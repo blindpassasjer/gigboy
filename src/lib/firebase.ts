@@ -3,12 +3,12 @@ import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? 'AIzaSyA2anSovYmXrjU8fnq15_y6cfCUY_JD73M',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? 'songbook-bebd5.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? 'songbook-bebd5',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? 'songbook-bebd5.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? '179160244928',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID ?? '1:179160244928:web:8a1d8769fedab44bb10325',
 };
 
 const missingFirebaseEnv = Object.entries(firebaseConfig)
