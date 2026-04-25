@@ -26,7 +26,7 @@ export default function Layout({ children }: Props) {
             <Plus size={16} /> Add Song
           </Link>
           {user && (
-            <button onClick={logout} className="topbar-logout" title={`Sign out (${user.username})`}>
+            <button onClick={logout} className="topbar-logout" title={`Sign out (${user.email})`}>
               <LogOut size={16} />
             </button>
           )}
