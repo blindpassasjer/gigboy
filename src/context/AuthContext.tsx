@@ -5,13 +5,15 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
 
 export interface User { id: string; email: string }
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  authEnabled: boolean;
+  authError: string | null;
   login: (email: string, password: string) => Promise<string | null>;
   logout: () => Promise<void>;
 }
@@ -20,9 +22,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(firebaseEnabled);
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     return onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser ? { id: firebaseUser.uid, email: firebaseUser.email ?? '' } : null);
       setLoading(false);
@@ -30,6 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<string | null> => {
+    if (!auth) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return null;
@@ -39,11 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (!auth) return;
     await signOut(auth);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, authEnabled: firebaseEnabled, authError: firebaseConfigError, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -32,6 +32,8 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
+Copy `.env.example` to `.env` and fill in the Firebase values before running locally.
+
 ## ChordPro format
 
 Chords are wrapped in square brackets inline with lyrics:
@@ -82,6 +84,19 @@ For Workers static assets deploys, use:
 ```bash
 npm run deploy
 ```
+
+For Cloudflare deploys, add these variables to your project build environment:
+
+```bash
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+```
+
+If those variables are missing, the deployed app now falls back to local-only mode and still shows the built-in songs.
 
 If you are deploying from the Cloudflare Pages dashboard, set build command `npm run build` and output directory `dist`.
 

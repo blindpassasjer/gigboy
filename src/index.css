@@ -27,6 +27,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+#root { min-height: 100vh; }
+
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button { cursor: pointer; font: inherit; border: none; background: none; }
@@ -99,6 +101,28 @@ input, select, textarea { font: inherit; }
   width: 100%;
   margin: 0 auto;
   padding: 1.5rem 1rem;
+}
+
+.app-status,
+.app-notice {
+  width: min(860px, calc(100% - 2rem));
+  margin: 1rem auto 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.app-status {
+  margin-top: 4rem;
+  padding: 1rem 1.25rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.app-notice {
+  padding: .85rem 1rem;
+  color: var(--muted);
 }
 
 .footer {

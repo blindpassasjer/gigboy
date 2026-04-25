@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,7 +11,22 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+const missingFirebaseEnv = Object.entries(firebaseConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const firebaseEnabled = missingFirebaseEnv.length === 0;
+export const firebaseConfigError = firebaseEnabled
+  ? null
+  : `Missing Firebase environment variables: ${missingFirebaseEnv.join(', ')}`;
+
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+
+if (firebaseEnabled) {
+  const app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+}
+
+export { auth, db };

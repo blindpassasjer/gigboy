@@ -8,9 +8,14 @@ import { SongsProvider } from './context/SongsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 function AuthGate() {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <LoginPage />;
+  const { user, loading, authEnabled } = useAuth();
+
+  if (loading) {
+    return <div className="app-status">Loading Songbook…</div>;
+  }
+
+  if (authEnabled && !user) return <LoginPage />;
+
   return (
     <SongsProvider>
       <BrowserRouter>

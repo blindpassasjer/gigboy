@@ -9,7 +9,7 @@ interface Props {
 
 export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, authEnabled, authError } = useAuth();
 
   return (
     <div className="app-shell">
@@ -32,6 +32,11 @@ export default function Layout({ children }: Props) {
           )}
         </nav>
       </header>
+      {!authEnabled && authError && (
+        <div className="app-notice" role="status">
+          Firebase is not configured in this deployment. Songbook is running in local-only mode.
+        </div>
+      )}
       <main className="main-content">{children}</main>
       <footer className="footer">
         <p>Songbook — open source music chords &amp; lyrics</p>

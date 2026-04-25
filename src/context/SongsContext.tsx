@@ -10,8 +10,28 @@ import {
   query,
 } from 'firebase/firestore';
 import type { Song } from '../types';
-import { db } from '../lib/firebase';
+import { db, firebaseEnabled } from '../lib/firebase';
 import builtinSongs from '../data/songs';
+
+const LOCAL_STORAGE_KEY = 'songbook-local-songs';
+
+function readLocalSongs(): Song[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!raw) return [];
+    const songs = JSON.parse(raw);
+    return Array.isArray(songs) ? songs as Song[] : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalSongs(songs: Song[]) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(songs));
+}
 
 interface SongsContextValue {
   songs: Song[];
@@ -23,10 +43,15 @@ interface SongsContextValue {
 const SongsContext = createContext<SongsContextValue | null>(null);
 
 export function SongsProvider({ children }: { children: ReactNode }) {
-  const [userSongs, setUserSongs] = useState<Song[]>([]);
+  const [userSongs, setUserSongs] = useState<Song[]>(() => (firebaseEnabled ? [] : readLocalSongs()));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!db) {
+      setLoading(false);
+      return;
+    }
+
     const q = query(collection(db, 'songs'), orderBy('createdAt', 'desc'));
     getDocs(q)
       .then((snap) => {
@@ -36,10 +61,20 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!firebaseEnabled) {
+      writeLocalSongs(userSongs);
+    }
+  }, [userSongs]);
+
   const songs = [...userSongs, ...builtinSongs];
 
   const addSong = useCallback(async (song: Song) => {
     setUserSongs((prev) => [song, ...prev]);
+    if (!db) {
+      return;
+    }
+
     try {
       const { id, ...rest } = song;
       await setDoc(doc(db, 'songs', id), rest);
@@ -50,6 +85,10 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
   const deleteSong = useCallback(async (id: string) => {
     setUserSongs((prev) => prev.filter((s) => s.id !== id));
+    if (!db) {
+      return;
+    }
+
     try {
       await deleteDoc(doc(db, 'songs', id));
     } catch {
