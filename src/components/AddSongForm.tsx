@@ -1,0 +1,151 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Save } from 'lucide-react';
+import type { Song } from '../types';
+import ChordDisplay from './ChordDisplay';
+import { LANGUAGE_NAMES } from '../utils/languages';
+
+interface Props {
+  onAdd: (song: Song) => void;
+}
+
+const PLACEHOLDER = `{title: My Song}
+{artist: Artist Name}
+
+{start_of_verse}
+[G]Amazing [C]grace, how [G]sweet the [D]sound
+[G]That saved a [C]wretch like [G]me
+{end_of_verse}
+
+{start_of_chorus}
+[D]I once was [G]lost but [C]now am [G]found
+Was [Em]blind but [D]now I [G]see
+{end_of_chorus}`;
+
+export default function AddSongForm({ onAdd }: Props) {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState('');
+  const [artist, setArtist] = useState('');
+  const [language, setLanguage] = useState('en');
+  const [tags, setTags] = useState('');
+  const [key, setKey] = useState('');
+  const [capo, setCapo] = useState('');
+  const [tempo, setTempo] = useState('');
+  const [chordpro, setChordpro] = useState('');
+  const [preview, setPreview] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  function validate() {
+    const errs: string[] = [];
+    if (!title.trim()) errs.push('Title is required.');
+    if (!chordpro.trim()) errs.push('Song content (ChordPro) is required.');
+    return errs;
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const errs = validate();
+    if (errs.length) { setErrors(errs); return; }
+
+    const song: Song = {
+      id: crypto.randomUUID(),
+      title: title.trim(),
+      artist: artist.trim() || undefined,
+      language,
+      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      key: key.trim() || undefined,
+      capo: capo ? parseInt(capo) : undefined,
+      tempo: tempo ? parseInt(tempo) : undefined,
+      chordpro: chordpro.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    onAdd(song);
+    navigate(`/songs/${song.id}`);
+  }
+
+  return (
+    <div className="add-song-page">
+      <h1>Add Song</h1>
+      <form onSubmit={handleSubmit} className="add-song-form">
+        {errors.length > 0 && (
+          <ul className="form-errors">
+            {errors.map((e) => <li key={e}>{e}</li>)}
+          </ul>
+        )}
+
+        <div className="form-row">
+          <div className="form-field">
+            <label>Title *</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Song title" />
+          </div>
+          <div className="form-field">
+            <label>Artist</label>
+            <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist / band" />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-field">
+            <label>Language</label>
+            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+              {Object.entries(LANGUAGE_NAMES).map(([code, name]) => (
+                <option key={code} value={code}>{name}</option>
+              ))}
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Key</label>
+            <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="e.g. G" maxLength={4} />
+          </div>
+          <div className="form-field">
+            <label>Capo</label>
+            <input type="number" value={capo} onChange={(e) => setCapo(e.target.value)} min={0} max={12} placeholder="0" />
+          </div>
+          <div className="form-field">
+            <label>BPM</label>
+            <input type="number" value={tempo} onChange={(e) => setTempo(e.target.value)} min={20} max={300} placeholder="120" />
+          </div>
+        </div>
+
+        <div className="form-field">
+          <label>Tags (comma separated)</label>
+          <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="worship, hymn, folk…" />
+        </div>
+
+        <div className="form-field form-field--full">
+          <div className="chordpro-label-row">
+            <label>ChordPro Lyrics *</label>
+            <button type="button" className="preview-toggle" onClick={() => setPreview((v) => !v)}>
+              {preview ? 'Edit' : 'Preview'}
+            </button>
+          </div>
+          {preview ? (
+            <div className="chordpro-preview">
+              <ChordDisplay chordpro={chordpro || PLACEHOLDER} showChords />
+            </div>
+          ) : (
+            <textarea
+              value={chordpro}
+              onChange={(e) => setChordpro(e.target.value)}
+              placeholder={PLACEHOLDER}
+              rows={16}
+              spellCheck={false}
+            />
+          )}
+          <p className="form-hint">
+            Wrap chords in brackets: <code>[G]Amazing [C]grace</code>. Use directives like{' '}
+            <code>&#123;title: Name&#125;</code>, <code>&#123;start_of_chorus&#125;</code>.
+          </p>
+        </div>
+
+        <div className="form-actions">
+          <button type="submit" className="btn-primary">
+            <Save size={16} /> Save Song
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

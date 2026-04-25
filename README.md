@@ -1,0 +1,93 @@
+# Songbook
+
+A web-based music songbook that stores songs in **ChordPro** format, supports lyrics in multiple languages, and lets you record or attach audio to any song.
+
+## Features
+
+- **ChordPro lyrics** — chords displayed above lyrics with `[G]Amazing [C]grace` notation
+- **Transpose** — shift all chords up or down by semitone in real time
+- **Multi-language** — songs in English, Norwegian, Spanish, Portuguese, French, Italian, German, and more
+- **Audio recording** — record directly in the browser using the microphone; recordings are saved in `localStorage`
+- **Add songs** — live ChordPro preview while writing; songs are persisted in `localStorage`
+- **Search & filter** — full-text search by title/artist/tag, and filter by language
+- **GitHub Pages ready** — static build with `vite`, no backend required
+
+## Tech stack
+
+| Tool | Purpose |
+|---|---|
+| React 18 + TypeScript | UI |
+| Vite 4 | Build tooling |
+| React Router 6 | Client-side routing |
+| lucide-react | Icons |
+| `localStorage` | Song & recording persistence |
+| Web MediaRecorder API | Audio recording |
+
+## Quick start
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173).
+
+## ChordPro format
+
+Chords are wrapped in square brackets inline with lyrics:
+
+```
+[G]Amazing [C]grace, how [G]sweet the [D]sound
+```
+
+Directives use curly braces:
+
+```
+{title: Amazing Grace}
+{artist: John Newton}
+{start_of_verse}
+...
+{end_of_verse}
+{start_of_chorus}
+...
+{end_of_chorus}
+```
+
+Supported directives: `title`, `subtitle`, `artist`, `start_of_verse`, `end_of_verse`, `start_of_chorus`, `end_of_chorus`, `start_of_bridge`, `end_of_bridge`.
+
+## Adding songs
+
+1. Click **Add Song** in the nav bar.
+2. Fill in title, artist, language, key, capo, and BPM.
+3. Write (or paste) ChordPro lyrics in the editor — toggle **Preview** to see the rendered result.
+4. Click **Save Song** — the song is stored in `localStorage` and you're taken straight to the song view.
+
+## Deploying to GitHub Pages
+
+```bash
+npm install --save-dev gh-pages
+npm run deploy
+```
+
+Or use the provided GitHub Actions workflow (`.github/workflows/deploy.yml`) which builds and pushes to the `gh-pages` branch on every push to `main`.
+
+## Project structure
+
+```
+src/
+  components/     UI components (Layout, SongList, SongView, ChordDisplay, …)
+  context/        SongsContext — song list state + localStorage sync
+  data/           Built-in songs (songs.ts)
+  hooks/          useAudioRecorder
+  pages/          HomePage, SongPage, AddSongPage
+  types/          Song, Recording, ParsedLine types
+  utils/          chordParser, storage, languages
+```
+
+## Contributing
+
+Songs live in [src/data/songs.ts](src/data/songs.ts). To add a built-in song, append a `Song` object and open a PR. Keep the ChordPro text accurate and include `language`, `tags`, and optionally `key`/`capo`.
+
+## License
+
+MIT
