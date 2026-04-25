@@ -71,7 +71,19 @@ npm run build
 # then upload / point your host at the dist/ folder
 ```
 
-For Cloudflare Pages: connect the repo, set build command `npm run build`, output directory `dist`.
+For Cloudflare Pages direct deploys, use:
+
+```bash
+npm run deploy:pages
+```
+
+For Workers static assets deploys, use:
+
+```bash
+npm run deploy
+```
+
+If you are deploying from the Cloudflare Pages dashboard, set build command `npm run build` and output directory `dist`.
 
 ## Project structure
 
