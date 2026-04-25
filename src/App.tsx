@@ -3,9 +3,14 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import SongPage from './pages/SongPage';
 import AddSongPage from './pages/AddSongPage';
+import LoginPage from './pages/LoginPage';
 import { SongsProvider } from './context/SongsContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-export default function App() {
+function AuthGate() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <LoginPage />;
   return (
     <SongsProvider>
       <BrowserRouter>
@@ -18,5 +23,13 @@ export default function App() {
         </Layout>
       </BrowserRouter>
     </SongsProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
   );
 }

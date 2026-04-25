@@ -1,49 +1,67 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  orderBy,
+  query,
+} from 'firebase/firestore';
 import type { Song } from '../types';
+import { db } from '../lib/firebase';
 import builtinSongs from '../data/songs';
-
-const STORAGE_KEY = 'songbook:user-songs';
-
-function loadUserSongs(): Song[] {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
-  } catch {
-    return [];
-  }
-}
 
 interface SongsContextValue {
   songs: Song[];
-  addSong: (song: Song) => void;
-  deleteSong: (id: string) => void;
+  loading: boolean;
+  addSong: (song: Song) => Promise<void>;
+  deleteSong: (id: string) => Promise<void>;
 }
 
 const SongsContext = createContext<SongsContextValue | null>(null);
 
 export function SongsProvider({ children }: { children: ReactNode }) {
-  const [userSongs, setUserSongs] = useState<Song[]>(loadUserSongs);
+  const [userSongs, setUserSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, 'songs'), orderBy('createdAt', 'desc'));
+    getDocs(q)
+      .then((snap) => {
+        setUserSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const songs = [...userSongs, ...builtinSongs];
 
-  const addSong = useCallback((song: Song) => {
-    setUserSongs((prev) => {
-      const updated = [song, ...prev];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      return updated;
-    });
+  const addSong = useCallback(async (song: Song) => {
+    setUserSongs((prev) => [song, ...prev]);
+    try {
+      const { id, ...rest } = song;
+      await setDoc(doc(db, 'songs', id), rest);
+    } catch {
+      setUserSongs((prev) => prev.filter((s) => s.id !== song.id));
+    }
   }, []);
 
-  const deleteSong = useCallback((id: string) => {
-    setUserSongs((prev) => {
-      const updated = prev.filter((s) => s.id !== id);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      return updated;
-    });
+  const deleteSong = useCallback(async (id: string) => {
+    setUserSongs((prev) => prev.filter((s) => s.id !== id));
+    try {
+      await deleteDoc(doc(db, 'songs', id));
+    } catch {
+      const q = query(collection(db, 'songs'), orderBy('createdAt', 'desc'));
+      getDocs(q).then((snap) => {
+        setUserSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song));
+      });
+    }
   }, []);
 
   return (
-    <SongsContext.Provider value={{ songs, addSong, deleteSong }}>
+    <SongsContext.Provider value={{ songs, loading, addSong, deleteSong }}>
       {children}
     </SongsContext.Provider>
   );

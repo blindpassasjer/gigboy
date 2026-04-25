@@ -10,12 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "firebase": "^11.0.0",
     "lucide-react": "^1.11.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260425.1",
     "@types/node": "^25.6.0",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",

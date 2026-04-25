@@ -1,11 +1,8 @@
 import { useState } from 'react';
-import { ChevronUp, ChevronDown, Mic, Music } from 'lucide-react';
-import type { Song, Recording } from '../types';
+import { ChevronUp, ChevronDown } from 'lucide-react';
+import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
-import AudioPlayer from './AudioPlayer';
-import AudioRecorder from './AudioRecorder';
 import LanguageBadge from './LanguageBadge';
-import { saveRecording, deleteRecording, getRecordings } from '../utils/storage';
 
 interface Props {
   song: Song;
@@ -14,22 +11,6 @@ interface Props {
 export default function SongView({ song }: Props) {
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
-  const [showRecorder, setShowRecorder] = useState(false);
-  const [recordings, setRecordings] = useState<Recording[]>(() => [
-    ...getRecordings(song.id),
-    ...(song.recordings ?? []),
-  ]);
-
-  function handleSaveRecording(rec: Recording) {
-    saveRecording(song.id, rec);
-    setRecordings([rec, ...recordings]);
-    setShowRecorder(false);
-  }
-
-  function handleDeleteRecording(id: string) {
-    deleteRecording(song.id, id);
-    setRecordings(recordings.filter((r) => r.id !== id));
-  }
 
   return (
     <div className="song-view">
@@ -86,37 +67,6 @@ export default function SongView({ song }: Props) {
       <div className="song-view-body">
         <ChordDisplay chordpro={song.chordpro} transpose={transpose} showChords={showChords} />
       </div>
-
-      <section className="recordings-section">
-        <div className="recordings-header">
-          <h2><Music size={18} /> Recordings</h2>
-          <button
-            className="rec-btn rec-btn--toggle"
-            onClick={() => setShowRecorder((v) => !v)}
-          >
-            <Mic size={15} /> {showRecorder ? 'Cancel' : 'Record'}
-          </button>
-        </div>
-
-        {showRecorder && (
-          <AudioRecorder onSave={handleSaveRecording} />
-        )}
-
-        {recordings.length === 0 && !showRecorder ? (
-          <p className="no-recordings">No recordings yet. Press Record to add one.</p>
-        ) : (
-          <ul className="recordings-list">
-            {recordings.map((rec) => (
-              <li key={rec.id}>
-                <AudioPlayer
-                  recording={rec}
-                  onDelete={() => handleDeleteRecording(rec.id)}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

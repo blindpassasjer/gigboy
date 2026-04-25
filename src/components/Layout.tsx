@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Music, BookOpen, Plus } from 'lucide-react';
+import { Music, BookOpen, Plus, LogOut } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 interface Props {
   children: ReactNode;
@@ -8,6 +9,7 @@ interface Props {
 
 export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
+  const { user, logout } = useAuth();
 
   return (
     <div className="app-shell">
@@ -23,6 +25,11 @@ export default function Layout({ children }: Props) {
           <Link to="/add" className={pathname === '/add' ? 'active' : ''}>
             <Plus size={16} /> Add Song
           </Link>
+          {user && (
+            <button onClick={logout} className="topbar-logout" title={`Sign out (${user.username})`}>
+              <LogOut size={16} />
+            </button>
+          )}
         </nav>
       </header>
       <main className="main-content">{children}</main>

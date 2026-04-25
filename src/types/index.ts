@@ -9,16 +9,6 @@ export type Language =
   | 'la'
   | string;
 
-export interface Recording {
-  id: string;
-  name: string;
-  createdAt: string;
-  /** base64-encoded audio data (audio/webm or audio/ogg) */
-  data: string;
-  mimeType: string;
-  durationSeconds?: number;
-}
-
 export interface Song {
   id: string;
   title: string;
@@ -33,7 +23,6 @@ export interface Song {
   key?: string;
   tempo?: number;
   timeSignature?: string;
-  recordings?: Recording[];
   createdAt?: string;
   updatedAt?: string;
 }
