@@ -62,14 +62,16 @@ Supported directives: `title`, `subtitle`, `artist`, `start_of_verse`, `end_of_v
 3. Write (or paste) ChordPro lyrics in the editor — toggle **Preview** to see the rendered result.
 4. Click **Save Song** — the song is stored in `localStorage` and you're taken straight to the song view.
 
-## Deploying to GitHub Pages
+## Deploying
+
+Build the project and deploy the `dist/` folder to any static host (Cloudflare Pages, Netlify, Vercel, etc.):
 
 ```bash
-npm install --save-dev gh-pages
-npm run deploy
+npm run build
+# then upload / point your host at the dist/ folder
 ```
 
-Or use the provided GitHub Actions workflow (`.github/workflows/deploy.yml`) which builds and pushes to the `gh-pages` branch on every push to `main`.
+For Cloudflare Pages: connect the repo, set build command `npm run build`, output directory `dist`.
 
 ## Project structure
 
