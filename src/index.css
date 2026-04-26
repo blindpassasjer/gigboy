@@ -49,7 +49,7 @@ button { cursor: pointer; font: inherit; border: none; background: none; }
 input, select, textarea { font: inherit; color: var(--text); }
 
 /* ─── App Shell ─────────────────────────────────────────────────────────────── */
-.app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+.app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 .app-body {
   display: flex;
@@ -213,7 +213,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 /* ─── Song List ─────────────────────────────────────────────────────────────── */
-.song-list-page { display: flex; flex-direction: column; gap: 1rem; }
+.song-list-page { display: flex; flex-direction: column; }
 
 .song-list-header {
   display: flex;
@@ -258,6 +258,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 .view-toggle-btn.active {
   background: var(--chord-bg);
   color: var(--accent);
+}
+
+.song-list-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding-bottom: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .song-list-controls {
@@ -318,7 +329,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-width: 150px;
 }
 
-.song-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+.song-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; margin-top: .25rem; }
 .song-list > li {
   position: relative;
 }
@@ -398,6 +409,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
+  margin-top: .25rem;
 }
 
 .song-preview-card {
@@ -539,6 +551,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .75rem;
   padding: 3rem;
   color: var(--muted);
+  margin-top: .25rem;
 }
 
 /* ─── Song View ─────────────────────────────────────────────────────────────── */

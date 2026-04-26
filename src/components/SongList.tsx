@@ -173,6 +173,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
 
   return (
     <div className="song-list-page">
+      <div className="song-list-sticky">
       <div className="song-list-header">
         <div>
           {listName && <h2 className="song-list-heading">{listName}</h2>}
@@ -237,6 +238,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
           </select>
         </div>
       </div>
+      </div>{/* end song-list-sticky */}
 
       {filtered.length === 0 ? (
         <div className="empty-state">
