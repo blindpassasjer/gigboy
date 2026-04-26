@@ -46,7 +46,7 @@ body {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button { cursor: pointer; font: inherit; border: none; background: none; }
-input, select, textarea { font: inherit; }
+input, select, textarea { font: inherit; color: var(--text); }
 
 /* ─── App Shell ─────────────────────────────────────────────────────────────── */
 .app-shell { display: flex; flex-direction: column; min-height: 100vh; }
@@ -734,6 +734,7 @@ input, select, textarea { font: inherit; }
 .chord-line { display: flex; flex-wrap: nowrap; white-space: pre; }
 .chord-line--empty { height: .9rem; }
 .chord-line--has-chords { margin-top: .4rem; }
+.chord-line--chord-only { gap: 1.5ch; }
 
 .chord-segment { display: inline-flex; flex-direction: column; white-space: pre; }
 

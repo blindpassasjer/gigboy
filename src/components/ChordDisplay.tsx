@@ -82,9 +82,10 @@ function LineRenderer({
   // Chord-lyric line
   const segments = line.segments ?? [];
   const hasChords = showChords && lineHasChords(line);
+  const isChordOnly = hasChords && segments.every(seg => !seg.lyric.trim());
 
   return (
-    <div className={`chord-line ${hasChords ? 'chord-line--has-chords' : ''}`}>
+    <div className={`chord-line ${hasChords ? 'chord-line--has-chords' : ''} ${isChordOnly ? 'chord-line--chord-only' : ''}`}>
       {segments.map((seg, idx) => (
         <span key={idx} className="chord-segment">
           {showChords && (
