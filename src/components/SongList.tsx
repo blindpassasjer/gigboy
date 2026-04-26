@@ -7,6 +7,7 @@ import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
+const SONG_DRAG_FALLBACK_MIME = 'text/x-songbook-song-id';
 
 function getSongPreview(song: Song): string {
   const lyricLines = parseChordPro(song.chordpro)
@@ -67,6 +68,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
     setDropAtEnd(false);
     event.dataTransfer.effectAllowed = onMoveSong ? 'copyMove' : 'copy';
     event.dataTransfer.setData(SONG_DRAG_MIME, song.id);
+    event.dataTransfer.setData(SONG_DRAG_FALLBACK_MIME, song.id);
     event.dataTransfer.setData('text/plain', song.title);
   };
 
@@ -88,8 +90,8 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
 
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-    setDropTargetSongId(songId);
-    setDropAtEnd(false);
+    setDropTargetSongId((current) => (current === songId ? current : songId));
+    setDropAtEnd((current) => (current ? false : current));
   };
 
   const handleSongDrop = (beforeSongId: string, event: React.DragEvent<HTMLElement>) => {
@@ -115,8 +117,8 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
 
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-    setDropTargetSongId(null);
-    setDropAtEnd(true);
+    setDropTargetSongId((current) => (current === null ? current : null));
+    setDropAtEnd((current) => (current ? current : true));
   };
 
   const handleListEndDrop = (event: React.DragEvent<HTMLElement>) => {

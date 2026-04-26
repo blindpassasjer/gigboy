@@ -3,7 +3,20 @@ import { Folder, FolderOpen, FolderPlus, List, Plus, Trash2, ChevronRight, Chevr
 import { useSongLists } from '../context/SongListsContext';
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
+const SONG_DRAG_FALLBACK_MIME = 'text/x-songbook-song-id';
 const LIST_DRAG_MIME = 'application/x-songbook-list-id';
+
+function hasType(types: readonly string[], mime: string): boolean {
+  return Array.from(types).includes(mime);
+}
+
+function readSongIdFromDrag(event: React.DragEvent<HTMLDivElement>): string {
+  return event.dataTransfer.getData(SONG_DRAG_MIME) || event.dataTransfer.getData(SONG_DRAG_FALLBACK_MIME);
+}
+
+function readListIdFromDrag(event: React.DragEvent<HTMLDivElement>): string {
+  return event.dataTransfer.getData(LIST_DRAG_MIME);
+}
 
 interface Props {
   open: boolean;
@@ -84,31 +97,42 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     folderKey: string | 'root',
     listId: string
   ) => {
-    const isSongDrop = event.dataTransfer.types.includes(SONG_DRAG_MIME);
+    const isSongDrop = hasType(event.dataTransfer.types, SONG_DRAG_MIME)
+      || hasType(event.dataTransfer.types, SONG_DRAG_FALLBACK_MIME);
 
     if (isSongDrop) {
       event.preventDefault();
       event.dataTransfer.dropEffect = 'copy';
-      setSongDropTargetId(listId);
+      setSongDropTargetId((current) => (current === listId ? current : listId));
       return;
     }
 
-    if (!draggingListId || draggingListId === listId) return;
+    const sourceListId = draggingListId || readListIdFromDrag(event);
+    if (!sourceListId || sourceListId === listId) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-    setSongDropTargetId(null);
-    setDropPreview({ folderKey, beforeListId: listId });
+    setSongDropTargetId((current) => (current === null ? current : null));
+    setDropPreview((current) => (
+      current?.folderKey === folderKey && current.beforeListId === listId
+        ? current
+        : { folderKey, beforeListId: listId }
+    ));
   };
 
   const handleContainerDragOver = (
     event: React.DragEvent<HTMLDivElement>,
     folderKey: string | 'root'
   ) => {
-    if (!draggingListId) return;
+    const sourceListId = draggingListId || readListIdFromDrag(event);
+    if (!sourceListId) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-    setSongDropTargetId(null);
-    setDropPreview({ folderKey, beforeListId: null });
+    setSongDropTargetId((current) => (current === null ? current : null));
+    setDropPreview((current) => (
+      current?.folderKey === folderKey && current.beforeListId === null
+        ? current
+        : { folderKey, beforeListId: null }
+    ));
   };
 
   const commitDrop = (
@@ -119,7 +143,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   ) => {
     event.preventDefault();
 
-    const droppedSongId = event.dataTransfer.getData(SONG_DRAG_MIME);
+    const droppedSongId = readSongIdFromDrag(event);
     if (droppedSongId && listId) {
       addSongToList(listId, droppedSongId);
       setSongDropTargetId(null);
@@ -127,8 +151,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       return;
     }
 
-    if (!draggingListId) return;
-    moveSongList(draggingListId, targetFolderId, beforeListId);
+    const sourceListId = draggingListId || readListIdFromDrag(event);
+    if (!sourceListId) return;
+    moveSongList(sourceListId, targetFolderId, beforeListId);
     setDraggingListId(null);
     setDropPreview(null);
     setSongDropTargetId(null);
@@ -160,7 +185,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         className={`sidebar-all-songs${activeSongListId === null && activeFolderId === null ? ' active' : ''}`}
         onClick={() => {
           clearActiveSelection();
-          onNavigate?.();
         }}
       >
         All songs

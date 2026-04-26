@@ -51,8 +51,6 @@ export default function AddSongForm({
   const [songListId, setSongListId] = useState(initialSongListId ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const showSongListSelector = (songListOptions?.length ?? 0) > 0;
-
   function validate() {
     const errs: string[] = [];
     if (!title.trim()) errs.push('Title is required.');
@@ -147,17 +145,15 @@ export default function AddSongForm({
           <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="worship, hymn, folk…" />
         </div>
 
-        {showSongListSelector && (
-          <div className="form-field">
-            <label>Save to song list</label>
-            <select value={songListId} onChange={(e) => setSongListId(e.target.value)}>
-              <option value="">Do not add to a list</option>
-              {songListOptions?.map((option) => (
-                <option key={option.id} value={option.id}>{option.label}</option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className="form-field">
+          <label>Save to song list</label>
+          <select value={songListId} onChange={(e) => setSongListId(e.target.value)}>
+            <option value="">Do not add to a list</option>
+            {songListOptions?.map((option) => (
+              <option key={option.id} value={option.id}>{option.label}</option>
+            ))}
+          </select>
+        </div>
 
         <div className="form-field form-field--full">
           <div className="chordpro-label-row">
