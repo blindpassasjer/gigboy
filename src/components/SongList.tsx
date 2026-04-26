@@ -34,7 +34,14 @@ interface Props {
 export default function SongList({ songs, listName, onMoveSong, onRenameSong, onDeleteSong }: Props) {
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>(
+    () => (localStorage.getItem('songbook-view-mode') === 'cards' ? 'cards' : 'list')
+  );
+
+  function handleSetViewMode(mode: 'list' | 'cards') {
+    localStorage.setItem('songbook-view-mode', mode);
+    setViewMode(mode);
+  }
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
   const [dropTargetSongId, setDropTargetSongId] = useState<string | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
@@ -148,7 +155,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
           <button
             type="button"
             className={`view-toggle-btn${viewMode === 'list' ? ' active' : ''}`}
-            onClick={() => setViewMode('list')}
+            onClick={() => handleSetViewMode('list')}
             aria-pressed={viewMode === 'list'}
           >
             <Rows3 size={15} /> List
@@ -156,7 +163,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
           <button
             type="button"
             className={`view-toggle-btn${viewMode === 'cards' ? ' active' : ''}`}
-            onClick={() => setViewMode('cards')}
+            onClick={() => handleSetViewMode('cards')}
             aria-pressed={viewMode === 'cards'}
           >
             <LayoutGrid size={15} /> Cards

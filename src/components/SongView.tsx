@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronUp, ChevronDown, RotateCcw, ListPlus, Check, Plus } from 'lucide-react';
+import { ChevronUp, ChevronDown, RotateCcw, ListPlus, Check, Plus, Printer } from 'lucide-react';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
@@ -97,6 +97,13 @@ export default function SongView({ song }: Props) {
             </button>
             <button className="song-action-btn song-action-btn--danger" onClick={handleDelete}>
               Delete
+            </button>
+            <button
+              className="song-action-btn"
+              onClick={() => window.print()}
+              title="Print / Save as PDF"
+            >
+              <Printer size={13} style={{ marginRight: '4px' }} /> Print
             </button>
           </div>
 

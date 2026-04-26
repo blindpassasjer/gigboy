@@ -1668,3 +1668,20 @@ input, select, textarea { font: inherit; color: var(--text); }
   .song-view-title { font-size: 1.3rem; }
 }
 
+
+@media print {
+  .topbar,
+  .sidebar-anim,
+  .sidebar-backdrop,
+  .song-view-toolbar,
+  .song-action-btn { display: none !important; }
+
+  body { background: white; color: black; }
+
+  .song-view { gap: .75rem; }
+  .song-view-title { font-size: 1.4rem; }
+  .song-view-artist { color: #555; }
+
+  .chord-display { padding: 0; }
+  .chord-token--chord { color: #1a56db; }
+}
