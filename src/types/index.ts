@@ -1,6 +1,7 @@
 export interface SongListCategory {
   id: string;
   name: string;
+  sortOrder?: number;
 }
 
 export interface SongList {
@@ -8,6 +9,7 @@ export interface SongList {
   name: string;
   songIds: string[];
   folderId?: string;
+  sortOrder?: number;
 }
 
 export interface Setlist {
@@ -16,6 +18,7 @@ export interface Setlist {
   songIds: string[];
   createdAt?: string;
   updatedAt?: string;
+  sortOrder?: number;
 }
 
 export type Language =
