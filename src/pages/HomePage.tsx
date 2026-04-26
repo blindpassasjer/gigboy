@@ -5,12 +5,22 @@ import type { Song } from '../types';
 
 export default function HomePage() {
   const { songs, updateSong, deleteSong } = useSongs();
-  const { activeSongListId, songLists } = useSongLists();
+  const { activeFolderId, activeSongListId, folders, songLists } = useSongLists();
 
   const activeList = songLists.find((l) => l.id === activeSongListId) ?? null;
+  const activeFolder = folders.find((folder) => folder.id === activeFolderId) ?? null;
+  const activeFolderSongIds = activeFolder
+    ? new Set(
+        songLists
+          .filter((list) => list.folderId === activeFolder.id)
+          .flatMap((list) => list.songIds)
+      )
+    : null;
   const displayedSongs = activeList
-    ? songs.filter((s) => activeList.songIds.includes(s.id))
-    : songs;
+    ? songs.filter((song) => activeList.songIds.includes(song.id))
+    : activeFolderSongIds
+      ? songs.filter((song) => activeFolderSongIds.has(song.id))
+      : songs;
 
   async function handleRenameSong(song: Song) {
     const nextTitle = window.prompt('Rename song', song.title);
@@ -36,7 +46,7 @@ export default function HomePage() {
   return (
     <SongList
       songs={displayedSongs}
-      listName={activeList?.name}
+      listName={activeList?.name ?? activeFolder?.name}
       onRenameSong={handleRenameSong}
       onDeleteSong={handleDeleteSong}
     />

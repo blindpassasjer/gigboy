@@ -2,6 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { Folder, FolderOpen, FolderPlus, List, Plus, Trash2, ChevronRight, ChevronDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 
+const SONG_DRAG_MIME = 'application/x-songbook-song-id';
+const LIST_DRAG_MIME = 'application/x-songbook-list-id';
+
 interface Props {
   open: boolean;
 }
@@ -10,12 +13,16 @@ export default function Sidebar({ open }: Props) {
   const {
     folders,
     songLists,
+    activeFolderId,
     activeSongListId,
     addFolder,
+    addSongToList,
     deleteFolder,
     addSongList,
     deleteSongList,
     moveSongList,
+    clearActiveSelection,
+    setActiveFolderId,
     setActiveSongListId,
   } = useSongLists();
 
@@ -25,8 +32,10 @@ export default function Sidebar({ open }: Props) {
   const [draftName, setDraftName] = useState('');
   const [draggingListId, setDraggingListId] = useState<string | null>(null);
   const [dropPreview, setDropPreview] = useState<{ folderKey: string | 'root'; beforeListId: string | null } | null>(null);
+  const [songDropTargetId, setSongDropTargetId] = useState<string | null>(null);
 
   const toggleFolder = (id: string) => {
+    setActiveFolderId(id);
     setExpandedFolders((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -57,12 +66,14 @@ export default function Sidebar({ open }: Props) {
   const handleListDragStart = (listId: string, event: React.DragEvent<HTMLDivElement>) => {
     setDraggingListId(listId);
     event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData(LIST_DRAG_MIME, listId);
     event.dataTransfer.setData('text/plain', listId);
   };
 
   const handleListDragEnd = () => {
     setDraggingListId(null);
     setDropPreview(null);
+    setSongDropTargetId(null);
   };
 
   const handleListDragOver = (
@@ -70,9 +81,19 @@ export default function Sidebar({ open }: Props) {
     folderKey: string | 'root',
     listId: string
   ) => {
+    const isSongDrop = event.dataTransfer.types.includes(SONG_DRAG_MIME);
+
+    if (isSongDrop) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+      setSongDropTargetId(listId);
+      return;
+    }
+
     if (!draggingListId || draggingListId === listId) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
+    setSongDropTargetId(null);
     setDropPreview({ folderKey, beforeListId: listId });
   };
 
@@ -83,19 +104,31 @@ export default function Sidebar({ open }: Props) {
     if (!draggingListId) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
+    setSongDropTargetId(null);
     setDropPreview({ folderKey, beforeListId: null });
   };
 
   const commitDrop = (
     event: React.DragEvent<HTMLDivElement>,
+    listId: string | null,
     targetFolderId: string | undefined,
     beforeListId: string | null
   ) => {
     event.preventDefault();
+
+    const droppedSongId = event.dataTransfer.getData(SONG_DRAG_MIME);
+    if (droppedSongId && listId) {
+      addSongToList(listId, droppedSongId);
+      setSongDropTargetId(null);
+      setDropPreview(null);
+      return;
+    }
+
     if (!draggingListId) return;
     moveSongList(draggingListId, targetFolderId, beforeListId);
     setDraggingListId(null);
     setDropPreview(null);
+    setSongDropTargetId(null);
   };
 
   if (!open) return null;
@@ -114,8 +147,8 @@ export default function Sidebar({ open }: Props) {
       </div>
 
       <button
-        className={`sidebar-all-songs${activeSongListId === null ? ' active' : ''}`}
-        onClick={() => setActiveSongListId(null)}
+        className={`sidebar-all-songs${activeSongListId === null && activeFolderId === null ? ' active' : ''}`}
+        onClick={clearActiveSelection}
       >
         All songs
       </button>
@@ -136,7 +169,10 @@ export default function Sidebar({ open }: Props) {
         return (
           <div key={folder.id} className="sidebar-folder">
             <div className="sidebar-folder-header">
-              <button className="sidebar-folder-toggle" onClick={() => toggleFolder(folder.id)}>
+              <button
+                className={`sidebar-folder-toggle${activeFolderId === folder.id ? ' active' : ''}`}
+                onClick={() => toggleFolder(folder.id)}
+              >
                 {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                 {isExpanded ? <FolderOpen size={14} /> : <Folder size={14} />}
                 <span className="sidebar-folder-name">{folder.name}</span>
@@ -155,7 +191,7 @@ export default function Sidebar({ open }: Props) {
               <div
                 className={`sidebar-folder-children${dropPreview?.folderKey === folder.id && dropPreview.beforeListId === null ? ' drop-active' : ''}`}
                 onDragOver={(e) => handleContainerDragOver(e, folder.id)}
-                onDrop={(e) => commitDrop(e, folder.id, dropPreview?.folderKey === folder.id ? dropPreview.beforeListId : null)}
+                onDrop={(e) => commitDrop(e, null, folder.id, dropPreview?.folderKey === folder.id ? dropPreview.beforeListId : null)}
               >
                 {listsInFolder.map((list) => (
                   <SidebarListItem
@@ -166,11 +202,13 @@ export default function Sidebar({ open }: Props) {
                     count={list.songIds.length}
                     active={activeSongListId === list.id}
                     dragging={draggingListId === list.id}
+                    songDropTarget={songDropTargetId === list.id}
                     dropBefore={dropPreview?.folderKey === folder.id && dropPreview.beforeListId === list.id}
                     onDragStart={handleListDragStart}
                     onDragEnd={handleListDragEnd}
                     onDragOver={handleListDragOver}
-                    onDrop={(e, beforeListId) => commitDrop(e, folder.id, beforeListId)}
+                    onDrop={(e, beforeListId) => commitDrop(e, list.id, folder.id, beforeListId)}
+                    onDragLeave={() => setSongDropTargetId((current) => (current === list.id ? null : current))}
                     onSelect={() => setActiveSongListId(list.id)}
                     onDelete={() => deleteSongList(list.id)}
                   />
@@ -194,7 +232,7 @@ export default function Sidebar({ open }: Props) {
       <div
         className={`sidebar-root-lists${dropPreview?.folderKey === 'root' && dropPreview.beforeListId === null ? ' drop-active' : ''}`}
         onDragOver={(e) => handleContainerDragOver(e, 'root')}
-        onDrop={(e) => commitDrop(e, undefined, dropPreview?.folderKey === 'root' ? dropPreview.beforeListId : null)}
+        onDrop={(e) => commitDrop(e, null, undefined, dropPreview?.folderKey === 'root' ? dropPreview.beforeListId : null)}
       >
         {unfiledLists.map((list) => (
           <SidebarListItem
@@ -205,11 +243,13 @@ export default function Sidebar({ open }: Props) {
             count={list.songIds.length}
             active={activeSongListId === list.id}
             dragging={draggingListId === list.id}
+            songDropTarget={songDropTargetId === list.id}
             dropBefore={dropPreview?.folderKey === 'root' && dropPreview.beforeListId === list.id}
             onDragStart={handleListDragStart}
             onDragEnd={handleListDragEnd}
             onDragOver={handleListDragOver}
-            onDrop={(e, beforeListId) => commitDrop(e, undefined, beforeListId)}
+            onDrop={(e, beforeListId) => commitDrop(e, list.id, undefined, beforeListId)}
+            onDragLeave={() => setSongDropTargetId((current) => (current === list.id ? null : current))}
             onSelect={() => setActiveSongListId(list.id)}
             onDelete={() => deleteSongList(list.id)}
           />
@@ -243,11 +283,13 @@ interface ListItemProps {
   count: number;
   active: boolean;
   dragging: boolean;
+  songDropTarget: boolean;
   dropBefore: boolean;
   onDragStart: (listId: string, event: React.DragEvent<HTMLDivElement>) => void;
   onDragEnd: () => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>, folderKey: string | 'root', listId: string) => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>, beforeListId: string) => void;
+  onDragLeave: () => void;
   onSelect: () => void;
   onDelete: () => void;
 }
@@ -259,21 +301,24 @@ function SidebarListItem({
   count,
   active,
   dragging,
+  songDropTarget,
   dropBefore,
   onDragStart,
   onDragEnd,
   onDragOver,
   onDrop,
+  onDragLeave,
   onSelect,
   onDelete,
 }: ListItemProps) {
   return (
     <div
-      className={`sidebar-list-item${active ? ' active' : ''}${dragging ? ' dragging' : ''}${dropBefore ? ' drop-before' : ''}`}
+      className={`sidebar-list-item${active ? ' active' : ''}${dragging ? ' dragging' : ''}${songDropTarget ? ' song-drop-target' : ''}${dropBefore ? ' drop-before' : ''}`}
       draggable
       onDragStart={(e) => onDragStart(listId, e)}
       onDragEnd={onDragEnd}
       onDragOver={(e) => onDragOver(e, folderKey, listId)}
+      onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, listId)}
     >
       <button className="sidebar-list-item-btn" onClick={onSelect}>

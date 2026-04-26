@@ -17,6 +17,7 @@ function readLocal<T>(key: string, fallback: T): T {
 interface SongListsContextValue {
   folders: SongListFolder[];
   songLists: SongList[];
+  activeFolderId: string | null;
   activeSongListId: string | null;
   addFolder: (name: string) => void;
   deleteFolder: (id: string) => void;
@@ -25,7 +26,9 @@ interface SongListsContextValue {
   addSongToList: (listId: string, songId: string) => void;
   removeSongFromList: (listId: string, songId: string) => void;
   moveSongList: (listId: string, targetFolderId?: string, beforeListId?: string | null) => void;
+  setActiveFolderId: (id: string | null) => void;
   setActiveSongListId: (id: string | null) => void;
+  clearActiveSelection: () => void;
 }
 
 const SongListsContext = createContext<SongListsContextValue | null>(null);
@@ -33,6 +36,7 @@ const SongListsContext = createContext<SongListsContextValue | null>(null);
 export function SongListsProvider({ children }: { children: ReactNode }) {
   const [folders, setFolders] = useState<SongListFolder[]>(() => readLocal(KEY_FOLDERS, []));
   const [songLists, setSongLists] = useState<SongList[]>(() => readLocal(KEY_LISTS, []));
+  const [activeFolderId, setActiveFolderState] = useState<string | null>(null);
   const [activeSongListId, setActiveSongListId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,6 +54,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
   const deleteFolder = useCallback((id: string) => {
     setFolders((prev) => prev.filter((f) => f.id !== id));
     setSongLists((prev) => prev.map((l) => l.folderId === id ? { ...l, folderId: undefined } : l));
+    setActiveFolderState((prev) => (prev === id ? null : prev));
   }, []);
 
   const addSongList = useCallback((name: string, folderId?: string) => {
@@ -59,6 +64,21 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
   const deleteSongList = useCallback((id: string) => {
     setSongLists((prev) => prev.filter((l) => l.id !== id));
     setActiveSongListId((prev) => (prev === id ? null : prev));
+  }, []);
+
+  const setActiveFolderId = useCallback((id: string | null) => {
+    setActiveFolderState(id);
+    setActiveSongListId(null);
+  }, []);
+
+  const setActiveListId = useCallback((id: string | null) => {
+    setActiveSongListId(id);
+    setActiveFolderState(null);
+  }, []);
+
+  const clearActiveSelection = useCallback(() => {
+    setActiveFolderState(null);
+    setActiveSongListId(null);
   }, []);
 
   const addSongToList = useCallback((listId: string, songId: string) => {
@@ -118,6 +138,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
       value={{
         folders,
         songLists,
+        activeFolderId,
         activeSongListId,
         addFolder,
         deleteFolder,
@@ -126,7 +147,9 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
         addSongToList,
         removeSongFromList,
         moveSongList,
-        setActiveSongListId,
+        setActiveFolderId,
+        setActiveSongListId: setActiveListId,
+        clearActiveSelection,
       }}
     >
       {children}

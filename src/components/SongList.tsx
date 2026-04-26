@@ -1,9 +1,26 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Music } from 'lucide-react';
+import { Search, Music, LayoutGrid, Rows3 } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
+import { parseChordPro } from '../utils/chordParser';
+
+const SONG_DRAG_MIME = 'application/x-songbook-song-id';
+
+function getSongPreview(song: Song): string {
+  const lyricLines = parseChordPro(song.chordpro)
+    .filter((line) => line.type === 'chord-lyric')
+    .map((line) => line.segments?.map((segment) => segment.lyric).join('').trim() ?? '')
+    .filter(Boolean);
+
+  if (lyricLines.length === 0) {
+    return 'No lyric preview available yet.';
+  }
+
+  const preview = lyricLines.slice(0, 2).join(' ');
+  return preview.length > 150 ? `${preview.slice(0, 147).trimEnd()}...` : preview;
+}
 
 interface Props {
   songs: Song[];
@@ -15,6 +32,7 @@ interface Props {
 export default function SongList({ songs, listName, onRenameSong, onDeleteSong }: Props) {
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
 
   const languages = useMemo(
     () => Array.from(new Set(songs.map((s) => s.language))).sort(),
@@ -34,9 +52,43 @@ export default function SongList({ songs, listName, onRenameSong, onDeleteSong }
     });
   }, [songs, query, langFilter]);
 
+  const songPreviews = useMemo(
+    () => Object.fromEntries(filtered.map((song) => [song.id, getSongPreview(song)])),
+    [filtered]
+  );
+
+  const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
+    event.dataTransfer.effectAllowed = 'copy';
+    event.dataTransfer.setData(SONG_DRAG_MIME, song.id);
+    event.dataTransfer.setData('text/plain', song.title);
+  };
+
   return (
     <div className="song-list-page">
-      {listName && <h2 className="song-list-heading">{listName}</h2>}
+      <div className="song-list-header">
+        <div>
+          {listName && <h2 className="song-list-heading">{listName}</h2>}
+          <p className="song-list-summary">{filtered.length} song{filtered.length === 1 ? '' : 's'}</p>
+        </div>
+        <div className="view-toggle" role="tablist" aria-label="Song view mode">
+          <button
+            type="button"
+            className={`view-toggle-btn${viewMode === 'list' ? ' active' : ''}`}
+            onClick={() => setViewMode('list')}
+            aria-pressed={viewMode === 'list'}
+          >
+            <Rows3 size={15} /> List
+          </button>
+          <button
+            type="button"
+            className={`view-toggle-btn${viewMode === 'cards' ? ' active' : ''}`}
+            onClick={() => setViewMode('cards')}
+            aria-pressed={viewMode === 'cards'}
+          >
+            <LayoutGrid size={15} /> Cards
+          </button>
+        </div>
+      </div>
       <div className="song-list-controls">
         <div className="search-box">
           <Search size={16} className="search-icon" />
@@ -67,11 +119,56 @@ export default function SongList({ songs, listName, onRenameSong, onDeleteSong }
           <Music size={48} />
           <p>No songs found.</p>
         </div>
+      ) : viewMode === 'cards' ? (
+        <div className="song-card-grid">
+          {filtered.map((song) => (
+            <article
+              key={song.id}
+              className="song-preview-card"
+              draggable
+              onDragStart={(event) => handleSongDragStart(song, event)}
+            >
+              <Link to={`/songs/${song.id}`} className="song-preview-card-link">
+                <div className="song-preview-card-main">
+                  <span className="song-card-title">{song.title}</span>
+                  {song.artist && <span className="song-card-artist">{song.artist}</span>}
+                </div>
+                <p className="song-preview-text">{songPreviews[song.id]}</p>
+                <div className="song-card-meta">
+                  <LanguageBadge code={song.language} size="sm" />
+                  {song.tags?.map((tag) => (
+                    <span key={tag} className="tag">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </Link>
+              <div className="song-actions song-actions--stacked">
+                <Link to={`/songs/${song.id}/edit`} className="song-action-btn song-action-btn--link">
+                  Edit
+                </Link>
+                <button className="song-action-btn" onClick={() => onRenameSong(song)}>
+                  Rename
+                </button>
+                <button
+                  className="song-action-btn song-action-btn--danger"
+                  onClick={() => onDeleteSong(song)}
+                >
+                  Delete
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
       ) : (
         <ul className="song-list">
           {filtered.map((song) => (
             <li key={song.id}>
-              <div className="song-card">
+              <div
+                className="song-card"
+                draggable
+                onDragStart={(event) => handleSongDragStart(song, event)}
+              >
                 <Link to={`/songs/${song.id}`} className="song-card-link">
                   <div className="song-card-main">
                     <span className="song-card-title">{song.title}</span>
