@@ -31,9 +31,10 @@ interface Props {
   onMoveSong?: (songId: string, beforeSongId: string | null) => void;
   onRenameSong: (song: Song) => void | Promise<void>;
   onDeleteSong: (song: Song) => void | Promise<void>;
+  onRemoveSong?: (song: Song) => void;
 }
 
-export default function SongList({ songs, listName, onMoveSong, onRenameSong, onDeleteSong }: Props) {
+export default function SongList({ songs, listName, onMoveSong, onRenameSong, onDeleteSong, onRemoveSong }: Props) {
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
@@ -285,6 +286,14 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
                 <button className="song-action-btn" onClick={() => onRenameSong(song)}>
                   Rename
                 </button>
+                {onRemoveSong && (
+                  <button
+                    className="song-action-btn song-action-btn--danger"
+                    onClick={() => onRemoveSong(song)}
+                  >
+                    Remove
+                  </button>
+                )}
                 <button
                   className="song-action-btn song-action-btn--danger"
                   onClick={() => onDeleteSong(song)}
@@ -338,6 +347,14 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
                   <button className="song-action-btn" onClick={() => onRenameSong(song)}>
                     Rename
                   </button>
+                  {onRemoveSong && (
+                    <button
+                      className="song-action-btn song-action-btn--danger"
+                      onClick={() => onRemoveSong(song)}
+                    >
+                      Remove
+                    </button>
+                  )}
                   <button
                     className="song-action-btn song-action-btn--danger"
                     onClick={() => onDeleteSong(song)}

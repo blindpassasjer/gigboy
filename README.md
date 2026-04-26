@@ -1,16 +1,18 @@
-# Songbook
+# Folio
 
-A web-based music songbook that stores songs in **ChordPro** format, supports lyrics in multiple languages, and lets you record or attach audio to any song.
+A personal web-based songbook that stores songs in **ChordPro** format. Supports multiple languages, setlists, transposing, and in-browser audio recording. Runs as a static SPA with optional Firebase authentication and Cloudflare Workers or Pages hosting.
 
 ## Features
 
-- **ChordPro lyrics** — chords displayed above lyrics with `[G]Amazing [C]grace` notation
+- **ChordPro rendering** — chords displayed inline above lyrics using `[G]Amazing [C]grace` notation
 - **Transpose** — shift all chords up or down by semitone in real time
+- **Setlists** — create and manage ordered setlists from your song library
 - **Multi-language** — songs in English, Norwegian, Spanish, Portuguese, French, Italian, German, and more
-- **Audio recording** — record directly in the browser using the microphone; recordings are saved in `localStorage`
-- **Add songs** — live ChordPro preview while writing; songs are persisted in `localStorage`
-- **Search & filter** — full-text search by title/artist/tag, and filter by language
-- **GitHub Pages ready** — static build with `vite`, no backend required
+- **Audio recording** — record directly in the browser; recordings are saved to `localStorage`
+- **Add & edit songs** — live ChordPro preview while writing; songs persist in `localStorage` when Firebase is not configured
+- **Search & filter** — full-text search by title/artist/tag, filter by language
+- **Dark mode** — automatic system preference detection with manual toggle
+- **Auth-optional** — Firebase auth can be enabled via environment variables; omitting them gives a fully local, login-free experience
 
 ## Tech stack
 
@@ -18,10 +20,12 @@ A web-based music songbook that stores songs in **ChordPro** format, supports ly
 |---|---|
 | React 18 + TypeScript | UI |
 | Vite 4 | Build tooling |
-| React Router 6 | Client-side routing |
+| React Router 7 | Client-side routing |
+| Firebase 11 | Auth & (optional) data storage |
+| Cloudflare Workers / Pages | Hosting & serverless functions |
 | lucide-react | Icons |
-| `localStorage` | Song & recording persistence |
-| Web MediaRecorder API | Audio recording |
+| `localStorage` | Local song & recording persistence |
+| Web MediaRecorder API | In-browser audio recording |
 
 ## Quick start
 
@@ -32,7 +36,22 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
-Copy `.env.example` to `.env` and fill in the Firebase values before running locally.
+Without any environment variables the app runs in local-only mode — no login required and songs are stored in `localStorage`.
+
+## Firebase setup (optional)
+
+To enable authentication and cloud storage, create a Firebase project and add the following variables to a `.env` file at the project root:
+
+```
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+```
+
+When these are present the app requires login before showing any content.
 
 ## ChordPro format
 
@@ -61,42 +80,35 @@ Supported directives: `title`, `subtitle`, `artist`, `start_of_verse`, `end_of_v
 
 1. Click **Add Song** in the nav bar.
 2. Fill in title, artist, language, key, capo, and BPM.
-3. Write (or paste) ChordPro lyrics in the editor — toggle **Preview** to see the rendered result.
-4. Click **Save Song** — the song is stored in `localStorage` and you're taken straight to the song view.
+3. Write or paste ChordPro lyrics — toggle **Preview** to see the rendered result.
+4. Click **Save Song** — the song is stored and you land directly on the song view.
 
 ## Deploying
 
-Build the project and deploy the `dist/` folder to any static host (Cloudflare Pages, Netlify, Vercel, etc.):
-
-```bash
-npm run build
-# then upload / point your host at the dist/ folder
-```
-
-For Cloudflare Pages direct deploys, use:
-
-```bash
-npm run deploy:pages
-```
-
-For Workers static assets deploys, use:
+### Cloudflare Workers (recommended)
 
 ```bash
 npm run deploy
 ```
 
-For Cloudflare deploys, add these variables to your project build environment:
+This runs `tsc && vite build` then deploys the `dist/` folder as a Workers static asset site with SPA routing.
+
+### Cloudflare Pages
 
 ```bash
-VITE_FIREBASE_API_KEY
-VITE_FIREBASE_AUTH_DOMAIN
-VITE_FIREBASE_PROJECT_ID
-VITE_FIREBASE_STORAGE_BUCKET
-VITE_FIREBASE_MESSAGING_SENDER_ID
-VITE_FIREBASE_APP_ID
+npm run deploy:pages
 ```
 
-If those variables are missing, the deployed app now falls back to local-only mode and still shows the built-in songs.
+This builds the project, writes the `_redirects` file for SPA fallback, then deploys via `wrangler pages deploy`.
+
+### Other static hosts
+
+```bash
+npm run build
+# deploy the dist/ folder to Netlify, Vercel, etc.
+```
+
+Add the Firebase environment variables to your host's build environment if you want auth and cloud storage enabled in production.
 
 If you are deploying from the Cloudflare Pages dashboard, set build command `npm run build` and output directory `dist`.
 

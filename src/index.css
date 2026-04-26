@@ -1253,6 +1253,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   overflow: hidden;
   width: 220px;
   transition: width 0.18s ease-in-out;
+  position: sticky;
+  top: 56px;
+  height: calc(100vh - 56px);
+  align-self: flex-start;
 }
 .sidebar-anim:not(.sidebar-anim--open) {
   width: 0;

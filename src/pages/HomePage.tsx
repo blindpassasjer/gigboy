@@ -7,7 +7,7 @@ import type { Song } from '../types';
 
 export default function HomePage() {
   const { songs, updateSong, deleteSong, moveSong } = useSongs();
-  const { activeCategoryId, activeSongListId, categories, songLists, moveSongInList } = useSongLists();
+  const { activeCategoryId, activeSongListId, categories, songLists, moveSongInList, removeSongFromList } = useSongLists();
   const {
     setlists,
     activeSetlistId,
@@ -92,6 +92,7 @@ export default function HomePage() {
       onMoveSong={handleMoveSong}
       onRenameSong={handleRenameSong}
       onDeleteSong={handleDeleteSong}
+      onRemoveSong={activeList ? (song) => removeSongFromList(activeList.id, song.id) : undefined}
     />
   );
 }
