@@ -262,7 +262,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-list-sticky {
   position: sticky;
-  top: 0;
+  top: 56px;
   z-index: 10;
   background: var(--bg);
   margin-top: -1.5rem;
