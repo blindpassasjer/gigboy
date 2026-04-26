@@ -11,6 +11,7 @@ export default function HomePage() {
   const {
     setlists,
     activeSetlistId,
+    addSongToSetlist,
     removeSongFromSetlist,
     moveSongInSetlist,
   } = useSetlists();
@@ -31,6 +32,8 @@ export default function HomePage() {
         setlistId={activeSetlist.id}
         setlistName={activeSetlist.name}
         songs={setlistSongs}
+        allSongs={songs}
+        onAddSong={(songId) => addSongToSetlist(activeSetlist.id, songId)}
         onMoveSong={(songId, beforeSongId) => moveSongInSetlist(activeSetlist.id, songId, beforeSongId)}
         onRemoveSong={(songId) => removeSongFromSetlist(activeSetlist.id, songId)}
       />

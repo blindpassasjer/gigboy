@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Trash2, Music } from 'lucide-react';
+import { GripVertical, Trash2, Music, Plus, Search, X } from 'lucide-react';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
@@ -9,8 +9,10 @@ interface Props {
   setlistId: string;
   setlistName: string;
   songs: Song[];
+  allSongs: Song[];
   onMoveSong: (songId: string, beforeSongId: string | null) => void;
   onRemoveSong: (songId: string) => void;
+  onAddSong: (songId: string) => void;
 }
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
@@ -20,8 +22,10 @@ export default function SetlistsView({
   setlistId,
   setlistName,
   songs,
+  allSongs,
   onMoveSong,
   onRemoveSong,
+  onAddSong,
 }: Props) {
   const { renameSetlist } = useSetlists();
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
@@ -29,7 +33,28 @@ export default function SetlistsView({
   const [dropAtEnd, setDropAtEnd] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(setlistName);
+  const [showSongPicker, setShowSongPicker] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const availableSongs = useMemo(() => {
+    const songIdsInSetlist = new Set(songs.map((song) => song.id));
+    return allSongs
+      .filter((song) => !songIdsInSetlist.has(song.id))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [allSongs, songs]);
+
+  const filteredAvailableSongs = useMemo(() => {
+    const query = pickerQuery.trim().toLowerCase();
+    if (!query) return availableSongs;
+
+    return availableSongs.filter((song) => {
+      const inTitle = song.title.toLowerCase().includes(query);
+      const inArtist = (song.artist ?? '').toLowerCase().includes(query);
+      const inTags = (song.tags ?? []).some((tag) => tag.toLowerCase().includes(query));
+      return inTitle || inArtist || inTags;
+    });
+  }, [availableSongs, pickerQuery]);
 
   useEffect(() => {
     if (isRenaming) {
@@ -37,6 +62,30 @@ export default function SetlistsView({
       renameInputRef.current?.select();
     }
   }, [isRenaming]);
+
+  useEffect(() => {
+    if (!showSongPicker) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowSongPicker(false);
+        setPickerQuery('');
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showSongPicker]);
+
+  const openSongPicker = () => {
+    setPickerQuery('');
+    setShowSongPicker(true);
+  };
+
+  const closeSongPicker = () => {
+    setShowSongPicker(false);
+    setPickerQuery('');
+  };
 
   const handleRenameCommit = () => {
     const trimmed = renameValue.trim();
@@ -155,13 +204,22 @@ export default function SetlistsView({
             {songs.length} song{songs.length === 1 ? '' : 's'}
           </p>
         </div>
-        <button
-          className="setlist-action-btn"
-          onClick={() => setIsRenaming(true)}
-          title="Rename setlist"
-        >
-          Rename
-        </button>
+        <div className="setlist-header-actions">
+          <button
+            className="setlist-action-btn setlist-action-btn--secondary"
+            onClick={openSongPicker}
+            title="Add songs"
+          >
+            <Plus size={14} /> Add songs
+          </button>
+          <button
+            className="setlist-action-btn"
+            onClick={() => setIsRenaming(true)}
+            title="Rename setlist"
+          >
+            Rename
+          </button>
+        </div>
       </div>
 
       <div className="setlist-info">
@@ -233,6 +291,56 @@ export default function SetlistsView({
             <li className={`setlist-drop-zone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />
           )}
         </ul>
+      )}
+
+      {showSongPicker && (
+        <div className="song-picker-overlay" role="dialog" aria-modal="true" aria-label="Add songs to setlist">
+          <div className="song-picker-panel">
+            <div className="song-picker-header">
+              <h2>Add songs to {setlistName}</h2>
+              <button className="song-picker-close" onClick={closeSongPicker} aria-label="Close song picker">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="song-picker-search-wrap">
+              <Search size={15} className="song-picker-search-icon" />
+              <input
+                type="text"
+                className="song-picker-search"
+                value={pickerQuery}
+                onChange={(event) => setPickerQuery(event.target.value)}
+                placeholder="Search by title, artist, or tag"
+              />
+            </div>
+
+            <div className="song-picker-results" role="list">
+              {filteredAvailableSongs.length === 0 ? (
+                <p className="song-picker-empty">No songs available to add.</p>
+              ) : (
+                filteredAvailableSongs.map((song) => (
+                  <div key={song.id} className="song-picker-item" role="listitem">
+                    <div className="song-picker-item-main">
+                      <span className="song-picker-song-title">{song.title}</span>
+                      {song.artist && <span className="song-picker-song-artist">{song.artist}</span>}
+                    </div>
+                    <button
+                      className="song-picker-add-btn"
+                      onClick={() => onAddSong(song.id)}
+                      title={`Add ${song.title}`}
+                    >
+                      <Plus size={14} /> Add
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="song-picker-footer">
+              <button className="setlist-action-btn" onClick={closeSongPicker}>Done</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

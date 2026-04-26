@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Music, BookOpen, Plus, LogOut, PanelLeft, Sun, Moon } from 'lucide-react';
+import { Music, BookOpen, Plus, LogOut, PanelLeft, Sun, Moon, Maximize2, Minimize2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
@@ -22,6 +22,24 @@ export default function Layout({ children }: Props) {
     return !window.matchMedia('(max-width: 900px)').matches;
   });
   const { dark, toggle: toggleDark } = useDarkMode();
+  const [isFullscreen, setIsFullscreen] = useState(() => {
+    if (typeof document === 'undefined') return false;
+    return Boolean(document.fullscreenElement);
+  });
+
+  const toggleFullscreen = async () => {
+    if (typeof document === 'undefined') return;
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      // Ignore failures when fullscreen is unavailable or blocked by the browser.
+    }
+  };
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 900px)');
@@ -58,6 +76,19 @@ export default function Layout({ children }: Props) {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [sidebarOpen, isNarrowViewport]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    handleFullscreenChange();
+
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -88,6 +119,14 @@ export default function Layout({ children }: Props) {
           >
             {dark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
+          <button
+            onClick={toggleFullscreen}
+            className="topbar-logout"
+            title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            aria-pressed={isFullscreen}
+          >
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
           {user && (
             <button onClick={logout} className="topbar-logout" title={`Sign out (${user.email})`}>
               <LogOut size={16} />
@@ -101,7 +140,7 @@ export default function Layout({ children }: Props) {
         </div>
       )}
       <div className={`app-body${isNarrowViewport ? ' app-body--narrow' : ''}`}>
-        <Sidebar open={sidebarOpen} mobile={isNarrowViewport} onNavigate={() => setSidebarOpen(false)} onClose={() => setSidebarOpen(false)} />
+        <Sidebar open={sidebarOpen} mobile={isNarrowViewport} onNavigate={isNarrowViewport ? () => setSidebarOpen(false) : undefined} onClose={() => setSidebarOpen(false)} />
         {isNarrowViewport && sidebarOpen && (
           <button
             type="button"
