@@ -18,6 +18,68 @@ export interface ParsedImportResult extends ParsedSong {
 
 const CHORD_TOKEN_RE = /^[A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?$/;
 const CHORD_SCAN_RE = /[A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?/g;
+// Matches a properly formed inline chord marker [G], [Am7], [C#m/G], etc. (not section labels)
+const INLINE_CHORD_MARKER_RE = /\[[A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?\]/;
+
+// Section label → ChordPro section type mapping (verse / chorus / bridge / null=generic)
+const SECTION_TYPE_MAP: Array<[RegExp, string | null]> = [
+  [/^(verse|verso|copla|strophe|stanza|couplet)(\s+\d+)?$/i, 'verse'],
+  [/^(chorus|refrain|refrán|estribillo)(\s+\d+)?$/i, 'chorus'],
+  [/^pre.?(chorus|estribillo)(\s+\d+)?$/i, 'chorus'],
+  [/^post.?(chorus|estribillo)(\s+\d+)?$/i, 'chorus'],
+  [/^(bridge|puente|middle[- ]?8?)(\s+\d+)?$/i, 'bridge'],
+  [/^(hook)(\s+\d+)?$/i, 'chorus'],
+  [/^(intro|outro|solo|interlude|interludio|coda|tag|instrumental|breakdown)(\s+\d+)?$/i, null],
+];
+
+function getSectionType(label: string): string | null | undefined {
+  for (const [re, type] of SECTION_TYPE_MAP) {
+    if (re.test(label.trim())) return type;
+  }
+  return undefined; // unknown — not a recognised section
+}
+
+// Returns the section label string if the line is a section marker, otherwise null.
+// Handles: [Verse 1], [Chorus], [Estribillo], Estribillo:, Verso:
+function parseSectionMarker(line: string): string | null {
+  const trimmed = line.trim();
+
+  // Square-bracket format: [Verse 1], [Chorus], [Bridge], [Estribillo]
+  // Must have 2+ chars inside brackets and must NOT be a valid chord token.
+  const bracketMatch = trimmed.match(/^\[([^\]]{2,50})\]$/);
+  if (bracketMatch) {
+    const label = bracketMatch[1].trim();
+    if (!CHORD_TOKEN_RE.test(label) && getSectionType(label) !== undefined) return label;
+  }
+
+  // Colon-suffix format: Estribillo:, Verso:, Bridge: (only for recognised keywords)
+  const colonMatch = trimmed.match(/^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 \-]{1,30}):$/);
+  if (colonMatch) {
+    const label = colonMatch[1].trim();
+    if (getSectionType(label) !== undefined) return label;
+  }
+
+  return null;
+}
+
+// Returns true if the line is a section marker (used to guard title/artist detection)
+function looksLikeSectionMarker(line: string): boolean {
+  return parseSectionMarker(line) !== null;
+}
+
+// Pre-process Ultimate Guitar and cuerdas.net specific markup before parsing.
+function preprocessSongText(text: string): string {
+  // UG inline chord tags: [ch]G[/ch] → [G]
+  text = text.replace(/\[ch\]([^\[]*?)\[\/ch\]/gi, (_, chord) => `[${chord.trim()}]`);
+  // UG tab wrappers: [tab] ... [/tab] — just remove the wrapper tags
+  text = text.replace(/\[tab\]/gi, '').replace(/\[\/tab\]/gi, '');
+  return text;
+}
+
+// Strip repeat annotations (x2, (x2), ×2) that UG appends to chord lines.
+function stripRepeatAnnotations(line: string): string {
+  return line.replace(/\(?\s*[x×]\s*\d+\s*\)?/gi, '').trim();
+}
 
 function normalizeLineEndings(input: string): string {
   return input.replace(/\r\n?/g, '\n');
@@ -38,7 +100,8 @@ function tokenizeWithIndexes(line: string): Array<{ chord: string; index: number
 }
 
 function lineLooksLikeChordRow(line: string): boolean {
-  const trimmed = line.trim();
+  // Strip repeat markers (x2, ×2) before checking — UG appends these to chord lines.
+  const trimmed = stripRepeatAnnotations(line).trim();
   if (!trimmed) return false;
   const tokens = trimmed.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return false;
@@ -88,8 +151,9 @@ function parseLeadingMetadata(lines: string[]): {
   const first = lines[startIndex].trim();
   const second = startIndex + 1 < lines.length ? lines[startIndex + 1].trim() : '';
 
-  const firstHasChord = lineLooksLikeChordRow(first) || /\[[A-G]/.test(first);
-  if (!firstHasChord && first.length <= 90 && !first.startsWith('{')) {
+  const firstHasChord = lineLooksLikeChordRow(first) || INLINE_CHORD_MARKER_RE.test(first);
+  const firstIsSectionMarker = looksLikeSectionMarker(first);
+  if (!firstHasChord && !firstIsSectionMarker && first.length <= 90 && !first.startsWith('{')) {
     title = first;
     startIndex += 1;
   }
@@ -102,7 +166,8 @@ function parseLeadingMetadata(lines: string[]): {
     second &&
     second.length <= 80 &&
     !lineLooksLikeChordRow(second) &&
-    !/\[[A-G]/.test(second) &&
+    !INLINE_CHORD_MARKER_RE.test(second) &&
+    !looksLikeSectionMarker(second) &&
     !second.startsWith('{')
   ) {
     artist = second;
@@ -118,20 +183,30 @@ function parseLeadingMetadata(lines: string[]): {
  * - Existing ChordPro
  * - Inline [Chord]lyrics
  * - Chord-row above lyric-row formats
+ * - Ultimate Guitar: [ch]Chord[/ch] tags, [tab] blocks, [Verse 1] / [Chorus] section labels
+ * - cuerdas.net: [Estribillo] / Estribillo: section labels, (Chord)lyrics inline format
  */
 export function parsePastedSong(text: string): ParsedImportResult {
-  const input = normalizeLineEndings(text).trim();
-  if (!input) {
+  const normalized = normalizeLineEndings(text).trim();
+  if (!normalized) {
     return { chordpro: '', warnings: [] };
   }
 
+  // Step 1: strip site-specific markup (UG [ch]/[tab] tags, etc.)
+  const input = preprocessSongText(normalized);
+
   const warnings: string[] = [];
-  const hasChordProMarkers = /\{\s*[a-z_]+\s*:|\[[A-G]/i.test(input);
+
+  // Detect existing ChordPro: directive syntax OR properly formed inline chord markers.
+  // Use INLINE_CHORD_MARKER_RE instead of /\[[A-G]/i to avoid false matches on
+  // section labels like [Chorus] or [Bridge] that start with a letter in A–G.
+  const hasChordProMarkers =
+    /\{\s*[a-z_]+\s*:/.test(input) || INLINE_CHORD_MARKER_RE.test(input);
 
   const lines = input.split('\n');
   const meta = parseLeadingMetadata(lines);
+  const content = lines.slice(meta.startIndex);
 
-  let content = lines.slice(meta.startIndex);
   if (hasChordProMarkers) {
     const parsed = parseChordPro(input);
     return {
@@ -143,9 +218,30 @@ export function parsePastedSong(text: string): ParsedImportResult {
   }
 
   const out: string[] = [];
+  let openSection: string | null = null; // currently open verse/chorus/bridge type
+
   for (let i = 0; i < content.length; i += 1) {
     const current = content[i] ?? '';
     const next = i + 1 < content.length ? content[i + 1] ?? '' : '';
+
+    // Section marker: [Verse 1], [Chorus], Estribillo:, etc.
+    const sectionLabel = parseSectionMarker(current);
+    if (sectionLabel !== null) {
+      if (openSection) {
+        out.push(`{end_of_${openSection}}`);
+        out.push('');
+        openSection = null;
+      }
+      const sectionType = getSectionType(sectionLabel);
+      if (sectionType) {
+        openSection = sectionType;
+        out.push(`{start_of_${sectionType}: ${sectionLabel}}`);
+      } else {
+        // Intro, Outro, Solo, etc. — use a comment label
+        out.push(`{comment: ${sectionLabel}}`);
+      }
+      continue;
+    }
 
     if (lineLooksLikeChordRow(current)) {
       const merged = mergeChordRowWithLyrics(current, next);
@@ -158,20 +254,26 @@ export function parsePastedSong(text: string): ParsedImportResult {
       continue;
     }
 
-    // Convert simple inline (G)Lyrics to [G]Lyrics.
-    const convertedInline = current.replace(/\(([A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?)\)/g, '[$1]');
+    // Convert inline (G)Lyrics → [G]Lyrics (cuerdas.net and similar sites).
+    const convertedInline = current.replace(
+      /\(([A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?)\)/g,
+      '[$1]',
+    );
     out.push(convertedInline);
   }
 
+  if (openSection) {
+    out.push(`{end_of_${openSection}}`);
+  }
+
   const chordproBody = out.join('\n').trim();
-  if (!/\[[A-G]/.test(chordproBody)) {
+  if (!INLINE_CHORD_MARKER_RE.test(chordproBody)) {
     warnings.push('No clear chord tokens were detected. You can edit the parsed result before importing.');
   }
 
   const withDirectives = [
     meta.title ? `{title: ${meta.title}}` : '',
     meta.artist ? `{artist: ${meta.artist}}` : '',
-    [meta.title, meta.artist].some(Boolean) ? '' : '',
     chordproBody,
   ]
     .filter(Boolean)
