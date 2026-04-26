@@ -53,8 +53,18 @@ interface SongListsContextValue {
 
 const SongListsContext = createContext<SongListsContextValue | null>(null);
 
+const SONGLISTS_CATEGORY_ID = 'songlists-default';
+
 export function SongListsProvider({ children }: { children: ReactNode }) {
-  const [categories, setCategories] = useState<SongListCategory[]>(() => readLocal(KEY_FOLDERS, []));
+  const [categories, setCategories] = useState<SongListCategory[]>(() => {
+    const loaded = readLocal<SongListCategory[]>(KEY_FOLDERS, []);
+    // Ensure "songlists" category exists
+    const hasSongListsCategory = loaded.some((c) => c.id === SONGLISTS_CATEGORY_ID);
+    if (!hasSongListsCategory) {
+      return [...loaded, { id: SONGLISTS_CATEGORY_ID, name: 'songlists' }];
+    }
+    return loaded;
+  });
   const [songLists, setSongLists] = useState<SongList[]>(() => readLocal(KEY_LISTS, []));
   const [activeCategoryId, setActiveCategoryState] = useState<string | null>(null);
   const [activeSongListId, setActiveSongListId] = useState<string | null>(null);
@@ -72,6 +82,8 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteCategory = useCallback((id: string) => {
+    // Prevent deletion of the default "songlists" category
+    if (id === SONGLISTS_CATEGORY_ID) return;
     setCategories((prev) => prev.filter((f) => f.id !== id));
     setSongLists((prev) => prev.map((l) => l.folderId === id ? { ...l, folderId: undefined } : l));
     setActiveCategoryState((prev) => (prev === id ? null : prev));

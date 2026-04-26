@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import SongPage from './pages/SongPage';
 import AddSongPage from './pages/AddSongPage';
+import SongImportPage from './pages/SongImportPage';
 import EditSongPage from './pages/EditSongPage';
 import LoginPage from './pages/LoginPage';
 import { SongsProvider } from './context/SongsContext';
@@ -28,6 +29,7 @@ function AuthGate() {
             <Route path="/songs/:id" element={<SongPage />} />
             <Route path="/songs/:id/edit" element={<EditSongPage />} />
             <Route path="/add" element={<AddSongPage />} />
+            <Route path="/import" element={<SongImportPage />} />
           </Routes>
         </Layout>
       </BrowserRouter>

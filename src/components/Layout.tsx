@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Music, BookOpen, Plus, LogOut, PanelLeft, Sun, Moon } from 'lucide-react';
+import { Music, BookOpen, Plus, LogOut, PanelLeft, Sun, Moon, Download } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
@@ -79,6 +79,9 @@ export default function Layout({ children }: Props) {
           </Link>
           <Link to="/add" className={pathname === '/add' ? 'active' : ''}>
             <Plus size={16} /> <span>Add Song</span>
+          </Link>
+          <Link to="/import" className={pathname === '/import' ? 'active' : ''}>
+            <Download size={16} /> <span>Import</span>
           </Link>
           <button
             onClick={toggleDark}

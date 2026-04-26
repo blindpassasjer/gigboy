@@ -5,6 +5,7 @@ import { useSongLists } from '../context/SongListsContext';
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-songbook-song-id';
 const LIST_DRAG_MIME = 'application/x-songbook-list-id';
+const SONGLISTS_CATEGORY_ID = 'songlists-default';
 
 function hasType(types: readonly string[], mime: string): boolean {
   return Array.from(types).includes(mime);
@@ -218,9 +219,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 <button title="New list" onClick={() => startAddingListIn(folder.id)}>
                   <Plus size={13} />
                 </button>
-                <button title="Delete category" onClick={() => deleteCategory(folder.id)}>
-                  <Trash2 size={13} />
-                </button>
+                {folder.id !== SONGLISTS_CATEGORY_ID && (
+                  <button title="Delete category" onClick={() => deleteCategory(folder.id)}>
+                    <Trash2 size={13} />
+                  </button>
+                )}
               </div>
             </div>
 
