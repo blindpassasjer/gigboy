@@ -384,6 +384,7 @@ input, select, textarea { font: inherit; }
 }
 
 .song-preview-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -397,9 +398,15 @@ input, select, textarea { font: inherit; }
   transition: transform .15s, border-color .15s, box-shadow .15s;
 }
 
+.song-preview-card .song-drag-handle {
+  position: absolute;
+  top: .5rem;
+  left: .5rem;
+  align-self: auto;
+}
+
 .song-preview-card.drop-before {
   box-shadow: var(--shadow);
-  position: relative;
 }
 .song-preview-card.drop-before::before {
   content: '';
@@ -424,6 +431,7 @@ input, select, textarea { font: inherit; }
   flex-direction: column;
   gap: .85rem;
   min-height: 0;
+  padding-top: 1.75rem;
   color: inherit;
   text-decoration: none;
 }
@@ -433,6 +441,8 @@ input, select, textarea { font: inherit; }
 .song-preview-card-main {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: .15rem;
 }
 
@@ -975,6 +985,10 @@ input, select, textarea { font: inherit; }
   justify-content: space-between;
   margin-bottom: .3rem;
 }
+.chordpro-label-actions {
+  display: flex;
+  gap: .4rem;
+}
 .preview-toggle {
   font-size: .8rem;
   color: var(--accent);
@@ -1191,6 +1205,18 @@ input, select, textarea { font: inherit; }
 }
 
 /* ─── Sidebar ───────────────────────────────────────────────────────────────── */
+
+/* Animation wrapper — collapses width on desktop, no-op on mobile (sidebar is fixed) */
+.sidebar-anim {
+  flex-shrink: 0;
+  overflow: hidden;
+  width: 220px;
+  transition: width 0.18s ease-in-out;
+}
+.sidebar-anim:not(.sidebar-anim--open) {
+  width: 0;
+}
+
 .sidebar {
   width: 220px;
   min-width: 220px;
@@ -1535,6 +1561,12 @@ input, select, textarea { font: inherit; }
     flex: 1 1 220px;
   }
 
+  /* Mobile wrapper takes no layout space — sidebar is fixed */
+  .sidebar-anim--mobile {
+    width: 0;
+    transition: none;
+  }
+
   .sidebar--mobile {
     position: fixed;
     top: 56px;
@@ -1544,6 +1576,12 @@ input, select, textarea { font: inherit; }
     min-width: 0;
     z-index: 90;
     box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    transform: translateX(-100%);
+    transition: transform 0.18s ease-in-out;
+  }
+
+  .sidebar--mobile.sidebar--open {
+    transform: translateX(0);
   }
 }
 

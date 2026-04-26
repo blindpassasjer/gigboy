@@ -58,10 +58,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     setSongDropTargetId(null);
   };
 
-  if (!open) return null;
-
   return (
-    <aside className={`sidebar${mobile ? ' sidebar--mobile' : ''}`}>
+    <div className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}`}>
+    <aside className={`sidebar${mobile ? ' sidebar--mobile' : ''}${open ? ' sidebar--open' : ''}`}>
       <div className="sidebar-header">
         <span className="sidebar-title">Library</span>
         <div className="sidebar-header-actions">
@@ -124,6 +123,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         </button>
       )}
     </aside>
+    </div>
   );
 }
 

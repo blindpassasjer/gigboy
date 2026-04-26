@@ -178,12 +178,14 @@ export default function AddSongForm({
         <div className="form-field form-field--full">
           <div className="chordpro-label-row">
             <label>ChordPro Lyrics *</label>
-            <button type="button" className="preview-toggle" onClick={handleParsePasted}>
-              <Wand2 size={14} /> Parse
-            </button>
-            <button type="button" className="preview-toggle" onClick={() => setPreview((v) => !v)}>
-              {preview ? 'Edit' : 'Preview'}
-            </button>
+            <div className="chordpro-label-actions">
+              <button type="button" className="preview-toggle" onClick={handleParsePasted}>
+                <Wand2 size={14} /> Parse
+              </button>
+              <button type="button" className="preview-toggle" onClick={() => setPreview((v) => !v)}>
+                {preview ? 'Edit' : 'Preview'}
+              </button>
+            </div>
           </div>
           {!preview && (
             <ChordProToolbar
