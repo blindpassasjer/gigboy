@@ -24,40 +24,40 @@ export function parseLine(raw: string): ParsedLine {
     return { type: 'comment', raw };
   }
 
-  // Chord-lyric line — parse [Chord]lyric pairs
+  // Chord-lyric line — parse [Chord]lyric pairs.
+  // Each chord marks the start of the lyric that follows it, so we track a
+  // pendingChord and emit a segment when we collect the lyric that belongs to it.
   const segments: ChordSegment[] = [];
   let remaining = trimmed;
-  let currentLyric = '';
+  let pendingChord = '';
 
   while (remaining.length > 0) {
     const bracketIdx = remaining.indexOf('[');
     if (bracketIdx === -1) {
-      currentLyric += remaining;
-      segments.push({ chord: '', lyric: currentLyric });
-      currentLyric = '';
+      segments.push({ chord: pendingChord, lyric: remaining });
+      pendingChord = '';
       break;
     }
 
-    if (bracketIdx > 0) {
-      currentLyric += remaining.slice(0, bracketIdx);
-    }
-
+    const lyricBefore = remaining.slice(0, bracketIdx);
     const closeIdx = remaining.indexOf(']', bracketIdx);
     if (closeIdx === -1) {
       // Malformed — treat rest as lyric
-      currentLyric += remaining.slice(bracketIdx);
-      segments.push({ chord: '', lyric: currentLyric });
+      segments.push({ chord: pendingChord, lyric: lyricBefore + remaining.slice(bracketIdx) });
+      pendingChord = '';
       break;
     }
 
-    const chord = remaining.slice(bracketIdx + 1, closeIdx);
-    segments.push({ chord, lyric: currentLyric });
-    currentLyric = '';
+    if (lyricBefore || pendingChord) {
+      segments.push({ chord: pendingChord, lyric: lyricBefore });
+    }
+    pendingChord = remaining.slice(bracketIdx + 1, closeIdx);
     remaining = remaining.slice(closeIdx + 1);
   }
 
-  if (currentLyric) {
-    segments.push({ chord: '', lyric: currentLyric });
+  // Trailing chord with no following lyric
+  if (pendingChord) {
+    segments.push({ chord: pendingChord, lyric: '' });
   }
 
   return { type: 'chord-lyric', segments, raw };

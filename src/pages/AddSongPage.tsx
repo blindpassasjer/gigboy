@@ -5,8 +5,8 @@ import type { Song } from '../types';
 export default function AddSongPage() {
   const { addSong } = useSongs();
 
-  function handleAdd(song: Song) {
-    addSong(song);
+  async function handleAdd(song: Song): Promise<string | null> {
+    return addSong(song);
   }
 
   return <AddSongForm onAdd={handleAdd} />;

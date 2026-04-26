@@ -7,7 +7,7 @@ import ChordProToolbar from './ChordProToolbar';
 import { LANGUAGE_NAMES } from '../utils/languages';
 
 interface Props {
-  onAdd: (song: Song) => void;
+  onAdd: (song: Song) => Promise<string | null>;
 }
 
 const PLACEHOLDER = `{title: My Song}
@@ -45,7 +45,7 @@ export default function AddSongForm({ onAdd }: Props) {
     return errs;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate();
     if (errs.length) { setErrors(errs); return; }
@@ -64,7 +64,11 @@ export default function AddSongForm({ onAdd }: Props) {
       createdAt: new Date().toISOString(),
     };
 
-    onAdd(song);
+    const saveError = await onAdd(song);
+    if (saveError) {
+      setErrors([`Could not save song: ${saveError}`]);
+      return;
+    }
     navigate(`/songs/${song.id}`);
   }
 

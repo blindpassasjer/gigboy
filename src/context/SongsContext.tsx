@@ -35,7 +35,7 @@ function writeLocalSongs(songs: Song[]) {
 interface SongsContextValue {
   songs: Song[];
   loading: boolean;
-  addSong: (song: Song) => Promise<void>;
+  addSong: (song: Song) => Promise<string | null>;
   deleteSong: (id: string) => Promise<void>;
 }
 
@@ -68,17 +68,22 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
   const songs = [...userSongs];
 
-  const addSong = useCallback(async (song: Song) => {
+  const addSong = useCallback(async (song: Song): Promise<string | null> => {
     setUserSongs((prev) => [song, ...prev]);
     if (!db) {
-      return;
+      return null;
     }
 
     try {
       const { id, ...rest } = song;
-      await setDoc(doc(db, 'songs', id), rest);
-    } catch {
+      const firestoreData = Object.fromEntries(
+        Object.entries(rest).filter(([, v]) => v !== undefined)
+      );
+      await setDoc(doc(db, 'songs', id), firestoreData);
+      return null;
+    } catch (err) {
       setUserSongs((prev) => prev.filter((s) => s.id !== song.id));
+      return err instanceof Error ? err.message : 'Failed to save song.';
     }
   }, []);
 
