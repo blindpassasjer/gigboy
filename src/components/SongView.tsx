@@ -6,6 +6,7 @@ import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
 import { transposeChord } from '../utils/chordParser';
+import type { ChordNotation } from '../utils/chordParser';
 import { useSongLists } from '../context/SongListsContext';
 import { useSongs } from '../context/SongsContext';
 
@@ -23,6 +24,7 @@ export default function SongView({ song }: Props) {
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
   const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
+  const [chordNotation, setChordNotation] = useState<ChordNotation>('anglo');
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -172,6 +174,21 @@ export default function SongView({ song }: Props) {
             </div>
           )}
 
+          <div className="instrument-toggle">
+            <button
+              className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
+              onClick={() => setChordNotation('anglo')}
+            >
+              C D E
+            </button>
+            <button
+              className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
+              onClick={() => setChordNotation('spanish')}
+            >
+              Do Re Mi
+            </button>
+          </div>
+
           {song.capo !== undefined && song.capo > 0 && (
             <span className="capo-badge">Capo {song.capo}</span>
           )}
@@ -220,6 +237,7 @@ export default function SongView({ song }: Props) {
           chordpro={song.chordpro}
           transpose={transpose}
           showChords={showChords}
+          notation={chordNotation}
           instrument={chordInstrument}
           onChordClick={showChords ? handleChordClick : undefined}
         />

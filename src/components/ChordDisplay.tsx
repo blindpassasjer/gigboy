@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { parseChordPro, lineHasChords, transposeChord } from '../utils/chordParser';
+import { parseChordPro, lineHasChords, transposeChord, convertChordNotation } from '../utils/chordParser';
+import type { ChordNotation } from '../utils/chordParser';
 import type { ParsedLine } from '../types';
 import type { DiagramInstrument } from './ChordDiagram';
 
@@ -7,6 +8,7 @@ interface Props {
   chordpro: string;
   transpose?: number;
   showChords?: boolean;
+  notation?: ChordNotation;
   instrument?: DiagramInstrument;
   onChordClick?: (chord: string, rect: DOMRect) => void;
 }
@@ -15,6 +17,7 @@ export default function ChordDisplay({
   chordpro,
   transpose = 0,
   showChords = true,
+  notation = 'anglo',
   onChordClick,
 }: Props) {
   const lines = useMemo(() => parseChordPro(chordpro), [chordpro]);
@@ -27,6 +30,7 @@ export default function ChordDisplay({
           line={line}
           transpose={transpose}
           showChords={showChords}
+          notation={notation}
           onChordClick={onChordClick}
         />
       ))}
@@ -38,11 +42,13 @@ function LineRenderer({
   line,
   transpose,
   showChords,
+  notation,
   onChordClick,
 }: {
   line: ParsedLine;
   transpose: number;
   showChords: boolean;
+  notation: ChordNotation;
   onChordClick?: (chord: string, rect: DOMRect) => void;
 }) {
   if (line.type === 'empty') return <div className="chord-line chord-line--empty" />;
@@ -96,13 +102,14 @@ function LineRenderer({
                     className="chord-name-btn"
                     onClick={(e) => {
                       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      // Always pass Anglo chord to diagram lookup
                       onChordClick(transposeChord(seg.chord, transpose), rect);
                     }}
                   >
-                    {transposeChord(seg.chord, transpose)}
+                    {convertChordNotation(transposeChord(seg.chord, transpose), notation)}
                   </button>
                 ) : (
-                  transposeChord(seg.chord, transpose)
+                  convertChordNotation(transposeChord(seg.chord, transpose), notation)
                 )
               ) : (
                 <>&nbsp;</>

@@ -73,6 +73,22 @@ export function lineHasChords(line: ParsedLine): boolean {
   return !!line.segments?.some((s) => s.chord !== '');
 }
 
+export type ChordNotation = 'anglo' | 'spanish';
+
+const SPANISH_NOTE: Record<string, string> = {
+  C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si',
+};
+
+export function convertChordNotation(chord: string, notation: ChordNotation): string {
+  if (notation === 'anglo') return chord;
+  const match = chord.match(/^([A-G][#b]?)(.*?)(?:\/([A-G][#b]?))?$/);
+  if (!match) return chord;
+  const [, root, quality, bass] = match;
+  const spRoot = (SPANISH_NOTE[root[0]] ?? root[0]) + root.slice(1);
+  const spBass = bass ? '/' + (SPANISH_NOTE[bass[0]] ?? bass[0]) + bass.slice(1) : '';
+  return `${spRoot}${quality}${spBass}`;
+}
+
 /** Transpose a chord up or down by semitones. */
 const SHARP_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const FLAT_NOTES  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];

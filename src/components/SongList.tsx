@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Music, LayoutGrid, Rows3, GripVertical } from 'lucide-react';
+import { Search, Music, LayoutGrid, Rows3, GripVertical, ArrowUpDown } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
+
+type SortBy = 'custom' | 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest' | 'language';
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-songbook-song-id';
@@ -37,10 +39,18 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
     () => (localStorage.getItem('songbook-view-mode') === 'cards' ? 'cards' : 'list')
   );
+  const [sortBy, setSortBy] = useState<SortBy>(
+    () => (localStorage.getItem('songbook-sort-by') as SortBy | null) ?? (onMoveSong ? 'custom' : 'name-asc')
+  );
 
   function handleSetViewMode(mode: 'list' | 'cards') {
     localStorage.setItem('songbook-view-mode', mode);
     setViewMode(mode);
+  }
+
+  function handleSetSortBy(sort: SortBy) {
+    localStorage.setItem('songbook-sort-by', sort);
+    setSortBy(sort);
   }
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
   const [dropTargetSongId, setDropTargetSongId] = useState<string | null>(null);
@@ -53,7 +63,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    return songs.filter((s) => {
+    const base = songs.filter((s) => {
       const matchesQuery =
         !q ||
         s.title.toLowerCase().includes(q) ||
@@ -62,7 +72,23 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
       const matchesLang = !langFilter || s.language === langFilter;
       return matchesQuery && matchesLang;
     });
-  }, [songs, query, langFilter]);
+
+    if (sortBy === 'custom') return base;
+
+    const sorted = [...base];
+    if (sortBy === 'name-asc') {
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sortBy === 'name-desc') {
+      sorted.sort((a, b) => b.title.localeCompare(a.title));
+    } else if (sortBy === 'date-newest') {
+      sorted.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+    } else if (sortBy === 'date-oldest') {
+      sorted.sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''));
+    } else if (sortBy === 'language') {
+      sorted.sort((a, b) => languageName(a.language).localeCompare(languageName(b.language)) || a.title.localeCompare(b.title));
+    }
+    return sorted;
+  }, [songs, query, langFilter, sortBy]);
 
   const songPreviews = useMemo(
     () => Object.fromEntries(filtered.map((song) => [song.id, getSongPreview(song)])),
@@ -193,6 +219,22 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
             </option>
           ))}
         </select>
+        <div className="sort-select-wrapper">
+          <ArrowUpDown size={14} className="sort-select-icon" />
+          <select
+            value={sortBy}
+            onChange={(e) => handleSetSortBy(e.target.value as SortBy)}
+            className="lang-select sort-select"
+            aria-label="Sort songs"
+          >
+            {onMoveSong && <option value="custom">Custom order</option>}
+            <option value="name-asc">Name A → Z</option>
+            <option value="name-desc">Name Z → A</option>
+            <option value="date-newest">Date: newest</option>
+            <option value="date-oldest">Date: oldest</option>
+            <option value="language">Language</option>
+          </select>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -209,6 +251,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
               onDragOver={(event) => handleSongDragOver(song.id, event)}
               onDrop={(event) => handleSongDrop(song.id, event)}
             >
+              {sortBy === 'custom' && onMoveSong && (
               <button
                 type="button"
                 className="song-drag-handle"
@@ -219,6 +262,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
               >
                 <GripVertical size={16} />
               </button>
+              )}
               <Link to={`/songs/${song.id}`} className="song-preview-card-link">
                 <div className="song-preview-card-main">
                   <span className="song-card-title">{song.title}</span>
@@ -261,6 +305,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
                 onDragOver={(event) => handleSongDragOver(song.id, event)}
                 onDrop={(event) => handleSongDrop(song.id, event)}
               >
+                {sortBy === 'custom' && onMoveSong && (
                 <button
                   type="button"
                   className="song-drag-handle"
@@ -271,6 +316,7 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
                 >
                   <GripVertical size={16} />
                 </button>
+                )}
                 <Link to={`/songs/${song.id}`} className="song-card-link">
                   <div className="song-card-main">
                     <span className="song-card-title">{song.title}</span>

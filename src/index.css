@@ -301,6 +301,23 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 .lang-select:focus { border-color: var(--accent); }
 
+.sort-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.sort-select-icon {
+  position: absolute;
+  left: .65rem;
+  color: var(--muted);
+  pointer-events: none;
+  z-index: 1;
+}
+.sort-select {
+  padding-left: 2rem;
+  min-width: 150px;
+}
+
 .song-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
 .song-list > li {
   position: relative;
@@ -1617,16 +1634,22 @@ input, select, textarea { font: inherit; color: var(--text); }
     gap: .5rem;
   }
   .search-box,
-  .lang-select {
+  .lang-select,
+  .sort-select-wrapper {
     min-width: 0;
   }
   .search-box {
     flex: 1 1 auto;
   }
-  .lang-select {
+  .lang-select,
+  .sort-select-wrapper {
     flex: 0 0 auto;
     width: auto;
-    min-width: 120px;
+    min-width: 0;
+    max-width: 42vw;
+  }
+  .sort-select {
+    min-width: 0;
     max-width: 42vw;
   }
   .search-input,
