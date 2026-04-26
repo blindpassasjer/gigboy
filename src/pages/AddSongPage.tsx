@@ -9,5 +9,5 @@ export default function AddSongPage() {
     return addSong(song);
   }
 
-  return <AddSongForm onAdd={handleAdd} />;
+  return <AddSongForm onSave={handleAdd} />;
 }

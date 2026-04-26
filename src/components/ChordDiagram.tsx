@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -110,24 +110,151 @@ const ROOT_MAP: Record<string, number> = {
   F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11,
 };
 
-function chordToPitchClasses(chord: string): Set<number> {
+interface ChordModel {
+  rootPc: number;
+  triadIntervals: number[];
+  fullIntervals: number[];
+}
+
+function normalizeInterval(value: number): number {
+  return ((value % 12) + 12) % 12;
+}
+
+function uniqSorted(intervals: number[]): number[] {
+  return Array.from(new Set(intervals.map(normalizeInterval))).sort((a, b) => a - b);
+}
+
+function containsStandaloneNumber(text: string, n: number): boolean {
+  const re = new RegExp(`(^|[^0-9])${n}($|[^0-9])`);
+  return re.test(text);
+}
+
+function getTriadIntervals(suffix: string): number[] {
+  const s = suffix.toLowerCase();
+  const startsMinor = (s.startsWith('m') && !s.startsWith('maj')) || s.startsWith('min') || s.startsWith('-');
+  const startsDim = s.startsWith('dim') || s.startsWith('o') || s.includes('dim');
+  const startsAug = s.startsWith('aug') || s.startsWith('+') || s.includes('aug');
+  const hasSus2 = s.includes('sus2');
+  const hasSus4 = s.includes('sus4') || (s.includes('sus') && !hasSus2);
+
+  let triad = [0, 4, 7];
+  if (startsDim) triad = [0, 3, 6];
+  else if (startsAug) triad = [0, 4, 8];
+  else if (startsMinor) triad = [0, 3, 7];
+
+  if (hasSus2) triad = [0, 2, 7];
+  else if (hasSus4) triad = [0, 5, 7];
+
+  if (containsStandaloneNumber(s, 5) && !s.includes('sus')) {
+    triad = [0, 7];
+  }
+
+  if (s.includes('b5')) triad = triad.map((n) => (n === 7 ? 6 : n));
+  if (s.includes('#5') || s.includes('+5')) triad = triad.map((n) => (n === 7 ? 8 : n));
+
+  if (s.includes('no3')) {
+    triad = triad.filter((n) => n !== 3 && n !== 4 && n !== 2 && n !== 5);
+  }
+  if (s.includes('no5')) {
+    triad = triad.filter((n) => n !== 6 && n !== 7 && n !== 8);
+  }
+
+  return uniqSorted(triad);
+}
+
+function getFullIntervals(suffix: string): number[] {
+  const s = suffix.toLowerCase();
+  const intervals = [...getTriadIntervals(suffix)];
+  const add = (n: number) => intervals.push(normalizeInterval(n));
+  const remove = (n: number) => {
+    const pc = normalizeInterval(n);
+    const idx = intervals.findIndex((x) => normalizeInterval(x) === pc);
+    if (idx >= 0) intervals.splice(idx, 1);
+  };
+
+  const hasMajorFamily = /maj(7|9|11|13)|ma(7|9|11|13)/.test(s);
+  const hasDim7 = s.includes('dim7') || s.includes('o7');
+  const hasAny7 = containsStandaloneNumber(s, 7) || containsStandaloneNumber(s, 9) || containsStandaloneNumber(s, 11) || containsStandaloneNumber(s, 13);
+
+  if (hasDim7) add(9);
+  else if (hasMajorFamily || s.includes('maj7') || s.includes('ma7')) add(11);
+  else if (hasAny7) add(10);
+  else if (containsStandaloneNumber(s, 6) || s.includes('add6') || s.includes('add13')) add(9);
+
+  if (containsStandaloneNumber(s, 9) || s.includes('add9') || s.includes('add2')) add(2);
+  if (containsStandaloneNumber(s, 11) || s.includes('add11') || s.includes('add4')) add(5);
+  if (containsStandaloneNumber(s, 13) || s.includes('add13') || s.includes('add6')) add(9);
+
+  const alterationRe = /([b#])(5|9|11|13)/g;
+  let match = alterationRe.exec(s);
+  while (match) {
+    const accidental = match[1];
+    const degree = Number(match[2]);
+    const baseInterval = degree === 5 ? 7 : degree === 9 ? 2 : degree === 11 ? 5 : 9;
+    remove(baseInterval);
+    add(accidental === 'b' ? baseInterval - 1 : baseInterval + 1);
+    match = alterationRe.exec(s);
+  }
+
+  if (s.includes('no3')) {
+    remove(3);
+    remove(4);
+  }
+  if (s.includes('no5')) {
+    remove(6);
+    remove(7);
+    remove(8);
+  }
+
+  return uniqSorted(intervals);
+}
+
+function parseChordModel(chord: string): ChordModel | null {
   const base = chord.split('/')[0];
-  const m = base.match(/^[A-G][#b]?/);
-  if (!m) return new Set();
-  const root = ROOT_MAP[m[0]] ?? 0;
-  const suffix = base.slice(m[0].length);
-  let intervals: number[];
-  if (suffix === 'm7')        intervals = [0, 3, 7, 10];
-  else if (suffix === 'maj7') intervals = [0, 4, 7, 11];
-  else if (suffix === '7')    intervals = [0, 4, 7, 10];
-  else if (suffix === 'm')    intervals = [0, 3, 7];
-  else if (suffix === 'dim')  intervals = [0, 3, 6];
-  else if (suffix === 'dim7') intervals = [0, 3, 6, 9];
-  else if (suffix === 'aug')  intervals = [0, 4, 8];
-  else if (suffix === 'sus2') intervals = [0, 2, 7];
-  else if (suffix === 'sus4') intervals = [0, 5, 7];
-  else                        intervals = [0, 4, 7];
-  return new Set(intervals.map(i => (root + i) % 12));
+  const m = base.match(/^([A-G][#b]?)(.*)$/);
+  if (!m) return null;
+  const rootPc = ROOT_MAP[m[1]];
+  if (rootPc === undefined) return null;
+  const suffix = m[2] ?? '';
+  return {
+    rootPc,
+    triadIntervals: getTriadIntervals(suffix),
+    fullIntervals: getFullIntervals(suffix),
+  };
+}
+
+function inversionLabel(index: number): string {
+  if (index === 0) return 'Root';
+  if (index === 1) return '1st inv';
+  if (index === 2) return '2nd inv';
+  if (index === 3) return '3rd inv';
+  return `${index}th inv`;
+}
+
+function buildPianoNotes(rootPc: number, intervals: number[], inversion: number): number[] {
+  if (intervals.length === 0) return [];
+
+  const MIDI_START = 48; // C3
+  const MIDI_END = 83;   // B5
+  const base = MIDI_START + rootPc;
+  const rotated = [...intervals].sort((a, b) => a - b);
+  const turns = ((inversion % rotated.length) + rotated.length) % rotated.length;
+
+  for (let i = 0; i < turns; i += 1) {
+    const head = rotated.shift();
+    if (head === undefined) break;
+    rotated.push(head + 12);
+  }
+
+  let notes = rotated.map((intv) => base + intv);
+  while (Math.max(...notes) > MIDI_END && Math.min(...notes) - 12 >= MIDI_START) {
+    notes = notes.map((n) => n - 12);
+  }
+  while (Math.min(...notes) < MIDI_START && Math.max(...notes) + 12 <= MIDI_END) {
+    notes = notes.map((n) => n + 12);
+  }
+
+  return notes;
 }
 
 // ─── Guitar diagram ───────────────────────────────────────────────────────────
@@ -243,8 +370,9 @@ const BLACK_PCS: { pc: number; wOff: number }[] = [
   { pc: 10, wOff: 6 }, // A#
 ];
 
-function PianoDiagram({ pitchClasses }: { pitchClasses: Set<number> }) {
-  const OCTAVES = 2;
+function PianoDiagram({ activeNotes }: { activeNotes: Set<number> }) {
+  const OCTAVES = 3;
+  const MIDI_START = 48; // C3
   const WKW = 20;  // white key width
   const WKH = 68;  // white key height
   const BKW = 13;  // black key width
@@ -255,32 +383,38 @@ function PianoDiagram({ pitchClasses }: { pitchClasses: Set<number> }) {
   return (
     <div style={{ position: 'relative', width: totalW, height: WKH, userSelect: 'none' }}>
       {Array.from({ length: OCTAVES }, (_, oct) => (
-        WHITE_PCS.map((pc, wOff) => (
+        WHITE_PCS.map((pc, wOff) => {
+          const note = MIDI_START + oct * 12 + pc;
+          return (
           <div key={`w-${oct}-${wOff}`} style={{
             position: 'absolute',
             left: (oct * 7 + wOff) * WKW + 1,
             top: 0,
             width: WKW - 2,
             height: WKH,
-            background: pitchClasses.has(pc) ? ACCENT : '#fff',
+            background: activeNotes.has(note) ? ACCENT : '#fff',
             border: '1px solid #ccc',
             borderRadius: '0 0 4px 4px',
           }} />
-        ))
+          );
+        })
       ))}
       {Array.from({ length: OCTAVES }, (_, oct) => (
-        BLACK_PCS.map(({ pc, wOff }) => (
+        BLACK_PCS.map(({ pc, wOff }) => {
+          const note = MIDI_START + oct * 12 + pc;
+          return (
           <div key={`b-${oct}-${pc}`} style={{
             position: 'absolute',
             left: (oct * 7 + wOff) * WKW - BKW / 2,
             top: 0,
             width: BKW,
             height: BKH,
-            background: pitchClasses.has(pc) ? ACCENT : '#222',
+            background: activeNotes.has(note) ? ACCENT : '#222',
             borderRadius: '0 0 3px 3px',
             zIndex: 1,
           }} />
-        ))
+          );
+        })
       ))}
     </div>
   );
@@ -291,6 +425,8 @@ function PianoDiagram({ pitchClasses }: { pitchClasses: Set<number> }) {
 export default function ChordDiagram({ chord, instrument, anchorRect, onClose }: Props) {
   const popupRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ top: anchorRect.bottom + 8, left: anchorRect.left + anchorRect.width / 2 });
+  const [showInversions, setShowInversions] = useState(false);
+  const [inversionIndex, setInversionIndex] = useState(0);
 
   // Auto-position: flip above if popup would overflow viewport bottom
   useLayoutEffect(() => {
@@ -321,9 +457,32 @@ export default function ChordDiagram({ chord, instrument, anchorRect, onClose }:
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  useEffect(() => {
+    setShowInversions(false);
+    setInversionIndex(0);
+  }, [chord]);
+
   const normalized = normalizeForLookup(chord);
   const guitarFrets = GUITAR_CHORDS[normalized];
-  const pitchClasses = chordToPitchClasses(chord);
+  const chordModel = useMemo(() => parseChordModel(chord), [chord]);
+  const triadIntervals = chordModel?.triadIntervals ?? [];
+  const inversionSteps = Math.max(1, triadIntervals.length);
+  const effectiveInversion = showInversions ? inversionIndex : 0;
+
+  const pianoNotes = useMemo(() => {
+    if (!chordModel) return [];
+    return buildPianoNotes(chordModel.rootPc, triadIntervals, effectiveInversion);
+  }, [chordModel, triadIntervals, effectiveInversion]);
+
+  const activePianoNotes = useMemo(() => new Set(pianoNotes), [pianoNotes]);
+
+  useEffect(() => {
+    if (!showInversions) {
+      setInversionIndex(0);
+      return;
+    }
+    setInversionIndex((prev) => Math.max(0, Math.min(prev, inversionSteps - 1)));
+  }, [showInversions, inversionSteps]);
 
   return createPortal(
     <div
@@ -343,7 +502,42 @@ export default function ChordDiagram({ chord, instrument, anchorRect, onClose }:
           ? <GuitarDiagram frets={guitarFrets} />
           : <p className="chord-diagram-unavailable">No diagram for {chord}</p>
       ) : (
-        <PianoDiagram pitchClasses={pitchClasses} />
+        chordModel && triadIntervals.length > 0 ? (
+          <>
+            <div className="piano-diagram-controls">
+              <label className="piano-diagram-toggle">
+                <input
+                  type="checkbox"
+                  checked={showInversions}
+                  onChange={(e) => setShowInversions(e.target.checked)}
+                />
+                Inverted chords
+              </label>
+              {showInversions && inversionSteps > 1 && (
+                <div className="piano-inversion-group" role="group" aria-label="Piano inversion">
+                  {Array.from({ length: inversionSteps }, (_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`piano-inversion-btn${inversionIndex === idx ? ' piano-inversion-btn--active' : ''}`}
+                      onClick={() => setInversionIndex(idx)}
+                    >
+                      {inversionLabel(idx)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <PianoDiagram activeNotes={activePianoNotes} />
+            <p className="chord-diagram-hint">
+              Triad view
+              {showInversions && inversionSteps > 1 ? ` (${inversionLabel(inversionIndex)})` : ''}
+              {chordModel.fullIntervals.length > triadIntervals.length ? ' from extended chord' : ''}
+            </p>
+          </>
+        ) : (
+          <p className="chord-diagram-unavailable">No piano diagram for {chord}</p>
+        )
       )}
     </div>,
     document.body

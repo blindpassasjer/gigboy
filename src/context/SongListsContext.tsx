@@ -24,6 +24,7 @@ interface SongListsContextValue {
   deleteSongList: (id: string) => void;
   addSongToList: (listId: string, songId: string) => void;
   removeSongFromList: (listId: string, songId: string) => void;
+  moveSongList: (listId: string, targetFolderId?: string, beforeListId?: string | null) => void;
   setActiveSongListId: (id: string | null) => void;
 }
 
@@ -78,6 +79,40 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const moveSongList = useCallback((listId: string, targetFolderId?: string, beforeListId?: string | null) => {
+    setSongLists((prev) => {
+      const moving = prev.find((l) => l.id === listId);
+      if (!moving) return prev;
+
+      const normalizedTarget = targetFolderId;
+      const withoutMoving = prev.filter((l) => l.id !== listId);
+      const moved: SongList = { ...moving, folderId: normalizedTarget };
+
+      if (beforeListId) {
+        const beforeIndex = withoutMoving.findIndex((l) => l.id === beforeListId);
+        if (beforeIndex >= 0) {
+          return [
+            ...withoutMoving.slice(0, beforeIndex),
+            moved,
+            ...withoutMoving.slice(beforeIndex),
+          ];
+        }
+      }
+
+      for (let i = withoutMoving.length - 1; i >= 0; i -= 1) {
+        if (withoutMoving[i].folderId === normalizedTarget) {
+          return [
+            ...withoutMoving.slice(0, i + 1),
+            moved,
+            ...withoutMoving.slice(i + 1),
+          ];
+        }
+      }
+
+      return [...withoutMoving, moved];
+    });
+  }, []);
+
   return (
     <SongListsContext.Provider
       value={{
@@ -90,6 +125,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
         deleteSongList,
         addSongToList,
         removeSongFromList,
+        moveSongList,
         setActiveSongListId,
       }}
     >

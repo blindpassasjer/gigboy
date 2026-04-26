@@ -36,6 +36,7 @@ interface SongsContextValue {
   songs: Song[];
   loading: boolean;
   addSong: (song: Song) => Promise<string | null>;
+  updateSong: (song: Song) => Promise<string | null>;
   deleteSong: (id: string) => Promise<void>;
 }
 
@@ -87,6 +88,38 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateSong = useCallback(async (song: Song): Promise<string | null> => {
+    let previousSong: Song | null = null;
+
+    setUserSongs((prev) => {
+      previousSong = prev.find((s) => s.id === song.id) ?? null;
+      if (!previousSong) return prev;
+      return prev.map((s) => (s.id === song.id ? song : s));
+    });
+
+    if (!previousSong) {
+      return 'Song not found.';
+    }
+
+    if (!db) {
+      return null;
+    }
+
+    try {
+      const { id, ...rest } = song;
+      const firestoreData = Object.fromEntries(
+        Object.entries(rest).filter(([, v]) => v !== undefined)
+      );
+      await setDoc(doc(db, 'songs', id), firestoreData);
+      return null;
+    } catch (err) {
+      if (previousSong) {
+        setUserSongs((prev) => prev.map((s) => (s.id === previousSong?.id ? previousSong : s)));
+      }
+      return err instanceof Error ? err.message : 'Failed to update song.';
+    }
+  }, []);
+
   const deleteSong = useCallback(async (id: string) => {
     setUserSongs((prev) => prev.filter((s) => s.id !== id));
     if (!db) {
@@ -104,7 +137,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <SongsContext.Provider value={{ songs, loading, addSong, deleteSong }}>
+    <SongsContext.Provider value={{ songs, loading, addSong, updateSong, deleteSong }}>
       {children}
     </SongsContext.Provider>
   );

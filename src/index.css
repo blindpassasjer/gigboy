@@ -256,18 +256,69 @@ input, select, textarea { font: inherit; }
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   transition: border-color .15s, box-shadow .15s;
-  text-decoration: none;
-  color: inherit;
 }
 .song-card:hover {
   border-color: var(--accent);
   box-shadow: 0 2px 8px rgba(92,79,166,.15);
+}
+.song-card-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+  min-width: 0;
+  flex: 1;
+  color: inherit;
   text-decoration: none;
 }
+.song-card-link:hover { text-decoration: none; }
 .song-card-main { display: flex; flex-direction: column; gap: .1rem; }
 .song-card-title { font-weight: 600; font-size: 1rem; }
 .song-card-artist { font-size: .85rem; color: var(--muted); }
 .song-card-meta { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+
+.song-actions {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+.song-action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: .22rem .55rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  text-decoration: none;
+  transition: background .12s, border-color .12s, color .12s;
+}
+
+.song-action-btn:hover {
+  background: var(--chord-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.song-action-btn--link {
+  color: var(--accent);
+}
+
+.song-action-btn--danger {
+  color: var(--danger);
+}
+
+.song-action-btn--danger:hover {
+  background: #fde8e8;
+  border-color: #efb5ae;
+  color: var(--danger);
+}
 
 .empty-state {
   display: flex;
@@ -413,6 +464,64 @@ input, select, textarea { font: inherit; }
   font-size: .82rem;
   color: var(--muted);
   padding: .25rem 0;
+}
+
+.piano-diagram-controls {
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+
+.piano-diagram-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .8rem;
+  color: var(--muted);
+  user-select: none;
+}
+
+.piano-diagram-toggle input {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+}
+
+.piano-inversion-group {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  flex-wrap: wrap;
+}
+
+.piano-inversion-btn {
+  padding: .2rem .45rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.piano-inversion-btn:hover {
+  background: var(--chord-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.piano-inversion-btn--active,
+.piano-inversion-btn--active:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.chord-diagram-hint {
+  font-size: .76rem;
+  color: var(--muted);
 }
 
 /* ─── Chord Display ─────────────────────────────────────────────────────────── */
@@ -980,14 +1089,33 @@ input, select, textarea { font: inherit; }
 .sidebar-folder-actions button:last-child:hover { background: #fde8e8; color: var(--danger); }
 
 .sidebar-folder-children { display: flex; flex-direction: column; }
+.sidebar-folder-children.drop-active,
+.sidebar-root-lists.drop-active {
+  background: color-mix(in srgb, var(--chord-bg) 55%, transparent);
+}
+
+.sidebar-root-lists {
+  display: flex;
+  flex-direction: column;
+  min-height: 1.5rem;
+}
 
 /* List items */
 .sidebar-list-item {
   display: flex;
   align-items: center;
   padding: .1rem .5rem .1rem 1.75rem;
+  cursor: grab;
+  transition: opacity .15s;
 }
 .sidebar-list-item--root { padding-left: .75rem; }
+.sidebar-list-item.dragging {
+  opacity: .45;
+  cursor: grabbing;
+}
+.sidebar-list-item.drop-before {
+  border-top: 2px solid var(--accent);
+}
 
 .sidebar-list-item-btn {
   display: flex;

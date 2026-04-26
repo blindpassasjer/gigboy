@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronUp, ChevronDown, RotateCcw, ListPlus, Check, Plus } from 'lucide-react';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
@@ -6,6 +7,7 @@ import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
 import { transposeChord } from '../utils/chordParser';
 import { useSongLists } from '../context/SongListsContext';
+import { useSongs } from '../context/SongsContext';
 
 interface Props {
   song: Song;
@@ -17,12 +19,14 @@ interface ActiveChord {
 }
 
 export default function SongView({ song }: Props) {
+  const navigate = useNavigate();
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
   const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { updateSong, deleteSong } = useSongs();
   const { songLists, addSongToList, removeSongFromList } = useSongLists();
 
   useEffect(() => {
@@ -45,6 +49,28 @@ export default function SongView({ song }: Props) {
     );
   }, []);
 
+  async function handleRename() {
+    const nextTitle = window.prompt('Rename song', song.title);
+    if (nextTitle === null) return;
+    const trimmed = nextTitle.trim();
+    if (!trimmed || trimmed === song.title) return;
+    const err = await updateSong({
+      ...song,
+      title: trimmed,
+      updatedAt: new Date().toISOString(),
+    });
+    if (err) {
+      window.alert(`Could not rename song: ${err}`);
+    }
+  }
+
+  async function handleDelete() {
+    const confirmed = window.confirm(`Delete "${song.title}"? This cannot be undone.`);
+    if (!confirmed) return;
+    await deleteSong(song.id);
+    navigate('/');
+  }
+
   return (
     <div className="song-view">
       <div className="song-view-header">
@@ -59,6 +85,21 @@ export default function SongView({ song }: Props) {
         </div>
 
         <div className="song-view-toolbar">
+          <div className="song-actions">
+            <button
+              className="song-action-btn"
+              onClick={() => navigate(`/songs/${song.id}/edit`)}
+            >
+              Edit
+            </button>
+            <button className="song-action-btn" onClick={handleRename}>
+              Rename
+            </button>
+            <button className="song-action-btn song-action-btn--danger" onClick={handleDelete}>
+              Delete
+            </button>
+          </div>
+
           <div className="transpose-control">
             <button
               onClick={() => setTranspose((t) => t - 1)}

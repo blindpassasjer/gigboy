@@ -8,9 +8,11 @@ import { languageName } from '../utils/languages';
 interface Props {
   songs: Song[];
   listName?: string;
+  onRenameSong: (song: Song) => void | Promise<void>;
+  onDeleteSong: (song: Song) => void | Promise<void>;
 }
 
-export default function SongList({ songs, listName }: Props) {
+export default function SongList({ songs, listName, onRenameSong, onDeleteSong }: Props) {
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
 
@@ -69,20 +71,36 @@ export default function SongList({ songs, listName }: Props) {
         <ul className="song-list">
           {filtered.map((song) => (
             <li key={song.id}>
-              <Link to={`/songs/${song.id}`} className="song-card">
-                <div className="song-card-main">
-                  <span className="song-card-title">{song.title}</span>
-                  {song.artist && <span className="song-card-artist">{song.artist}</span>}
+              <div className="song-card">
+                <Link to={`/songs/${song.id}`} className="song-card-link">
+                  <div className="song-card-main">
+                    <span className="song-card-title">{song.title}</span>
+                    {song.artist && <span className="song-card-artist">{song.artist}</span>}
+                  </div>
+                  <div className="song-card-meta">
+                    <LanguageBadge code={song.language} size="sm" />
+                    {song.tags?.map((tag) => (
+                      <span key={tag} className="tag">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </Link>
+                <div className="song-actions">
+                  <Link to={`/songs/${song.id}/edit`} className="song-action-btn song-action-btn--link">
+                    Edit
+                  </Link>
+                  <button className="song-action-btn" onClick={() => onRenameSong(song)}>
+                    Rename
+                  </button>
+                  <button
+                    className="song-action-btn song-action-btn--danger"
+                    onClick={() => onDeleteSong(song)}
+                  >
+                    Delete
+                  </button>
                 </div>
-                <div className="song-card-meta">
-                  <LanguageBadge code={song.language} size="sm" />
-                  {song.tags?.map((tag) => (
-                    <span key={tag} className="tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </Link>
+              </div>
             </li>
           ))}
         </ul>

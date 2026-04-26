@@ -7,7 +7,9 @@ import ChordProToolbar from './ChordProToolbar';
 import { LANGUAGE_NAMES } from '../utils/languages';
 
 interface Props {
-  onAdd: (song: Song) => Promise<string | null>;
+  onSave: (song: Song) => Promise<string | null>;
+  initialSong?: Song;
+  mode?: 'add' | 'edit';
 }
 
 const PLACEHOLDER = `{title: My Song}
@@ -23,17 +25,17 @@ const PLACEHOLDER = `{title: My Song}
 Was [Em]blind but [D]now I [G]see
 {end_of_chorus}`;
 
-export default function AddSongForm({ onAdd }: Props) {
+export default function AddSongForm({ onSave, initialSong, mode = 'add' }: Props) {
   const navigate = useNavigate();
-  const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
-  const [language, setLanguage] = useState('en');
-  const [tags, setTags] = useState('');
-  const [key, setKey] = useState('');
-  const [capo, setCapo] = useState('');
-  const [tempo, setTempo] = useState('');
-  const [timeSignature, setTimeSignature] = useState('');
-  const [chordpro, setChordpro] = useState('');
+  const [title, setTitle] = useState(initialSong?.title ?? '');
+  const [artist, setArtist] = useState(initialSong?.artist ?? '');
+  const [language, setLanguage] = useState(initialSong?.language ?? 'en');
+  const [tags, setTags] = useState((initialSong?.tags ?? []).join(', '));
+  const [key, setKey] = useState(initialSong?.key ?? '');
+  const [capo, setCapo] = useState(initialSong?.capo !== undefined ? String(initialSong.capo) : '');
+  const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(initialSong.tempo) : '');
+  const [timeSignature, setTimeSignature] = useState(initialSong?.timeSignature ?? '');
+  const [chordpro, setChordpro] = useState(initialSong?.chordpro ?? '');
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -51,7 +53,7 @@ export default function AddSongForm({ onAdd }: Props) {
     if (errs.length) { setErrors(errs); return; }
 
     const song: Song = {
-      id: crypto.randomUUID(),
+      id: initialSong?.id ?? crypto.randomUUID(),
       title: title.trim(),
       artist: artist.trim() || undefined,
       language,
@@ -61,10 +63,11 @@ export default function AddSongForm({ onAdd }: Props) {
       tempo: tempo ? parseInt(tempo) : undefined,
       timeSignature: timeSignature.trim() || undefined,
       chordpro: chordpro.trim(),
-      createdAt: new Date().toISOString(),
+      createdAt: initialSong?.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    const saveError = await onAdd(song);
+    const saveError = await onSave(song);
     if (saveError) {
       setErrors([`Could not save song: ${saveError}`]);
       return;
@@ -74,7 +77,7 @@ export default function AddSongForm({ onAdd }: Props) {
 
   return (
     <div className="add-song-page">
-      <h1>Add Song</h1>
+      <h1>{mode === 'edit' ? 'Edit Song' : 'Add Song'}</h1>
       <form onSubmit={handleSubmit} className="add-song-form">
         {errors.length > 0 && (
           <ul className="form-errors">
@@ -162,7 +165,7 @@ export default function AddSongForm({ onAdd }: Props) {
 
         <div className="form-actions">
           <button type="submit" className="btn-primary">
-            <Save size={16} /> Save Song
+            <Save size={16} /> {mode === 'edit' ? 'Update Song' : 'Save Song'}
           </button>
         </div>
       </form>
