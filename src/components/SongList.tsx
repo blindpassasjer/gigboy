@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Music, LayoutGrid, Rows3 } from 'lucide-react';
+import { Search, Music, LayoutGrid, Rows3, GripVertical } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
@@ -25,14 +25,18 @@ function getSongPreview(song: Song): string {
 interface Props {
   songs: Song[];
   listName?: string;
+  onMoveSong?: (songId: string, beforeSongId: string | null) => void;
   onRenameSong: (song: Song) => void | Promise<void>;
   onDeleteSong: (song: Song) => void | Promise<void>;
 }
 
-export default function SongList({ songs, listName, onRenameSong, onDeleteSong }: Props) {
+export default function SongList({ songs, listName, onMoveSong, onRenameSong, onDeleteSong }: Props) {
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
+  const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
+  const [dropTargetSongId, setDropTargetSongId] = useState<string | null>(null);
+  const [dropAtEnd, setDropAtEnd] = useState(false);
 
   const languages = useMemo(
     () => Array.from(new Set(songs.map((s) => s.language))).sort(),
@@ -58,9 +62,77 @@ export default function SongList({ songs, listName, onRenameSong, onDeleteSong }
   );
 
   const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
-    event.dataTransfer.effectAllowed = 'copy';
+    setDraggingSongId(song.id);
+    setDropTargetSongId(null);
+    setDropAtEnd(false);
+    event.dataTransfer.effectAllowed = onMoveSong ? 'copyMove' : 'copy';
     event.dataTransfer.setData(SONG_DRAG_MIME, song.id);
     event.dataTransfer.setData('text/plain', song.title);
+  };
+
+  const handleSongDragEnd = () => {
+    setDraggingSongId(null);
+    setDropTargetSongId(null);
+    setDropAtEnd(false);
+  };
+
+  const handleSongDragOver = (songId: string, event: React.DragEvent<HTMLElement>) => {
+    if (!onMoveSong || !event.dataTransfer.types.includes(SONG_DRAG_MIME)) {
+      return;
+    }
+
+    const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
+    if (!sourceSongId || sourceSongId === songId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDropTargetSongId(songId);
+    setDropAtEnd(false);
+  };
+
+  const handleSongDrop = (beforeSongId: string, event: React.DragEvent<HTMLElement>) => {
+    if (!onMoveSong) {
+      return;
+    }
+
+    const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
+    if (!sourceSongId || sourceSongId === beforeSongId) {
+      handleSongDragEnd();
+      return;
+    }
+
+    event.preventDefault();
+    onMoveSong(sourceSongId, beforeSongId);
+    handleSongDragEnd();
+  };
+
+  const handleListEndDragOver = (event: React.DragEvent<HTMLElement>) => {
+    if (!onMoveSong || !event.dataTransfer.types.includes(SONG_DRAG_MIME)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDropTargetSongId(null);
+    setDropAtEnd(true);
+  };
+
+  const handleListEndDrop = (event: React.DragEvent<HTMLElement>) => {
+    if (!onMoveSong) {
+      return;
+    }
+
+    const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
+    if (!sourceSongId) {
+      handleSongDragEnd();
+      return;
+    }
+
+    event.preventDefault();
+    onMoveSong(sourceSongId, null);
+    handleSongDragEnd();
   };
 
   return (
@@ -120,14 +192,24 @@ export default function SongList({ songs, listName, onRenameSong, onDeleteSong }
           <p>No songs found.</p>
         </div>
       ) : viewMode === 'cards' ? (
-        <div className="song-card-grid">
+        <div className="song-card-grid" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
           {filtered.map((song) => (
             <article
               key={song.id}
-              className="song-preview-card"
-              draggable
-              onDragStart={(event) => handleSongDragStart(song, event)}
+              className={`song-preview-card${dropTargetSongId === song.id ? ' drop-before' : ''}`}
+              onDragOver={(event) => handleSongDragOver(song.id, event)}
+              onDrop={(event) => handleSongDrop(song.id, event)}
             >
+              <button
+                type="button"
+                className="song-drag-handle"
+                draggable
+                onDragStart={(event) => handleSongDragStart(song, event)}
+                onDragEnd={handleSongDragEnd}
+                aria-label={`Drag ${song.title}`}
+              >
+                <GripVertical size={16} />
+              </button>
               <Link to={`/songs/${song.id}`} className="song-preview-card-link">
                 <div className="song-preview-card-main">
                   <span className="song-card-title">{song.title}</span>
@@ -159,16 +241,27 @@ export default function SongList({ songs, listName, onRenameSong, onDeleteSong }
               </div>
             </article>
           ))}
+          {filtered.length > 0 && <div className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
         </div>
       ) : (
-        <ul className="song-list">
+        <ul className="song-list" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
           {filtered.map((song) => (
-            <li key={song.id}>
+            <li key={song.id} className={dropTargetSongId === song.id ? 'drop-before' : ''}>
               <div
                 className="song-card"
-                draggable
-                onDragStart={(event) => handleSongDragStart(song, event)}
+                onDragOver={(event) => handleSongDragOver(song.id, event)}
+                onDrop={(event) => handleSongDrop(song.id, event)}
               >
+                <button
+                  type="button"
+                  className="song-drag-handle"
+                  draggable
+                  onDragStart={(event) => handleSongDragStart(song, event)}
+                  onDragEnd={handleSongDragEnd}
+                  aria-label={`Drag ${song.title}`}
+                >
+                  <GripVertical size={16} />
+                </button>
                 <Link to={`/songs/${song.id}`} className="song-card-link">
                   <div className="song-card-main">
                     <span className="song-card-title">{song.title}</span>
@@ -200,6 +293,7 @@ export default function SongList({ songs, listName, onRenameSong, onDeleteSong }
               </div>
             </li>
           ))}
+          {filtered.length > 0 && <li className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
         </ul>
       )}
     </div>

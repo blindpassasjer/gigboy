@@ -14,6 +14,25 @@ function readLocal<T>(key: string, fallback: T): T {
   }
 }
 
+function moveSongId(songIds: string[], songId: string, beforeSongId: string | null) {
+  const currentIndex = songIds.indexOf(songId);
+  if (currentIndex < 0) return songIds;
+
+  const nextSongIds = [...songIds];
+  nextSongIds.splice(currentIndex, 1);
+
+  if (beforeSongId === null) {
+    nextSongIds.push(songId);
+    return nextSongIds;
+  }
+
+  const targetIndex = nextSongIds.indexOf(beforeSongId);
+  if (targetIndex < 0) return songIds;
+
+  nextSongIds.splice(targetIndex, 0, songId);
+  return nextSongIds;
+}
+
 interface SongListsContextValue {
   folders: SongListFolder[];
   songLists: SongList[];
@@ -25,6 +44,7 @@ interface SongListsContextValue {
   deleteSongList: (id: string) => void;
   addSongToList: (listId: string, songId: string) => void;
   removeSongFromList: (listId: string, songId: string) => void;
+  moveSongInList: (listId: string, songId: string, beforeSongId: string | null) => void;
   moveSongList: (listId: string, targetFolderId?: string, beforeListId?: string | null) => void;
   setActiveFolderId: (id: string | null) => void;
   setActiveSongListId: (id: string | null) => void;
@@ -99,6 +119,19 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const moveSongInList = useCallback((listId: string, songId: string, beforeSongId: string | null) => {
+    setSongLists((prev) =>
+      prev.map((list) => {
+        if (list.id !== listId) {
+          return list;
+        }
+
+        const nextSongIds = moveSongId(list.songIds, songId, beforeSongId);
+        return nextSongIds === list.songIds ? list : { ...list, songIds: nextSongIds };
+      })
+    );
+  }, []);
+
   const moveSongList = useCallback((listId: string, targetFolderId?: string, beforeListId?: string | null) => {
     setSongLists((prev) => {
       const moving = prev.find((l) => l.id === listId);
@@ -146,6 +179,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
         deleteSongList,
         addSongToList,
         removeSongFromList,
+        moveSongInList,
         moveSongList,
         setActiveFolderId,
         setActiveSongListId: setActiveListId,

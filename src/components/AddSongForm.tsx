@@ -12,7 +12,7 @@ interface Props {
   mode?: 'add' | 'edit';
   songListOptions?: Array<{ id: string; label: string }>;
   initialSongListId?: string;
-  onSongListChange?: (songListId: string) => void;
+  onSongListChange?: (songListId: string, songId: string) => void;
 }
 
 const PLACEHOLDER = `{title: My Song}
@@ -51,7 +51,7 @@ export default function AddSongForm({
   const [songListId, setSongListId] = useState(initialSongListId ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const showSongListSelector = mode === 'edit' && (songListOptions?.length ?? 0) > 0;
+  const showSongListSelector = (songListOptions?.length ?? 0) > 0;
 
   function validate() {
     const errs: string[] = [];
@@ -87,7 +87,7 @@ export default function AddSongForm({
     }
 
     if (songListId) {
-      onSongListChange?.(songListId);
+      onSongListChange?.(songListId, song.id);
     }
 
     navigate(`/songs/${song.id}`);

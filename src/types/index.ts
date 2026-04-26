@@ -35,6 +35,7 @@ export interface Song {
   key?: string;
   tempo?: number;
   timeSignature?: string;
+  sortOrder?: number;
   createdAt?: string;
   updatedAt?: string;
 }

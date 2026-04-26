@@ -302,6 +302,9 @@ input, select, textarea { font: inherit; }
 .lang-select:focus { border-color: var(--accent); }
 
 .song-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+.song-list > li.drop-before .song-card {
+  border-top: 2px solid var(--accent);
+}
 
 .song-card {
   display: flex;
@@ -316,14 +319,33 @@ input, select, textarea { font: inherit; }
   box-shadow: var(--shadow);
   transition: border-color .15s, box-shadow .15s;
 }
-.song-card[draggable="true"],
-.song-preview-card[draggable="true"] {
-  cursor: grab;
-}
 .song-card:hover {
   border-color: var(--accent);
   box-shadow: 0 2px 8px rgba(92,79,166,.15);
 }
+.song-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  padding: .35rem;
+  border: 1px dashed transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+  flex-shrink: 0;
+  transition: color .15s, background .15s, border-color .15s;
+}
+
+.song-drag-handle:hover {
+  color: var(--accent);
+  background: var(--bg);
+  border-color: var(--border);
+}
+
+.song-drag-handle:active { cursor: grabbing; }
+
 .song-card-link {
   display: flex;
   align-items: center;
@@ -359,6 +381,10 @@ input, select, textarea { font: inherit; }
   border-radius: calc(var(--radius) + 4px);
   box-shadow: var(--shadow);
   transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+
+.song-preview-card.drop-before {
+  border-top: 2px solid var(--accent);
 }
 
 .song-preview-card:hover {
@@ -399,6 +425,17 @@ input, select, textarea { font: inherit; }
   align-items: center;
   gap: .35rem;
   flex-wrap: wrap;
+}
+
+.song-reorder-dropzone {
+  min-height: 1rem;
+  border: 1px dashed transparent;
+  border-radius: var(--radius);
+}
+
+.song-reorder-dropzone.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .song-actions--stacked {

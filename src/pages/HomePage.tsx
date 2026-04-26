@@ -4,11 +4,12 @@ import SongList from '../components/SongList';
 import type { Song } from '../types';
 
 export default function HomePage() {
-  const { songs, updateSong, deleteSong } = useSongs();
-  const { activeFolderId, activeSongListId, folders, songLists } = useSongLists();
+  const { songs, updateSong, deleteSong, moveSong } = useSongs();
+  const { activeFolderId, activeSongListId, folders, songLists, moveSongInList } = useSongLists();
 
   const activeList = songLists.find((l) => l.id === activeSongListId) ?? null;
   const activeFolder = folders.find((folder) => folder.id === activeFolderId) ?? null;
+  const songsById = new Map(songs.map((song) => [song.id, song]));
   const activeFolderSongIds = activeFolder
     ? new Set(
         songLists
@@ -17,10 +18,21 @@ export default function HomePage() {
       )
     : null;
   const displayedSongs = activeList
-    ? songs.filter((song) => activeList.songIds.includes(song.id))
+    ? activeList.songIds
+        .map((songId) => songsById.get(songId))
+        .filter((song): song is Song => Boolean(song))
     : activeFolderSongIds
       ? songs.filter((song) => activeFolderSongIds.has(song.id))
       : songs;
+
+  function handleMoveSong(songId: string, beforeSongId: string | null) {
+    if (activeList) {
+      moveSongInList(activeList.id, songId, beforeSongId);
+      return;
+    }
+
+    moveSong(songId, beforeSongId);
+  }
 
   async function handleRenameSong(song: Song) {
     const nextTitle = window.prompt('Rename song', song.title);
@@ -47,6 +59,7 @@ export default function HomePage() {
     <SongList
       songs={displayedSongs}
       listName={activeList?.name ?? activeFolder?.name}
+      onMoveSong={handleMoveSong}
       onRenameSong={handleRenameSong}
       onDeleteSong={handleDeleteSong}
     />

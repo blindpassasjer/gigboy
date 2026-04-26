@@ -47,7 +47,7 @@ export default function EditSongPage() {
         onSave={handleSave}
         songListOptions={songListOptions}
         initialSongListId={initialSongListId}
-        onSongListChange={(songListId) => addSongToList(songListId, song.id)}
+        onSongListChange={(songListId, songId) => addSongToList(songListId, songId)}
       />
     </div>
   );

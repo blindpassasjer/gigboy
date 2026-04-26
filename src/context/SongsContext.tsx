@@ -6,13 +6,55 @@ import {
   getDocs,
   setDoc,
   deleteDoc,
-  orderBy,
-  query,
 } from 'firebase/firestore';
 import type { Song } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
 
 const LOCAL_STORAGE_KEY = 'songbook-local-songs';
+
+function compareSongs(a: Song, b: Song) {
+  const aHasSortOrder = typeof a.sortOrder === 'number';
+  const bHasSortOrder = typeof b.sortOrder === 'number';
+
+  if (aHasSortOrder && bHasSortOrder) {
+    return (a.sortOrder as number) - (b.sortOrder as number);
+  }
+
+  if (aHasSortOrder) return -1;
+  if (bHasSortOrder) return 1;
+
+  const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+  const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+  return bTime - aTime;
+}
+
+function normalizeSongs(songs: Song[]) {
+  return [...songs].sort(compareSongs);
+}
+
+function moveSongInArray(songs: Song[], songId: string, beforeSongId: string | null) {
+  const currentIndex = songs.findIndex((song) => song.id === songId);
+  if (currentIndex < 0) return songs;
+
+  const nextSongs = [...songs];
+  const [movingSong] = nextSongs.splice(currentIndex, 1);
+  if (!movingSong) return songs;
+
+  if (beforeSongId === null) {
+    nextSongs.push(movingSong);
+    return nextSongs;
+  }
+
+  const targetIndex = nextSongs.findIndex((song) => song.id === beforeSongId);
+  if (targetIndex < 0) return songs;
+
+  nextSongs.splice(targetIndex, 0, movingSong);
+  return nextSongs;
+}
+
+function withSequentialSortOrder(songs: Song[]) {
+  return songs.map((song, index) => ({ ...song, sortOrder: index }));
+}
 
 function readLocalSongs(): Song[] {
   if (typeof window === 'undefined') return [];
@@ -21,7 +63,7 @@ function readLocalSongs(): Song[] {
     const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return [];
     const songs = JSON.parse(raw);
-    return Array.isArray(songs) ? songs as Song[] : [];
+    return Array.isArray(songs) ? normalizeSongs(songs as Song[]) : [];
   } catch {
     return [];
   }
@@ -38,6 +80,7 @@ interface SongsContextValue {
   addSong: (song: Song) => Promise<string | null>;
   updateSong: (song: Song) => Promise<string | null>;
   deleteSong: (id: string) => Promise<void>;
+  moveSong: (songId: string, beforeSongId: string | null) => void;
 }
 
 const SongsContext = createContext<SongsContextValue | null>(null);
@@ -52,10 +95,9 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const q = query(collection(db, 'songs'), orderBy('createdAt', 'desc'));
-    getDocs(q)
+    getDocs(collection(db, 'songs'))
       .then((snap) => {
-        setUserSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song));
+        setUserSongs(normalizeSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song)));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -70,13 +112,22 @@ export function SongsProvider({ children }: { children: ReactNode }) {
   const songs = [...userSongs];
 
   const addSong = useCallback(async (song: Song): Promise<string | null> => {
-    setUserSongs((prev) => [song, ...prev]);
+    let nextSong = song;
+
+    setUserSongs((prev) => {
+      nextSong = {
+        ...song,
+        sortOrder: song.sortOrder ?? Math.min(...prev.map((entry) => entry.sortOrder ?? 0), 0) - 1,
+      };
+
+      return normalizeSongs([nextSong, ...prev]);
+    });
     if (!db) {
       return null;
     }
 
     try {
-      const { id, ...rest } = song;
+      const { id, ...rest } = nextSong;
       const firestoreData = Object.fromEntries(
         Object.entries(rest).filter(([, v]) => v !== undefined)
       );
@@ -90,14 +141,19 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
   const updateSong = useCallback(async (song: Song): Promise<string | null> => {
     let previousSong: Song | null = null;
+    let nextSong: Song | null = null;
 
     setUserSongs((prev) => {
       previousSong = prev.find((s) => s.id === song.id) ?? null;
       if (!previousSong) return prev;
-      return prev.map((s) => (s.id === song.id ? song : s));
+      nextSong = {
+        ...song,
+        sortOrder: song.sortOrder ?? previousSong.sortOrder,
+      };
+      return prev.map((s) => (s.id === song.id ? (nextSong as Song) : s));
     });
 
-    if (!previousSong) {
+    if (!previousSong || !nextSong) {
       return 'Song not found.';
     }
 
@@ -105,8 +161,10 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
+    const songToSave: Song = nextSong;
+
     try {
-      const { id, ...rest } = song;
+      const { id, ...rest } = songToSave;
       const firestoreData = Object.fromEntries(
         Object.entries(rest).filter(([, v]) => v !== undefined)
       );
@@ -129,15 +187,58 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     try {
       await deleteDoc(doc(db, 'songs', id));
     } catch {
-      const q = query(collection(db, 'songs'), orderBy('createdAt', 'desc'));
-      getDocs(q).then((snap) => {
-        setUserSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song));
+      getDocs(collection(db, 'songs')).then((snap) => {
+        setUserSongs(normalizeSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song)));
       });
     }
   }, []);
 
+  const moveSong = useCallback((songId: string, beforeSongId: string | null) => {
+    let previousSongs: Song[] = [];
+    let nextSongs: Song[] = [];
+
+    setUserSongs((prev) => {
+      previousSongs = prev;
+      const reorderedSongs = moveSongInArray(prev, songId, beforeSongId);
+      if (reorderedSongs === prev) {
+        nextSongs = prev;
+        return prev;
+      }
+
+      nextSongs = withSequentialSortOrder(reorderedSongs);
+      return nextSongs;
+    });
+
+    if (!db || nextSongs === previousSongs) {
+      return;
+    }
+
+    const firestore = db;
+
+    const changedSongs = nextSongs.filter((song, index) => {
+      const previousSong = previousSongs[index];
+      return previousSong?.id !== song.id || previousSong?.sortOrder !== song.sortOrder;
+    });
+
+    if (changedSongs.length === 0) {
+      return;
+    }
+
+    Promise.all(
+      changedSongs.map((song) => {
+        const { id, ...rest } = song;
+        const firestoreData = Object.fromEntries(
+          Object.entries(rest).filter(([, value]) => value !== undefined)
+        );
+        return setDoc(doc(firestore, 'songs', id), firestoreData);
+      })
+    ).catch(() => {
+      setUserSongs(previousSongs);
+    });
+  }, []);
+
   return (
-    <SongsContext.Provider value={{ songs, loading, addSong, updateSong, deleteSong }}>
+    <SongsContext.Provider value={{ songs, loading, addSong, updateSong, deleteSong, moveSong }}>
       {children}
     </SongsContext.Provider>
   );
