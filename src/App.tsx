@@ -14,7 +14,7 @@ function AuthGate() {
   const { user, loading, authEnabled } = useAuth();
 
   if (loading) {
-    return <div className="app-status">Loading Scorebook…</div>;
+    return <div className="app-status">Loading Folio…</div>;
   }
 
   if (authEnabled && !user) return <LoginPage />;

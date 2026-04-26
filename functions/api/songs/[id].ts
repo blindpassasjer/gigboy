@@ -1,12 +1,10 @@
 /// <reference types="@cloudflare/workers-types" />
 
-interface Env { DB: D1Database }
-interface Data { userId: string }
+interface Data extends Record<string, unknown> {
+  userId?: string;
+}
 
-export const onRequestDelete: PagesFunction<Env, 'id', Data> = async (ctx) => {
-  await ctx.env.DB
-    .prepare('DELETE FROM songs WHERE id = ?')
-    .bind(ctx.params.id)
-    .run();
+export const onRequestDelete: PagesFunction<never, 'id', Data> = async (ctx) => {
+  // Firebase delete would go here
   return Response.json({ ok: true });
 };

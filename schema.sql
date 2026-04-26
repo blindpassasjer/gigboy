@@ -1,6 +1,6 @@
--- Run once: wrangler d1 execute folio --file=schema.sql
+-- This schema is for reference only. Using Firebase Firestore instead.
 
-CREATE TABLE IF NOT EXISTS users (
+-- CREATE TABLE IF NOT EXISTS users (
   id           TEXT PRIMARY KEY,
   username     TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,

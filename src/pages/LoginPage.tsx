@@ -22,7 +22,7 @@ export default function LoginPage() {
       <div className="login-card">
         <div className="login-brand">
           <BookOpen size={28} />
-          <span>Scorebook</span>
+          <span>Folio</span>
         </div>
         <h1 className="login-title">Sign in</h1>
         <form className="login-form" onSubmit={handleSubmit} noValidate>

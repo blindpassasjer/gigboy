@@ -1,5 +1,3 @@
-/// <reference types="@cloudflare/workers-types" />
-
 const ITERATIONS = 100_000;
 const KEY_BYTES = 32;
 
@@ -46,12 +44,10 @@ export function generateToken(): string {
 }
 
 export async function getSession(
-  db: D1Database, token: string,
+  token: string,
 ): Promise<{ user_id: string } | null> {
-  return db
-    .prepare("SELECT user_id FROM sessions WHERE token = ? AND expires_at > datetime('now')")
-    .bind(token)
-    .first<{ user_id: string }>();
+  // Firebase auth session handling would go here
+  return null;
 }
 
 export function getToken(req: Request): string | null {
