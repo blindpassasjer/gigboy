@@ -47,7 +47,6 @@ export default function AddSongForm({
   const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(initialSong.tempo) : '');
   const [timeSignature, setTimeSignature] = useState(initialSong?.timeSignature ?? '');
   const [chordpro, setChordpro] = useState(initialSong?.chordpro ?? '');
-  const [pastedInput, setPastedInput] = useState('');
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -62,12 +61,12 @@ export default function AddSongForm({
   }
 
   function handleParsePasted() {
-    if (!pastedInput.trim()) {
-      setErrors(['Paste lyrics with chords before parsing.']);
+    if (!chordpro.trim()) {
+      setErrors(['Add some content before parsing.']);
       return;
     }
 
-    const parsed = parsePastedSong(pastedInput);
+    const parsed = parsePastedSong(chordpro);
     if (parsed.title) setTitle(parsed.title);
     if (parsed.artist) setArtist(parsed.artist);
     if (parsed.key) setKey(parsed.key);
@@ -176,36 +175,12 @@ export default function AddSongForm({
           </select>
         </div>
 
-        {mode === 'add' && (
-          <div className="form-field form-field--full">
-            <label>Paste Lyrics + Chords (Import)</label>
-            <textarea
-              value={pastedInput}
-              onChange={(e) => setPastedInput(e.target.value)}
-              placeholder={'Title\nArtist\n\nG    D    Em\nAmazing grace how sweet the sound\n\nor\n\n[G]Amazing [D]grace'}
-              rows={10}
-              spellCheck={false}
-              className="paste-import-textarea"
-            />
-            <button type="button" className="preview-toggle paste-import-parse-btn" onClick={handleParsePasted}>
-              <Wand2 size={14} /> Parse Paste Into Song
-            </button>
-            {parseWarnings.length > 0 && (
-              <div className="paste-import-warnings" role="status">
-                {parseWarnings.map((warning) => (
-                  <p key={warning}>{warning}</p>
-                ))}
-              </div>
-            )}
-            <p className="form-hint">
-              This is now the import flow: paste text, parse, then review/edit the ChordPro field below before saving.
-            </p>
-          </div>
-        )}
-
         <div className="form-field form-field--full">
           <div className="chordpro-label-row">
             <label>ChordPro Lyrics *</label>
+            <button type="button" className="preview-toggle" onClick={handleParsePasted}>
+              <Wand2 size={14} /> Parse
+            </button>
             <button type="button" className="preview-toggle" onClick={() => setPreview((v) => !v)}>
               {preview ? 'Edit' : 'Preview'}
             </button>
@@ -231,9 +206,16 @@ export default function AddSongForm({
               spellCheck={false}
             />
           )}
+          {parseWarnings.length > 0 && (
+            <div className="paste-import-warnings" role="status">
+              {parseWarnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+            </div>
+          )}
           <p className="form-hint">
-            Wrap chords in brackets: <code>[G]Amazing [C]grace</code>. Use directives like{' '}
-            <code>&#123;title: Name&#125;</code>, <code>&#123;start_of_chorus&#125;</code>.
+            Paste plain lyrics with chords and click <strong>Parse</strong> to convert, or write ChordPro directly:{' '}
+            <code>[G]Amazing [C]grace</code>, <code>&#123;start_of_chorus&#125;</code>.
           </p>
         </div>
 

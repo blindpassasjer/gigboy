@@ -956,16 +956,6 @@ input, select, textarea { font: inherit; }
   min-height: 280px;
 }
 
-.paste-import-textarea {
-  min-height: 210px;
-}
-
-.paste-import-parse-btn {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-}
 
 .paste-import-warnings {
   border: 1px solid var(--border);
