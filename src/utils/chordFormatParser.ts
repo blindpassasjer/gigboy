@@ -312,10 +312,10 @@ export function normalizeChord(chord: string): string {
     .replace(/♯/g, '#')
     .replace(/♭/g, 'b')
     .replace(/flat/gi, 'b')
-    .replace(/sharp/gi, '#')
-    .toUpperCase();
+    .replace(/sharp/gi, '#');
 
-  return normalized;
+  // Only uppercase the root note; preserve case of quality suffix (m, maj, dim, etc.)
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 /**
