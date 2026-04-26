@@ -525,7 +525,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 /* ─── Song View ─────────────────────────────────────────────────────────────── */
-.song-view { display: flex; flex-direction: column; gap: 1.5rem; }
+.song-view { display: flex; flex-direction: column; gap: 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
 
 .song-view-header {
   background: var(--surface);
