@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save } from 'lucide-react';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
+import ChordProToolbar from './ChordProToolbar';
 import { LANGUAGE_NAMES } from '../utils/languages';
 
 interface Props {
@@ -31,9 +32,11 @@ export default function AddSongForm({ onAdd }: Props) {
   const [key, setKey] = useState('');
   const [capo, setCapo] = useState('');
   const [tempo, setTempo] = useState('');
+  const [timeSignature, setTimeSignature] = useState('');
   const [chordpro, setChordpro] = useState('');
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   function validate() {
     const errs: string[] = [];
@@ -56,6 +59,7 @@ export default function AddSongForm({ onAdd }: Props) {
       key: key.trim() || undefined,
       capo: capo ? parseInt(capo) : undefined,
       tempo: tempo ? parseInt(tempo) : undefined,
+      timeSignature: timeSignature.trim() || undefined,
       chordpro: chordpro.trim(),
       createdAt: new Date().toISOString(),
     };
@@ -107,6 +111,10 @@ export default function AddSongForm({ onAdd }: Props) {
             <label>BPM</label>
             <input type="number" value={tempo} onChange={(e) => setTempo(e.target.value)} min={20} max={300} placeholder="120" />
           </div>
+          <div className="form-field">
+            <label>Time Signature</label>
+            <input value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} placeholder="4/4" maxLength={7} />
+          </div>
         </div>
 
         <div className="form-field">
@@ -121,12 +129,20 @@ export default function AddSongForm({ onAdd }: Props) {
               {preview ? 'Edit' : 'Preview'}
             </button>
           </div>
+          {!preview && (
+            <ChordProToolbar
+              textareaRef={textareaRef}
+              value={chordpro}
+              onChange={setChordpro}
+            />
+          )}
           {preview ? (
             <div className="chordpro-preview">
               <ChordDisplay chordpro={chordpro || PLACEHOLDER} showChords />
             </div>
           ) : (
             <textarea
+              ref={textareaRef}
               value={chordpro}
               onChange={(e) => setChordpro(e.target.value)}
               placeholder={PLACEHOLDER}

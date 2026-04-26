@@ -1,20 +1,34 @@
 import { useMemo } from 'react';
 import { parseChordPro, lineHasChords, transposeChord } from '../utils/chordParser';
 import type { ParsedLine } from '../types';
+import type { DiagramInstrument } from './ChordDiagram';
 
 interface Props {
   chordpro: string;
   transpose?: number;
   showChords?: boolean;
+  instrument?: DiagramInstrument;
+  onChordClick?: (chord: string, rect: DOMRect) => void;
 }
 
-export default function ChordDisplay({ chordpro, transpose = 0, showChords = true }: Props) {
+export default function ChordDisplay({
+  chordpro,
+  transpose = 0,
+  showChords = true,
+  onChordClick,
+}: Props) {
   const lines = useMemo(() => parseChordPro(chordpro), [chordpro]);
 
   return (
     <div className="chord-display">
       {lines.map((line, i) => (
-        <LineRenderer key={i} line={line} transpose={transpose} showChords={showChords} />
+        <LineRenderer
+          key={i}
+          line={line}
+          transpose={transpose}
+          showChords={showChords}
+          onChordClick={onChordClick}
+        />
       ))}
     </div>
   );
@@ -24,10 +38,12 @@ function LineRenderer({
   line,
   transpose,
   showChords,
+  onChordClick,
 }: {
   line: ParsedLine;
   transpose: number;
   showChords: boolean;
+  onChordClick?: (chord: string, rect: DOMRect) => void;
 }) {
   if (line.type === 'empty') return <div className="chord-line chord-line--empty" />;
 
@@ -46,7 +62,6 @@ function LineRenderer({
       return <div className="section-label">Bridge</div>;
     if (dir === 'end_of_chorus' || dir === 'end_of_verse' || dir === 'end_of_bridge')
       return null;
-    // Generic labelled section
     if (line.directiveValue) return <div className="section-label">{line.directiveValue}</div>;
     return null;
   }
@@ -61,10 +76,26 @@ function LineRenderer({
         <span key={idx} className="chord-segment">
           {showChords && (
             <span className="chord-name">
-              {seg.chord ? transposeChord(seg.chord, transpose) : <>&nbsp;</>}
+              {seg.chord ? (
+                onChordClick ? (
+                  <button
+                    className="chord-name-btn"
+                    onClick={(e) => {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      onChordClick(transposeChord(seg.chord, transpose), rect);
+                    }}
+                  >
+                    {transposeChord(seg.chord, transpose)}
+                  </button>
+                ) : (
+                  transposeChord(seg.chord, transpose)
+                )
+              ) : (
+                <>&nbsp;</>
+              )}
             </span>
           )}
-          <span className="lyric-text">{seg.lyric || (showChords && seg.chord ? ' ' : '')}</span>
+          <span className="lyric-text">{seg.lyric || (showChords && seg.chord ? ' ' : '')}</span>
         </span>
       ))}
     </div>

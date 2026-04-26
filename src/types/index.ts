@@ -1,3 +1,15 @@
+export interface SongListFolder {
+  id: string;
+  name: string;
+}
+
+export interface SongList {
+  id: string;
+  name: string;
+  songIds: string[];
+  folderId?: string;
+}
+
 export type Language =
   | 'en'
   | 'es'

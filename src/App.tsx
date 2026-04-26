@@ -5,6 +5,7 @@ import SongPage from './pages/SongPage';
 import AddSongPage from './pages/AddSongPage';
 import LoginPage from './pages/LoginPage';
 import { SongsProvider } from './context/SongsContext';
+import { SongListsProvider } from './context/SongListsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 function AuthGate() {
@@ -18,6 +19,7 @@ function AuthGate() {
 
   return (
     <SongsProvider>
+      <SongListsProvider>
       <BrowserRouter>
         <Layout>
           <Routes>
@@ -27,6 +29,7 @@ function AuthGate() {
           </Routes>
         </Layout>
       </BrowserRouter>
+      </SongListsProvider>
     </SongsProvider>
   );
 }

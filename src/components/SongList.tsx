@@ -7,9 +7,10 @@ import { languageName } from '../utils/languages';
 
 interface Props {
   songs: Song[];
+  listName?: string;
 }
 
-export default function SongList({ songs }: Props) {
+export default function SongList({ songs, listName }: Props) {
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
 
@@ -33,6 +34,7 @@ export default function SongList({ songs }: Props) {
 
   return (
     <div className="song-list-page">
+      {listName && <h2 className="song-list-heading">{listName}</h2>}
       <div className="song-list-controls">
         <div className="search-box">
           <Search size={16} className="search-icon" />

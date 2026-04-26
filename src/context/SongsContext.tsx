@@ -11,7 +11,6 @@ import {
 } from 'firebase/firestore';
 import type { Song } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
-import builtinSongs from '../data/songs';
 
 const LOCAL_STORAGE_KEY = 'songbook-local-songs';
 
@@ -67,7 +66,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     }
   }, [userSongs]);
 
-  const songs = [...userSongs, ...builtinSongs];
+  const songs = [...userSongs];
 
   const addSong = useCallback(async (song: Song) => {
     setUserSongs((prev) => [song, ...prev]);
