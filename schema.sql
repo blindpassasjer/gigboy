@@ -1,4 +1,4 @@
--- Run once: wrangler d1 execute songbook --file=schema.sql
+-- Run once: wrangler d1 execute folio --file=schema.sql
 
 CREATE TABLE IF NOT EXISTS users (
   id           TEXT PRIMARY KEY,

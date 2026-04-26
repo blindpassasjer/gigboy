@@ -3,8 +3,8 @@ import { Folder, FolderOpen, FolderPlus, Trash2, X, ListMusic, ListMusicIcon } f
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 
-const SONG_DRAG_MIME = 'application/x-songbook-song-id';
-const SONG_DRAG_FALLBACK_MIME = 'text/x-songbook-song-id';
+const SONG_DRAG_MIME = 'application/x-folio-song-id';
+const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
 
 function hasType(types: readonly string[], mime: string): boolean {
   return Array.from(types).includes(mime);

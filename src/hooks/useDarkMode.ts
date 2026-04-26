@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const KEY = 'songbook-dark-mode';
+const KEY = 'folio-dark-mode';
 
 function getInitial(): boolean {
   const stored = localStorage.getItem(KEY);

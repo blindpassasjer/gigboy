@@ -10,7 +10,7 @@ import {
 import type { Song } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
 
-const LOCAL_STORAGE_KEY = 'songbook-local-songs';
+const LOCAL_STORAGE_KEY = 'folio-local-songs';
 
 function compareSongs(a: Song, b: Song) {
   const aHasSortOrder = typeof a.sortOrder === 'number';

@@ -2,8 +2,8 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import type { ReactNode } from 'react';
 import type { SongList, SongListCategory } from '../types';
 
-const KEY_FOLDERS = 'songbook-folders';
-const KEY_LISTS = 'songbook-song-lists';
+const KEY_FOLDERS = 'folio-folders';
+const KEY_LISTS = 'folio-song-lists';
 
 function readLocal<T>(key: string, fallback: T): T {
   try {

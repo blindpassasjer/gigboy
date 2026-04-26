@@ -8,8 +8,8 @@ import { parseChordPro } from '../utils/chordParser';
 
 type SortBy = 'custom' | 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest' | 'language';
 
-const SONG_DRAG_MIME = 'application/x-songbook-song-id';
-const SONG_DRAG_FALLBACK_MIME = 'text/x-songbook-song-id';
+const SONG_DRAG_MIME = 'application/x-folio-song-id';
+const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
 
 function getSongPreview(song: Song): string {
   const lyricLines = parseChordPro(song.chordpro)
@@ -37,19 +37,19 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
-    () => (localStorage.getItem('songbook-view-mode') === 'cards' ? 'cards' : 'list')
+    () => (localStorage.getItem('folio-view-mode') === 'cards' ? 'cards' : 'list')
   );
   const [sortBy, setSortBy] = useState<SortBy>(
-    () => (localStorage.getItem('songbook-sort-by') as SortBy | null) ?? (onMoveSong ? 'custom' : 'name-asc')
+    () => (localStorage.getItem('folio-sort-by') as SortBy | null) ?? (onMoveSong ? 'custom' : 'name-asc')
   );
 
   function handleSetViewMode(mode: 'list' | 'cards') {
-    localStorage.setItem('songbook-view-mode', mode);
+    localStorage.setItem('folio-view-mode', mode);
     setViewMode(mode);
   }
 
   function handleSetSortBy(sort: SortBy) {
-    localStorage.setItem('songbook-sort-by', sort);
+    localStorage.setItem('folio-sort-by', sort);
     setSortBy(sort);
   }
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);

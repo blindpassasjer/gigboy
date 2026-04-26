@@ -71,7 +71,7 @@ export default function Layout({ children }: Props) {
         </button>
         <Link to="/" className="topbar-brand">
           <BookOpen size={22} />
-          <span>Scorebook</span>
+          <span>Folio</span>
         </Link>
         <nav className="topbar-nav">
           <Link to="/" className={pathname === '/' ? 'active' : ''}>
@@ -97,7 +97,7 @@ export default function Layout({ children }: Props) {
       </header>
       {!authEnabled && authError && (
         <div className="app-notice" role="status">
-          Firebase is not configured in this deployment. Scorebook is running in local-only mode.
+          Firebase is not configured in this deployment. Folio is running in local-only mode.
         </div>
       )}
       <div className={`app-body${isNarrowViewport ? ' app-body--narrow' : ''}`}>
@@ -113,7 +113,7 @@ export default function Layout({ children }: Props) {
         <main className="main-content">{children}</main>
       </div>
       <footer className="footer">
-        <p>Scorebook - open source music chords &amp; lyrics</p>
+        <p>Folio - open source music chords &amp; lyrics</p>
       </footer>
     </div>
   );
