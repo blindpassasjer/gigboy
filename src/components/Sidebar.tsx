@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Folder, FolderOpen, FolderPlus, List, Plus, Trash2, ChevronRight, ChevronDown } from 'lucide-react';
+import { Folder, FolderOpen, FolderPlus, List, Plus, Trash2, ChevronRight, ChevronDown, X } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
@@ -7,9 +7,12 @@ const LIST_DRAG_MIME = 'application/x-songbook-list-id';
 
 interface Props {
   open: boolean;
+  mobile?: boolean;
+  onNavigate?: () => void;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ open }: Props) {
+export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const {
     folders,
     songLists,
@@ -134,21 +137,31 @@ export default function Sidebar({ open }: Props) {
   if (!open) return null;
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${mobile ? ' sidebar--mobile' : ''}`}>
       <div className="sidebar-header">
         <span className="sidebar-title">Song Lists</span>
-        <button
-          className="sidebar-icon-btn"
-          title="New folder"
-          onClick={() => { setAddingFolder(true); setDraftName(''); }}
-        >
-          <FolderPlus size={15} />
-        </button>
+        <div className="sidebar-header-actions">
+          <button
+            className="sidebar-icon-btn"
+            title="New folder"
+            onClick={() => { setAddingFolder(true); setDraftName(''); }}
+          >
+            <FolderPlus size={15} />
+          </button>
+          {mobile && onClose && (
+            <button className="sidebar-icon-btn" title="Close sidebar" onClick={onClose}>
+              <X size={15} />
+            </button>
+          )}
+        </div>
       </div>
 
       <button
         className={`sidebar-all-songs${activeSongListId === null && activeFolderId === null ? ' active' : ''}`}
-        onClick={clearActiveSelection}
+        onClick={() => {
+          clearActiveSelection();
+          onNavigate?.();
+        }}
       >
         All songs
       </button>
@@ -209,7 +222,10 @@ export default function Sidebar({ open }: Props) {
                     onDragOver={handleListDragOver}
                     onDrop={(e, beforeListId) => commitDrop(e, list.id, folder.id, beforeListId)}
                     onDragLeave={() => setSongDropTargetId((current) => (current === list.id ? null : current))}
-                    onSelect={() => setActiveSongListId(list.id)}
+                    onSelect={() => {
+                      setActiveSongListId(list.id);
+                      onNavigate?.();
+                    }}
                     onDelete={() => deleteSongList(list.id)}
                   />
                 ))}
@@ -250,7 +266,10 @@ export default function Sidebar({ open }: Props) {
             onDragOver={handleListDragOver}
             onDrop={(e, beforeListId) => commitDrop(e, list.id, undefined, beforeListId)}
             onDragLeave={() => setSongDropTargetId((current) => (current === list.id ? null : current))}
-            onSelect={() => setActiveSongListId(list.id)}
+            onSelect={() => {
+              setActiveSongListId(list.id);
+              onNavigate?.();
+            }}
             onDelete={() => deleteSongList(list.id)}
           />
         ))}

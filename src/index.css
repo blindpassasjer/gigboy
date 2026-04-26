@@ -55,6 +55,11 @@ input, select, textarea { font: inherit; }
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
+}
+
+.app-body--narrow {
+  overflow: visible;
 }
 
 .topbar {
@@ -97,6 +102,7 @@ input, select, textarea { font: inherit; }
   display: flex;
   gap: 1rem;
   margin-left: auto;
+  align-items: center;
 }
 
 .topbar-nav a {
@@ -132,6 +138,14 @@ input, select, textarea { font: inherit; }
   min-width: 0;
   padding: 1.5rem 1.5rem;
   overflow-y: auto;
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 56px 0 0;
+  background: rgba(26, 26, 26, .4);
+  backdrop-filter: blur(2px);
+  z-index: 89;
 }
 
 .app-status,
@@ -1123,6 +1137,12 @@ input, select, textarea { font: inherit; }
   z-index: 1;
 }
 
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+
 .sidebar-title {
   font-size: .8rem;
   font-weight: 700;
@@ -1367,15 +1387,72 @@ input, select, textarea { font: inherit; }
 }
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
-@media (max-width: 700px) {
-  .sidebar { display: none; }
-  .topbar-sidebar-toggle { display: none; }
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0 1rem;
+    gap: .75rem;
+  }
+
+  .topbar-nav {
+    gap: .5rem;
+  }
+
+  .topbar-nav a {
+    padding: .3rem .55rem;
+  }
+
+  .main-content {
+    padding: 1.25rem 1rem;
+  }
+
+  .song-list-controls > * {
+    flex: 1 1 220px;
+  }
+
+  .sidebar--mobile {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: min(320px, calc(100vw - 2.5rem));
+    min-width: 0;
+    z-index: 90;
+    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+  }
 }
 
 @media (max-width: 600px) {
+  .topbar {
+    padding: 0 .75rem;
+    gap: .5rem;
+  }
+
+  .topbar-brand span,
+  .topbar-nav a span {
+    display: none;
+  }
+
+  .topbar-nav {
+    gap: .35rem;
+  }
+
+  .topbar-nav a,
+  .topbar-logout,
+  .topbar-sidebar-toggle {
+    padding: .35rem;
+  }
+
   .song-view-header { flex-direction: column; }
   .song-view-toolbar { align-items: flex-start; }
   .song-list-header { align-items: stretch; }
+  .song-list-controls {
+    flex-direction: column;
+  }
+  .search-box,
+  .lang-select {
+    min-width: 0;
+    width: 100%;
+  }
   .view-toggle {
     width: 100%;
     justify-content: space-between;
@@ -1384,7 +1461,17 @@ input, select, textarea { font: inherit; }
     flex: 1;
     justify-content: center;
   }
-  .topbar { padding: 0 1rem; }
+  .song-card,
+  .song-card-link {
+    align-items: flex-start;
+  }
+  .song-actions {
+    width: 100%;
+  }
+  .song-action-btn {
+    flex: 1 1 90px;
+    justify-content: center;
+  }
   .chord-display { padding: .75rem; font-size: .88rem; }
   .song-view-title { font-size: 1.3rem; }
 }

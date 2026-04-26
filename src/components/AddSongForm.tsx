@@ -10,6 +10,9 @@ interface Props {
   onSave: (song: Song) => Promise<string | null>;
   initialSong?: Song;
   mode?: 'add' | 'edit';
+  songListOptions?: Array<{ id: string; label: string }>;
+  initialSongListId?: string;
+  onSongListChange?: (songListId: string) => void;
 }
 
 const PLACEHOLDER = `{title: My Song}
@@ -25,7 +28,14 @@ const PLACEHOLDER = `{title: My Song}
 Was [Em]blind but [D]now I [G]see
 {end_of_chorus}`;
 
-export default function AddSongForm({ onSave, initialSong, mode = 'add' }: Props) {
+export default function AddSongForm({
+  onSave,
+  initialSong,
+  mode = 'add',
+  songListOptions,
+  initialSongListId,
+  onSongListChange,
+}: Props) {
   const navigate = useNavigate();
   const [title, setTitle] = useState(initialSong?.title ?? '');
   const [artist, setArtist] = useState(initialSong?.artist ?? '');
@@ -38,7 +48,10 @@ export default function AddSongForm({ onSave, initialSong, mode = 'add' }: Props
   const [chordpro, setChordpro] = useState(initialSong?.chordpro ?? '');
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [songListId, setSongListId] = useState(initialSongListId ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const showSongListSelector = mode === 'edit' && (songListOptions?.length ?? 0) > 0;
 
   function validate() {
     const errs: string[] = [];
@@ -72,6 +85,11 @@ export default function AddSongForm({ onSave, initialSong, mode = 'add' }: Props
       setErrors([`Could not save song: ${saveError}`]);
       return;
     }
+
+    if (songListId) {
+      onSongListChange?.(songListId);
+    }
+
     navigate(`/songs/${song.id}`);
   }
 
@@ -128,6 +146,18 @@ export default function AddSongForm({ onSave, initialSong, mode = 'add' }: Props
           <label>Tags (comma separated)</label>
           <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="worship, hymn, folk…" />
         </div>
+
+        {showSongListSelector && (
+          <div className="form-field">
+            <label>Save to song list</label>
+            <select value={songListId} onChange={(e) => setSongListId(e.target.value)}>
+              <option value="">Do not add to a list</option>
+              {songListOptions?.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="form-field form-field--full">
           <div className="chordpro-label-row">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Music, BookOpen, Plus, LogOut, PanelLeft, Sun, Moon } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -13,8 +13,50 @@ interface Props {
 export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
   const { user, logout, authEnabled, authError } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 900px)').matches;
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return !window.matchMedia('(max-width: 900px)').matches;
+  });
   const { dark, toggle: toggleDark } = useDarkMode();
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 900px)');
+
+    const updateViewport = (matches: boolean) => {
+      setIsNarrowViewport(matches);
+      setSidebarOpen((current) => (matches ? false : current || true));
+    };
+
+    updateViewport(mediaQuery.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      updateViewport(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (isNarrowViewport) {
+      setSidebarOpen(false);
+    }
+  }, [pathname, isNarrowViewport]);
+
+  useEffect(() => {
+    if (!sidebarOpen || !isNarrowViewport) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [sidebarOpen, isNarrowViewport]);
 
   return (
     <div className="app-shell">
@@ -33,10 +75,10 @@ export default function Layout({ children }: Props) {
         </Link>
         <nav className="topbar-nav">
           <Link to="/" className={pathname === '/' ? 'active' : ''}>
-            <BookOpen size={16} /> Songs
+            <BookOpen size={16} /> <span>Songs</span>
           </Link>
           <Link to="/add" className={pathname === '/add' ? 'active' : ''}>
-            <Plus size={16} /> Add Song
+            <Plus size={16} /> <span>Add Song</span>
           </Link>
           <button
             onClick={toggleDark}
@@ -58,8 +100,16 @@ export default function Layout({ children }: Props) {
           Firebase is not configured in this deployment. Songbook is running in local-only mode.
         </div>
       )}
-      <div className="app-body">
-        <Sidebar open={sidebarOpen} />
+      <div className={`app-body${isNarrowViewport ? ' app-body--narrow' : ''}`}>
+        <Sidebar open={sidebarOpen} mobile={isNarrowViewport} onNavigate={() => setSidebarOpen(false)} onClose={() => setSidebarOpen(false)} />
+        {isNarrowViewport && sidebarOpen && (
+          <button
+            type="button"
+            className="sidebar-backdrop"
+            aria-label="Close sidebar"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         <main className="main-content">{children}</main>
       </div>
       <footer className="footer">
