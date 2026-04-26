@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save } from 'lucide-react';
+import { Save, Wand2 } from 'lucide-react';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordProToolbar from './ChordProToolbar';
 import { LANGUAGE_NAMES } from '../utils/languages';
+import { parsePastedSong } from '../utils/chordFormatParser';
 
 interface Props {
   onSave: (song: Song) => Promise<string | null>;
@@ -46,6 +47,8 @@ export default function AddSongForm({
   const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(initialSong.tempo) : '');
   const [timeSignature, setTimeSignature] = useState(initialSong?.timeSignature ?? '');
   const [chordpro, setChordpro] = useState(initialSong?.chordpro ?? '');
+  const [pastedInput, setPastedInput] = useState('');
+  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [songListId, setSongListId] = useState(initialSongListId ?? '');
@@ -56,6 +59,24 @@ export default function AddSongForm({
     if (!title.trim()) errs.push('Title is required.');
     if (!chordpro.trim()) errs.push('Song content (ChordPro) is required.');
     return errs;
+  }
+
+  function handleParsePasted() {
+    if (!pastedInput.trim()) {
+      setErrors(['Paste lyrics with chords before parsing.']);
+      return;
+    }
+
+    const parsed = parsePastedSong(pastedInput);
+    if (parsed.title) setTitle(parsed.title);
+    if (parsed.artist) setArtist(parsed.artist);
+    if (parsed.key) setKey(parsed.key);
+    if (typeof parsed.capo === 'number') setCapo(String(parsed.capo));
+    if (typeof parsed.tempo === 'number') setTempo(String(parsed.tempo));
+    setChordpro(parsed.chordpro);
+    setParseWarnings(parsed.warnings);
+    setErrors([]);
+    setPreview(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -154,6 +175,33 @@ export default function AddSongForm({
             ))}
           </select>
         </div>
+
+        {mode === 'add' && (
+          <div className="form-field form-field--full">
+            <label>Paste Lyrics + Chords (Import)</label>
+            <textarea
+              value={pastedInput}
+              onChange={(e) => setPastedInput(e.target.value)}
+              placeholder={'Title\nArtist\n\nG    D    Em\nAmazing grace how sweet the sound\n\nor\n\n[G]Amazing [D]grace'}
+              rows={10}
+              spellCheck={false}
+              className="paste-import-textarea"
+            />
+            <button type="button" className="preview-toggle paste-import-parse-btn" onClick={handleParsePasted}>
+              <Wand2 size={14} /> Parse Paste Into Song
+            </button>
+            {parseWarnings.length > 0 && (
+              <div className="paste-import-warnings" role="status">
+                {parseWarnings.map((warning) => (
+                  <p key={warning}>{warning}</p>
+                ))}
+              </div>
+            )}
+            <p className="form-hint">
+              This is now the import flow: paste text, parse, then review/edit the ChordPro field below before saving.
+            </p>
+          </div>
+        )}
 
         <div className="form-field form-field--full">
           <div className="chordpro-label-row">
