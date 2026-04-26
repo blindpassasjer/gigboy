@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { SongList, SongListFolder } from '../types';
+import type { SongList, SongListCategory } from '../types';
 
 const KEY_FOLDERS = 'songbook-folders';
 const KEY_LISTS = 'songbook-song-lists';
@@ -34,19 +34,19 @@ function moveSongId(songIds: string[], songId: string, beforeSongId: string | nu
 }
 
 interface SongListsContextValue {
-  folders: SongListFolder[];
+  categories: SongListCategory[];
   songLists: SongList[];
-  activeFolderId: string | null;
+  activeCategoryId: string | null;
   activeSongListId: string | null;
-  addFolder: (name: string) => void;
-  deleteFolder: (id: string) => void;
+  addCategory: (name: string) => void;
+  deleteCategory: (id: string) => void;
   addSongList: (name: string, folderId?: string) => void;
   deleteSongList: (id: string) => void;
   addSongToList: (listId: string, songId: string) => void;
   removeSongFromList: (listId: string, songId: string) => void;
   moveSongInList: (listId: string, songId: string, beforeSongId: string | null) => void;
-  moveSongList: (listId: string, targetFolderId?: string, beforeListId?: string | null) => void;
-  setActiveFolderId: (id: string | null) => void;
+  moveSongList: (listId: string, targetCategoryId?: string, beforeListId?: string | null) => void;
+  setActiveCategoryId: (id: string | null) => void;
   setActiveSongListId: (id: string | null) => void;
   clearActiveSelection: () => void;
 }
@@ -54,27 +54,27 @@ interface SongListsContextValue {
 const SongListsContext = createContext<SongListsContextValue | null>(null);
 
 export function SongListsProvider({ children }: { children: ReactNode }) {
-  const [folders, setFolders] = useState<SongListFolder[]>(() => readLocal(KEY_FOLDERS, []));
+  const [categories, setCategories] = useState<SongListCategory[]>(() => readLocal(KEY_FOLDERS, []));
   const [songLists, setSongLists] = useState<SongList[]>(() => readLocal(KEY_LISTS, []));
-  const [activeFolderId, setActiveFolderState] = useState<string | null>(null);
+  const [activeCategoryId, setActiveCategoryState] = useState<string | null>(null);
   const [activeSongListId, setActiveSongListId] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem(KEY_FOLDERS, JSON.stringify(folders));
-  }, [folders]);
+    localStorage.setItem(KEY_FOLDERS, JSON.stringify(categories));
+  }, [categories]);
 
   useEffect(() => {
     localStorage.setItem(KEY_LISTS, JSON.stringify(songLists));
   }, [songLists]);
 
-  const addFolder = useCallback((name: string) => {
-    setFolders((prev) => [...prev, { id: crypto.randomUUID(), name }]);
+  const addCategory = useCallback((name: string) => {
+    setCategories((prev) => [...prev, { id: crypto.randomUUID(), name }]);
   }, []);
 
-  const deleteFolder = useCallback((id: string) => {
-    setFolders((prev) => prev.filter((f) => f.id !== id));
+  const deleteCategory = useCallback((id: string) => {
+    setCategories((prev) => prev.filter((f) => f.id !== id));
     setSongLists((prev) => prev.map((l) => l.folderId === id ? { ...l, folderId: undefined } : l));
-    setActiveFolderState((prev) => (prev === id ? null : prev));
+    setActiveCategoryState((prev) => (prev === id ? null : prev));
   }, []);
 
   const addSongList = useCallback((name: string, folderId?: string) => {
@@ -86,18 +86,18 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     setActiveSongListId((prev) => (prev === id ? null : prev));
   }, []);
 
-  const setActiveFolderId = useCallback((id: string | null) => {
-    setActiveFolderState(id);
+  const setActiveCategoryId = useCallback((id: string | null) => {
+    setActiveCategoryState(id);
     setActiveSongListId(null);
   }, []);
 
   const setActiveListId = useCallback((id: string | null) => {
     setActiveSongListId(id);
-    setActiveFolderState(null);
+    setActiveCategoryState(null);
   }, []);
 
   const clearActiveSelection = useCallback(() => {
-    setActiveFolderState(null);
+    setActiveCategoryState(null);
     setActiveSongListId(null);
   }, []);
 
@@ -132,12 +132,12 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const moveSongList = useCallback((listId: string, targetFolderId?: string, beforeListId?: string | null) => {
+  const moveSongList = useCallback((listId: string, targetCategoryId?: string, beforeListId?: string | null) => {
     setSongLists((prev) => {
       const moving = prev.find((l) => l.id === listId);
       if (!moving) return prev;
 
-      const normalizedTarget = targetFolderId;
+      const normalizedTarget = targetCategoryId;
       const withoutMoving = prev.filter((l) => l.id !== listId);
       const moved: SongList = { ...moving, folderId: normalizedTarget };
 
@@ -169,19 +169,19 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
   return (
     <SongListsContext.Provider
       value={{
-        folders,
+        categories,
         songLists,
-        activeFolderId,
+        activeCategoryId,
         activeSongListId,
-        addFolder,
-        deleteFolder,
+        addCategory,
+        deleteCategory,
         addSongList,
         deleteSongList,
         addSongToList,
         removeSongFromList,
         moveSongInList,
         moveSongList,
-        setActiveFolderId,
+        setActiveCategoryId,
         setActiveSongListId: setActiveListId,
         clearActiveSelection,
       }}

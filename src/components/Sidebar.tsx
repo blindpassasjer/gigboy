@@ -27,18 +27,18 @@ interface Props {
 
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const {
-    folders,
+    categories,
     songLists,
-    activeFolderId,
+    activeCategoryId,
     activeSongListId,
-    addFolder,
+    addCategory,
     addSongToList,
-    deleteFolder,
+    deleteCategory,
     addSongList,
     deleteSongList,
     moveSongList,
     clearActiveSelection,
-    setActiveFolderId,
+    setActiveCategoryId,
     setActiveSongListId,
   } = useSongLists();
 
@@ -51,7 +51,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [songDropTargetId, setSongDropTargetId] = useState<string | null>(null);
 
   const toggleFolder = (id: string) => {
-    setActiveFolderId(id);
+    setActiveCategoryId(id);
     setExpandedFolders((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -60,7 +60,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   };
 
   const commitFolder = () => {
-    if (draftName.trim()) addFolder(draftName.trim());
+    if (draftName.trim()) addCategory(draftName.trim());
     setDraftName('');
     setAddingFolder(false);
   };
@@ -138,7 +138,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const commitDrop = (
     event: React.DragEvent<HTMLDivElement>,
     listId: string | null,
-    targetFolderId: string | undefined,
+    targetCategoryId: string | undefined,
     beforeListId: string | null
   ) => {
     event.preventDefault();
@@ -153,7 +153,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const sourceListId = draggingListId || readListIdFromDrag(event);
     if (!sourceListId) return;
-    moveSongList(sourceListId, targetFolderId, beforeListId);
+    moveSongList(sourceListId, targetCategoryId, beforeListId);
     setDraggingListId(null);
     setDropPreview(null);
     setSongDropTargetId(null);
@@ -168,7 +168,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         <div className="sidebar-header-actions">
           <button
             className="sidebar-icon-btn"
-            title="New folder"
+            title="New category"
             onClick={() => { setAddingFolder(true); setDraftName(''); }}
           >
             <FolderPlus size={15} />
@@ -182,7 +182,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       </div>
 
       <button
-        className={`sidebar-all-songs${activeSongListId === null && activeFolderId === null ? ' active' : ''}`}
+        className={`sidebar-all-songs${activeSongListId === null && activeCategoryId === null ? ' active' : ''}`}
         onClick={() => {
           clearActiveSelection();
         }}
@@ -196,18 +196,18 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           onChange={setDraftName}
           onCommit={commitFolder}
           onCancel={() => setAddingFolder(false)}
-          placeholder="Folder name…"
+          placeholder="Category name…"
         />
       )}
 
-      {folders.map((folder) => {
+      {categories.map((folder) => {
         const isExpanded = expandedFolders.has(folder.id);
         const listsInFolder = songLists.filter((l) => l.folderId === folder.id);
         return (
           <div key={folder.id} className="sidebar-folder">
             <div className="sidebar-folder-header">
               <button
-                className={`sidebar-folder-toggle${activeFolderId === folder.id ? ' active' : ''}`}
+                className={`sidebar-folder-toggle${activeCategoryId === folder.id ? ' active' : ''}`}
                 onClick={() => toggleFolder(folder.id)}
               >
                 {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
@@ -218,7 +218,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 <button title="New list" onClick={() => startAddingListIn(folder.id)}>
                   <Plus size={13} />
                 </button>
-                <button title="Delete folder" onClick={() => deleteFolder(folder.id)}>
+                <button title="Delete category" onClick={() => deleteCategory(folder.id)}>
                   <Trash2 size={13} />
                 </button>
               </div>

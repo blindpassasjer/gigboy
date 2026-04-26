@@ -5,14 +5,14 @@ import type { Song } from '../types';
 
 export default function AddSongPage() {
   const { addSong } = useSongs();
-  const { folders, songLists, activeSongListId, addSongToList } = useSongLists();
+  const { categories, songLists, activeSongListId, addSongToList } = useSongLists();
 
-  const folderNameById = new Map(folders.map((folder) => [folder.id, folder.name]));
+  const categoryNameById = new Map(categories.map((category) => [category.id, category.name]));
   const songListOptions = songLists.map((list) => {
-    const folderName = list.folderId ? folderNameById.get(list.folderId) : undefined;
+    const categoryName = list.folderId ? categoryNameById.get(list.folderId) : undefined;
     return {
       id: list.id,
-      label: folderName ? `${folderName} / ${list.name}` : list.name,
+      label: categoryName ? `${categoryName} / ${list.name}` : list.name,
     };
   });
 

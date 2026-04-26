@@ -1,4 +1,4 @@
-export interface SongListFolder {
+export interface SongListCategory {
   id: string;
   name: string;
 }

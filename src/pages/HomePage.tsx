@@ -5,15 +5,15 @@ import type { Song } from '../types';
 
 export default function HomePage() {
   const { songs, updateSong, deleteSong, moveSong } = useSongs();
-  const { activeFolderId, activeSongListId, folders, songLists, moveSongInList } = useSongLists();
+  const { activeCategoryId, activeSongListId, categories, songLists, moveSongInList } = useSongLists();
 
   const activeList = songLists.find((l) => l.id === activeSongListId) ?? null;
-  const activeFolder = folders.find((folder) => folder.id === activeFolderId) ?? null;
+  const activeCategory = categories.find((category) => category.id === activeCategoryId) ?? null;
   const songsById = new Map(songs.map((song) => [song.id, song]));
-  const activeFolderSongIds = activeFolder
+  const activeCategorySongIds = activeCategory
     ? new Set(
         songLists
-          .filter((list) => list.folderId === activeFolder.id)
+          .filter((list) => list.folderId === activeCategory.id)
           .flatMap((list) => list.songIds)
       )
     : null;
@@ -21,8 +21,8 @@ export default function HomePage() {
     ? activeList.songIds
         .map((songId) => songsById.get(songId))
         .filter((song): song is Song => Boolean(song))
-    : activeFolderSongIds
-      ? songs.filter((song) => activeFolderSongIds.has(song.id))
+    : activeCategorySongIds
+      ? songs.filter((song) => activeCategorySongIds.has(song.id))
       : songs;
 
   function handleMoveSong(songId: string, beforeSongId: string | null) {
@@ -58,7 +58,7 @@ export default function HomePage() {
   return (
     <SongList
       songs={displayedSongs}
-      listName={activeList?.name ?? activeFolder?.name}
+      listName={activeList?.name ?? activeCategory?.name}
       onMoveSong={handleMoveSong}
       onRenameSong={handleRenameSong}
       onDeleteSong={handleDeleteSong}
