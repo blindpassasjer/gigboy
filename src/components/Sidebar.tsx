@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Folder, FolderOpen, FolderPlus, Trash2, X } from 'lucide-react';
+import { Folder, FolderOpen, FolderPlus, Trash2, X, ListMusic, ListMusicIcon } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
+import { useSetlists } from '../context/SetlistsContext';
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-songbook-song-id';
@@ -31,14 +32,31 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     setActiveSongListId,
   } = useSongLists();
 
+  const {
+    setlists,
+    activeSetlistId,
+    addSetlist,
+    deleteSetlist,
+    addSongToSetlist,
+    setActiveSetlistId,
+  } = useSetlists();
+
   const [addingFolder, setAddingFolder] = useState(false);
+  const [addingSetlist, setAddingSetlist] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [songDropTargetId, setSongDropTargetId] = useState<string | null>(null);
+  const [setlistDropTargetId, setSetlistDropTargetId] = useState<string | null>(null);
 
   const commitFolder = () => {
     if (draftName.trim()) addSongList(draftName.trim());
     setDraftName('');
     setAddingFolder(false);
+  };
+
+  const commitSetlist = () => {
+    if (draftName.trim()) addSetlist(draftName.trim());
+    setDraftName('');
+    setAddingSetlist(false);
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>, listId: string) => {
@@ -56,6 +74,23 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     event.preventDefault();
     addSongToList(listId, songId);
     setSongDropTargetId(null);
+  };
+
+  const handleSetlistDragOver = (event: React.DragEvent<HTMLDivElement>, setlistId: string) => {
+    const isSongDrop = hasType(event.dataTransfer.types, SONG_DRAG_MIME)
+      || hasType(event.dataTransfer.types, SONG_DRAG_FALLBACK_MIME);
+    if (!isSongDrop) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setSetlistDropTargetId((c) => (c === setlistId ? c : setlistId));
+  };
+
+  const handleSetlistDrop = (event: React.DragEvent<HTMLDivElement>, setlistId: string) => {
+    const songId = readSongIdFromDrag(event);
+    if (!songId) return;
+    event.preventDefault();
+    addSongToSetlist(setlistId, songId);
+    setSetlistDropTargetId(null);
   };
 
   return (
@@ -80,8 +115,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       </div>
 
       <button
-        className={`sidebar-all-songs${activeSongListId === null ? ' active' : ''}`}
-        onClick={() => { clearActiveSelection(); onNavigate?.(); }}
+        className={`sidebar-all-songs${activeSongListId === null && activeSetlistId === null ? ' active' : ''}`}
+        onClick={() => { clearActiveSelection(); setActiveSetlistId(null); onNavigate?.(); }}
       >
         All songs
       </button>
@@ -98,7 +133,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             onDragOver={(e) => handleDragOver(e, list.id)}
             onDragLeave={() => setSongDropTargetId((c) => (c === list.id ? null : c))}
             onDrop={(e) => handleDrop(e, list.id)}
-            onSelect={() => { setActiveSongListId(list.id); onNavigate?.(); }}
+            onSelect={() => { setActiveSongListId(list.id); setActiveSetlistId(null); onNavigate?.(); }}
             onDelete={() => deleteSongList(list.id)}
           />
         ))}
@@ -122,6 +157,65 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           <FolderPlus size={13} /> New folder
         </button>
       )}
+
+      <div className="sidebar-setlists-section">
+        <div className="sidebar-setlists-header">
+          <h3 className="sidebar-section-title">Setlists</h3>
+          <button
+            className="sidebar-icon-btn"
+            title="New setlist"
+            onClick={() => { setAddingSetlist(true); setDraftName(''); }}
+          >
+            <FolderPlus size={15} />
+          </button>
+        </div>
+
+        <div className="sidebar-setlists">
+          {setlists.map((setlist) => (
+            <SetlistItem
+              key={setlist.id}
+              setlistId={setlist.id}
+              name={setlist.name}
+              count={setlist.songIds.length}
+              active={activeSetlistId === setlist.id}
+              songDropTarget={setlistDropTargetId === setlist.id}
+              onDragOver={(e) => handleSetlistDragOver(e, setlist.id)}
+              onDragLeave={() => setSetlistDropTargetId((c) => (c === setlist.id ? null : c))}
+              onDrop={(e) => handleSetlistDrop(e, setlist.id)}
+              onSelect={() => { setActiveSetlistId(setlist.id); setActiveSongListId(null); clearActiveSelection(); onNavigate?.(); }}
+              onDelete={() => deleteSetlist(setlist.id)}
+            />
+          ))}
+
+          {addingSetlist && (
+            <InlineInput
+              value={draftName}
+              onChange={setDraftName}
+              onCommit={commitSetlist}
+              onCancel={() => setAddingSetlist(false)}
+              placeholder="Setlist name…"
+            />
+          )}
+        </div>
+
+        {!addingSetlist && setlists.length > 0 && (
+          <button
+            className="sidebar-new-setlist-btn"
+            onClick={() => { setAddingSetlist(true); setDraftName(''); }}
+          >
+            <FolderPlus size={13} /> New setlist
+          </button>
+        )}
+
+        {setlists.length === 0 && !addingSetlist && (
+          <button
+            className="sidebar-new-setlist-btn sidebar-new-setlist-btn--primary"
+            onClick={() => { setAddingSetlist(true); setDraftName(''); }}
+          >
+            <ListMusic size={13} /> Create your first setlist
+          </button>
+        )}
+      </div>
     </aside>
     </div>
   );
@@ -164,6 +258,49 @@ function FolderItem({
         {count > 0 && <span className="sidebar-list-count">{count}</span>}
       </button>
       <button className="sidebar-list-delete" title="Delete folder" onClick={onDelete}>
+        <Trash2 size={12} />
+      </button>
+    </div>
+  );
+}
+
+interface SetlistItemProps {
+  setlistId: string;
+  name: string;
+  count: number;
+  active: boolean;
+  songDropTarget: boolean;
+  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
+  onDragLeave: () => void;
+  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
+  onSelect: () => void;
+  onDelete: () => void;
+}
+
+function SetlistItem({
+  name,
+  count,
+  active,
+  songDropTarget,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onSelect,
+  onDelete,
+}: SetlistItemProps) {
+  return (
+    <div
+      className={`sidebar-setlist-item${active ? ' active' : ''}${songDropTarget ? ' song-drop-target' : ''}`}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      <button className="sidebar-setlist-item-btn" onClick={onSelect}>
+        {active ? <ListMusicIcon size={14} /> : <ListMusic size={14} />}
+        <span className="sidebar-setlist-name">{name}</span>
+        {count > 0 && <span className="sidebar-setlist-count">{count}</span>}
+      </button>
+      <button className="sidebar-setlist-delete" title="Delete setlist" onClick={onDelete}>
         <Trash2 size={12} />
       </button>
     </div>

@@ -10,6 +10,14 @@ export interface SongList {
   folderId?: string;
 }
 
+export interface Setlist {
+  id: string;
+  name: string;
+  songIds: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export type Language =
   | 'en'
   | 'es'

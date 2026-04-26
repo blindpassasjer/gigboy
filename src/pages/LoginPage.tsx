@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Music } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -21,8 +21,8 @@ export default function LoginPage() {
     <div className="login-screen">
       <div className="login-card">
         <div className="login-brand">
-          <Music size={28} />
-          <span>Songbook</span>
+          <BookOpen size={28} />
+          <span>Scorebook</span>
         </div>
         <h1 className="login-title">Sign in</h1>
         <form className="login-form" onSubmit={handleSubmit} noValidate>

@@ -1,18 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <title>Songbook</title>
-  <!-- Open book - left page -->
-  <path d="M2 5.5C4.5 5 7.5 5 10 5.5V18.5C7.5 18 4.5 18 2 18.5Z" fill="#8b7cf6" stroke="#5c4fa6" stroke-width="1" stroke-linejoin="round"/>
-  <!-- Open book - right page -->
-  <path d="M22 5.5C19.5 5 16.5 5 14 5.5V18.5C16.5 18 19.5 18 22 18.5Z" fill="#7c6ef0" stroke="#5c4fa6" stroke-width="1" stroke-linejoin="round"/>
-  <!-- Spine -->
-  <path d="M10 5.5L12 5.2L14 5.5V18.5L12 18.8L10 18.5Z" fill="#5c4fa6"/>
-  <!-- Staff lines on left page -->
-  <line x1="3" y1="9.5" x2="9.5" y2="9.5" stroke="white" stroke-width="0.75" opacity="0.75"/>
-  <line x1="3" y1="11.5" x2="9.5" y2="11.5" stroke="white" stroke-width="0.75" opacity="0.75"/>
-  <line x1="3" y1="13.5" x2="9.5" y2="13.5" stroke="white" stroke-width="0.75" opacity="0.75"/>
-  <line x1="3" y1="15.5" x2="9.5" y2="15.5" stroke="white" stroke-width="0.75" opacity="0.75"/>
-  <!-- Eighth note on right page -->
-  <line x1="19.5" y1="8" x2="19.5" y2="14.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-  <ellipse cx="18" cy="14.8" rx="2" ry="1.4" fill="white" transform="rotate(-20 18 14.8)"/>
-  <path d="M19.5 8 Q22.5 9.5 21 13" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Scorebook</title>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="#f6f4ee"/>
+  <path d="M18 14h24a8 8 0 0 1 8 8v28H18z" fill="#fefcf7" stroke="#2b3a42" stroke-width="3"/>
+  <path d="M18 14h8v36h-8a6 6 0 0 1-6-6V20a6 6 0 0 1 6-6z" fill="#dbe6ef" stroke="#2b3a42" stroke-width="3"/>
+  <line x1="28" y1="24" x2="46" y2="24" stroke="#2b3a42" stroke-width="2"/>
+  <line x1="28" y1="28" x2="46" y2="28" stroke="#2b3a42" stroke-width="2"/>
+  <line x1="28" y1="32" x2="46" y2="32" stroke="#2b3a42" stroke-width="2"/>
+  <line x1="28" y1="36" x2="46" y2="36" stroke="#2b3a42" stroke-width="2"/>
+  <line x1="28" y1="40" x2="46" y2="40" stroke="#2b3a42" stroke-width="2"/>
+  <circle cx="35" cy="39" r="3" fill="#0f766e"/>
+  <line x1="38" y1="24" x2="38" y2="39" stroke="#0f766e" stroke-width="2.6" stroke-linecap="round"/>
 </svg>

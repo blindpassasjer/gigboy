@@ -1,15 +1,42 @@
 import { useSongs } from '../context/SongsContext';
 import { useSongLists } from '../context/SongListsContext';
+import { useSetlists } from '../context/SetlistsContext';
 import SongList from '../components/SongList';
+import SetlistsView from '../components/SetlistsView';
 import type { Song } from '../types';
 
 export default function HomePage() {
   const { songs, updateSong, deleteSong, moveSong } = useSongs();
   const { activeCategoryId, activeSongListId, categories, songLists, moveSongInList } = useSongLists();
+  const {
+    setlists,
+    activeSetlistId,
+    removeSongFromSetlist,
+    moveSongInSetlist,
+  } = useSetlists();
 
   const activeList = songLists.find((l) => l.id === activeSongListId) ?? null;
+  const activeSetlist = setlists.find((s) => s.id === activeSetlistId) ?? null;
   const activeCategory = categories.find((category) => category.id === activeCategoryId) ?? null;
   const songsById = new Map(songs.map((song) => [song.id, song]));
+  
+  // If viewing a setlist, show SetlistsView
+  if (activeSetlist) {
+    const setlistSongs = activeSetlist.songIds
+      .map((songId) => songsById.get(songId))
+      .filter((song): song is Song => Boolean(song));
+
+    return (
+      <SetlistsView
+        setlistId={activeSetlist.id}
+        setlistName={activeSetlist.name}
+        songs={setlistSongs}
+        onMoveSong={(songId, beforeSongId) => moveSongInSetlist(activeSetlist.id, songId, beforeSongId)}
+        onRemoveSong={(songId) => removeSongFromSetlist(activeSetlist.id, songId)}
+      />
+    );
+  }
+
   const activeCategorySongIds = activeCategory
     ? new Set(
         songLists

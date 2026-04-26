@@ -87,147 +87,153 @@ export default function SongView({ song }: Props) {
         </div>
 
         <div className="song-view-toolbar">
-          <div className="song-actions">
-            <button
-              className="song-action-btn"
-              onClick={() => navigate(`/songs/${song.id}/edit`)}
-            >
-              Edit
-            </button>
-            <button className="song-action-btn" onClick={handleRename}>
-              Rename
-            </button>
-            <button className="song-action-btn song-action-btn--danger" onClick={handleDelete}>
-              Delete
-            </button>
-            <button
-              className="song-action-btn"
-              onClick={() => window.print()}
-              title="Print / Save as PDF"
-            >
-              <Printer size={13} style={{ marginRight: '4px' }} /> Print
-            </button>
-          </div>
-
-          <div className="transpose-control">
-            <button
-              onClick={() => setTranspose((t) => t - 1)}
-              aria-label="Transpose down"
-              className="transpose-btn"
-            >
-              <ChevronDown size={16} />
-            </button>
-            <span className="transpose-label">
-              {song.key
-                ? transpose === 0
-                  ? `Key of ${song.key}`
-                  : `Key of ${transposeChord(song.key, transpose)}`
-                : transpose === 0
-                  ? 'Original key'
-                  : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
-            </span>
-            <button
-              onClick={() => setTranspose((t) => t + 1)}
-              aria-label="Transpose up"
-              className="transpose-btn"
-            >
-              <ChevronUp size={16} />
-            </button>
-            {transpose !== 0 && (
+          <div className="song-toolbar-row song-toolbar-row--controls">
+            <div className="transpose-control">
               <button
-                onClick={() => setTranspose(0)}
-                aria-label="Reset transpose"
-                className="transpose-btn transpose-btn--reset"
-                title="Reset to original key"
+                onClick={() => setTranspose((t) => t - 1)}
+                aria-label="Transpose down"
+                className="transpose-btn"
               >
-                <RotateCcw size={13} />
+                <ChevronDown size={16} />
               </button>
-            )}
-          </div>
-
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={showChords}
-              onChange={(e) => {
-                setShowChords(e.target.checked);
-                if (!e.target.checked) setActiveChord(null);
-              }}
-            />
-            Show chords
-          </label>
-
-          {showChords && (
-            <div className="instrument-toggle">
+              <span className="transpose-label">
+                {song.key
+                  ? transpose === 0
+                    ? `Key of ${song.key}`
+                    : `Key of ${transposeChord(song.key, transpose)}`
+                  : transpose === 0
+                    ? 'Original key'
+                    : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
+              </span>
               <button
-                className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
-                onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
+                onClick={() => setTranspose((t) => t + 1)}
+                aria-label="Transpose up"
+                className="transpose-btn"
               >
-                Guitar
+                <ChevronUp size={16} />
               </button>
-              <button
-                className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
-                onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
-              >
-                Piano
-              </button>
+              {transpose !== 0 && (
+                <button
+                  onClick={() => setTranspose(0)}
+                  aria-label="Reset transpose"
+                  className="transpose-btn transpose-btn--reset"
+                  title="Reset to original key"
+                >
+                  <RotateCcw size={13} />
+                </button>
+              )}
             </div>
-          )}
 
-          <div className="instrument-toggle">
-            <button
-              className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
-              onClick={() => setChordNotation('anglo')}
-            >
-              C D E
-            </button>
-            <button
-              className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
-              onClick={() => setChordNotation('spanish')}
-            >
-              Do Re Mi
-            </button>
-          </div>
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={showChords}
+                onChange={(e) => {
+                  setShowChords(e.target.checked);
+                  if (!e.target.checked) setActiveChord(null);
+                }}
+              />
+              Show chords
+            </label>
 
-          {song.capo !== undefined && song.capo > 0 && (
-            <span className="capo-badge">Capo {song.capo}</span>
-          )}
-          {song.tempo && <span className="meta-pill">♩ {song.tempo} bpm</span>}
-          {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
-
-          <div className="add-to-list-wrap" ref={menuRef}>
-            <button
-              className="rec-btn rec-btn--toggle"
-              onClick={() => setListMenuOpen((v) => !v)}
-              title="Add to song list"
-            >
-              <ListPlus size={15} /> Lists
-            </button>
-            {listMenuOpen && (
-              <div className="list-dropdown">
-                {songLists.length === 0 ? (
-                  <p className="list-dropdown-empty">No lists yet — create one in the sidebar</p>
-                ) : (
-                  songLists.map((list) => {
-                    const inList = list.songIds.includes(song.id);
-                    return (
-                      <button
-                        key={list.id}
-                        className={`list-dropdown-item${inList ? ' in-list' : ''}`}
-                        onClick={() => {
-                          inList
-                            ? removeSongFromList(list.id, song.id)
-                            : addSongToList(list.id, song.id);
-                        }}
-                      >
-                        {inList ? <Check size={13} /> : <Plus size={13} />}
-                        {list.name}
-                      </button>
-                    );
-                  })
-                )}
+            {showChords && (
+              <div className="instrument-toggle">
+                <button
+                  className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
+                >
+                  Guitar
+                </button>
+                <button
+                  className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
+                >
+                  Piano
+                </button>
               </div>
             )}
+
+            <div className="instrument-toggle">
+              <button
+                className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
+                onClick={() => setChordNotation('anglo')}
+              >
+                C D E
+              </button>
+              <button
+                className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
+                onClick={() => setChordNotation('spanish')}
+              >
+                Do Re Mi
+              </button>
+            </div>
+          </div>
+
+          <div className="song-toolbar-row song-toolbar-row--meta">
+            {song.capo !== undefined && song.capo > 0 && (
+              <span className="capo-badge">Capo {song.capo}</span>
+            )}
+            {song.tempo && <span className="meta-pill">♩ {song.tempo} bpm</span>}
+            {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
+
+            <div className="add-to-list-wrap" ref={menuRef}>
+              <button
+                className="rec-btn rec-btn--toggle"
+                onClick={() => setListMenuOpen((v) => !v)}
+                title="Add to song list"
+              >
+                <ListPlus size={15} /> Lists
+              </button>
+              {listMenuOpen && (
+                <div className="list-dropdown">
+                  {songLists.length === 0 ? (
+                    <p className="list-dropdown-empty">No lists yet — create one in the sidebar</p>
+                  ) : (
+                    songLists.map((list) => {
+                      const inList = list.songIds.includes(song.id);
+                      return (
+                        <button
+                          key={list.id}
+                          className={`list-dropdown-item${inList ? ' in-list' : ''}`}
+                          onClick={() => {
+                            inList
+                              ? removeSongFromList(list.id, song.id)
+                              : addSongToList(list.id, song.id);
+                          }}
+                        >
+                          {inList ? <Check size={13} /> : <Plus size={13} />}
+                          {list.name}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="song-toolbar-row song-toolbar-row--actions">
+            <div className="song-actions">
+              <button
+                className="song-action-btn"
+                onClick={() => navigate(`/songs/${song.id}/edit`)}
+              >
+                Edit
+              </button>
+              <button className="song-action-btn" onClick={handleRename}>
+                Rename
+              </button>
+              <button
+                className="song-action-btn"
+                onClick={() => window.print()}
+                title="Print / Save as PDF"
+              >
+                <Printer size={13} style={{ marginRight: '4px' }} /> Print
+              </button>
+              <button className="song-action-btn song-action-btn--danger" onClick={handleDelete}>
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       </div>

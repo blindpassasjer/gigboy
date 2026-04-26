@@ -70,12 +70,12 @@ export default function Layout({ children }: Props) {
           <PanelLeft size={20} />
         </button>
         <Link to="/" className="topbar-brand">
-          <Music size={22} />
-          <span>Songbook</span>
+          <BookOpen size={22} />
+          <span>Scorebook</span>
         </Link>
         <nav className="topbar-nav">
           <Link to="/" className={pathname === '/' ? 'active' : ''}>
-            <BookOpen size={16} /> <span>Songs</span>
+            <Music size={16} /> <span>Songs</span>
           </Link>
           <Link to="/add" className={pathname === '/add' ? 'active' : ''}>
             <Plus size={16} /> <span>Add Song</span>
@@ -97,7 +97,7 @@ export default function Layout({ children }: Props) {
       </header>
       {!authEnabled && authError && (
         <div className="app-notice" role="status">
-          Firebase is not configured in this deployment. Songbook is running in local-only mode.
+          Firebase is not configured in this deployment. Scorebook is running in local-only mode.
         </div>
       )}
       <div className={`app-body${isNarrowViewport ? ' app-body--narrow' : ''}`}>
@@ -113,7 +113,7 @@ export default function Layout({ children }: Props) {
         <main className="main-content">{children}</main>
       </div>
       <footer className="footer">
-        <p>Songbook — open source music chords &amp; lyrics</p>
+        <p>Scorebook - open source music chords &amp; lyrics</p>
       </footer>
     </div>
   );

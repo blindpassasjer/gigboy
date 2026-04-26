@@ -569,7 +569,19 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-direction: column;
   gap: .6rem;
-  align-items: flex-end;
+  align-items: stretch;
+  width: 100%;
+}
+
+.song-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex-wrap: wrap;
+}
+
+.song-toolbar-row--actions .song-actions {
+  justify-content: flex-start;
 }
 
 .transpose-control {
@@ -592,7 +604,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .transpose-btn:hover { background: var(--chord-bg); }
 .transpose-btn--reset { color: var(--muted); opacity: .7; }
 .transpose-btn--reset:hover { color: var(--danger); background: #fde8e8; opacity: 1; }
-.transpose-label { font-size: .82rem; color: var(--muted); min-width: 100px; text-align: center; }
+.transpose-label { font-size: .82rem; color: var(--muted); min-width: 125px; text-align: center; }
 
 .toggle-label {
   display: flex;
@@ -633,6 +645,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 .instrument-toggle-btn:hover { background: var(--chord-bg); color: var(--accent); }
 .instrument-toggle-btn--active { background: var(--accent); color: #fff; }
 .instrument-toggle-btn--active:hover { background: var(--accent-h); color: #fff; }
+
+@media (max-width: 900px) {
+  .song-view-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .song-view-toolbar {
+    margin-top: .35rem;
+  }
+}
 
 /* ─── Chord diagram popup ───────────────────────────────────────────────────── */
 .chord-diagram-popup {
@@ -1510,7 +1533,318 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 .sidebar-new-list-btn:hover { color: var(--accent); }
 
-/* Song list heading when a list is active */
+/* ─── Setlists section in sidebar ──────────────────────────────────────────── */
+.sidebar-setlists-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-setlists-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 .75rem;
+  margin-bottom: .5rem;
+}
+
+.sidebar-section-title {
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  margin: 0;
+}
+
+.sidebar-setlists {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  margin-bottom: .5rem;
+}
+
+.sidebar-setlist-item {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .4rem .6rem;
+  border-radius: 5px;
+  transition: background .12s;
+}
+.sidebar-setlist-item:hover { background: var(--bg); }
+.sidebar-setlist-item.active {
+  background: var(--chord-bg);
+  color: var(--accent);
+}
+.sidebar-setlist-item.song-drop-target {
+  background: var(--chord-bg);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.sidebar-setlist-item-btn {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex: 1;
+  padding: 0;
+  font-size: .88rem;
+  color: inherit;
+  text-align: left;
+}
+
+.sidebar-setlist-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-setlist-count {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-left: auto;
+  padding: 0 .3rem;
+  background: var(--border);
+  border-radius: 10px;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.sidebar-setlist-delete {
+  display: none;
+  color: var(--muted);
+  padding: 0;
+  opacity: .6;
+  transition: opacity .12s;
+}
+.sidebar-setlist-delete:hover { opacity: 1; color: var(--danger); }
+.sidebar-setlist-item:hover .sidebar-setlist-delete { display: block; }
+
+.sidebar-new-setlist-btn {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  width: 100%;
+  padding: .45rem .75rem;
+  font-size: .82rem;
+  color: var(--muted);
+  text-align: left;
+  transition: color .15s;
+}
+.sidebar-new-setlist-btn:hover { color: var(--accent); }
+.sidebar-new-setlist-btn--primary {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ─── Setlist view ──────────────────────────────────────────────────────────── */
+.setlist-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  background: var(--bg);
+}
+
+.setlist-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--chord-bg);
+  background: var(--surface);
+}
+
+.setlist-title-block {
+  flex: 1;
+}
+
+.setlist-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 .25rem;
+  cursor: pointer;
+  padding: .25rem .5rem;
+  border-radius: 4px;
+  transition: background .12s;
+}
+.setlist-title:hover { background: var(--chord-bg); }
+.setlist-title:active { opacity: .8; }
+
+.setlist-name-input {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: .25rem .5rem;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  background: var(--surface);
+  width: 100%;
+}
+
+.setlist-song-count {
+  font-size: .88rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.setlist-action-btn {
+  padding: .5rem 1rem;
+  background: var(--accent);
+  color: white;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: .85rem;
+  transition: background .12s;
+}
+.setlist-action-btn:hover { background: var(--accent-h); }
+
+.setlist-info {
+  padding: .75rem 1.5rem;
+  background: var(--chord-bg);
+  border-bottom: 1px solid var(--border);
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.setlist-hint {
+  margin: 0;
+  font-style: italic;
+}
+
+.setlist-songs {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.setlist-song-item {
+  padding: .5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  transition: background .12s;
+}
+.setlist-song-item.drop-before {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.setlist-song-card {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .5rem;
+  border-radius: 5px;
+  background: var(--surface);
+  transition: background .12s;
+}
+.setlist-song-item:hover .setlist-song-card {
+  background: var(--bg);
+}
+
+.setlist-drag-handle {
+  flex-shrink: 0;
+  padding: .25rem;
+  color: var(--muted);
+  opacity: 0.4;
+  transition: opacity .12s;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.setlist-drag-handle:active { cursor: grabbing; }
+.setlist-song-card:hover .setlist-drag-handle { opacity: 0.8; }
+
+.setlist-song-position {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--chord-bg);
+  border-radius: 50%;
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.setlist-song-link {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.setlist-song-info {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
+}
+
+.setlist-song-title {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setlist-song-artist {
+  font-size: .85rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setlist-song-meta {
+  display: flex;
+  gap: .5rem;
+  font-size: .75rem;
+  flex-wrap: wrap;
+}
+
+.setlist-remove-btn {
+  flex-shrink: 0;
+  padding: .4rem;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity .12s;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.setlist-remove-btn:hover {
+  opacity: 1;
+  color: var(--danger);
+  background: var(--chord-bg);
+}
+.setlist-song-item:hover .setlist-remove-btn {
+  opacity: 1;
+}
+
+.setlist-drop-zone {
+  min-height: 2px;
+  padding: .5rem 0;
+  transition: all .12s;
+}
+.setlist-drop-zone.active {
+  min-height: 24px;
+  background: var(--chord-bg);
+  box-shadow: inset 0 0 0 2px var(--accent);
+  border-radius: 4px;
+}
+
+/* ─── Song list heading when a list is active ──────────────────────────────── */
 .song-list-heading {
   font-size: 1.1rem;
   font-weight: 700;
