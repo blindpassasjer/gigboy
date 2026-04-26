@@ -56,11 +56,24 @@ function LineRenderer({
       return <p className="song-subtitle-directive">{line.directiveValue}</p>;
     if (dir === 'chorus' || dir === 'start_of_chorus')
       return <div className="section-label">Chorus</div>;
+    if (dir === 'intro' || dir === 'start_of_intro')
+      return <div className="section-label">Intro</div>;
     if (dir === 'verse' || dir === 'start_of_verse')
       return <div className="section-label">Verse</div>;
     if (dir === 'bridge' || dir === 'start_of_bridge')
       return <div className="section-label">Bridge</div>;
-    if (dir === 'end_of_chorus' || dir === 'end_of_verse' || dir === 'end_of_bridge')
+    if (dir === 'interlude' || dir === 'start_of_interlude')
+      return <div className="section-label">Interlude</div>;
+    if (dir === 'outro' || dir === 'start_of_outro')
+      return <div className="section-label">Outro</div>;
+    if (
+      dir === 'end_of_chorus' ||
+      dir === 'end_of_intro' ||
+      dir === 'end_of_interlude' ||
+      dir === 'end_of_outro' ||
+      dir === 'end_of_verse' ||
+      dir === 'end_of_bridge'
+    )
       return null;
     if (line.directiveValue) return <div className="section-label">{line.directiveValue}</div>;
     return null;

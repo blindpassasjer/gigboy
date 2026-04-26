@@ -201,6 +201,51 @@ input, select, textarea { font: inherit; }
 /* ─── Song List ─────────────────────────────────────────────────────────────── */
 .song-list-page { display: flex; flex-direction: column; gap: 1rem; }
 
+.song-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.song-list-heading {
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.song-list-summary {
+  margin-top: .25rem;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .3rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.view-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .45rem .75rem;
+  border-radius: 999px;
+  color: var(--muted);
+  transition: background .15s, color .15s;
+}
+
+.view-toggle-btn.active {
+  background: var(--chord-bg);
+  color: var(--accent);
+}
+
 .song-list-controls {
   display: flex;
   gap: .75rem;
@@ -257,6 +302,10 @@ input, select, textarea { font: inherit; }
   box-shadow: var(--shadow);
   transition: border-color .15s, box-shadow .15s;
 }
+.song-card[draggable="true"],
+.song-preview-card[draggable="true"] {
+  cursor: grab;
+}
 .song-card:hover {
   border-color: var(--accent);
   box-shadow: 0 2px 8px rgba(92,79,166,.15);
@@ -278,11 +327,69 @@ input, select, textarea { font: inherit; }
 .song-card-artist { font-size: .85rem; color: var(--muted); }
 .song-card-meta { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
 
+.song-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.song-preview-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 240px;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow);
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+
+.song-preview-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(92,79,166,.14);
+}
+
+.song-preview-card-link {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+  min-height: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.song-preview-card-link:hover { text-decoration: none; }
+
+.song-preview-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.song-preview-text {
+  color: var(--muted);
+  font-size: .92rem;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .song-actions {
   display: flex;
   align-items: center;
   gap: .35rem;
   flex-wrap: wrap;
+}
+
+.song-actions--stacked {
+  padding-top: .25rem;
+  border-top: 1px solid var(--border);
 }
 
 .song-action-btn {
@@ -851,12 +958,18 @@ input, select, textarea { font: inherit; }
 .toolbar-btn--chord:hover { background: var(--accent-h); }
 .toolbar-btn--chord:disabled { opacity: .4; cursor: default; }
 
+.section-intro      { border-color: #f5d8b2; background: #fff5e8; color: #aa5b14; }
+.section-intro:hover      { background: #aa5b14; border-color: #aa5b14; color: #fff; }
 .section-chorus     { border-color: #c8ecd4; background: #edfaf2; color: #2e7d52; }
 .section-chorus:hover     { background: #2e7d52; border-color: #2e7d52; color: #fff; }
 .section-bridge     { border-color: #f8d9c0; background: #fef3ea; color: #b35a1a; }
 .section-bridge:hover     { background: #b35a1a; border-color: #b35a1a; color: #fff; }
 .section-prechorus  { border-color: #d0e8f8; background: #eaf5fd; color: #1a6090; }
 .section-prechorus:hover  { background: #1a6090; border-color: #1a6090; color: #fff; }
+.section-interlude  { border-color: #d7d3fb; background: #f2f0ff; color: #5b4db2; }
+.section-interlude:hover  { background: #5b4db2; border-color: #5b4db2; color: #fff; }
+.section-outro      { border-color: #f6cfd8; background: #fff0f4; color: #b34763; }
+.section-outro:hover      { background: #b34763; border-color: #b34763; color: #fff; }
 
 .toolbar-chord-input-wrap {
   display: flex;
@@ -1064,6 +1177,11 @@ input, select, textarea { font: inherit; }
   overflow: hidden;
 }
 .sidebar-folder-toggle:hover { color: var(--accent); }
+.sidebar-folder-toggle.active {
+  color: var(--accent);
+  background: var(--chord-bg);
+  border-radius: 5px;
+}
 
 .sidebar-folder-name {
   overflow: hidden;
@@ -1112,6 +1230,11 @@ input, select, textarea { font: inherit; }
 .sidebar-list-item.dragging {
   opacity: .45;
   cursor: grabbing;
+}
+.sidebar-list-item.song-drop-target .sidebar-list-item-btn {
+  background: var(--chord-bg);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 .sidebar-list-item.drop-before {
   border-top: 2px solid var(--accent);
@@ -1252,6 +1375,15 @@ input, select, textarea { font: inherit; }
 @media (max-width: 600px) {
   .song-view-header { flex-direction: column; }
   .song-view-toolbar { align-items: flex-start; }
+  .song-list-header { align-items: stretch; }
+  .view-toggle {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .view-toggle-btn {
+    flex: 1;
+    justify-content: center;
+  }
   .topbar { padding: 0 1rem; }
   .chord-display { padding: .75rem; font-size: .88rem; }
   .song-view-title { font-size: 1.3rem; }
