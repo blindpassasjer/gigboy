@@ -265,6 +265,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   top: 0;
   z-index: 10;
   background: var(--bg);
+  margin-top: -1.5rem;
+  padding-top: 1.5rem;
   padding-bottom: .75rem;
   display: flex;
   flex-direction: column;
