@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import type { Setlist } from '../types';
-import { db, firebaseEnabled } from '../lib/firebase';
+import { db } from '../lib/firebase';
 
 const KEY_SETLISTS = 'songbook-setlists';
 const KEY_ACTIVE_SETLIST = 'songbook-active-setlist';
@@ -87,7 +87,7 @@ const SetlistsContext = createContext<SetlistsContextValue | null>(null);
 
 export function SetlistsProvider({ children }: { children: ReactNode }) {
   const [setlists, setSetlists] = useState<Setlist[]>(() =>
-    firebaseEnabled ? [] : normalizeSetlists(readLocal(KEY_SETLISTS, []))
+    normalizeSetlists(readLocal(KEY_SETLISTS, []))
   );
   const [activeSetlistId, setActiveSetlistId] = useState<string | null>(() =>
     readLocal(KEY_ACTIVE_SETLIST, null)
@@ -102,13 +102,13 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       .then((snapshot) => {
         setSetlists(normalizeSetlists(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }) as Setlist)));
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.error('Failed to load setlists from Firestore. Falling back to local data.', error);
+      });
   }, []);
 
   useEffect(() => {
-    if (!firebaseEnabled) {
-      writeLocal(KEY_SETLISTS, setlists);
-    }
+    writeLocal(KEY_SETLISTS, setlists);
   }, [setlists]);
 
   useEffect(() => {

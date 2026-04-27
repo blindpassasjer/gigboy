@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import type { SongList, SongListCategory } from '../types';
-import { db, firebaseEnabled } from '../lib/firebase';
+import { db } from '../lib/firebase';
 
 const KEY_FOLDERS = 'folio-folders';
 const KEY_LISTS = 'folio-song-lists';
@@ -98,6 +98,16 @@ function moveSongId(songIds: string[], songId: string, beforeSongId: string | nu
   return nextSongIds;
 }
 
+function findLastIndexByFolderId(songLists: SongList[], folderId: string | undefined) {
+  for (let index = songLists.length - 1; index >= 0; index -= 1) {
+    if (songLists[index]?.folderId === folderId) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
 interface SongListsContextValue {
   categories: SongListCategory[];
   songLists: SongList[];
@@ -122,10 +132,10 @@ const SONGLISTS_CATEGORY_ID = 'songlists-default';
 
 export function SongListsProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<SongListCategory[]>(() =>
-    firebaseEnabled ? [] : ensureSongListsCategory(readLocal<SongListCategory[]>(KEY_FOLDERS, []))
+    ensureSongListsCategory(readLocal<SongListCategory[]>(KEY_FOLDERS, []))
   );
   const [songLists, setSongLists] = useState<SongList[]>(() =>
-    firebaseEnabled ? [] : normalizeSongLists(readLocal<SongList[]>(KEY_LISTS, []))
+    normalizeSongLists(readLocal<SongList[]>(KEY_LISTS, []))
   );
   const [activeCategoryId, setActiveCategoryState] = useState<string | null>(null);
   const [activeSongListId, setActiveSongListId] = useState<string | null>(null);
@@ -153,14 +163,14 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
           if (defaultCat) void writeCategory(defaultCat);
         }
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.error('Failed to load song lists from Firestore. Falling back to local data.', error);
+      });
   }, []);
 
   useEffect(() => {
-    if (!firebaseEnabled) {
-      writeLocal(KEY_FOLDERS, categories);
-      writeLocal(KEY_LISTS, songLists);
-    }
+    writeLocal(KEY_FOLDERS, categories);
+    writeLocal(KEY_LISTS, songLists);
   }, [categories, songLists]);
 
   const addCategory = useCallback((name: string) => {
@@ -328,7 +338,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
             : [...withoutMoving, moved]
         );
       } else {
-        const targetIndex = withoutMoving.findLastIndex((l) => l.folderId === targetCategoryId);
+        const targetIndex = findLastIndexByFolderId(withoutMoving, targetCategoryId);
         nextLists = normalizeSongLists(
           targetIndex >= 0
             ? [...withoutMoving.slice(0, targetIndex + 1), moved, ...withoutMoving.slice(targetIndex + 1)]
