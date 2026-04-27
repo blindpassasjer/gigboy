@@ -25,5 +25,15 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
     }
+
+    // Legacy storage path for older Folio versions
+    match /songs/{songId} {
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.uid == request.auth.uid ||
+        resource.data.createdBy == request.auth.uid
+      );
+    }
   }
 }

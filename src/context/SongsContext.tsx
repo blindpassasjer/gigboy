@@ -4,9 +4,12 @@ import {
   collection,
   doc,
   getDocs,
+  query,
   setDoc,
   deleteDoc,
+  where,
 } from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
 import type { Song } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
 import { useAuth } from './AuthContext';
@@ -87,6 +90,61 @@ interface SongsContextValue {
 const SongsContext = createContext<SongsContextValue | null>(null);
 const SONGS_COLLECTION = 'songs';
 
+function songFromDoc(id: string, data: Record<string, unknown>): Song {
+  return { id, ...(data as Omit<Song, 'id'>) };
+}
+
+function mergeSongsById(songs: Song[]) {
+  const byId = new Map<string, Song>();
+  songs.forEach((song) => {
+    byId.set(song.id, song);
+  });
+  return [...byId.values()];
+}
+
+function isPermissionDeniedError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  return (error as { code?: unknown }).code === 'permission-denied';
+}
+
+async function loadLegacySongs(db: Firestore, userId: string) {
+  const legacyOwnerFields = ['userId', 'ownerId', 'uid', 'createdBy'] as const;
+  const legacySongs: Song[] = [];
+
+  await Promise.all(
+    legacyOwnerFields.map(async (fieldName) => {
+      try {
+        const snapshot = await getDocs(
+          query(collection(db, SONGS_COLLECTION), where(fieldName, '==', userId))
+        );
+        snapshot.docs.forEach((entry) => {
+          legacySongs.push(songFromDoc(entry.id, entry.data() as Record<string, unknown>));
+        });
+      } catch (error) {
+        if (!isPermissionDeniedError(error)) {
+          console.warn(`Legacy songs lookup failed for field ${fieldName}.`, error);
+        }
+      }
+    })
+  );
+
+  return mergeSongsById(legacySongs);
+}
+
+async function migrateLegacySongsToUserPath(db: Firestore, userId: string, songs: Song[]) {
+  if (songs.length === 0) return;
+
+  await Promise.all(
+    songs.map((song) => {
+      const { id, ...rest } = song;
+      const firestoreData = Object.fromEntries(
+        Object.entries(rest).filter(([, value]) => value !== undefined)
+      );
+      return setDoc(doc(db, ...songsCollectionPath(userId), id), firestoreData);
+    })
+  );
+}
+
 function songsCollectionPath(userId: string) {
   return ['users', userId, SONGS_COLLECTION] as const;
 }
@@ -103,9 +161,29 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    getDocs(collection(db, ...songsCollectionPath(userId)))
-      .then((snap) => {
-        setUserSongs(normalizeSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song)));
+    const firestore = db;
+
+    getDocs(collection(firestore, ...songsCollectionPath(userId)))
+      .then(async (snap) => {
+        const directSongs = normalizeSongs(
+          snap.docs.map((entry) => songFromDoc(entry.id, entry.data() as Record<string, unknown>))
+        );
+
+        if (directSongs.length > 0) {
+          setUserSongs(directSongs);
+          return;
+        }
+
+        const legacySongs = normalizeSongs(await loadLegacySongs(firestore, userId));
+        if (legacySongs.length === 0) {
+          setUserSongs([]);
+          return;
+        }
+
+        setUserSongs(legacySongs);
+        void migrateLegacySongsToUserPath(firestore, userId, legacySongs).catch((error) => {
+          console.warn('Loaded legacy songs but failed to migrate them into users/{uid}/songs.', error);
+        });
       })
       .catch((error) => {
         console.error('Failed to load songs from Firestore. Falling back to local data.', error);
