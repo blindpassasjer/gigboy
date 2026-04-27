@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Music, BookOpen, Plus, LogOut, PanelLeft, Sun, Moon, Maximize2, Minimize2 } from 'lucide-react';
+import { Music, BookOpen, Plus, LogOut, Menu, Sun, Moon, Maximize2, Minimize2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
@@ -98,7 +98,7 @@ export default function Layout({ children }: Props) {
           title="Toggle sidebar"
           aria-pressed={sidebarOpen}
         >
-          <PanelLeft size={20} />
+          <Menu size={20} />
         </button>
         <Link to="/" className="topbar-brand">
           <BookOpen size={22} />
