@@ -116,8 +116,9 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
   }, [activeSetlistId]);
 
   const addSetlist = useCallback((name: string) => {
+    const id = crypto.randomUUID();
     const nextSetlist: Setlist = {
-      id: crypto.randomUUID(),
+      id,
       name,
       songIds: [],
       createdAt: new Date().toISOString(),
@@ -125,160 +126,105 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     };
 
     setSetlists((prev) => {
-      const nextSetlists = normalizeSetlists([
-        ...prev,
-        nextSetlist,
-      ]);
-      const createdSetlist = nextSetlists.find((setlist) => setlist.id === nextSetlist.id);
-
-      if (db && createdSetlist) {
-        void writeSetlist(createdSetlist).catch(() => {
-          setSetlists((rollback) => rollback.filter((setlist) => setlist.id !== nextSetlist.id));
+      const nextSetlists = normalizeSetlists([...prev, nextSetlist]);
+      if (db) {
+        const changed = nextSetlists.filter((list) => {
+          const p = prev.find((item) => item.id === list.id);
+          return !p || p.sortOrder !== list.sortOrder;
         });
+        Promise.all(changed.map((list) => writeSetlist(list))).catch(() => setSetlists(prev));
       }
-
       return nextSetlists;
     });
   }, []);
 
   const deleteSetlist = useCallback((id: string) => {
-    let previousSetlists: Setlist[] = [];
-    let nextSetlists: Setlist[] = [];
-
     setSetlists((prev) => {
-      previousSetlists = prev;
-      nextSetlists = normalizeSetlists(prev.filter((setlist) => setlist.id !== id));
+      const nextSetlists = normalizeSetlists(prev.filter((list) => list.id !== id));
+      if (db) {
+        const changed = nextSetlists.filter((list) => {
+          const p = prev.find((item) => item.id === list.id);
+          return p && p.sortOrder !== list.sortOrder;
+        });
+
+        Promise.all([
+          deleteDoc(doc(db, SETLISTS_COLLECTION, id)),
+          ...changed.map((list) => writeSetlist(list)),
+        ]).catch(() => setSetlists(prev));
+      }
       return nextSetlists;
     });
     setActiveSetlistId((prev) => (prev === id ? null : prev));
-
-    if (!db) {
-      return;
-    }
-
-    const changedSetlists = nextSetlists.filter((setlist, index) => {
-      const previousSetlist = previousSetlists[index];
-      return previousSetlist?.id !== setlist.id || previousSetlist?.sortOrder !== setlist.sortOrder;
-    });
-
-    Promise.all([
-      deleteDoc(doc(db, SETLISTS_COLLECTION, id)),
-      ...changedSetlists.map((setlist) => writeSetlist(setlist)),
-    ]).catch(() => {
-      setSetlists(previousSetlists);
-    });
   }, []);
 
   const renameSetlist = useCallback((id: string, name: string) => {
-    let previousSetlist: Setlist | undefined;
-    let nextSetlist: Setlist | undefined;
+    setSetlists((prev) => {
+      const setlist = prev.find((l) => l.id === id);
+      if (!setlist) return prev;
 
-    setSetlists((prev) =>
-      prev.map((setlist) => {
-        if (setlist.id !== id) {
-          return setlist;
-        }
+      const nextSetlist = { ...setlist, name, updatedAt: new Date().toISOString() };
+      const nextSetlists = prev.map((l) => (l.id === id ? nextSetlist : l));
 
-        previousSetlist = setlist;
-        nextSetlist = { ...setlist, name, updatedAt: new Date().toISOString() };
-        return nextSetlist;
-      })
-    );
-
-    if (!db || !previousSetlist || !nextSetlist) {
-      return;
-    }
-
-    void writeSetlist(nextSetlist).catch(() => {
-      setSetlists((prev) => prev.map((setlist) => (setlist.id === id ? previousSetlist as Setlist : setlist)));
+      if (db) {
+        void writeSetlist(nextSetlist).catch(() => setSetlists(prev));
+      }
+      return nextSetlists;
     });
   }, []);
 
   const addSongToSetlist = useCallback((setlistId: string, songId: string) => {
-    let previousSetlist: Setlist | undefined;
-    let nextSetlist: Setlist | undefined;
+    setSetlists((prev) => {
+      const setlist = prev.find((l) => l.id === setlistId);
+      if (!setlist || setlist.songIds.includes(songId)) return prev;
 
-    setSetlists((prev) =>
-      prev.map((setlist) => {
-        if (setlist.id !== setlistId || setlist.songIds.includes(songId)) {
-          return setlist;
-        }
+      const nextSetlist = {
+        ...setlist,
+        songIds: [...setlist.songIds, songId],
+        updatedAt: new Date().toISOString(),
+      };
+      const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
 
-        previousSetlist = setlist;
-        nextSetlist = {
-          ...setlist,
-          songIds: [...setlist.songIds, songId],
-          updatedAt: new Date().toISOString(),
-        };
-        return nextSetlist;
-      })
-    );
-
-    if (!db || !previousSetlist || !nextSetlist) {
-      return;
-    }
-
-    void writeSetlist(nextSetlist).catch(() => {
-      setSetlists((prev) => prev.map((setlist) => (setlist.id === setlistId ? previousSetlist as Setlist : setlist)));
+      if (db) {
+        void writeSetlist(nextSetlist).catch(() => setSetlists(prev));
+      }
+      return nextSetlists;
     });
   }, []);
 
   const removeSongFromSetlist = useCallback((setlistId: string, songId: string) => {
-    let previousSetlist: Setlist | undefined;
-    let nextSetlist: Setlist | undefined;
+    setSetlists((prev) => {
+      const setlist = prev.find((l) => l.id === setlistId);
+      if (!setlist) return prev;
 
-    setSetlists((prev) =>
-      prev.map((setlist) => {
-        if (setlist.id !== setlistId) {
-          return setlist;
-        }
+      const nextSetlist = {
+        ...setlist,
+        songIds: setlist.songIds.filter((id) => id !== songId),
+        updatedAt: new Date().toISOString(),
+      };
+      const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
 
-        previousSetlist = setlist;
-        nextSetlist = {
-          ...setlist,
-          songIds: setlist.songIds.filter((id) => id !== songId),
-          updatedAt: new Date().toISOString(),
-        };
-        return nextSetlist;
-      })
-    );
-
-    if (!db || !previousSetlist || !nextSetlist) {
-      return;
-    }
-
-    void writeSetlist(nextSetlist).catch(() => {
-      setSetlists((prev) => prev.map((setlist) => (setlist.id === setlistId ? previousSetlist as Setlist : setlist)));
+      if (db) {
+        void writeSetlist(nextSetlist).catch(() => setSetlists(prev));
+      }
+      return nextSetlists;
     });
   }, []);
 
   const moveSongInSetlist = useCallback((setlistId: string, songId: string, beforeSongId: string | null) => {
-    let previousSetlist: Setlist | undefined;
-    let nextSetlist: Setlist | undefined;
+    setSetlists((prev) => {
+      const setlist = prev.find((l) => l.id === setlistId);
+      if (!setlist) return prev;
 
-    setSetlists((prev) =>
-      prev.map((setlist) => {
-        if (setlist.id !== setlistId) {
-          return setlist;
-        }
+      const nextSongIds = moveSongId(setlist.songIds, songId, beforeSongId);
+      if (nextSongIds === setlist.songIds) return prev;
 
-        const nextSongIds = moveSongId(setlist.songIds, songId, beforeSongId);
-        if (nextSongIds === setlist.songIds) {
-          return setlist;
-        }
+      const nextSetlist = { ...setlist, songIds: nextSongIds, updatedAt: new Date().toISOString() };
+      const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
 
-        previousSetlist = setlist;
-        nextSetlist = { ...setlist, songIds: nextSongIds, updatedAt: new Date().toISOString() };
-        return nextSetlist;
-      })
-    );
-
-    if (!db || !previousSetlist || !nextSetlist) {
-      return;
-    }
-
-    void writeSetlist(nextSetlist).catch(() => {
-      setSetlists((prev) => prev.map((setlist) => (setlist.id === setlistId ? previousSetlist as Setlist : setlist)));
+      if (db) {
+        void writeSetlist(nextSetlist).catch(() => setSetlists(prev));
+      }
+      return nextSetlists;
     });
   }, []);
 

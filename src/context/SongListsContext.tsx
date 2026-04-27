@@ -166,88 +166,87 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
   const addCategory = useCallback((name: string) => {
     const id = crypto.randomUUID();
     const nextCategory: SongListCategory = { id, name };
-    const nextCategories = withSequentialSortOrder([...categories, nextCategory]);
 
-    setCategories(nextCategories);
-
-    if (db) {
-      const savedCategory = nextCategories.find(c => c.id === id);
-      if (savedCategory) {
-        void writeCategory(savedCategory).catch(() => {
-          setCategories(categories);
-        });
+    setCategories((prev) => {
+      const nextCategories = withSequentialSortOrder([...prev, nextCategory]);
+      if (db) {
+        const saved = nextCategories.find(c => c.id === id);
+        if (saved) void writeCategory(saved).catch(() => setCategories(prev));
       }
-    }
-  }, [categories]);
+      return nextCategories;
+    });
+  }, []);
 
   const deleteCategory = useCallback((id: string) => {
     if (id === SONGLISTS_CATEGORY_ID) return;
 
-    const nextCategories = withSequentialSortOrder(categories.filter((c) => c.id !== id));
-    const nextLists = normalizeSongLists(
-      songLists.map((list) => (list.folderId === id ? { ...list, folderId: undefined } : list))
-    );
+    setCategories((prevCategories) => {
+      const nextCategories = withSequentialSortOrder(prevCategories.filter((c) => c.id !== id));
+      
+      setSongLists((prevLists) => {
+        const nextLists = normalizeSongLists(
+          prevLists.map((list) => (list.folderId === id ? { ...list, folderId: undefined } : list))
+        );
 
-    setCategories(nextCategories);
-    setSongLists(nextLists);
-    if (activeCategoryId === id) setActiveCategoryState(null);
+        if (db) {
+          const changedLists = nextLists.filter((list) => {
+            const prev = prevLists.find((p) => p.id === list.id);
+            return prev && (prev.folderId !== list.folderId || prev.sortOrder !== list.sortOrder);
+          });
 
-    if (db) {
-      const changedLists = nextLists.filter((list) => {
-        const prev = songLists.find((p) => p.id === list.id);
-        return prev && (prev.folderId !== list.folderId || prev.sortOrder !== list.sortOrder);
+          Promise.all([
+            deleteDoc(doc(db, CATEGORIES_COLLECTION, id)),
+            ...nextCategories.map((cat) => writeCategory(cat)),
+            ...changedLists.map((list) => writeSongList(list)),
+          ]).catch(() => {
+            setCategories(prevCategories);
+            setSongLists(prevLists);
+          });
+        }
+        return nextLists;
       });
 
-    Promise.all([
-      deleteDoc(doc(db, CATEGORIES_COLLECTION, id)),
-      ...nextCategories.map((cat) => writeCategory(cat)),
-      ...changedLists.map((list) => writeSongList(list)),
-    ]).catch(() => {
-        setCategories(categories);
-        setSongLists(songLists);
-      });
-    }
-  }, [categories, songLists, activeCategoryId]);
+      return nextCategories;
+    });
+    
+    setActiveCategoryState((prev) => (prev === id ? null : prev));
+  }, []);
 
   const addSongList = useCallback((name: string, folderId?: string) => {
     const id = crypto.randomUUID();
     const nextSongList: SongList = { id, name, songIds: [], folderId };
-    const nextLists = normalizeSongLists([...songLists, nextSongList]);
 
-    setSongLists(nextLists);
-
-    if (db) {
-      const changed = nextLists.filter((list) => {
-        const prev = songLists.find((p) => p.id === list.id);
-        return !prev || prev.sortOrder !== list.sortOrder;
-      });
-
-      Promise.all(changed.map((list) => writeSongList(list))).catch(() => {
-        setSongLists(songLists);
-      });
-    }
-  }, [songLists]);
+    setSongLists((prev) => {
+      const nextLists = normalizeSongLists([...prev, nextSongList]);
+      if (db) {
+        const changed = nextLists.filter((list) => {
+          const p = prev.find((item) => item.id === list.id);
+          return !p || p.sortOrder !== list.sortOrder;
+        });
+        Promise.all(changed.map((list) => writeSongList(list))).catch(() => setSongLists(prev));
+      }
+      return nextLists;
+    });
+  }, []);
 
   const deleteSongList = useCallback((id: string) => {
-    const nextLists = normalizeSongLists(songLists.filter((list) => list.id !== id));
+    setSongLists((prev) => {
+      const nextLists = normalizeSongLists(prev.filter((list) => list.id !== id));
+      if (db) {
+        const changed = nextLists.filter((list) => {
+          const p = prev.find((item) => item.id === list.id);
+          return p && p.sortOrder !== list.sortOrder;
+        });
 
-    setSongLists(nextLists);
-    if (activeSongListId === id) setActiveSongListId(null);
-
-    if (db) {
-      const changed = nextLists.filter((list) => {
-        const prev = songLists.find((p) => p.id === list.id);
-        return prev && prev.sortOrder !== list.sortOrder;
-      });
-
-    Promise.all([
-      deleteDoc(doc(db, LISTS_COLLECTION, id)),
-      ...changed.map((list) => writeSongList(list)),
-    ]).catch(() => {
-        setSongLists(songLists);
-      });
-    }
-  }, [songLists, activeSongListId]);
+        Promise.all([
+          deleteDoc(doc(db, LISTS_COLLECTION, id)),
+          ...changed.map((list) => writeSongList(list)),
+        ]).catch(() => setSongLists(prev));
+      }
+      return nextLists;
+    });
+    setActiveSongListId((prev) => (prev === id ? null : prev));
+  }, []);
 
   const setActiveCategoryId = useCallback((id: string | null) => {
     setActiveCategoryState(id);
@@ -265,93 +264,88 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addSongToList = useCallback((listId: string, songId: string) => {
-    const list = songLists.find((l) => l.id === listId);
-    if (!list || list.songIds.includes(songId)) return;
+    setSongLists((prev) => {
+      const list = prev.find((l) => l.id === listId);
+      if (!list || list.songIds.includes(songId)) return prev;
 
-    const nextList = { ...list, songIds: [...list.songIds, songId] };
-    const nextLists = songLists.map((l) => (l.id === listId ? nextList : l));
+      const nextList = { ...list, songIds: [...list.songIds, songId] };
+      const nextLists = prev.map((l) => (l.id === listId ? nextList : l));
 
-    setSongLists(nextLists);
-
-    if (db) {
-    void writeSongList(nextList).catch(() => {
-        setSongLists(songLists);
-      });
-    }
-  }, [songLists]);
+      if (db) {
+        void writeSongList(nextList).catch(() => setSongLists(prev));
+      }
+      return nextLists;
+    });
+  }, []);
 
   const removeSongFromList = useCallback((listId: string, songId: string) => {
-    const list = songLists.find((l) => l.id === listId);
-    if (!list) return;
+    setSongLists((prev) => {
+      const list = prev.find((l) => l.id === listId);
+      if (!list) return prev;
 
-    const nextList = { ...list, songIds: list.songIds.filter((id) => id !== songId) };
-    const nextLists = songLists.map((l) => (l.id === listId ? nextList : l));
+      const nextList = { ...list, songIds: list.songIds.filter((id) => id !== songId) };
+      const nextLists = prev.map((l) => (l.id === listId ? nextList : l));
 
-    setSongLists(nextLists);
-
-    if (db) {
-    void writeSongList(nextList).catch(() => {
-        setSongLists(songLists);
-      });
-    }
-  }, [songLists]);
+      if (db) {
+        void writeSongList(nextList).catch(() => setSongLists(prev));
+      }
+      return nextLists;
+    });
+  }, []);
 
   const moveSongInList = useCallback((listId: string, songId: string, beforeSongId: string | null) => {
-    const list = songLists.find((l) => l.id === listId);
-    if (!list) return;
+    setSongLists((prev) => {
+      const list = prev.find((l) => l.id === listId);
+      if (!list) return prev;
 
-    const nextSongIds = moveSongId(list.songIds, songId, beforeSongId);
-    if (nextSongIds === list.songIds) return;
+      const nextSongIds = moveSongId(list.songIds, songId, beforeSongId);
+      if (nextSongIds === list.songIds) return prev;
 
-    const nextList = { ...list, songIds: nextSongIds };
-    const nextLists = songLists.map((l) => (l.id === listId ? nextList : l));
+      const nextList = { ...list, songIds: nextSongIds };
+      const nextLists = prev.map((l) => (l.id === listId ? nextList : l));
 
-    setSongLists(nextLists);
-
-    if (db) {
-    void writeSongList(nextList).catch(() => {
-        setSongLists(songLists);
-      });
-    }
-  }, [songLists]);
+      if (db) {
+        void writeSongList(nextList).catch(() => setSongLists(prev));
+      }
+      return nextLists;
+    });
+  }, []);
 
   const moveSongList = useCallback((listId: string, targetCategoryId?: string, beforeListId?: string | null) => {
-    const moving = songLists.find((l) => l.id === listId);
-    if (!moving) return;
+    setSongLists((prev) => {
+      const moving = prev.find((l) => l.id === listId);
+      if (!moving) return prev;
 
-    const withoutMoving = songLists.filter((l) => l.id !== listId);
-    const moved: SongList = { ...moving, folderId: targetCategoryId };
+      const withoutMoving = prev.filter((l) => l.id !== listId);
+      const moved: SongList = { ...moving, folderId: targetCategoryId };
 
-    let nextLists: SongList[];
-    if (beforeListId) {
+      let nextLists: SongList[];
+      if (beforeListId) {
         const beforeIndex = withoutMoving.findIndex((l) => l.id === beforeListId);
-      nextLists = normalizeSongLists(
-        beforeIndex >= 0
-          ? [...withoutMoving.slice(0, beforeIndex), moved, ...withoutMoving.slice(beforeIndex)]
-          : [...withoutMoving, moved]
-      );
-    } else {
-      const targetIndex = withoutMoving.findLastIndex((l) => l.folderId === targetCategoryId);
-      nextLists = normalizeSongLists(
-        targetIndex >= 0
-          ? [...withoutMoving.slice(0, targetIndex + 1), moved, ...withoutMoving.slice(targetIndex + 1)]
-          : [...withoutMoving, moved]
-      );
-    }
+        nextLists = normalizeSongLists(
+          beforeIndex >= 0
+            ? [...withoutMoving.slice(0, beforeIndex), moved, ...withoutMoving.slice(beforeIndex)]
+            : [...withoutMoving, moved]
+        );
+      } else {
+        const targetIndex = withoutMoving.findLastIndex((l) => l.folderId === targetCategoryId);
+        nextLists = normalizeSongLists(
+          targetIndex >= 0
+            ? [...withoutMoving.slice(0, targetIndex + 1), moved, ...withoutMoving.slice(targetIndex + 1)]
+            : [...withoutMoving, moved]
+        );
+      }
 
-    setSongLists(nextLists);
-
-    if (db) {
-      const changed = nextLists.filter((list) => {
-        const prev = songLists.find((p) => p.id === list.id);
-        return !prev || prev.sortOrder !== list.sortOrder || prev.folderId !== list.folderId;
-      });
-
-      Promise.all(changed.map((list) => writeSongList(list))).catch(() => {
-        setSongLists(songLists);
-      });
-    }
-  }, [songLists]);
+      if (db) {
+        const changed = nextLists.filter((list) => {
+          const p = prev.find((item) => item.id === list.id);
+          return !p || p.sortOrder !== list.sortOrder || p.folderId !== list.folderId;
+        });
+        Promise.all(changed.map((list) => writeSongList(list))).catch(() => setSongLists(prev));
+      }
+      return nextLists;
+    });
+  }, []);
 
   return (
     <SongListsContext.Provider
