@@ -88,7 +88,7 @@ export default function HomePage() {
   return (
     <SongList
       songs={displayedSongs}
-      listName={activeList?.name ?? activeCategory?.name}
+      listName={activeList?.name ?? activeCategory?.name ?? 'All Songs'}
       onMoveSong={handleMoveSong}
       onRenameSong={handleRenameSong}
       onDeleteSong={handleDeleteSong}

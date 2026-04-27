@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import type { Song } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
+import { useAuth } from './AuthContext';
 
 const LOCAL_STORAGE_KEY = 'folio-local-songs';
 
@@ -84,24 +85,33 @@ interface SongsContextValue {
 }
 
 const SongsContext = createContext<SongsContextValue | null>(null);
+const SONGS_COLLECTION = 'songs';
+
+function songsCollectionPath(userId: string) {
+  return ['users', userId, SONGS_COLLECTION] as const;
+}
 
 export function SongsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [userSongs, setUserSongs] = useState<Song[]>(() => (firebaseEnabled ? [] : readLocalSongs()));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!db) {
+    if (!db || !userId) {
       setLoading(false);
       return;
     }
 
-    getDocs(collection(db, 'songs'))
+    getDocs(collection(db, ...songsCollectionPath(userId)))
       .then((snap) => {
         setUserSongs(normalizeSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song)));
       })
-      .catch(() => {})
+      .catch((error) => {
+        console.error('Failed to load songs from Firestore. Falling back to local data.', error);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (!firebaseEnabled) {
@@ -122,7 +132,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
       return normalizeSongs([nextSong, ...prev]);
     });
-    if (!db) {
+    if (!db || !userId) {
       return null;
     }
 
@@ -131,13 +141,13 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       const firestoreData = Object.fromEntries(
         Object.entries(rest).filter(([, v]) => v !== undefined)
       );
-      await setDoc(doc(db, 'songs', id), firestoreData);
+      await setDoc(doc(db, ...songsCollectionPath(userId), id), firestoreData);
       return null;
     } catch (err) {
       setUserSongs((prev) => prev.filter((s) => s.id !== song.id));
       return err instanceof Error ? err.message : 'Failed to save song.';
     }
-  }, []);
+  }, [userId]);
 
   const updateSong = useCallback(async (song: Song): Promise<string | null> => {
     let previousSong: Song | null = null;
@@ -157,7 +167,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return 'Song not found.';
     }
 
-    if (!db) {
+    if (!db || !userId) {
       return null;
     }
 
@@ -168,7 +178,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       const firestoreData = Object.fromEntries(
         Object.entries(rest).filter(([, v]) => v !== undefined)
       );
-      await setDoc(doc(db, 'songs', id), firestoreData);
+      await setDoc(doc(db, ...songsCollectionPath(userId), id), firestoreData);
       return null;
     } catch (err) {
       if (previousSong) {
@@ -176,22 +186,23 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       }
       return err instanceof Error ? err.message : 'Failed to update song.';
     }
-  }, []);
+  }, [userId]);
 
   const deleteSong = useCallback(async (id: string) => {
     setUserSongs((prev) => prev.filter((s) => s.id !== id));
-    if (!db) {
+    if (!db || !userId) {
       return;
     }
 
     try {
-      await deleteDoc(doc(db, 'songs', id));
-    } catch {
-      getDocs(collection(db, 'songs')).then((snap) => {
+      await deleteDoc(doc(db, ...songsCollectionPath(userId), id));
+    } catch (error) {
+      console.error('Failed to delete song in Firestore. Restoring list from server.', error);
+      getDocs(collection(db, ...songsCollectionPath(userId))).then((snap) => {
         setUserSongs(normalizeSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song)));
       });
     }
-  }, []);
+  }, [userId]);
 
   const moveSong = useCallback((songId: string, beforeSongId: string | null) => {
     let previousSongs: Song[] = [];
@@ -209,7 +220,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return nextSongs;
     });
 
-    if (!db || nextSongs === previousSongs) {
+    if (!db || !userId || nextSongs === previousSongs) {
       return;
     }
 
@@ -230,12 +241,13 @@ export function SongsProvider({ children }: { children: ReactNode }) {
         const firestoreData = Object.fromEntries(
           Object.entries(rest).filter(([, value]) => value !== undefined)
         );
-        return setDoc(doc(firestore, 'songs', id), firestoreData);
+        return setDoc(doc(firestore, ...songsCollectionPath(userId), id), firestoreData);
       })
-    ).catch(() => {
+    ).catch((error) => {
+      console.error('Failed to reorder songs in Firestore.', error);
       setUserSongs(previousSongs);
     });
-  }, []);
+  }, [userId]);
 
   return (
     <SongsContext.Provider value={{ songs, loading, addSong, updateSong, deleteSong, moveSong }}>

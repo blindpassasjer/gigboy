@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import type { Setlist } from '../types';
 import { db } from '../lib/firebase';
+import { useAuth } from './AuthContext';
 
 const KEY_SETLISTS = 'songbook-setlists';
 const KEY_ACTIVE_SETLIST = 'songbook-active-setlist';
@@ -43,12 +44,12 @@ function normalizeSetlists(setlists: Setlist[]) {
     .map((setlist, index) => ({ ...setlist, sortOrder: index }));
 }
 
-async function writeSetlist(setlist: Setlist) {
-  if (!db) return;
+async function writeSetlist(setlist: Setlist, userId: string | null) {
+  if (!db || !userId) return;
 
   const { id, ...rest } = setlist;
   const firestoreData = Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== undefined));
-  await setDoc(doc(db, SETLISTS_COLLECTION, id), firestoreData);
+  await setDoc(doc(db, 'users', userId, SETLISTS_COLLECTION, id), firestoreData);
 }
 
 function moveSongId(songIds: string[], songId: string, beforeSongId: string | null) {
@@ -86,6 +87,8 @@ interface SetlistsContextValue {
 const SetlistsContext = createContext<SetlistsContextValue | null>(null);
 
 export function SetlistsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [setlists, setSetlists] = useState<Setlist[]>(() =>
     normalizeSetlists(readLocal(KEY_SETLISTS, []))
   );
@@ -94,18 +97,18 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!db) {
+    if (!db || !userId) {
       return;
     }
 
-    getDocs(collection(db, SETLISTS_COLLECTION))
+    getDocs(collection(db, 'users', userId, SETLISTS_COLLECTION))
       .then((snapshot) => {
         setSetlists(normalizeSetlists(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }) as Setlist)));
       })
       .catch((error) => {
         console.error('Failed to load setlists from Firestore. Falling back to local data.', error);
       });
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     writeLocal(KEY_SETLISTS, setlists);
@@ -127,35 +130,41 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
 
     setSetlists((prev) => {
       const nextSetlists = normalizeSetlists([...prev, nextSetlist]);
-      if (db) {
+      if (db && userId) {
         const changed = nextSetlists.filter((list) => {
           const p = prev.find((item) => item.id === list.id);
           return !p || p.sortOrder !== list.sortOrder;
         });
-        Promise.all(changed.map((list) => writeSetlist(list))).catch(() => setSetlists(prev));
+        Promise.all(changed.map((list) => writeSetlist(list, userId))).catch((error) => {
+          console.error('Failed to save setlists to Firestore.', error);
+          setSetlists(prev);
+        });
       }
       return nextSetlists;
     });
-  }, []);
+  }, [userId]);
 
   const deleteSetlist = useCallback((id: string) => {
     setSetlists((prev) => {
       const nextSetlists = normalizeSetlists(prev.filter((list) => list.id !== id));
-      if (db) {
+      if (db && userId) {
         const changed = nextSetlists.filter((list) => {
           const p = prev.find((item) => item.id === list.id);
           return p && p.sortOrder !== list.sortOrder;
         });
 
         Promise.all([
-          deleteDoc(doc(db, SETLISTS_COLLECTION, id)),
-          ...changed.map((list) => writeSetlist(list)),
-        ]).catch(() => setSetlists(prev));
+          deleteDoc(doc(db, 'users', userId, SETLISTS_COLLECTION, id)),
+          ...changed.map((list) => writeSetlist(list, userId)),
+        ]).catch((error) => {
+          console.error('Failed to delete setlist in Firestore.', error);
+          setSetlists(prev);
+        });
       }
       return nextSetlists;
     });
     setActiveSetlistId((prev) => (prev === id ? null : prev));
-  }, []);
+  }, [userId]);
 
   const renameSetlist = useCallback((id: string, name: string) => {
     setSetlists((prev) => {
@@ -165,12 +174,15 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       const nextSetlist = { ...setlist, name, updatedAt: new Date().toISOString() };
       const nextSetlists = prev.map((l) => (l.id === id ? nextSetlist : l));
 
-      if (db) {
-        void writeSetlist(nextSetlist).catch(() => setSetlists(prev));
+      if (db && userId) {
+        void writeSetlist(nextSetlist, userId).catch((error) => {
+          console.error('Failed to rename setlist in Firestore.', error);
+          setSetlists(prev);
+        });
       }
       return nextSetlists;
     });
-  }, []);
+  }, [userId]);
 
   const addSongToSetlist = useCallback((setlistId: string, songId: string) => {
     setSetlists((prev) => {
@@ -184,12 +196,15 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       };
       const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
 
-      if (db) {
-        void writeSetlist(nextSetlist).catch(() => setSetlists(prev));
+      if (db && userId) {
+        void writeSetlist(nextSetlist, userId).catch((error) => {
+          console.error('Failed to add song to setlist in Firestore.', error);
+          setSetlists(prev);
+        });
       }
       return nextSetlists;
     });
-  }, []);
+  }, [userId]);
 
   const removeSongFromSetlist = useCallback((setlistId: string, songId: string) => {
     setSetlists((prev) => {
@@ -203,12 +218,15 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       };
       const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
 
-      if (db) {
-        void writeSetlist(nextSetlist).catch(() => setSetlists(prev));
+      if (db && userId) {
+        void writeSetlist(nextSetlist, userId).catch((error) => {
+          console.error('Failed to remove song from setlist in Firestore.', error);
+          setSetlists(prev);
+        });
       }
       return nextSetlists;
     });
-  }, []);
+  }, [userId]);
 
   const moveSongInSetlist = useCallback((setlistId: string, songId: string, beforeSongId: string | null) => {
     setSetlists((prev) => {
@@ -221,12 +239,15 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       const nextSetlist = { ...setlist, songIds: nextSongIds, updatedAt: new Date().toISOString() };
       const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
 
-      if (db) {
-        void writeSetlist(nextSetlist).catch(() => setSetlists(prev));
+      if (db && userId) {
+        void writeSetlist(nextSetlist, userId).catch((error) => {
+          console.error('Failed to reorder setlist songs in Firestore.', error);
+          setSetlists(prev);
+        });
       }
       return nextSetlists;
     });
-  }, []);
+  }, [userId]);
 
   const clearActiveSelection = useCallback(() => {
     setActiveSetlistId(null);
