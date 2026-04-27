@@ -9,6 +9,19 @@ const KEY_SETLISTS = 'songbook-setlists';
 const KEY_ACTIVE_SETLIST = 'songbook-active-setlist';
 const SETLISTS_COLLECTION = 'setlists';
 
+function isPermissionDeniedError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const maybeCode = (error as { code?: unknown }).code;
+  return maybeCode === 'permission-denied';
+}
+
+function logSetlistsPermissionHelp(error: unknown) {
+  console.warn(
+    'Firestore denied access to users/{uid}/setlists. Setlists will stay local until Firestore rules allow this path.',
+    error
+  );
+}
+
 function readLocal<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
 
@@ -106,6 +119,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
         setSetlists(normalizeSetlists(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }) as Setlist)));
       })
       .catch((error) => {
+        if (isPermissionDeniedError(error)) {
+          logSetlistsPermissionHelp(error);
+          return;
+        }
+
         console.error('Failed to load setlists from Firestore. Falling back to local data.', error);
       });
   }, [userId]);
@@ -136,7 +154,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
           return !p || p.sortOrder !== list.sortOrder;
         });
         Promise.all(changed.map((list) => writeSetlist(list, userId))).catch((error) => {
-          console.error('Failed to save setlists to Firestore.', error);
+          if (isPermissionDeniedError(error)) {
+            logSetlistsPermissionHelp(error);
+          } else {
+            console.error('Failed to save setlists to Firestore.', error);
+          }
           setSetlists(prev);
         });
       }
@@ -157,7 +179,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
           deleteDoc(doc(db, 'users', userId, SETLISTS_COLLECTION, id)),
           ...changed.map((list) => writeSetlist(list, userId)),
         ]).catch((error) => {
-          console.error('Failed to delete setlist in Firestore.', error);
+          if (isPermissionDeniedError(error)) {
+            logSetlistsPermissionHelp(error);
+          } else {
+            console.error('Failed to delete setlist in Firestore.', error);
+          }
           setSetlists(prev);
         });
       }
@@ -176,7 +202,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
 
       if (db && userId) {
         void writeSetlist(nextSetlist, userId).catch((error) => {
-          console.error('Failed to rename setlist in Firestore.', error);
+          if (isPermissionDeniedError(error)) {
+            logSetlistsPermissionHelp(error);
+          } else {
+            console.error('Failed to rename setlist in Firestore.', error);
+          }
           setSetlists(prev);
         });
       }
@@ -198,7 +228,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
 
       if (db && userId) {
         void writeSetlist(nextSetlist, userId).catch((error) => {
-          console.error('Failed to add song to setlist in Firestore.', error);
+          if (isPermissionDeniedError(error)) {
+            logSetlistsPermissionHelp(error);
+          } else {
+            console.error('Failed to add song to setlist in Firestore.', error);
+          }
           setSetlists(prev);
         });
       }
@@ -220,7 +254,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
 
       if (db && userId) {
         void writeSetlist(nextSetlist, userId).catch((error) => {
-          console.error('Failed to remove song from setlist in Firestore.', error);
+          if (isPermissionDeniedError(error)) {
+            logSetlistsPermissionHelp(error);
+          } else {
+            console.error('Failed to remove song from setlist in Firestore.', error);
+          }
           setSetlists(prev);
         });
       }
@@ -241,7 +279,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
 
       if (db && userId) {
         void writeSetlist(nextSetlist, userId).catch((error) => {
-          console.error('Failed to reorder setlist songs in Firestore.', error);
+          if (isPermissionDeniedError(error)) {
+            logSetlistsPermissionHelp(error);
+          } else {
+            console.error('Failed to reorder setlist songs in Firestore.', error);
+          }
           setSetlists(prev);
         });
       }

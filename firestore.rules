@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // User-scoped songbook data
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /songs/{songId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /songListCategories/{categoryId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /songLists/{listId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /setlists/{setlistId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}
