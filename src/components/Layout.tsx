@@ -134,11 +134,7 @@ export default function Layout({ children }: Props) {
           )}
         </nav>
       </header>
-      {!authEnabled && authError && (
-        <div className="app-notice" role="status">
-          Firebase is not configured in this deployment. Folio is running in local-only mode.
-        </div>
-      )}
+
       <div className={`app-body${isNarrowViewport ? ' app-body--narrow' : ''}`}>
         <Sidebar open={sidebarOpen} mobile={isNarrowViewport} onNavigate={isNarrowViewport ? () => setSidebarOpen(false) : undefined} onClose={() => setSidebarOpen(false)} />
         {isNarrowViewport && sidebarOpen && (
