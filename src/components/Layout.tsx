@@ -12,7 +12,7 @@ interface Props {
 
 export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
-  const { user, logout, authEnabled, authError } = useAuth();
+  const { user, logout } = useAuth();
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(max-width: 900px)').matches;
