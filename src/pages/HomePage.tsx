@@ -5,6 +5,8 @@ import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import type { Song } from '../types';
 
+const INTERNAL_SONGLISTS_CATEGORY_ID = 'songlists-default';
+
 export default function HomePage() {
   const { songs, updateSong, deleteSong, moveSong } = useSongs();
   const { activeCategoryId, activeSongListId, categories, songLists, moveSongInList, removeSongFromList } = useSongLists();
@@ -40,7 +42,11 @@ export default function HomePage() {
     );
   }
 
-  const activeCategorySongIds = activeCategory
+  const shouldFilterByCategory = Boolean(
+    activeCategory && activeCategory.id !== INTERNAL_SONGLISTS_CATEGORY_ID
+  );
+
+  const activeCategorySongIds = shouldFilterByCategory
     ? new Set(
         songLists
           .filter((list) => list.folderId === activeCategory.id)
