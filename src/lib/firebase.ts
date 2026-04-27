@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { PUBLIC_FIREBASE_CONFIG } from './firebase.public';
+
 const firebaseEnvConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -10,20 +12,29 @@ const firebaseEnvConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const missingFirebaseEnv = Object.entries(firebaseEnvConfig)
+const firebaseConfig = {
+  apiKey: firebaseEnvConfig.apiKey || PUBLIC_FIREBASE_CONFIG.apiKey,
+  authDomain: firebaseEnvConfig.authDomain || PUBLIC_FIREBASE_CONFIG.authDomain,
+  projectId: firebaseEnvConfig.projectId || PUBLIC_FIREBASE_CONFIG.projectId,
+  storageBucket: firebaseEnvConfig.storageBucket || PUBLIC_FIREBASE_CONFIG.storageBucket,
+  messagingSenderId: firebaseEnvConfig.messagingSenderId || PUBLIC_FIREBASE_CONFIG.messagingSenderId,
+  appId: firebaseEnvConfig.appId || PUBLIC_FIREBASE_CONFIG.appId,
+};
+
+const missingFirebaseEnv = Object.entries(firebaseConfig)
   .filter(([, value]) => !value)
   .map(([key]) => key);
 
 export const firebaseEnabled = missingFirebaseEnv.length === 0;
 export const firebaseConfigError = firebaseEnabled
   ? null
-  : `Missing Firebase environment variables: ${missingFirebaseEnv.join(', ')}`;
+  : `Missing Firebase configuration values: ${missingFirebaseEnv.join(', ')}`;
 
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 
 if (firebaseEnabled) {
-  const app = initializeApp(firebaseEnvConfig as {
+  const app = initializeApp(firebaseConfig as {
     apiKey: string;
     authDomain: string;
     projectId: string;
