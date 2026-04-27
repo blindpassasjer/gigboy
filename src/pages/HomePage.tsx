@@ -46,10 +46,14 @@ export default function HomePage() {
     activeCategory && activeCategory.id !== INTERNAL_SONGLISTS_CATEGORY_ID
   );
 
-  const activeCategorySongIds = shouldFilterByCategory
+  const activeCategoryFilterId = shouldFilterByCategory
+    ? activeCategory?.id ?? null
+    : null;
+
+  const activeCategorySongIds = activeCategoryFilterId
     ? new Set(
         songLists
-          .filter((list) => list.folderId === activeCategory.id)
+          .filter((list) => list.folderId === activeCategoryFilterId)
           .flatMap((list) => list.songIds)
       )
     : null;
