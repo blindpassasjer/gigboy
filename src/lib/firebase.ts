@@ -12,23 +12,36 @@ const firebaseEnvConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const firebaseConfig = {
-  apiKey: firebaseEnvConfig.apiKey || PUBLIC_FIREBASE_CONFIG.apiKey,
-  authDomain: firebaseEnvConfig.authDomain || PUBLIC_FIREBASE_CONFIG.authDomain,
-  projectId: firebaseEnvConfig.projectId || PUBLIC_FIREBASE_CONFIG.projectId,
-  storageBucket: firebaseEnvConfig.storageBucket || PUBLIC_FIREBASE_CONFIG.storageBucket,
-  messagingSenderId: firebaseEnvConfig.messagingSenderId || PUBLIC_FIREBASE_CONFIG.messagingSenderId,
-  appId: firebaseEnvConfig.appId || PUBLIC_FIREBASE_CONFIG.appId,
-};
+const hasAnyFirebaseEnvOverride = Object.values(firebaseEnvConfig).some((value) => Boolean(value));
+const missingEnvOverrideKeys = Object.entries(firebaseEnvConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+const hasCompleteFirebaseEnvOverride = hasAnyFirebaseEnvOverride && missingEnvOverrideKeys.length === 0;
+
+const firebaseConfig = hasCompleteFirebaseEnvOverride
+  ? {
+      apiKey: firebaseEnvConfig.apiKey,
+      authDomain: firebaseEnvConfig.authDomain,
+      projectId: firebaseEnvConfig.projectId,
+      storageBucket: firebaseEnvConfig.storageBucket,
+      messagingSenderId: firebaseEnvConfig.messagingSenderId,
+      appId: firebaseEnvConfig.appId,
+    }
+  : PUBLIC_FIREBASE_CONFIG;
 
 const missingFirebaseEnv = Object.entries(firebaseConfig)
   .filter(([, value]) => !value)
   .map(([key]) => key);
 
-export const firebaseEnabled = missingFirebaseEnv.length === 0;
+const hasInvalidPartialOverride = hasAnyFirebaseEnvOverride && !hasCompleteFirebaseEnvOverride;
+
+export const firebaseEnabled = missingFirebaseEnv.length === 0 && !hasInvalidPartialOverride;
 export const firebaseConfigError = firebaseEnabled
   ? null
-  : `Missing Firebase configuration values: ${missingFirebaseEnv.join(', ')}`;
+  : hasInvalidPartialOverride
+    ? `Incomplete Firebase override values: ${missingEnvOverrideKeys.join(', ')}. Set all VITE_FIREBASE_* values or remove them all to use the built-in config.`
+    : `Missing Firebase configuration values: ${missingFirebaseEnv.join(', ')}`;
 
 let auth: Auth | null = null;
 let db: Firestore | null = null;
