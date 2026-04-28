@@ -46,9 +46,7 @@ function compareSetlists(a: Setlist, b: Setlist) {
     return aSortOrder - bSortOrder;
   }
 
-  const aCreatedAt = a.createdAt ? Date.parse(a.createdAt) : 0;
-  const bCreatedAt = b.createdAt ? Date.parse(b.createdAt) : 0;
-  return aCreatedAt - bCreatedAt;
+  return a.name.localeCompare(b.name);
 }
 
 function normalizeSetlists(setlists: Setlist[]) {

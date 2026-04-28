@@ -1,9 +1,11 @@
 import { useSongs } from '../context/SongsContext';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
+import toast from 'react-hot-toast';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import type { Song } from '../types';
+import { showConfirmToast } from '../utils/toastDialogs';
 
 const INTERNAL_SONGLISTS_CATEGORY_ID = 'songlists-default';
 
@@ -100,7 +102,9 @@ export default function HomePage() {
   }
 
   async function handleDeleteSong(song: Song) {
-    const confirmed = window.confirm(`Delete "${song.title}"? This cannot be undone.`);
+    const confirmed = await showConfirmToast(`Delete "${song.title}"? This cannot be undone.`, {
+      confirmLabel: 'Delete',
+    });
     if (!confirmed) return;
     await deleteSong(song.id);
   }
@@ -112,7 +116,7 @@ export default function HomePage() {
       updatedAt: new Date().toISOString(),
     });
     if (err) {
-      window.alert(`Could not update song color: ${err}`);
+      toast.error(`Could not update song color: ${err}`);
     }
   }
 

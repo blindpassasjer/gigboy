@@ -13,6 +13,7 @@ import {
   PenLine,
   Trash2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
@@ -22,6 +23,7 @@ import type { ChordNotation } from '../utils/chordParser';
 import { useSongLists } from '../context/SongListsContext';
 import { useSongs } from '../context/SongsContext';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
+import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 
 interface Props {
   song: Song;
@@ -66,7 +68,10 @@ export default function SongView({ song, accentColor }: Props) {
   }, []);
 
   async function handleRename() {
-    const nextTitle = window.prompt('Rename song', song.title);
+    const nextTitle = await showPromptToast('Rename song', {
+      initialValue: song.title,
+      confirmLabel: 'Rename',
+    });
     if (nextTitle === null) return;
     const trimmed = nextTitle.trim();
     if (!trimmed || trimmed === song.title) return;
@@ -76,12 +81,14 @@ export default function SongView({ song, accentColor }: Props) {
       updatedAt: new Date().toISOString(),
     });
     if (err) {
-      window.alert(`Could not rename song: ${err}`);
+      toast.error(`Could not rename song: ${err}`);
     }
   }
 
   async function handleDelete() {
-    const confirmed = window.confirm(`Delete "${song.title}"? This cannot be undone.`);
+    const confirmed = await showConfirmToast(`Delete "${song.title}"? This cannot be undone.`, {
+      confirmLabel: 'Delete',
+    });
     if (!confirmed) return;
     await deleteSong(song.id);
     navigate('/');

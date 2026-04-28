@@ -27,9 +27,7 @@ function compareSongs(a: Song, b: Song) {
   if (aHasSortOrder) return -1;
   if (bHasSortOrder) return 1;
 
-  const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
-  const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
-  return bTime - aTime;
+  return a.title.localeCompare(b.title);
 }
 
 function normalizeSongs(songs: Song[]) {

@@ -1307,19 +1307,52 @@ input, select, textarea { font: inherit; color: var(--text); }
 .rec-btn--toggle { background: var(--chord-bg); color: var(--accent); border-color: var(--chord-bg); }
 .rec-btn--toggle:hover { background: var(--accent); color: #fff; }
 
-.btn-primary {
+.btn-primary,
+.setlist-action-btn,
+.song-picker-add-btn,
+.concert-nav-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: .4rem;
-  padding: .6rem 1.2rem;
-  background: var(--accent);
-  color: #fff;
+  min-height: 2.25rem;
+  padding: .55rem 1rem;
+  border: 1px solid transparent;
   border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: .88rem;
   font-weight: 600;
-  font-size: .95rem;
-  transition: background .15s;
+  line-height: 1;
+  transition: background .15s, color .15s, border-color .15s, box-shadow .15s, transform .08s;
 }
-.btn-primary:hover { background: var(--accent-h); }
+
+.btn-primary:hover,
+.setlist-action-btn:hover,
+.song-picker-add-btn:hover {
+  background: var(--accent-h);
+}
+
+.btn-primary:focus-visible,
+.setlist-action-btn:focus-visible,
+.song-picker-add-btn:focus-visible,
+.concert-nav-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.btn-primary:disabled,
+.setlist-action-btn:disabled,
+.song-picker-add-btn:disabled,
+.concert-nav-btn:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.btn-primary {
+  padding: .6rem 1.2rem;
+  font-size: .95rem;
+}
 
 /* ─── Add Song Form ──────────────────────────────────────────────────────────── */
 .add-song-page h1 { margin-bottom: 1.25rem; }
@@ -2104,18 +2137,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .setlist-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .5rem 1rem;
-  background: var(--accent);
-  color: white;
-  border-radius: 5px;
-  font-weight: 600;
   font-size: .85rem;
-  transition: background .12s;
 }
-.setlist-action-btn:hover { background: var(--accent-h); }
 
 .setlist-action-btn--secondary {
   background: var(--surface);
@@ -2170,6 +2193,30 @@ input, select, textarea { font: inherit; color: var(--text); }
     transparent 65%,
     color-mix(in srgb, var(--chord-bg) 34%, transparent) 100%
   );
+}
+
+.setlist-drop-slot {
+  list-style: none;
+  margin: 0 1rem;
+  height: 0;
+  border-radius: 999px;
+  transition: height .12s ease, background .12s ease, box-shadow .12s ease;
+}
+
+.setlist-songs.is-dragging .setlist-drop-slot {
+  height: 8px;
+}
+
+.setlist-drop-slot.active {
+  height: 24px;
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--accent) 58%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.setlist-drop-slot-end {
+  margin-bottom: .75rem;
 }
 
 .setlist-song-item {
@@ -2330,21 +2377,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   opacity: 1;
 }
 
-.setlist-drop-zone {
-  min-height: 2px;
-  margin: 0 1rem;
-  padding: .5rem 0;
-  border-radius: 8px;
-  transition: min-height .12s, background .12s, box-shadow .12s;
-}
-.setlist-drop-zone.active {
-  min-height: 30px;
-  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
-  box-shadow:
-    inset 0 0 0 2px color-mix(in srgb, var(--accent) 58%, transparent),
-    0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
 .song-picker-overlay {
   position: fixed;
   inset: 0;
@@ -2463,20 +2495,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-picker-add-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
   flex-shrink: 0;
-  padding: .42rem .7rem;
-  border-radius: 6px;
-  background: var(--accent);
-  color: white;
   font-size: .82rem;
-  font-weight: 600;
-}
-
-.song-picker-add-btn:hover {
-  background: var(--accent-h);
+  padding: .45rem .8rem;
 }
 
 .song-picker-empty {
@@ -2616,6 +2637,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: grid;
   grid-template-columns: minmax(0, 1fr) 290px;
   gap: .85rem;
+}
+
+.concert-content-wrap--full {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .concert-song-surface {
@@ -2802,17 +2827,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .concert-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
   border-radius: 999px;
   padding: .5rem 1.05rem;
-  font-weight: 600;
   min-width: 126px;
-  justify-content: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, .14);
   pointer-events: auto;
 }

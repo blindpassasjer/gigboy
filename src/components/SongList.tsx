@@ -14,6 +14,7 @@ import {
   ListMinus,
   Palette,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
@@ -26,9 +27,26 @@ type SortBy =
   | 'name-desc'
   | 'artist-asc'
   | 'artist-desc'
-  | 'date-newest'
-  | 'date-oldest'
   | 'language';
+
+const SORT_OPTIONS_WITH_CUSTOM: SortBy[] = ['custom', 'name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language'];
+const SORT_OPTIONS_NO_CUSTOM: SortBy[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language'];
+
+function getInitialSortBy(canUseCustomOrder: boolean): SortBy {
+  const fallback: SortBy = canUseCustomOrder ? 'custom' : 'name-asc';
+
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  const stored = window.localStorage.getItem('folio-sort-by');
+  if (!stored) {
+    return fallback;
+  }
+
+  const allowed = canUseCustomOrder ? SORT_OPTIONS_WITH_CUSTOM : SORT_OPTIONS_NO_CUSTOM;
+  return allowed.includes(stored as SortBy) ? (stored as SortBy) : fallback;
+}
 
 const SONG_DRAG_MIME = 'application/x-folio-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
@@ -116,9 +134,7 @@ export default function SongList({
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
     () => (localStorage.getItem('folio-view-mode') === 'cards' ? 'cards' : 'list')
   );
-  const [sortBy, setSortBy] = useState<SortBy>(
-    () => (localStorage.getItem('folio-sort-by') as SortBy | null) ?? (onMoveSong ? 'custom' : 'name-asc')
-  );
+  const [sortBy, setSortBy] = useState<SortBy>(() => getInitialSortBy(Boolean(onMoveSong)));
 
   function handleSetViewMode(mode: 'list' | 'cards') {
     localStorage.setItem('folio-view-mode', mode);
@@ -201,10 +217,6 @@ export default function SongList({
         const artistB = (b.artist ?? '').trim().toLowerCase();
         return artistB.localeCompare(artistA) || a.title.localeCompare(b.title);
       });
-    } else if (sortBy === 'date-newest') {
-      sorted.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
-    } else if (sortBy === 'date-oldest') {
-      sorted.sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''));
     } else if (sortBy === 'language') {
       sorted.sort((a, b) => languageName(a.language).localeCompare(languageName(b.language)) || a.title.localeCompare(b.title));
     }
@@ -274,7 +286,7 @@ export default function SongList({
 
     const normalizedColor = normalizeHexColor(listColorDraft);
     if (!normalizedColor) {
-      window.alert('Please choose a valid color. Example: #4f46e5');
+      toast.error('Please choose a valid color. Example: #4f46e5');
       return;
     }
 
@@ -517,8 +529,6 @@ export default function SongList({
             <option value="name-desc">Song name Z → A</option>
             <option value="artist-asc">Artist A → Z</option>
             <option value="artist-desc">Artist Z → A</option>
-            <option value="date-newest">Date: newest</option>
-            <option value="date-oldest">Date: oldest</option>
             <option value="language">Language</option>
           </select>
         </div>

@@ -439,7 +439,7 @@ export default function SetlistConcertPage() {
       </header>
       )}
 
-      <div className="concert-content-wrap">
+      <div className={`concert-content-wrap${showSongNavigator ? '' : ' concert-content-wrap--full'}`}>
         <article className="concert-song-surface">
           <div className="concert-song-header">
             <h2>{currentSong.title}</h2>

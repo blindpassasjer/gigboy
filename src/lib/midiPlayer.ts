@@ -2,12 +2,21 @@
  * MIDI playback service for guitar tab sections.
  * Uses Tone.js for in-browser audio synthesis — no soundfont files required.
  */
-import * as Tone from 'tone';
 import { parseTabLines } from '../utils/tabParser';
 
-let synthInstance: Tone.PolySynth | null = null;
+type ToneModule = typeof import('tone');
 
-function getSynth(): Tone.PolySynth {
+let toneModulePromise: Promise<ToneModule> | null = null;
+let synthInstance: InstanceType<ToneModule['PolySynth']> | null = null;
+
+function getTone(): Promise<ToneModule> {
+  if (!toneModulePromise) {
+    toneModulePromise = import('tone');
+  }
+  return toneModulePromise;
+}
+
+function getSynth(Tone: ToneModule): InstanceType<ToneModule['PolySynth']> {
   if (!synthInstance) {
     synthInstance = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'triangle' as const },
@@ -32,6 +41,7 @@ export async function playTab(
   bpm = 120,
   transposeSemitones = 0,
 ): Promise<number> {
+  const Tone = await getTone();
   await Tone.start();
 
   const transport = Tone.getTransport();
@@ -42,7 +52,7 @@ export async function playTab(
   const events = parseTabLines(tabLines);
   if (events.length === 0) return 0;
 
-  const synth = getSynth();
+  const synth = getSynth(Tone);
   // 16th-note step size in seconds (avoids relying on Tone.Time evaluation order)
   const stepSeconds = (60 / bpm) / 4;
 
@@ -66,7 +76,13 @@ export async function playTab(
 
 /** Stop any currently playing tab and cancel scheduled events. */
 export function stopPlayback(): void {
-  const transport = Tone.getTransport();
-  transport.stop();
-  transport.cancel();
+  if (!toneModulePromise) {
+    return;
+  }
+
+  void toneModulePromise.then((Tone) => {
+    const transport = Tone.getTransport();
+    transport.stop();
+    transport.cancel();
+  });
 }
