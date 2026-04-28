@@ -22,6 +22,7 @@ import LanguageBadge from '../components/LanguageBadge';
 import ChordDisplay from '../components/ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from '../components/ChordDiagram';
 import VisualMetronome from '../components/VisualMetronome';
+import VisualTuner from '../components/VisualTuner';
 import type { ChordNotation } from '../utils/chordParser';
 import { transposeChord } from '../utils/chordParser';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
@@ -456,6 +457,12 @@ export default function SetlistConcertPage() {
                   tempo={currentSong.tempo}
                   timeSignature={currentSong.timeSignature}
                   className="concert-metronome"
+                />
+              )}
+              {currentSong.key && (
+                <VisualTuner
+                  targetKey={transpose === 0 ? currentSong.key : transposeChord(currentSong.key, transpose)}
+                  className="concert-tuner"
                 />
               )}
               {currentSong.timeSignature && <span className="meta-pill">{currentSong.timeSignature}</span>}

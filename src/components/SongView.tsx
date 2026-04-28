@@ -19,6 +19,7 @@ import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
 import VisualMetronome from './VisualMetronome';
+import VisualTuner from './VisualTuner';
 import { transposeChord } from '../utils/chordParser';
 import type { ChordNotation } from '../utils/chordParser';
 import { useSongLists } from '../context/SongListsContext';
@@ -217,6 +218,12 @@ export default function SongView({ song, accentColor }: Props) {
                 tempo={song.tempo}
                 timeSignature={song.timeSignature}
                 className="song-view-metronome"
+              />
+            )}
+            {song.key && (
+              <VisualTuner
+                targetKey={transpose === 0 ? song.key : transposeChord(song.key, transpose)}
+                className="song-view-tuner"
               />
             )}
             {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}

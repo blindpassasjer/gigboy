@@ -1035,6 +1035,132 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--surface) 82%, var(--bg));
 }
 
+.visual-tuner {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .2rem .35rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 70%, var(--bg));
+}
+
+.visual-tuner-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .2rem .55rem;
+  font-size: .73rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.visual-tuner-toggle:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--chord-bg);
+}
+
+.visual-tuner-readout {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .35rem;
+}
+
+.visual-tuner-target {
+  font-size: .74rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.visual-tuner-status {
+  font-size: .74rem;
+  color: var(--muted);
+}
+
+.visual-tuner-status.is-in-tune {
+  color: #1f8b4c;
+  font-weight: 700;
+}
+
+.visual-tuner-gauge {
+  position: relative;
+  width: 5.1rem;
+  height: .85rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(to right,
+      color-mix(in srgb, var(--danger) 55%, transparent) 0%,
+      color-mix(in srgb, var(--danger) 35%, transparent) 38%,
+      color-mix(in srgb, #1f8b4c 45%, transparent) 50%,
+      color-mix(in srgb, var(--danger) 35%, transparent) 62%,
+      color-mix(in srgb, var(--danger) 55%, transparent) 100%
+    );
+  overflow: hidden;
+}
+
+.visual-tuner-center {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 2px;
+  height: .85rem;
+  background: color-mix(in srgb, var(--text) 55%, transparent);
+}
+
+.visual-tuner-needle {
+  position: absolute;
+  top: .08rem;
+  width: 2px;
+  height: .7rem;
+  background: color-mix(in srgb, var(--text) 88%, transparent);
+  transform: translateX(-50%);
+  transition: left .08s linear;
+}
+
+.visual-tuner-footer {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .7rem;
+  color: var(--muted);
+}
+
+.visual-tuner-error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.song-view-header .visual-tuner {
+  border-color: var(--song-item-border);
+  background: var(--song-item-chip-bg);
+}
+
+.song-view-header .visual-tuner-toggle {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+}
+
+.song-view-header .visual-tuner-toggle:hover {
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
+}
+
+.song-view-header .visual-tuner-target,
+.song-view-header .visual-tuner-status,
+.song-view-header .visual-tuner-footer {
+  color: var(--song-item-chip-text);
+}
+
+.concert-tuner {
+  background: color-mix(in srgb, var(--surface) 82%, var(--bg));
+}
+
 @keyframes metronome-pulse {
   0% {
     transform: scale(.72);
@@ -3187,6 +3313,22 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .visual-metronome-beats {
     width: 100%;
+  }
+
+  .visual-tuner {
+    width: 100%;
+    border-radius: 12px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .visual-tuner-gauge {
+    width: 100%;
+  }
+
+  .visual-tuner-footer {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .concert-song-surface .chord-display {
