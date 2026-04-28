@@ -2173,6 +2173,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   .sidebar-anim--mobile {
     width: 0;
     transition: none;
+    position: relative;
+    z-index: 310;
+  }
+
+  .sidebar-backdrop {
+    z-index: 300;
   }
 
   .sidebar--mobile {
@@ -2182,7 +2188,7 @@ input, select, textarea { font: inherit; color: var(--text); }
     bottom: 0;
     width: min(320px, calc(100vw - 2.5rem));
     min-width: 0;
-    z-index: 90;
+    z-index: 310;
     box-shadow: 0 10px 30px rgba(0,0,0,.18);
     transform: translateX(-100%);
     transition: transform 0.18s ease-in-out;

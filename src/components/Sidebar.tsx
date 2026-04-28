@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Folder, FolderOpen, FolderPlus, Trash2, X, ListMusic, ListMusicIcon } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
@@ -22,6 +23,8 @@ interface Props {
 }
 
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const {
     songLists,
     activeSongListId,
@@ -46,6 +49,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [draftName, setDraftName] = useState('');
   const [songDropTargetId, setSongDropTargetId] = useState<string | null>(null);
   const [setlistDropTargetId, setSetlistDropTargetId] = useState<string | null>(null);
+
+  const goToLibraryView = () => {
+    if (pathname !== '/') {
+      navigate('/');
+    }
+    onNavigate?.();
+  };
 
   const commitFolder = () => {
     if (draftName.trim()) addSongList(draftName.trim());
@@ -116,7 +126,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
       <button
         className={`sidebar-all-songs${activeSongListId === null && activeSetlistId === null ? ' active' : ''}`}
-        onClick={() => { clearActiveSelection(); setActiveSetlistId(null); onNavigate?.(); }}
+        onClick={() => { clearActiveSelection(); setActiveSetlistId(null); goToLibraryView(); }}
       >
         All songs
       </button>
@@ -133,7 +143,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             onDragOver={(e) => handleDragOver(e, list.id)}
             onDragLeave={() => setSongDropTargetId((c) => (c === list.id ? null : c))}
             onDrop={(e) => handleDrop(e, list.id)}
-            onSelect={() => { setActiveSongListId(list.id); setActiveSetlistId(null); onNavigate?.(); }}
+            onSelect={() => { setActiveSongListId(list.id); setActiveSetlistId(null); goToLibraryView(); }}
             onDelete={() => deleteSongList(list.id)}
           />
         ))}
@@ -182,7 +192,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               onDragOver={(e) => handleSetlistDragOver(e, setlist.id)}
               onDragLeave={() => setSetlistDropTargetId((c) => (c === setlist.id ? null : c))}
               onDrop={(e) => handleSetlistDrop(e, setlist.id)}
-              onSelect={() => { setActiveSetlistId(setlist.id); setActiveSongListId(null); clearActiveSelection(); onNavigate?.(); }}
+              onSelect={() => { setActiveSetlistId(setlist.id); setActiveSongListId(null); clearActiveSelection(); goToLibraryView(); }}
               onDelete={() => deleteSetlist(setlist.id)}
             />
           ))}
