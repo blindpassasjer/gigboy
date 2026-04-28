@@ -1,13 +1,14 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
-import type { Setlist } from '../types';
+import type { Setlist, Song } from '../types';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 
 const KEY_SETLISTS = 'songbook-setlists';
 const KEY_ACTIVE_SETLIST = 'songbook-active-setlist';
 const SETLISTS_COLLECTION = 'setlists';
+const SHARED_SETLISTS_COLLECTION = 'sharedSetlists';
 
 function isPermissionDeniedError(error: unknown) {
   if (!error || typeof error !== 'object') return false;
@@ -93,6 +94,8 @@ interface SetlistsContextValue {
   moveSongInSetlist: (setlistId: string, songId: string, beforeSongId: string | null) => void;
   setActiveSetlistId: (id: string | null) => void;
   clearActiveSelection: () => void;
+  shareSetlist: (setlistId: string, setlistName: string, songs: Song[]) => Promise<string | null>;
+  unshareSetlist: (setlistId: string) => Promise<void>;
 }
 
 const SetlistsContext = createContext<SetlistsContextValue | null>(null);
@@ -293,6 +296,55 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     setActiveSetlistId(null);
   }, []);
 
+  const shareSetlist = useCallback(async (setlistId: string, setlistName: string, songs: Song[]): Promise<string | null> => {
+    if (!db || !userId) return null;
+
+    const shareToken = crypto.randomUUID();
+
+    await setDoc(doc(db, SHARED_SETLISTS_COLLECTION, shareToken), {
+      name: setlistName,
+      songs: songs.map((s) => ({ ...s })),
+      ownerId: userId,
+      createdAt: new Date().toISOString(),
+      setlistId,
+    });
+
+    setSetlists((prev) => {
+      const setlist = prev.find((l) => l.id === setlistId);
+      if (!setlist) return prev;
+      const nextSetlist = { ...setlist, shareToken, updatedAt: new Date().toISOString() };
+      const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
+      void writeSetlist(nextSetlist, userId).catch((error) => {
+        console.error('Failed to save shareToken to setlist in Firestore.', error);
+      });
+      return nextSetlists;
+    });
+
+    return shareToken;
+  }, [userId]);
+
+  const unshareSetlist = useCallback(async (setlistId: string): Promise<void> => {
+    setSetlists((prev) => {
+      const setlist = prev.find((l) => l.id === setlistId);
+      if (!setlist?.shareToken) return prev;
+
+      const { shareToken, ...rest } = setlist;
+      const nextSetlist: Setlist = { ...rest, updatedAt: new Date().toISOString() };
+      const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
+
+      if (db && userId) {
+        Promise.all([
+          deleteDoc(doc(db, SHARED_SETLISTS_COLLECTION, shareToken)),
+          writeSetlist(nextSetlist, userId),
+        ]).catch((error) => {
+          console.error('Failed to remove shared setlist from Firestore.', error);
+        });
+      }
+
+      return nextSetlists;
+    });
+  }, [userId]);
+
   return (
     <SetlistsContext.Provider
       value={{
@@ -306,6 +358,8 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
         moveSongInSetlist,
         setActiveSetlistId,
         clearActiveSelection,
+        shareSetlist,
+        unshareSetlist,
       }}
     >
       {children}

@@ -21,6 +21,7 @@ export interface Setlist {
   createdAt?: string;
   updatedAt?: string;
   sortOrder?: number;
+  shareToken?: string;
 }
 
 export type Language =
