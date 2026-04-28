@@ -9,6 +9,7 @@
   --muted:      #6b6560;
   --accent:     #5c4fa6;
   --accent-h:   #4a3f87;
+  --accent-contrast: #ffffff;
   --danger:     #c0392b;
   --chord:      #5c4fa6;
   --chord-bg:   #ede9f8;
@@ -26,6 +27,7 @@
   --muted:      #9e9890;
   --accent:     #9d91e0;
   --accent-h:   #b3a9e8;
+  --accent-contrast: #1c1a18;
   --danger:     #e05c4e;
   --chord:      #9d91e0;
   --chord-bg:   #2e2840;
@@ -813,6 +815,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   line-height: 1.2;
   color: var(--song-item-text);
 }
+
+.song-view-title-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
 .song-view-artist { color: var(--song-item-muted); margin-top: .2rem; }
 .song-view-badges {
   display: flex;
@@ -863,6 +873,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .instrument-toggle-btn:hover {
   background: var(--song-item-chip-bg);
   color: var(--song-item-chip-text);
+}
+
+.song-view-header .instrument-toggle-btn--active,
+.song-view-header .instrument-toggle-btn--active:hover {
+  background: var(--song-header-accent);
+  color: var(--song-item-accent-contrast, var(--accent-contrast));
 }
 
 .song-view-header .capo-badge,
@@ -930,8 +946,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   transition: background .15s, color .15s;
 }
 .instrument-toggle-btn:hover { background: var(--chord-bg); color: var(--accent); }
-.instrument-toggle-btn--active { background: var(--accent); color: #fff; }
-.instrument-toggle-btn--active:hover { background: var(--accent-h); color: #fff; }
+.instrument-toggle-btn--active { background: var(--accent); color: var(--accent-contrast); }
+.instrument-toggle-btn--active:hover { background: var(--accent-h); color: var(--accent-contrast); }
 
 @media (max-width: 900px) {
   .song-view-header {
@@ -1038,7 +1054,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .piano-inversion-btn--active:hover {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast);
 }
 
 .chord-diagram-hint {

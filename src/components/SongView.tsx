@@ -98,7 +98,17 @@ export default function SongView({ song, accentColor }: Props) {
     <div className="song-view">
       <div className="song-view-header" style={headerStyle}>
         <div className="song-view-title-block">
-          <h1 className="song-view-title">{song.title}</h1>
+          <div className="song-view-title-row">
+            <h1 className="song-view-title">{song.title}</h1>
+            <button
+              className="song-action-btn song-action-btn--rename"
+              onClick={handleRename}
+              title={`Rename ${song.title}`}
+              aria-label={`Rename ${song.title}`}
+            >
+              <PenLine size={14} />
+            </button>
+          </div>
           {song.artist && <p className="song-view-artist">{song.artist}</p>}
           <div className="song-view-badges">
             <LanguageBadge code={song.language} />
@@ -242,14 +252,6 @@ export default function SongView({ song, accentColor }: Props) {
                 aria-label={`Edit ${song.title}`}
               >
                 <SquarePen size={14} />
-              </button>
-              <button
-                className="song-action-btn song-action-btn--rename"
-                onClick={handleRename}
-                title={`Rename ${song.title}`}
-                aria-label={`Rename ${song.title}`}
-              >
-                <PenLine size={14} />
               </button>
               <button
                 className="song-action-btn song-action-btn--print"

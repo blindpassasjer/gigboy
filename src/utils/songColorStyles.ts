@@ -77,6 +77,10 @@ function relativeLuminance([r, g, b]: [number, number, number]): number {
   return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
 }
 
+function contrastTextRgb(background: [number, number, number]): [number, number, number] {
+  return relativeLuminance(background) > 0.44 ? [30, 24, 20] : [248, 250, 252];
+}
+
 export function buildSongSurfaceStyle(accentColor?: string): CSSProperties | undefined {
   if (!accentColor) return undefined;
 
@@ -89,8 +93,8 @@ export function buildSongSurfaceStyle(accentColor?: string): CSSProperties | und
   const bgRgb = mixRgb(accentRgb, [255, 255, 255], 0.78);
   const borderRgb = mixRgb(accentRgb, [255, 255, 255], 0.58);
   const chipBgRgb = mixRgb(accentRgb, [255, 255, 255], 0.68);
-  const textRgb: [number, number, number] =
-    relativeLuminance(bgRgb) > 0.44 ? [30, 24, 20] : [248, 250, 252];
+  const textRgb = contrastTextRgb(bgRgb);
+  const accentContrastRgb = contrastTextRgb(accentRgb);
   const mutedRgb: [number, number, number] =
     relativeLuminance(bgRgb) > 0.44 ? [77, 64, 55] : [226, 232, 240];
 
@@ -102,6 +106,7 @@ export function buildSongSurfaceStyle(accentColor?: string): CSSProperties | und
     '--song-item-muted': rgbToCss(mutedRgb),
     '--song-item-chip-bg': rgbToCss(chipBgRgb),
     '--song-item-chip-text': rgbToCss(textRgb),
+    '--song-item-accent-contrast': rgbToCss(accentContrastRgb),
   } as CSSProperties;
 }
 
@@ -117,10 +122,8 @@ export function buildSongSurfaceStyleFromPalette(accentColors: string[]): CSSPro
   const avgAccentRgb = averageRgb(accentRgbs);
   const borderRgb = mixRgb(avgAccentRgb, [255, 255, 255], 0.56);
   const chipBgRgb = mixRgb(avgAccentRgb, [255, 255, 255], 0.68);
-  const textRgb: [number, number, number] =
-    relativeLuminance(mixRgb(avgAccentRgb, [255, 255, 255], 0.76)) > 0.44
-      ? [30, 24, 20]
-      : [248, 250, 252];
+  const textRgb = contrastTextRgb(mixRgb(avgAccentRgb, [255, 255, 255], 0.76));
+  const accentContrastRgb = contrastTextRgb(avgAccentRgb);
   const mutedRgb: [number, number, number] =
     relativeLuminance(mixRgb(avgAccentRgb, [255, 255, 255], 0.76)) > 0.44
       ? [77, 64, 55]
@@ -142,5 +145,6 @@ export function buildSongSurfaceStyleFromPalette(accentColors: string[]): CSSPro
     '--song-item-muted': rgbToCss(mutedRgb),
     '--song-item-chip-bg': rgbToCss(chipBgRgb),
     '--song-item-chip-text': rgbToCss(textRgb),
+    '--song-item-accent-contrast': rgbToCss(accentContrastRgb),
   } as CSSProperties;
 }
