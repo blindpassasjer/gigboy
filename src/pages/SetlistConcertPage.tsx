@@ -21,6 +21,7 @@ import type { Song } from '../types';
 import LanguageBadge from '../components/LanguageBadge';
 import ChordDisplay from '../components/ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from '../components/ChordDiagram';
+import VisualMetronome from '../components/VisualMetronome';
 import type { ChordNotation } from '../utils/chordParser';
 import { transposeChord } from '../utils/chordParser';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
@@ -450,7 +451,13 @@ export default function SetlistConcertPage() {
               {currentSong.capo !== undefined && currentSong.capo > 0 && (
                 <span className="capo-badge">Capo {currentSong.capo}</span>
               )}
-              {currentSong.tempo && <span className="meta-pill">♩ {currentSong.tempo} bpm</span>}
+              {currentSong.tempo && (
+                <VisualMetronome
+                  tempo={currentSong.tempo}
+                  timeSignature={currentSong.timeSignature}
+                  className="concert-metronome"
+                />
+              )}
               {currentSong.timeSignature && <span className="meta-pill">{currentSong.timeSignature}</span>}
             </div>
           </div>

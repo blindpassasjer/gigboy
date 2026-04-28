@@ -18,6 +18,7 @@ import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
+import VisualMetronome from './VisualMetronome';
 import { transposeChord } from '../utils/chordParser';
 import type { ChordNotation } from '../utils/chordParser';
 import { useSongLists } from '../context/SongListsContext';
@@ -211,7 +212,13 @@ export default function SongView({ song, accentColor }: Props) {
             {song.capo !== undefined && song.capo > 0 && (
               <span className="capo-badge">Capo {song.capo}</span>
             )}
-            {song.tempo && <span className="meta-pill">♩ {song.tempo} bpm</span>}
+            {song.tempo && (
+              <VisualMetronome
+                tempo={song.tempo}
+                timeSignature={song.timeSignature}
+                className="song-view-metronome"
+              />
+            )}
             {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
 
             <div className="add-to-list-wrap" ref={menuRef}>

@@ -929,6 +929,138 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-weight: 600;
 }
 
+.visual-metronome {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .2rem .35rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 70%, var(--bg));
+}
+
+.visual-metronome-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .2rem .55rem;
+  font-size: .73rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.visual-metronome-toggle:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--chord-bg);
+}
+
+.visual-metronome-readout {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.visual-metronome-light {
+  width: .68rem;
+  height: .68rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
+  opacity: .45;
+}
+
+.visual-metronome-light.is-running {
+  background: color-mix(in srgb, var(--accent) 85%, white);
+  animation-name: metronome-pulse;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+.visual-metronome-tempo {
+  font-size: .76rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: .02em;
+}
+
+.visual-metronome-beats {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+}
+
+.visual-metronome-beat {
+  width: .38rem;
+  height: .38rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+  transition: transform .14s ease, background .14s ease;
+}
+
+.visual-metronome-beat.is-active {
+  transform: scale(1.12);
+  background: color-mix(in srgb, var(--accent) 85%, white);
+}
+
+.visual-metronome-beat.is-downbeat {
+  width: .5rem;
+  height: .5rem;
+}
+
+.song-view-header .visual-metronome {
+  border-color: var(--song-item-border);
+  background: var(--song-item-chip-bg);
+}
+
+.song-view-header .visual-metronome-toggle {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+}
+
+.song-view-header .visual-metronome-toggle:hover {
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
+}
+
+.song-view-header .visual-metronome-tempo {
+  color: var(--song-item-chip-text);
+}
+
+.concert-metronome {
+  background: color-mix(in srgb, var(--surface) 82%, var(--bg));
+}
+
+@keyframes metronome-pulse {
+  0% {
+    transform: scale(.72);
+    opacity: .4;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+
+  14% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 .34rem color-mix(in srgb, var(--accent) 26%, transparent);
+  }
+
+  32% {
+    transform: scale(.74);
+    opacity: .5;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+
+  100% {
+    transform: scale(.72);
+    opacity: .4;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
 /* ─── Instrument toggle ─────────────────────────────────────────────────────── */
 .instrument-toggle {
   display: flex;
@@ -3044,6 +3176,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   .concert-teleprompter-speed {
     width: 100%;
     text-align: left;
+  }
+
+  .visual-metronome {
+    width: 100%;
+    border-radius: 12px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .visual-metronome-beats {
+    width: 100%;
   }
 
   .concert-song-surface .chord-display {
