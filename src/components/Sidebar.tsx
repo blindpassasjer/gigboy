@@ -50,6 +50,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [draftName, setDraftName] = useState('');
   const [songDropTargetId, setSongDropTargetId] = useState<string | null>(null);
   const [setlistDropTargetId, setSetlistDropTargetId] = useState<string | null>(null);
+  const setlistDropActive = setlistDropTargetId !== null;
 
   const goToLibraryView = () => {
     if (pathname !== '/') {
@@ -171,7 +172,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         </button>
       )}
 
-      <div className="sidebar-setlists-section">
+      <div className={`sidebar-setlists-section${setlistDropActive ? ' drop-active' : ''}`}>
         <div className="sidebar-setlists-header">
           <h3 className="sidebar-section-title">Setlists</h3>
           <button
@@ -183,7 +184,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           </button>
         </div>
 
-        <div className="sidebar-setlists">
+        <div className={`sidebar-setlists${setlistDropActive ? ' drop-active' : ''}`}>
           {setlists.map((setlist) => (
             <SetlistItem
               key={setlist.id}
@@ -324,6 +325,7 @@ function SetlistItem({
       <button className="sidebar-setlist-item-btn" onClick={onSelect}>
         {active ? <ListMusicIcon size={14} /> : <ListMusic size={14} />}
         <span className="sidebar-setlist-name">{name}</span>
+        {songDropTarget && <span className="sidebar-setlist-drop-label">Drop song</span>}
         {count > 0 && <span className="sidebar-setlist-count">{count}</span>}
       </button>
       <button className="sidebar-setlist-delete" title="Delete setlist" onClick={onDelete}>

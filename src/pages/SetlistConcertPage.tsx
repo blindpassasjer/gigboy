@@ -12,6 +12,8 @@ import {
   Pause,
   Play,
   RotateCcw,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { useSetlists } from '../context/SetlistsContext';
 import { useSongs } from '../context/SongsContext';
@@ -49,7 +51,8 @@ export default function SetlistConcertPage() {
   const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
   const [chordNotation, setChordNotation] = useState<ChordNotation>('anglo');
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
-  const [showSongNavigator, setShowSongNavigator] = useState(true);
+  const [showTopbar, setShowTopbar] = useState(false);
+  const [showSongNavigator, setShowSongNavigator] = useState(false);
   const [teleprompterActive, setTeleprompterActive] = useState(false);
   const [teleprompterSpeed, setTeleprompterSpeed] = useState(28);
   const [isFullscreen, setIsFullscreen] = useState(() => {
@@ -146,6 +149,18 @@ export default function SetlistConcertPage() {
       // Ignore failures when fullscreen is unavailable.
     }
   }, []);
+
+  const handleStopConcert = useCallback(async () => {
+    setTeleprompterActive(false);
+    if (typeof document !== 'undefined' && document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+      } catch {
+        // Ignore failures when fullscreen is unavailable.
+      }
+    }
+    navigate('/');
+  }, [navigate]);
 
   const goToSong = useCallback((index: number) => {
     setCurrentIndex(Math.min(Math.max(index, 0), setlistSongs.length - 1));
@@ -257,6 +272,26 @@ export default function SetlistConcertPage() {
 
   return (
     <section className="concert-mode">
+      <div className="concert-topbar-toggle-row">
+        <button
+          type="button"
+          className="concert-chip-btn concert-topbar-toggle-btn"
+          onClick={() => setShowTopbar((v) => !v)}
+          aria-label={showTopbar ? 'Hide toolbar' : 'Show toolbar'}
+        >
+          <SlidersHorizontal size={14} />
+          {showTopbar ? 'Hide toolbar' : 'Show toolbar'}
+        </button>
+        <button
+          type="button"
+          className="concert-chip-btn concert-chip-btn--danger"
+          onClick={() => { void handleStopConcert(); }}
+          aria-label="Stop concert mode"
+        >
+          <X size={14} /> Stop Concert
+        </button>
+      </div>
+      {showTopbar && (
       <header className="concert-topbar" style={headerStyle}>
         <div className="concert-topbar-main">
           <Link to="/" className="back-link concert-back-link"><ArrowLeft size={15} /> Back</Link>
@@ -402,6 +437,7 @@ export default function SetlistConcertPage() {
           </div>
         </div>
       </header>
+      )}
 
       <div className="concert-content-wrap">
         <article className="concert-song-surface">

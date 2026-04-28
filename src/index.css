@@ -219,7 +219,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-list-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
@@ -685,14 +685,14 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-action-btn--rename {
   color: #8a5400;
-  border-color: #eec88d;
-  background: #fff5e4;
+  border-color: transparent;
+  background: transparent;
 }
 
 .song-action-btn--rename:hover {
   color: #663f00;
-  border-color: #dfad63;
-  background: #ffedcb;
+  border-color: transparent;
+  background: transparent;
 }
 
 .song-action-btn--remove {
@@ -1918,6 +1918,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-top: 1px solid var(--border);
 }
 
+.sidebar-setlists-section.drop-active {
+  border-top-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
 .sidebar-setlists-header {
   display: flex;
   align-items: center;
@@ -1942,6 +1946,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-bottom: .5rem;
 }
 
+.sidebar-setlists.drop-active {
+  background: color-mix(in srgb, var(--chord-bg) 68%, transparent);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 32%, transparent);
+  padding: .25rem;
+}
+
 .sidebar-setlist-item {
   display: flex;
   align-items: center;
@@ -1956,8 +1967,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--accent);
 }
 .sidebar-setlist-item.song-drop-target {
-  background: var(--chord-bg);
-  box-shadow: inset 0 0 0 2px var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--accent) 72%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+  animation: sidebar-song-drop-pulse .72s ease-in-out infinite alternate;
 }
 
 .sidebar-setlist-item-btn {
@@ -1975,6 +1990,20 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.sidebar-setlist-drop-label {
+  margin-left: .3rem;
+  display: inline-flex;
+  align-items: center;
+  font-size: .67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: .1rem .35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  color: color-mix(in srgb, var(--accent) 78%, var(--text));
 }
 
 .sidebar-setlist-count {
@@ -2133,13 +2162,41 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0;
 }
 
+.setlist-songs.is-dragging {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--chord-bg) 38%, transparent) 0%,
+    transparent 35%,
+    transparent 65%,
+    color-mix(in srgb, var(--chord-bg) 34%, transparent) 100%
+  );
+}
+
 .setlist-song-item {
+  position: relative;
   padding: .5rem 1rem;
   border-bottom: 1px solid var(--border);
-  transition: background .12s;
+  transition: background .12s, opacity .12s;
 }
+
+.setlist-song-item.dragging {
+  opacity: .52;
+}
+
 .setlist-song-item.drop-before {
-  box-shadow: inset 0 -2px 0 var(--accent);
+  z-index: 1;
+}
+
+.setlist-song-item.drop-before::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 1rem;
+  right: 1rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: drop-insert-line .14s ease-out;
 }
 
 .setlist-song-card {
@@ -2149,24 +2206,38 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .5rem;
   border-radius: 5px;
   background: var(--surface);
-  transition: background .12s;
+  border: 1px solid transparent;
+  transition: background .12s, border-color .12s, box-shadow .12s;
 }
 .setlist-song-item:hover .setlist-song-card {
   background: var(--bg);
+}
+
+.setlist-song-card.drop-target {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .setlist-drag-handle {
   flex-shrink: 0;
   padding: .25rem;
   color: var(--muted);
-  opacity: 0.4;
-  transition: opacity .12s;
+  opacity: 0.45;
+  border: 1px dashed transparent;
+  border-radius: 7px;
+  transition: opacity .12s, color .12s, border-color .12s, background .12s;
   cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .setlist-drag-handle:active { cursor: grabbing; }
+.setlist-drag-handle.dragging {
+  opacity: 1;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--chord-bg) 70%, transparent);
+}
 .setlist-song-card:hover .setlist-drag-handle { opacity: 0.8; }
 
 .setlist-song-position {
@@ -2245,14 +2316,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .setlist-drop-zone {
   min-height: 2px;
+  margin: 0 1rem;
   padding: .5rem 0;
-  transition: all .12s;
+  border-radius: 8px;
+  transition: min-height .12s, background .12s, box-shadow .12s;
 }
 .setlist-drop-zone.active {
-  min-height: 24px;
-  background: var(--chord-bg);
-  box-shadow: inset 0 0 0 2px var(--accent);
-  border-radius: 4px;
+  min-height: 30px;
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--accent) 58%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .song-picker-overlay {
@@ -2410,6 +2484,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-height: calc(100vh - 140px);
 }
 
+.concert-topbar-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.concert-topbar-toggle-btn {
+  font-size: .78rem;
+}
+
 .concert-topbar {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2471,6 +2557,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
   background: var(--chord-bg);
+}
+
+.concert-chip-btn--danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+}
+
+.concert-chip-btn--danger:hover {
+  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
 }
 
 .concert-chip-btn--compact {
@@ -2671,17 +2768,21 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .concert-nav-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  margin: 0 -1rem -1rem;
-  padding: .7rem 1rem;
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  backdrop-filter: blur(6px);
-  border-top: 1px solid var(--border);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: .95rem;
+  z-index: 12;
+  margin: 0;
+  padding: 0 1rem;
+  background: transparent;
+  backdrop-filter: none;
+  border-top: none;
   display: flex;
-  justify-content: center;
-  gap: .7rem;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0;
+  pointer-events: none;
 }
 
 .concert-nav-btn {
@@ -2696,6 +2797,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-weight: 600;
   min-width: 126px;
   justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .14);
+  pointer-events: auto;
 }
 
 .concert-nav-btn:hover {
@@ -2913,16 +3016,16 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .concert-nav-footer {
-    margin: 0;
-    padding: .55rem 0;
+    bottom: .7rem;
+    padding: 0 .7rem;
     background: transparent;
     backdrop-filter: none;
     border-top: none;
   }
 
   .concert-nav-btn {
-    flex: 1;
-    min-width: 0;
+    flex: 0 0 auto;
+    min-width: 110px;
     padding: .58rem .7rem;
   }
   .song-list-controls {

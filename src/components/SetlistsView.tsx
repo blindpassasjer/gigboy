@@ -248,23 +248,23 @@ export default function SetlistsView({
         </div>
       ) : (
         <ul
-          className="setlist-songs"
+          className={`setlist-songs${draggingSongId ? ' is-dragging' : ''}${dropAtEnd ? ' drop-at-end' : ''}`}
           onDragOver={handleListEndDragOver}
           onDrop={handleListEndDrop}
         >
           {songs.map((song, index) => (
             <li
               key={song.id}
-              className={`setlist-song-item ${dropTargetSongId === song.id ? 'drop-before' : ''}`}
+              className={`setlist-song-item${dropTargetSongId === song.id ? ' drop-before' : ''}${draggingSongId === song.id ? ' dragging' : ''}`}
             >
               <div
-                className="setlist-song-card"
+                className={`setlist-song-card${dropTargetSongId === song.id ? ' drop-target' : ''}`}
                 onDragOver={(event) => handleSongDragOver(song.id, event)}
                 onDrop={(event) => handleSongDrop(song.id, event)}
               >
                 <button
                   type="button"
-                  className="setlist-drag-handle"
+                  className={`setlist-drag-handle${draggingSongId === song.id ? ' dragging' : ''}`}
                   draggable
                   onDragStart={(event) => handleSongDragStart(song, event)}
                   onDragEnd={handleSongDragEnd}
