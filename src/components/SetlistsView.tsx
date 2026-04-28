@@ -222,10 +222,6 @@ export default function SetlistsView({
         </div>
       </div>
 
-      <div className="setlist-info">
-        <p className="setlist-hint">💡 Drag songs here to add them, or drag within the list to reorder</p>
-      </div>
-
       {songs.length === 0 ? (
         <div className="empty-state">
           <Music size={48} />
