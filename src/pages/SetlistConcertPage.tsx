@@ -458,7 +458,7 @@ export default function SetlistConcertPage() {
                 <li key={song.id}>
                   <button
                     type="button"
-                    className={`concert-song-jump${index === currentIndex ? ' active' : ''}`}
+                    className={`concert-song-jump${index === currentIndex ? ' active' : ''}${index < currentIndex ? ' played' : ''}`}
                     onClick={() => goToSong(index)}
                   >
                     <span className="concert-song-jump-number">{index + 1}</span>

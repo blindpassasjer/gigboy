@@ -2622,6 +2622,20 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--accent) 15%, var(--surface));
 }
 
+.concert-song-jump.played {
+  opacity: .55;
+}
+
+.concert-song-jump.played .concert-song-jump-main strong {
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
+}
+
+.concert-song-jump.played .concert-song-jump-number {
+  background: var(--border);
+  color: var(--muted);
+}
+
 .concert-song-jump-number {
   width: 1.8rem;
   height: 1.8rem;
