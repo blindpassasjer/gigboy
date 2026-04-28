@@ -205,6 +205,24 @@ export default function SetlistsView({
           </p>
         </div>
         <div className="setlist-header-actions">
+          {songs.length > 0 ? (
+            <Link
+              className="setlist-action-btn setlist-action-btn--concert"
+              to={`/setlists/${setlistId}/concert`}
+              title={`Start concert for ${setlistName}`}
+            >
+              Start Concert
+            </Link>
+          ) : (
+            <button
+              className="setlist-action-btn setlist-action-btn--concert"
+              type="button"
+              disabled
+              title="Add songs to enable concert mode"
+            >
+              Start Concert
+            </button>
+          )}
           <button
             className="setlist-action-btn setlist-action-btn--secondary"
             onClick={openSongPicker}

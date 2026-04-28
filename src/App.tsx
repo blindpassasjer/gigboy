@@ -5,6 +5,7 @@ import SongPage from './pages/SongPage';
 import AddSongPage from './pages/AddSongPage';
 import EditSongPage from './pages/EditSongPage';
 import LoginPage from './pages/LoginPage';
+import SetlistConcertPage from './pages/SetlistConcertPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
@@ -30,6 +31,7 @@ function AuthGate() {
                 <Route path="/songs/:id" element={<SongPage />} />
                 <Route path="/songs/:id/edit" element={<EditSongPage />} />
                 <Route path="/add" element={<AddSongPage />} />
+                <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />
               </Routes>
             </Layout>
           </BrowserRouter>
