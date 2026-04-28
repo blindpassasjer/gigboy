@@ -183,19 +183,30 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
     const firestore = db;
 
-    Promise.all([
+    Promise.allSettled([
       getDocs(collection(firestore, ...songsCollectionPath(userId))),
       getDocs(query(collectionGroup(firestore, SONGS_COLLECTION), where('collaboratorIds', 'array-contains', userId))),
     ])
-      .then(async ([ownedSnap, sharedSnap]) => {
+      .then(async ([ownedResult, sharedResult]) => {
+        const ownedSnap = ownedResult.status === 'fulfilled' ? ownedResult.value : null;
+        const sharedSnap = sharedResult.status === 'fulfilled' ? sharedResult.value : null;
+
+        if (ownedResult.status === 'rejected') {
+          console.error('Failed to load owned songs from Firestore.', ownedResult.reason);
+        }
+
+        if (sharedResult.status === 'rejected') {
+          console.warn('Failed to load shared songs from Firestore. Continuing with owned songs only.', sharedResult.reason);
+        }
+
         const directSongs = normalizeSongs(
-          ownedSnap.docs.map((entry) =>
+          (ownedSnap?.docs ?? []).map((entry) =>
             songFromOwnedDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
           )
         );
 
         const sharedSongs = normalizeSongs(
-          sharedSnap.docs
+          (sharedSnap?.docs ?? [])
             .map((entry) => {
               const ownerId = entry.ref.parent.parent?.id;
               if (!ownerId || ownerId === userId) return null;
@@ -209,6 +220,10 @@ export function SongsProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        if (!ownedSnap) {
+          return;
+        }
+
         const legacySongs = normalizeSongs(await loadLegacySongs(firestore, userId));
         if (legacySongs.length === 0) {
           setUserSongs([]);
@@ -219,9 +234,6 @@ export function SongsProvider({ children }: { children: ReactNode }) {
         void migrateLegacySongsToUserPath(firestore, userId, legacySongs).catch((error) => {
           console.warn('Loaded legacy songs but failed to migrate them into users/{uid}/songs.', error);
         });
-      })
-      .catch((error) => {
-        console.error('Failed to load songs from Firestore. Falling back to local data.', error);
       })
       .finally(() => setLoading(false));
   }, [userId]);

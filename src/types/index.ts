@@ -49,7 +49,6 @@ export interface Setlist extends CollaborationMetadata {
   createdAt?: string;
   updatedAt?: string;
   sortOrder?: number;
-  shareToken?: string;
 }
 
 export type Language =
