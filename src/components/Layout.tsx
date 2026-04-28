@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Music, BookOpen, Plus, LogOut, Menu, Sun, Moon, Maximize2, Minimize2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -14,6 +14,7 @@ export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
+  const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(max-width: 900px)').matches;
@@ -47,7 +48,7 @@ export default function Layout({ children }: Props) {
 
     const updateViewport = (matches: boolean) => {
       setIsNarrowViewport(matches);
-      setSidebarOpen((current) => (matches ? false : current || true));
+      setSidebarOpen((current) => (matches ? false : current));
     };
 
     updateViewport(mediaQuery.matches);
@@ -61,9 +62,13 @@ export default function Layout({ children }: Props) {
   }, []);
 
   useEffect(() => {
-    if (isNarrowViewport || isConcertRoute) {
+    const leavingConcertRoute = wasConcertRouteRef.current && !isConcertRoute;
+
+    if (isNarrowViewport || isConcertRoute || leavingConcertRoute) {
       setSidebarOpen(false);
     }
+
+    wasConcertRouteRef.current = isConcertRoute;
   }, [pathname, isNarrowViewport, isConcertRoute]);
 
   useEffect(() => {
