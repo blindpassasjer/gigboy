@@ -217,11 +217,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 /* ─── Song List ─────────────────────────────────────────────────────────────── */
 .song-list-page { display: flex; flex-direction: column; }
 
-.song-list-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+.songlist-header {
   flex-wrap: wrap;
 }
 
@@ -3384,7 +3380,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .song-view-header { flex-direction: column; }
   .song-view-toolbar { align-items: flex-start; }
-  .song-list-header { align-items: stretch; }
+  .songlist-header { align-items: stretch; }
   .setlist-header-actions {
     width: 100%;
   }
@@ -3561,6 +3557,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 
 @media print {
+  html,
+  body,
+  #root,
+  .app-shell,
+  .app-body,
+  .main-content,
+  .setlist-view,
+  .setlist-songs {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   .topbar,
   .sidebar-anim,
   .sidebar-backdrop,

@@ -389,7 +389,7 @@ export default function SongList({
   return (
     <div className="song-list-page">
       <div className="song-list-sticky">
-      <div className="song-list-header setlist-header">
+      <div className="songlist-header setlist-header">
         <div className="setlist-title-block">
           {listName && (
             <h2 className="song-list-heading setlist-title">
