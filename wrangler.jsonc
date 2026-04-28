@@ -4,5 +4,21 @@
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
+  },
+  "env": {
+    "development": {
+      "vars": {
+        "FIREBASE_PROJECT_ID": "",
+        "FIREBASE_PRIVATE_KEY": "",
+        "FIREBASE_CLIENT_EMAIL": ""
+      }
+    },
+    "production": {
+      "vars": {
+        "FIREBASE_PROJECT_ID": "",
+        "FIREBASE_PRIVATE_KEY": "",
+        "FIREBASE_CLIENT_EMAIL": ""
+      }
+    }
   }
 }
