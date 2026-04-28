@@ -4,7 +4,35 @@ export interface SongListCategory {
   sortOrder?: number;
 }
 
-export interface SongList {
+export type CollaborationPermission = 'viewer' | 'editor';
+export type CollaborationRole = 'owner' | CollaborationPermission;
+
+export type ShareResourceType = 'song' | 'songlist' | 'setlist';
+
+export interface CollaborationMetadata {
+  ownerId?: string;
+  collaboratorIds?: string[];
+  collaborationPermissions?: Record<string, CollaborationPermission>;
+  accessRole?: CollaborationRole;
+}
+
+export interface CollaborationInvite {
+  id: string;
+  ownerId: string;
+  ownerEmail: string;
+  recipientEmail: string;
+  recipientEmailLower: string;
+  recipientUid?: string;
+  resourceType: ShareResourceType;
+  resourceId: string;
+  resourceName: string;
+  permission: CollaborationPermission;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked';
+  createdAt: string;
+  respondedAt?: string;
+}
+
+export interface SongList extends CollaborationMetadata {
   id: string;
   name: string;
   songIds: string[];
@@ -14,7 +42,7 @@ export interface SongList {
   sortOrder?: number;
 }
 
-export interface Setlist {
+export interface Setlist extends CollaborationMetadata {
   id: string;
   name: string;
   songIds: string[];
@@ -35,7 +63,7 @@ export type Language =
   | 'la'
   | string;
 
-export interface Song {
+export interface Song extends CollaborationMetadata {
   id: string;
   title: string;
   artist?: string;

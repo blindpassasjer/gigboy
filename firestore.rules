@@ -1,8 +1,42 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isOwnerForResource(ownerId) {
+      return isSignedIn() && ownerId == request.auth.uid;
+    }
+
+    function isCollaboratorOnResource() {
+      return isSignedIn()
+        && resource.data.collaboratorIds is list
+        && resource.data.collaboratorIds.hasAny([request.auth.uid]);
+    }
+
+    function isEditorOnResource() {
+      return isCollaboratorOnResource()
+        && resource.data.collaborationPermissions[request.auth.uid] == 'editor';
+    }
+
+    function collaborationMetadataUnchanged() {
+      return request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.collaboratorIds == resource.data.collaboratorIds
+        && request.resource.data.collaborationPermissions == resource.data.collaborationPermissions;
+    }
+
+    function canReadResource(ownerId) {
+      return isOwnerForResource(ownerId) || isCollaboratorOnResource();
+    }
+
+    function canUpdateResource(ownerId) {
+      return isOwnerForResource(ownerId)
+        || (isEditorOnResource() && collaborationMetadataUnchanged());
     }
 
     // User-scoped songbook data
@@ -10,7 +44,10 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
 
       match /songs/{songId} {
-        allow read, write: if isOwner(userId);
+        allow read: if canReadResource(userId);
+        allow create: if isOwner(userId) && request.resource.data.ownerId == request.auth.uid;
+        allow update: if canUpdateResource(userId);
+        allow delete: if isOwner(userId);
       }
 
       match /songListCategories/{categoryId} {
@@ -18,12 +55,44 @@ service cloud.firestore {
       }
 
       match /songLists/{listId} {
-        allow read, write: if isOwner(userId);
+        allow read: if canReadResource(userId);
+        allow create: if isOwner(userId) && request.resource.data.ownerId == request.auth.uid;
+        allow update: if canUpdateResource(userId);
+        allow delete: if isOwner(userId);
       }
 
       match /setlists/{setlistId} {
-        allow read, write: if isOwner(userId);
+        allow read: if canReadResource(userId);
+        allow create: if isOwner(userId) && request.resource.data.ownerId == request.auth.uid;
+        allow update: if canUpdateResource(userId);
+        allow delete: if isOwner(userId);
       }
+    }
+
+    match /collaborationInvites/{inviteId} {
+      allow read: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid
+        || resource.data.recipientUid == request.auth.uid
+        || (
+          request.auth.token.email != null
+          && resource.data.recipientEmailLower == lower(request.auth.token.email)
+        )
+      );
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      allow update: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid
+        || resource.data.recipientUid == request.auth.uid
+        || (
+          request.auth.token.email != null
+          && resource.data.recipientEmailLower == lower(request.auth.token.email)
+        )
+      );
+
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
 
     // Legacy storage path for older Folio versions

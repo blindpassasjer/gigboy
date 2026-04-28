@@ -4,7 +4,7 @@ interface Data extends Record<string, unknown> {
   userId?: string;
 }
 
-export const onRequestDelete: PagesFunction<never, 'id', Data> = async (ctx) => {
+export const onRequestDelete: PagesFunction<never, 'id', Data> = async () => {
   // Firebase delete would go here
   return Response.json({ ok: true });
 };

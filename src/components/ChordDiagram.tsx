@@ -465,7 +465,7 @@ export default function ChordDiagram({ chord, instrument, anchorRect, onClose }:
   const normalized = normalizeForLookup(chord);
   const guitarFrets = GUITAR_CHORDS[normalized];
   const chordModel = useMemo(() => parseChordModel(chord), [chord]);
-  const triadIntervals = chordModel?.triadIntervals ?? [];
+  const triadIntervals = useMemo(() => chordModel?.triadIntervals ?? [], [chordModel]);
   const inversionSteps = Math.max(1, triadIntervals.length);
   const effectiveInversion = showInversions ? inversionIndex : 0;
 

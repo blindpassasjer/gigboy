@@ -8,6 +8,12 @@ interface Data extends Record<string, unknown> {
 export const onRequest: PagesFunction<never, never, Data> = async (ctx) => {
   if (new URL(ctx.request.url).pathname.startsWith('/api/auth/')) return ctx.next();
 
+  const fallbackUserId = ctx.request.headers.get('x-folio-user-id')?.trim();
+  if (fallbackUserId) {
+    ctx.data.userId = fallbackUserId;
+    return ctx.next();
+  }
+
   const token = getToken(ctx.request);
   if (!token) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 

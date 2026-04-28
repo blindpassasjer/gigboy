@@ -17,7 +17,14 @@ interface FirebaseConfig {
   clientEmail: string;
 }
 
-function getFirebaseConfig(env: Record<string, string>): FirebaseConfig | null {
+interface FirebaseTokenCache {
+  token: string;
+  expiresAt: number;
+}
+
+let tokenCache: FirebaseTokenCache | null = null;
+
+function getFirebaseConfig(env: Record<string, string | undefined>): FirebaseConfig | null {
   const { FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL } = env;
 
   if (!FIREBASE_PROJECT_ID || !FIREBASE_PRIVATE_KEY || !FIREBASE_CLIENT_EMAIL) {
@@ -30,12 +37,235 @@ function getFirebaseConfig(env: Record<string, string>): FirebaseConfig | null {
 
   return {
     projectId: FIREBASE_PROJECT_ID,
-    privateKey: FIREBASE_PRIVATE_KEY,
+    privateKey: FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
     clientEmail: FIREBASE_CLIENT_EMAIL,
   };
 }
 
-export function initializeFirebaseAdmin(env: Record<string, string>) {
+function decodeBase64ToBytes(base64: string): Uint8Array {
+  const normalized = base64.replace(/\s+/g, '');
+  const binary = atob(normalized);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const stripped = pem
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\s+/g, '');
+  return decodeBase64ToBytes(stripped).buffer;
+}
+
+function base64UrlEncodeBytes(bytes: Uint8Array): string {
+  let binary = '';
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlEncodeJson(payload: Record<string, unknown>): string {
+  const json = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(json);
+  return base64UrlEncodeBytes(bytes);
+}
+
+async function signJwt(payload: Record<string, unknown>, privateKeyPem: string): Promise<string> {
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const headerPart = base64UrlEncodeJson(header);
+  const payloadPart = base64UrlEncodeJson(payload);
+  const unsignedToken = `${headerPart}.${payloadPart}`;
+
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(privateKeyPem),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    { name: 'RSASSA-PKCS1-v1_5' },
+    key,
+    new TextEncoder().encode(unsignedToken)
+  );
+
+  const signaturePart = base64UrlEncodeBytes(new Uint8Array(signature));
+  return `${unsignedToken}.${signaturePart}`;
+}
+
+async function fetchAccessToken(config: FirebaseConfig) {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const assertion = await signJwt(
+    {
+      iss: config.clientEmail,
+      scope: 'https://www.googleapis.com/auth/datastore',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: nowSeconds + 3600,
+      iat: nowSeconds,
+    },
+    config.privateKey
+  );
+
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }).toString(),
+  });
+
+  if (!tokenResponse.ok) {
+    const details = await tokenResponse.text();
+    throw new Error(`Failed to fetch Firebase access token: ${details}`);
+  }
+
+  const tokenPayload = await tokenResponse.json() as {
+    access_token: string;
+    expires_in: number;
+  };
+
+  tokenCache = {
+    token: tokenPayload.access_token,
+    expiresAt: Date.now() + (tokenPayload.expires_in - 60) * 1000,
+  };
+
+  return tokenCache.token;
+}
+
+async function getAccessToken(env: Record<string, string | undefined>) {
+  const config = getFirebaseConfig(env);
+  if (!config) {
+    throw new Error('Firebase credentials not configured');
+  }
+
+  if (tokenCache && tokenCache.expiresAt > Date.now()) {
+    return tokenCache.token;
+  }
+
+  return fetchAccessToken(config);
+}
+
+function documentPath(segments: string[]) {
+  return segments.map((segment) => encodeURIComponent(segment)).join('/');
+}
+
+function toFirestoreValue(value: unknown): Record<string, unknown> {
+  if (value === null) {
+    return { nullValue: null };
+  }
+
+  if (typeof value === 'string') {
+    return { stringValue: value };
+  }
+
+  if (typeof value === 'boolean') {
+    return { booleanValue: value };
+  }
+
+  if (typeof value === 'number') {
+    if (Number.isInteger(value)) {
+      return { integerValue: String(value) };
+    }
+    return { doubleValue: value };
+  }
+
+  if (Array.isArray(value)) {
+    return {
+      arrayValue: {
+        values: value.map((entry) => toFirestoreValue(entry)),
+      },
+    };
+  }
+
+  if (typeof value === 'object') {
+    const objectValue = value as Record<string, unknown>;
+    return {
+      mapValue: {
+        fields: Object.fromEntries(
+          Object.entries(objectValue)
+            .filter(([, entryValue]) => entryValue !== undefined)
+            .map(([entryKey, entryValue]) => [entryKey, toFirestoreValue(entryValue)])
+        ),
+      },
+    };
+  }
+
+  return { stringValue: String(value) };
+}
+
+function fromFirestoreValue(value: Record<string, unknown>): unknown {
+  if ('stringValue' in value) return value.stringValue as string;
+  if ('booleanValue' in value) return value.booleanValue as boolean;
+  if ('integerValue' in value) return Number(value.integerValue);
+  if ('doubleValue' in value) return value.doubleValue as number;
+  if ('timestampValue' in value) return value.timestampValue as string;
+  if ('nullValue' in value) return null;
+
+  if ('arrayValue' in value) {
+    const arrayValue = value.arrayValue as { values?: Array<Record<string, unknown>> };
+    return (arrayValue.values ?? []).map((entry) => fromFirestoreValue(entry));
+  }
+
+  if ('mapValue' in value) {
+    const mapValue = value.mapValue as { fields?: Record<string, Record<string, unknown>> };
+    const fields = mapValue.fields ?? {};
+    return Object.fromEntries(
+      Object.entries(fields).map(([entryKey, entryValue]) => [entryKey, fromFirestoreValue(entryValue)])
+    );
+  }
+
+  return undefined;
+}
+
+function fromFirestoreFields(fields: Record<string, Record<string, unknown>> | undefined) {
+  if (!fields) return {} as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(fields).map(([key, value]) => [key, fromFirestoreValue(value)])
+  );
+}
+
+async function firestoreRequest(
+  env: Record<string, string | undefined>,
+  method: string,
+  segments: string[],
+  body?: Record<string, unknown>
+) {
+  const config = getFirebaseConfig(env);
+  if (!config) {
+    throw new Error('Firebase credentials not configured');
+  }
+
+  const accessToken = await getAccessToken(env);
+  const endpoint = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/${documentPath(segments)}`;
+
+  const response = await fetch(endpoint, {
+    method,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Firestore request failed (${method} ${segments.join('/')}): ${details}`);
+  }
+
+  return response.json() as Promise<Record<string, unknown>>;
+}
+
+export function initializeFirebaseAdmin(env: Record<string, string | undefined>) {
   const config = getFirebaseConfig(env);
 
   if (!config) {
@@ -67,9 +297,33 @@ export function initializeFirebaseAdmin(env: Record<string, string>) {
   };
 }
 
-export function requireFirebaseAdmin(env: Record<string, string>) {
+export function requireFirebaseAdmin(env: Record<string, string | undefined>) {
   const { isConfigured, error } = initializeFirebaseAdmin(env);
   if (!isConfigured) {
     throw new Error(error);
   }
+}
+
+export async function getFirestoreDocument(
+  env: Record<string, string | undefined>,
+  segments: string[]
+): Promise<Record<string, unknown> | null> {
+  const doc = await firestoreRequest(env, 'GET', segments);
+  if (!doc) return null;
+  const fields = doc.fields as Record<string, Record<string, unknown>> | undefined;
+  return fromFirestoreFields(fields);
+}
+
+export async function setFirestoreDocument(
+  env: Record<string, string | undefined>,
+  segments: string[],
+  payload: Record<string, unknown>
+) {
+  const fields = Object.fromEntries(
+    Object.entries(payload)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, toFirestoreValue(value)])
+  );
+
+  await firestoreRequest(env, 'PATCH', segments, { fields });
 }

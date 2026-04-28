@@ -1,6 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, collectionGroup, deleteDoc, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import type { Setlist, Song } from '../types';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
@@ -59,9 +60,35 @@ function normalizeSetlists(setlists: Setlist[]) {
 async function writeSetlist(setlist: Setlist, userId: string | null) {
   if (!db || !userId) return;
 
+  const targetOwnerId = setlist.ownerId ?? userId;
+
   const { id, ...rest } = setlist;
   const firestoreData = Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== undefined));
-  await setDoc(doc(db, 'users', userId, SETLISTS_COLLECTION, id), firestoreData);
+  await setDoc(doc(db, 'users', targetOwnerId, SETLISTS_COLLECTION, id), firestoreData);
+}
+
+function getRole(setlist: Setlist, userId: string | null): Setlist['accessRole'] {
+  if (!userId) return undefined;
+  const ownerId = setlist.ownerId;
+  if (ownerId && ownerId === userId) return 'owner';
+  const permission = setlist.collaborationPermissions?.[userId];
+  if (permission === 'editor' || permission === 'viewer') return permission;
+  return undefined;
+}
+
+function canEditSetlist(setlist: Setlist, userId: string | null) {
+  const role = getRole(setlist, userId);
+  return role === 'owner' || role === 'editor';
+}
+
+function isSetlistOwner(setlist: Setlist, userId: string | null) {
+  const ownerId = setlist.ownerId ?? userId;
+  return Boolean(userId && ownerId === userId);
+}
+
+function setlistFromDoc(id: string, data: Record<string, unknown>, ownerId: string, userId: string): Setlist {
+  const setlist = { id, ownerId, ...(data as Omit<Setlist, 'id'>) } as Setlist;
+  return { ...setlist, accessRole: getRole(setlist, userId) };
 }
 
 function moveSongId(songIds: string[], songId: string, beforeSongId: string | null) {
@@ -115,9 +142,23 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    getDocs(collection(db, 'users', userId, SETLISTS_COLLECTION))
-      .then((snapshot) => {
-        setSetlists(normalizeSetlists(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }) as Setlist)));
+    Promise.all([
+      getDocs(collection(db, 'users', userId, SETLISTS_COLLECTION)),
+      getDocs(query(collectionGroup(db, SETLISTS_COLLECTION), where('collaboratorIds', 'array-contains', userId))),
+    ])
+      .then(([ownedSnapshot, sharedSnapshot]) => {
+        const ownedSetlists = ownedSnapshot.docs.map((entry) =>
+          setlistFromDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
+        );
+        const sharedSetlists = sharedSnapshot.docs
+          .map((entry) => {
+            const ownerId = entry.ref.parent.parent?.id;
+            if (!ownerId || ownerId === userId) return null;
+            return setlistFromDoc(entry.id, entry.data() as Record<string, unknown>, ownerId, userId);
+          })
+          .filter((entry): entry is Setlist => Boolean(entry));
+
+        setSetlists(normalizeSetlists([...ownedSetlists, ...sharedSetlists]));
       })
       .catch((error) => {
         if (isPermissionDeniedError(error)) {
@@ -143,6 +184,10 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       id,
       name,
       songIds: [],
+      ownerId: userId ?? undefined,
+      collaboratorIds: [],
+      collaborationPermissions: {},
+      accessRole: 'owner',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -169,6 +214,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
 
   const deleteSetlist = useCallback((id: string) => {
     setSetlists((prev) => {
+      const deleting = prev.find((list) => list.id === id);
+      if (!deleting || !isSetlistOwner(deleting, userId)) {
+        return prev;
+      }
+
       const nextSetlists = normalizeSetlists(prev.filter((list) => list.id !== id));
       if (db && userId) {
         const changed = nextSetlists.filter((list) => {
@@ -197,6 +247,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     setSetlists((prev) => {
       const setlist = prev.find((l) => l.id === id);
       if (!setlist) return prev;
+      if (!canEditSetlist(setlist, userId)) return prev;
 
       const nextSetlist = { ...setlist, name, updatedAt: new Date().toISOString() };
       const nextSetlists = prev.map((l) => (l.id === id ? nextSetlist : l));
@@ -219,6 +270,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     setSetlists((prev) => {
       const setlist = prev.find((l) => l.id === setlistId);
       if (!setlist || setlist.songIds.includes(songId)) return prev;
+      if (!canEditSetlist(setlist, userId)) return prev;
 
       const nextSetlist = {
         ...setlist,
@@ -245,6 +297,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     setSetlists((prev) => {
       const setlist = prev.find((l) => l.id === setlistId);
       if (!setlist) return prev;
+      if (!canEditSetlist(setlist, userId)) return prev;
 
       const nextSetlist = {
         ...setlist,
@@ -271,6 +324,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     setSetlists((prev) => {
       const setlist = prev.find((l) => l.id === setlistId);
       if (!setlist) return prev;
+      if (!canEditSetlist(setlist, userId)) return prev;
 
       const nextSongIds = moveSongId(setlist.songIds, songId, beforeSongId);
       if (nextSongIds === setlist.songIds) return prev;
@@ -299,6 +353,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
   const shareSetlist = useCallback(async (setlistId: string, setlistName: string, songs: Song[]): Promise<string | null> => {
     if (!db || !userId) return null;
 
+    const targetSetlist = setlists.find((entry) => entry.id === setlistId);
+    if (!targetSetlist || !isSetlistOwner(targetSetlist, userId)) {
+      return null;
+    }
+
     const shareToken = crypto.randomUUID();
 
     await setDoc(doc(db, SHARED_SETLISTS_COLLECTION, shareToken), {
@@ -321,12 +380,13 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     });
 
     return shareToken;
-  }, [userId]);
+  }, [setlists, userId]);
 
   const unshareSetlist = useCallback(async (setlistId: string): Promise<void> => {
     setSetlists((prev) => {
       const setlist = prev.find((l) => l.id === setlistId);
       if (!setlist?.shareToken) return prev;
+      if (!isSetlistOwner(setlist, userId)) return prev;
 
       const { shareToken, ...rest } = setlist;
       const nextSetlist: Setlist = { ...rest, updatedAt: new Date().toISOString() };

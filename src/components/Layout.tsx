@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Music, BookOpen, Plus, LogOut, Menu, Sun, Moon, Maximize2, Minimize2 } from 'lucide-react';
+import { Music, BookOpen, Plus, LogOut, Menu, Sun, Moon, Maximize2, Minimize2, User } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
@@ -116,6 +116,9 @@ export default function Layout({ children }: Props) {
           </Link>
           <Link to="/add" className={pathname === '/add' ? 'active' : ''}>
             <Plus size={16} /> <span>Add Song</span>
+          </Link>
+          <Link to="/profile/invites" className={pathname === '/profile/invites' ? 'active' : ''}>
+            <User size={16} /> <span>Invites</span>
           </Link>
           <button
             onClick={toggleDark}

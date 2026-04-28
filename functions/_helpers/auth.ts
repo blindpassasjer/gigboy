@@ -46,6 +46,7 @@ export function generateToken(): string {
 export async function getSession(
   token: string,
 ): Promise<{ user_id: string } | null> {
+  void token;
   // Firebase auth session handling would go here
   return null;
 }

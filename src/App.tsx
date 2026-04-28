@@ -8,6 +8,7 @@ import EditSongPage from './pages/EditSongPage';
 import LoginPage from './pages/LoginPage';
 import SetlistConcertPage from './pages/SetlistConcertPage';
 import SharedSetlistPage from './pages/SharedSetlistPage';
+import ProfileInvitesPage from './pages/ProfileInvitesPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
@@ -32,6 +33,7 @@ function AuthenticatedApp() {
               <Route path="/songs/:id" element={<SongPage />} />
               <Route path="/songs/:id/edit" element={<EditSongPage />} />
               <Route path="/add" element={<AddSongPage />} />
+              <Route path="/profile/invites" element={<ProfileInvitesPage />} />
               <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />
             </Routes>
           </Layout>

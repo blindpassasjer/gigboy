@@ -1,7 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
   collection,
+  collectionGroup,
   doc,
   getDocs,
   query,
@@ -92,6 +94,26 @@ function songFromDoc(id: string, data: Record<string, unknown>): Song {
   return { id, ...(data as Omit<Song, 'id'>) };
 }
 
+function songFromOwnedDoc(id: string, data: Record<string, unknown>, ownerId: string, currentUserId: string): Song {
+  const song = { id, ownerId, ...(data as Omit<Song, 'id'>) } as Song;
+  const role = ownerId === currentUserId
+    ? 'owner'
+    : song.collaborationPermissions?.[currentUserId];
+  return {
+    ...song,
+    accessRole: role === 'editor' || role === 'viewer' ? role : ownerId === currentUserId ? 'owner' : undefined,
+  };
+}
+
+function canEditSong(song: Song, userId: string | null) {
+  if (!userId) return false;
+  return song.ownerId === userId || song.accessRole === 'editor';
+}
+
+function isSongOwner(song: Song, userId: string | null) {
+  return Boolean(userId && song.ownerId === userId);
+}
+
 function mergeSongsById(songs: Song[]) {
   const byId = new Map<string, Song>();
   songs.forEach((song) => {
@@ -161,14 +183,29 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
     const firestore = db;
 
-    getDocs(collection(firestore, ...songsCollectionPath(userId)))
-      .then(async (snap) => {
+    Promise.all([
+      getDocs(collection(firestore, ...songsCollectionPath(userId))),
+      getDocs(query(collectionGroup(firestore, SONGS_COLLECTION), where('collaboratorIds', 'array-contains', userId))),
+    ])
+      .then(async ([ownedSnap, sharedSnap]) => {
         const directSongs = normalizeSongs(
-          snap.docs.map((entry) => songFromDoc(entry.id, entry.data() as Record<string, unknown>))
+          ownedSnap.docs.map((entry) =>
+            songFromOwnedDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
+          )
         );
 
-        if (directSongs.length > 0) {
-          setUserSongs(directSongs);
+        const sharedSongs = normalizeSongs(
+          sharedSnap.docs
+            .map((entry) => {
+              const ownerId = entry.ref.parent.parent?.id;
+              if (!ownerId || ownerId === userId) return null;
+              return songFromOwnedDoc(entry.id, entry.data() as Record<string, unknown>, ownerId, userId);
+            })
+            .filter((entry): entry is Song => Boolean(entry))
+        );
+
+        if (directSongs.length > 0 || sharedSongs.length > 0) {
+          setUserSongs(normalizeSongs([...directSongs, ...sharedSongs]));
           return;
         }
 
@@ -178,7 +215,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setUserSongs(legacySongs);
+        setUserSongs(legacySongs.map((song) => ({ ...song, ownerId: userId, accessRole: 'owner' })));
         void migrateLegacySongsToUserPath(firestore, userId, legacySongs).catch((error) => {
           console.warn('Loaded legacy songs but failed to migrate them into users/{uid}/songs.', error);
         });
@@ -201,9 +238,14 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     let nextSong = song;
 
     setUserSongs((prev) => {
+      const ownSongs = prev.filter((entry) => (entry.ownerId ?? userId) === userId);
       nextSong = {
         ...song,
-        sortOrder: song.sortOrder ?? Math.min(...prev.map((entry) => entry.sortOrder ?? 0), 0) - 1,
+        ownerId: userId ?? undefined,
+        collaboratorIds: song.collaboratorIds ?? [],
+        collaborationPermissions: song.collaborationPermissions ?? {},
+        accessRole: 'owner',
+        sortOrder: song.sortOrder ?? Math.min(...ownSongs.map((entry) => entry.sortOrder ?? 0), 0) - 1,
       };
 
       return normalizeSongs([nextSong, ...prev]);
@@ -232,8 +274,13 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     setUserSongs((prev) => {
       previousSong = prev.find((s) => s.id === song.id) ?? null;
       if (!previousSong) return prev;
+      if (!canEditSong(previousSong, userId)) return prev;
       nextSong = {
         ...song,
+        ownerId: previousSong.ownerId,
+        collaboratorIds: previousSong.collaboratorIds,
+        collaborationPermissions: previousSong.collaborationPermissions,
+        accessRole: previousSong.accessRole,
         sortOrder: song.sortOrder ?? previousSong.sortOrder,
       };
       return prev.map((s) => (s.id === song.id ? (nextSong as Song) : s));
@@ -241,6 +288,10 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
     if (!previousSong || !nextSong) {
       return 'Song not found.';
+    }
+
+    if (!canEditSong(previousSong, userId)) {
+      return 'You only have viewer access to this song.';
     }
 
     if (!db || !userId) {
@@ -254,7 +305,8 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       const firestoreData = Object.fromEntries(
         Object.entries(rest).filter(([, v]) => v !== undefined)
       );
-      await setDoc(doc(db, ...songsCollectionPath(userId), id), firestoreData);
+      const targetOwnerId = songToSave.ownerId ?? userId;
+      await setDoc(doc(db, ...songsCollectionPath(targetOwnerId as string), id), firestoreData);
       return null;
     } catch (err) {
       if (previousSong) {
@@ -265,6 +317,11 @@ export function SongsProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const deleteSong = useCallback(async (id: string) => {
+    const targetSong = userSongs.find((entry) => entry.id === id);
+    if (!targetSong || !isSongOwner(targetSong, userId)) {
+      return;
+    }
+
     setUserSongs((prev) => prev.filter((s) => s.id !== id));
     if (!db || !userId) {
       return;
@@ -278,13 +335,20 @@ export function SongsProvider({ children }: { children: ReactNode }) {
         setUserSongs(normalizeSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song)));
       });
     }
-  }, [userId]);
+  }, [userId, userSongs]);
 
   const moveSong = useCallback((songId: string, beforeSongId: string | null) => {
     let previousSongs: Song[] = [];
     let nextSongs: Song[] = [];
 
     setUserSongs((prev) => {
+      const movingSong = prev.find((song) => song.id === songId);
+      if (!movingSong || !isSongOwner(movingSong, userId)) {
+        previousSongs = prev;
+        nextSongs = prev;
+        return prev;
+      }
+
       previousSongs = prev;
       const reorderedSongs = moveSongInArray(prev, songId, beforeSongId);
       if (reorderedSongs === prev) {
@@ -305,7 +369,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     const changedSongs = nextSongs.filter((song, index) => {
       const previousSong = previousSongs[index];
       return previousSong?.id !== song.id || previousSong?.sortOrder !== song.sortOrder;
-    });
+    }).filter((song) => isSongOwner(song, userId));
 
     if (changedSongs.length === 0) {
       return;

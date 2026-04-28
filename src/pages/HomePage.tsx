@@ -138,6 +138,15 @@ export default function HomePage() {
       }
       onSetSongColor={handleSetSongColor}
       onRemoveSong={activeList ? (song) => removeSongFromList(activeList.id, song.id) : undefined}
+      shareConfig={
+        activeList
+          ? {
+              resourceId: activeList.id,
+              resourceName: activeList.name,
+              songsForPdf: displayedSongs,
+            }
+          : undefined
+      }
     />
   );
 }

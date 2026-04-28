@@ -53,7 +53,7 @@ function parseSectionMarker(line: string): string | null {
   }
 
   // Colon-suffix format: Estribillo:, Verso:, Bridge: (only for recognised keywords)
-  const colonMatch = trimmed.match(/^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 \-]{1,30}):$/);
+  const colonMatch = trimmed.match(/^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 -]{1,30}):$/);
   if (colonMatch) {
     const label = colonMatch[1].trim();
     if (getSectionType(label) !== undefined) return label;
@@ -82,7 +82,7 @@ function convertUGTabBlocks(text: string): string {
 // Pre-process Ultimate Guitar and cuerdas.net specific markup before parsing.
 function preprocessSongText(text: string): string {
   // UG inline chord tags: [ch]G[/ch] → [G]
-  text = text.replace(/\[ch\]([^\[]*?)\[\/ch\]/gi, (_, chord) => `[${chord.trim()}]`);
+  text = text.replace(/\[ch\]([^[]*?)\[\/ch\]/gi, (_, chord) => `[${chord.trim()}]`);
   // UG tab wrappers: [tab] ... [/tab] → ChordPro {start_of_tab} ... {end_of_tab}
   text = convertUGTabBlocks(text);
   return text;

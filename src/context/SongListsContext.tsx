@@ -1,6 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, collectionGroup, deleteDoc, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import type { SongList, SongListCategory } from '../types';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
@@ -75,9 +76,34 @@ async function writeCategory(category: SongListCategory, userId: string | null) 
 async function writeSongList(songList: SongList, userId: string | null) {
   if (!db || !userId) return;
 
+  const targetOwnerId = songList.ownerId ?? userId;
+
   const { id, ...rest } = songList;
   const firestoreData = Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== undefined));
-  await setDoc(doc(db, 'users', userId, LISTS_COLLECTION, id), firestoreData);
+  await setDoc(doc(db, 'users', targetOwnerId, LISTS_COLLECTION, id), firestoreData);
+}
+
+function roleForSongList(songList: SongList, userId: string | null): SongList['accessRole'] {
+  if (!userId) return undefined;
+  if (songList.ownerId === userId) return 'owner';
+  const permission = songList.collaborationPermissions?.[userId];
+  if (permission === 'viewer' || permission === 'editor') return permission;
+  return undefined;
+}
+
+function canEditSongList(songList: SongList, userId: string | null) {
+  const role = roleForSongList(songList, userId);
+  return role === 'owner' || role === 'editor';
+}
+
+function isSongListOwner(songList: SongList, userId: string | null) {
+  const ownerId = songList.ownerId ?? userId;
+  return Boolean(userId && ownerId === userId);
+}
+
+function songListFromDoc(id: string, data: Record<string, unknown>, ownerId: string, currentUserId: string): SongList {
+  const songList = { id, ownerId, ...(data as Omit<SongList, 'id'>) } as SongList;
+  return { ...songList, accessRole: roleForSongList(songList, currentUserId) };
 }
 
 function moveSongId(songIds: string[], songId: string, beforeSongId: string | null) {
@@ -150,13 +176,23 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     Promise.all([
       getDocs(collection(db, 'users', userId, CATEGORIES_COLLECTION)),
       getDocs(collection(db, 'users', userId, LISTS_COLLECTION)),
+      getDocs(query(collectionGroup(db, LISTS_COLLECTION), where('collaboratorIds', 'array-contains', userId))),
     ])
-      .then(([categorySnapshot, listSnapshot]) => {
+      .then(([categorySnapshot, listSnapshot, sharedListSnapshot]) => {
         const fetchedCategories = categorySnapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }) as SongListCategory);
         const nextCategories = ensureSongListsCategory(fetchedCategories);
-        const nextLists = normalizeSongLists(
-          listSnapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }) as SongList)
+        const ownedLists = listSnapshot.docs.map((entry) =>
+          songListFromDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
         );
+        const sharedLists = sharedListSnapshot.docs
+          .map((entry) => {
+            const ownerId = entry.ref.parent.parent?.id;
+            if (!ownerId || ownerId === userId) return null;
+            return songListFromDoc(entry.id, entry.data() as Record<string, unknown>, ownerId, userId);
+          })
+          .filter((entry): entry is SongList => Boolean(entry));
+
+        const nextLists = normalizeSongLists([...ownedLists, ...sharedLists]);
 
         setCategories(nextCategories);
         setSongLists(nextLists);
@@ -234,7 +270,16 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
 
   const addSongList = useCallback((name: string, folderId?: string) => {
     const id = crypto.randomUUID();
-    const nextSongList: SongList = { id, name, songIds: [], folderId };
+    const nextSongList: SongList = {
+      id,
+      name,
+      songIds: [],
+      folderId,
+      ownerId: userId ?? undefined,
+      collaboratorIds: [],
+      collaborationPermissions: {},
+      accessRole: 'owner',
+    };
 
     setSongLists((prev) => {
       const nextLists = normalizeSongLists([...prev, nextSongList]);
@@ -254,6 +299,11 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
 
   const deleteSongList = useCallback((id: string) => {
     setSongLists((prev) => {
+      const deleting = prev.find((list) => list.id === id);
+      if (!deleting || !isSongListOwner(deleting, userId)) {
+        return prev;
+      }
+
       const nextLists = normalizeSongLists(prev.filter((list) => list.id !== id));
       if (db && userId) {
         const changed = nextLists.filter((list) => {
@@ -293,6 +343,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     setSongLists((prev) => {
       const list = prev.find((l) => l.id === listId);
       if (!list || list.songIds.includes(songId)) return prev;
+      if (!canEditSongList(list, userId)) return prev;
 
       const nextList = { ...list, songIds: [...list.songIds, songId] };
       const nextLists = prev.map((l) => (l.id === listId ? nextList : l));
@@ -311,6 +362,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     setSongLists((prev) => {
       const list = prev.find((l) => l.id === listId);
       if (!list) return prev;
+      if (!canEditSongList(list, userId)) return prev;
 
       const nextList = { ...list, songIds: list.songIds.filter((id) => id !== songId) };
       const nextLists = prev.map((l) => (l.id === listId ? nextList : l));
@@ -329,6 +381,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     setSongLists((prev) => {
       const list = prev.find((l) => l.id === listId);
       if (!list) return prev;
+      if (!canEditSongList(list, userId)) return prev;
 
       const nextSongIds = moveSongId(list.songIds, songId, beforeSongId);
       if (nextSongIds === list.songIds) return prev;
@@ -350,6 +403,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     setSongLists((prev) => {
       const list = prev.find((l) => l.id === listId);
       if (!list) return prev;
+      if (!canEditSongList(list, userId)) return prev;
 
       const nextList: SongList = {
         ...list,
@@ -373,6 +427,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     setSongLists((prev) => {
       const moving = prev.find((l) => l.id === listId);
       if (!moving) return prev;
+      if (!canEditSongList(moving, userId)) return prev;
 
       const withoutMoving = prev.filter((l) => l.id !== listId);
       const moved: SongList = { ...moving, folderId: targetCategoryId };

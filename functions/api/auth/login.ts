@@ -1,5 +1,4 @@
 /// <reference types="@cloudflare/workers-types" />
-import { verifyPassword, generateToken, setCookie } from '../../_helpers/auth';
 
 export const onRequestPost: PagesFunction<never> = async (ctx) => {
   const { username, password } = await ctx.request.json<{ username: string; password: string }>();

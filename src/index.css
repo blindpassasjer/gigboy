@@ -3112,6 +3112,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 8px;
   border: 1px solid transparent;
   padding: .42rem .45rem;
+  color: var(--text);
 }
 
 .concert-song-jump:hover {
@@ -3170,6 +3171,19 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .concert-song-jump.active {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
+  background: color-mix(in srgb, var(--accent) 24%, var(--surface));
+}
+
+[data-theme="dark"] .concert-song-jump.played {
+  opacity: .8;
+}
+
+[data-theme="dark"] .concert-song-jump-main small {
+  color: color-mix(in srgb, var(--text) 72%, var(--muted));
 }
 
 .concert-nav-footer {
@@ -3731,4 +3745,129 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .shared-setlist-cta:hover {
   background: var(--accent-h);
+}
+
+/* ─── Collaboration share menu ─────────────────────────────────────────────── */
+.share-menu {
+  position: relative;
+}
+
+.share-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + .45rem);
+  width: min(320px, calc(100vw - 2rem));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .2);
+  padding: .8rem;
+  z-index: 250;
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+}
+
+.share-menu-title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.share-menu-field {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.share-menu-field span {
+  font-size: .82rem;
+  color: var(--muted);
+}
+
+.share-menu-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: .45rem .55rem;
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.share-menu-input-wrap input {
+  border: none;
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+}
+
+.share-menu-field select {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: .45rem .55rem;
+  background: var(--bg);
+}
+
+.share-menu-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .45rem;
+}
+
+.share-menu-extra {
+  border-top: 1px solid var(--border);
+  padding-top: .55rem;
+}
+
+/* ─── Profile invites page ─────────────────────────────────────────────────── */
+.profile-invites-page {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+}
+
+.profile-invites-header h1 {
+  font-size: 1.4rem;
+}
+
+.profile-invites-header p,
+.profile-invites-status {
+  color: var(--muted);
+}
+
+.profile-invites-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.profile-invite-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .8rem;
+}
+
+.profile-invite-main {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.profile-invite-main span {
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.profile-invite-actions {
+  display: flex;
+  gap: .5rem;
 }

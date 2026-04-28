@@ -26,6 +26,7 @@ import { useSongLists } from '../context/SongListsContext';
 import { useSongs } from '../context/SongsContext';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
+import ShareMenu from './ShareMenu';
 
 interface Props {
   song: Song;
@@ -282,6 +283,14 @@ export default function SongView({ song, accentColor }: Props) {
               >
                 <Printer size={14} />
               </button>
+              <ShareMenu
+                resourceType="song"
+                resourceId={song.id}
+                resourceName={song.title}
+                songsForPdf={[song]}
+                buttonClassName="song-action-btn song-action-btn--print"
+                buttonTitle={`Share ${song.title}`}
+              />
               <button
                 className="song-action-btn song-action-btn--delete"
                 onClick={handleDelete}

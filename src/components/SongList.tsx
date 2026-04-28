@@ -17,6 +17,7 @@ import {
 import toast from 'react-hot-toast';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
+import ShareMenu from './ShareMenu';
 import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
 import { buildSongSurfaceStyle, buildSongSurfaceStyleFromPalette } from '../utils/songColorStyles';
@@ -113,6 +114,12 @@ interface Props {
   onUpdateListAppearance?: (appearance: { color?: string; icon?: string }) => void;
   onRemoveSong?: (song: Song) => void;
   onAddSong?: (songId: string) => void;
+  shareConfig?: {
+    resourceId: string;
+    resourceName: string;
+    songsForPdf: Song[];
+    disabled?: boolean;
+  };
 }
 
 export default function SongList({
@@ -128,6 +135,7 @@ export default function SongList({
   onUpdateListAppearance,
   onRemoveSong,
   onAddSong,
+  shareConfig,
 }: Props) {
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
@@ -409,6 +417,17 @@ export default function SongList({
             >
               <Palette size={14} /> Style list
             </button>
+          )}
+          {canAddSongs && (
+            <ShareMenu
+              resourceType="songlist"
+              resourceId={shareConfig?.resourceId ?? ''}
+              resourceName={shareConfig?.resourceName ?? listName ?? 'Songlist'}
+              songsForPdf={shareConfig?.songsForPdf ?? songs}
+              disabled={shareConfig?.disabled ?? !shareConfig?.resourceId}
+              buttonClassName="setlist-action-btn setlist-action-btn--secondary"
+              buttonTitle="Share this songlist"
+            />
           )}
           {canAddSongs && (
             <button

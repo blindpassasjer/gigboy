@@ -1,0 +1,81 @@
+import type { CollaborationPermission, ShareResourceType, Song } from '../types';
+
+interface ApiHeaders {
+  userId: string;
+  userEmail: string;
+}
+
+function buildHeaders(headers: ApiHeaders) {
+  return {
+    'Content-Type': 'application/json',
+    'x-folio-user-id': headers.userId,
+    'x-folio-user-email': headers.userEmail,
+  };
+}
+
+async function postJson<T>(path: string, body: Record<string, unknown>, headers: ApiHeaders): Promise<T> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: buildHeaders(headers),
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json().catch(() => ({} as Record<string, unknown>));
+  if (!response.ok) {
+    const errorMessage = typeof payload.error === 'string' ? payload.error : 'Request failed.';
+    throw new Error(errorMessage);
+  }
+
+  return payload as T;
+}
+
+export async function sendInviteEmail(params: {
+  userId: string;
+  userEmail: string;
+  recipientEmail: string;
+  resourceType: ShareResourceType;
+  resourceName: string;
+  permission: CollaborationPermission;
+  inviteId: string;
+}) {
+  await postJson('/api/share/email-invite', params, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
+export async function sendPdfEmail(params: {
+  userId: string;
+  userEmail: string;
+  recipientEmail: string;
+  resourceType: ShareResourceType;
+  resourceName: string;
+  songs: Song[];
+}) {
+  await postJson('/api/share/pdf-email', params, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
+export async function acceptInviteOnServer(params: {
+  userId: string;
+  userEmail: string;
+  inviteId: string;
+}) {
+  await postJson('/api/share/accept', { inviteId: params.inviteId }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
+export async function revokeInviteOnServer(params: {
+  userId: string;
+  userEmail: string;
+  inviteId: string;
+}) {
+  await postJson('/api/share/revoke', { inviteId: params.inviteId }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}

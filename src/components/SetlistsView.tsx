@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
+import ShareMenu from './ShareMenu';
 
 interface Props {
   setlistId: string;
@@ -285,6 +286,14 @@ export default function SetlistsView({
           >
             <Printer size={14} /> Print
           </button>
+          <ShareMenu
+            resourceType="setlist"
+            resourceId={setlistId}
+            resourceName={setlistName}
+            songsForPdf={songs}
+            buttonClassName="setlist-action-btn setlist-action-btn--secondary"
+            buttonTitle="Invite collaborators"
+          />
           {shareToken ? (
             <>
               <button
@@ -310,9 +319,9 @@ export default function SetlistsView({
               type="button"
               onClick={handleShare}
               disabled={isSharing}
-              title="Share this setlist"
+              title="Create public share link"
             >
-              <Share2 size={14} /> {isSharing ? 'Sharing…' : 'Share'}
+              <Share2 size={14} /> {isSharing ? 'Creating…' : 'Create public link'}
             </button>
           )}
           <button
