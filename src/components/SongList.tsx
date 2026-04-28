@@ -19,7 +19,7 @@ import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
-import { buildSongSurfaceStyle } from '../utils/songColorStyles';
+import { buildSongSurfaceStyle, buildSongSurfaceStyleFromPalette } from '../utils/songColorStyles';
 
 type SortBy = 'custom' | 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest' | 'language';
 
@@ -79,6 +79,7 @@ interface Props {
   songs: Song[];
   listName?: string;
   listColor?: string;
+  songListColorsBySongId?: Record<string, string[]>;
   listIcon?: string;
   allSongs?: Song[];
   onMoveSong?: (songId: string, beforeSongId: string | null) => void;
@@ -94,6 +95,7 @@ export default function SongList({
   songs,
   listName,
   listColor,
+  songListColorsBySongId,
   listIcon,
   allSongs,
   onMoveSong,
@@ -512,8 +514,12 @@ export default function SongList({
       ) : viewMode === 'cards' ? (
         <div className="song-card-grid" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
           {filtered.map((song) => {
-            const effectiveSongColor = song.color ?? listColor;
-            const cardStyle = buildSongSurfaceStyle(effectiveSongColor);
+            const songListColors = songListColorsBySongId?.[song.id] ?? [];
+            const effectiveSongColor = song.color ?? listColor ?? songListColors[0];
+            const cardStyle =
+              !song.color && !listColor && songListColors.length > 1
+                ? buildSongSurfaceStyleFromPalette(songListColors)
+                : buildSongSurfaceStyle(effectiveSongColor);
             const songPageState = songPageStateBase
               ? { ...songPageStateBase, accentColor: effectiveSongColor }
               : undefined;
@@ -632,8 +638,12 @@ export default function SongList({
       ) : (
         <ul className="song-list" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
           {filtered.map((song) => {
-            const effectiveSongColor = song.color ?? listColor;
-            const cardStyle = buildSongSurfaceStyle(effectiveSongColor);
+            const songListColors = songListColorsBySongId?.[song.id] ?? [];
+            const effectiveSongColor = song.color ?? listColor ?? songListColors[0];
+            const cardStyle =
+              !song.color && !listColor && songListColors.length > 1
+                ? buildSongSurfaceStyleFromPalette(songListColors)
+                : buildSongSurfaceStyle(effectiveSongColor);
             const songPageState = songPageStateBase
               ? { ...songPageStateBase, accentColor: effectiveSongColor }
               : undefined;

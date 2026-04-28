@@ -50,6 +50,21 @@ function rgbToCss([r, g, b]: [number, number, number]): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+function averageRgb(colors: Array<[number, number, number]>): [number, number, number] {
+  if (colors.length === 0) return [92, 79, 166];
+
+  const totals = colors.reduce(
+    (acc, [r, g, b]) => [acc[0] + r, acc[1] + g, acc[2] + b] as [number, number, number],
+    [0, 0, 0] as [number, number, number],
+  );
+
+  return [
+    Math.round(totals[0] / colors.length),
+    Math.round(totals[1] / colors.length),
+    Math.round(totals[2] / colors.length),
+  ];
+}
+
 function relativeLuminance([r, g, b]: [number, number, number]): number {
   const toLinear = (channel: number) => {
     const s = channel / 255;
@@ -82,6 +97,46 @@ export function buildSongSurfaceStyle(accentColor?: string): CSSProperties | und
   return {
     '--song-item-accent': normalized,
     '--song-item-bg': rgbToCss(bgRgb),
+    '--song-item-border': rgbToCss(borderRgb),
+    '--song-item-text': rgbToCss(textRgb),
+    '--song-item-muted': rgbToCss(mutedRgb),
+    '--song-item-chip-bg': rgbToCss(chipBgRgb),
+    '--song-item-chip-text': rgbToCss(textRgb),
+  } as CSSProperties;
+}
+
+export function buildSongSurfaceStyleFromPalette(accentColors: string[]): CSSProperties | undefined {
+  const normalizedPalette = Array.from(
+    new Set(accentColors.map((color) => normalizeHex(color)).filter((color): color is string => Boolean(color)))
+  );
+
+  if (normalizedPalette.length === 0) return undefined;
+  if (normalizedPalette.length === 1) return buildSongSurfaceStyle(normalizedPalette[0]);
+
+  const accentRgbs = normalizedPalette.map((color) => hexToRgb(color));
+  const avgAccentRgb = averageRgb(accentRgbs);
+  const borderRgb = mixRgb(avgAccentRgb, [255, 255, 255], 0.56);
+  const chipBgRgb = mixRgb(avgAccentRgb, [255, 255, 255], 0.68);
+  const textRgb: [number, number, number] =
+    relativeLuminance(mixRgb(avgAccentRgb, [255, 255, 255], 0.76)) > 0.44
+      ? [30, 24, 20]
+      : [248, 250, 252];
+  const mutedRgb: [number, number, number] =
+    relativeLuminance(mixRgb(avgAccentRgb, [255, 255, 255], 0.76)) > 0.44
+      ? [77, 64, 55]
+      : [226, 232, 240];
+
+  const gradientStops = accentRgbs
+    .map((rgb, index) => {
+      const stop = accentRgbs.length === 1 ? 0 : Math.round((index / (accentRgbs.length - 1)) * 100);
+      const tinted = mixRgb(rgb, [255, 255, 255], 0.8);
+      return `${rgbToCss(tinted)} ${stop}%`;
+    })
+    .join(', ');
+
+  return {
+    '--song-item-accent': normalizedPalette[0],
+    '--song-item-bg': `linear-gradient(135deg, ${gradientStops})`,
     '--song-item-border': rgbToCss(borderRgb),
     '--song-item-text': rgbToCss(textRgb),
     '--song-item-muted': rgbToCss(mutedRgb),

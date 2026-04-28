@@ -1137,6 +1137,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: block;
 }
 
+.tab-guide-line {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .tab-play-btn {
   display: inline-flex;
   align-items: center;
@@ -1157,6 +1162,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 .tab-play-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 .tab-play-btn--playing { background: #fde8e8; color: var(--danger); border-color: var(--danger); }
 .tab-play-btn--playing:hover { background: var(--danger); color: #fff; }
+
+.tab-editor-guides {
+  margin-top: .6rem;
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+
+.tab-guide-hint {
+  margin: 0;
+}
 
 /* ─── Recordings ────────────────────────────────────────────────────────────── */
 .recordings-section {

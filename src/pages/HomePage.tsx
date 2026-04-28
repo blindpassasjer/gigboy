@@ -66,6 +66,22 @@ export default function HomePage() {
           .flatMap((list) => list.songIds)
       )
     : null;
+  const isAllSongsView = !activeList && !activeCategorySongIds;
+  const allSongsListColorsBySongId = isAllSongsView
+    ? songLists.reduce<Record<string, string[]>>((acc, list) => {
+        const listColor = list.color;
+        if (!listColor) return acc;
+
+        list.songIds.forEach((songId) => {
+          const existing = acc[songId] ?? [];
+          if (!existing.includes(listColor)) {
+            acc[songId] = [...existing, listColor];
+          }
+        });
+
+        return acc;
+      }, {})
+    : undefined;
   const displayedSongs = activeList
     ? activeList.songIds
         .map((songId) => songsById.get(songId))
@@ -125,6 +141,7 @@ export default function HomePage() {
       onRenameSong={handleRenameSong}
       onDeleteSong={handleDeleteSong}
       listColor={activeList?.color}
+      songListColorsBySongId={allSongsListColorsBySongId}
       listIcon={activeList?.icon}
       onUpdateListAppearance={
         activeList

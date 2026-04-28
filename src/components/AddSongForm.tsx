@@ -1,11 +1,13 @@
-import { useState, useRef } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, Wand2 } from 'lucide-react';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordProToolbar from './ChordProToolbar';
+import TabDisplay from './TabDisplay';
 import { LANGUAGE_NAMES } from '../utils/languages';
 import { parsePastedSong } from '../utils/chordFormatParser';
+import { extractTabBlocks } from '../utils/tabParser';
 
 interface Props {
   onSave: (song: Song) => Promise<string | null>;
@@ -52,6 +54,7 @@ export default function AddSongForm({
   const [errors, setErrors] = useState<string[]>([]);
   const [songListId, setSongListId] = useState(initialSongListId ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const tabBlocks = useMemo(() => extractTabBlocks(chordpro), [chordpro]);
 
   function validate() {
     const errs: string[] = [];
@@ -196,17 +199,38 @@ export default function AddSongForm({
           )}
           {preview ? (
             <div className="chordpro-preview">
-              <ChordDisplay chordpro={chordpro || PLACEHOLDER} showChords />
+              <ChordDisplay
+                chordpro={chordpro || PLACEHOLDER}
+                showChords
+                timeSignature={timeSignature.trim() || undefined}
+              />
             </div>
           ) : (
-            <textarea
-              ref={textareaRef}
-              value={chordpro}
-              onChange={(e) => setChordpro(e.target.value)}
-              placeholder={PLACEHOLDER}
-              rows={16}
-              spellCheck={false}
-            />
+            <>
+              <textarea
+                ref={textareaRef}
+                value={chordpro}
+                onChange={(e) => setChordpro(e.target.value)}
+                placeholder={PLACEHOLDER}
+                rows={16}
+                spellCheck={false}
+              />
+              {tabBlocks.length > 0 && (
+                <div className="tab-editor-guides">
+                  <p className="form-hint tab-guide-hint">
+                    Tab beat guide ({timeSignature.trim() || '4/4'}): bars start with <strong>|</strong>, beats are numbered.
+                  </p>
+                  {tabBlocks.map((block, idx) => (
+                    <TabDisplay
+                      key={`tab-guide-${idx}`}
+                      tabLines={block}
+                      timeSignature={timeSignature.trim() || undefined}
+                      showPlayback={false}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
           {parseWarnings.length > 0 && (
             <div className="paste-import-warnings" role="status">

@@ -278,6 +278,7 @@ export default function SongView({ song, accentColor }: Props) {
           transpose={transpose}
           showChords={showChords}
           notation={chordNotation}
+          timeSignature={song.timeSignature}
           instrument={chordInstrument}
           onChordClick={showChords ? handleChordClick : undefined}
         />

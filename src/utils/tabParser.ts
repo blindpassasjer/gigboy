@@ -13,6 +13,11 @@ export interface TabNoteEvent {
   notes: number[];
 }
 
+export interface TimeSignatureInfo {
+  beatsPerBar: number;
+  beatUnit: number;
+}
+
 /**
  * Convert a string index + fret number to a MIDI note.
  * stringIndex 0 = high-e (MIDI 64), 5 = low-E (MIDI 40).
@@ -29,6 +34,46 @@ export function fretToMidi(stringIndex: number, fret: number): number {
 function stripStringLabel(line: string): string {
   // Remove leading string label (single letter optionally followed by |, :, or space)
   return line.replace(/^[eEbBgGdDaA]\s*[|:]\s*/, '');
+}
+
+/** Parse a time signature like "4/4" or "6/8". Falls back to 4/4. */
+export function parseTimeSignature(timeSignature?: string): TimeSignatureInfo {
+  if (!timeSignature) return { beatsPerBar: 4, beatUnit: 4 };
+  const match = timeSignature.trim().match(/^(\d{1,2})\s*\/\s*(\d{1,2})$/);
+  if (!match) return { beatsPerBar: 4, beatUnit: 4 };
+
+  const beatsPerBar = parseInt(match[1], 10);
+  const beatUnit = parseInt(match[2], 10);
+  if (beatsPerBar <= 0) return { beatsPerBar: 4, beatUnit: 4 };
+
+  // Keep denominator in a useful practical range for bar guides.
+  if (![1, 2, 4, 8, 16].includes(beatUnit)) return { beatsPerBar: 4, beatUnit: 4 };
+  return { beatsPerBar, beatUnit };
+}
+
+/**
+ * Build a character-level beat guide line aligned to tab columns.
+ * Columns are treated as 16th-note resolution.
+ */
+export function buildBeatGuide(length: number, timeSignature?: string): string {
+  if (length <= 0) return '';
+  const { beatsPerBar, beatUnit } = parseTimeSignature(timeSignature);
+  const columnsPerBeat = Math.max(1, Math.round(16 / beatUnit));
+  const columnsPerBar = Math.max(1, beatsPerBar * columnsPerBeat);
+
+  const chars = new Array<string>(length).fill('-');
+  for (let col = 0; col < length; col++) {
+    if (col % columnsPerBar === 0) {
+      chars[col] = '|';
+      continue;
+    }
+    if (col % columnsPerBeat === 0) {
+      const beatIdx = Math.floor((col % columnsPerBar) / columnsPerBeat) + 1;
+      chars[col] = String(beatIdx % 10);
+    }
+  }
+
+  return chars.join('');
 }
 
 /**

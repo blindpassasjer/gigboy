@@ -10,6 +10,7 @@ interface Props {
   transpose?: number;
   showChords?: boolean;
   notation?: ChordNotation;
+  timeSignature?: string;
   instrument?: DiagramInstrument;
   onChordClick?: (chord: string, rect: DOMRect) => void;
 }
@@ -19,6 +20,7 @@ export default function ChordDisplay({
   transpose = 0,
   showChords = true,
   notation = 'anglo',
+  timeSignature,
   onChordClick,
 }: Props) {
   const lines = useMemo(() => parseChordPro(chordpro), [chordpro]);
@@ -32,6 +34,7 @@ export default function ChordDisplay({
           transpose={transpose}
           showChords={showChords}
           notation={notation}
+          timeSignature={timeSignature}
           onChordClick={onChordClick}
         />
       ))}
@@ -44,12 +47,14 @@ function LineRenderer({
   transpose,
   showChords,
   notation,
+  timeSignature,
   onChordClick,
 }: {
   line: ParsedLine;
   transpose: number;
   showChords: boolean;
   notation: ChordNotation;
+  timeSignature?: string;
   onChordClick?: (chord: string, rect: DOMRect) => void;
 }) {
   if (line.type === 'empty') return <div className="chord-line chord-line--empty" />;
@@ -57,7 +62,13 @@ function LineRenderer({
   if (line.type === 'comment') return null;
 
   if (line.type === 'tab') {
-    return <TabDisplay tabLines={line.tabLines ?? []} transpose={transpose} />;
+    return (
+      <TabDisplay
+        tabLines={line.tabLines ?? []}
+        transpose={transpose}
+        timeSignature={timeSignature}
+      />
+    );
   }
 
   if (line.type === 'directive') {
