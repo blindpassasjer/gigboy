@@ -26,6 +26,23 @@ type SortBy = 'custom' | 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest
 const SONG_DRAG_MIME = 'application/x-folio-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
 
+const COLOR_OPTIONS = [
+  '#5c4fa6',
+  '#2563eb',
+  '#0f766e',
+  '#16a34a',
+  '#ca8a04',
+  '#ea580c',
+  '#dc2626',
+  '#db2777',
+  '#7c3aed',
+  '#0e7490',
+  '#64748b',
+  '#374151',
+] as const;
+
+const EMOJI_OPTIONS = ['🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '📀', '✨', '🔥'] as const;
+
 function getSongPreview(song: Song): string {
   const lyricLines = parseChordPro(song.chordpro)
     .filter((line) => line.type === 'chord-lyric')
@@ -111,9 +128,10 @@ export default function SongList({
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
   const [showListAppearanceEditor, setShowListAppearanceEditor] = useState(false);
+  const [songColorPickerSongId, setSongColorPickerSongId] = useState<string | null>(null);
   const [listColorDraft, setListColorDraft] = useState(listColor ?? '#5c4fa6');
   const [listIconDraft, setListIconDraft] = useState(listIcon ?? '🎵');
-  const songPageState = onRemoveSong && listName
+  const songPageStateBase = onRemoveSong && listName
     ? { backTo: '/', backLabel: listName }
     : undefined;
 
@@ -188,18 +206,39 @@ export default function SongList({
   }, [listIcon]);
 
   useEffect(() => {
-    if (!showSongPicker) return;
-
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key !== 'Escape') return;
+
+      if (showSongPicker) {
         setShowSongPicker(false);
         setPickerQuery('');
+      }
+
+      if (showListAppearanceEditor) {
+        setShowListAppearanceEditor(false);
+      }
+
+      if (songColorPickerSongId) {
+        setSongColorPickerSongId(null);
       }
     };
 
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [showSongPicker]);
+  }, [showSongPicker, showListAppearanceEditor, songColorPickerSongId]);
+
+  useEffect(() => {
+    if (!songColorPickerSongId) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('.song-color-picker-wrap')) return;
+      setSongColorPickerSongId(null);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [songColorPickerSongId]);
 
   const openSongPicker = () => {
     setPickerQuery('');
@@ -235,30 +274,10 @@ export default function SongList({
     setShowListAppearanceEditor(false);
   };
 
-  const handleSetSongColor = (song: Song) => {
+  const handleSetSongColor = (song: Song, color: string | undefined) => {
     if (!onSetSongColor) return;
-
-    const suggested = song.color ?? listColor ?? '#5c4fa6';
-    const value = window.prompt(
-      `Set color for "${song.title}" as #RRGGBB. Leave empty to use the songlist color.`,
-      suggested
-    );
-
-    if (value === null) return;
-
-    const trimmed = value.trim();
-    if (!trimmed) {
-      onSetSongColor(song, undefined);
-      return;
-    }
-
-    const normalized = normalizeHexColor(trimmed);
-    if (!normalized) {
-      window.alert('Invalid color. Please use a hex value like #f59e0b');
-      return;
-    }
-
-    onSetSongColor(song, normalized);
+    onSetSongColor(song, color);
+    setSongColorPickerSongId(null);
   };
 
   const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
@@ -392,22 +411,51 @@ export default function SongList({
       </div>
       {showListAppearanceEditor && onUpdateListAppearance && (
         <div className="list-appearance-editor" role="region" aria-label="Songlist style settings">
+          <div className="list-appearance-group">
+            <span className="list-appearance-label">Color</span>
+            <div className="color-swatch-grid" role="listbox" aria-label="Songlist color options">
+              {COLOR_OPTIONS.map((color) => {
+                const selected = normalizeHexColor(listColorDraft) === color;
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`color-swatch-btn${selected ? ' active' : ''}`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setListColorDraft(color)}
+                    aria-label={`Choose color ${color}`}
+                    aria-pressed={selected}
+                  />
+                );
+              })}
+            </div>
+          </div>
+          <div className="list-appearance-group">
+            <span className="list-appearance-label">Emoji</span>
+            <div className="emoji-choice-grid" role="listbox" aria-label="Songlist emoji options">
+              {EMOJI_OPTIONS.map((emoji) => {
+                const selected = listIconDraft === emoji;
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                    onClick={() => setListIconDraft(emoji)}
+                    aria-label={`Choose icon ${emoji}`}
+                    aria-pressed={selected}
+                  >
+                    {emoji}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <label className="list-appearance-field">
-            <span>Color</span>
+            <span>Custom color</span>
             <input
               type="color"
               value={normalizeHexColor(listColorDraft) ?? '#5c4fa6'}
               onChange={(event) => setListColorDraft(event.target.value)}
-            />
-          </label>
-          <label className="list-appearance-field list-appearance-field--emoji">
-            <span>Emoji icon</span>
-            <input
-              type="text"
-              value={listIconDraft}
-              onChange={(event) => setListIconDraft(event.target.value)}
-              maxLength={4}
-              placeholder="🎵"
             />
           </label>
           <button type="button" className="setlist-action-btn" onClick={handleApplyListAppearance}>Save</button>
@@ -468,6 +516,9 @@ export default function SongList({
             const cardStyle = effectiveSongColor
               ? ({ '--song-item-accent': effectiveSongColor } as CSSProperties)
               : undefined;
+            const songPageState = songPageStateBase
+              ? { ...songPageStateBase, accentColor: effectiveSongColor }
+              : undefined;
 
             return (
             <article
@@ -522,14 +573,39 @@ export default function SongList({
                   <PenLine size={14} />
                 </button>
                 {onSetSongColor && (
-                  <button
-                    className="song-action-btn song-action-btn--color"
-                    onClick={() => handleSetSongColor(song)}
-                    title={`Set color for ${song.title}`}
-                    aria-label={`Set color for ${song.title}`}
-                  >
-                    <Palette size={14} />
-                  </button>
+                  <div className="song-color-picker-wrap">
+                    <button
+                      className="song-action-btn song-action-btn--color"
+                      onClick={() => setSongColorPickerSongId((current) => (current === song.id ? null : song.id))}
+                      title={`Set color for ${song.title}`}
+                      aria-label={`Set color for ${song.title}`}
+                    >
+                      <Palette size={14} />
+                    </button>
+                    {songColorPickerSongId === song.id && (
+                      <div className="song-color-picker" role="menu" aria-label={`Color options for ${song.title}`}>
+                        <button
+                          type="button"
+                          className="song-color-picker-clear"
+                          onClick={() => handleSetSongColor(song, undefined)}
+                        >
+                          Use list color
+                        </button>
+                        <div className="color-swatch-grid color-swatch-grid--compact">
+                          {COLOR_OPTIONS.map((color) => (
+                            <button
+                              key={`${song.id}-${color}`}
+                              type="button"
+                              className={`color-swatch-btn${song.color === color ? ' active' : ''}`}
+                              style={{ backgroundColor: color }}
+                              onClick={() => handleSetSongColor(song, color)}
+                              aria-label={`Set song color ${color}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
                 {onRemoveSong && (
                   <button
@@ -561,6 +637,9 @@ export default function SongList({
             const effectiveSongColor = song.color ?? listColor;
             const cardStyle = effectiveSongColor
               ? ({ '--song-item-accent': effectiveSongColor } as CSSProperties)
+              : undefined;
+            const songPageState = songPageStateBase
+              ? { ...songPageStateBase, accentColor: effectiveSongColor }
               : undefined;
 
             return (
@@ -615,14 +694,39 @@ export default function SongList({
                     <PenLine size={14} />
                   </button>
                   {onSetSongColor && (
-                    <button
-                      className="song-action-btn song-action-btn--color"
-                      onClick={() => handleSetSongColor(song)}
-                      title={`Set color for ${song.title}`}
-                      aria-label={`Set color for ${song.title}`}
-                    >
-                      <Palette size={14} />
-                    </button>
+                    <div className="song-color-picker-wrap">
+                      <button
+                        className="song-action-btn song-action-btn--color"
+                        onClick={() => setSongColorPickerSongId((current) => (current === song.id ? null : song.id))}
+                        title={`Set color for ${song.title}`}
+                        aria-label={`Set color for ${song.title}`}
+                      >
+                        <Palette size={14} />
+                      </button>
+                      {songColorPickerSongId === song.id && (
+                        <div className="song-color-picker" role="menu" aria-label={`Color options for ${song.title}`}>
+                          <button
+                            type="button"
+                            className="song-color-picker-clear"
+                            onClick={() => handleSetSongColor(song, undefined)}
+                          >
+                            Use list color
+                          </button>
+                          <div className="color-swatch-grid color-swatch-grid--compact">
+                            {COLOR_OPTIONS.map((color) => (
+                              <button
+                                key={`${song.id}-${color}`}
+                                type="button"
+                                className={`color-swatch-btn${song.color === color ? ' active' : ''}`}
+                                style={{ backgroundColor: color }}
+                                onClick={() => handleSetSongColor(song, color)}
+                                aria-label={`Set song color ${color}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                   {onRemoveSong && (
                     <button

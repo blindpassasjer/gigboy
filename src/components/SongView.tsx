@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronUp,
@@ -23,6 +24,7 @@ import { useSongs } from '../context/SongsContext';
 
 interface Props {
   song: Song;
+  accentColor?: string;
 }
 
 interface ActiveChord {
@@ -30,7 +32,7 @@ interface ActiveChord {
   rect: DOMRect;
 }
 
-export default function SongView({ song }: Props) {
+export default function SongView({ song, accentColor }: Props) {
   const navigate = useNavigate();
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
@@ -84,9 +86,13 @@ export default function SongView({ song }: Props) {
     navigate('/');
   }
 
+  const headerStyle = accentColor
+    ? ({ '--song-header-accent': accentColor } as CSSProperties)
+    : undefined;
+
   return (
     <div className="song-view">
-      <div className="song-view-header">
+      <div className="song-view-header" style={headerStyle}>
         <div className="song-view-title-block">
           <h1 className="song-view-title">{song.title}</h1>
           {song.artist && <p className="song-view-artist">{song.artist}</p>}
