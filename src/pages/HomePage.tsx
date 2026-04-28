@@ -9,7 +9,7 @@ const INTERNAL_SONGLISTS_CATEGORY_ID = 'songlists-default';
 
 export default function HomePage() {
   const { songs, updateSong, deleteSong, moveSong } = useSongs();
-  const { activeCategoryId, activeSongListId, categories, songLists, moveSongInList, removeSongFromList } = useSongLists();
+  const { activeCategoryId, activeSongListId, categories, songLists, addSongToList, moveSongInList, removeSongFromList } = useSongLists();
   const {
     setlists,
     activeSetlistId,
@@ -99,6 +99,8 @@ export default function HomePage() {
     <SongList
       songs={displayedSongs}
       listName={activeList?.name ?? activeCategory?.name ?? 'All Songs'}
+      allSongs={activeList ? songs : undefined}
+      onAddSong={activeList ? (songId) => addSongToList(activeList.id, songId) : undefined}
       onMoveSong={handleMoveSong}
       onRenameSong={handleRenameSong}
       onDeleteSong={handleDeleteSong}

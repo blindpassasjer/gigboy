@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Music, LayoutGrid, Rows3, GripVertical, ArrowUpDown } from 'lucide-react';
+import { Search, Music, LayoutGrid, Rows3, GripVertical, ArrowUpDown, Plus, X } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
@@ -28,13 +28,24 @@ function getSongPreview(song: Song): string {
 interface Props {
   songs: Song[];
   listName?: string;
+  allSongs?: Song[];
   onMoveSong?: (songId: string, beforeSongId: string | null) => void;
   onRenameSong: (song: Song) => void | Promise<void>;
   onDeleteSong: (song: Song) => void | Promise<void>;
   onRemoveSong?: (song: Song) => void;
+  onAddSong?: (songId: string) => void;
 }
 
-export default function SongList({ songs, listName, onMoveSong, onRenameSong, onDeleteSong, onRemoveSong }: Props) {
+export default function SongList({
+  songs,
+  listName,
+  allSongs,
+  onMoveSong,
+  onRenameSong,
+  onDeleteSong,
+  onRemoveSong,
+  onAddSong,
+}: Props) {
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
@@ -56,11 +67,36 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
   const [dropTargetSongId, setDropTargetSongId] = useState<string | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
+  const [showSongPicker, setShowSongPicker] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
+
+  const canAddSongs = Boolean(allSongs && onAddSong);
 
   const languages = useMemo(
     () => Array.from(new Set(songs.map((s) => s.language))).sort(),
     [songs]
   );
+
+  const availableSongs = useMemo(() => {
+    if (!allSongs) return [];
+
+    const songIdsInList = new Set(songs.map((song) => song.id));
+    return allSongs
+      .filter((song) => !songIdsInList.has(song.id))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [allSongs, songs]);
+
+  const filteredAvailableSongs = useMemo(() => {
+    const normalizedQuery = pickerQuery.trim().toLowerCase();
+    if (!normalizedQuery) return availableSongs;
+
+    return availableSongs.filter((song) => {
+      const inTitle = song.title.toLowerCase().includes(normalizedQuery);
+      const inArtist = (song.artist ?? '').toLowerCase().includes(normalizedQuery);
+      const inTags = (song.tags ?? []).some((tag) => tag.toLowerCase().includes(normalizedQuery));
+      return inTitle || inArtist || inTags;
+    });
+  }, [availableSongs, pickerQuery]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -95,6 +131,30 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
     () => Object.fromEntries(filtered.map((song) => [song.id, getSongPreview(song)])),
     [filtered]
   );
+
+  useEffect(() => {
+    if (!showSongPicker) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowSongPicker(false);
+        setPickerQuery('');
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showSongPicker]);
+
+  const openSongPicker = () => {
+    setPickerQuery('');
+    setShowSongPicker(true);
+  };
+
+  const closeSongPicker = () => {
+    setShowSongPicker(false);
+    setPickerQuery('');
+  };
 
   const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
     setDraggingSongId(song.id);
@@ -179,23 +239,35 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
           {listName && <h2 className="song-list-heading">{listName}</h2>}
           <p className="song-list-summary">{filtered.length} song{filtered.length === 1 ? '' : 's'}</p>
         </div>
-        <div className="view-toggle" role="tablist" aria-label="Song view mode">
-          <button
-            type="button"
-            className={`view-toggle-btn${viewMode === 'list' ? ' active' : ''}`}
-            onClick={() => handleSetViewMode('list')}
-            aria-pressed={viewMode === 'list'}
-          >
-            <Rows3 size={15} /> List
-          </button>
-          <button
-            type="button"
-            className={`view-toggle-btn${viewMode === 'cards' ? ' active' : ''}`}
-            onClick={() => handleSetViewMode('cards')}
-            aria-pressed={viewMode === 'cards'}
-          >
-            <LayoutGrid size={15} /> Cards
-          </button>
+        <div className="setlist-header-actions">
+          {canAddSongs && (
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={openSongPicker}
+              title="Add songs"
+            >
+              <Plus size={14} /> Add songs
+            </button>
+          )}
+          <div className="view-toggle" role="tablist" aria-label="Song view mode">
+            <button
+              type="button"
+              className={`view-toggle-btn${viewMode === 'list' ? ' active' : ''}`}
+              onClick={() => handleSetViewMode('list')}
+              aria-pressed={viewMode === 'list'}
+            >
+              <Rows3 size={15} /> List
+            </button>
+            <button
+              type="button"
+              className={`view-toggle-btn${viewMode === 'cards' ? ' active' : ''}`}
+              onClick={() => handleSetViewMode('cards')}
+              aria-pressed={viewMode === 'cards'}
+            >
+              <LayoutGrid size={15} /> Cards
+            </button>
+          </div>
         </div>
       </div>
       <div className="song-list-controls">
@@ -369,6 +441,56 @@ export default function SongList({ songs, listName, onMoveSong, onRenameSong, on
           ))}
           {filtered.length > 0 && <li className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
         </ul>
+      )}
+
+      {showSongPicker && canAddSongs && (
+        <div className="song-picker-overlay" role="dialog" aria-modal="true" aria-label="Add songs to songlist">
+          <div className="song-picker-panel">
+            <div className="song-picker-header">
+              <h2>Add songs to {listName ?? 'songlist'}</h2>
+              <button className="song-picker-close" onClick={closeSongPicker} aria-label="Close song picker">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="song-picker-search-wrap">
+              <Search size={15} className="song-picker-search-icon" />
+              <input
+                type="text"
+                className="song-picker-search"
+                value={pickerQuery}
+                onChange={(event) => setPickerQuery(event.target.value)}
+                placeholder="Search by title, artist, or tag"
+              />
+            </div>
+
+            <div className="song-picker-results" role="list">
+              {filteredAvailableSongs.length === 0 ? (
+                <p className="song-picker-empty">No songs available to add.</p>
+              ) : (
+                filteredAvailableSongs.map((song) => (
+                  <div key={song.id} className="song-picker-item" role="listitem">
+                    <div className="song-picker-item-main">
+                      <span className="song-picker-song-title">{song.title}</span>
+                      {song.artist && <span className="song-picker-song-artist">{song.artist}</span>}
+                    </div>
+                    <button
+                      className="song-picker-add-btn"
+                      onClick={() => onAddSong?.(song.id)}
+                      title={`Add ${song.title}`}
+                    >
+                      <Plus size={14} /> Add
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="song-picker-footer">
+              <button className="setlist-action-btn" onClick={closeSongPicker}>Done</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

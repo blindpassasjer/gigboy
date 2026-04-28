@@ -9,6 +9,7 @@
     "deploy": "npm run build && npx -y wrangler@4 deploy",
     "build:pages": "npm run build && node scripts/write-pages-redirects.mjs",
     "deploy:pages": "npm run build:pages && npx -y wrangler@4 pages deploy dist",
+    "migrate:songs": "node scripts/migrate-songs-to-user.mjs",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -30,7 +31,9 @@
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
+    "firebase-admin": "^13.8.0",
     "typescript": "^5.0.2",
-    "vite": "^4.4.5"
+    "vite": "^4.4.5",
+    "firebase-admin": "^13.5.0"
   }
 }
