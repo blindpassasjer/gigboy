@@ -30,8 +30,13 @@ const NOTE_LABELS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#',
 
 function extractRootNote(key?: string): string | null {
   if (!key) return null;
-  const match = key.trim().match(/^([A-G][#b]?)/);
-  return match?.[1] ?? null;
+
+  const trimmed = key.trim();
+  const match = trimmed.match(/^([A-Ga-g])([#b]?)/);
+  if (!match) return null;
+
+  const normalized = `${match[1].toUpperCase()}${match[2] || ''}`;
+  return NOTE_INDEX[normalized] !== undefined ? normalized : null;
 }
 
 function autocorrelate(buffer: Float32Array, sampleRate: number): number | null {

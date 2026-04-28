@@ -389,15 +389,15 @@ export default function SongList({
   return (
     <div className="song-list-page">
       <div className="song-list-sticky">
-      <div className="song-list-header">
-        <div>
+      <div className="song-list-header setlist-header">
+        <div className="setlist-title-block">
           {listName && (
-            <h2 className="song-list-heading">
+            <h2 className="song-list-heading setlist-title">
               {listIcon && <span className="song-list-heading-icon" aria-hidden="true">{listIcon}</span>}
               <span>{listName}</span>
             </h2>
           )}
-          <p className="song-list-summary">{filtered.length} song{filtered.length === 1 ? '' : 's'}</p>
+          <p className="song-list-summary setlist-song-count">{filtered.length} song{filtered.length === 1 ? '' : 's'}</p>
         </div>
         <div className="setlist-header-actions">
           {onUpdateListAppearance && listName && (

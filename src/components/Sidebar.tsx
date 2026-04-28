@@ -163,15 +163,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         )}
       </div>
 
-      {!addingFolder && (
-        <button
-          className="sidebar-new-list-btn"
-          onClick={() => { setAddingFolder(true); setDraftName(''); }}
-        >
-          <FolderPlus size={13} /> New folder
-        </button>
-      )}
-
       <div className={`sidebar-setlists-section${setlistDropActive ? ' drop-active' : ''}`}>
         <div className="sidebar-setlists-header">
           <h3 className="sidebar-section-title">Setlists</h3>
@@ -211,24 +202,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             />
           )}
         </div>
-
-        {!addingSetlist && setlists.length > 0 && (
-          <button
-            className="sidebar-new-setlist-btn"
-            onClick={() => { setAddingSetlist(true); setDraftName(''); }}
-          >
-            <FolderPlus size={13} /> New setlist
-          </button>
-        )}
-
-        {setlists.length === 0 && !addingSetlist && (
-          <button
-            className="sidebar-new-setlist-btn sidebar-new-setlist-btn--primary"
-            onClick={() => { setAddingSetlist(true); setDraftName(''); }}
-          >
-            <ListMusic size={13} /> Create your first setlist
-          </button>
-        )}
       </div>
     </aside>
     </div>
