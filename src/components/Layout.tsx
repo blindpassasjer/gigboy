@@ -13,6 +13,7 @@ interface Props {
 export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
+  const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(max-width: 900px)').matches;
@@ -60,10 +61,10 @@ export default function Layout({ children }: Props) {
   }, []);
 
   useEffect(() => {
-    if (isNarrowViewport) {
+    if (isNarrowViewport || isConcertRoute) {
       setSidebarOpen(false);
     }
-  }, [pathname, isNarrowViewport]);
+  }, [pathname, isNarrowViewport, isConcertRoute]);
 
   useEffect(() => {
     if (!sidebarOpen || !isNarrowViewport) return;

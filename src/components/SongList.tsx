@@ -10,7 +10,6 @@ import {
   Plus,
   X,
   SquarePen,
-  PenLine,
   Trash2,
   ListMinus,
   Palette,
@@ -21,7 +20,15 @@ import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
 import { buildSongSurfaceStyle, buildSongSurfaceStyleFromPalette } from '../utils/songColorStyles';
 
-type SortBy = 'custom' | 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest' | 'language';
+type SortBy =
+  | 'custom'
+  | 'name-asc'
+  | 'name-desc'
+  | 'artist-asc'
+  | 'artist-desc'
+  | 'date-newest'
+  | 'date-oldest'
+  | 'language';
 
 const SONG_DRAG_MIME = 'application/x-folio-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
@@ -83,7 +90,6 @@ interface Props {
   listIcon?: string;
   allSongs?: Song[];
   onMoveSong?: (songId: string, beforeSongId: string | null) => void;
-  onRenameSong: (song: Song) => void | Promise<void>;
   onDeleteSong: (song: Song) => void | Promise<void>;
   onSetSongColor?: (song: Song, color: string | undefined) => void | Promise<void>;
   onUpdateListAppearance?: (appearance: { color?: string; icon?: string }) => void;
@@ -99,7 +105,6 @@ export default function SongList({
   listIcon,
   allSongs,
   onMoveSong,
-  onRenameSong,
   onDeleteSong,
   onSetSongColor,
   onUpdateListAppearance,
@@ -184,6 +189,18 @@ export default function SongList({
       sorted.sort((a, b) => a.title.localeCompare(b.title));
     } else if (sortBy === 'name-desc') {
       sorted.sort((a, b) => b.title.localeCompare(a.title));
+    } else if (sortBy === 'artist-asc') {
+      sorted.sort((a, b) => {
+        const artistA = (a.artist ?? '').trim().toLowerCase();
+        const artistB = (b.artist ?? '').trim().toLowerCase();
+        return artistA.localeCompare(artistB) || a.title.localeCompare(b.title);
+      });
+    } else if (sortBy === 'artist-desc') {
+      sorted.sort((a, b) => {
+        const artistA = (a.artist ?? '').trim().toLowerCase();
+        const artistB = (b.artist ?? '').trim().toLowerCase();
+        return artistB.localeCompare(artistA) || a.title.localeCompare(b.title);
+      });
     } else if (sortBy === 'date-newest') {
       sorted.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
     } else if (sortBy === 'date-oldest') {
@@ -496,8 +513,10 @@ export default function SongList({
             aria-label="Sort songs"
           >
             {onMoveSong && <option value="custom">Custom order</option>}
-            <option value="name-asc">Name A → Z</option>
-            <option value="name-desc">Name Z → A</option>
+            <option value="name-asc">Song name A → Z</option>
+            <option value="name-desc">Song name Z → A</option>
+            <option value="artist-asc">Artist A → Z</option>
+            <option value="artist-desc">Artist Z → A</option>
             <option value="date-newest">Date: newest</option>
             <option value="date-oldest">Date: oldest</option>
             <option value="language">Language</option>
@@ -568,14 +587,6 @@ export default function SongList({
                 >
                   <SquarePen size={14} />
                 </Link>
-                <button
-                  className="song-action-btn song-action-btn--rename"
-                  onClick={() => onRenameSong(song)}
-                  title={`Rename ${song.title}`}
-                  aria-label={`Rename ${song.title}`}
-                >
-                  <PenLine size={14} />
-                </button>
                 {onSetSongColor && (
                   <div className="song-color-picker-wrap">
                     <button
@@ -691,14 +702,6 @@ export default function SongList({
                   >
                     <SquarePen size={14} />
                   </Link>
-                  <button
-                    className="song-action-btn song-action-btn--rename"
-                    onClick={() => onRenameSong(song)}
-                    title={`Rename ${song.title}`}
-                    aria-label={`Rename ${song.title}`}
-                  >
-                    <PenLine size={14} />
-                  </button>
                   {onSetSongColor && (
                     <div className="song-color-picker-wrap">
                       <button

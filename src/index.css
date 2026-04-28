@@ -2199,6 +2199,22 @@ input, select, textarea { font: inherit; color: var(--text); }
   animation: drop-insert-line .14s ease-out;
 }
 
+.setlist-song-item.drop-after {
+  z-index: 1;
+}
+
+.setlist-song-item.drop-after::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 1rem;
+  right: 1rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: drop-insert-line .14s ease-out;
+}
+
 .setlist-song-card {
   display: flex;
   align-items: center;
@@ -2779,9 +2795,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   backdrop-filter: none;
   border-top: none;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  gap: 0;
+  gap: .75rem;
   pointer-events: none;
 }
 
@@ -3013,6 +3029,28 @@ input, select, textarea { font: inherit; color: var(--text); }
   .concert-song-surface .chord-display {
     padding: 1rem .85rem;
     font-size: .95rem;
+  }
+
+  .concert-song-surface .chord-line {
+    flex-wrap: wrap;
+    white-space: normal;
+    align-items: flex-start;
+    row-gap: .2rem;
+  }
+
+  .concert-song-surface .chord-segment {
+    white-space: pre-wrap;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .concert-song-surface .lyric-text {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .concert-song-surface .chord-name-btn {
+    white-space: normal;
   }
 
   .concert-nav-footer {

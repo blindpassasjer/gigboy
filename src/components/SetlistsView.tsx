@@ -30,6 +30,7 @@ export default function SetlistsView({
   const { renameSetlist } = useSetlists();
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
   const [dropTargetSongId, setDropTargetSongId] = useState<string | null>(null);
+  const [dropTargetPosition, setDropTargetPosition] = useState<'before' | 'after'>('before');
   const [dropAtEnd, setDropAtEnd] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(setlistName);
@@ -99,6 +100,7 @@ export default function SetlistsView({
   const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
     setDraggingSongId(song.id);
     setDropTargetSongId(null);
+    setDropTargetPosition('before');
     setDropAtEnd(false);
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData(SONG_DRAG_MIME, song.id);
@@ -109,6 +111,7 @@ export default function SetlistsView({
   const handleSongDragEnd = () => {
     setDraggingSongId(null);
     setDropTargetSongId(null);
+    setDropTargetPosition('before');
     setDropAtEnd(false);
   };
 
@@ -122,13 +125,18 @@ export default function SetlistsView({
       return;
     }
 
+    const target = event.currentTarget;
+    const targetRect = target.getBoundingClientRect();
+    const dropPosition = event.clientY < targetRect.top + targetRect.height / 2 ? 'before' : 'after';
+
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     setDropTargetSongId((current) => (current === songId ? current : songId));
+    setDropTargetPosition((current) => (current === dropPosition ? current : dropPosition));
     setDropAtEnd((current) => (current ? false : current));
   };
 
-  const handleSongDrop = (beforeSongId: string, event: React.DragEvent<HTMLElement>) => {
+  const handleSongDrop = (targetSongId: string, event: React.DragEvent<HTMLElement>) => {
     const isSongDrop = event.dataTransfer.types.includes(SONG_DRAG_MIME)
       || event.dataTransfer.types.includes(SONG_DRAG_FALLBACK_MIME);
     if (!isSongDrop) {
@@ -136,10 +144,24 @@ export default function SetlistsView({
     }
 
     const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
-    if (!sourceSongId || sourceSongId === beforeSongId) {
+    if (!sourceSongId || sourceSongId === targetSongId) {
       handleSongDragEnd();
       return;
     }
+
+    const target = event.currentTarget;
+    const targetRect = target.getBoundingClientRect();
+    const dropPosition = event.clientY < targetRect.top + targetRect.height / 2 ? 'before' : 'after';
+    const targetIndex = songs.findIndex((song) => song.id === targetSongId);
+
+    if (targetIndex < 0) {
+      handleSongDragEnd();
+      return;
+    }
+
+    const beforeSongId = dropPosition === 'before'
+      ? targetSongId
+      : songs[targetIndex + 1]?.id ?? null;
 
     event.preventDefault();
     onMoveSong(sourceSongId, beforeSongId);
@@ -255,7 +277,7 @@ export default function SetlistsView({
           {songs.map((song, index) => (
             <li
               key={song.id}
-              className={`setlist-song-item${dropTargetSongId === song.id ? ' drop-before' : ''}${draggingSongId === song.id ? ' dragging' : ''}`}
+              className={`setlist-song-item${dropTargetSongId === song.id ? ` drop-${dropTargetPosition}` : ''}${draggingSongId === song.id ? ' dragging' : ''}`}
             >
               <div
                 className={`setlist-song-card${dropTargetSongId === song.id ? ' drop-target' : ''}`}

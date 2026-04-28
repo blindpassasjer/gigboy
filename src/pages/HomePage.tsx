@@ -99,21 +99,6 @@ export default function HomePage() {
     moveSong(songId, beforeSongId);
   }
 
-  async function handleRenameSong(song: Song) {
-    const nextTitle = window.prompt('Rename song', song.title);
-    if (nextTitle === null) return;
-    const trimmed = nextTitle.trim();
-    if (!trimmed || trimmed === song.title) return;
-    const err = await updateSong({
-      ...song,
-      title: trimmed,
-      updatedAt: new Date().toISOString(),
-    });
-    if (err) {
-      window.alert(`Could not rename song: ${err}`);
-    }
-  }
-
   async function handleDeleteSong(song: Song) {
     const confirmed = window.confirm(`Delete "${song.title}"? This cannot be undone.`);
     if (!confirmed) return;
@@ -138,7 +123,6 @@ export default function HomePage() {
       allSongs={activeList ? songs : undefined}
       onAddSong={activeList ? (songId) => addSongToList(activeList.id, songId) : undefined}
       onMoveSong={handleMoveSong}
-      onRenameSong={handleRenameSong}
       onDeleteSong={handleDeleteSong}
       listColor={activeList?.color}
       songListColorsBySongId={allSongsListColorsBySongId}
