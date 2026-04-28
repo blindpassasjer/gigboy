@@ -1958,6 +1958,16 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .5rem;
 }
 
+.oauth-provider-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.oauth-provider-icon--muted {
+  color: var(--text);
+}
+
 .login-divider {
   margin: 0;
   display: flex;

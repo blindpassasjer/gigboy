@@ -1,6 +1,29 @@
 import { FormEvent, useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Github } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="oauth-provider-icon">
+      <path
+        fill="#4285F4"
+        d="M23.49 12.27c0-.79-.07-1.55-.2-2.27H12v4.31h6.44a5.5 5.5 0 0 1-2.39 3.62v3h3.86c2.26-2.08 3.58-5.13 3.58-8.66Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.07 7.94-2.91l-3.86-3A7.19 7.19 0 0 1 12 19.3a7.16 7.16 0 0 1-6.72-4.95H1.29v3.09A12 12 0 0 0 12 24Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.28 14.35A7.16 7.16 0 0 1 4.9 12c0-.82.14-1.62.38-2.35V6.56H1.29A12 12 0 0 0 0 12c0 1.94.46 3.78 1.29 5.44l3.99-3.09Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.77c1.76 0 3.34.61 4.58 1.82l3.43-3.43C17.94 1.24 15.24 0 12 0A12 12 0 0 0 1.29 6.56l3.99 3.09A7.16 7.16 0 0 1 12 4.77Z"
+      />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const { login, register, loginWithGoogle, loginWithGithub } = useAuth();
@@ -69,6 +92,7 @@ export default function LoginPage() {
             onClick={() => { void handleProviderAuth('google'); }}
             disabled={busy}
           >
+            <GoogleIcon />
             Continue with Google
           </button>
           <button
@@ -77,6 +101,7 @@ export default function LoginPage() {
             onClick={() => { void handleProviderAuth('github'); }}
             disabled={busy}
           >
+            <Github size={16} className="oauth-provider-icon oauth-provider-icon--muted" />
             Continue with GitHub
           </button>
         </div>

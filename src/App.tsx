@@ -7,12 +7,13 @@ import AddSongPage from './pages/AddSongPage';
 import EditSongPage from './pages/EditSongPage';
 import LoginPage from './pages/LoginPage';
 import SetlistConcertPage from './pages/SetlistConcertPage';
+import SharedSetlistPage from './pages/SharedSetlistPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-function AuthGate() {
+function AuthenticatedApp() {
   const { user, loading, authEnabled } = useAuth();
 
   if (loading) {
@@ -25,17 +26,15 @@ function AuthGate() {
     <SongsProvider>
       <SongListsProvider>
         <SetlistsProvider>
-          <BrowserRouter>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/songs/:id" element={<SongPage />} />
-                <Route path="/songs/:id/edit" element={<EditSongPage />} />
-                <Route path="/add" element={<AddSongPage />} />
-                <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />
-              </Routes>
-            </Layout>
-          </BrowserRouter>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/songs/:id" element={<SongPage />} />
+              <Route path="/songs/:id/edit" element={<EditSongPage />} />
+              <Route path="/add" element={<AddSongPage />} />
+              <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />
+            </Routes>
+          </Layout>
         </SetlistsProvider>
       </SongListsProvider>
     </SongsProvider>
@@ -56,7 +55,12 @@ export default function App() {
           },
         }}
       />
-      <AuthGate />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/share/:shareToken" element={<SharedSetlistPage />} />
+          <Route path="*" element={<AuthenticatedApp />} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   );
 }
