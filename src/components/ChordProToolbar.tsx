@@ -1,5 +1,5 @@
 import { useState, type RefObject } from 'react';
-import { Music2, Repeat2, GitBranch, ArrowRight } from 'lucide-react';
+import { Music2, Repeat2, GitBranch, ArrowRight, Guitar } from 'lucide-react';
 
 interface Props {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -62,6 +62,20 @@ export default function ChordProToolbar({ textareaRef, value, onChange }: Props)
     insertSection(name, textareaRef.current, value, onChange);
   }
 
+  function handleInsertTab() {
+    if (!textareaRef.current) return;
+    const textarea = textareaRef.current;
+    const start = textarea.selectionStart;
+    const before = value.slice(0, start);
+    const needsNewline = before.length > 0 && !before.endsWith('\n');
+    const prefix = needsNewline ? '\n' : '';
+    const TEMPLATE = `e|---|\nB|---|\nG|---|\nD|---|\nA|---|\nE|---|`;
+    const block = `${prefix}{start_of_tab}\n${TEMPLATE}\n{end_of_tab}\n`;
+    // Place cursor on the first tab line (after "{start_of_tab}\n")
+    const cursorOffset = prefix.length + '{start_of_tab}\n'.length;
+    insertAtCursor(textarea, block, value, onChange, start + cursorOffset);
+  }
+
   function handleChordInsert() {
     const chord = chordInput.trim();
     if (!chord || !textareaRef.current) return;
@@ -92,6 +106,21 @@ export default function ChordProToolbar({ textareaRef, value, onChange }: Props)
             {s.label}
           </button>
         ))}
+      </div>
+
+      <div className="toolbar-divider" />
+
+      <div className="toolbar-group">
+        <span className="toolbar-label">Tab</span>
+        <button
+          type="button"
+          className="toolbar-btn toolbar-btn--section section-tab"
+          onClick={handleInsertTab}
+          title="Insert guitar tab block"
+        >
+          <Guitar size={13} />
+          Insert Tab
+        </button>
       </div>
 
       <div className="toolbar-divider" />

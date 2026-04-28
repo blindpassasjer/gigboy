@@ -67,12 +67,24 @@ function looksLikeSectionMarker(line: string): boolean {
   return parseSectionMarker(line) !== null;
 }
 
+// Convert Ultimate Guitar [tab]...[/tab] blocks to ChordPro {start_of_tab}...{end_of_tab}.
+// Handles both block form ([tab] on its own line) and inline form ([tab]content[/tab]).
+function convertUGTabBlocks(text: string): string {
+  // First handle the inline/single-line case: [tab]content[/tab] on one line
+  text = text.replace(/\[tab\]([\s\S]*?)\[\/tab\]/gi, (_, content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return '';
+    return `{start_of_tab}\n${trimmed}\n{end_of_tab}`;
+  });
+  return text;
+}
+
 // Pre-process Ultimate Guitar and cuerdas.net specific markup before parsing.
 function preprocessSongText(text: string): string {
   // UG inline chord tags: [ch]G[/ch] → [G]
   text = text.replace(/\[ch\]([^\[]*?)\[\/ch\]/gi, (_, chord) => `[${chord.trim()}]`);
-  // UG tab wrappers: [tab] ... [/tab] — just remove the wrapper tags
-  text = text.replace(/\[tab\]/gi, '').replace(/\[\/tab\]/gi, '');
+  // UG tab wrappers: [tab] ... [/tab] → ChordPro {start_of_tab} ... {end_of_tab}
+  text = convertUGTabBlocks(text);
   return text;
 }
 

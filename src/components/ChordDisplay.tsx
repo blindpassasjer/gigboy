@@ -3,6 +3,7 @@ import { parseChordPro, lineHasChords, transposeChord, convertChordNotation } fr
 import type { ChordNotation } from '../utils/chordParser';
 import type { ParsedLine } from '../types';
 import type { DiagramInstrument } from './ChordDiagram';
+import TabDisplay from './TabDisplay';
 
 interface Props {
   chordpro: string;
@@ -54,6 +55,10 @@ function LineRenderer({
   if (line.type === 'empty') return <div className="chord-line chord-line--empty" />;
 
   if (line.type === 'comment') return null;
+
+  if (line.type === 'tab') {
+    return <TabDisplay tabLines={line.tabLines ?? []} transpose={transpose} />;
+  }
 
   if (line.type === 'directive') {
     const dir = line.directive!;

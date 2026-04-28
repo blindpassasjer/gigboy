@@ -64,8 +64,35 @@ export function parseLine(raw: string): ParsedLine {
 }
 
 /** Parse full ChordPro text into an array of lines. */
+/** Parse full ChordPro text into an array of lines.
+ * Tab blocks ({start_of_tab}...{end_of_tab}) are collapsed into a single 'tab' line. */
 export function parseChordPro(text: string): ParsedLine[] {
-  return text.split('\n').map(parseLine);
+  const rawLines = text.split('\n');
+  const result: ParsedLine[] = [];
+  let i = 0;
+
+  while (i < rawLines.length) {
+    const trimmed = rawLines[i].trim().toLowerCase();
+    if (trimmed === '{start_of_tab}' || trimmed === '{sot}') {
+      const tabLines: string[] = [];
+      i++;
+      while (i < rawLines.length) {
+        const inner = rawLines[i].trim().toLowerCase();
+        if (inner === '{end_of_tab}' || inner === '{eot}') {
+          i++;
+          break;
+        }
+        tabLines.push(rawLines[i]);
+        i++;
+      }
+      result.push({ type: 'tab', tabLines, raw: '' });
+    } else {
+      result.push(parseLine(rawLines[i]));
+      i++;
+    }
+  }
+
+  return result;
 }
 
 /** Check if any segment in a line has a chord. */

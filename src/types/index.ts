@@ -55,12 +55,14 @@ export interface Song {
 }
 
 export interface ParsedLine {
-  type: 'chord-lyric' | 'directive' | 'comment' | 'empty';
+  type: 'chord-lyric' | 'directive' | 'comment' | 'empty' | 'tab';
   segments?: ChordSegment[];
   /** Directive name (e.g. "title", "chorus") */
   directive?: string;
   directiveValue?: string;
   raw: string;
+  /** Lines inside a {start_of_tab}...{end_of_tab} block (only present when type === 'tab') */
+  tabLines?: string[];
 }
 
 export interface ChordSegment {

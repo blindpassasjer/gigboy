@@ -275,8 +275,11 @@ function FolderItem({
       onDrop={onDrop}
     >
       <button className="sidebar-list-item-btn" onClick={onSelect}>
-        {icon && <span className="sidebar-list-icon" aria-hidden="true">{icon}</span>}
-        {active ? <FolderOpen size={14} /> : <Folder size={14} />}
+        {icon ? (
+          <span className="sidebar-list-icon" aria-hidden="true">{icon}</span>
+        ) : (
+          active ? <FolderOpen size={14} /> : <Folder size={14} />
+        )}
         <span className="sidebar-list-name">{name}</span>
         {count > 0 && <span className="sidebar-list-count">{count}</span>}
       </button>

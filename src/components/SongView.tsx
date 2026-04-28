@@ -21,6 +21,7 @@ import { transposeChord } from '../utils/chordParser';
 import type { ChordNotation } from '../utils/chordParser';
 import { useSongLists } from '../context/SongListsContext';
 import { useSongs } from '../context/SongsContext';
+import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 
 interface Props {
   song: Song;
@@ -87,7 +88,10 @@ export default function SongView({ song, accentColor }: Props) {
   }
 
   const headerStyle = accentColor
-    ? ({ '--song-header-accent': accentColor } as CSSProperties)
+    ? ({
+      ...buildSongSurfaceStyle(accentColor),
+      '--song-header-accent': accentColor,
+    } as CSSProperties)
     : undefined;
 
   return (

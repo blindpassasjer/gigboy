@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from 'react';
-import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -20,6 +19,7 @@ import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
+import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 
 type SortBy = 'custom' | 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest' | 'language';
 
@@ -41,7 +41,7 @@ const COLOR_OPTIONS = [
   '#374151',
 ] as const;
 
-const EMOJI_OPTIONS = ['🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '📀', '✨', '🔥'] as const;
+const EMOJI_OPTIONS = ['🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '📀', '✨', '🔥', '📁'] as const;
 
 function getSongPreview(song: Song): string {
   const lyricLines = parseChordPro(song.chordpro)
@@ -513,9 +513,7 @@ export default function SongList({
         <div className="song-card-grid" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
           {filtered.map((song) => {
             const effectiveSongColor = song.color ?? listColor;
-            const cardStyle = effectiveSongColor
-              ? ({ '--song-item-accent': effectiveSongColor } as CSSProperties)
-              : undefined;
+            const cardStyle = buildSongSurfaceStyle(effectiveSongColor);
             const songPageState = songPageStateBase
               ? { ...songPageStateBase, accentColor: effectiveSongColor }
               : undefined;
@@ -635,9 +633,7 @@ export default function SongList({
         <ul className="song-list" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
           {filtered.map((song) => {
             const effectiveSongColor = song.color ?? listColor;
-            const cardStyle = effectiveSongColor
-              ? ({ '--song-item-accent': effectiveSongColor } as CSSProperties)
-              : undefined;
+            const cardStyle = buildSongSurfaceStyle(effectiveSongColor);
             const songPageState = songPageStateBase
               ? { ...songPageStateBase, accentColor: effectiveSongColor }
               : undefined;
