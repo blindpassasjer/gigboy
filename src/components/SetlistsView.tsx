@@ -28,7 +28,6 @@ export default function SetlistsView({
   onRemoveSong,
   onAddSong,
 }: Props) {
-  const { renameSetlist } = useSetlists();
   const { renameSetlist, shareSetlist, unshareSetlist, setlists } = useSetlists();
   const currentSetlist = setlists.find((l) => l.id === setlistId);
   const shareToken = currentSetlist?.shareToken;
