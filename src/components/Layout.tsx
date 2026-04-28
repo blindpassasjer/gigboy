@@ -148,9 +148,6 @@ export default function Layout({ children }: Props) {
         )}
         <main className="main-content">{children}</main>
       </div>
-      <footer className="footer">
-        <p>Folio - open source music chords &amp; lyrics</p>
-      </footer>
     </div>
   );
 }

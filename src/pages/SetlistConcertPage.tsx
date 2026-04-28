@@ -52,7 +52,7 @@ export default function SetlistConcertPage() {
   const [chordNotation, setChordNotation] = useState<ChordNotation>('anglo');
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [showTopbar, setShowTopbar] = useState(false);
-  const [showSongNavigator, setShowSongNavigator] = useState(false);
+  const [showSongNavigator, setShowSongNavigator] = useState(true);
   const [teleprompterActive, setTeleprompterActive] = useState(false);
   const [teleprompterSpeed, setTeleprompterSpeed] = useState(28);
   const [isFullscreen, setIsFullscreen] = useState(() => {
