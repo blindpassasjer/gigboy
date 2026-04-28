@@ -9,7 +9,16 @@ const INTERNAL_SONGLISTS_CATEGORY_ID = 'songlists-default';
 
 export default function HomePage() {
   const { songs, updateSong, deleteSong, moveSong } = useSongs();
-  const { activeCategoryId, activeSongListId, categories, songLists, addSongToList, moveSongInList, removeSongFromList } = useSongLists();
+  const {
+    activeCategoryId,
+    activeSongListId,
+    categories,
+    songLists,
+    addSongToList,
+    moveSongInList,
+    removeSongFromList,
+    updateSongListAppearance,
+  } = useSongLists();
   const {
     setlists,
     activeSetlistId,
@@ -95,6 +104,17 @@ export default function HomePage() {
     await deleteSong(song.id);
   }
 
+  async function handleSetSongColor(song: Song, color: string | undefined) {
+    const err = await updateSong({
+      ...song,
+      color,
+      updatedAt: new Date().toISOString(),
+    });
+    if (err) {
+      window.alert(`Could not update song color: ${err}`);
+    }
+  }
+
   return (
     <SongList
       songs={displayedSongs}
@@ -104,6 +124,14 @@ export default function HomePage() {
       onMoveSong={handleMoveSong}
       onRenameSong={handleRenameSong}
       onDeleteSong={handleDeleteSong}
+      listColor={activeList?.color}
+      listIcon={activeList?.icon}
+      onUpdateListAppearance={
+        activeList
+          ? (appearance) => updateSongListAppearance(activeList.id, appearance)
+          : undefined
+      }
+      onSetSongColor={handleSetSongColor}
       onRemoveSong={activeList ? (song) => removeSongFromList(activeList.id, song.id) : undefined}
     />
   );

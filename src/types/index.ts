@@ -9,6 +9,8 @@ export interface SongList {
   name: string;
   songIds: string[];
   folderId?: string;
+  color?: string;
+  icon?: string;
   sortOrder?: number;
 }
 
@@ -36,6 +38,7 @@ export interface Song {
   id: string;
   title: string;
   artist?: string;
+  color?: string;
   language: Language;
   /** Additional languages present in the song (e.g. bilingual) */
   secondaryLanguages?: Language[];

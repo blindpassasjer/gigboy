@@ -121,6 +121,7 @@ interface SongListsContextValue {
   addSongToList: (listId: string, songId: string) => void;
   removeSongFromList: (listId: string, songId: string) => void;
   moveSongInList: (listId: string, songId: string, beforeSongId: string | null) => void;
+  updateSongListAppearance: (listId: string, appearance: { color?: string; icon?: string }) => void;
   moveSongList: (listId: string, targetCategoryId?: string, beforeListId?: string | null) => void;
   setActiveCategoryId: (id: string | null) => void;
   setActiveSongListId: (id: string | null) => void;
@@ -345,6 +346,29 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
+  const updateSongListAppearance = useCallback((listId: string, appearance: { color?: string; icon?: string }) => {
+    setSongLists((prev) => {
+      const list = prev.find((l) => l.id === listId);
+      if (!list) return prev;
+
+      const nextList: SongList = {
+        ...list,
+        color: appearance.color,
+        icon: appearance.icon,
+      };
+      const nextLists = prev.map((l) => (l.id === listId ? nextList : l));
+
+      if (db && userId) {
+        void writeSongList(nextList, userId).catch((error) => {
+          console.error('Failed to update song list appearance in Firestore.', error);
+          setSongLists(prev);
+        });
+      }
+
+      return nextLists;
+    });
+  }, [userId]);
+
   const moveSongList = useCallback((listId: string, targetCategoryId?: string, beforeListId?: string | null) => {
     setSongLists((prev) => {
       const moving = prev.find((l) => l.id === listId);
@@ -398,6 +422,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
         addSongToList,
         removeSongFromList,
         moveSongInList,
+        updateSongListAppearance,
         moveSongList,
         setActiveCategoryId,
         setActiveSongListId: setActiveListId,

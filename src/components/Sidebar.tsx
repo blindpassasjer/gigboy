@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import type { CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Folder, FolderOpen, FolderPlus, Trash2, X, ListMusic, ListMusicIcon } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
@@ -137,6 +138,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             key={list.id}
             listId={list.id}
             name={list.name}
+            icon={list.icon}
+            color={list.color}
             count={list.songIds.length}
             active={activeSongListId === list.id}
             songDropTarget={songDropTargetId === list.id}
@@ -234,6 +237,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 interface FolderItemProps {
   listId: string;
   name: string;
+  icon?: string;
+  color?: string;
   count: number;
   active: boolean;
   songDropTarget: boolean;
@@ -246,6 +251,8 @@ interface FolderItemProps {
 
 function FolderItem({
   name,
+  icon,
+  color,
   count,
   active,
   songDropTarget,
@@ -255,14 +262,20 @@ function FolderItem({
   onSelect,
   onDelete,
 }: FolderItemProps) {
+  const style = color
+    ? ({ '--list-accent': color } as CSSProperties)
+    : undefined;
+
   return (
     <div
       className={`sidebar-list-item${active ? ' active' : ''}${songDropTarget ? ' song-drop-target' : ''}`}
+      style={style}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
       <button className="sidebar-list-item-btn" onClick={onSelect}>
+        {icon && <span className="sidebar-list-icon" aria-hidden="true">{icon}</span>}
         {active ? <FolderOpen size={14} /> : <Folder size={14} />}
         <span className="sidebar-list-name">{name}</span>
         {count > 0 && <span className="sidebar-list-count">{count}</span>}

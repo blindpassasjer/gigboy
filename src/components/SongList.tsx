@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -13,6 +14,7 @@ import {
   PenLine,
   Trash2,
   ListMinus,
+  Palette,
 } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
@@ -38,13 +40,35 @@ function getSongPreview(song: Song): string {
   return preview.length > 150 ? `${preview.slice(0, 147).trimEnd()}...` : preview;
 }
 
+function normalizeHexColor(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const candidate = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(candidate)) {
+    return null;
+  }
+
+  return candidate.toLowerCase();
+}
+
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
+}
+
 interface Props {
   songs: Song[];
   listName?: string;
+  listColor?: string;
+  listIcon?: string;
   allSongs?: Song[];
   onMoveSong?: (songId: string, beforeSongId: string | null) => void;
   onRenameSong: (song: Song) => void | Promise<void>;
   onDeleteSong: (song: Song) => void | Promise<void>;
+  onSetSongColor?: (song: Song, color: string | undefined) => void | Promise<void>;
+  onUpdateListAppearance?: (appearance: { color?: string; icon?: string }) => void;
   onRemoveSong?: (song: Song) => void;
   onAddSong?: (songId: string) => void;
 }
@@ -52,10 +76,14 @@ interface Props {
 export default function SongList({
   songs,
   listName,
+  listColor,
+  listIcon,
   allSongs,
   onMoveSong,
   onRenameSong,
   onDeleteSong,
+  onSetSongColor,
+  onUpdateListAppearance,
   onRemoveSong,
   onAddSong,
 }: Props) {
@@ -82,6 +110,12 @@ export default function SongList({
   const [dropAtEnd, setDropAtEnd] = useState(false);
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const [showListAppearanceEditor, setShowListAppearanceEditor] = useState(false);
+  const [listColorDraft, setListColorDraft] = useState(listColor ?? '#5c4fa6');
+  const [listIconDraft, setListIconDraft] = useState(listIcon ?? '🎵');
+  const songPageState = onRemoveSong && listName
+    ? { backTo: '/', backLabel: listName }
+    : undefined;
 
   const canAddSongs = Boolean(allSongs && onAddSong);
 
@@ -146,6 +180,14 @@ export default function SongList({
   );
 
   useEffect(() => {
+    setListColorDraft(listColor ?? '#5c4fa6');
+  }, [listColor]);
+
+  useEffect(() => {
+    setListIconDraft(listIcon ?? '🎵');
+  }, [listIcon]);
+
+  useEffect(() => {
     if (!showSongPicker) return;
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -167,6 +209,56 @@ export default function SongList({
   const closeSongPicker = () => {
     setShowSongPicker(false);
     setPickerQuery('');
+  };
+
+  const handleApplyListAppearance = () => {
+    if (!onUpdateListAppearance) return;
+
+    const normalizedColor = normalizeHexColor(listColorDraft);
+    if (!normalizedColor) {
+      window.alert('Please choose a valid color. Example: #4f46e5');
+      return;
+    }
+
+    onUpdateListAppearance({
+      color: normalizedColor,
+      icon: normalizeEmojiIcon(listIconDraft),
+    });
+    setShowListAppearanceEditor(false);
+  };
+
+  const handleResetListAppearance = () => {
+    if (!onUpdateListAppearance) return;
+    onUpdateListAppearance({ color: undefined, icon: undefined });
+    setListColorDraft('#5c4fa6');
+    setListIconDraft('🎵');
+    setShowListAppearanceEditor(false);
+  };
+
+  const handleSetSongColor = (song: Song) => {
+    if (!onSetSongColor) return;
+
+    const suggested = song.color ?? listColor ?? '#5c4fa6';
+    const value = window.prompt(
+      `Set color for "${song.title}" as #RRGGBB. Leave empty to use the songlist color.`,
+      suggested
+    );
+
+    if (value === null) return;
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      onSetSongColor(song, undefined);
+      return;
+    }
+
+    const normalized = normalizeHexColor(trimmed);
+    if (!normalized) {
+      window.alert('Invalid color. Please use a hex value like #f59e0b');
+      return;
+    }
+
+    onSetSongColor(song, normalized);
   };
 
   const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
@@ -249,10 +341,25 @@ export default function SongList({
       <div className="song-list-sticky">
       <div className="song-list-header">
         <div>
-          {listName && <h2 className="song-list-heading">{listName}</h2>}
+          {listName && (
+            <h2 className="song-list-heading">
+              {listIcon && <span className="song-list-heading-icon" aria-hidden="true">{listIcon}</span>}
+              <span>{listName}</span>
+            </h2>
+          )}
           <p className="song-list-summary">{filtered.length} song{filtered.length === 1 ? '' : 's'}</p>
         </div>
         <div className="setlist-header-actions">
+          {onUpdateListAppearance && listName && (
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => setShowListAppearanceEditor((value) => !value)}
+              title="Customize songlist color and icon"
+            >
+              <Palette size={14} /> Style list
+            </button>
+          )}
           {canAddSongs && (
             <button
               type="button"
@@ -283,6 +390,30 @@ export default function SongList({
           </div>
         </div>
       </div>
+      {showListAppearanceEditor && onUpdateListAppearance && (
+        <div className="list-appearance-editor" role="region" aria-label="Songlist style settings">
+          <label className="list-appearance-field">
+            <span>Color</span>
+            <input
+              type="color"
+              value={normalizeHexColor(listColorDraft) ?? '#5c4fa6'}
+              onChange={(event) => setListColorDraft(event.target.value)}
+            />
+          </label>
+          <label className="list-appearance-field list-appearance-field--emoji">
+            <span>Emoji icon</span>
+            <input
+              type="text"
+              value={listIconDraft}
+              onChange={(event) => setListIconDraft(event.target.value)}
+              maxLength={4}
+              placeholder="🎵"
+            />
+          </label>
+          <button type="button" className="setlist-action-btn" onClick={handleApplyListAppearance}>Save</button>
+          <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={handleResetListAppearance}>Reset</button>
+        </div>
+      )}
       <div className="song-list-controls">
         <div className="search-box">
           <Search size={16} className="search-icon" />
@@ -332,10 +463,17 @@ export default function SongList({
         </div>
       ) : viewMode === 'cards' ? (
         <div className="song-card-grid" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
-          {filtered.map((song) => (
+          {filtered.map((song) => {
+            const effectiveSongColor = song.color ?? listColor;
+            const cardStyle = effectiveSongColor
+              ? ({ '--song-item-accent': effectiveSongColor } as CSSProperties)
+              : undefined;
+
+            return (
             <article
               key={song.id}
               className={`song-preview-card${dropTargetSongId === song.id ? ' drop-before' : ''}`}
+              style={cardStyle}
               onDragOver={(event) => handleSongDragOver(song.id, event)}
               onDrop={(event) => handleSongDrop(song.id, event)}
             >
@@ -351,7 +489,7 @@ export default function SongList({
                 <GripVertical size={16} />
               </button>
               )}
-              <Link to={`/songs/${song.id}`} className="song-preview-card-link">
+              <Link to={`/songs/${song.id}`} state={songPageState} className="song-preview-card-link">
                 <div className="song-preview-card-main">
                   <span className="song-card-title">{song.title}</span>
                   {song.artist && <span className="song-card-artist">{song.artist}</span>}
@@ -383,6 +521,16 @@ export default function SongList({
                 >
                   <PenLine size={14} />
                 </button>
+                {onSetSongColor && (
+                  <button
+                    className="song-action-btn song-action-btn--color"
+                    onClick={() => handleSetSongColor(song)}
+                    title={`Set color for ${song.title}`}
+                    aria-label={`Set color for ${song.title}`}
+                  >
+                    <Palette size={14} />
+                  </button>
+                )}
                 {onRemoveSong && (
                   <button
                     className="song-action-btn song-action-btn--remove"
@@ -403,15 +551,23 @@ export default function SongList({
                 </button>
               </div>
             </article>
-          ))}
+            );
+          })}
           {filtered.length > 0 && <div className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
         </div>
       ) : (
         <ul className="song-list" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
-          {filtered.map((song) => (
+          {filtered.map((song) => {
+            const effectiveSongColor = song.color ?? listColor;
+            const cardStyle = effectiveSongColor
+              ? ({ '--song-item-accent': effectiveSongColor } as CSSProperties)
+              : undefined;
+
+            return (
             <li key={song.id} className={dropTargetSongId === song.id ? 'drop-before' : ''}>
               <div
                 className="song-card"
+                style={cardStyle}
                 onDragOver={(event) => handleSongDragOver(song.id, event)}
                 onDrop={(event) => handleSongDrop(song.id, event)}
               >
@@ -427,7 +583,7 @@ export default function SongList({
                   <GripVertical size={16} />
                 </button>
                 )}
-                <Link to={`/songs/${song.id}`} className="song-card-link">
+                <Link to={`/songs/${song.id}`} state={songPageState} className="song-card-link">
                   <div className="song-card-main">
                     <span className="song-card-title">{song.title}</span>
                     {song.artist && <span className="song-card-artist">{song.artist}</span>}
@@ -458,6 +614,16 @@ export default function SongList({
                   >
                     <PenLine size={14} />
                   </button>
+                  {onSetSongColor && (
+                    <button
+                      className="song-action-btn song-action-btn--color"
+                      onClick={() => handleSetSongColor(song)}
+                      title={`Set color for ${song.title}`}
+                      aria-label={`Set color for ${song.title}`}
+                    >
+                      <Palette size={14} />
+                    </button>
+                  )}
                   {onRemoveSong && (
                     <button
                       className="song-action-btn song-action-btn--remove"
@@ -479,7 +645,8 @@ export default function SongList({
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
           {filtered.length > 0 && <li className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
         </ul>
       )}
