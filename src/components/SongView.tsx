@@ -1,6 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronUp, ChevronDown, RotateCcw, ListPlus, Check, Plus, Printer } from 'lucide-react';
+import {
+  ChevronUp,
+  ChevronDown,
+  RotateCcw,
+  ListPlus,
+  Check,
+  Plus,
+  Printer,
+  SquarePen,
+  PenLine,
+  Trash2,
+} from 'lucide-react';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
@@ -215,23 +226,36 @@ export default function SongView({ song }: Props) {
           <div className="song-toolbar-row song-toolbar-row--actions">
             <div className="song-actions">
               <button
-                className="song-action-btn"
+                className="song-action-btn song-action-btn--edit"
                 onClick={() => navigate(`/songs/${song.id}/edit`)}
+                title={`Edit ${song.title}`}
+                aria-label={`Edit ${song.title}`}
               >
-                Edit
-              </button>
-              <button className="song-action-btn" onClick={handleRename}>
-                Rename
+                <SquarePen size={14} />
               </button>
               <button
-                className="song-action-btn"
+                className="song-action-btn song-action-btn--rename"
+                onClick={handleRename}
+                title={`Rename ${song.title}`}
+                aria-label={`Rename ${song.title}`}
+              >
+                <PenLine size={14} />
+              </button>
+              <button
+                className="song-action-btn song-action-btn--print"
                 onClick={() => window.print()}
                 title="Print / Save as PDF"
+                aria-label="Print or save as PDF"
               >
-                <Printer size={13} style={{ marginRight: '4px' }} /> Print
+                <Printer size={14} />
               </button>
-              <button className="song-action-btn song-action-btn--danger" onClick={handleDelete}>
-                Delete
+              <button
+                className="song-action-btn song-action-btn--delete"
+                onClick={handleDelete}
+                title={`Delete ${song.title}`}
+                aria-label={`Delete ${song.title}`}
+              >
+                <Trash2 size={14} />
               </button>
             </div>
           </div>

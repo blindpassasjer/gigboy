@@ -516,36 +516,85 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-action-btn {
   display: inline-flex;
   align-items: center;
-  padding: .22rem .55rem;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: .78rem;
-  font-weight: 600;
   color: var(--muted);
   background: var(--surface);
   text-decoration: none;
-  transition: background .12s, border-color .12s, color .12s;
+  transition: background .12s, border-color .12s, color .12s, transform .08s;
 }
 
 .song-action-btn:hover {
-  background: var(--chord-bg);
-  border-color: var(--accent);
-  color: var(--accent);
+  transform: translateY(-1px);
   text-decoration: none;
 }
 
-.song-action-btn--link {
-  color: var(--accent);
+.song-action-btn svg {
+  flex-shrink: 0;
 }
 
-.song-action-btn--danger {
+.song-action-btn--edit {
+  color: #1f5ea8;
+  border-color: #b7d0ee;
+  background: #f2f8ff;
+}
+
+.song-action-btn--edit:hover {
+  color: #134783;
+  border-color: #8eb7e2;
+  background: #e4f1ff;
+}
+
+.song-action-btn--rename {
+  color: #8a5400;
+  border-color: #eec88d;
+  background: #fff5e4;
+}
+
+.song-action-btn--rename:hover {
+  color: #663f00;
+  border-color: #dfad63;
+  background: #ffedcb;
+}
+
+.song-action-btn--remove {
+  color: #8d4d13;
+  border-color: #efc8a6;
+  background: #fff3e7;
+}
+
+.song-action-btn--remove:hover {
+  color: #6d3a0b;
+  border-color: #deab7b;
+  background: #ffe5cc;
+}
+
+.song-action-btn--delete {
   color: var(--danger);
-}
-
-.song-action-btn--danger:hover {
-  background: #fde8e8;
   border-color: #efb5ae;
+  background: #fff0f0;
+}
+
+.song-action-btn--delete:hover {
   color: var(--danger);
+  border-color: #e28c82;
+  background: #fde1de;
+}
+
+.song-action-btn--print {
+  color: #52606d;
+  border-color: #d1d8df;
+  background: #f7f9fb;
+}
+
+.song-action-btn--print:hover {
+  color: #3f4d5a;
+  border-color: #b8c2cc;
+  background: #ecf1f5;
 }
 
 .empty-state {
@@ -2238,8 +2287,8 @@ input, select, textarea { font: inherit; color: var(--text); }
     width: 100%;
   }
   .song-action-btn {
-    flex: 1 1 90px;
-    justify-content: center;
+    width: 2rem;
+    height: 2rem;
   }
   .chord-display { padding: .75rem; font-size: .88rem; }
   .song-view-title { font-size: 1.3rem; }

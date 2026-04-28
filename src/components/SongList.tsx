@@ -1,6 +1,19 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Music, LayoutGrid, Rows3, GripVertical, ArrowUpDown, Plus, X } from 'lucide-react';
+import {
+  Search,
+  Music,
+  LayoutGrid,
+  Rows3,
+  GripVertical,
+  ArrowUpDown,
+  Plus,
+  X,
+  SquarePen,
+  PenLine,
+  Trash2,
+  ListMinus,
+} from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
@@ -354,25 +367,39 @@ export default function SongList({
                 </div>
               </Link>
               <div className="song-actions song-actions--stacked">
-                <Link to={`/songs/${song.id}/edit`} className="song-action-btn song-action-btn--link">
-                  Edit
+                <Link
+                  to={`/songs/${song.id}/edit`}
+                  className="song-action-btn song-action-btn--edit"
+                  title={`Edit ${song.title}`}
+                  aria-label={`Edit ${song.title}`}
+                >
+                  <SquarePen size={14} />
                 </Link>
-                <button className="song-action-btn" onClick={() => onRenameSong(song)}>
-                  Rename
+                <button
+                  className="song-action-btn song-action-btn--rename"
+                  onClick={() => onRenameSong(song)}
+                  title={`Rename ${song.title}`}
+                  aria-label={`Rename ${song.title}`}
+                >
+                  <PenLine size={14} />
                 </button>
                 {onRemoveSong && (
                   <button
-                    className="song-action-btn song-action-btn--danger"
+                    className="song-action-btn song-action-btn--remove"
                     onClick={() => onRemoveSong(song)}
+                    title={`Remove ${song.title}`}
+                    aria-label={`Remove ${song.title}`}
                   >
-                    Remove
+                    <ListMinus size={14} />
                   </button>
                 )}
                 <button
-                  className="song-action-btn song-action-btn--danger"
+                  className="song-action-btn song-action-btn--delete"
                   onClick={() => onDeleteSong(song)}
+                  title={`Delete ${song.title}`}
+                  aria-label={`Delete ${song.title}`}
                 >
-                  Delete
+                  <Trash2 size={14} />
                 </button>
               </div>
             </article>
@@ -415,25 +442,39 @@ export default function SongList({
                   </div>
                 </Link>
                 <div className="song-actions">
-                  <Link to={`/songs/${song.id}/edit`} className="song-action-btn song-action-btn--link">
-                    Edit
+                  <Link
+                    to={`/songs/${song.id}/edit`}
+                    className="song-action-btn song-action-btn--edit"
+                    title={`Edit ${song.title}`}
+                    aria-label={`Edit ${song.title}`}
+                  >
+                    <SquarePen size={14} />
                   </Link>
-                  <button className="song-action-btn" onClick={() => onRenameSong(song)}>
-                    Rename
+                  <button
+                    className="song-action-btn song-action-btn--rename"
+                    onClick={() => onRenameSong(song)}
+                    title={`Rename ${song.title}`}
+                    aria-label={`Rename ${song.title}`}
+                  >
+                    <PenLine size={14} />
                   </button>
                   {onRemoveSong && (
                     <button
-                      className="song-action-btn song-action-btn--danger"
+                      className="song-action-btn song-action-btn--remove"
                       onClick={() => onRemoveSong(song)}
+                      title={`Remove ${song.title}`}
+                      aria-label={`Remove ${song.title}`}
                     >
-                      Remove
+                      <ListMinus size={14} />
                     </button>
                   )}
                   <button
-                    className="song-action-btn song-action-btn--danger"
+                    className="song-action-btn song-action-btn--delete"
                     onClick={() => onDeleteSong(song)}
+                    title={`Delete ${song.title}`}
+                    aria-label={`Delete ${song.title}`}
                   >
-                    Delete
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
