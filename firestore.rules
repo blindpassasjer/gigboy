@@ -88,13 +88,16 @@ service cloud.firestore {
     }
 
     match /collaborationInvites/{inviteId} {
+      function collaborationInviteEmailMatchesRecipient() {
+        return request.auth.token.email is string
+          && resource.data.recipientEmailLower is string
+          && resource.data.recipientEmailLower == lower(request.auth.token.email);
+      }
+
       allow read: if isSignedIn() && (
         resource.data.ownerId == request.auth.uid
         || resource.data.recipientUid == request.auth.uid
-        || (
-          request.auth.token.email != null
-          && resource.data.recipientEmailLower == lower(request.auth.token.email)
-        )
+        || collaborationInviteEmailMatchesRecipient()
       );
 
       allow create: if isSignedIn()
@@ -104,10 +107,7 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         resource.data.ownerId == request.auth.uid
         || resource.data.recipientUid == request.auth.uid
-        || (
-          request.auth.token.email != null
-          && resource.data.recipientEmailLower == lower(request.auth.token.email)
-        )
+        || collaborationInviteEmailMatchesRecipient()
       );
 
       allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
@@ -128,13 +128,16 @@ service cloud.firestore {
     }
 
     match /bandInvites/{inviteId} {
+      function bandInviteEmailMatchesRecipient() {
+        return request.auth.token.email is string
+          && resource.data.recipientEmailLower is string
+          && resource.data.recipientEmailLower == lower(request.auth.token.email);
+      }
+
       allow read: if isSignedIn() && (
         resource.data.inviterId == request.auth.uid
         || resource.data.recipientUid == request.auth.uid
-        || (
-          request.auth.token.email != null
-          && resource.data.recipientEmailLower == lower(request.auth.token.email)
-        )
+        || bandInviteEmailMatchesRecipient()
       );
 
       allow create: if isSignedIn()
@@ -144,10 +147,7 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         resource.data.inviterId == request.auth.uid
         || resource.data.recipientUid == request.auth.uid
-        || (
-          request.auth.token.email != null
-          && resource.data.recipientEmailLower == lower(request.auth.token.email)
-        )
+        || bandInviteEmailMatchesRecipient()
       );
 
       allow delete: if isSignedIn() && resource.data.inviterId == request.auth.uid;
