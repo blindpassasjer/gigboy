@@ -7,7 +7,7 @@ import AddSongPage from './pages/AddSongPage';
 import EditSongPage from './pages/EditSongPage';
 import LoginPage from './pages/LoginPage';
 import SetlistConcertPage from './pages/SetlistConcertPage';
-import ProfileInvitesPage from './pages/ProfileInvitesPage';
+import SharedSetlistPage from './pages/SharedSetlistPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
@@ -32,7 +32,6 @@ function AuthenticatedApp() {
               <Route path="/songs/:id" element={<SongPage />} />
               <Route path="/songs/:id/edit" element={<EditSongPage />} />
               <Route path="/add" element={<AddSongPage />} />
-              <Route path="/profile/invites" element={<ProfileInvitesPage />} />
               <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />
             </Routes>
           </Layout>
@@ -58,6 +57,7 @@ export default function App() {
       />
       <BrowserRouter>
         <Routes>
+          <Route path="/share/:shareToken" element={<SharedSetlistPage />} />
           <Route path="*" element={<AuthenticatedApp />} />
         </Routes>
       </BrowserRouter>
