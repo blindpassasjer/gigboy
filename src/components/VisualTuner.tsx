@@ -247,6 +247,28 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
   const clamped = Math.max(-50, Math.min(50, centsValue));
   const needleLeftPercent = ((clamped + 50) / 100) * 100;
   const inTune = targetNoteIndex !== undefined && detectedHz !== null && Math.abs(centsValue) <= 5;
+  const closeToTune = targetNoteIndex !== undefined && detectedHz !== null && Math.abs(centsValue) > 5 && Math.abs(centsValue) <= 12;
+
+  let proximityClass = 'is-listening';
+  let proximityLabel = 'Listening';
+  if (targetNoteIndex === undefined) {
+    proximityClass = 'is-chromatic';
+    proximityLabel = 'Chromatic';
+  } else if (detectedHz !== null) {
+    if (Math.abs(centsValue) <= 5) {
+      proximityClass = 'is-in-tune';
+      proximityLabel = 'In tune';
+    } else if (Math.abs(centsValue) <= 12) {
+      proximityClass = 'is-close';
+      proximityLabel = 'Close';
+    } else if (centsValue < 0) {
+      proximityClass = 'is-flat';
+      proximityLabel = 'Flat';
+    } else {
+      proximityClass = 'is-sharp';
+      proximityLabel = 'Sharp';
+    }
+  }
 
   return (
     <div className={`visual-tuner ${className}`.trim()}>
@@ -264,13 +286,18 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
         <span className="visual-tuner-target">
           {rootNote ? `Target ${rootNote}` : 'Chromatic'}
         </span>
-        <span className={`visual-tuner-status${inTune && detectedHz ? ' is-in-tune' : ''}`}>
+        <span className={`visual-tuner-status${inTune && detectedHz ? ' is-in-tune' : ''}${closeToTune ? ' is-close' : ''}`}>
           {detectedNote
             ? targetNoteIndex === undefined
               ? `${detectedNote} detected`
               : `${detectedNote} ${centsValue > 0 ? '+' : ''}${centsValue}c`
             : 'Listening...'}
         </span>
+      </div>
+
+      <div className={`visual-tuner-proximity ${proximityClass}`} aria-live="polite">
+        <span className="visual-tuner-proximity-dot" aria-hidden="true" />
+        <span className="visual-tuner-proximity-label">{proximityLabel}</span>
       </div>
 
       <div className="visual-tuner-gauge" aria-hidden="true">

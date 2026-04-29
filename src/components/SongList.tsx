@@ -427,6 +427,7 @@ export default function SongList({
               disabled={shareConfig?.disabled ?? !shareConfig?.resourceId}
               buttonClassName="setlist-action-btn setlist-action-btn--secondary"
               buttonTitle="Share this songlist"
+              iconOnly
             />
           )}
           {canAddSongs && (

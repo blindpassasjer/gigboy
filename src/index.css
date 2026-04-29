@@ -1121,6 +1121,55 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-weight: 700;
 }
 
+.visual-tuner-status.is-close {
+  color: color-mix(in srgb, #1f8b4c 68%, var(--muted));
+}
+
+.visual-tuner-proximity {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .12rem .45rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: color-mix(in srgb, var(--surface) 84%, var(--bg));
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.visual-tuner-proximity-dot {
+  width: .42rem;
+  height: .42rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.visual-tuner-proximity.is-in-tune {
+  color: #1f8b4c;
+  border-color: color-mix(in srgb, #1f8b4c 40%, var(--border));
+  background: color-mix(in srgb, #1f8b4c 16%, var(--surface));
+}
+
+.visual-tuner-proximity.is-close {
+  color: #3f7f39;
+  border-color: color-mix(in srgb, #3f7f39 38%, var(--border));
+  background: color-mix(in srgb, #3f7f39 14%, var(--surface));
+}
+
+.visual-tuner-proximity.is-flat,
+.visual-tuner-proximity.is-sharp {
+  color: #a35b14;
+  border-color: color-mix(in srgb, #a35b14 36%, var(--border));
+  background: color-mix(in srgb, #a35b14 16%, var(--surface));
+}
+
+.visual-tuner-proximity.is-listening,
+.visual-tuner-proximity.is-chromatic {
+  color: var(--muted);
+}
+
 .visual-tuner-gauge {
   position: relative;
   width: 5.1rem;
@@ -1188,6 +1237,16 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .visual-tuner-target,
 .song-view-header .visual-tuner-status,
 .song-view-header .visual-tuner-footer {
+  color: var(--song-item-chip-text);
+}
+
+.song-view-header .visual-tuner-proximity {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  background: color-mix(in srgb, var(--song-item-bg) 72%, white);
+}
+
+.song-view-header .visual-tuner-proximity.is-listening,
+.song-view-header .visual-tuner-proximity.is-chromatic {
   color: var(--song-item-chip-text);
 }
 

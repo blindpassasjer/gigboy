@@ -288,6 +288,7 @@ export default function SongView({ song, accentColor }: Props) {
                 songsForPdf={[song]}
                 buttonClassName="song-action-btn song-action-btn--print"
                 buttonTitle={`Share ${song.title}`}
+                iconOnly
               />
               <button
                 className="song-action-btn song-action-btn--delete"

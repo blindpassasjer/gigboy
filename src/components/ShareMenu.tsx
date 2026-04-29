@@ -15,6 +15,7 @@ interface ShareMenuProps {
   disabled?: boolean;
   buttonClassName?: string;
   buttonTitle?: string;
+  iconOnly?: boolean;
   extraActions?: ReactNode;
 }
 
@@ -26,6 +27,7 @@ export default function ShareMenu({
   disabled,
   buttonClassName,
   buttonTitle,
+  iconOnly = false,
   extraActions,
 }: ShareMenuProps) {
   const { user } = useAuth();
@@ -134,8 +136,10 @@ export default function ShareMenu({
         disabled={disabled}
         onClick={() => setOpen((value) => !value)}
         title={buttonTitle ?? 'Share'}
+        aria-label={buttonTitle ?? 'Share'}
       >
-        <Share2 size={14} /> Share
+        <Share2 size={14} />
+        {!iconOnly ? ' Share' : null}
       </button>
 
       {open && (

@@ -312,8 +312,9 @@ export default function SetlistsView({
               onClick={handleShare}
               disabled={isSharing}
               title="Share this setlist"
+              aria-label={isSharing ? 'Sharing setlist' : 'Share this setlist'}
             >
-              <Share2 size={14} /> {isSharing ? 'Sharing…' : 'Share'}
+              <Share2 size={14} />
             </button>
           )}
           <button
