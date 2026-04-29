@@ -1,5 +1,5 @@
 /// <reference types="@cloudflare/workers-types" />
-import { setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -31,6 +31,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
     const bandId = crypto.randomUUID();
     const now = new Date().toISOString();
+    const profile = await getFirestoreDocument(ctx.env, ['users', userId]);
+    const username = typeof profile?.username === 'string' ? profile.username : '';
 
     await setFirestoreDocument(ctx.env, ['bands', bandId], {
       name,
@@ -41,6 +43,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
         [userId]: 'editor',
       },
       memberEmails: userEmail ? { [userId]: userEmail } : {},
+      memberUsernames: username ? { [userId]: username } : {},
       createdAt: now,
       updatedAt: now,
     });

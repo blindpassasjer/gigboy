@@ -42,7 +42,10 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   }
 
   const bandPath = ['bands', bandId];
-  const band = await getFirestoreDocument(ctx.env, bandPath);
+  const [band, profile] = await Promise.all([
+    getFirestoreDocument(ctx.env, bandPath),
+    getFirestoreDocument(ctx.env, ['users', userId]),
+  ]);
   if (!band) {
     return Response.json({ error: 'Band not found.' }, { status: 404 });
   }
@@ -64,6 +67,15 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     memberEmails[userId] = userEmail;
   }
 
+  const memberUsernames = typeof band.memberUsernames === 'object' && band.memberUsernames !== null
+    ? { ...(band.memberUsernames as Record<string, unknown>) }
+    : {};
+  const profileUsername = typeof profile?.username === 'string' ? profile.username : null;
+  const inviteUsername = typeof invite.recipientUsername === 'string' ? invite.recipientUsername : null;
+  if (profileUsername || inviteUsername) {
+    memberUsernames[userId] = profileUsername ?? inviteUsername ?? userId;
+  }
+
   const now = new Date().toISOString();
 
   await setFirestoreDocument(ctx.env, bandPath, {
@@ -71,6 +83,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     memberIds: nextMemberIds,
     memberRoles,
     memberEmails,
+    memberUsernames,
     updatedAt: now,
   });
 

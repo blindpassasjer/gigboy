@@ -6,8 +6,8 @@ import SongPage from './pages/SongPage';
 import AddSongPage from './pages/AddSongPage';
 import EditSongPage from './pages/EditSongPage';
 import LoginPage from './pages/LoginPage';
+import UsernameSetupPage from './pages/UsernameSetupPage';
 import SetlistConcertPage from './pages/SetlistConcertPage';
-import SharedSetlistPage from './pages/SharedSetlistPage';
 import BandsPage from './pages/BandsPage';
 import BandDetailPage from './pages/BandDetailPage';
 import ProfileInvitesPage from './pages/ProfileInvitesPage';
@@ -25,6 +25,7 @@ function AuthenticatedApp() {
   }
 
   if (authEnabled && !user) return <LoginPage />;
+  if (authEnabled && user && !user.username) return <UsernameSetupPage />;
 
   return (
     <SongsProvider>
@@ -66,7 +67,6 @@ export default function App() {
       />
       <BrowserRouter>
         <Routes>
-          <Route path="/share/:shareToken" element={<SharedSetlistPage />} />
           <Route path="*" element={<AuthenticatedApp />} />
         </Routes>
       </BrowserRouter>

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Folder, FolderOpen, FolderPlus, Trash2, X, ListMusic, ListMusicIcon } from 'lucide-react';
+import { Folder, FolderOpen, FolderPlus, Trash2, X, ListMusic, ListMusicIcon, Users } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
+import { useBands } from '../context/BandsContext';
 
 const SONG_DRAG_MIME = 'application/x-folio-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
@@ -44,6 +45,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addSongToSetlist,
     setActiveSetlistId,
   } = useSetlists();
+
+  const { bands } = useBands();
 
   const [addingFolder, setAddingFolder] = useState(false);
   const [addingSetlist, setAddingSetlist] = useState(false);
@@ -202,6 +205,21 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             />
           )}
         </div>
+      </div>
+
+      <div className="sidebar-bands-section">
+        <div className="sidebar-bands-header">
+          <h3 className="sidebar-section-title">Bands</h3>
+        </div>
+        <button
+          className="sidebar-bands-btn"
+          onClick={() => { navigate('/bands'); onNavigate?.(); }}
+          title="View all bands"
+        >
+          <Users size={14} />
+          <span>All Bands</span>
+          {bands.length > 0 && <span className="sidebar-bands-count">{bands.length}</span>}
+        </button>
       </div>
     </aside>
     </div>

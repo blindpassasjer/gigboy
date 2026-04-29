@@ -117,9 +117,6 @@ export default function Layout({ children }: Props) {
           <Link to="/add" className={pathname === '/add' ? 'active' : ''}>
             <Plus size={16} /> <span>Add Song</span>
           </Link>
-          <Link to="/bands" className={pathname.startsWith('/bands') ? 'active' : ''}>
-            <Users size={16} /> <span>Bands</span>
-          </Link>
           <Link to="/profile/invites" className={pathname === '/profile/invites' ? 'active' : ''}>
             <User size={16} /> <span>Invites</span>
           </Link>

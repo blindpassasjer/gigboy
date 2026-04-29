@@ -87,6 +87,14 @@ service cloud.firestore {
       }
     }
 
+    match /usernames/{usernameLower} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.usernameLower == usernameLower
+        && !exists(/databases/$(database)/documents/usernames/$(usernameLower));
+    }
+
     match /collaborationInvites/{inviteId} {
       function collaborationInviteEmailMatchesRecipient() {
         return request.auth.token.email is string
@@ -163,6 +171,8 @@ service cloud.firestore {
           && request.resource.data.bandName == resource.data.bandName
           && request.resource.data.inviterId == resource.data.inviterId
           && request.resource.data.inviterEmail == resource.data.inviterEmail
+          && request.resource.data.recipientUsername == resource.data.recipientUsername
+          && request.resource.data.recipientUsernameLower == resource.data.recipientUsernameLower
           && request.resource.data.recipientEmail == resource.data.recipientEmail
           && request.resource.data.recipientEmailLower == resource.data.recipientEmailLower
           && request.resource.data.role == resource.data.role

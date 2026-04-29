@@ -1,10 +1,10 @@
 import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Trash2, Music, Plus, Search, X, Printer, Share2, Link2Off } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { GripVertical, Trash2, Music, Plus, Search, X, Printer } from 'lucide-react';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
+import ShareMenu from './ShareMenu';
 
 interface Props {
   setlistId: string;
@@ -28,10 +28,8 @@ export default function SetlistsView({
   onRemoveSong,
   onAddSong,
 }: Props) {
-  const { renameSetlist, shareSetlist, unshareSetlist, setlists } = useSetlists();
+  const { renameSetlist, setlists } = useSetlists();
   const currentSetlist = setlists.find((l) => l.id === setlistId);
-  const shareToken = currentSetlist?.shareToken;
-  const [isSharing, setIsSharing] = useState(false);
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -92,34 +90,6 @@ export default function SetlistsView({
 
   const handlePrintSetlist = () => {
     window.print();
-  };
-
-  const handleShare = async () => {
-    setIsSharing(true);
-    try {
-      const token = await shareSetlist(setlistId);
-      if (token) {
-        const url = `${window.location.origin}/share/${token}`;
-        await navigator.clipboard.writeText(url);
-        toast.success('Share link copied to clipboard!');
-      }
-    } catch {
-      toast.error('Failed to create share link.');
-    } finally {
-      setIsSharing(false);
-    }
-  };
-
-  const handleCopyLink = async () => {
-    if (!shareToken) return;
-    const url = `${window.location.origin}/share/${shareToken}`;
-    await navigator.clipboard.writeText(url);
-    toast.success('Link copied to clipboard!');
-  };
-
-  const handleUnshare = async () => {
-    await unshareSetlist(setlistId);
-    toast.success('Setlist is now private.');
   };
 
   const handleRenameCommit = () => {
@@ -285,37 +255,14 @@ export default function SetlistsView({
           >
             <Printer size={14} /> Print
           </button>
-          {shareToken ? (
-            <>
-              <button
-                className="setlist-action-btn setlist-action-btn--secondary"
-                type="button"
-                onClick={handleCopyLink}
-                title="Copy share link"
-              >
-                <Share2 size={14} /> Copy link
-              </button>
-              <button
-                className="setlist-action-btn setlist-action-btn--secondary"
-                type="button"
-                onClick={handleUnshare}
-                title="Stop sharing this setlist"
-              >
-                <Link2Off size={14} /> Unshare
-              </button>
-            </>
-          ) : (
-            <button
-              className="setlist-action-btn setlist-action-btn--secondary"
-              type="button"
-              onClick={handleShare}
-              disabled={isSharing}
-              title="Share this setlist"
-              aria-label={isSharing ? 'Sharing setlist' : 'Share this setlist'}
-            >
-              <Share2 size={14} />
-            </button>
-          )}
+          <ShareMenu
+            resourceType="setlist"
+            resourceId={setlistId}
+            resourceName={currentSetlist?.name ?? setlistName}
+            buttonClassName="setlist-action-btn setlist-action-btn--secondary"
+            buttonTitle="Share this setlist"
+            iconOnly
+          />
           <button
             className="setlist-action-btn setlist-action-btn--secondary"
             onClick={openSongPicker}

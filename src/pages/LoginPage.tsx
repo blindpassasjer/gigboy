@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 
 function GoogleIcon() {
   return (
@@ -40,7 +41,9 @@ export default function LoginPage() {
   const { login, register, loginWithGoogle, loginWithGithub } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -48,8 +51,24 @@ export default function LoginPage() {
     e.preventDefault();
     setBusy(true);
     setError('');
+
+    if (mode === 'register') {
+      const usernameError = validateUsername(username);
+      if (usernameError) {
+        setError(usernameError);
+        setBusy(false);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        setBusy(false);
+        return;
+      }
+    }
+
     const err = mode === 'register'
-      ? await register(email, password)
+      ? await register(email, password, normalizeUsername(username))
       : await login(email, password);
 
     if (err) {
@@ -122,6 +141,19 @@ export default function LoginPage() {
         </p>
 
         <form className="login-form" onSubmit={handleSubmit} noValidate>
+          {mode === 'register' ? (
+            <div className="form-field">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={(e) => { setUsername(e.target.value); setError(''); }}
+                required
+              />
+            </div>
+          ) : null}
           <div className="form-field">
             <label htmlFor="email">Email</label>
             <input
@@ -138,12 +170,25 @@ export default function LoginPage() {
             <input
               id="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
               required
             />
           </div>
+          {mode === 'register' ? (
+            <div className="form-field">
+              <label htmlFor="confirm-password">Confirm password</label>
+              <input
+                id="confirm-password"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+                required
+              />
+            </div>
+          ) : null}
           {error && <p className="login-error">{error}</p>}
           <button type="submit" className="btn-primary login-submit" disabled={busy}>
             {busy

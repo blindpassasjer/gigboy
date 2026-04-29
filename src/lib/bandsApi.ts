@@ -49,7 +49,7 @@ export async function inviteBandMemberOnServer(params: {
   userId: string;
   userEmail: string;
   bandId: string;
-  recipientEmail: string;
+  recipientUsername: string;
   role: CollaborationPermission;
 }) {
   return postJson<{ inviteId: string }>('/api/bands/invite', params, {

@@ -116,8 +116,6 @@ interface SetlistsContextValue {
   addSetlist: (name: string) => void;
   deleteSetlist: (id: string) => void;
   renameSetlist: (id: string, name: string) => void;
-  shareSetlist: (setlistId: string) => Promise<string | null>;
-  unshareSetlist: (setlistId: string) => Promise<void>;
   addSongToSetlist: (setlistId: string, songId: string) => void;
   removeSongFromSetlist: (setlistId: string, songId: string) => void;
   moveSongInSetlist: (setlistId: string, songId: string, beforeSongId: string | null) => void;
@@ -264,54 +262,6 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
-  const shareSetlist = useCallback(async (setlistId: string): Promise<string | null> => {
-    const targetSetlist = setlists.find((list) => list.id === setlistId);
-    if (!targetSetlist) return null;
-    if (!canEditSetlist(targetSetlist, userId)) return null;
-
-    const shareToken = targetSetlist.shareToken ?? crypto.randomUUID();
-    const nextSetlist = { ...targetSetlist, shareToken, updatedAt: new Date().toISOString() };
-
-    setSetlists((prev) => prev.map((list) => (list.id === setlistId ? nextSetlist : list)));
-
-    if (db && userId) {
-      try {
-        await writeSetlist(nextSetlist, userId);
-      } catch (error) {
-        if (isPermissionDeniedError(error)) {
-          logSetlistsPermissionHelp(error);
-        } else {
-          console.error('Failed to share setlist in Firestore.', error);
-        }
-      }
-    }
-
-    return shareToken;
-  }, [setlists, userId]);
-
-  const unshareSetlist = useCallback(async (setlistId: string): Promise<void> => {
-    const targetSetlist = setlists.find((list) => list.id === setlistId);
-    if (!targetSetlist) return;
-    if (!canEditSetlist(targetSetlist, userId)) return;
-
-    if (!targetSetlist.shareToken) return;
-
-    const nextSetlist = { ...targetSetlist, shareToken: undefined, updatedAt: new Date().toISOString() };
-    setSetlists((prev) => prev.map((list) => (list.id === setlistId ? nextSetlist : list)));
-
-    if (db && userId) {
-      try {
-        await writeSetlist(nextSetlist, userId);
-      } catch (error) {
-        if (isPermissionDeniedError(error)) {
-          logSetlistsPermissionHelp(error);
-        } else {
-          console.error('Failed to unshare setlist in Firestore.', error);
-        }
-      }
-    }
-  }, [setlists, userId]);
-
   const addSongToSetlist = useCallback((setlistId: string, songId: string) => {
     setSetlists((prev) => {
       const setlist = prev.find((l) => l.id === setlistId);
@@ -404,8 +354,6 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
         addSetlist,
         deleteSetlist,
         renameSetlist,
-        shareSetlist,
-        unshareSetlist,
         addSongToSetlist,
         removeSongFromSetlist,
         moveSongInSetlist,

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { LibraryBig, UserPlus, Users } from 'lucide-react';
+import { LibraryBig, Plus, Search, UserPlus, Users, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
@@ -29,18 +29,38 @@ export default function BandDetailPage() {
   const band = bands.find((entry) => entry.id === id) ?? null;
   const bandSongs = id ? (bandSongsByBandId[id] ?? []) : [];
   const [activeTab, setActiveTab] = useState<BandTab>('members');
-  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteUsername, setInviteUsername] = useState('');
   const [inviteRole, setInviteRole] = useState<CollaborationPermission>('viewer');
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
   const [busyInvite, setBusyInvite] = useState(false);
-  const [selectedSongId, setSelectedSongId] = useState('');
   const [busySongId, setBusySongId] = useState<string | null>(null);
   const [addingSong, setAddingSong] = useState(false);
+  const [showSongPicker, setShowSongPicker] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
 
   const ownedSongs = useMemo(() => {
     if (!user?.id) return [];
     return songs.filter((song) => song.ownerId === user.id);
   }, [songs, user?.id]);
+
+  const availableSongs = useMemo(() => {
+    const bandSongIds = new Set(bandSongs.map((song) => song.id));
+    return ownedSongs
+      .filter((song) => !bandSongIds.has(song.id))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [bandSongs, ownedSongs]);
+
+  const filteredAvailableSongs = useMemo(() => {
+    const query = pickerQuery.trim().toLowerCase();
+    if (!query) return availableSongs;
+
+    return availableSongs.filter((song) => {
+      const inTitle = song.title.toLowerCase().includes(query);
+      const inArtist = (song.artist ?? '').toLowerCase().includes(query);
+      const inTags = (song.tags ?? []).some((tag) => tag.toLowerCase().includes(query));
+      return inTitle || inArtist || inTags;
+    });
+  }, [availableSongs, pickerQuery]);
 
   useEffect(() => {
     if (!id || !band) return;
@@ -49,6 +69,20 @@ export default function BandDetailPage() {
       toast.error('Failed to load band library.');
     });
   }, [band, id, refreshBandSongs]);
+
+  useEffect(() => {
+    if (!showSongPicker) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowSongPicker(false);
+        setPickerQuery('');
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showSongPicker]);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -69,7 +103,7 @@ export default function BandDetailPage() {
   const handleInvite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBusyInvite(true);
-    const error = await inviteMember(band.id, inviteEmail, inviteRole);
+    const error = await inviteMember(band.id, inviteUsername, inviteRole);
     setBusyInvite(false);
 
     if (error) {
@@ -77,7 +111,7 @@ export default function BandDetailPage() {
       return;
     }
 
-    setInviteEmail('');
+    setInviteUsername('');
     toast.success('Band invite sent.');
   };
 
@@ -108,8 +142,18 @@ export default function BandDetailPage() {
     navigate('/bands');
   };
 
-  const handleAddSong = async () => {
-    const selectedSong = ownedSongs.find((song) => song.id === selectedSongId);
+  const openSongPicker = () => {
+    setPickerQuery('');
+    setShowSongPicker(true);
+  };
+
+  const closeSongPicker = () => {
+    setShowSongPicker(false);
+    setPickerQuery('');
+  };
+
+  const handleAddSong = async (songId: string) => {
+    const selectedSong = ownedSongs.find((song) => song.id === songId);
     if (!selectedSong) {
       toast.error('Select a song to add.');
       return;
@@ -124,7 +168,6 @@ export default function BandDetailPage() {
       return;
     }
 
-    setSelectedSongId('');
     toast.success('Song added to band library.');
   };
 
@@ -175,6 +218,7 @@ export default function BandDetailPage() {
             <ul className="bands-members-list">
               {band.memberIds.map((memberId) => {
                 const role = band.ownerId === memberId ? 'owner' : band.memberRoles[memberId] ?? 'viewer';
+                const username = band.memberUsernames[memberId] ?? null;
                 const email = band.memberEmails[memberId] ?? 'No email saved';
                 const canRemove = isOwner && memberId !== band.ownerId;
                 const isCurrentUser = memberId === user?.id;
@@ -182,7 +226,8 @@ export default function BandDetailPage() {
                 return (
                   <li key={memberId} className="bands-member-card">
                     <div className="bands-member-copy">
-                      <strong>{email}</strong>
+                      <strong>{username ?? email}</strong>
+                      <span>{username ? email : ''}</span>
                       <span>{role}</span>
                     </div>
                     <div className="bands-member-actions">
@@ -217,12 +262,12 @@ export default function BandDetailPage() {
             <h2>Invite member</h2>
             <form className="bands-invite-form" onSubmit={handleInvite}>
               <label className="share-menu-field">
-                <span>Email</span>
+                <span>Username</span>
                 <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(event) => setInviteEmail(event.target.value)}
-                  placeholder="name@example.com"
+                  type="text"
+                  value={inviteUsername}
+                  onChange={(event) => setInviteUsername(event.target.value)}
+                  placeholder="bandmate"
                   disabled={!canEditBand}
                 />
               </label>
@@ -275,18 +320,59 @@ export default function BandDetailPage() {
 
           <section className="bands-panel">
             <h2>Add from my library</h2>
-            <label className="share-menu-field">
-              <span>Song</span>
-              <select value={selectedSongId} onChange={(event) => setSelectedSongId(event.target.value)} disabled={!canEditBand}>
-                <option value="">Select a song…</option>
-                {ownedSongs.map((song) => (
-                  <option key={song.id} value={song.id}>{song.title}{song.artist ? ` - ${song.artist}` : ''}</option>
-                ))}
-              </select>
-            </label>
-            <button type="button" className="setlist-action-btn" disabled={!canEditBand || addingSong} onClick={() => void handleAddSong()}>
-              {addingSong ? 'Adding…' : 'Add to band library'}
+            <button type="button" className="setlist-action-btn" disabled={!canEditBand || addingSong} onClick={openSongPicker}>
+              <Plus size={15} /> {addingSong ? 'Adding…' : 'Add songs'}
             </button>
+            {showSongPicker ? (
+              <div className="song-picker-overlay" role="dialog" aria-modal="true" aria-label="Add songs to band library">
+                <div className="song-picker-panel">
+                  <div className="song-picker-header">
+                    <h2>Add songs to {band.name}</h2>
+                    <button className="song-picker-close" onClick={closeSongPicker} aria-label="Close song picker">
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="song-picker-search-wrap">
+                    <Search size={15} className="song-picker-search-icon" />
+                    <input
+                      type="text"
+                      className="song-picker-search"
+                      value={pickerQuery}
+                      onChange={(event) => setPickerQuery(event.target.value)}
+                      placeholder="Search by title, artist, or tag"
+                    />
+                  </div>
+
+                  <div className="song-picker-results" role="list">
+                    {filteredAvailableSongs.length === 0 ? (
+                      <p className="song-picker-empty">No songs available to add.</p>
+                    ) : (
+                      filteredAvailableSongs.map((song) => (
+                        <div key={song.id} className="song-picker-item" role="listitem">
+                          <div className="song-picker-item-main">
+                            <span className="song-picker-song-title">{song.title}</span>
+                            {song.artist ? <span className="song-picker-song-artist">{song.artist}</span> : null}
+                          </div>
+                          <button
+                            className="song-picker-add-btn"
+                            onClick={() => void handleAddSong(song.id)}
+                            title={`Add ${song.title}`}
+                            disabled={addingSong}
+                          >
+                            <Plus size={14} /> Add
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="song-picker-footer">
+                    <button className="setlist-action-btn" onClick={closeSongPicker}>Done</button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </section>
         </div>
       )}

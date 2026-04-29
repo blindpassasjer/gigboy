@@ -40,6 +40,7 @@ export interface Band {
   memberIds: string[];
   memberRoles: Record<string, CollaborationPermission>;
   memberEmails: Record<string, string>;
+  memberUsernames: Record<string, string>;
   createdAt: string;
   updatedAt?: string;
 }
@@ -50,6 +51,8 @@ export interface BandInvite {
   bandName: string;
   inviterId: string;
   inviterEmail: string;
+  recipientUsername?: string;
+  recipientUsernameLower?: string;
   recipientEmail: string;
   recipientEmailLower: string;
   recipientUid?: string;
@@ -73,7 +76,6 @@ export interface Setlist extends CollaborationMetadata {
   id: string;
   name: string;
   songIds: string[];
-  shareToken?: string;
   createdAt?: string;
   updatedAt?: string;
   sortOrder?: number;

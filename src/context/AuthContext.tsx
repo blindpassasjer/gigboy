@@ -5,14 +5,21 @@ import {
   GithubAuthProvider,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
 import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
+import { db } from '../lib/firebase';
+import { claimUsername, loadUserProfile } from '../lib/userProfiles';
 
-export interface User { id: string; email: string }
+export interface User {
+  id: string;
+  email: string;
+  username: string | null;
+}
 
 interface AuthContextValue {
   user: User | null;
@@ -20,9 +27,10 @@ interface AuthContextValue {
   authEnabled: boolean;
   authError: string | null;
   login: (email: string, password: string) => Promise<string | null>;
-  register: (email: string, password: string) => Promise<string | null>;
+  register: (email: string, password: string, username: string) => Promise<string | null>;
   loginWithGoogle: () => Promise<string | null>;
   loginWithGithub: () => Promise<string | null>;
+  completeUsername: (username: string) => Promise<string | null>;
   logout: () => Promise<void>;
 }
 
@@ -39,8 +47,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser ? { id: firebaseUser.uid, email: firebaseUser.email ?? '' } : null);
-      setLoading(false);
+      if (!firebaseUser) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      if (!db) {
+        setUser({ id: firebaseUser.uid, email: firebaseUser.email ?? '', username: null });
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      void loadUserProfile(db, firebaseUser.uid)
+        .then((profile) => {
+          setUser({
+            id: firebaseUser.uid,
+            email: firebaseUser.email ?? '',
+            username: profile?.username ?? null,
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load user profile.', error);
+          setUser({ id: firebaseUser.uid, email: firebaseUser.email ?? '', username: null });
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     });
   }, []);
 
@@ -57,13 +91,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (email: string, password: string): Promise<string | null> => {
-    if (!auth) {
+  const register = useCallback(async (email: string, password: string, username: string): Promise<string | null> => {
+    if (!auth || !db) {
       return firebaseConfigError ?? 'Firebase authentication is not configured.';
     }
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      try {
+        await claimUsername(db, {
+          userId: credential.user.uid,
+          email: credential.user.email ?? email,
+          username,
+        });
+      } catch (profileError) {
+        await deleteUser(credential.user).catch(() => undefined);
+        throw profileError;
+      }
       return null;
     } catch (err: unknown) {
       return err instanceof Error ? err.message : 'Registration failed';
@@ -96,6 +140,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const completeUsername = useCallback(async (username: string) => {
+    if (!db || !auth?.currentUser) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+
+    try {
+      const claimed = await claimUsername(db, {
+        userId: auth.currentUser.uid,
+        email: auth.currentUser.email ?? '',
+        username,
+      });
+      setUser((current) => (current ? { ...current, username: claimed } : current));
+      return null;
+    } catch (err: unknown) {
+      return err instanceof Error ? err.message : 'Failed to save username.';
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     if (!auth) return;
     await signOut(auth);
@@ -112,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         loginWithGoogle,
         loginWithGithub,
+        completeUsername,
         logout,
       }}
     >

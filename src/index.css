@@ -2474,6 +2474,47 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-weight: 600;
 }
 
+.sidebar-bands-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  padding-bottom: .5rem;
+}
+
+.sidebar-bands-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 .75rem;
+  margin-bottom: .5rem;
+}
+
+.sidebar-bands-btn {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  padding: .45rem .75rem;
+  font-size: .82rem;
+  color: inherit;
+  text-align: left;
+  border-radius: 5px;
+  transition: background .12s;
+  margin: 0 .25rem;
+}
+.sidebar-bands-btn:hover { background: var(--bg); }
+
+.sidebar-bands-count {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-left: auto;
+  padding: 0 .3rem;
+  background: var(--border);
+  border-radius: 10px;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
 /* ─── Setlist view ──────────────────────────────────────────────────────────── */
 .setlist-view {
   display: flex;
@@ -3632,152 +3673,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .chord-display { padding: 0; }
   .chord-token--chord { color: #1a56db; }
-}
-
-/* ─── Shared setlist public page ────────────────────────────────────────────── */
-.shared-setlist-page {
-  min-height: 100vh;
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-}
-
-.shared-setlist-header {
-  padding: .75rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.shared-setlist-logo {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: var(--accent);
-  text-decoration: none;
-  letter-spacing: -.01em;
-}
-
-.shared-setlist-content {
-  max-width: 640px;
-  width: 100%;
-  margin: 2.5rem auto;
-  padding: 0 1.25rem;
-}
-
-.shared-setlist-status {
-  color: var(--muted);
-  text-align: center;
-  margin-top: 3rem;
-}
-
-.shared-setlist-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 4rem;
-  color: var(--muted);
-  text-align: center;
-}
-
-.shared-setlist-empty h1 {
-  font-size: 1.25rem;
-  color: var(--text);
-}
-
-.shared-setlist-title-block {
-  margin-bottom: 1.5rem;
-}
-
-.shared-setlist-title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: -.02em;
-  color: var(--text);
-}
-
-.shared-setlist-meta {
-  color: var(--muted);
-  font-size: .9rem;
-  margin-top: .25rem;
-}
-
-.shared-setlist-songs {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: .5rem;
-}
-
-.shared-setlist-song-item {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: .65rem 1rem;
-}
-
-.shared-setlist-song-position {
-  font-size: .8rem;
-  color: var(--muted);
-  min-width: 1.5rem;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.shared-setlist-song-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: .1rem;
-  min-width: 0;
-}
-
-.shared-setlist-song-title {
-  font-weight: 600;
-  font-size: .95rem;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.shared-setlist-song-artist {
-  font-size: .82rem;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.shared-setlist-song-meta {
-  display: flex;
-  align-items: center;
-  gap: .35rem;
-  flex-shrink: 0;
-}
-
-.shared-setlist-footer {
-  margin-top: 2.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
-  text-align: center;
-}
-
-.shared-setlist-cta {
-  display: inline-block;
-  padding: .55rem 1.2rem;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border-radius: var(--radius);
-  font-size: .9rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.shared-setlist-cta:hover {
-  background: var(--accent-h);
 }
 
 /* ─── Collaboration share menu ─────────────────────────────────────────────── */
