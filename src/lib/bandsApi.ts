@@ -22,6 +22,10 @@ async function postJson<T>(path: string, body: Record<string, unknown>, headers:
 
   const payload = await response.json().catch(() => ({} as Record<string, unknown>));
   if (!response.ok) {
+    if (response.status === 405) {
+      throw new Error('API endpoint is not available in this deployment (405). Deploy with Cloudflare Pages Functions.');
+    }
+
     const errorMessage = typeof payload.error === 'string' ? payload.error : 'Request failed.';
     throw new Error(errorMessage);
   }
