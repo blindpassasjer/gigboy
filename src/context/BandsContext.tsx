@@ -230,6 +230,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return 'Bands require a signed-in account.';
     }
 
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return 'Band not found.';
+    }
+
     try {
       await deleteBandOnServer({ userId, userEmail, bandId });
       setBands((prev) => prev.filter((band) => band.id !== bandId));
@@ -239,10 +244,35 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         return next;
       });
       return null;
-    } catch (error) {
-      return error instanceof Error ? error.message : 'Failed to delete band.';
+    } catch (serverError) {
+      if (!db) {
+        return serverError instanceof Error ? serverError.message : 'Failed to delete band.';
+      }
+
+      if (band.ownerId !== userId) {
+        return serverError instanceof Error ? serverError.message : 'Failed to delete band.';
+      }
+
+      try {
+        const songsSnapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION));
+        await Promise.all(songsSnapshot.docs.map((entry) => deleteDoc(entry.ref)));
+        await deleteDoc(doc(db, BANDS_COLLECTION, bandId));
+
+        setBands((prev) => prev.filter((entry) => entry.id !== bandId));
+        setBandSongsByBandId((prev) => {
+          const next = { ...prev };
+          delete next[bandId];
+          return next;
+        });
+
+        return null;
+      } catch (fallbackError) {
+        const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : 'Failed to delete band.';
+        const serverMessage = serverError instanceof Error ? serverError.message : 'Server request failed.';
+        return `${fallbackMessage} (server error: ${serverMessage})`;
+      }
     }
-  }, [userEmail, userId]);
+  }, [bands, userEmail, userId]);
 
   const inviteMember = useCallback(async (bandId: string, recipientEmail: string, role: CollaborationPermission) => {
     if (!userId || !userEmail) {
