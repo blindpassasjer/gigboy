@@ -8,14 +8,14 @@
   "env": {
     "development": {
       "vars": {
-        "FIREBASE_PROJECT_ID": "",
+        "FIREBASE_PROJECT_ID": "songbook-bebd5",
         "FIREBASE_PRIVATE_KEY": "",
         "FIREBASE_CLIENT_EMAIL": ""
       }
     },
     "production": {
       "vars": {
-        "FIREBASE_PROJECT_ID": "",
+        "FIREBASE_PROJECT_ID": "songbook-bebd5",
         "FIREBASE_PRIVATE_KEY": "",
         "FIREBASE_CLIENT_EMAIL": ""
       }
