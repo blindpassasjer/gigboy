@@ -285,7 +285,6 @@ export default function SongView({ song, accentColor }: Props) {
                 resourceType="song"
                 resourceId={song.id}
                 resourceName={song.title}
-                songsForPdf={[song]}
                 buttonClassName="song-action-btn song-action-btn--print"
                 buttonTitle={`Share ${song.title}`}
                 iconOnly

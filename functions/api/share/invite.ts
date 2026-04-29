@@ -1,5 +1,4 @@
 /// <reference types="@cloudflare/workers-types" />
-import { sendEmail } from '../../_helpers/email';
 import {
   getFirestoreDocument,
   listFirestoreDocuments,
@@ -107,44 +106,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     status: 'pending',
     createdAt,
   });
-
-  const appUrl = ctx.env.APP_URL ?? new URL(ctx.request.url).origin;
-  const invitesUrl = `${appUrl}/profile/invites`;
-
-  try {
-    await sendEmail({
-      env: ctx.env,
-      to: recipientEmail,
-      subject: `Folio invite: ${resourceName}`,
-      html: `
-        <p>You received a Folio collaboration invite.</p>
-        <p><strong>${ownerEmail || 'A collaborator'}</strong> invited you to <strong>${resourceName}</strong> as <strong>${permission}</strong>.</p>
-        <p>Open your invites page to accept: <a href="${invitesUrl}">${invitesUrl}</a></p>
-        <p>Invite ID: ${inviteId}</p>
-      `,
-    });
-  } catch (error) {
-    if (!existingPendingInvite) {
-      await setFirestoreDocument(ctx.env, ['collaborationInvites', inviteId], {
-        ownerId: userId,
-        ownerEmail,
-        recipientEmail,
-        recipientEmailLower: normalizedRecipientEmail,
-        resourceType,
-        resourceId,
-        resourceName,
-        permission,
-        status: 'revoked',
-        createdAt,
-        respondedAt: new Date().toISOString(),
-      });
-    }
-
-    return Response.json(
-      { error: error instanceof Error ? error.message : 'Failed to send invite email.' },
-      { status: 500 }
-    );
-  }
 
   return Response.json({ ok: true, inviteId });
 };

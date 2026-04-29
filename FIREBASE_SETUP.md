@@ -169,28 +169,7 @@ Collections are created automatically on first write, but your deployment must a
 - `users/{uid}/songLists`
 - `users/{uid}/setlists`
 
-### 4. Configure Email Delivery Secrets
-
-Invite sending now happens directly inside the invite endpoints. Ensure your email provider secrets are set (for example via Wrangler secrets) so these APIs can send mail:
-
-```bash
-wrangler secret put RESEND_API_KEY
-wrangler secret put EMAIL_FROM
-```
-
-If your deployment uses different variable names, use the names expected by [functions/_helpers/email.ts](functions/_helpers/email.ts).
-
-### 5. Set App URL for Invite Links
-
-Set the public app origin used in invite emails:
-
-```bash
-wrangler secret put APP_URL
-```
-
-Example value: `https://your-app.example.com`
-
-### 6. Verify Health and Invite Flow
+### 4. Verify Health and Invite Flow
 
 1. Check backend health:
    ```bash
@@ -201,7 +180,7 @@ Example value: `https://your-app.example.com`
 4. Share a song/setlist/songlist with another user.
 5. Sign in as the recipient and accept from `/profile/invites`.
 
-### 7. Optional but Recommended Hardening
+### 5. Optional but Recommended Hardening
 
 - Avoid exposing fallback header-based auth (`x-folio-user-id`) in production unless protected by an upstream trusted proxy.
-- Rotate Firebase and email-provider keys periodically.
+- Rotate Firebase keys periodically.

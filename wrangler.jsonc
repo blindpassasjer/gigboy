@@ -10,18 +10,14 @@
       "vars": {
         "FIREBASE_PROJECT_ID": "",
         "FIREBASE_PRIVATE_KEY": "",
-        "FIREBASE_CLIENT_EMAIL": "",
-        "APP_URL": "http://localhost:5173",
-        "RESEND_FROM_EMAIL": ""
+        "FIREBASE_CLIENT_EMAIL": ""
       }
     },
     "production": {
       "vars": {
         "FIREBASE_PROJECT_ID": "",
         "FIREBASE_PRIVATE_KEY": "",
-        "FIREBASE_CLIENT_EMAIL": "",
-        "APP_URL": "",
-        "RESEND_FROM_EMAIL": ""
+        "FIREBASE_CLIENT_EMAIL": ""
       }
     }
   }

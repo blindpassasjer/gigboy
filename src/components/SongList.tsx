@@ -117,7 +117,6 @@ interface Props {
   shareConfig?: {
     resourceId: string;
     resourceName: string;
-    songsForPdf: Song[];
     disabled?: boolean;
   };
 }
@@ -423,7 +422,6 @@ export default function SongList({
               resourceType="songlist"
               resourceId={shareConfig?.resourceId ?? ''}
               resourceName={shareConfig?.resourceName ?? listName ?? 'Songlist'}
-              songsForPdf={shareConfig?.songsForPdf ?? songs}
               disabled={shareConfig?.disabled ?? !shareConfig?.resourceId}
               buttonClassName="setlist-action-btn setlist-action-btn--secondary"
               buttonTitle="Share this songlist"

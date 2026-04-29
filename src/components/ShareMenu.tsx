@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Mail, Send, Share2, FileDown, Users } from 'lucide-react';
+import { Mail, Send, Share2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import { isValidEmail } from '../lib/collaboration';
-import { createInviteOnServer, sendPdfEmail } from '../lib/shareApi';
-import type { CollaborationPermission, ShareResourceType, Song } from '../types';
+import { createInviteOnServer } from '../lib/shareApi';
+import type { CollaborationPermission, ShareResourceType } from '../types';
 
 interface ShareMenuProps {
   resourceType: ShareResourceType;
   resourceId: string;
   resourceName: string;
-  songsForPdf: Song[];
   disabled?: boolean;
   buttonClassName?: string;
   buttonTitle?: string;
@@ -24,7 +23,6 @@ export default function ShareMenu({
   resourceType,
   resourceId,
   resourceName,
-  songsForPdf,
   disabled,
   buttonClassName,
   buttonTitle,
@@ -37,7 +35,6 @@ export default function ShareMenu({
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState<CollaborationPermission>('viewer');
   const [submittingInvite, setSubmittingInvite] = useState(false);
-  const [sendingPdf, setSendingPdf] = useState(false);
   const [sharingBandId, setSharingBandId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -95,33 +92,6 @@ export default function ShareMenu({
       toast.error(message);
     } finally {
       setSubmittingInvite(false);
-    }
-  };
-
-  const handleSendPdf = async () => {
-    if (!validate() || !user?.id || !user.email) return;
-
-    if (songsForPdf.length === 0) {
-      toast.error('No songs available to include in PDF.');
-      return;
-    }
-
-    setSendingPdf(true);
-    try {
-      await sendPdfEmail({
-        userId: user.id,
-        userEmail: user.email,
-        recipientEmail: normalizedEmail,
-        resourceType,
-        resourceName,
-        songs: songsForPdf,
-      });
-      toast.success('PDF email sent.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to send PDF email.';
-      toast.error(message);
-    } finally {
-      setSendingPdf(false);
     }
   };
 
@@ -224,18 +194,10 @@ export default function ShareMenu({
             <button
               type="button"
               className="setlist-action-btn setlist-action-btn--secondary"
-              disabled={submittingInvite || sendingPdf || Boolean(sharingBandId)}
+              disabled={submittingInvite || Boolean(sharingBandId)}
               onClick={handleSendInvite}
             >
               <Send size={14} /> {submittingInvite ? 'Sending…' : 'Send invite'}
-            </button>
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              disabled={submittingInvite || sendingPdf || Boolean(sharingBandId)}
-              onClick={handleSendPdf}
-            >
-              <FileDown size={14} /> {sendingPdf ? 'Sending…' : 'Email PDF'}
             </button>
           </div>
 
@@ -254,7 +216,7 @@ export default function ShareMenu({
                       <button
                         type="button"
                         className="setlist-action-btn setlist-action-btn--secondary"
-                        disabled={submittingInvite || sendingPdf || Boolean(sharingBandId)}
+                        disabled={submittingInvite || Boolean(sharingBandId)}
                         onClick={() => void handleShareWithBand(band.id)}
                       >
                         <Users size={14} /> {sharingBandId === band.id ? 'Sharing…' : 'Share'}

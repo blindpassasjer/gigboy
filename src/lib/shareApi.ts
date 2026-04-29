@@ -1,4 +1,4 @@
-import type { CollaborationPermission, ShareResourceType, Song } from '../types';
+import type { CollaborationPermission, ShareResourceType } from '../types';
 
 interface ApiHeaders {
   userId: string;
@@ -39,20 +39,6 @@ export async function createInviteOnServer(params: {
   permission: CollaborationPermission;
 }) {
   return postJson<{ inviteId: string }>('/api/share/invite', params, {
-    userId: params.userId,
-    userEmail: params.userEmail,
-  });
-}
-
-export async function sendPdfEmail(params: {
-  userId: string;
-  userEmail: string;
-  recipientEmail: string;
-  resourceType: ShareResourceType;
-  resourceName: string;
-  songs: Song[];
-}) {
-  await postJson('/api/share/pdf-email', params, {
     userId: params.userId,
     userEmail: params.userEmail,
   });

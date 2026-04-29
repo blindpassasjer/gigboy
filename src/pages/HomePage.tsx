@@ -143,7 +143,6 @@ export default function HomePage() {
           ? {
               resourceId: activeList.id,
               resourceName: activeList.name,
-              songsForPdf: displayedSongs,
             }
           : undefined
       }

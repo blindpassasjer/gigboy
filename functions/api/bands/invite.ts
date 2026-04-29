@@ -1,5 +1,4 @@
 /// <reference types="@cloudflare/workers-types" />
-import { sendEmail } from '../../_helpers/email';
 import { getFirestoreDocument, listFirestoreDocuments, setFirestoreDocument } from '../../_helpers/firebase-admin';
 
 interface Data extends Record<string, unknown> {
@@ -100,41 +99,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     status: 'pending',
     createdAt: now,
   });
-
-  const appUrl = ctx.env.APP_URL ?? new URL(ctx.request.url).origin;
-  const invitesUrl = `${appUrl}/profile/invites`;
-
-  try {
-    await sendEmail({
-      env: ctx.env,
-      to: recipientEmail,
-      subject: `Folio band invite: ${bandName}`,
-      html: `
-        <p>You received a Folio band invitation.</p>
-        <p><strong>${inviterEmail || 'A band member'}</strong> invited you to join <strong>${bandName}</strong> as <strong>${role}</strong>.</p>
-        <p>Open your invites page to accept: <a href="${invitesUrl}">${invitesUrl}</a></p>
-        <p>Invite ID: ${inviteId}</p>
-      `,
-    });
-  } catch (error) {
-    await setFirestoreDocument(ctx.env, ['bandInvites', inviteId], {
-      bandId,
-      bandName,
-      inviterId: userId,
-      inviterEmail,
-      recipientEmail,
-      recipientEmailLower: normalizedRecipientEmail,
-      role,
-      status: 'revoked',
-      createdAt: now,
-      respondedAt: now,
-    });
-
-    return Response.json(
-      { error: error instanceof Error ? error.message : 'Failed to send invite email.' },
-      { status: 500 }
-    );
-  }
 
   return Response.json({ ok: true, inviteId });
 };
