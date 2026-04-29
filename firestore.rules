@@ -91,7 +91,7 @@ service cloud.firestore {
       function collaborationInviteEmailMatchesRecipient() {
         return request.auth.token.email is string
           && resource.data.recipientEmailLower is string
-          && resource.data.recipientEmailLower == lower(request.auth.token.email);
+          && resource.data.recipientEmailLower == request.auth.token.email.lower();
       }
 
       allow read: if isSignedIn() && (
@@ -133,7 +133,7 @@ service cloud.firestore {
       function bandInviteEmailMatchesRecipient() {
         return request.auth.token.email is string
           && resource.data.recipientEmailLower is string
-          && resource.data.recipientEmailLower == lower(request.auth.token.email);
+          && resource.data.recipientEmailLower == request.auth.token.email.lower();
       }
 
       allow read: if isSignedIn() && (
