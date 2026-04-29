@@ -2,10 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Mail, Send, Share2, FileDown } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
-import { createInvite, isValidEmail } from '../lib/collaboration';
-import { sendInviteEmail, sendPdfEmail } from '../lib/shareApi';
+import { isValidEmail } from '../lib/collaboration';
+import { createInviteOnServer, sendInviteEmail, sendPdfEmail } from '../lib/shareApi';
 import type { CollaborationPermission, ShareResourceType, Song } from '../types';
 
 interface ShareMenuProps {
@@ -57,11 +56,6 @@ export default function ShareMenu({
       return false;
     }
 
-    if (!db) {
-      toast.error('Sharing requires Firebase.');
-      return false;
-    }
-
     if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
       toast.error('Please enter a valid email.');
       return false;
@@ -71,14 +65,13 @@ export default function ShareMenu({
   };
 
   const handleSendInvite = async () => {
-    if (!validate() || !db || !user?.id || !user.email) return;
+    if (!validate() || !user?.id || !user.email) return;
 
     setSubmittingInvite(true);
     try {
-      const invite = await createInvite({
-        db,
-        ownerId: user.id,
-        ownerEmail: user.email,
+      const { inviteId } = await createInviteOnServer({
+        userId: user.id,
+        userEmail: user.email,
         recipientEmail: normalizedEmail,
         resourceType,
         resourceId,
@@ -93,7 +86,7 @@ export default function ShareMenu({
         resourceType,
         resourceName,
         permission,
-        inviteId: invite.id,
+        inviteId,
       });
 
       toast.success('Invite sent.');

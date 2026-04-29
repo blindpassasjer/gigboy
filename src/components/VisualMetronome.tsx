@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pause, Play } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Hand, Pause, Play } from 'lucide-react';
 
 interface Props {
   tempo?: number;
@@ -17,19 +17,26 @@ function parseBeatsPerBar(timeSignature?: string): number {
 }
 
 export default function VisualMetronome({ tempo, timeSignature, className = '' }: Props) {
-  const bpm = typeof tempo === 'number' && Number.isFinite(tempo) && tempo > 0
+  const baseBpm = typeof tempo === 'number' && Number.isFinite(tempo) && tempo > 0
     ? Math.round(tempo)
     : null;
+  const [bpm, setBpm] = useState<number>(baseBpm ?? 80);
   const beatsPerBar = useMemo(() => parseBeatsPerBar(timeSignature), [timeSignature]);
   const [isRunning, setIsRunning] = useState(false);
   const [activeBeat, setActiveBeat] = useState(0);
+  const tapTimesRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    if (!baseBpm) return;
+    setBpm(baseBpm);
+  }, [baseBpm]);
 
   useEffect(() => {
     setActiveBeat(0);
   }, [bpm, beatsPerBar]);
 
   useEffect(() => {
-    if (!bpm || !isRunning) return;
+    if (!isRunning) return;
 
     const intervalMs = Math.max(80, Math.round(60000 / bpm));
     const intervalId = window.setInterval(() => {
@@ -39,12 +46,20 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
     return () => window.clearInterval(intervalId);
   }, [bpm, beatsPerBar, isRunning]);
 
-  useEffect(() => {
-    if (bpm) return;
-    setIsRunning(false);
-  }, [bpm]);
+  const handleTapTempo = () => {
+    const now = Date.now();
+    const recent = [...tapTimesRef.current, now].filter((stamp) => now - stamp <= 2200).slice(-6);
+    tapTimesRef.current = recent;
 
-  if (!bpm) return null;
+    if (recent.length < 2) return;
+
+    const intervals = recent.slice(1).map((stamp, index) => stamp - recent[index]);
+    const averageInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+    if (!Number.isFinite(averageInterval) || averageInterval <= 0) return;
+
+    const tappedBpm = Math.round(60000 / averageInterval);
+    setBpm(Math.max(30, Math.min(260, tappedBpm)));
+  };
 
   const playState = isRunning ? 'running' : 'paused';
 
@@ -58,6 +73,17 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
       >
         {isRunning ? <Pause size={14} /> : <Play size={14} />}
         {isRunning ? 'Pause' : 'Start'}
+      </button>
+
+      <button
+        type="button"
+        className="visual-metronome-tap"
+        onClick={handleTapTempo}
+        aria-label="Tap to set metronome tempo"
+        title="Tap to set tempo"
+      >
+        <Hand size={13} />
+        Tap
       </button>
 
       <div className="visual-metronome-readout">

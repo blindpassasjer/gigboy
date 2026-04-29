@@ -452,19 +452,17 @@ export default function SetlistConcertPage() {
               {currentSong.capo !== undefined && currentSong.capo > 0 && (
                 <span className="capo-badge">Capo {currentSong.capo}</span>
               )}
-              {currentSong.tempo && (
-                <VisualMetronome
-                  tempo={currentSong.tempo}
-                  timeSignature={currentSong.timeSignature}
-                  className="concert-metronome"
-                />
-              )}
-              {currentSong.key && (
-                <VisualTuner
-                  targetKey={transpose === 0 ? currentSong.key : transposeChord(currentSong.key, transpose)}
-                  className="concert-tuner"
-                />
-              )}
+              <VisualMetronome
+                tempo={currentSong.tempo}
+                timeSignature={currentSong.timeSignature}
+                className="concert-metronome"
+              />
+              <VisualTuner
+                targetKey={currentSong.key
+                  ? (transpose === 0 ? currentSong.key : transposeChord(currentSong.key, transpose))
+                  : undefined}
+                className="concert-tuner"
+              />
               {currentSong.timeSignature && <span className="meta-pill">{currentSong.timeSignature}</span>}
             </div>
           </div>

@@ -155,16 +155,7 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (targetNoteIndex === undefined) {
-      setIsListening(false);
-      setDetectedHz(null);
-      setDetectedNote(null);
-      setCents(null);
-    }
-  }, [targetNoteIndex]);
-
-  useEffect(() => {
-    if (!isListening || targetNoteIndex === undefined) return;
+    if (!isListening) return;
 
     let cancelled = false;
 
@@ -205,10 +196,14 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
           if (frequency && Number.isFinite(frequency)) {
             const midi = frequencyToMidi(frequency);
             const noteName = NOTE_LABELS[((midi % 12) + 12) % 12];
-            const targetFrequency = closestTargetFrequency(targetNoteIndex, frequency);
             setDetectedHz(frequency);
             setDetectedNote(noteName);
-            setCents(centsOff(frequency, targetFrequency));
+            if (targetNoteIndex === undefined) {
+              setCents(null);
+            } else {
+              const targetFrequency = closestTargetFrequency(targetNoteIndex, frequency);
+              setCents(centsOff(frequency, targetFrequency));
+            }
           } else {
             setDetectedHz(null);
             setDetectedNote(null);
@@ -248,12 +243,10 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
     };
   }, [isListening, targetNoteIndex]);
 
-  if (targetNoteIndex === undefined || !rootNote) return null;
-
   const centsValue = cents ?? 0;
   const clamped = Math.max(-50, Math.min(50, centsValue));
   const needleLeftPercent = ((clamped + 50) / 100) * 100;
-  const inTune = Math.abs(centsValue) <= 5;
+  const inTune = targetNoteIndex !== undefined && detectedHz !== null && Math.abs(centsValue) <= 5;
 
   return (
     <div className={`visual-tuner ${className}`.trim()}>
@@ -268,9 +261,15 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
       </button>
 
       <div className="visual-tuner-readout">
-        <span className="visual-tuner-target">Target {rootNote}</span>
+        <span className="visual-tuner-target">
+          {rootNote ? `Target ${rootNote}` : 'Chromatic'}
+        </span>
         <span className={`visual-tuner-status${inTune && detectedHz ? ' is-in-tune' : ''}`}>
-          {detectedNote ? `${detectedNote} ${centsValue > 0 ? '+' : ''}${centsValue}c` : 'Listening...'}
+          {detectedNote
+            ? targetNoteIndex === undefined
+              ? `${detectedNote} detected`
+              : `${detectedNote} ${centsValue > 0 ? '+' : ''}${centsValue}c`
+            : 'Listening...'}
         </span>
       </div>
 
@@ -281,7 +280,9 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
 
       <div className="visual-tuner-footer">
         <span>{detectedHz ? `${Math.round(detectedHz)}Hz` : '--'}</span>
-        {error ? <span className="visual-tuner-error">{error}</span> : <span>{targetKey}</span>}
+        {error
+          ? <span className="visual-tuner-error">{error}</span>
+          : <span>{targetKey?.trim() || 'No target key'}</span>}
       </div>
     </div>
   );

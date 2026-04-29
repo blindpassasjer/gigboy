@@ -962,6 +962,26 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--chord-bg);
 }
 
+.visual-metronome-tap {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .2rem .5rem;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.visual-metronome-tap:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--chord-bg);
+}
+
 .visual-metronome-readout {
   display: inline-flex;
   align-items: center;
@@ -1025,7 +1045,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--song-item-bg) 75%, white);
 }
 
+.song-view-header .visual-metronome-tap {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+}
+
 .song-view-header .visual-metronome-toggle:hover {
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
+}
+
+.song-view-header .visual-metronome-tap:hover {
   color: var(--song-item-chip-text);
   background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
 }

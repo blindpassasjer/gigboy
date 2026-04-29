@@ -1,9 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import { getToken, clearCookie } from '../../_helpers/auth';
 
-interface Env {}
-
-export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+export const onRequestPost: PagesFunction<never> = async (ctx) => {
   const token = getToken(ctx.request);
   if (token) {
     // Firebase session cleanup would go here

@@ -214,19 +214,15 @@ export default function SongView({ song, accentColor }: Props) {
             {song.capo !== undefined && song.capo > 0 && (
               <span className="capo-badge">Capo {song.capo}</span>
             )}
-            {song.tempo && (
-              <VisualMetronome
-                tempo={song.tempo}
-                timeSignature={song.timeSignature}
-                className="song-view-metronome"
-              />
-            )}
-            {song.key && (
-              <VisualTuner
-                targetKey={transpose === 0 ? song.key : transposeChord(song.key, transpose)}
-                className="song-view-tuner"
-              />
-            )}
+            <VisualMetronome
+              tempo={song.tempo}
+              timeSignature={song.timeSignature}
+              className="song-view-metronome"
+            />
+            <VisualTuner
+              targetKey={song.key ? (transpose === 0 ? song.key : transposeChord(song.key, transpose)) : undefined}
+              className="song-view-tuner"
+            />
             {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
 
             <div className="add-to-list-wrap" ref={menuRef}>
@@ -249,9 +245,11 @@ export default function SongView({ song, accentColor }: Props) {
                           key={list.id}
                           className={`list-dropdown-item${inList ? ' in-list' : ''}`}
                           onClick={() => {
-                            inList
-                              ? removeSongFromList(list.id, song.id)
-                              : addSongToList(list.id, song.id);
+                            if (inList) {
+                              removeSongFromList(list.id, song.id);
+                            } else {
+                              addSongToList(list.id, song.id);
+                            }
                           }}
                         >
                           {inList ? <Check size={13} /> : <Plus size={13} />}

@@ -44,6 +44,21 @@ export async function sendInviteEmail(params: {
   });
 }
 
+export async function createInviteOnServer(params: {
+  userId: string;
+  userEmail: string;
+  recipientEmail: string;
+  resourceType: ShareResourceType;
+  resourceId: string;
+  resourceName: string;
+  permission: CollaborationPermission;
+}) {
+  return postJson<{ inviteId: string }>('/api/share/invite', params, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
 export async function sendPdfEmail(params: {
   userId: string;
   userEmail: string;
