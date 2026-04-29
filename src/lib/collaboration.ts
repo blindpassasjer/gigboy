@@ -103,14 +103,12 @@ export async function loadPendingInvites(db: Firestore, userId: string, email: s
     getDocs(
       query(
         collection(db, INVITES_COLLECTION),
-        where('status', '==', 'pending'),
         where('recipientUid', '==', userId)
       )
     ),
     getDocs(
       query(
         collection(db, INVITES_COLLECTION),
-        where('status', '==', 'pending'),
         where('recipientEmailLower', '==', normalizedEmail)
       )
     ),
@@ -121,7 +119,9 @@ export async function loadPendingInvites(db: Firestore, userId: string, email: s
     ...byEmailSnap.docs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
   ]);
 
-  return combined.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return combined
+    .filter((invite) => invite.status === 'pending')
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function acceptInvite(db: Firestore, invite: CollaborationInvite, userId: string) {

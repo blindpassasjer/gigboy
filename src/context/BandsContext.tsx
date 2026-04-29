@@ -182,11 +182,45 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         setBands(nextBands);
       }
       return { bandId: response.bandId, error: null };
-    } catch (error) {
-      return {
-        bandId: null,
-        error: error instanceof Error ? error.message : 'Failed to create band.',
-      };
+    } catch (serverError) {
+      if (!db) {
+        return {
+          bandId: null,
+          error: serverError instanceof Error ? serverError.message : 'Failed to create band.',
+        };
+      }
+
+      try {
+        const bandId = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await setDoc(doc(db, BANDS_COLLECTION, bandId), {
+          name: trimmedName,
+          description: description?.trim() || undefined,
+          ownerId: userId,
+          memberIds: [userId],
+          memberRoles: {
+            [userId]: 'editor',
+          },
+          memberEmails: userEmail ? { [userId]: userEmail } : {},
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const created = await getDocs(query(collection(db, BANDS_COLLECTION), where('memberIds', 'array-contains', userId)));
+        const nextBands = created.docs
+          .map((entry) => normalizeBand(entry.id, entry.data() as Record<string, unknown>))
+          .sort(compareBands);
+        setBands(nextBands);
+
+        return { bandId, error: null };
+      } catch (fallbackError) {
+        const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : 'Failed to create band.';
+        const serverMessage = serverError instanceof Error ? serverError.message : 'Server request failed.';
+        return {
+          bandId: null,
+          error: `${fallbackMessage} (server error: ${serverMessage})`,
+        };
+      }
     }
   }, [userEmail, userId]);
 

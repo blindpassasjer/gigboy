@@ -34,14 +34,12 @@ export async function loadPendingBandInvites(db: Firestore, userId: string, emai
     getDocs(
       query(
         collection(db, BAND_INVITES_COLLECTION),
-        where('status', '==', 'pending'),
         where('recipientUid', '==', userId)
       )
     ),
     getDocs(
       query(
         collection(db, BAND_INVITES_COLLECTION),
-        where('status', '==', 'pending'),
         where('recipientEmailLower', '==', normalizedEmail)
       )
     ),
@@ -50,7 +48,9 @@ export async function loadPendingBandInvites(db: Firestore, userId: string, emai
   return mergeInvites([
     ...byUidSnap.docs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
     ...byEmailSnap.docs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
-  ]).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  ])
+    .filter((invite) => invite.status === 'pending')
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function declineBandInvite(db: Firestore, inviteId: string, userId: string) {
