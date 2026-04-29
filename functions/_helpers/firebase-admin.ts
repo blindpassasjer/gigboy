@@ -1,3 +1,4 @@
+import './cf-process-patch';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 

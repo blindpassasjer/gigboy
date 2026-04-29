@@ -3,14 +3,7 @@
   "compatibility_date": "2026-04-25",
   "compatibility_flags": ["nodejs_compat"],
   "pages_build_output_dir": "./dist",
-  // process.stdout/stderr are Web WritableStreams in the Workers runtime and throw
-  // TypeError when coerced to a string (e.g. stream + ''), which breaks
-  // google-logging-utils/colours.js (transitive dep of firebase-admin).
-  // Replacing them with null at bundle time lets the null-safe checks pass silently.
-  "define": {
-    "process.stdout": "null",
-    "process.stderr": "null"
-  },
+
   "env": {
     "preview": {
       "vars": {
