@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "deploy": "npm run build && npx -y wrangler@4 deploy",
+    "deploy": "npm run deploy:pages",
+    "deploy:workers": "npm run build && npx -y wrangler@4 deploy",
     "build:pages": "npm run build && node scripts/write-pages-redirects.mjs",
     "deploy:pages": "npm run build:pages && npx -y wrangler@4 pages deploy dist",
     "migrate:songs": "node scripts/migrate-songs-to-user.mjs",

@@ -85,21 +85,22 @@ Supported directives: `title`, `subtitle`, `artist`, `start_of_verse`, `end_of_v
 
 ## Deploying
 
-### Cloudflare Workers (recommended)
+### Cloudflare Pages (recommended when using `/api/*`)
 
 ```bash
 npm run deploy
 ```
 
-This runs `tsc && vite build` then deploys the `dist/` folder as a Workers static asset site with SPA routing.
+This builds the project, writes the `_redirects` file for SPA fallback, then deploys via `wrangler pages deploy`.
+Use this if you need `functions/api/*` endpoints (invite, band create, accept, etc.).
 
-### Cloudflare Pages
+### Cloudflare Workers (static-only)
 
 ```bash
-npm run deploy:pages
+npm run deploy:workers
 ```
 
-This builds the project, writes the `_redirects` file for SPA fallback, then deploys via `wrangler pages deploy`.
+This deploys static assets only. Cloudflare Pages Functions in `functions/` are not included.
 
 ### Other static hosts
 
