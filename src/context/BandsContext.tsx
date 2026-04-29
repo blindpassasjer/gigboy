@@ -193,9 +193,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       try {
         const bandId = crypto.randomUUID();
         const now = new Date().toISOString();
+        const trimmedDescription = description?.trim();
         await setDoc(doc(db, BANDS_COLLECTION, bandId), {
           name: trimmedName,
-          description: description?.trim() || undefined,
+          ...(trimmedDescription ? { description: trimmedDescription } : {}),
           ownerId: userId,
           memberIds: [userId],
           memberRoles: {
