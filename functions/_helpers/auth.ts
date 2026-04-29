@@ -1,48 +1,57 @@
-import './cf-process-patch';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+const ITERATIONS = 100_000;
+const KEY_BYTES = 32;
 
-function getAdminAuth() {
-  if (getApps().length === 0) {
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-
-    if (projectId && privateKey && clientEmail) {
-      initializeApp({
-        credential: cert({
-          projectId,
-          privateKey,
-          clientEmail,
-        }),
-      });
-    } else {
-      initializeApp();
-    }
-  }
-
-  return getAuth();
+function toHex(buf: Uint8Array): string {
+  return Array.from(buf, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function getSession(token: string): Promise<{ user_id: string; email?: string } | null> {
-  try {
-    const decoded = await getAdminAuth().verifyIdToken(token);
-    return {
-      user_id: decoded.uid,
-      email: typeof decoded.email === 'string' ? decoded.email : undefined,
-    };
-  } catch {
-    return null;
-  }
+function fromHex(hex: string): Uint8Array {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) out[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+  return out;
+}
+
+async function pbkdf2(password: string, salt: Uint8Array): Promise<Uint8Array> {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits'],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: ITERATIONS, hash: 'SHA-256' },
+    key, KEY_BYTES * 8,
+  );
+  return new Uint8Array(bits);
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await pbkdf2(password, salt);
+  return `${toHex(salt)}:${toHex(hash)}`;
+}
+
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const [saltHex, hashHex] = stored.split(':');
+  const salt = fromHex(saltHex);
+  const expected = fromHex(hashHex);
+  const actual = await pbkdf2(password, salt);
+  if (expected.length !== actual.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected[i] ^ actual[i];
+  return diff === 0;
+}
+
+export function generateToken(): string {
+  return toHex(crypto.getRandomValues(new Uint8Array(32)));
+}
+
+export async function getSession(
+  token: string,
+): Promise<{ user_id: string } | null> {
+  void token;
+  // Firebase auth session handling would go here
+  return null;
 }
 
 export function getToken(req: Request): string | null {
-  const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice('Bearer '.length).trim();
-    if (token) return token;
-  }
-
   const match = (req.headers.get('Cookie') ?? '').match(/session=([^;]+)/);
   return match?.[1] ?? null;
 }
