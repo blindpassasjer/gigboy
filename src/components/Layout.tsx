@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Music, BookOpen, Plus, LogOut, Menu, Sun, Moon, Maximize2, Minimize2, User, Users } from 'lucide-react';
+import { Music, BookOpen, Plus, LogOut, Menu, Sun, Moon, Maximize2, Minimize2, User } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
