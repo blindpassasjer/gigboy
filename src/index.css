@@ -142,6 +142,32 @@ input, select, textarea { font: inherit; color: var(--text); }
   overflow-y: auto;
 }
 
+/* ─── Floating Add Song Button ───────────────────────────────────────────────── */
+.fab-add-song {
+  position: fixed;
+  bottom: 1.75rem;
+  right: 1.75rem;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  transition: background .15s, transform .15s, box-shadow .15s;
+  text-decoration: none;
+}
+.fab-add-song:hover {
+  background: var(--accent-hover, color-mix(in srgb, var(--accent) 85%, #000));
+  transform: scale(1.07);
+  box-shadow: 0 6px 20px rgba(0,0,0,.3);
+  color: #fff;
+  text-decoration: none;
+}
+
 .sidebar-backdrop {
   position: fixed;
   inset: 56px 0 0;
@@ -2489,30 +2515,47 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-bottom: .5rem;
 }
 
-.sidebar-bands-btn {
+.sidebar-bands-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-band-item {
+  display: flex;
+  align-items: center;
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 0 .25rem;
+}
+
+.sidebar-band-item.active {
+  background: var(--sidebar-active, var(--border));
+}
+
+.sidebar-band-item-btn {
   display: flex;
   align-items: center;
   gap: .5rem;
-  width: 100%;
-  padding: .45rem .75rem;
+  flex: 1;
+  min-width: 0;
+  padding: .45rem .5rem;
   font-size: .82rem;
   color: inherit;
   text-align: left;
   border-radius: 5px;
   transition: background .12s;
-  margin: 0 .25rem;
+  overflow: hidden;
 }
-.sidebar-bands-btn:hover { background: var(--bg); }
 
-.sidebar-bands-count {
-  font-size: .75rem;
-  color: var(--muted);
-  margin-left: auto;
-  padding: 0 .3rem;
-  background: var(--border);
-  border-radius: 10px;
-  min-width: 1.5rem;
-  text-align: center;
+.sidebar-band-item-btn:hover { background: var(--bg); }
+.sidebar-band-item.active .sidebar-band-item-btn:hover { background: transparent; }
+
+.sidebar-band-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ─── Setlist view ──────────────────────────────────────────────────────────── */
@@ -2530,32 +2573,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: space-between;
   gap: 1.5rem;
   padding: 1.5rem;
-  border-bottom: 2px solid var(--chord-bg);
-  background: var(--surface);
-}
-
-.setlist-title-block {
-  flex: 1;
-}
-
-.setlist-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--accent);
-  margin: 0 0 .25rem;
-  cursor: pointer;
-  padding: .25rem .5rem;
-  border-radius: 4px;
-  transition: background .12s;
-}
-.setlist-title:hover { background: var(--chord-bg); }
-.setlist-title:active { opacity: .8; }
-
-.setlist-name-input {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--accent);
-  padding: .25rem .5rem;
   border: 2px solid var(--accent);
   border-radius: 4px;
   background: var(--surface);

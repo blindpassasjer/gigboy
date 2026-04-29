@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Folder, FolderOpen, FolderPlus, Trash2, X, ListMusic, ListMusicIcon, Users } from 'lucide-react';
+import { Folder, FolderOpen, FolderPlus, Trash2, X, ListMusic, ListMusicIcon, Users, Plus } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
@@ -46,10 +46,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     setActiveSetlistId,
   } = useSetlists();
 
-  const { bands } = useBands();
+  const { bands, createBand } = useBands();
 
   const [addingFolder, setAddingFolder] = useState(false);
   const [addingSetlist, setAddingSetlist] = useState(false);
+  const [addingBand, setAddingBand] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [songDropTargetId, setSongDropTargetId] = useState<string | null>(null);
   const [setlistDropTargetId, setSetlistDropTargetId] = useState<string | null>(null);
@@ -72,6 +73,19 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (draftName.trim()) addSetlist(draftName.trim());
     setDraftName('');
     setAddingSetlist(false);
+  };
+
+  const commitBand = async () => {
+    const name = draftName.trim();
+    setDraftName('');
+    setAddingBand(false);
+    if (name) {
+      const result = await createBand(name);
+      if (result.bandId) {
+        navigate(`/bands/${result.bandId}`);
+        onNavigate?.();
+      }
+    }
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>, listId: string) => {
@@ -161,9 +175,47 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             onChange={setDraftName}
             onCommit={commitFolder}
             onCancel={() => setAddingFolder(false)}
-            placeholder="Folder name…"
+            placeholder="Folder name..."
           />
         )}
+      </div>
+
+      <div className="sidebar-bands-section">
+        <div className="sidebar-bands-header">
+          <h3 className="sidebar-section-title">Bands</h3>
+          <button
+            className="sidebar-icon-btn"
+            title="New band"
+            onClick={() => { setAddingBand(true); setDraftName(''); }}
+          >
+            <Plus size={15} />
+          </button>
+        </div>
+        <div className="sidebar-bands-list">
+          {bands.map((band) => (
+            <div
+              key={band.id}
+              className={`sidebar-band-item${pathname === `/bands/${band.id}` ? ' active' : ''}`}
+            >
+              <button
+                className="sidebar-band-item-btn"
+                onClick={() => { navigate(`/bands/${band.id}`); onNavigate?.(); }}
+              >
+                <Users size={14} />
+                <span className="sidebar-band-name">{band.name}</span>
+              </button>
+            </div>
+          ))}
+          {addingBand && (
+            <InlineInput
+              value={draftName}
+              onChange={setDraftName}
+              onCommit={commitBand}
+              onCancel={() => setAddingBand(false)}
+              placeholder="Band name..."
+            />
+          )}
+        </div>
       </div>
 
       <div className={`sidebar-setlists-section${setlistDropActive ? ' drop-active' : ''}`}>
@@ -201,25 +253,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               onChange={setDraftName}
               onCommit={commitSetlist}
               onCancel={() => setAddingSetlist(false)}
-              placeholder="Setlist name…"
+              placeholder="Setlist name..."
             />
           )}
         </div>
-      </div>
-
-      <div className="sidebar-bands-section">
-        <div className="sidebar-bands-header">
-          <h3 className="sidebar-section-title">Bands</h3>
-        </div>
-        <button
-          className="sidebar-bands-btn"
-          onClick={() => { navigate('/bands'); onNavigate?.(); }}
-          title="View all bands"
-        >
-          <Users size={14} />
-          <span>All Bands</span>
-          {bands.length > 0 && <span className="sidebar-bands-count">{bands.length}</span>}
-        </button>
       </div>
     </aside>
     </div>
