@@ -6,6 +6,7 @@ import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
+import UserAvatar from '../components/UserAvatar';
 import type { CollaborationPermission, Song } from '../types';
 
 export default function BandDetailPage() {
@@ -198,11 +199,13 @@ export default function BandDetailPage() {
                     const role = band.ownerId === memberId ? 'owner' : band.memberRoles[memberId] ?? 'viewer';
                     const username = band.memberUsernames[memberId] ?? null;
                     const email = band.memberEmails[memberId] ?? 'No email saved';
+                    const avatar = band.memberAvatars[memberId] ?? null;
                     const canRemove = isOwner && memberId !== band.ownerId;
                     const isCurrentUser = memberId === user?.id;
 
                     return (
                       <li key={memberId} className="bands-member-card">
+                        <UserAvatar avatar={avatar} label={username ?? email} size="md" />
                         <div className="bands-member-copy">
                           <strong>{username ?? email}</strong>
                           <span>{username ? email : ''}</span>

@@ -41,6 +41,7 @@ export interface Band {
   memberRoles: Record<string, CollaborationPermission>;
   memberEmails: Record<string, string>;
   memberUsernames: Record<string, string>;
+  memberAvatars: Record<string, string>;
   createdAt: string;
   updatedAt?: string;
 }

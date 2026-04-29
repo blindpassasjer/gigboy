@@ -33,6 +33,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     const now = new Date().toISOString();
     const profile = await getFirestoreDocument(ctx.env, ['users', userId]);
     const username = typeof profile?.username === 'string' ? profile.username : '';
+    const avatar = typeof profile?.avatar === 'string' ? profile.avatar : '';
 
     await setFirestoreDocument(ctx.env, ['bands', bandId], {
       name,
@@ -44,6 +45,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       },
       memberEmails: userEmail ? { [userId]: userEmail } : {},
       memberUsernames: username ? { [userId]: username } : {},
+      memberAvatars: avatar ? { [userId]: avatar } : {},
       createdAt: now,
       updatedAt: now,
     });

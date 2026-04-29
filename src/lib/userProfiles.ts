@@ -3,7 +3,6 @@ import {
   getDoc,
   runTransaction,
   serverTimestamp,
-  deleteField,
   setDoc,
   type Firestore,
 } from 'firebase/firestore';

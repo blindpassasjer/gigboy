@@ -54,6 +54,13 @@ function normalizeBand(id: string, data: Record<string, unknown>): Band {
           )
         ) as Record<string, string>
       : {},
+    memberAvatars: typeof data.memberAvatars === 'object' && data.memberAvatars !== null
+      ? Object.fromEntries(
+          Object.entries(data.memberAvatars as Record<string, unknown>).filter(
+            ([, avatar]) => typeof avatar === 'string'
+          )
+        ) as Record<string, string>
+      : {},
     createdAt: typeof data.createdAt === 'string' ? data.createdAt : new Date(0).toISOString(),
     updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,
   };
@@ -127,6 +134,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const userId = user?.id ?? null;
   const userEmail = user?.email ?? '';
   const userUsername = user?.username ?? '';
+  const userAvatar = user?.avatar ?? '';
   const [bands, setBands] = useState<Band[]>([]);
   const [bandSongsByBandId, setBandSongsByBandId] = useState<Record<string, Song[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
@@ -212,6 +220,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           },
           memberEmails: userEmail ? { [userId]: userEmail } : {},
           memberUsernames: userUsername ? { [userId]: userUsername } : {},
+          memberAvatars: userAvatar ? { [userId]: userAvatar } : {},
           createdAt: now,
           updatedAt: now,
         });
@@ -232,7 +241,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         };
       }
     }
-  }, [userEmail, userId, userUsername]);
+  }, [userAvatar, userEmail, userId, userUsername]);
 
   const deleteBand = useCallback(async (bandId: string) => {
     if (!userId) {
@@ -320,15 +329,18 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         const nextMemberRoles = { ...band.memberRoles };
         const nextMemberEmails = { ...band.memberEmails };
         const nextMemberUsernames = { ...band.memberUsernames };
+        const nextMemberAvatars = { ...band.memberAvatars };
         delete nextMemberRoles[memberId];
         delete nextMemberEmails[memberId];
         delete nextMemberUsernames[memberId];
+        delete nextMemberAvatars[memberId];
         return {
           ...band,
           memberIds: nextMemberIds,
           memberRoles: nextMemberRoles,
           memberEmails: nextMemberEmails,
           memberUsernames: nextMemberUsernames,
+          memberAvatars: nextMemberAvatars,
           updatedAt: new Date().toISOString(),
         };
       }));

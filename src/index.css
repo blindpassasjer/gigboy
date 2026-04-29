@@ -125,7 +125,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   text-decoration: none;
 }
 
-.topbar-logout {
+.topbar-icon-btn {
   display: flex;
   align-items: center;
   padding: .3rem .5rem;
@@ -133,7 +133,45 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
   transition: background .15s, color .15s;
 }
-.topbar-logout:hover { background: #fde8e8; color: var(--danger); }
+.topbar-icon-btn:hover { background: var(--chord-bg); color: var(--accent); }
+
+.topbar-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .28rem .5rem;
+  border-radius: 8px;
+}
+
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--chord-bg);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  font-weight: 700;
+  line-height: 1;
+}
+
+.user-avatar--sm {
+  width: 1.45rem;
+  height: 1.45rem;
+  font-size: .78rem;
+}
+
+.user-avatar--md {
+  width: 2rem;
+  height: 2rem;
+  font-size: 1rem;
+}
+
+.user-avatar--lg {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.35rem;
+}
 
 .main-content {
   flex: 1;
@@ -3494,7 +3532,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .topbar-nav a,
-  .topbar-logout,
+  .topbar-icon-btn,
   .topbar-sidebar-toggle {
     padding: .35rem;
   }
@@ -3822,6 +3860,101 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 /* ─── Profile invites page ─────────────────────────────────────────────────── */
+.profile-settings-page {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile-settings-status {
+  color: var(--muted);
+}
+
+.profile-settings-header {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+}
+
+.profile-settings-header h1 {
+  font-size: 1.45rem;
+}
+
+.profile-settings-header p,
+.profile-settings-muted {
+  color: var(--muted);
+}
+
+.profile-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.profile-settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+}
+
+.profile-settings-card--wide {
+  grid-column: span 2;
+}
+
+.profile-settings-card h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: 1.02rem;
+}
+
+.profile-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.profile-settings-link {
+  color: var(--muted);
+  font-size: .88rem;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: .5rem;
+}
+
+.avatar-choice {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 2.4rem;
+  font-size: 1.25rem;
+  transition: border-color .15s, transform .08s, background .15s;
+}
+
+.avatar-choice:hover {
+  border-color: var(--accent);
+}
+
+.avatar-choice--active {
+  border-color: var(--accent);
+  background: var(--chord-bg);
+}
+
+.avatar-choice:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
 .profile-invites-page {
   max-width: 760px;
   margin: 0 auto;
@@ -3983,6 +4116,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .16rem;
 }
 
+.bands-member-card {
+  justify-content: flex-start;
+}
+
 .bands-card-copy span,
 .bands-member-copy span,
 .bands-library-copy span {
@@ -3997,6 +4134,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .55rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.bands-member-actions {
+  margin-left: auto;
 }
 
 .bands-role-badge,
@@ -4042,6 +4183,18 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 @media (max-width: 900px) {
+  .profile-settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-settings-card--wide {
+    grid-column: span 1;
+  }
+
+  .avatar-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .bands-header,
   .bands-create-grid,
   .bands-detail-grid,

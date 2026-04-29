@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Plus, LogOut, Menu, Sun, Moon, Maximize2, Minimize2, User } from 'lucide-react';
+import { BookOpen, Plus, Menu, Sun, Moon, Maximize2, Minimize2, User } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 import { useDarkMode } from '../hooks/useDarkMode';
+import UserAvatar from './UserAvatar';
 
 interface Props {
   children: ReactNode;
@@ -12,7 +13,7 @@ interface Props {
 
 export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
@@ -116,7 +117,7 @@ export default function Layout({ children }: Props) {
           </Link>
           <button
             onClick={toggleDark}
-            className="topbar-logout"
+            className="topbar-icon-btn"
             title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-pressed={dark}
           >
@@ -124,16 +125,17 @@ export default function Layout({ children }: Props) {
           </button>
           <button
             onClick={toggleFullscreen}
-            className="topbar-logout"
+            className="topbar-icon-btn"
             title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
             aria-pressed={isFullscreen}
           >
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
           {user && (
-            <button onClick={logout} className="topbar-logout" title={`Sign out (${user.email})`}>
-              <LogOut size={16} />
-            </button>
+            <Link to="/profile" className={pathname === '/profile' ? 'active topbar-profile-link' : 'topbar-profile-link'} title={`Open profile (${user.email})`}>
+              <UserAvatar avatar={user.avatar} label={user.username ?? user.email} size="sm" />
+              <span>Profile</span>
+            </Link>
           )}
         </nav>
       </header>

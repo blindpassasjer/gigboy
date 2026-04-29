@@ -70,10 +70,17 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const memberUsernames = typeof band.memberUsernames === 'object' && band.memberUsernames !== null
     ? { ...(band.memberUsernames as Record<string, unknown>) }
     : {};
+  const memberAvatars = typeof band.memberAvatars === 'object' && band.memberAvatars !== null
+    ? { ...(band.memberAvatars as Record<string, unknown>) }
+    : {};
   const profileUsername = typeof profile?.username === 'string' ? profile.username : null;
+  const profileAvatar = typeof profile?.avatar === 'string' ? profile.avatar : null;
   const inviteUsername = typeof invite.recipientUsername === 'string' ? invite.recipientUsername : null;
   if (profileUsername || inviteUsername) {
     memberUsernames[userId] = profileUsername ?? inviteUsername ?? userId;
+  }
+  if (profileAvatar) {
+    memberAvatars[userId] = profileAvatar;
   }
 
   const now = new Date().toISOString();
@@ -84,6 +91,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     memberRoles,
     memberEmails,
     memberUsernames,
+    memberAvatars,
     updatedAt: now,
   });
 
