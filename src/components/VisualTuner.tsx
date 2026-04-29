@@ -248,27 +248,7 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
   const needleLeftPercent = ((clamped + 50) / 100) * 100;
   const inTune = targetNoteIndex !== undefined && detectedHz !== null && Math.abs(centsValue) <= 5;
   const closeToTune = targetNoteIndex !== undefined && detectedHz !== null && Math.abs(centsValue) > 5 && Math.abs(centsValue) <= 12;
-
-  let proximityClass = 'is-listening';
-  let proximityLabel = 'Listening';
-  if (targetNoteIndex === undefined) {
-    proximityClass = 'is-chromatic';
-    proximityLabel = 'Chromatic';
-  } else if (detectedHz !== null) {
-    if (Math.abs(centsValue) <= 5) {
-      proximityClass = 'is-in-tune';
-      proximityLabel = 'In tune';
-    } else if (Math.abs(centsValue) <= 12) {
-      proximityClass = 'is-close';
-      proximityLabel = 'Close';
-    } else if (centsValue < 0) {
-      proximityClass = 'is-flat';
-      proximityLabel = 'Flat';
-    } else {
-      proximityClass = 'is-sharp';
-      proximityLabel = 'Sharp';
-    }
-  }
+  const gaugeClass = inTune ? 'is-in-tune' : closeToTune ? 'is-close' : '';
 
   return (
     <div className={`visual-tuner ${className}`.trim()}>
@@ -283,33 +263,18 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
       </button>
 
       <div className="visual-tuner-readout">
-        <span className="visual-tuner-target">
-          {rootNote ? `Target ${rootNote}` : 'Chromatic'}
-        </span>
-        <span className={`visual-tuner-status${inTune && detectedHz ? ' is-in-tune' : ''}${closeToTune ? ' is-close' : ''}`}>
-          {detectedNote
-            ? targetNoteIndex === undefined
-              ? `${detectedNote} detected`
-              : `${detectedNote} ${centsValue > 0 ? '+' : ''}${centsValue}c`
-            : 'Listening...'}
+        <span className={`visual-tuner-status${inTune && detectedHz ? ' is-in-tune' : ''}${closeToTune ? ' is-close' : ''}`} aria-live="polite">
+          {detectedNote || '--'}
         </span>
       </div>
 
-      <div className={`visual-tuner-proximity ${proximityClass}`} aria-live="polite">
-        <span className="visual-tuner-proximity-dot" aria-hidden="true" />
-        <span className="visual-tuner-proximity-label">{proximityLabel}</span>
-      </div>
-
-      <div className="visual-tuner-gauge" aria-hidden="true">
+      <div className={`visual-tuner-gauge ${gaugeClass}`.trim()} aria-hidden="true">
         <span className="visual-tuner-center" />
         <span className="visual-tuner-needle" style={{ left: `${needleLeftPercent}%` }} />
       </div>
 
       <div className="visual-tuner-footer">
-        <span>{detectedHz ? `${Math.round(detectedHz)}Hz` : '--'}</span>
-        {error
-          ? <span className="visual-tuner-error">{error}</span>
-          : <span>{targetKey?.trim() || 'No target key'}</span>}
+        {error ? <span className="visual-tuner-error">{error}</span> : null}
       </div>
     </div>
   );
