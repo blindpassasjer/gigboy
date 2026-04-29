@@ -19,6 +19,10 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function mergeInvites(invites: BandInvite[]) {
   const seen = new Map<string, BandInvite>();
   invites.forEach((invite) => {
@@ -30,24 +34,39 @@ function mergeInvites(invites: BandInvite[]) {
 export async function loadPendingBandInvites(db: Firestore, userId: string, email: string) {
   const normalizedEmail = normalizeEmail(email);
 
-  const [byUidSnap, byEmailSnap] = await Promise.all([
-    getDocs(
-      query(
-        collection(db, BAND_INVITES_COLLECTION),
-        where('recipientUid', '==', userId)
-      )
-    ),
-    getDocs(
+  const byUidPromise = getDocs(
+    query(
+      collection(db, BAND_INVITES_COLLECTION),
+      where('recipientUid', '==', userId)
+    )
+  );
+
+  const byEmailPromise = isValidEmail(normalizedEmail)
+    ? getDocs(
       query(
         collection(db, BAND_INVITES_COLLECTION),
         where('recipientEmailLower', '==', normalizedEmail)
       )
-    ),
-  ]);
+    )
+    : Promise.resolve(null);
+
+  const [byUidResult, byEmailResult] = await Promise.allSettled([byUidPromise, byEmailPromise]);
+  if (byUidResult.status !== 'fulfilled') {
+    throw byUidResult.reason;
+  }
+
+  if (byEmailResult.status === 'rejected') {
+    console.warn('Failed to load email-based band invites; continuing with UID invites only.', byEmailResult.reason);
+  }
+
+  const byUidSnap = byUidResult.value;
+  const byEmailDocs = byEmailResult.status === 'fulfilled' && byEmailResult.value
+    ? byEmailResult.value.docs
+    : [];
 
   return mergeInvites([
     ...byUidSnap.docs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
-    ...byEmailSnap.docs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
+    ...byEmailDocs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
   ])
     .filter((invite) => invite.status === 'pending')
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));

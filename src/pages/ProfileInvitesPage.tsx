@@ -16,20 +16,37 @@ export default function ProfileInvitesPage() {
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
 
   const refreshInvites = useCallback(async () => {
-    if (!db || !user?.id || !user.email) {
+    if (!db || !user?.id) {
       setInvites([]);
+      setBandInvites([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      const [pendingInvites, pendingBandInvites] = await Promise.all([
-        loadPendingInvites(db, user.id, user.email),
-        loadPendingBandInvites(db, user.id, user.email),
+      const [pendingInvitesResult, pendingBandInvitesResult] = await Promise.allSettled([
+        loadPendingInvites(db, user.id, user.email ?? ''),
+        loadPendingBandInvites(db, user.id, user.email ?? ''),
       ]);
-      setInvites(pendingInvites);
-      setBandInvites(pendingBandInvites);
+
+      if (pendingInvitesResult.status === 'fulfilled') {
+        setInvites(pendingInvitesResult.value);
+      } else {
+        console.error('Failed to load collaboration invites.', pendingInvitesResult.reason);
+        setInvites([]);
+      }
+
+      if (pendingBandInvitesResult.status === 'fulfilled') {
+        setBandInvites(pendingBandInvitesResult.value);
+      } else {
+        console.error('Failed to load band invites.', pendingBandInvitesResult.reason);
+        setBandInvites([]);
+      }
+
+      if (pendingInvitesResult.status === 'rejected' && pendingBandInvitesResult.status === 'rejected') {
+        toast.error('Failed to load invites.');
+      }
     } catch (error) {
       console.error('Failed to load invites.', error);
       toast.error('Failed to load invites.');

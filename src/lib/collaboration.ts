@@ -99,24 +99,39 @@ function mergeInvites(invites: CollaborationInvite[]) {
 export async function loadPendingInvites(db: Firestore, userId: string, email: string) {
   const normalizedEmail = normalizeInviteEmail(email);
 
-  const [byUidSnap, byEmailSnap] = await Promise.all([
-    getDocs(
-      query(
-        collection(db, INVITES_COLLECTION),
-        where('recipientUid', '==', userId)
-      )
-    ),
-    getDocs(
+  const byUidPromise = getDocs(
+    query(
+      collection(db, INVITES_COLLECTION),
+      where('recipientUid', '==', userId)
+    )
+  );
+
+  const byEmailPromise = isValidEmail(normalizedEmail)
+    ? getDocs(
       query(
         collection(db, INVITES_COLLECTION),
         where('recipientEmailLower', '==', normalizedEmail)
       )
-    ),
-  ]);
+    )
+    : Promise.resolve(null);
+
+  const [byUidResult, byEmailResult] = await Promise.allSettled([byUidPromise, byEmailPromise]);
+  if (byUidResult.status !== 'fulfilled') {
+    throw byUidResult.reason;
+  }
+
+  if (byEmailResult.status === 'rejected') {
+    console.warn('Failed to load email-based invites; continuing with UID invites only.', byEmailResult.reason);
+  }
+
+  const byUidSnap = byUidResult.value;
+  const byEmailDocs = byEmailResult.status === 'fulfilled' && byEmailResult.value
+    ? byEmailResult.value.docs
+    : [];
 
   const combined = mergeInvites([
     ...byUidSnap.docs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
-    ...byEmailSnap.docs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
+    ...byEmailDocs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
   ]);
 
   return combined

@@ -41,3 +41,16 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
   return Response.json({ ok: true });
 };
+
+export const onRequest: PagesFunction<Record<string, string | undefined>, never, Data> = async (ctx) => {
+  if (ctx.request.method !== 'POST') {
+    return new Response('Method Not Allowed', {
+      status: 405,
+      headers: {
+        Allow: 'POST',
+      },
+    });
+  }
+
+  return onRequestPost(ctx);
+};

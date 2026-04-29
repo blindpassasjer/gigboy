@@ -6,7 +6,8 @@ interface Data extends Record<string, unknown> {
 }
 
 export const onRequest: PagesFunction<never, never, Data> = async (ctx) => {
-  if (new URL(ctx.request.url).pathname.startsWith('/api/auth/')) return ctx.next();
+  const path = new URL(ctx.request.url).pathname;
+  if (path.startsWith('/api/auth/') || path.startsWith('/api/health/')) return ctx.next();
 
   const fallbackUserId = ctx.request.headers.get('x-folio-user-id')?.trim();
   if (fallbackUserId) {

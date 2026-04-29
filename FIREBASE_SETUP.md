@@ -109,6 +109,19 @@ folio/
 
 ## Troubleshooting
 
+Run the backend health check endpoint after deployment:
+
+```bash
+curl https://YOUR_DOMAIN/api/health/firebase
+```
+
+Expected success response includes:
+- `ok: true`
+- `configured: true`
+- `projectId`
+
+If this endpoint returns `ok: false`, the `error` field usually points to the missing or invalid Firebase credential.
+
 **"Firebase credentials not fully configured"**
 - Make sure all three env variables are set: `FIREBASE_PROJECT_ID`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_CLIENT_EMAIL`
 
