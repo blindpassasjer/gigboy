@@ -38,6 +38,7 @@ export async function createBandOnServer(params: {
   userEmail: string;
   name: string;
   description?: string;
+  icon?: string;
 }) {
   return postJson<{ bandId: string }>('/api/bands/create', params, {
     userId: params.userId,

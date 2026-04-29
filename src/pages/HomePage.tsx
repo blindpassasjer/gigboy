@@ -1,7 +1,6 @@
 import { useSongs } from '../context/SongsContext';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
-import toast from 'react-hot-toast';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import type { Song } from '../types';
@@ -10,7 +9,7 @@ import { showConfirmToast } from '../utils/toastDialogs';
 const INTERNAL_SONGLISTS_CATEGORY_ID = 'songlists-default';
 
 export default function HomePage() {
-  const { songs, updateSong, deleteSong, moveSong } = useSongs();
+  const { songs, deleteSong, moveSong } = useSongs();
   const {
     activeCategoryId,
     activeSongListId,
@@ -68,22 +67,6 @@ export default function HomePage() {
           .flatMap((list) => list.songIds)
       )
     : null;
-  const isAllSongsView = !activeList && !activeCategorySongIds;
-  const allSongsListColorsBySongId = isAllSongsView
-    ? songLists.reduce<Record<string, string[]>>((acc, list) => {
-        const listColor = list.color;
-        if (!listColor) return acc;
-
-        list.songIds.forEach((songId) => {
-          const existing = acc[songId] ?? [];
-          if (!existing.includes(listColor)) {
-            acc[songId] = [...existing, listColor];
-          }
-        });
-
-        return acc;
-      }, {})
-    : undefined;
   const displayedSongs = activeList
     ? activeList.songIds
         .map((songId) => songsById.get(songId))
@@ -109,17 +92,6 @@ export default function HomePage() {
     await deleteSong(song.id);
   }
 
-  async function handleSetSongColor(song: Song, color: string | undefined) {
-    const err = await updateSong({
-      ...song,
-      color,
-      updatedAt: new Date().toISOString(),
-    });
-    if (err) {
-      toast.error(`Could not update song color: ${err}`);
-    }
-  }
-
   return (
     <SongList
       songs={displayedSongs}
@@ -128,15 +100,12 @@ export default function HomePage() {
       onAddSong={activeList ? (songId) => addSongToList(activeList.id, songId) : undefined}
       onMoveSong={handleMoveSong}
       onDeleteSong={handleDeleteSong}
-      listColor={activeList?.color}
-      songListColorsBySongId={allSongsListColorsBySongId}
       listIcon={activeList?.icon}
       onUpdateListAppearance={
         activeList
           ? (appearance) => updateSongListAppearance(activeList.id, appearance)
           : undefined
       }
-      onSetSongColor={handleSetSongColor}
       onRemoveSong={activeList ? (song) => removeSongFromList(activeList.id, song.id) : undefined}
       shareConfig={
         activeList

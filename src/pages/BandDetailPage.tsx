@@ -24,6 +24,7 @@ export default function BandDetailPage() {
     leaveBand,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
+    moveBandSong,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
@@ -146,17 +147,21 @@ export default function BandDetailPage() {
     toast.success('Song removed from band library.');
   };
 
+  const handleMoveSong = async (songId: string, beforeSongId: string | null) => {
+    const error = await moveBandSong(band.id, songId, beforeSongId);
+    if (error) {
+      toast.error(error);
+    }
+  };
+
   return (
     <section className="bands-page bands-page--library">
-      <header className="bands-header bands-header--detail setlist-header songlist-header">
-        <div className="setlist-title-block">
-          <h1 className="song-list-heading setlist-title">{band.name}</h1>
-          <p className="song-list-summary setlist-song-count">
-            {bandSongs.length} song{bandSongs.length === 1 ? '' : 's'}
-            {band.description ? ` • ${band.description}` : ` • ${band.memberIds.length} members in this band.`}
-          </p>
-        </div>
-        <div className="setlist-header-actions">
+      <SongList
+        songs={bandSongs}
+        listName={band.name}
+        headerMeta={`${band.memberIds.length} member${band.memberIds.length === 1 ? '' : 's'} in this band.`}
+        headerVariant="bands"
+        headerActions={(
           <button
             type="button"
             className="setlist-action-btn setlist-action-btn--secondary"
@@ -165,15 +170,11 @@ export default function BandDetailPage() {
           >
             <Users size={14} /> Members
           </button>
-          <Link to="/bands" className="setlist-action-btn setlist-action-btn--secondary">All bands</Link>
-        </div>
-      </header>
-
-      <SongList
-        songs={bandSongs}
+        )}
         allSongs={ownedSongs}
         onDeleteSong={canEditBand ? handleRemoveSong : async () => {}}
         onAddSong={canEditBand ? handleAddSong : undefined}
+        onMoveSong={canEditBand ? handleMoveSong : undefined}
       />
 
       {showMembersModal && (

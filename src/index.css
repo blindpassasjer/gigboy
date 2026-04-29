@@ -2602,7 +2602,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: space-between;
   gap: 1.5rem;
   padding: 1.5rem;
-  border: 2px solid #000;
+  border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--surface);
   width: 100%;

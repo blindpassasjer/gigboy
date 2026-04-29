@@ -1,29 +1,22 @@
 import { useLocation, useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useSongs } from '../context/SongsContext';
-import { useSongLists } from '../context/SongListsContext';
 import SongView from '../components/SongView';
 
 type SongPageState = {
   backTo?: string;
   backLabel?: string;
-  accentColor?: string;
 };
 
 export default function SongPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const { songs } = useSongs();
-  const { activeSongListId, songLists } = useSongLists();
   const song = songs.find((s) => s.id === id);
   const pageState = location.state as SongPageState | null;
   const backTo = pageState?.backTo ?? '/';
   const backLabel = pageState?.backLabel?.trim();
   const backLinkText = backLabel ? `Return to ${backLabel}` : 'All songs';
-  const activeListColor = song && activeSongListId
-    ? songLists.find((list) => list.id === activeSongListId && list.songIds.includes(song.id))?.color
-    : undefined;
-  const accentColor = pageState?.accentColor ?? song?.color ?? activeListColor;
 
   if (!song) {
     return (
@@ -37,7 +30,7 @@ export default function SongPage() {
   return (
     <div>
       <Link to={backTo} className="back-link"><ArrowLeft size={16} /> {backLinkText}</Link>
-      <SongView song={song} accentColor={accentColor} />
+      <SongView song={song} />
     </div>
   );
 }

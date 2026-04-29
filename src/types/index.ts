@@ -36,6 +36,7 @@ export interface Band {
   id: string;
   name: string;
   description?: string;
+  icon?: string;
   ownerId: string;
   memberIds: string[];
   memberRoles: Record<string, CollaborationPermission>;
@@ -68,7 +69,6 @@ export interface SongList extends CollaborationMetadata {
   name: string;
   songIds: string[];
   folderId?: string;
-  color?: string;
   icon?: string;
   sortOrder?: number;
 }
@@ -76,6 +76,7 @@ export interface SongList extends CollaborationMetadata {
 export interface Setlist extends CollaborationMetadata {
   id: string;
   name: string;
+  icon?: string;
   songIds: string[];
   createdAt?: string;
   updatedAt?: string;
@@ -97,7 +98,6 @@ export interface Song extends CollaborationMetadata {
   id: string;
   title: string;
   artist?: string;
-  color?: string;
   language: Language;
   /** Additional languages present in the song (e.g. bilingual) */
   secondaryLanguages?: Language[];

@@ -5,7 +5,6 @@ import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
 import ShareMenu from './ShareMenu';
-import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 
 interface Props {
   setlistId: string;
@@ -19,6 +18,13 @@ interface Props {
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-songbook-song-id';
+const EMOJI_OPTIONS = ['🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '📀', '✨', '🔥', '📁'] as const;
+
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
+}
 
 export default function SetlistsView({
   setlistId,
@@ -29,7 +35,7 @@ export default function SetlistsView({
   onRemoveSong,
   onAddSong,
 }: Props) {
-  const { renameSetlist, setlists } = useSetlists();
+  const { renameSetlist, updateSetlistIcon, setlists } = useSetlists();
   const currentSetlist = setlists.find((l) => l.id === setlistId);
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
@@ -37,7 +43,13 @@ export default function SetlistsView({
   const [renameValue, setRenameValue] = useState(setlistName);
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const [showIconEditor, setShowIconEditor] = useState(false);
+  const [iconDraft, setIconDraft] = useState(currentSetlist?.icon ?? '🎵');
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setIconDraft(currentSetlist?.icon ?? '🎵');
+  }, [currentSetlist?.icon]);
 
   const availableSongs = useMemo(() => {
     const songIdsInSetlist = new Set(songs.map((song) => song.id));
@@ -222,6 +234,7 @@ export default function SetlistsView({
             />
           ) : (
             <h1 className="song-list-heading setlist-title" onDoubleClick={() => setIsRenaming(true)}>
+              {currentSetlist?.icon ? <span className="song-list-heading-icon" aria-hidden="true">{currentSetlist.icon}</span> : null}
               {setlistName}
             </h1>
           )}
@@ -272,6 +285,13 @@ export default function SetlistsView({
             <Plus size={14} /> Add songs
           </button>
           <button
+            className="setlist-action-btn setlist-action-btn--secondary"
+            onClick={() => setShowIconEditor((value) => !value)}
+            title="Set setlist icon"
+          >
+            Set icon
+          </button>
+          <button
             className="setlist-action-btn"
             onClick={() => setIsRenaming(true)}
             title="Rename setlist"
@@ -280,6 +300,52 @@ export default function SetlistsView({
           </button>
         </div>
       </div>
+
+      {showIconEditor ? (
+        <div className="list-appearance-editor" role="region" aria-label="Setlist icon settings">
+          <div className="list-appearance-group">
+            <span className="list-appearance-label">Emoji</span>
+            <div className="emoji-choice-grid" role="listbox" aria-label="Setlist emoji options">
+              {EMOJI_OPTIONS.map((emoji) => {
+                const selected = iconDraft === emoji;
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                    onClick={() => setIconDraft(emoji)}
+                    aria-label={`Choose icon ${emoji}`}
+                    aria-pressed={selected}
+                  >
+                    {emoji}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="setlist-action-btn"
+            onClick={() => {
+              updateSetlistIcon(setlistId, normalizeEmojiIcon(iconDraft));
+              setShowIconEditor(false);
+            }}
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            className="setlist-action-btn setlist-action-btn--secondary"
+            onClick={() => {
+              updateSetlistIcon(setlistId, undefined);
+              setIconDraft('🎵');
+              setShowIconEditor(false);
+            }}
+          >
+            Reset
+          </button>
+        </div>
+      ) : null}
 
       {songs.length === 0 ? (
         <div className="empty-state">
@@ -306,7 +372,6 @@ export default function SetlistsView({
               >
                 <div
                   className="setlist-song-card"
-                  style={buildSongSurfaceStyle(song.color)}
                   onDragOver={(event) => handleSongCardDragOver(index, event)}
                   onDrop={(event) => handleSongCardDrop(index, event)}
                 >
@@ -392,7 +457,6 @@ export default function SetlistsView({
                     key={song.id}
                     className="song-picker-item"
                     role="listitem"
-                    style={buildSongSurfaceStyle(song.color)}
                   >
                     <div className="song-picker-item-main">
                       <span className="song-picker-song-title">{song.title}</span>

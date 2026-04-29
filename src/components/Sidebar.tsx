@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import type { CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Folder, FolderOpen, Trash2, X, ListMusic, ListMusicIcon, Users, Plus } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
@@ -160,7 +159,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             listId={list.id}
             name={list.name}
             icon={list.icon}
-            color={list.color}
             count={list.songIds.length}
             active={activeSongListId === list.id}
             songDropTarget={songDropTargetId === list.id}
@@ -204,7 +202,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 className="sidebar-band-item-btn"
                 onClick={() => { navigate(`/bands/${band.id}`); onNavigate?.(); }}
               >
-                <Users size={14} />
+                {band.icon ? <span className="sidebar-list-icon" aria-hidden="true">{band.icon}</span> : <Users size={14} />}
                 <span className="sidebar-band-name">{band.name}</span>
               </button>
             </div>
@@ -239,6 +237,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               key={setlist.id}
               setlistId={setlist.id}
               name={setlist.name}
+              icon={setlist.icon}
               count={setlist.songIds.length}
               active={activeSetlistId === setlist.id}
               songDropTarget={setlistDropTargetId === setlist.id}
@@ -270,7 +269,6 @@ interface FolderItemProps {
   listId: string;
   name: string;
   icon?: string;
-  color?: string;
   count: number;
   active: boolean;
   songDropTarget: boolean;
@@ -284,7 +282,6 @@ interface FolderItemProps {
 function FolderItem({
   name,
   icon,
-  color,
   count,
   active,
   songDropTarget,
@@ -294,14 +291,9 @@ function FolderItem({
   onSelect,
   onDelete,
 }: FolderItemProps) {
-  const style = color
-    ? ({ '--list-accent': color } as CSSProperties)
-    : undefined;
-
   return (
     <div
       className={`sidebar-list-item${active ? ' active' : ''}${songDropTarget ? ' song-drop-target' : ''}`}
-      style={style}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -325,6 +317,7 @@ function FolderItem({
 interface SetlistItemProps {
   setlistId: string;
   name: string;
+  icon?: string;
   count: number;
   active: boolean;
   songDropTarget: boolean;
@@ -337,6 +330,7 @@ interface SetlistItemProps {
 
 function SetlistItem({
   name,
+  icon,
   count,
   active,
   songDropTarget,
@@ -354,7 +348,7 @@ function SetlistItem({
       onDrop={onDrop}
     >
       <button className="sidebar-setlist-item-btn" onClick={onSelect}>
-        {active ? <ListMusicIcon size={14} /> : <ListMusic size={14} />}
+        {icon ? <span className="sidebar-list-icon" aria-hidden="true">{icon}</span> : active ? <ListMusicIcon size={14} /> : <ListMusic size={14} />}
         <span className="sidebar-setlist-name">{name}</span>
         {songDropTarget && <span className="sidebar-setlist-drop-label">Drop song</span>}
         {count > 0 && <span className="sidebar-setlist-count">{count}</span>}

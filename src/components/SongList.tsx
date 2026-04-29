@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -12,15 +13,12 @@ import {
   SquarePen,
   Trash2,
   ListMinus,
-  Palette,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import ShareMenu from './ShareMenu';
 import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
-import { buildSongSurfaceStyle, buildSongSurfaceStyleFromPalette } from '../utils/songColorStyles';
 
 type SortBy =
   | 'custom'
@@ -52,21 +50,6 @@ function getInitialSortBy(canUseCustomOrder: boolean): SortBy {
 const SONG_DRAG_MIME = 'application/x-folio-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
 
-const COLOR_OPTIONS = [
-  '#5c4fa6',
-  '#2563eb',
-  '#0f766e',
-  '#16a34a',
-  '#ca8a04',
-  '#ea580c',
-  '#dc2626',
-  '#db2777',
-  '#7c3aed',
-  '#0e7490',
-  '#64748b',
-  '#374151',
-] as const;
-
 const EMOJI_OPTIONS = ['🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '📀', '✨', '🔥', '📁'] as const;
 
 function getSongPreview(song: Song): string {
@@ -83,18 +66,6 @@ function getSongPreview(song: Song): string {
   return preview.length > 150 ? `${preview.slice(0, 147).trimEnd()}...` : preview;
 }
 
-function normalizeHexColor(value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  const candidate = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
-  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(candidate)) {
-    return null;
-  }
-
-  return candidate.toLowerCase();
-}
-
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -104,14 +75,14 @@ function normalizeEmojiIcon(value: string): string | undefined {
 interface Props {
   songs: Song[];
   listName?: string;
-  listColor?: string;
-  songListColorsBySongId?: Record<string, string[]>;
+  headerMeta?: string;
+  headerVariant?: 'songlist' | 'bands';
+  headerActions?: ReactNode;
   listIcon?: string;
   allSongs?: Song[];
   onMoveSong?: (songId: string, beforeSongId: string | null) => void;
   onDeleteSong: (song: Song) => void | Promise<void>;
-  onSetSongColor?: (song: Song, color: string | undefined) => void | Promise<void>;
-  onUpdateListAppearance?: (appearance: { color?: string; icon?: string }) => void;
+  onUpdateListAppearance?: (appearance: { icon?: string }) => void;
   onRemoveSong?: (song: Song) => void;
   onAddSong?: (songId: string) => void;
   shareConfig?: {
@@ -124,13 +95,13 @@ interface Props {
 export default function SongList({
   songs,
   listName,
-  listColor,
-  songListColorsBySongId,
+  headerMeta,
+  headerVariant = 'songlist',
+  headerActions,
   listIcon,
   allSongs,
   onMoveSong,
   onDeleteSong,
-  onSetSongColor,
   onUpdateListAppearance,
   onRemoveSong,
   onAddSong,
@@ -158,8 +129,6 @@ export default function SongList({
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
   const [showListAppearanceEditor, setShowListAppearanceEditor] = useState(false);
-  const [songColorPickerSongId, setSongColorPickerSongId] = useState<string | null>(null);
-  const [listColorDraft, setListColorDraft] = useState(listColor ?? '#5c4fa6');
   const [listIconDraft, setListIconDraft] = useState(listIcon ?? '🎵');
   const songPageStateBase = onRemoveSong && listName
     ? { backTo: '/', backLabel: listName }
@@ -236,10 +205,6 @@ export default function SongList({
   );
 
   useEffect(() => {
-    setListColorDraft(listColor ?? '#5c4fa6');
-  }, [listColor]);
-
-  useEffect(() => {
     setListIconDraft(listIcon ?? '🎵');
   }, [listIcon]);
 
@@ -255,28 +220,11 @@ export default function SongList({
       if (showListAppearanceEditor) {
         setShowListAppearanceEditor(false);
       }
-
-      if (songColorPickerSongId) {
-        setSongColorPickerSongId(null);
-      }
     };
 
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [showSongPicker, showListAppearanceEditor, songColorPickerSongId]);
-
-  useEffect(() => {
-    if (!songColorPickerSongId) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest('.song-color-picker-wrap')) return;
-      setSongColorPickerSongId(null);
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [songColorPickerSongId]);
+  }, [showSongPicker, showListAppearanceEditor]);
 
   const openSongPicker = () => {
     setPickerQuery('');
@@ -291,14 +239,7 @@ export default function SongList({
   const handleApplyListAppearance = () => {
     if (!onUpdateListAppearance) return;
 
-    const normalizedColor = normalizeHexColor(listColorDraft);
-    if (!normalizedColor) {
-      toast.error('Please choose a valid color. Example: #4f46e5');
-      return;
-    }
-
     onUpdateListAppearance({
-      color: normalizedColor,
       icon: normalizeEmojiIcon(listIconDraft),
     });
     setShowListAppearanceEditor(false);
@@ -306,16 +247,9 @@ export default function SongList({
 
   const handleResetListAppearance = () => {
     if (!onUpdateListAppearance) return;
-    onUpdateListAppearance({ color: undefined, icon: undefined });
-    setListColorDraft('#5c4fa6');
+    onUpdateListAppearance({ icon: undefined });
     setListIconDraft('🎵');
     setShowListAppearanceEditor(false);
-  };
-
-  const handleSetSongColor = (song: Song, color: string | undefined) => {
-    if (!onSetSongColor) return;
-    onSetSongColor(song, color);
-    setSongColorPickerSongId(null);
   };
 
   const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
@@ -396,7 +330,7 @@ export default function SongList({
   return (
     <div className="song-list-page">
       <div className="song-list-sticky">
-      <div className="songlist-header setlist-header">
+      <div className={`${headerVariant === 'bands' ? 'bands-header' : 'songlist-header'} setlist-header`}>
         <div className="setlist-title-block">
           {listName && (
             <h2 className="song-list-heading setlist-title">
@@ -405,16 +339,18 @@ export default function SongList({
             </h2>
           )}
           <p className="song-list-summary setlist-song-count">{filtered.length} song{filtered.length === 1 ? '' : 's'}</p>
+          {headerMeta ? <p className="song-list-summary setlist-song-count">{headerMeta}</p> : null}
         </div>
         <div className="setlist-header-actions">
+          {headerActions}
           {onUpdateListAppearance && listName && (
             <button
               type="button"
               className="setlist-action-btn setlist-action-btn--secondary"
               onClick={() => setShowListAppearanceEditor((value) => !value)}
-              title="Customize songlist color and icon"
+              title="Set songlist icon"
             >
-              <Palette size={14} /> Style list
+              Set icon
             </button>
           )}
           {canAddSongs && (
@@ -459,26 +395,7 @@ export default function SongList({
         </div>
       </div>
       {showListAppearanceEditor && onUpdateListAppearance && (
-        <div className="list-appearance-editor" role="region" aria-label="Songlist style settings">
-          <div className="list-appearance-group">
-            <span className="list-appearance-label">Color</span>
-            <div className="color-swatch-grid" role="listbox" aria-label="Songlist color options">
-              {COLOR_OPTIONS.map((color) => {
-                const selected = normalizeHexColor(listColorDraft) === color;
-                return (
-                  <button
-                    key={color}
-                    type="button"
-                    className={`color-swatch-btn${selected ? ' active' : ''}`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => setListColorDraft(color)}
-                    aria-label={`Choose color ${color}`}
-                    aria-pressed={selected}
-                  />
-                );
-              })}
-            </div>
-          </div>
+        <div className="list-appearance-editor" role="region" aria-label="Songlist icon settings">
           <div className="list-appearance-group">
             <span className="list-appearance-label">Emoji</span>
             <div className="emoji-choice-grid" role="listbox" aria-label="Songlist emoji options">
@@ -499,14 +416,6 @@ export default function SongList({
               })}
             </div>
           </div>
-          <label className="list-appearance-field">
-            <span>Custom color</span>
-            <input
-              type="color"
-              value={normalizeHexColor(listColorDraft) ?? '#5c4fa6'}
-              onChange={(event) => setListColorDraft(event.target.value)}
-            />
-          </label>
           <button type="button" className="setlist-action-btn" onClick={handleApplyListAppearance}>Save</button>
           <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={handleResetListAppearance}>Reset</button>
         </div>
@@ -561,21 +470,14 @@ export default function SongList({
       ) : viewMode === 'cards' ? (
         <div className="song-card-grid" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
           {filtered.map((song) => {
-            const songListColors = songListColorsBySongId?.[song.id] ?? [];
-            const effectiveSongColor = song.color ?? listColor ?? songListColors[0];
-            const cardStyle =
-              !song.color && !listColor && songListColors.length > 1
-                ? buildSongSurfaceStyleFromPalette(songListColors)
-                : buildSongSurfaceStyle(effectiveSongColor);
             const songPageState = songPageStateBase
-              ? { ...songPageStateBase, accentColor: effectiveSongColor }
+              ? { ...songPageStateBase }
               : undefined;
 
             return (
             <article
               key={song.id}
               className={`song-preview-card${dropTargetSongId === song.id ? ' drop-before' : ''}`}
-              style={cardStyle}
               onDragOver={(event) => handleSongDragOver(song.id, event)}
               onDrop={(event) => handleSongDrop(song.id, event)}
             >
@@ -615,41 +517,6 @@ export default function SongList({
                 >
                   <SquarePen size={14} />
                 </Link>
-                {onSetSongColor && (
-                  <div className="song-color-picker-wrap">
-                    <button
-                      className="song-action-btn song-action-btn--color"
-                      onClick={() => setSongColorPickerSongId((current) => (current === song.id ? null : song.id))}
-                      title={`Set color for ${song.title}`}
-                      aria-label={`Set color for ${song.title}`}
-                    >
-                      <Palette size={14} />
-                    </button>
-                    {songColorPickerSongId === song.id && (
-                      <div className="song-color-picker" role="menu" aria-label={`Color options for ${song.title}`}>
-                        <button
-                          type="button"
-                          className="song-color-picker-clear"
-                          onClick={() => handleSetSongColor(song, undefined)}
-                        >
-                          Use list color
-                        </button>
-                        <div className="color-swatch-grid color-swatch-grid--compact">
-                          {COLOR_OPTIONS.map((color) => (
-                            <button
-                              key={`${song.id}-${color}`}
-                              type="button"
-                              className={`color-swatch-btn${song.color === color ? ' active' : ''}`}
-                              style={{ backgroundColor: color }}
-                              onClick={() => handleSetSongColor(song, color)}
-                              aria-label={`Set song color ${color}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
                 {onRemoveSong && (
                   <button
                     className="song-action-btn song-action-btn--remove"
@@ -677,21 +544,14 @@ export default function SongList({
       ) : (
         <ul className="song-list" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
           {filtered.map((song) => {
-            const songListColors = songListColorsBySongId?.[song.id] ?? [];
-            const effectiveSongColor = song.color ?? listColor ?? songListColors[0];
-            const cardStyle =
-              !song.color && !listColor && songListColors.length > 1
-                ? buildSongSurfaceStyleFromPalette(songListColors)
-                : buildSongSurfaceStyle(effectiveSongColor);
             const songPageState = songPageStateBase
-              ? { ...songPageStateBase, accentColor: effectiveSongColor }
+              ? { ...songPageStateBase }
               : undefined;
 
             return (
             <li key={song.id} className={dropTargetSongId === song.id ? 'drop-before' : ''}>
               <div
                 className="song-card"
-                style={cardStyle}
                 onDragOver={(event) => handleSongDragOver(song.id, event)}
                 onDrop={(event) => handleSongDrop(song.id, event)}
               >
@@ -730,41 +590,6 @@ export default function SongList({
                   >
                     <SquarePen size={14} />
                   </Link>
-                  {onSetSongColor && (
-                    <div className="song-color-picker-wrap">
-                      <button
-                        className="song-action-btn song-action-btn--color"
-                        onClick={() => setSongColorPickerSongId((current) => (current === song.id ? null : song.id))}
-                        title={`Set color for ${song.title}`}
-                        aria-label={`Set color for ${song.title}`}
-                      >
-                        <Palette size={14} />
-                      </button>
-                      {songColorPickerSongId === song.id && (
-                        <div className="song-color-picker" role="menu" aria-label={`Color options for ${song.title}`}>
-                          <button
-                            type="button"
-                            className="song-color-picker-clear"
-                            onClick={() => handleSetSongColor(song, undefined)}
-                          >
-                            Use list color
-                          </button>
-                          <div className="color-swatch-grid color-swatch-grid--compact">
-                            {COLOR_OPTIONS.map((color) => (
-                              <button
-                                key={`${song.id}-${color}`}
-                                type="button"
-                                className={`color-swatch-btn${song.color === color ? ' active' : ''}`}
-                                style={{ backgroundColor: color }}
-                                onClick={() => handleSetSongColor(song, color)}
-                                aria-label={`Set song color ${color}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                   {onRemoveSong && (
                     <button
                       className="song-action-btn song-action-btn--remove"
@@ -822,7 +647,6 @@ export default function SongList({
                     key={song.id}
                     className="song-picker-item"
                     role="listitem"
-                    style={buildSongSurfaceStyle(song.color)}
                   >
                     <div className="song-picker-item-main">
                       <span className="song-picker-song-title">{song.title}</span>

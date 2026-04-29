@@ -5,12 +5,21 @@ import { Music2, Users } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 
+const EMOJI_OPTIONS = ['🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '📀', '✨', '🔥', '📁'] as const;
+
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
+}
+
 export default function BandsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { bands, loading, cloudRequired, createBand, deleteBand } = useBands();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [icon, setIcon] = useState('🎵');
   const [creating, setCreating] = useState(false);
   const [busyBandId, setBusyBandId] = useState<string | null>(null);
 
@@ -18,7 +27,7 @@ export default function BandsPage() {
     event.preventDefault();
     setCreating(true);
 
-    const result = await createBand(name, description);
+    const result = await createBand(name, description, normalizeEmojiIcon(icon));
     setCreating(false);
 
     if (result.error) {
@@ -28,6 +37,7 @@ export default function BandsPage() {
 
     setName('');
     setDescription('');
+    setIcon('🎵');
     toast.success('Band created.');
 
     if (result.bandId) {
@@ -81,6 +91,14 @@ export default function BandsPage() {
               placeholder="Optional"
             />
           </label>
+          <label className="share-menu-field">
+            <span>Icon</span>
+            <select value={icon} onChange={(event) => setIcon(event.target.value)}>
+              {EMOJI_OPTIONS.map((emoji) => (
+                <option key={emoji} value={emoji}>{emoji}</option>
+              ))}
+            </select>
+          </label>
         </div>
         <div className="bands-create-actions">
           <button type="submit" className="setlist-action-btn" disabled={creating || cloudRequired}>
@@ -103,7 +121,7 @@ export default function BandsPage() {
               <li key={band.id} className="bands-card">
                 <Link to={`/bands/${band.id}`} className="bands-card-main">
                   <div className="bands-card-icon" aria-hidden="true">
-                    <Music2 size={18} />
+                    {band.icon ? <span>{band.icon}</span> : <Music2 size={18} />}
                   </div>
                   <div className="bands-card-copy">
                     <strong>{band.name}</strong>

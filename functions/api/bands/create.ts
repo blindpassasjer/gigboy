@@ -13,9 +13,10 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     }
 
     const userEmail = ctx.request.headers.get('x-folio-user-email')?.trim() ?? '';
-    const body = await ctx.request.json<{ name?: string; description?: string }>();
+    const body = await ctx.request.json<{ name?: string; description?: string; icon?: string }>();
     const name = body.name?.trim() ?? '';
     const description = body.description?.trim() || undefined;
+    const icon = body.icon?.trim() || undefined;
 
     if (!name) {
       return Response.json({ error: 'Band name is required.' }, { status: 400 });
@@ -38,6 +39,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     await setFirestoreDocument(ctx.env, ['bands', bandId], {
       name,
       description,
+      icon,
       ownerId: userId,
       memberIds: [userId],
       memberRoles: {

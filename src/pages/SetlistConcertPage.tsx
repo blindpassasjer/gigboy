@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import type { CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -25,7 +24,6 @@ import VisualMetronome from '../components/VisualMetronome';
 import VisualTuner from '../components/VisualTuner';
 import type { ChordNotation } from '../utils/chordParser';
 import { transposeChord } from '../utils/chordParser';
-import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 
 interface ActiveChord {
   chord: string;
@@ -261,14 +259,6 @@ export default function SetlistConcertPage() {
     );
   }
 
-  const accentColor = currentSong.color;
-  const headerStyle = accentColor
-    ? ({
-      ...buildSongSurfaceStyle(accentColor),
-      '--song-header-accent': accentColor,
-    } as CSSProperties)
-    : undefined;
-
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < setlistSongs.length - 1;
 
@@ -294,7 +284,7 @@ export default function SetlistConcertPage() {
         </button>
       </div>
       {showTopbar && (
-      <header className="concert-topbar" style={headerStyle}>
+      <header className="concert-topbar">
         <div className="concert-topbar-main">
           <Link to="/" className="back-link concert-back-link"><ArrowLeft size={15} /> Back</Link>
           <h1>{setlist.name}</h1>

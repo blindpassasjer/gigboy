@@ -148,7 +148,7 @@ interface SongListsContextValue {
   addSongToList: (listId: string, songId: string) => void;
   removeSongFromList: (listId: string, songId: string) => void;
   moveSongInList: (listId: string, songId: string, beforeSongId: string | null) => void;
-  updateSongListAppearance: (listId: string, appearance: { color?: string; icon?: string }) => void;
+  updateSongListAppearance: (listId: string, appearance: { icon?: string }) => void;
   moveSongList: (listId: string, targetCategoryId?: string, beforeListId?: string | null) => void;
   setActiveCategoryId: (id: string | null) => void;
   setActiveSongListId: (id: string | null) => void;
@@ -398,7 +398,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
-  const updateSongListAppearance = useCallback((listId: string, appearance: { color?: string; icon?: string }) => {
+  const updateSongListAppearance = useCallback((listId: string, appearance: { icon?: string }) => {
     setSongLists((prev) => {
       const list = prev.find((l) => l.id === listId);
       if (!list) return prev;
@@ -406,7 +406,6 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
 
       const nextList: SongList = {
         ...list,
-        color: appearance.color,
         icon: appearance.icon,
       };
       const nextLists = prev.map((l) => (l.id === listId ? nextList : l));

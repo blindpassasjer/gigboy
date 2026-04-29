@@ -29,6 +29,7 @@ function normalizeBand(id: string, data: Record<string, unknown>): Band {
     id,
     name: typeof data.name === 'string' ? data.name : 'Untitled band',
     description: typeof data.description === 'string' ? data.description : undefined,
+    icon: typeof data.icon === 'string' ? data.icon : undefined,
     ownerId: typeof data.ownerId === 'string' ? data.ownerId : '',
     memberIds: Array.isArray(data.memberIds)
       ? data.memberIds.filter((entry): entry is string => typeof entry === 'string')
@@ -71,7 +72,6 @@ function normalizeBandSong(id: string, data: Record<string, unknown>): Song {
     id,
     title: typeof data.title === 'string' ? data.title : 'Untitled',
     artist: typeof data.artist === 'string' ? data.artist : undefined,
-    color: typeof data.color === 'string' ? data.color : undefined,
     language: typeof data.language === 'string' ? data.language : 'en',
     secondaryLanguages: Array.isArray(data.secondaryLanguages)
       ? data.secondaryLanguages.filter((entry): entry is string => typeof entry === 'string')
@@ -112,12 +112,36 @@ function sortBandSongs(songs: Song[]) {
   });
 }
 
+function moveSongInArray(songs: Song[], songId: string, beforeSongId: string | null) {
+  const currentIndex = songs.findIndex((song) => song.id === songId);
+  if (currentIndex < 0) return songs;
+
+  const nextSongs = [...songs];
+  const [movingSong] = nextSongs.splice(currentIndex, 1);
+  if (!movingSong) return songs;
+
+  if (beforeSongId === null) {
+    nextSongs.push(movingSong);
+    return nextSongs;
+  }
+
+  const targetIndex = nextSongs.findIndex((song) => song.id === beforeSongId);
+  if (targetIndex < 0) return songs;
+
+  nextSongs.splice(targetIndex, 0, movingSong);
+  return nextSongs;
+}
+
+function withSequentialSortOrder(songs: Song[]) {
+  return songs.map((song, index) => ({ ...song, sortOrder: index }));
+}
+
 interface BandsContextValue {
   bands: Band[];
   bandSongsByBandId: Record<string, Song[]>;
   loading: boolean;
   cloudRequired: boolean;
-  createBand: (name: string, description?: string) => Promise<{ bandId: string | null; error: string | null }>;
+  createBand: (name: string, description?: string, icon?: string) => Promise<{ bandId: string | null; error: string | null }>;
   deleteBand: (bandId: string) => Promise<string | null>;
   inviteMember: (bandId: string, recipientUsername: string, role: CollaborationPermission) => Promise<string | null>;
   removeMember: (bandId: string, memberId: string) => Promise<string | null>;
@@ -125,6 +149,7 @@ interface BandsContextValue {
   refreshBandSongs: (bandId: string) => Promise<void>;
   addSongToBandLibrary: (bandId: string, song: Song) => Promise<string | null>;
   removeSongFromBandLibrary: (bandId: string, songId: string) => Promise<string | null>;
+  moveBandSong: (bandId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
 }
 
 const BandsContext = createContext<BandsContextValue | null>(null);
@@ -178,7 +203,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }));
   }, [userId]);
 
-  const createBand = useCallback(async (name: string, description?: string) => {
+  const createBand = useCallback(async (name: string, description?: string, icon?: string) => {
     if (!userId) {
       return { bandId: null, error: 'Bands require a signed-in account.' };
     }
@@ -189,7 +214,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await createBandOnServer({ userId, userEmail, name: trimmedName, description });
+      const response = await createBandOnServer({ userId, userEmail, name: trimmedName, description, icon });
       if (db) {
         const created = await getDocs(query(collection(db, BANDS_COLLECTION), where('memberIds', 'array-contains', userId)));
         const nextBands = created.docs
@@ -213,6 +238,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         await setDoc(doc(db, BANDS_COLLECTION, bandId), {
           name: trimmedName,
           ...(trimmedDescription ? { description: trimmedDescription } : {}),
+          ...(icon ? { icon } : {}),
           ownerId: userId,
           memberIds: [userId],
           memberRoles: {
@@ -373,10 +399,16 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
 
     const songId = song.id || crypto.randomUUID();
+    const currentBandSongs = bandSongsByBandId[bandId] ?? [];
+    const nextSortOrder = currentBandSongs.reduce((max, entry) => {
+      if (typeof entry.sortOrder !== 'number') return max;
+      return Math.max(max, entry.sortOrder);
+    }, -1) + 1;
     const { id, accessRole, ...rest } = song;
     const payload = Object.fromEntries(
       Object.entries({
         ...rest,
+        sortOrder: nextSortOrder,
         ownerId: band.ownerId,
         collaboratorIds: band.memberIds,
         collaborationPermissions: Object.fromEntries(
@@ -393,7 +425,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       return error instanceof Error ? error.message : 'Failed to add song to band library.';
     }
-  }, [bands, refreshBandSongs, userId]);
+  }, [bandSongsByBandId, bands, refreshBandSongs, userId]);
 
   const removeSongFromBandLibrary = useCallback(async (bandId: string, songId: string) => {
     if (!db || !userId) {
@@ -422,6 +454,56 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bands, userId]);
 
+  const moveBandSong = useCallback(async (bandId: string, songId: string, beforeSongId: string | null) => {
+    if (!db || !userId) {
+      return 'Band libraries require cloud sync.';
+    }
+
+    const firestore = db;
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return 'Band not found.';
+    }
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band library.';
+    }
+
+    const previousSongs = bandSongsByBandId[bandId] ?? [];
+    const reorderedSongs = moveSongInArray(previousSongs, songId, beforeSongId);
+    if (reorderedSongs === previousSongs) {
+      return null;
+    }
+
+    const nextSongs = withSequentialSortOrder(reorderedSongs);
+
+    setBandSongsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSongs,
+    }));
+
+    try {
+      await Promise.all(
+        nextSongs.map((song) => {
+          const { id, accessRole, ...rest } = song;
+          const payload = Object.fromEntries(
+            Object.entries(rest).filter(([, value]) => value !== undefined)
+          );
+          return setDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, id), payload);
+        })
+      );
+      return null;
+    } catch (error) {
+      setBandSongsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSongs,
+      }));
+      return error instanceof Error ? error.message : 'Failed to reorder songs in band library.';
+    }
+  }, [bandSongsByBandId, bands, userId]);
+
   const value = useMemo<BandsContextValue>(() => ({
     bands,
     bandSongsByBandId,
@@ -435,6 +517,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBandSongs,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
+    moveBandSong,
   }), [
     addSongToBandLibrary,
     bandSongsByBandId,
@@ -444,6 +527,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     inviteMember,
     leaveBand,
     loading,
+    moveBandSong,
     refreshBandSongs,
     removeMember,
     removeSongFromBandLibrary,

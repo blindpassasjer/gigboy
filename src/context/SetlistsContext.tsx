@@ -116,6 +116,7 @@ interface SetlistsContextValue {
   addSetlist: (name: string) => void;
   deleteSetlist: (id: string) => void;
   renameSetlist: (id: string, name: string) => void;
+  updateSetlistIcon: (id: string, icon?: string) => void;
   addSongToSetlist: (setlistId: string, songId: string) => void;
   removeSongFromSetlist: (setlistId: string, songId: string) => void;
   moveSongInSetlist: (setlistId: string, songId: string, beforeSongId: string | null) => void;
@@ -262,6 +263,30 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
+  const updateSetlistIcon = useCallback((id: string, icon?: string) => {
+    setSetlists((prev) => {
+      const setlist = prev.find((l) => l.id === id);
+      if (!setlist) return prev;
+      if (!canEditSetlist(setlist, userId)) return prev;
+
+      const nextSetlist = { ...setlist, icon, updatedAt: new Date().toISOString() };
+      const nextSetlists = prev.map((l) => (l.id === id ? nextSetlist : l));
+
+      if (db && userId) {
+        void writeSetlist(nextSetlist, userId).catch((error) => {
+          if (isPermissionDeniedError(error)) {
+            logSetlistsPermissionHelp(error);
+          } else {
+            console.error('Failed to update setlist icon in Firestore.', error);
+          }
+          setSetlists(prev);
+        });
+      }
+
+      return nextSetlists;
+    });
+  }, [userId]);
+
   const addSongToSetlist = useCallback((setlistId: string, songId: string) => {
     setSetlists((prev) => {
       const setlist = prev.find((l) => l.id === setlistId);
@@ -354,6 +379,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
         addSetlist,
         deleteSetlist,
         renameSetlist,
+        updateSetlistIcon,
         addSongToSetlist,
         removeSongFromSetlist,
         moveSongInSetlist,
