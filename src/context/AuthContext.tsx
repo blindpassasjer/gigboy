@@ -7,18 +7,22 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   onAuthStateChanged,
+  updateEmail,
+  updatePassword,
   signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
 import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { claimUsername, loadUserProfile } from '../lib/userProfiles';
+import { changeUsername, claimUsername, loadUserProfile, updateProfileFields } from '../lib/userProfiles';
+import { isValidAvatar } from '../lib/avatars';
 
 export interface User {
   id: string;
   email: string;
   username: string | null;
+  avatar: string | null;
 }
 
 interface AuthContextValue {
@@ -31,6 +35,10 @@ interface AuthContextValue {
   loginWithGoogle: () => Promise<string | null>;
   loginWithGithub: () => Promise<string | null>;
   completeUsername: (username: string) => Promise<string | null>;
+  updateEmailAddress: (email: string) => Promise<string | null>;
+  updateUsername: (username: string) => Promise<string | null>;
+  updateAvatar: (avatar: string) => Promise<string | null>;
+  updatePassword: (password: string) => Promise<string | null>;
   logout: () => Promise<void>;
 }
 
@@ -54,7 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!db) {
-        setUser({ id: firebaseUser.uid, email: firebaseUser.email ?? '', username: null });
+        setUser({
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          username: null,
+          avatar: null,
+        });
         setLoading(false);
         return;
       }
@@ -66,11 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: firebaseUser.uid,
             email: firebaseUser.email ?? '',
             username: profile?.username ?? null,
+            avatar: profile?.avatar ?? null,
           });
         })
         .catch((error) => {
           console.error('Failed to load user profile.', error);
-          setUser({ id: firebaseUser.uid, email: firebaseUser.email ?? '', username: null });
+          setUser({
+            id: firebaseUser.uid,
+            email: firebaseUser.email ?? '',
+            username: null,
+            avatar: null,
+          });
         })
         .finally(() => {
           setLoading(false);
@@ -158,6 +177,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateEmailAddress = useCallback(async (email: string) => {
+    if (!auth?.currentUser || !db) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+
+    const trimmed = email.trim();
+    if (!trimmed) {
+      return 'Email is required.';
+    }
+
+    try {
+      await updateEmail(auth.currentUser, trimmed);
+      await updateProfileFields(db, {
+        userId: auth.currentUser.uid,
+        email: trimmed,
+      });
+      setUser((current) => (current ? { ...current, email: trimmed } : current));
+      return null;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes('auth/requires-recent-login')) {
+        return 'Please sign in again, then retry changing your email.';
+      }
+      return err instanceof Error ? err.message : 'Failed to update email.';
+    }
+  }, []);
+
+  const updateUsernameValue = useCallback(async (username: string) => {
+    if (!auth?.currentUser || !db) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+
+    try {
+      const claimed = await changeUsername(db, {
+        userId: auth.currentUser.uid,
+        email: auth.currentUser.email ?? undefined,
+        username,
+      });
+      setUser((current) => (current ? { ...current, username: claimed } : current));
+      return null;
+    } catch (err: unknown) {
+      return err instanceof Error ? err.message : 'Failed to update username.';
+    }
+  }, []);
+
+  const updateAvatarValue = useCallback(async (avatar: string) => {
+    if (!auth?.currentUser || !db) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+
+    if (!isValidAvatar(avatar)) {
+      return 'Invalid avatar selection.';
+    }
+
+    try {
+      await updateProfileFields(db, {
+        userId: auth.currentUser.uid,
+        avatar,
+      });
+      setUser((current) => (current ? { ...current, avatar } : current));
+      return null;
+    } catch (err: unknown) {
+      return err instanceof Error ? err.message : 'Failed to update avatar.';
+    }
+  }, []);
+
+  const updatePasswordValue = useCallback(async (password: string) => {
+    if (!auth?.currentUser) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters.';
+    }
+
+    try {
+      await updatePassword(auth.currentUser, password);
+      return null;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes('auth/requires-recent-login')) {
+        return 'Please sign in again, then retry changing your password.';
+      }
+      return err instanceof Error ? err.message : 'Failed to update password.';
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     if (!auth) return;
     await signOut(auth);
@@ -175,6 +279,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginWithGoogle,
         loginWithGithub,
         completeUsername,
+        updateEmailAddress,
+        updateUsername: updateUsernameValue,
+        updateAvatar: updateAvatarValue,
+        updatePassword: updatePasswordValue,
         logout,
       }}
     >

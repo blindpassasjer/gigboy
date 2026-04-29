@@ -818,7 +818,12 @@ export default function SongList({
                 <p className="song-picker-empty">No songs available to add.</p>
               ) : (
                 filteredAvailableSongs.map((song) => (
-                  <div key={song.id} className="song-picker-item" role="listitem">
+                  <div
+                    key={song.id}
+                    className="song-picker-item"
+                    role="listitem"
+                    style={buildSongSurfaceStyle(song.color)}
+                  >
                     <div className="song-picker-item-main">
                       <span className="song-picker-song-title">{song.title}</span>
                       {song.artist && <span className="song-picker-song-artist">{song.artist}</span>}

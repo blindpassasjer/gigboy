@@ -3,13 +3,18 @@ import {
   getDoc,
   runTransaction,
   serverTimestamp,
+  deleteField,
+  setDoc,
   type Firestore,
 } from 'firebase/firestore';
+
+import { DEFAULT_AVATAR, isValidAvatar } from './avatars';
 
 export interface UserProfile {
   username: string;
   usernameLower: string;
   email?: string;
+  avatar?: string;
 }
 
 const USERS_COLLECTION = 'users';
@@ -49,6 +54,7 @@ function profileFromData(data: Record<string, unknown> | undefined | null): User
     username,
     usernameLower,
     email: typeof data.email === 'string' ? data.email : undefined,
+    avatar: typeof data.avatar === 'string' ? data.avatar : undefined,
   };
 }
 
@@ -100,8 +106,91 @@ export async function claimUsername(db: Firestore, params: {
       ...(params.email ? { email: params.email } : {}),
       username: normalized,
       usernameLower: normalized,
+      avatar: DEFAULT_AVATAR,
       updatedAt: serverTimestamp(),
       ...(existingProfile ? {} : { createdAt: serverTimestamp() }),
+    }, { merge: true });
+  });
+
+  return normalized;
+}
+
+export async function updateProfileFields(db: Firestore, params: {
+  userId: string;
+  email?: string;
+  avatar?: string;
+}) {
+  const payload: Record<string, unknown> = {
+    updatedAt: serverTimestamp(),
+  };
+
+  if (typeof params.email === 'string') {
+    payload.email = params.email;
+  }
+
+  if (typeof params.avatar === 'string') {
+    if (!isValidAvatar(params.avatar)) {
+      throw new Error('Invalid avatar selection.');
+    }
+    payload.avatar = params.avatar;
+  }
+
+  await setDoc(doc(db, USERS_COLLECTION, params.userId), payload, { merge: true });
+}
+
+export async function changeUsername(db: Firestore, params: {
+  userId: string;
+  email?: string;
+  username: string;
+}) {
+  const normalized = normalizeUsername(params.username);
+  const validationError = validateUsername(normalized);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const userRef = doc(db, USERS_COLLECTION, params.userId);
+  const nextUsernameRef = doc(db, USERNAMES_COLLECTION, normalized);
+
+  await runTransaction(db, async (transaction) => {
+    const [userSnapshot, nextUsernameSnapshot] = await Promise.all([
+      transaction.get(userRef),
+      transaction.get(nextUsernameRef),
+    ]);
+
+    const existingProfile = profileFromData(userSnapshot.data() as Record<string, unknown> | undefined);
+    const currentUsernameLower = existingProfile?.usernameLower ?? null;
+
+    if (nextUsernameSnapshot.exists()) {
+      const claimedBy = nextUsernameSnapshot.data().userId;
+      if (claimedBy !== params.userId) {
+        throw new Error('That username is already taken.');
+      }
+    }
+
+    if (currentUsernameLower && currentUsernameLower !== normalized) {
+      const currentUsernameRef = doc(db, USERNAMES_COLLECTION, currentUsernameLower);
+      const currentUsernameSnapshot = await transaction.get(currentUsernameRef);
+      if (currentUsernameSnapshot.exists() && currentUsernameSnapshot.data().userId === params.userId) {
+        transaction.delete(currentUsernameRef);
+      }
+    }
+
+    transaction.set(nextUsernameRef, {
+      userId: params.userId,
+      username: normalized,
+      usernameLower: normalized,
+      updatedAt: serverTimestamp(),
+      ...(nextUsernameSnapshot.exists() ? {} : { createdAt: serverTimestamp() }),
+    }, { merge: true });
+
+    transaction.set(userRef, {
+      ...(params.email ? { email: params.email } : {}),
+      username: normalized,
+      usernameLower: normalized,
+      updatedAt: serverTimestamp(),
+      ...(existingProfile ? {} : { createdAt: serverTimestamp() }),
+      ...(existingProfile?.avatar ? {} : { avatar: DEFAULT_AVATAR }),
     }, { merge: true });
   });
 

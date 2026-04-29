@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Folder, FolderOpen, FolderPlus, Trash2, X, ListMusic, ListMusicIcon, Users, Plus } from 'lucide-react';
+import { Folder, FolderOpen, Trash2, X, ListMusic, ListMusicIcon, Users, Plus } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
@@ -133,7 +133,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             title="New folder"
             onClick={() => { setAddingFolder(true); setDraftName(''); }}
           >
-            <FolderPlus size={15} />
+            <Plus size={15} />
           </button>
           {mobile && onClose && (
             <button className="sidebar-icon-btn" title="Close sidebar" onClick={onClose}>
@@ -229,7 +229,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             title="New setlist"
             onClick={() => { setAddingSetlist(true); setDraftName(''); }}
           >
-            <FolderPlus size={15} />
+            <Plus size={15} />
           </button>
         </div>
 

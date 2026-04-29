@@ -146,11 +146,14 @@ export default function BandDetailPage() {
   };
 
   return (
-    <section className="bands-page">
-      <header className="bands-header bands-header--detail">
-        <div>
-          <h1>{band.name}</h1>
-          <p>{band.description || `${band.memberIds.length} members in this band.`}</p>
+    <section className="bands-page bands-page--library">
+      <header className="bands-header bands-header--detail setlist-header">
+        <div className="setlist-title-block">
+          <h1 className="setlist-title">{band.name}</h1>
+          <p className="setlist-song-count">
+            {bandSongs.length} song{bandSongs.length === 1 ? '' : 's'}
+            {band.description ? ` • ${band.description}` : ` • ${band.memberIds.length} members in this band.`}
+          </p>
         </div>
         <div className="setlist-header-actions">
           <button
@@ -167,7 +170,6 @@ export default function BandDetailPage() {
 
       <SongList
         songs={bandSongs}
-        listName={band.name}
         allSongs={ownedSongs}
         onDeleteSong={canEditBand ? handleRemoveSong : async () => {}}
         onAddSong={canEditBand ? handleAddSong : undefined}

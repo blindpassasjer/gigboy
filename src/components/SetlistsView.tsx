@@ -5,6 +5,7 @@ import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
 import ShareMenu from './ShareMenu';
+import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 
 interface Props {
   setlistId: string;
@@ -305,6 +306,7 @@ export default function SetlistsView({
               >
                 <div
                   className="setlist-song-card"
+                  style={buildSongSurfaceStyle(song.color)}
                   onDragOver={(event) => handleSongCardDragOver(index, event)}
                   onDrop={(event) => handleSongCardDrop(index, event)}
                 >
@@ -386,7 +388,12 @@ export default function SetlistsView({
                 <p className="song-picker-empty">No songs available to add.</p>
               ) : (
                 filteredAvailableSongs.map((song) => (
-                  <div key={song.id} className="song-picker-item" role="listitem">
+                  <div
+                    key={song.id}
+                    className="song-picker-item"
+                    role="listitem"
+                    style={buildSongSurfaceStyle(song.color)}
+                  >
                     <div className="song-picker-item-main">
                       <span className="song-picker-song-title">{song.title}</span>
                       {song.artist && <span className="song-picker-song-artist">{song.artist}</span>}
