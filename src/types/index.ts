@@ -32,6 +32,33 @@ export interface CollaborationInvite {
   respondedAt?: string;
 }
 
+export interface Band {
+  id: string;
+  name: string;
+  description?: string;
+  ownerId: string;
+  memberIds: string[];
+  memberRoles: Record<string, CollaborationPermission>;
+  memberEmails: Record<string, string>;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface BandInvite {
+  id: string;
+  bandId: string;
+  bandName: string;
+  inviterId: string;
+  inviterEmail: string;
+  recipientEmail: string;
+  recipientEmailLower: string;
+  recipientUid?: string;
+  role: CollaborationPermission;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked';
+  createdAt: string;
+  respondedAt?: string;
+}
+
 export interface SongList extends CollaborationMetadata {
   id: string;
   name: string;
@@ -46,6 +73,7 @@ export interface Setlist extends CollaborationMetadata {
   id: string;
   name: string;
   songIds: string[];
+  shareToken?: string;
   createdAt?: string;
   updatedAt?: string;
   sortOrder?: number;

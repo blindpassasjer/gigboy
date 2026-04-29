@@ -327,3 +327,32 @@ export async function setFirestoreDocument(
 
   await firestoreRequest(env, 'PATCH', segments, { fields });
 }
+
+export async function deleteFirestoreDocument(
+  env: Record<string, string | undefined>,
+  segments: string[]
+) {
+  await firestoreRequest(env, 'DELETE', segments);
+}
+
+export async function listFirestoreDocuments(
+  env: Record<string, string | undefined>,
+  segments: string[]
+): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
+  const response = await firestoreRequest(env, 'GET', segments);
+  if (!response) return [];
+
+  const documents = Array.isArray(response.documents)
+    ? response.documents as Array<Record<string, unknown>>
+    : [];
+
+  return documents
+    .map((entry) => {
+      const name = typeof entry.name === 'string' ? entry.name : '';
+      const id = decodeURIComponent(name.split('/').pop() ?? '');
+      const fields = entry.fields as Record<string, Record<string, unknown>> | undefined;
+      if (!id) return null;
+      return { id, data: fromFirestoreFields(fields) };
+    })
+    .filter((entry): entry is { id: string; data: Record<string, unknown> } => Boolean(entry));
+}

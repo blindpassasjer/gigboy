@@ -1,0 +1,90 @@
+import type { CollaborationPermission } from '../types';
+
+interface ApiHeaders {
+  userId: string;
+  userEmail: string;
+}
+
+function buildHeaders(headers: ApiHeaders) {
+  return {
+    'Content-Type': 'application/json',
+    'x-folio-user-id': headers.userId,
+    'x-folio-user-email': headers.userEmail,
+  };
+}
+
+async function postJson<T>(path: string, body: Record<string, unknown>, headers: ApiHeaders): Promise<T> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: buildHeaders(headers),
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json().catch(() => ({} as Record<string, unknown>));
+  if (!response.ok) {
+    const errorMessage = typeof payload.error === 'string' ? payload.error : 'Request failed.';
+    throw new Error(errorMessage);
+  }
+
+  return payload as T;
+}
+
+export async function createBandOnServer(params: {
+  userId: string;
+  userEmail: string;
+  name: string;
+  description?: string;
+}) {
+  return postJson<{ bandId: string }>('/api/bands/create', params, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
+export async function inviteBandMemberOnServer(params: {
+  userId: string;
+  userEmail: string;
+  bandId: string;
+  bandName: string;
+  recipientEmail: string;
+  role: CollaborationPermission;
+}) {
+  return postJson<{ inviteId: string }>('/api/bands/invite', params, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
+export async function acceptBandInviteOnServer(params: {
+  userId: string;
+  userEmail: string;
+  inviteId: string;
+}) {
+  await postJson('/api/bands/accept', { inviteId: params.inviteId }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
+export async function removeBandMemberOnServer(params: {
+  userId: string;
+  userEmail: string;
+  bandId: string;
+  memberId: string;
+}) {
+  await postJson('/api/bands/remove-member', { bandId: params.bandId, memberId: params.memberId }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
+export async function deleteBandOnServer(params: {
+  userId: string;
+  userEmail: string;
+  bandId: string;
+}) {
+  await postJson('/api/bands/delete', { bandId: params.bandId }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}

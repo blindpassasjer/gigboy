@@ -8,10 +8,14 @@ import EditSongPage from './pages/EditSongPage';
 import LoginPage from './pages/LoginPage';
 import SetlistConcertPage from './pages/SetlistConcertPage';
 import SharedSetlistPage from './pages/SharedSetlistPage';
+import BandsPage from './pages/BandsPage';
+import BandDetailPage from './pages/BandDetailPage';
+import ProfileInvitesPage from './pages/ProfileInvitesPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { BandsProvider } from './context/BandsContext';
 
 function AuthenticatedApp() {
   const { user, loading, authEnabled } = useAuth();
@@ -26,15 +30,20 @@ function AuthenticatedApp() {
     <SongsProvider>
       <SongListsProvider>
         <SetlistsProvider>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/songs/:id" element={<SongPage />} />
-              <Route path="/songs/:id/edit" element={<EditSongPage />} />
-              <Route path="/add" element={<AddSongPage />} />
-              <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />
-            </Routes>
-          </Layout>
+          <BandsProvider>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/songs/:id" element={<SongPage />} />
+                <Route path="/songs/:id/edit" element={<EditSongPage />} />
+                <Route path="/add" element={<AddSongPage />} />
+                <Route path="/bands" element={<BandsPage />} />
+                <Route path="/bands/:id" element={<BandDetailPage />} />
+                <Route path="/profile/invites" element={<ProfileInvitesPage />} />
+                <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />
+              </Routes>
+            </Layout>
+          </BandsProvider>
         </SetlistsProvider>
       </SongListsProvider>
     </SongsProvider>

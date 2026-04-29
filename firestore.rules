@@ -39,6 +39,24 @@ service cloud.firestore {
         || (isEditorOnResource() && collaborationMetadataUnchanged());
     }
 
+    function bandDocument(bandId) {
+      return get(/databases/$(database)/documents/bands/$(bandId));
+    }
+
+    function isBandMember(bandId) {
+      return isSignedIn()
+        && bandDocument(bandId).data.memberIds is list
+        && bandDocument(bandId).data.memberIds.hasAny([request.auth.uid]);
+    }
+
+    function isBandEditor(bandId) {
+      return isBandMember(bandId)
+        && (
+          bandDocument(bandId).data.ownerId == request.auth.uid
+          || bandDocument(bandId).data.memberRoles[request.auth.uid] == 'editor'
+        );
+    }
+
     // User-scoped songbook data
     match /users/{userId} {
       allow read, write: if isOwner(userId);
@@ -93,6 +111,46 @@ service cloud.firestore {
       );
 
       allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /bands/{bandId} {
+      allow read: if isBandMember(bandId);
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.hasAny([request.auth.uid]);
+      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      match /songs/{songId} {
+        allow read: if isBandMember(bandId);
+        allow create, update, delete: if isBandEditor(bandId);
+      }
+    }
+
+    match /bandInvites/{inviteId} {
+      allow read: if isSignedIn() && (
+        resource.data.inviterId == request.auth.uid
+        || resource.data.recipientUid == request.auth.uid
+        || (
+          request.auth.token.email != null
+          && resource.data.recipientEmailLower == lower(request.auth.token.email)
+        )
+      );
+
+      allow create: if isSignedIn()
+        && request.resource.data.inviterId == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      allow update: if isSignedIn() && (
+        resource.data.inviterId == request.auth.uid
+        || resource.data.recipientUid == request.auth.uid
+        || (
+          request.auth.token.email != null
+          && resource.data.recipientEmailLower == lower(request.auth.token.email)
+        )
+      );
+
+      allow delete: if isSignedIn() && resource.data.inviterId == request.auth.uid;
     }
 
     // Legacy storage path for older Folio versions

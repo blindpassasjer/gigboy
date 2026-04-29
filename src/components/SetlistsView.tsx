@@ -28,7 +28,6 @@ export default function SetlistsView({
   onRemoveSong,
   onAddSong,
 }: Props) {
-  const { renameSetlist } = useSetlists();
   const { renameSetlist, shareSetlist, unshareSetlist, setlists } = useSetlists();
   const currentSetlist = setlists.find((l) => l.id === setlistId);
   const shareToken = currentSetlist?.shareToken;
@@ -98,7 +97,7 @@ export default function SetlistsView({
   const handleShare = async () => {
     setIsSharing(true);
     try {
-      const token = await shareSetlist(setlistId, setlistName, songs);
+      const token = await shareSetlist(setlistId);
       if (token) {
         const url = `${window.location.origin}/share/${token}`;
         await navigator.clipboard.writeText(url);

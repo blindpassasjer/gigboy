@@ -3842,6 +3842,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--bg);
 }
 
+.share-menu-field input {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: .55rem .65rem;
+  background: var(--bg);
+}
+
 .share-menu-actions {
   display: grid;
   grid-template-columns: 1fr;
@@ -3851,6 +3858,39 @@ input, select, textarea { font: inherit; color: var(--text); }
 .share-menu-extra {
   border-top: 1px solid var(--border);
   padding-top: .55rem;
+}
+
+.share-menu-subtitle {
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: .5rem;
+}
+
+.share-menu-band-list {
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+
+.share-menu-band-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.share-menu-band-copy {
+  display: flex;
+  flex-direction: column;
+  gap: .12rem;
+}
+
+.share-menu-band-copy span {
+  color: var(--muted);
+  font-size: .8rem;
 }
 
 /* ─── Profile invites page ─────────────────────────────────────────────────── */
@@ -3869,6 +3909,16 @@ input, select, textarea { font: inherit; color: var(--text); }
 .profile-invites-header p,
 .profile-invites-status {
   color: var(--muted);
+}
+
+.profile-invites-section {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.profile-invites-section h2 {
+  font-size: 1rem;
 }
 
 .profile-invites-list {
@@ -3903,4 +3953,179 @@ input, select, textarea { font: inherit; color: var(--text); }
 .profile-invite-actions {
   display: flex;
   gap: .5rem;
+}
+
+/* ─── Bands ────────────────────────────────────────────────────────────────── */
+.bands-page {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bands-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.bands-header h1 {
+  font-size: 1.45rem;
+}
+
+.bands-header p,
+.bands-status {
+  color: var(--muted);
+}
+
+.bands-create-card,
+.bands-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+}
+
+.bands-create-grid,
+.bands-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.bands-create-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bands-list,
+.bands-members-list,
+.bands-library-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.bands-card,
+.bands-member-card,
+.bands-library-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: .9rem 1rem;
+}
+
+.bands-card-main {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  color: inherit;
+  min-width: 0;
+}
+
+.bands-card-icon {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--chord-bg);
+  color: var(--accent);
+}
+
+.bands-card-copy,
+.bands-member-copy,
+.bands-library-copy {
+  display: flex;
+  flex-direction: column;
+  gap: .16rem;
+}
+
+.bands-card-copy span,
+.bands-member-copy span,
+.bands-library-copy span {
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.bands-card-meta,
+.bands-member-actions {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.bands-role-badge,
+.bands-members-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .3rem .55rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .78rem;
+  text-transform: capitalize;
+}
+
+.bands-tabs {
+  display: flex;
+  gap: .5rem;
+}
+
+.bands-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: .45rem .8rem;
+}
+
+.bands-tab.active {
+  background: var(--chord-bg);
+  color: var(--accent);
+  border-color: transparent;
+}
+
+.bands-invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+}
+
+@media (max-width: 900px) {
+  .bands-header,
+  .bands-create-grid,
+  .bands-detail-grid,
+  .profile-invite-card,
+  .bands-card,
+  .bands-member-card,
+  .bands-library-card,
+  .share-menu-band-row {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bands-card-meta,
+  .bands-member-actions,
+  .profile-invite-actions {
+    justify-content: flex-start;
+  }
 }
