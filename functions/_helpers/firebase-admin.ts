@@ -36,6 +36,33 @@ function stripWrappingQuotes(value: string) {
   return trimmed;
 }
 
+function tryParseJsonObject(value: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Non-JSON input is expected for most deployments.
+  }
+  return null;
+}
+
+function tryDecodeBase64Utf8(value: string): string | null {
+  if (!/^[A-Za-z0-9+/=\s]+$/.test(value)) {
+    return null;
+  }
+
+  try {
+    const normalized = value.replace(/\s+/g, '');
+    const binary = atob(normalized);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes).trim();
+  } catch {
+    return null;
+  }
+}
+
 function normalizePrivateKey(privateKey: string) {
   let normalized = stripWrappingQuotes(privateKey)
     .replace(/\\r\\n/g, '\n')
@@ -43,11 +70,31 @@ function normalizePrivateKey(privateKey: string) {
     .replace(/\\r/g, '\n')
     .trim();
 
+  // Accept passing the full service account JSON in FIREBASE_PRIVATE_KEY.
+  const parsedJson = tryParseJsonObject(normalized);
+  if (parsedJson && typeof parsedJson.private_key === 'string') {
+    normalized = stripWrappingQuotes(parsedJson.private_key)
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\n')
+      .trim();
+  }
+
   if (
     normalized.startsWith('-----BEGIN PRIVATE KEY-----')
     && normalized.endsWith('-----END PRIVATE KEY-----')
   ) {
     return normalized;
+  }
+
+  // Accept base64-encoded full PEM blocks.
+  const decodedPem = tryDecodeBase64Utf8(normalized);
+  if (
+    decodedPem
+    && decodedPem.startsWith('-----BEGIN PRIVATE KEY-----')
+    && decodedPem.endsWith('-----END PRIVATE KEY-----')
+  ) {
+    return decodedPem;
   }
 
   const base64Body = normalized.replace(/\s+/g, '');
@@ -101,7 +148,10 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
     );
   }
 
-  return decodeBase64ToBytes(stripped).buffer;
+  const bytes = decodeBase64ToBytes(stripped);
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
 }
 
 function base64UrlEncodeBytes(bytes: Uint8Array): string {
