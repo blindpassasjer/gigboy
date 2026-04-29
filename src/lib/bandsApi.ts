@@ -49,7 +49,6 @@ export async function inviteBandMemberOnServer(params: {
   userId: string;
   userEmail: string;
   bandId: string;
-  bandName: string;
   recipientEmail: string;
   role: CollaborationPermission;
 }) {

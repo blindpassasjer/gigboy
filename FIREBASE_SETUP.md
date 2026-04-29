@@ -130,3 +130,78 @@ If this endpoint returns `ok: false`, the `error` field usually points to the mi
 
 **"Permission denied"**
 - Verify the service account has the necessary Firebase roles in Google Cloud Console
+
+## Bands, Invites, and Sharing Checklist
+
+Use this checklist after the basic credential setup so band creation, invites, and sharing work end-to-end.
+
+### 1. Enable Firebase Authentication
+
+1. Open Firebase Console for your project.
+2. Go to **Authentication** -> **Sign-in method**.
+3. Enable at least one provider that yields verified emails (Google is recommended).
+4. In **Authentication** -> **Settings**, confirm your project domain(s) are authorized.
+
+Why this matters: invite matching uses the signed-in user UID and email.
+
+### 2. Publish Firestore Rules
+
+Deploy the repository rules file:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+This project expects rules from [firestore.rules](firestore.rules), including access for:
+- `/bands/{bandId}` and `/bands/{bandId}/songs/{songId}`
+- `/bandInvites/{inviteId}`
+- `/collaborationInvites/{inviteId}`
+- `/users/{userId}/{songs|songLists|setlists}`
+
+### 3. Confirm Required Collections Exist
+
+Collections are created automatically on first write, but your deployment must allow writes to:
+
+- `bands`
+- `bandInvites`
+- `collaborationInvites`
+- `users/{uid}/songs`
+- `users/{uid}/songLists`
+- `users/{uid}/setlists`
+
+### 4. Configure Email Delivery Secrets
+
+Invite sending now happens directly inside the invite endpoints. Ensure your email provider secrets are set (for example via Wrangler secrets) so these APIs can send mail:
+
+```bash
+wrangler secret put RESEND_API_KEY
+wrangler secret put EMAIL_FROM
+```
+
+If your deployment uses different variable names, use the names expected by [functions/_helpers/email.ts](functions/_helpers/email.ts).
+
+### 5. Set App URL for Invite Links
+
+Set the public app origin used in invite emails:
+
+```bash
+wrangler secret put APP_URL
+```
+
+Example value: `https://your-app.example.com`
+
+### 6. Verify Health and Invite Flow
+
+1. Check backend health:
+   ```bash
+   curl https://YOUR_DOMAIN/api/health/firebase
+   ```
+2. Create a band in the app.
+3. Invite another user to the band.
+4. Share a song/setlist/songlist with another user.
+5. Sign in as the recipient and accept from `/profile/invites`.
+
+### 7. Optional but Recommended Hardening
+
+- Avoid exposing fallback header-based auth (`x-folio-user-id`) in production unless protected by an upstream trusted proxy.
+- Rotate Firebase and email-provider keys periodically.

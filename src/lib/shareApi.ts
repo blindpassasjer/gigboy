@@ -29,21 +29,6 @@ async function postJson<T>(path: string, body: Record<string, unknown>, headers:
   return payload as T;
 }
 
-export async function sendInviteEmail(params: {
-  userId: string;
-  userEmail: string;
-  recipientEmail: string;
-  resourceType: ShareResourceType;
-  resourceName: string;
-  permission: CollaborationPermission;
-  inviteId: string;
-}) {
-  await postJson('/api/share/email-invite', params, {
-    userId: params.userId,
-    userEmail: params.userEmail,
-  });
-}
-
 export async function createInviteOnServer(params: {
   userId: string;
   userEmail: string;

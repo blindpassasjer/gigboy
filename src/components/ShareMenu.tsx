@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import { isValidEmail } from '../lib/collaboration';
-import { createInviteOnServer, sendInviteEmail, sendPdfEmail } from '../lib/shareApi';
+import { createInviteOnServer, sendPdfEmail } from '../lib/shareApi';
 import type { CollaborationPermission, ShareResourceType, Song } from '../types';
 
 interface ShareMenuProps {
@@ -78,7 +78,7 @@ export default function ShareMenu({
 
     setSubmittingInvite(true);
     try {
-      const { inviteId } = await createInviteOnServer({
+      await createInviteOnServer({
         userId: user.id,
         userEmail: user.email,
         recipientEmail: normalizedEmail,
@@ -86,16 +86,6 @@ export default function ShareMenu({
         resourceId,
         resourceName,
         permission,
-      });
-
-      await sendInviteEmail({
-        userId: user.id,
-        userEmail: user.email,
-        recipientEmail: normalizedEmail,
-        resourceType,
-        resourceName,
-        permission,
-        inviteId,
       });
 
       toast.success('Invite sent.');
@@ -162,7 +152,7 @@ export default function ShareMenu({
 
     const results = await Promise.allSettled(
       recipients.map(async (recipientEmail) => {
-        const { inviteId } = await createInviteOnServer({
+        await createInviteOnServer({
           userId: user.id,
           userEmail: user.email,
           recipientEmail,
@@ -170,16 +160,6 @@ export default function ShareMenu({
           resourceId,
           resourceName,
           permission,
-        });
-
-        await sendInviteEmail({
-          userId: user.id,
-          userEmail: user.email,
-          recipientEmail,
-          resourceType,
-          resourceName,
-          permission,
-          inviteId,
         });
       })
     );

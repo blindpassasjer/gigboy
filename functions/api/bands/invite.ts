@@ -1,6 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { sendEmail } from '../../_helpers/email';
-import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { getFirestoreDocument, listFirestoreDocuments, setFirestoreDocument } from '../../_helpers/firebase-admin';
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -8,6 +8,10 @@ interface Data extends Record<string, unknown> {
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export const onRequestPost: PagesFunction<Record<string, string | undefined>, never, Data> = async (ctx) => {
@@ -19,24 +23,32 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const inviterEmail = ctx.request.headers.get('x-folio-user-email')?.trim() ?? '';
   const body = await ctx.request.json<{
     bandId?: string;
-    bandName?: string;
     recipientEmail?: string;
     role?: 'viewer' | 'editor';
   }>();
 
   const bandId = body.bandId?.trim() ?? '';
-  const bandName = body.bandName?.trim() ?? '';
   const recipientEmail = body.recipientEmail?.trim() ?? '';
   const role = body.role === 'editor' ? 'editor' : 'viewer';
 
-  if (!bandId || !bandName || !recipientEmail) {
+  if (!bandId || !recipientEmail) {
     return Response.json({ error: 'Missing required fields.' }, { status: 400 });
+  }
+
+  if (!isValidEmail(recipientEmail)) {
+    return Response.json({ error: 'Please provide a valid recipient email.' }, { status: 400 });
+  }
+
+  if (inviterEmail && normalizeEmail(inviterEmail) === normalizeEmail(recipientEmail)) {
+    return Response.json({ error: 'You cannot invite yourself to a band.' }, { status: 409 });
   }
 
   const band = await getFirestoreDocument(ctx.env, ['bands', bandId]);
   if (!band) {
     return Response.json({ error: 'Band not found.' }, { status: 404 });
   }
+
+  const bandName = typeof band.name === 'string' && band.name.trim() ? band.name.trim() : 'Untitled band';
 
   const memberIds = Array.isArray(band.memberIds)
     ? band.memberIds.filter((entry): entry is string => typeof entry === 'string')
@@ -59,6 +71,19 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     .map((entry) => normalizeEmail(entry));
   if (existingMemberEmail.includes(normalizedRecipientEmail)) {
     return Response.json({ error: 'That user is already a member of this band.' }, { status: 409 });
+  }
+
+  const existingInvites = await listFirestoreDocuments(ctx.env, ['bandInvites']);
+  const duplicatePendingInvite = existingInvites.find((entry) => {
+    const data = entry.data;
+    return data.status === 'pending'
+      && data.bandId === bandId
+      && typeof data.recipientEmailLower === 'string'
+      && data.recipientEmailLower === normalizedRecipientEmail;
+  });
+
+  if (duplicatePendingInvite) {
+    return Response.json({ error: 'A pending invite already exists for this email.' }, { status: 409 });
   }
 
   const inviteId = crypto.randomUUID();

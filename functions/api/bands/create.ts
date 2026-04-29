@@ -20,6 +20,14 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Band name is required.' }, { status: 400 });
   }
 
+  if (name.length > 80) {
+    return Response.json({ error: 'Band name must be 80 characters or fewer.' }, { status: 400 });
+  }
+
+  if (description && description.length > 240) {
+    return Response.json({ error: 'Band description must be 240 characters or fewer.' }, { status: 400 });
+  }
+
   const bandId = crypto.randomUUID();
   const now = new Date().toISOString();
 

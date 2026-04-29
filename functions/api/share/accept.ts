@@ -65,6 +65,15 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Shared resource not found.' }, { status: 404 });
   }
 
+  const resourceOwnerId = typeof resource.ownerId === 'string' ? resource.ownerId : ownerId;
+  if (resourceOwnerId !== ownerId) {
+    return Response.json({ error: 'Invite owner no longer matches this resource.' }, { status: 409 });
+  }
+
+  if (ownerId === userId) {
+    return Response.json({ error: 'You cannot accept your own invite.' }, { status: 409 });
+  }
+
   const collaboratorIds = Array.isArray(resource.collaboratorIds)
     ? (resource.collaboratorIds.filter((entry): entry is string => typeof entry === 'string'))
     : [];

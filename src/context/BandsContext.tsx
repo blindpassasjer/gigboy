@@ -259,7 +259,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         userId,
         userEmail,
         bandId,
-        bandName: band.name,
         recipientEmail,
         role,
       });
