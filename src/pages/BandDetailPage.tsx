@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { LibraryBig, UserPlus, Users } from 'lucide-react';
+import { UserPlus, Users, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
 import type { CollaborationPermission, Song } from '../types';
-
-type BandTab = 'members' | 'library';
 
 export default function BandDetailPage() {
   const { id } = useParams();
@@ -29,7 +27,7 @@ export default function BandDetailPage() {
 
   const band = bands.find((entry) => entry.id === id) ?? null;
   const bandSongs = id ? (bandSongsByBandId[id] ?? []) : [];
-  const [activeTab, setActiveTab] = useState<BandTab>('members');
+  const [showMembersModal, setShowMembersModal] = useState(false);
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviteRole, setInviteRole] = useState<CollaborationPermission>('viewer');
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
@@ -47,6 +45,19 @@ export default function BandDetailPage() {
       toast.error('Failed to load band library.');
     });
   }, [band, id, refreshBandSongs]);
+
+  useEffect(() => {
+    if (!showMembersModal) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowMembersModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showMembersModal]);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -141,111 +152,120 @@ export default function BandDetailPage() {
           <h1>{band.name}</h1>
           <p>{band.description || `${band.memberIds.length} members in this band.`}</p>
         </div>
-        <Link to="/bands" className="setlist-action-btn setlist-action-btn--secondary">All bands</Link>
+        <div className="setlist-header-actions">
+          <button
+            type="button"
+            className="setlist-action-btn setlist-action-btn--secondary"
+            onClick={() => setShowMembersModal(true)}
+            title="Manage band members"
+          >
+            <Users size={14} /> Members
+          </button>
+          <Link to="/bands" className="setlist-action-btn setlist-action-btn--secondary">All bands</Link>
+        </div>
       </header>
 
-      <div className="bands-tabs" role="tablist" aria-label="Band tabs">
-        <button
-          type="button"
-          className={`bands-tab${activeTab === 'members' ? ' active' : ''}`}
-          onClick={() => setActiveTab('members')}
-        >
-          <Users size={15} /> Members
-        </button>
-        <button
-          type="button"
-          className={`bands-tab${activeTab === 'library' ? ' active' : ''}`}
-          onClick={() => setActiveTab('library')}
-        >
-          <LibraryBig size={15} /> Library
-        </button>
-      </div>
+      <SongList
+        songs={bandSongs}
+        listName={band.name}
+        allSongs={ownedSongs}
+        onDeleteSong={canEditBand ? handleRemoveSong : async () => {}}
+        onAddSong={canEditBand ? handleAddSong : undefined}
+      />
 
-      {activeTab === 'members' ? (
-        <div className="bands-detail-grid">
-          <section className="bands-panel">
-            <h2>Members</h2>
-            <ul className="bands-members-list">
-              {band.memberIds.map((memberId) => {
-                const role = band.ownerId === memberId ? 'owner' : band.memberRoles[memberId] ?? 'viewer';
-                const username = band.memberUsernames[memberId] ?? null;
-                const email = band.memberEmails[memberId] ?? 'No email saved';
-                const canRemove = isOwner && memberId !== band.ownerId;
-                const isCurrentUser = memberId === user?.id;
-
-                return (
-                  <li key={memberId} className="bands-member-card">
-                    <div className="bands-member-copy">
-                      <strong>{username ?? email}</strong>
-                      <span>{username ? email : ''}</span>
-                      <span>{role}</span>
-                    </div>
-                    <div className="bands-member-actions">
-                      {canRemove ? (
-                        <button
-                          type="button"
-                          className="setlist-action-btn setlist-action-btn--secondary"
-                          disabled={busyMemberId === memberId}
-                          onClick={() => void handleRemoveMember(memberId)}
-                        >
-                          {busyMemberId === memberId ? 'Working…' : 'Remove'}
-                        </button>
-                      ) : null}
-                      {!isOwner && isCurrentUser ? (
-                        <button
-                          type="button"
-                          className="setlist-action-btn setlist-action-btn--secondary"
-                          disabled={busyMemberId === memberId}
-                          onClick={() => void handleLeaveBand()}
-                        >
-                          {busyMemberId === memberId ? 'Working…' : 'Leave band'}
-                        </button>
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-
-          <section className="bands-panel">
-            <h2>Invite member</h2>
-            <form className="bands-invite-form" onSubmit={handleInvite}>
-              <label className="share-menu-field">
-                <span>Username</span>
-                <input
-                  type="text"
-                  value={inviteUsername}
-                  onChange={(event) => setInviteUsername(event.target.value)}
-                  placeholder="bandmate"
-                  disabled={!canEditBand}
-                />
-              </label>
-              <label className="share-menu-field">
-                <span>Role</span>
-                <select
-                  value={inviteRole}
-                  onChange={(event) => setInviteRole(event.target.value as CollaborationPermission)}
-                  disabled={!canEditBand}
-                >
-                  <option value="viewer">Viewer</option>
-                  <option value="editor">Editor</option>
-                </select>
-              </label>
-              <button type="submit" className="setlist-action-btn" disabled={!canEditBand || busyInvite}>
-                <UserPlus size={15} /> {busyInvite ? 'Sending…' : 'Send invite'}
+      {showMembersModal && (
+        <div className="modal-overlay" onClick={() => setShowMembersModal(false)}>
+          <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Band Members</h2>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowMembersModal(false)}
+                aria-label="Close members panel"
+              >
+                <X size={20} />
               </button>
-            </form>
-          </section>
+            </div>
+
+            <div className="modal-content">
+              <section className="bands-panel">
+                <h3>Members</h3>
+                <ul className="bands-members-list">
+                  {band.memberIds.map((memberId) => {
+                    const role = band.ownerId === memberId ? 'owner' : band.memberRoles[memberId] ?? 'viewer';
+                    const username = band.memberUsernames[memberId] ?? null;
+                    const email = band.memberEmails[memberId] ?? 'No email saved';
+                    const canRemove = isOwner && memberId !== band.ownerId;
+                    const isCurrentUser = memberId === user?.id;
+
+                    return (
+                      <li key={memberId} className="bands-member-card">
+                        <div className="bands-member-copy">
+                          <strong>{username ?? email}</strong>
+                          <span>{username ? email : ''}</span>
+                          <span>{role}</span>
+                        </div>
+                        <div className="bands-member-actions">
+                          {canRemove ? (
+                            <button
+                              type="button"
+                              className="setlist-action-btn setlist-action-btn--secondary"
+                              disabled={busyMemberId === memberId}
+                              onClick={() => void handleRemoveMember(memberId)}
+                            >
+                              {busyMemberId === memberId ? 'Working…' : 'Remove'}
+                            </button>
+                          ) : null}
+                          {!isOwner && isCurrentUser ? (
+                            <button
+                              type="button"
+                              className="setlist-action-btn setlist-action-btn--secondary"
+                              disabled={busyMemberId === memberId}
+                              onClick={() => void handleLeaveBand()}
+                            >
+                              {busyMemberId === memberId ? 'Working…' : 'Leave band'}
+                            </button>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+
+              <section className="bands-panel">
+                <h3>Invite member</h3>
+                <form className="bands-invite-form" onSubmit={handleInvite}>
+                  <label className="share-menu-field">
+                    <span>Username</span>
+                    <input
+                      type="text"
+                      value={inviteUsername}
+                      onChange={(event) => setInviteUsername(event.target.value)}
+                      placeholder="bandmate"
+                      disabled={!canEditBand}
+                    />
+                  </label>
+                  <label className="share-menu-field">
+                    <span>Role</span>
+                    <select
+                      value={inviteRole}
+                      onChange={(event) => setInviteRole(event.target.value as CollaborationPermission)}
+                      disabled={!canEditBand}
+                    >
+                      <option value="viewer">Viewer</option>
+                      <option value="editor">Editor</option>
+                    </select>
+                  </label>
+                  <button type="submit" className="setlist-action-btn" disabled={!canEditBand || busyInvite}>
+                    <UserPlus size={15} /> {busyInvite ? 'Sending…' : 'Send invite'}
+                  </button>
+                </form>
+              </section>
+            </div>
+          </div>
         </div>
-      ) : (
-        <SongList
-          songs={bandSongs}
-          listName={band.name}
-          allSongs={ownedSongs}
-          onDeleteSong={canEditBand ? handleRemoveSong : async () => {}}
-          onAddSong={canEditBand ? handleAddSong : undefined}
-        />
       )}
     </section>
   );
