@@ -57,6 +57,12 @@ service cloud.firestore {
         );
     }
 
+    function bandSongMatchesBandMembership(bandId) {
+      return request.resource.data.ownerId == bandDocument(bandId).data.ownerId
+        && request.resource.data.collaboratorIds == bandDocument(bandId).data.memberIds
+        && request.resource.data.collaborationPermissions == bandDocument(bandId).data.memberRoles;
+    }
+
     // User-scoped songbook data
     match /users/{userId} {
       allow read, write: if isOwner(userId);
@@ -133,7 +139,7 @@ service cloud.firestore {
     }
 
     match /bands/{bandId} {
-      allow read: if isSignedIn();
+      allow read: if isBandMember(bandId);
       allow create: if isSignedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.memberIds is list
@@ -142,7 +148,11 @@ service cloud.firestore {
 
       match /songs/{songId} {
         allow read: if isBandMember(bandId);
-        allow create, update, delete: if isBandEditor(bandId);
+        allow create: if isBandEditor(bandId)
+          && bandSongMatchesBandMembership(bandId);
+        allow update: if isBandEditor(bandId)
+          && bandSongMatchesBandMembership(bandId);
+        allow delete: if isBandEditor(bandId);
       }
     }
 
