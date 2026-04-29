@@ -114,7 +114,9 @@ service cloud.firestore {
     }
 
     match /bands/{bandId} {
-      allow read: if isBandMember(bandId);
+      allow read: if isSignedIn()
+        && resource.data.memberIds is list
+        && resource.data.memberIds.hasAny([request.auth.uid]);
       allow create: if isSignedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.memberIds is list
