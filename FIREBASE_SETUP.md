@@ -29,7 +29,8 @@ FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@songbook-bebd5.iam.gserviceaccount
 ```
 
 **Important**: 
-- The `FIREBASE_PRIVATE_KEY` must preserve newlines as `\n` (not actual line breaks)
+- The `FIREBASE_PRIVATE_KEY` must be the service account `private_key` value, not the Firebase Web API key
+- It may be stored with literal `\n` escapes or pasted as a full PEM block; surrounding quotes are allowed
 - The `.env` file is already in `.gitignore`, so it won't be committed
 
 ### 3. Verify Setup Locally
@@ -126,7 +127,9 @@ If this endpoint returns `ok: false`, the `error` field usually points to the mi
 - Make sure all three env variables are set: `FIREBASE_PROJECT_ID`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_CLIENT_EMAIL`
 
 **"Invalid private key format"**
-- Check that `FIREBASE_PRIVATE_KEY` preserves the `\n` characters as literal `\n`, not actual newlines
+- Check that `FIREBASE_PRIVATE_KEY` is copied from the service account JSON field named `private_key`
+- Do not use the Firebase client `apiKey`; it is a different credential and will fail server auth
+- If you use Cloudflare secrets, paste the full private key value exactly once without extra shell escaping
 
 **"Permission denied"**
 - Verify the service account has the necessary Firebase roles in Google Cloud Console

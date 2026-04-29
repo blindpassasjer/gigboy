@@ -24,6 +24,43 @@ interface FirebaseTokenCache {
 
 let tokenCache: FirebaseTokenCache | null = null;
 
+function stripWrappingQuotes(value: string) {
+  const trimmed = value.trim();
+  if (trimmed.length >= 2) {
+    const firstChar = trimmed[0];
+    const lastChar = trimmed[trimmed.length - 1];
+    if ((firstChar === '"' && lastChar === '"') || (firstChar === '\'' && lastChar === '\'')) {
+      return trimmed.slice(1, -1);
+    }
+  }
+  return trimmed;
+}
+
+function normalizePrivateKey(privateKey: string) {
+  let normalized = stripWrappingQuotes(privateKey)
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\n')
+    .trim();
+
+  if (
+    normalized.startsWith('-----BEGIN PRIVATE KEY-----')
+    && normalized.endsWith('-----END PRIVATE KEY-----')
+  ) {
+    return normalized;
+  }
+
+  const base64Body = normalized.replace(/\s+/g, '');
+  const isLikelyBase64Body = /^[A-Za-z0-9+/=]+$/.test(base64Body) && base64Body.length > 0;
+  if (isLikelyBase64Body) {
+    return `-----BEGIN PRIVATE KEY-----\n${base64Body}\n-----END PRIVATE KEY-----`;
+  }
+
+  throw new Error(
+    'Invalid Firebase private key format. Use the service account private_key value, including the BEGIN/END PRIVATE KEY markers.'
+  );
+}
+
 function getFirebaseConfig(env: Record<string, string | undefined>): FirebaseConfig | null {
   const { FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL } = env;
 
@@ -37,7 +74,7 @@ function getFirebaseConfig(env: Record<string, string | undefined>): FirebaseCon
 
   return {
     projectId: FIREBASE_PROJECT_ID,
-    privateKey: FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    privateKey: normalizePrivateKey(FIREBASE_PRIVATE_KEY),
     clientEmail: FIREBASE_CLIENT_EMAIL,
   };
 }
@@ -57,6 +94,13 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
     .replace('-----BEGIN PRIVATE KEY-----', '')
     .replace('-----END PRIVATE KEY-----', '')
     .replace(/\s+/g, '');
+
+  if (!stripped || !/^[A-Za-z0-9+/=]+$/.test(stripped)) {
+    throw new Error(
+      'Invalid Firebase private key format. The decoded PEM body contains characters that are not valid base64.'
+    );
+  }
+
   return decodeBase64ToBytes(stripped).buffer;
 }
 
@@ -266,7 +310,16 @@ async function firestoreRequest(
 }
 
 export function initializeFirebaseAdmin(env: Record<string, string | undefined>) {
-  const config = getFirebaseConfig(env);
+  let config: FirebaseConfig | null;
+
+  try {
+    config = getFirebaseConfig(env);
+  } catch (error) {
+    return {
+      isConfigured: false,
+      error: error instanceof Error ? error.message : 'Invalid Firebase Admin configuration',
+    };
+  }
 
   if (!config) {
     return {
