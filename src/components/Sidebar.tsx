@@ -143,14 +143,17 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         </div>
       </div>
 
-      <button
-        className={`sidebar-all-songs${activeSongListId === null && activeSetlistId === null ? ' active' : ''}`}
-        onClick={() => { clearActiveSelection(); setActiveSetlistId(null); goToLibraryView(); }}
-      >
-        All songs
-      </button>
-
       <div className="sidebar-folders">
+        <div className={`sidebar-list-item sidebar-list-item--pinned${activeSongListId === null && activeSetlistId === null ? ' active' : ''}`}>
+          <button
+            className="sidebar-list-item-btn"
+            onClick={() => { clearActiveSelection(); setActiveSetlistId(null); goToLibraryView(); }}
+          >
+            <ListMusic size={14} />
+            <span className="sidebar-list-name">All songs</span>
+          </button>
+        </div>
+
         {songLists.map((list) => (
           <FolderItem
             key={list.id}

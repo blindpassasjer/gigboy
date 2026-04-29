@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Music, BookOpen, Plus, LogOut, Menu, Sun, Moon, Maximize2, Minimize2, User } from 'lucide-react';
+import { BookOpen, Plus, LogOut, Menu, Sun, Moon, Maximize2, Minimize2, User } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
@@ -111,9 +111,6 @@ export default function Layout({ children }: Props) {
           <span>Folio</span>
         </Link>
         <nav className="topbar-nav">
-          <Link to="/" className={pathname === '/' ? 'active' : ''}>
-            <Music size={16} /> <span>Songs</span>
-          </Link>
           <Link to="/profile/invites" className={pathname === '/profile/invites' ? 'active' : ''}>
             <User size={16} /> <span>Invites</span>
           </Link>

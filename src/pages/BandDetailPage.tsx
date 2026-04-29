@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { LibraryBig, Plus, Search, UserPlus, Users, X } from 'lucide-react';
+import { LibraryBig, UserPlus, Users } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
-import type { CollaborationPermission } from '../types';
+import SongList from '../components/SongList';
+import type { CollaborationPermission, Song } from '../types';
 
 type BandTab = 'members' | 'library';
 
@@ -33,34 +34,11 @@ export default function BandDetailPage() {
   const [inviteRole, setInviteRole] = useState<CollaborationPermission>('viewer');
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
   const [busyInvite, setBusyInvite] = useState(false);
-  const [busySongId, setBusySongId] = useState<string | null>(null);
-  const [addingSong, setAddingSong] = useState(false);
-  const [showSongPicker, setShowSongPicker] = useState(false);
-  const [pickerQuery, setPickerQuery] = useState('');
 
   const ownedSongs = useMemo(() => {
     if (!user?.id) return [];
     return songs.filter((song) => song.ownerId === user.id);
   }, [songs, user?.id]);
-
-  const availableSongs = useMemo(() => {
-    const bandSongIds = new Set(bandSongs.map((song) => song.id));
-    return ownedSongs
-      .filter((song) => !bandSongIds.has(song.id))
-      .sort((a, b) => a.title.localeCompare(b.title));
-  }, [bandSongs, ownedSongs]);
-
-  const filteredAvailableSongs = useMemo(() => {
-    const query = pickerQuery.trim().toLowerCase();
-    if (!query) return availableSongs;
-
-    return availableSongs.filter((song) => {
-      const inTitle = song.title.toLowerCase().includes(query);
-      const inArtist = (song.artist ?? '').toLowerCase().includes(query);
-      const inTags = (song.tags ?? []).some((tag) => tag.toLowerCase().includes(query));
-      return inTitle || inArtist || inTags;
-    });
-  }, [availableSongs, pickerQuery]);
 
   useEffect(() => {
     if (!id || !band) return;
@@ -69,20 +47,6 @@ export default function BandDetailPage() {
       toast.error('Failed to load band library.');
     });
   }, [band, id, refreshBandSongs]);
-
-  useEffect(() => {
-    if (!showSongPicker) return;
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setShowSongPicker(false);
-        setPickerQuery('');
-      }
-    };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [showSongPicker]);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -142,16 +106,6 @@ export default function BandDetailPage() {
     navigate('/bands');
   };
 
-  const openSongPicker = () => {
-    setPickerQuery('');
-    setShowSongPicker(true);
-  };
-
-  const closeSongPicker = () => {
-    setShowSongPicker(false);
-    setPickerQuery('');
-  };
-
   const handleAddSong = async (songId: string) => {
     const selectedSong = ownedSongs.find((song) => song.id === songId);
     if (!selectedSong) {
@@ -159,9 +113,7 @@ export default function BandDetailPage() {
       return;
     }
 
-    setAddingSong(true);
     const error = await addSongToBandLibrary(band.id, selectedSong);
-    setAddingSong(false);
 
     if (error) {
       toast.error(error);
@@ -171,10 +123,8 @@ export default function BandDetailPage() {
     toast.success('Song added to band library.');
   };
 
-  const handleRemoveSong = async (songId: string) => {
-    setBusySongId(songId);
-    const error = await removeSongFromBandLibrary(band.id, songId);
-    setBusySongId(null);
+  const handleRemoveSong = async (song: Song) => {
+    const error = await removeSongFromBandLibrary(band.id, song.id);
 
     if (error) {
       toast.error(error);
@@ -289,92 +239,13 @@ export default function BandDetailPage() {
           </section>
         </div>
       ) : (
-        <div className="bands-detail-grid">
-          <section className="bands-panel">
-            <h2>Band library</h2>
-            {bandSongs.length === 0 ? (
-              <p className="bands-status">No songs in this band library yet.</p>
-            ) : (
-              <ul className="bands-library-list">
-                {bandSongs.map((song) => (
-                  <li key={song.id} className="bands-library-card">
-                    <div className="bands-library-copy">
-                      <strong>{song.title}</strong>
-                      <span>{song.artist || 'Unknown artist'}</span>
-                    </div>
-                    {canEditBand ? (
-                      <button
-                        type="button"
-                        className="setlist-action-btn setlist-action-btn--secondary"
-                        disabled={busySongId === song.id}
-                        onClick={() => void handleRemoveSong(song.id)}
-                      >
-                        {busySongId === song.id ? 'Working…' : 'Remove'}
-                      </button>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="bands-panel">
-            <h2>Add from my library</h2>
-            <button type="button" className="setlist-action-btn" disabled={!canEditBand || addingSong} onClick={openSongPicker}>
-              <Plus size={15} /> {addingSong ? 'Adding…' : 'Add songs'}
-            </button>
-            {showSongPicker ? (
-              <div className="song-picker-overlay" role="dialog" aria-modal="true" aria-label="Add songs to band library">
-                <div className="song-picker-panel">
-                  <div className="song-picker-header">
-                    <h2>Add songs to {band.name}</h2>
-                    <button className="song-picker-close" onClick={closeSongPicker} aria-label="Close song picker">
-                      <X size={16} />
-                    </button>
-                  </div>
-
-                  <div className="song-picker-search-wrap">
-                    <Search size={15} className="song-picker-search-icon" />
-                    <input
-                      type="text"
-                      className="song-picker-search"
-                      value={pickerQuery}
-                      onChange={(event) => setPickerQuery(event.target.value)}
-                      placeholder="Search by title, artist, or tag"
-                    />
-                  </div>
-
-                  <div className="song-picker-results" role="list">
-                    {filteredAvailableSongs.length === 0 ? (
-                      <p className="song-picker-empty">No songs available to add.</p>
-                    ) : (
-                      filteredAvailableSongs.map((song) => (
-                        <div key={song.id} className="song-picker-item" role="listitem">
-                          <div className="song-picker-item-main">
-                            <span className="song-picker-song-title">{song.title}</span>
-                            {song.artist ? <span className="song-picker-song-artist">{song.artist}</span> : null}
-                          </div>
-                          <button
-                            className="song-picker-add-btn"
-                            onClick={() => void handleAddSong(song.id)}
-                            title={`Add ${song.title}`}
-                            disabled={addingSong}
-                          >
-                            <Plus size={14} /> Add
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="song-picker-footer">
-                    <button className="setlist-action-btn" onClick={closeSongPicker}>Done</button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </section>
-        </div>
+        <SongList
+          songs={bandSongs}
+          listName={band.name}
+          allSongs={ownedSongs}
+          onDeleteSong={canEditBand ? handleRemoveSong : async () => {}}
+          onAddSong={canEditBand ? handleAddSong : undefined}
+        />
       )}
     </section>
   );

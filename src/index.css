@@ -2129,26 +2129,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 .sidebar-icon-btn:hover { background: var(--chord-bg); color: var(--accent); }
 
-.sidebar-all-songs {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: .55rem 1rem;
-  font-size: .88rem;
-  color: var(--muted);
-  text-align: left;
-  transition: background .15s, color .15s;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: .25rem;
-}
-.sidebar-all-songs:hover { background: var(--bg); color: var(--text); }
-.sidebar-all-songs.active { background: var(--chord-bg); color: var(--accent); font-weight: 600; }
-
 .sidebar-folders {
   display: flex;
   flex-direction: column;
   flex: 1;
   padding: .25rem 0;
+}
+
+.sidebar-list-item--pinned {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: .25rem;
+  padding-bottom: .3rem;
 }
 
 /* Folders */
