@@ -2,11 +2,13 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
+  EmailAuthProvider,
   GithubAuthProvider,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   deleteUser,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   updateEmail,
   updatePassword,
   signInWithPopup,
@@ -38,7 +40,7 @@ interface AuthContextValue {
   updateEmailAddress: (email: string) => Promise<string | null>;
   updateUsername: (username: string) => Promise<string | null>;
   updateAvatar: (avatar: string) => Promise<string | null>;
-  updatePassword: (password: string) => Promise<string | null>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
   logout: () => Promise<void>;
 }
 
@@ -242,19 +244,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const updatePasswordValue = useCallback(async (password: string) => {
+  const updatePasswordValue = useCallback(async (currentPassword: string, newPassword: string) => {
     if (!auth?.currentUser) {
       return firebaseConfigError ?? 'Firebase authentication is not configured.';
     }
 
-    if (password.length < 8) {
+    if (!auth.currentUser.email) {
+      return 'Password changes are only available for email/password accounts.';
+    }
+
+    if (!currentPassword) {
+      return 'Current password is required.';
+    }
+
+    if (newPassword.length < 8) {
       return 'Password must be at least 8 characters.';
     }
 
     try {
-      await updatePassword(auth.currentUser, password);
+      const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      await updatePassword(auth.currentUser, newPassword);
       return null;
     } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes('auth/wrong-password')) {
+        return 'Current password is incorrect.';
+      }
       if (err instanceof Error && err.message.includes('auth/requires-recent-login')) {
         return 'Please sign in again, then retry changing your password.';
       }

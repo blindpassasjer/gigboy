@@ -12,7 +12,9 @@ export default function ProfilePage() {
 
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
-  const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar ?? AVATAR_OPTIONS[0]);
   const [busyEmail, setBusyEmail] = useState(false);
   const [busyUsername, setBusyUsername] = useState(false);
@@ -68,20 +70,32 @@ export default function ProfilePage() {
 
   const onPasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (password.length < 8) {
+    if (!currentPassword) {
+      toast.error('Current password is required.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
       toast.error('Password must be at least 8 characters.');
       return;
     }
 
+    if (newPassword !== confirmNewPassword) {
+      toast.error('New passwords do not match.');
+      return;
+    }
+
     setBusyPassword(true);
-    const error = await updatePassword(password);
+    const error = await updatePassword(currentPassword, newPassword);
     setBusyPassword(false);
     if (error) {
       toast.error(error);
       return;
     }
 
-    setPassword('');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmNewPassword('');
     toast.success('Password updated.');
   };
 
@@ -182,12 +196,33 @@ export default function ProfilePage() {
           <h2><KeyRound size={16} /> Password</h2>
           <form className="profile-settings-form" onSubmit={onPasswordSubmit}>
             <label className="form-field">
+              <span>Current password</span>
+              <input
+                type="password"
+                value={currentPassword}
+                autoComplete="current-password"
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                required
+              />
+            </label>
+            <label className="form-field">
               <span>New password</span>
               <input
                 type="password"
-                value={password}
+                value={newPassword}
                 autoComplete="new-password"
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => setNewPassword(event.target.value)}
+                required
+                minLength={8}
+              />
+            </label>
+            <label className="form-field">
+              <span>Confirm new password</span>
+              <input
+                type="password"
+                value={confirmNewPassword}
+                autoComplete="new-password"
+                onChange={(event) => setConfirmNewPassword(event.target.value)}
                 required
                 minLength={8}
               />

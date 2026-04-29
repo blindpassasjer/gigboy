@@ -148,10 +148,10 @@ export default function BandDetailPage() {
 
   return (
     <section className="bands-page bands-page--library">
-      <header className="bands-header bands-header--detail setlist-header">
+      <header className="bands-header bands-header--detail setlist-header songlist-header">
         <div className="setlist-title-block">
-          <h1 className="setlist-title">{band.name}</h1>
-          <p className="setlist-song-count">
+          <h1 className="song-list-heading setlist-title">{band.name}</h1>
+          <p className="song-list-summary setlist-song-count">
             {bandSongs.length} song{bandSongs.length === 1 ? '' : 's'}
             {band.description ? ` • ${band.description}` : ` • ${band.memberIds.length} members in this band.`}
           </p>

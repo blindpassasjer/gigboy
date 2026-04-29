@@ -202,7 +202,7 @@ export default function SetlistsView({
 
   return (
     <div className="setlist-view">
-      <div className="setlist-header">
+      <div className="setlist-header songlist-header">
         <div className="setlist-title-block">
           {isRenaming ? (
             <input
@@ -221,11 +221,11 @@ export default function SetlistsView({
               className="setlist-name-input"
             />
           ) : (
-            <h1 className="setlist-title" onDoubleClick={() => setIsRenaming(true)}>
+            <h1 className="song-list-heading setlist-title" onDoubleClick={() => setIsRenaming(true)}>
               {setlistName}
             </h1>
           )}
-          <p className="setlist-song-count">
+          <p className="song-list-summary setlist-song-count">
             {songs.length} song{songs.length === 1 ? '' : 's'}
           </p>
         </div>

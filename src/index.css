@@ -2602,7 +2602,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: space-between;
   gap: 1.5rem;
   padding: 1.5rem;
-  border: 2px solid var(--accent);
+  border: 2px solid #000;
   border-radius: 4px;
   background: var(--surface);
   width: 100%;
@@ -4036,7 +4036,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: 1rem;
 }
 
-.bands-header h1 {
+.bands-header:not(.bands-header--detail) h1 {
   font-size: 1.45rem;
 }
 
