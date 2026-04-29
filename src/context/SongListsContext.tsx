@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { collection, collectionGroup, deleteDoc, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import type { SongList, SongListCategory } from '../types';
+import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 
@@ -176,21 +177,19 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     Promise.all([
       getDocs(collection(db, 'users', userId, CATEGORIES_COLLECTION)),
       getDocs(collection(db, 'users', userId, LISTS_COLLECTION)),
-      getDocs(query(collectionGroup(db, LISTS_COLLECTION), where('collaboratorIds', 'array-contains', userId))),
+      loadAcceptedSharedResources({
+        db,
+        userId,
+        resourceType: 'songlist',
+        mapResource: (invite, id, data) => songListFromDoc(id, data, invite.ownerId, userId),
+      }),
     ])
-      .then(([categorySnapshot, listSnapshot, sharedListSnapshot]) => {
+      .then(([categorySnapshot, listSnapshot, sharedLists]) => {
         const fetchedCategories = categorySnapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }) as SongListCategory);
         const nextCategories = ensureSongListsCategory(fetchedCategories);
         const ownedLists = listSnapshot.docs.map((entry) =>
           songListFromDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
         );
-        const sharedLists = sharedListSnapshot.docs
-          .map((entry) => {
-            const ownerId = entry.ref.parent.parent?.id;
-            if (!ownerId || ownerId === userId) return null;
-            return songListFromDoc(entry.id, entry.data() as Record<string, unknown>, ownerId, userId);
-          })
-          .filter((entry): entry is SongList => Boolean(entry));
 
         const nextLists = normalizeSongLists([...ownedLists, ...sharedLists]);
 

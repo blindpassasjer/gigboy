@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { collection, collectionGroup, deleteDoc, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import type { Setlist } from '../types';
+import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 
@@ -143,19 +144,17 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
 
     Promise.all([
       getDocs(collection(db, 'users', userId, SETLISTS_COLLECTION)),
-      getDocs(query(collectionGroup(db, SETLISTS_COLLECTION), where('collaboratorIds', 'array-contains', userId))),
+      loadAcceptedSharedResources({
+        db,
+        userId,
+        resourceType: 'setlist',
+        mapResource: (invite, id, data) => setlistFromDoc(id, data, invite.ownerId, userId),
+      }),
     ])
-      .then(([ownedSnapshot, sharedSnapshot]) => {
+      .then(([ownedSnapshot, sharedSetlists]) => {
         const ownedSetlists = ownedSnapshot.docs.map((entry) =>
           setlistFromDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
         );
-        const sharedSetlists = sharedSnapshot.docs
-          .map((entry) => {
-            const ownerId = entry.ref.parent.parent?.id;
-            if (!ownerId || ownerId === userId) return null;
-            return setlistFromDoc(entry.id, entry.data() as Record<string, unknown>, ownerId, userId);
-          })
-          .filter((entry): entry is Setlist => Boolean(entry));
 
         setSetlists(normalizeSetlists([...ownedSetlists, ...sharedSetlists]));
       })

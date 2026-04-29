@@ -195,3 +195,50 @@ export async function declineInvite(db: Firestore, inviteId: string, userId: str
     respondedAt: new Date().toISOString(),
   });
 }
+
+export async function loadAcceptedSharedResources<T>(params: {
+  db: Firestore;
+  userId: string;
+  resourceType: ShareResourceType;
+  mapResource: (invite: CollaborationInvite, id: string, data: Record<string, unknown>) => T | null;
+}) {
+  const { db, userId, resourceType, mapResource } = params;
+  const snapshot = await getDocs(
+    query(
+      collection(db, INVITES_COLLECTION),
+      where('recipientUid', '==', userId)
+    )
+  );
+
+  const invitesByResource = new Map<string, CollaborationInvite>();
+
+  snapshot.docs
+    .map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>))
+    .filter((invite) => invite.status === 'accepted' && invite.resourceType === resourceType)
+    .forEach((invite) => {
+      const resourceKey = `${invite.ownerId}:${invite.resourceId}`;
+      const existing = invitesByResource.get(resourceKey);
+      const inviteTimestamp = invite.respondedAt ?? invite.createdAt;
+      const existingTimestamp = existing ? (existing.respondedAt ?? existing.createdAt) : '';
+      if (!existing || inviteTimestamp >= existingTimestamp) {
+        invitesByResource.set(resourceKey, invite);
+      }
+    });
+
+  const resources = await Promise.allSettled(
+    [...invitesByResource.values()].map(async (invite) => {
+      const resourceSnapshot = await getDoc(
+        getSharedResourceRef(db, invite.ownerId, invite.resourceType, invite.resourceId)
+      );
+
+      if (!resourceSnapshot.exists()) {
+        return null;
+      }
+
+      return mapResource(invite, resourceSnapshot.id, resourceSnapshot.data() as Record<string, unknown>);
+    })
+  );
+
+  return resources
+    .flatMap((result) => (result.status === 'fulfilled' && result.value ? [result.value] : []));
+}

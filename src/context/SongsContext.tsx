@@ -3,7 +3,6 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import type { ReactNode } from 'react';
 import {
   collection,
-  collectionGroup,
   doc,
   getDocs,
   query,
@@ -13,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { Song } from '../types';
+import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db, firebaseEnabled } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 
@@ -185,11 +185,16 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
     Promise.allSettled([
       getDocs(collection(firestore, ...songsCollectionPath(userId))),
-      getDocs(query(collectionGroup(firestore, SONGS_COLLECTION), where('collaboratorIds', 'array-contains', userId))),
+      loadAcceptedSharedResources({
+        db: firestore,
+        userId,
+        resourceType: 'song',
+        mapResource: (invite, id, data) => songFromOwnedDoc(id, data, invite.ownerId, userId),
+      }),
     ])
       .then(async ([ownedResult, sharedResult]) => {
         const ownedSnap = ownedResult.status === 'fulfilled' ? ownedResult.value : null;
-        const sharedSnap = sharedResult.status === 'fulfilled' ? sharedResult.value : null;
+        const sharedSongs = sharedResult.status === 'fulfilled' ? normalizeSongs(sharedResult.value) : [];
 
         if (ownedResult.status === 'rejected') {
           console.error('Failed to load owned songs from Firestore.', ownedResult.reason);
@@ -203,16 +208,6 @@ export function SongsProvider({ children }: { children: ReactNode }) {
           (ownedSnap?.docs ?? []).map((entry) =>
             songFromOwnedDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
           )
-        );
-
-        const sharedSongs = normalizeSongs(
-          (sharedSnap?.docs ?? [])
-            .map((entry) => {
-              const ownerId = entry.ref.parent.parent?.id;
-              if (!ownerId || ownerId === userId) return null;
-              return songFromOwnedDoc(entry.id, entry.data() as Record<string, unknown>, ownerId, userId);
-            })
-            .filter((entry): entry is Song => Boolean(entry))
         );
 
         if (directSongs.length > 0 || sharedSongs.length > 0) {

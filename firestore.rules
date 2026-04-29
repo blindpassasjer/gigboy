@@ -94,6 +94,23 @@ service cloud.firestore {
           && resource.data.recipientEmailLower == request.auth.token.email.lower();
       }
 
+      function collaborationInviteBelongsToCurrentUser() {
+        return resource.data.recipientUid == request.auth.uid
+          || collaborationInviteEmailMatchesRecipient();
+      }
+
+      function collaborationInviteImmutableFieldsUnchanged() {
+        return request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.ownerEmail == resource.data.ownerEmail
+          && request.resource.data.recipientEmail == resource.data.recipientEmail
+          && request.resource.data.recipientEmailLower == resource.data.recipientEmailLower
+          && request.resource.data.resourceType == resource.data.resourceType
+          && request.resource.data.resourceId == resource.data.resourceId
+          && request.resource.data.resourceName == resource.data.resourceName
+          && request.resource.data.permission == resource.data.permission
+          && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
       allow read: if isSignedIn() && (
         resource.data.ownerId == request.auth.uid
         || resource.data.recipientUid == request.auth.uid
@@ -104,11 +121,13 @@ service cloud.firestore {
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.status == 'pending';
 
-      allow update: if isSignedIn() && (
-        resource.data.ownerId == request.auth.uid
-        || resource.data.recipientUid == request.auth.uid
-        || collaborationInviteEmailMatchesRecipient()
-      );
+      allow update: if isSignedIn()
+        && collaborationInviteBelongsToCurrentUser()
+        && resource.data.status == 'pending'
+        && collaborationInviteImmutableFieldsUnchanged()
+        && request.resource.data.recipientUid == request.auth.uid
+        && (request.resource.data.status == 'accepted' || request.resource.data.status == 'declined')
+        && request.resource.data.respondedAt is string;
 
       allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
@@ -136,6 +155,22 @@ service cloud.firestore {
           && resource.data.recipientEmailLower == request.auth.token.email.lower();
       }
 
+      function bandInviteBelongsToCurrentUser() {
+        return resource.data.recipientUid == request.auth.uid
+          || bandInviteEmailMatchesRecipient();
+      }
+
+      function bandInviteImmutableFieldsUnchanged() {
+        return request.resource.data.bandId == resource.data.bandId
+          && request.resource.data.bandName == resource.data.bandName
+          && request.resource.data.inviterId == resource.data.inviterId
+          && request.resource.data.inviterEmail == resource.data.inviterEmail
+          && request.resource.data.recipientEmail == resource.data.recipientEmail
+          && request.resource.data.recipientEmailLower == resource.data.recipientEmailLower
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
       allow read: if isSignedIn() && (
         resource.data.inviterId == request.auth.uid
         || resource.data.recipientUid == request.auth.uid
@@ -146,11 +181,13 @@ service cloud.firestore {
         && request.resource.data.inviterId == request.auth.uid
         && request.resource.data.status == 'pending';
 
-      allow update: if isSignedIn() && (
-        resource.data.inviterId == request.auth.uid
-        || resource.data.recipientUid == request.auth.uid
-        || bandInviteEmailMatchesRecipient()
-      );
+      allow update: if isSignedIn()
+        && bandInviteBelongsToCurrentUser()
+        && resource.data.status == 'pending'
+        && bandInviteImmutableFieldsUnchanged()
+        && request.resource.data.recipientUid == request.auth.uid
+        && (request.resource.data.status == 'accepted' || request.resource.data.status == 'declined')
+        && request.resource.data.respondedAt is string;
 
       allow delete: if isSignedIn() && resource.data.inviterId == request.auth.uid;
     }
