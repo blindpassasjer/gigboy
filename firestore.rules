@@ -59,7 +59,8 @@ service cloud.firestore {
 
     // User-scoped songbook data
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
 
       match /songs/{songId} {
         allow read: if canReadResource(userId);
