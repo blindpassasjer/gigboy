@@ -150,7 +150,7 @@ export default function Layout({ children }: Props) {
             onClick={() => setSidebarOpen(false)}
           />
         )}
-        <main className="main-content">{children}</main>
+        <main className={`main-content${isConcertRoute ? ' main-content--concert' : ''}`}>{children}</main>
       </div>
       {!isConcertRoute && !pathname.startsWith('/bands') && (
         <Link to="/add" className="fab-add-song" title="create song" aria-label="create song">

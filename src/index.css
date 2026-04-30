@@ -238,6 +238,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   touch-action: pan-y;
 }
 
+.main-content--concert {
+  padding-top: 0;
+}
+
 /* ─── Floating Add Song Button ───────────────────────────────────────────────── */
 .fab-add-song {
   position: fixed;
@@ -3403,6 +3407,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .concert-song-navigator {
@@ -3659,6 +3665,10 @@ input, select, textarea { font: inherit; color: var(--text); }
     padding: 1.25rem 1rem;
     overflow-y: visible;
     overscroll-behavior-y: auto;
+  }
+
+  .main-content--concert {
+    padding-top: 0;
   }
 
   .song-list-sticky {

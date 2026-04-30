@@ -60,6 +60,7 @@ export default function SetlistConcertPage() {
     return Boolean(document.fullscreenElement);
   });
   const songScrollRef = useRef<HTMLDivElement>(null);
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
   const teleprompterFrameRef = useRef<number | null>(null);
   const teleprompterLastTickRef = useRef<number | null>(null);
 
@@ -173,6 +174,20 @@ export default function SetlistConcertPage() {
   const goToNext = useCallback(() => {
     setCurrentIndex((current) => Math.min(current + 1, setlistSongs.length - 1));
   }, [setlistSongs.length]);
+
+  const onSwipeStart = useCallback((e: React.PointerEvent) => {
+    swipeRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const onSwipeEnd = useCallback((e: React.PointerEvent) => {
+    if (!swipeRef.current) return;
+    const dx = e.clientX - swipeRef.current.x;
+    const dy = e.clientY - swipeRef.current.y;
+    swipeRef.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) goToNext();
+    else goToPrevious();
+  }, [goToNext, goToPrevious]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -432,7 +447,11 @@ export default function SetlistConcertPage() {
       )}
 
       <div className={`concert-content-wrap${showSongNavigator ? '' : ' concert-content-wrap--full'}`}>
-        <article className="concert-song-surface">
+        <article
+          className="concert-song-surface"
+          onPointerDown={onSwipeStart}
+          onPointerUp={onSwipeEnd}
+        >
           <div className="concert-song-header">
             <h2>{currentSong.title}</h2>
             {currentSong.artist && <p className="concert-song-artist">{currentSong.artist}</p>}
