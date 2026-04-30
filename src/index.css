@@ -2529,10 +2529,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: .75rem;
   color: var(--muted);
   margin-left: auto;
-  padding: 0 .3rem;
-  background: var(--border);
-  border-radius: 10px;
-  min-width: 1.5rem;
+  padding: 0 .4rem;
+  background: var(--bg);
+  border-radius: 100px;
+  min-width: 1.4em;
   text-align: center;
 }
 
