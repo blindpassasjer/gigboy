@@ -224,107 +224,108 @@ export default function SetlistsView({
 
   return (
     <div className="setlist-view">
-      <div className="setlist-header songlist-header">
-        <div className="setlist-title-block">
-          {isRenaming ? (
-            <input
-              ref={renameInputRef}
-              type="text"
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleRenameCommit();
-                if (e.key === 'Escape') {
-                  setRenameValue(setlistName);
-                  setIsRenaming(false);
-                }
-              }}
-              onBlur={handleRenameCommit}
-              className="setlist-name-input"
-            />
-          ) : (
-            <div className="song-list-title-row">
-              <h1 className="song-list-heading setlist-title" onDoubleClick={() => setIsRenaming(true)}>
-                {currentSetlist?.icon ? <span className="song-list-heading-icon" aria-hidden="true">{currentSetlist.icon}</span> : null}
-                {setlistName}
-              </h1>
-              <button
-                type="button"
-                className="title-rename-btn"
-                onClick={() => setIsRenaming(true)}
-                title="Rename setlist"
-                aria-label="Rename setlist"
+      <div className="song-list-sticky">
+        <div className="setlist-header songlist-header">
+          <div className="setlist-title-block">
+            {isRenaming ? (
+              <input
+                ref={renameInputRef}
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameCommit();
+                  if (e.key === 'Escape') {
+                    setRenameValue(setlistName);
+                    setIsRenaming(false);
+                  }
+                }}
+                onBlur={handleRenameCommit}
+                className="setlist-name-input"
+              />
+            ) : (
+              <div className="song-list-title-row">
+                <h1 className="song-list-heading setlist-title" onDoubleClick={() => setIsRenaming(true)}>
+                  {currentSetlist?.icon ? <span className="song-list-heading-icon" aria-hidden="true">{currentSetlist.icon}</span> : null}
+                  {setlistName}
+                </h1>
+                <button
+                  type="button"
+                  className="title-rename-btn"
+                  onClick={() => setIsRenaming(true)}
+                  title="Rename setlist"
+                  aria-label="Rename setlist"
+                >
+                  <PenLine size={14} />
+                </button>
+              </div>
+            )}
+            <p className="song-list-summary setlist-song-count">
+              {songs.length} song{songs.length === 1 ? '' : 's'}
+            </p>
+          </div>
+          <div className="setlist-header-actions">
+            {songs.length > 0 ? (
+              <Link
+                className="setlist-action-btn setlist-action-btn--concert"
+                to={`/setlists/${setlistId}/concert`}
+                title={`Start concert for ${setlistName}`}
               >
-                <PenLine size={14} />
+                <Play size={14} />
+              </Link>
+            ) : (
+              <button
+                className="setlist-action-btn setlist-action-btn--concert"
+                type="button"
+                disabled
+                title="Add songs to enable concert mode"
+              >
+                <Play size={14} />
               </button>
-            </div>
-          )}
-          <p className="song-list-summary setlist-song-count">
-            {songs.length} song{songs.length === 1 ? '' : 's'}
-          </p>
-        </div>
-        <div className="setlist-header-actions">
-          {songs.length > 0 ? (
-            <Link
-              className="setlist-action-btn setlist-action-btn--concert"
-              to={`/setlists/${setlistId}/concert`}
-              title={`Start concert for ${setlistName}`}
-            >
-              <Play size={14} />
-            </Link>
-          ) : (
+            )}
             <button
-              className="setlist-action-btn setlist-action-btn--concert"
+              className="setlist-action-btn setlist-action-btn--secondary"
               type="button"
-              disabled
-              title="Add songs to enable concert mode"
+              onClick={handlePrintSetlist}
+              title={`Print ${setlistName}`}
             >
-              <Play size={14} />
+              <Printer size={14} />
             </button>
-          )}
-          <button
-            className="setlist-action-btn setlist-action-btn--secondary"
-            type="button"
-            onClick={handlePrintSetlist}
-            title={`Print ${setlistName}`}
-          >
-            <Printer size={14} />
-          </button>
-          <ShareMenu
-            resourceType="setlist"
-            resourceId={setlistId}
-            resourceName={currentSetlist?.name ?? setlistName}
-            buttonClassName="setlist-action-btn setlist-action-btn--secondary"
-            buttonTitle="Share this setlist"
-            iconOnly
-          />
-          <button
-            className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={openSongPicker}
-            title="Add songs"
-          >
-            <Plus size={14} />
-          </button>
-          <button
-            className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={() => setShowIconEditor((value) => !value)}
-            title="Set setlist icon"
-          >
-            <Smile size={14} />
-          </button>
-          <button
-            className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={() => void handleDeleteSetlist()}
-            title={`Delete setlist ${setlistName}`}
-            aria-label={`Delete setlist ${setlistName}`}
-          >
-            <Trash2 size={14} />
-          </button>
+            <ShareMenu
+              resourceType="setlist"
+              resourceId={setlistId}
+              resourceName={currentSetlist?.name ?? setlistName}
+              buttonClassName="setlist-action-btn setlist-action-btn--secondary"
+              buttonTitle="Share this setlist"
+              iconOnly
+            />
+            <button
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={openSongPicker}
+              title="Add songs"
+            >
+              <Plus size={14} />
+            </button>
+            <button
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => setShowIconEditor((value) => !value)}
+              title="Set setlist icon"
+            >
+              <Smile size={14} />
+            </button>
+            <button
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => void handleDeleteSetlist()}
+              title={`Delete setlist ${setlistName}`}
+              aria-label={`Delete setlist ${setlistName}`}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {showIconEditor ? (
-        <div className="list-appearance-editor" role="region" aria-label="Setlist icon settings">
+        {showIconEditor ? (
+          <div className="list-appearance-editor" role="region" aria-label="Setlist icon settings">
           <div className="list-appearance-group">
             <span className="list-appearance-label">Emoji</span>
             <div className="emoji-choice-grid" role="listbox" aria-label="Setlist emoji options">
@@ -368,6 +369,7 @@ export default function SetlistsView({
           </button>
         </div>
       ) : null}
+      </div>{/* end song-list-sticky */}
 
       {songs.length === 0 ? (
         <div className="empty-state">
