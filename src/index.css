@@ -45,11 +45,6 @@ body {
 
 #root { min-height: 100vh; }
 
-/* Touch ergonomics and fewer accidental double-taps on mobile controls */
-:where(a, button, input, select, textarea, [role="button"]) {
-  touch-action: manipulation;
-}
-
 button,
 a,
 input,
@@ -346,12 +341,22 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-height: 100%;
   padding: 0;
   background: var(--bg);
+  touch-action: pan-y;
 }
 
 .song-list-results {
   flex: initial;
   min-height: 0;
   overflow: visible;
+  touch-action: pan-y;
+}
+
+.song-list,
+.song-card,
+.song-card-link,
+.song-preview-card,
+.song-preview-card-link {
+  touch-action: pan-y;
 }
 
 .songlist-header {

@@ -142,7 +142,7 @@ export default function SongList({
   const [isRenaming, setIsRenaming] = useState(false);
   const [canDragReorder, setCanDragReorder] = useState(() => {
     if (typeof window === 'undefined') return true;
-    return !window.matchMedia('(pointer: coarse)').matches;
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   });
   const [renameValue, setRenameValue] = useState(listName ?? '');
   const [listIconDraft, setListIconDraft] = useState(listIcon ?? '🎵');
@@ -234,12 +234,12 @@ export default function SongList({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const mediaQuery = window.matchMedia('(pointer: coarse)');
+    const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
     const handleChange = (event: MediaQueryListEvent) => {
-      setCanDragReorder(!event.matches);
+      setCanDragReorder(event.matches);
     };
 
-    setCanDragReorder(!mediaQuery.matches);
+    setCanDragReorder(mediaQuery.matches);
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
