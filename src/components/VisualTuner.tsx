@@ -206,9 +206,10 @@ export default function VisualTuner({ className = '' }: Props) {
         : 'is-down';
   const centsLabel = hasSignal ? `${centsValue > 0 ? '+' : ''}${centsValue} cents` : '-- cents';
   const detectedLabel = detectedNote ? `${detectedNote}${detectedOctave ?? ''}` : '--';
+  const tunerClassName = `visual-tuner ${className}${isListening ? '' : ' is-collapsed'}`.trim();
 
   return (
-    <div className={`visual-tuner ${className}`.trim()}>
+    <div className={tunerClassName}>
       <button
         type="button"
         className="visual-tuner-toggle"
@@ -219,28 +220,32 @@ export default function VisualTuner({ className = '' }: Props) {
         {isListening ? 'Stop tuner' : 'Start tuner'}
       </button>
 
-      <div className="visual-tuner-readout">
-        <span className="visual-tuner-label" aria-hidden="true">Note</span>
-        <span className={`visual-tuner-status${inTune ? ' is-in-tune' : ''}`} aria-live="polite">
-          {detectedLabel}
-        </span>
-        <span className="visual-tuner-cents" aria-live="polite">
-          {centsLabel}
-        </span>
-      </div>
+      {isListening ? (
+        <>
+          <div className="visual-tuner-readout">
+            <span className="visual-tuner-label" aria-hidden="true">Note</span>
+            <span className={`visual-tuner-status${inTune ? ' is-in-tune' : ''}`} aria-live="polite">
+              {detectedLabel}
+            </span>
+            <span className="visual-tuner-cents" aria-live="polite">
+              {centsLabel}
+            </span>
+          </div>
 
-      <div className="visual-tuner-cue-row" aria-live="polite">
-        <span className="visual-tuner-side">Flat</span>
-        <span className={`visual-tuner-cue ${tuningCueClass}`.trim()}>{tuningCue}</span>
-        <span className="visual-tuner-side">Sharp</span>
-      </div>
+          <div className="visual-tuner-cue-row" aria-live="polite">
+            <span className="visual-tuner-side">Flat</span>
+            <span className={`visual-tuner-cue ${tuningCueClass}`.trim()}>{tuningCue}</span>
+            <span className="visual-tuner-side">Sharp</span>
+          </div>
 
-      <div className={`visual-tuner-gauge${inTune ? ' is-in-tune' : ''}`.trim()} aria-label="Tuning deviation in cents">
-        <span className="visual-tuner-center" />
-        <span className="visual-tuner-needle" style={{ left: `${needleLeftPercent}%` }} />
-      </div>
+          <div className={`visual-tuner-gauge${inTune ? ' is-in-tune' : ''}`.trim()} aria-label="Tuning deviation in cents">
+            <span className="visual-tuner-center" />
+            <span className="visual-tuner-needle" style={{ left: `${needleLeftPercent}%` }} />
+          </div>
 
-      {detectedHz ? <div className="visual-tuner-hz">{detectedHz.toFixed(1)} Hz</div> : null}
+          {detectedHz ? <div className="visual-tuner-hz">{detectedHz.toFixed(1)} Hz</div> : null}
+        </>
+      ) : null}
       {error ? <div className="visual-tuner-error">{error}</div> : null}
     </div>
   );

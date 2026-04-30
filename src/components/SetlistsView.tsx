@@ -48,6 +48,11 @@ export default function SetlistsView({
   const [iconDraft, setIconDraft] = useState(currentSetlist?.icon ?? '🎵');
   const renameInputRef = useRef<HTMLInputElement>(null);
 
+  const startRenaming = () => {
+    setRenameValue(setlistName);
+    setIsRenaming(true);
+  };
+
   useEffect(() => {
     setIconDraft(currentSetlist?.icon ?? '🎵');
   }, [currentSetlist?.icon]);
@@ -245,14 +250,14 @@ export default function SetlistsView({
               />
             ) : (
               <div className="song-list-title-row">
-                <h1 className="song-list-heading setlist-title" onDoubleClick={() => setIsRenaming(true)}>
+                <h1 className="song-list-heading setlist-title" onDoubleClick={startRenaming}>
                   {currentSetlist?.icon ? <span className="song-list-heading-icon" aria-hidden="true">{currentSetlist.icon}</span> : null}
                   {setlistName}
                 </h1>
                 <button
                   type="button"
                   className="title-rename-btn"
-                  onClick={() => setIsRenaming(true)}
+                  onClick={startRenaming}
                   title="Rename setlist"
                   aria-label="Rename setlist"
                 >

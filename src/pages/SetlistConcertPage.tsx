@@ -435,8 +435,8 @@ export default function SetlistConcertPage() {
         <article className="concert-song-surface">
           <div className="concert-song-header">
             <h2>{currentSong.title}</h2>
+            {currentSong.artist && <p className="concert-song-artist">{currentSong.artist}</p>}
             <div className="concert-song-meta">
-              {currentSong.artist && <span className="meta-pill">{currentSong.artist}</span>}
               <LanguageBadge code={currentSong.language} />
               {currentSong.secondaryLanguages?.map((code) => <LanguageBadge key={code} code={code} />)}
               {currentSong.capo !== undefined && currentSong.capo > 0 && (

@@ -60,7 +60,17 @@ service cloud.firestore {
     // User-scoped songbook data
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId)
+        && (
+          // Username fields must not change here — they're managed via the usernames collection transaction
+          (!('username' in request.resource.data) && !('usernameLower' in request.resource.data))
+          || (request.resource.data.username == resource.data.username
+              && request.resource.data.usernameLower == resource.data.usernameLower)
+          // Allow setting username on first claim (no existing username)
+          || (!('username' in resource.data) || resource.data.username == null)
+        );
+      allow delete: if isOwner(userId);
 
       match /songs/{songId} {
         allow read: if canReadResource(userId);
@@ -94,6 +104,12 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.usernameLower == usernameLower
         && !exists(/databases/$(database)/documents/usernames/$(usernameLower));
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.usernameLower == usernameLower;
+      allow delete: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
     }
 
     match /collaborationInvites/{inviteId} {
