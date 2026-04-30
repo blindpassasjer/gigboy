@@ -2795,6 +2795,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   opacity: 0.6;
 }
 
+.setlist-action-btn--danger {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+.setlist-action-btn--danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
 .setlist-info {
   padding: .75rem 1.5rem;
   background: var(--chord-bg);

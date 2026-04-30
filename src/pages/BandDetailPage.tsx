@@ -25,6 +25,7 @@ export default function BandDetailPage() {
     changeMemberRole,
     removeMember,
     leaveBand,
+    deleteBand,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
     moveBandSong,
@@ -38,6 +39,7 @@ export default function BandDetailPage() {
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
   const [busyRoleId, setBusyRoleId] = useState<string | null>(null);
   const [busyInvite, setBusyInvite] = useState(false);
+  const [busyDeleteBand, setBusyDeleteBand] = useState(false);
 
   const ownedSongs = useMemo(() => {
     if (!user?.id) return [];
@@ -186,6 +188,25 @@ export default function BandDetailPage() {
     }
   };
 
+  const handleDeleteBand = async () => {
+    const confirmed = await showConfirmToast(`Delete "${band.name}"? This cannot be undone.`, {
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
+
+    setBusyDeleteBand(true);
+    const error = await deleteBand(band.id);
+    setBusyDeleteBand(false);
+
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    toast.success('Band deleted.');
+    navigate('/bands');
+  };
+
   const handleRenameBand = async (name: string) => {
     const error = await renameBand(band.id, name);
     if (error) {
@@ -298,6 +319,20 @@ export default function BandDetailPage() {
                   })}
                 </ul>
               </section>
+
+              {isOwner && (
+                <section className="bands-panel bands-panel--danger">
+                  <h3>Danger zone</h3>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--danger"
+                    disabled={busyDeleteBand}
+                    onClick={() => void handleDeleteBand()}
+                  >
+                    {busyDeleteBand ? 'Deleting…' : 'Delete band'}
+                  </button>
+                </section>
+              )}
 
               <section className="bands-panel">
                 <h3>Invite member</h3>

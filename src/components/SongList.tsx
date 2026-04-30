@@ -414,17 +414,6 @@ export default function SongList({
         </div>
         <div className="setlist-header-actions">
           {headerActions}
-          {onDeleteList && (
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => void onDeleteList()}
-              title={deleteListLabel ?? `Delete ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
-              aria-label={deleteListLabel ?? `Delete ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
           {onUpdateListAppearance && listName && (
             <button
               type="button"
@@ -474,6 +463,17 @@ export default function SongList({
               <LayoutGrid size={15} />
             </button>
           </div>
+          {onDeleteList && (
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => void onDeleteList()}
+              title={deleteListLabel ?? `Delete ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
+              aria-label={deleteListLabel ?? `Delete ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </div>
       {showListAppearanceEditor && onUpdateListAppearance && (
