@@ -228,6 +228,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-width: 0;
   padding: 1.5rem 1.5rem;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
 }
 
 /* ─── Floating Add Song Button ───────────────────────────────────────────────── */
@@ -342,6 +345,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
 }
 
 .songlist-header {
@@ -3708,6 +3714,10 @@ input, select, textarea { font: inherit; color: var(--text); }
     transform: translateX(0);
   }
 
+  .sidebar--mobile .sidebar-folders {
+    flex: 0 0 auto;
+  }
+
   .sidebar-list-delete,
   .setlist-remove-btn,
   .sidebar-setlist-delete {
@@ -3969,6 +3979,19 @@ input, select, textarea { font: inherit; color: var(--text); }
   .sidebar-setlist-item.active,
   .sidebar-band-item.active {
     background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  }
+}
+
+@media (pointer: coarse) {
+  /* Use one scroll container on touch devices to avoid nested-scroll issues on tablets. */
+  .song-list-page {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .song-list-results {
+    flex: initial;
+    overflow: visible;
   }
 }
 
