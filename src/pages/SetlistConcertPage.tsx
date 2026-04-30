@@ -279,7 +279,7 @@ export default function SetlistConcertPage() {
 
   return (
     <section className="concert-mode">
-      <div className="concert-topbar-toggle-row">
+      <div className={`concert-topbar-toggle-row${showTopbar ? ' concert-topbar-toggle-row--with-topbar' : ''}`}>
         <button
           type="button"
           className="concert-chip-btn concert-topbar-toggle-btn"

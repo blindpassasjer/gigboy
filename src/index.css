@@ -458,10 +458,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-list-sticky {
   position: sticky;
-  top: .25rem;
+  top: -1.5rem;
   z-index: 80;
   background: var(--bg);
-  margin: 0 -1.5rem .75rem;
+  margin: -1.5rem -1.5rem .75rem;
   padding: 0 0 .9rem;
   display: flex;
   flex-direction: column;
@@ -3243,6 +3243,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-wrap: wrap;
 }
 
+.concert-topbar-toggle-row--with-topbar {
+  margin-bottom: .4rem;
+}
+
 .concert-topbar-toggle-btn {
   font-size: .78rem;
 }
@@ -3672,9 +3676,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky {
-    margin: 0 -1rem .75rem;
+    margin: -1.25rem -1rem .75rem;
     padding: 0 0 .85rem;
-    top: .25rem;
+    top: -1.25rem;
   }
 
   .song-list-sticky > .setlist-header {
@@ -3801,6 +3805,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .concert-mode {
     gap: .75rem;
+  }
+
+  .concert-topbar-toggle-row--with-topbar {
+    margin-bottom: .25rem;
   }
 
   .concert-topbar {
