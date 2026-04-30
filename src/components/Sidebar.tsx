@@ -297,7 +297,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     <div className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}`}>
     <aside className={`sidebar${mobile ? ' sidebar--mobile' : ''}${open ? ' sidebar--open' : ''}`}>
       <div className="sidebar-header">
-        <span className="sidebar-title">Collections</span>
+        <span className="sidebar-title"></span>
         <div className="sidebar-header-actions">
           {mobile && onClose && (
             <button className="sidebar-icon-btn" title="Close sidebar" onClick={onClose}>
@@ -309,7 +309,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
       <div className="sidebar-folders">
         <div className="sidebar-setlists-header">
-          <h3 className="sidebar-section-title">My Library</h3>
+          <h3 className="sidebar-section-title">Artist</h3>
         </div>
 
         <div className={`sidebar-list-item sidebar-list-item--pinned${isMyAllSongsActive ? ' active' : ''}`}>
