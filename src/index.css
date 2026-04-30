@@ -335,19 +335,16 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-list-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  height: auto;
+  min-height: 100%;
   padding: 0;
   background: var(--bg);
 }
 
 .song-list-results {
-  flex: 1;
+  flex: initial;
   min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  touch-action: pan-y;
+  overflow: visible;
 }
 
 .songlist-header {
@@ -3981,20 +3978,6 @@ input, select, textarea { font: inherit; color: var(--text); }
     background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   }
 }
-
-@media (pointer: coarse) {
-  /* Use one scroll container on touch devices to avoid nested-scroll issues on tablets. */
-  .song-list-page {
-    height: auto;
-    min-height: 100%;
-  }
-
-  .song-list-results {
-    flex: initial;
-    overflow: visible;
-  }
-}
-
 
 @media print {
   html,
