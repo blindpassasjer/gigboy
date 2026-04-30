@@ -2,7 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import type { Band, CollaborationPermission, Song } from '../types';
+import type { Band, CollaborationPermission, Setlist, Song, SongList } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
 import {
   changeBandMemberRoleOnServer,
@@ -15,6 +15,8 @@ import { useAuth } from './AuthContext';
 
 const BANDS_COLLECTION = 'bands';
 const BAND_SONGS_COLLECTION = 'songs';
+const BAND_SONGLISTS_COLLECTION = 'songLists';
+const BAND_SETLISTS_COLLECTION = 'setlists';
 
 function compareBands(a: Band, b: Band) {
   const updatedAtA = a.updatedAt ?? a.createdAt;
@@ -120,6 +122,76 @@ function sortBandSongs(songs: Song[]) {
   });
 }
 
+function normalizeBandSongList(id: string, data: Record<string, unknown>): SongList {
+  return {
+    id,
+    name: typeof data.name === 'string' ? data.name : 'Untitled songlist',
+    songIds: Array.isArray(data.songIds)
+      ? data.songIds.filter((entry): entry is string => typeof entry === 'string')
+      : [],
+    icon: typeof data.icon === 'string' ? data.icon : undefined,
+    sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : undefined,
+    ownerId: typeof data.ownerId === 'string' ? data.ownerId : undefined,
+    collaboratorIds: Array.isArray(data.collaboratorIds)
+      ? data.collaboratorIds.filter((entry): entry is string => typeof entry === 'string')
+      : undefined,
+    collaborationPermissions:
+      typeof data.collaborationPermissions === 'object' && data.collaborationPermissions !== null
+        ? Object.fromEntries(
+            Object.entries(data.collaborationPermissions as Record<string, unknown>).filter(
+              ([, permission]) => permission === 'viewer' || permission === 'editor'
+            )
+          ) as Record<string, CollaborationPermission>
+        : undefined,
+    accessRole: 'owner',
+  };
+}
+
+function normalizeBandSetlist(id: string, data: Record<string, unknown>): Setlist {
+  return {
+    id,
+    name: typeof data.name === 'string' ? data.name : 'Untitled setlist',
+    icon: typeof data.icon === 'string' ? data.icon : undefined,
+    songIds: Array.isArray(data.songIds)
+      ? data.songIds.filter((entry): entry is string => typeof entry === 'string')
+      : [],
+    sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : undefined,
+    createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
+    updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,
+    ownerId: typeof data.ownerId === 'string' ? data.ownerId : undefined,
+    collaboratorIds: Array.isArray(data.collaboratorIds)
+      ? data.collaboratorIds.filter((entry): entry is string => typeof entry === 'string')
+      : undefined,
+    collaborationPermissions:
+      typeof data.collaborationPermissions === 'object' && data.collaborationPermissions !== null
+        ? Object.fromEntries(
+            Object.entries(data.collaborationPermissions as Record<string, unknown>).filter(
+              ([, permission]) => permission === 'viewer' || permission === 'editor'
+            )
+          ) as Record<string, CollaborationPermission>
+        : undefined,
+    accessRole: 'owner',
+  };
+}
+
+function sortBandSongLists(songLists: SongList[]) {
+  return [...songLists].sort((a, b) => {
+    const aSortOrder = typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
+    const bSortOrder = typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
+    if (aSortOrder !== bSortOrder) return aSortOrder - bSortOrder;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function sortBandSetlists(setlists: Setlist[]) {
+  return [...setlists].sort((a, b) => {
+    const aSortOrder = typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
+    const bSortOrder = typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
+    if (aSortOrder !== bSortOrder) return aSortOrder - bSortOrder;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function moveSongInArray(songs: Song[], songId: string, beforeSongId: string | null) {
   const currentIndex = songs.findIndex((song) => song.id === songId);
   if (currentIndex < 0) return songs;
@@ -144,9 +216,38 @@ function withSequentialSortOrder(songs: Song[]) {
   return songs.map((song, index) => ({ ...song, sortOrder: index }));
 }
 
+function withSequentialSongListSortOrder(songLists: SongList[]) {
+  return songLists.map((songList, index) => ({ ...songList, sortOrder: index }));
+}
+
+function withSequentialSetlistSortOrder(setlists: Setlist[]) {
+  return setlists.map((setlist, index) => ({ ...setlist, sortOrder: index }));
+}
+
+function moveSongId(songIds: string[], songId: string, beforeSongId: string | null) {
+  const currentIndex = songIds.indexOf(songId);
+  if (currentIndex < 0) return songIds;
+
+  const nextSongIds = [...songIds];
+  nextSongIds.splice(currentIndex, 1);
+
+  if (beforeSongId === null) {
+    nextSongIds.push(songId);
+    return nextSongIds;
+  }
+
+  const targetIndex = nextSongIds.indexOf(beforeSongId);
+  if (targetIndex < 0) return songIds;
+
+  nextSongIds.splice(targetIndex, 0, songId);
+  return nextSongIds;
+}
+
 interface BandsContextValue {
   bands: Band[];
   bandSongsByBandId: Record<string, Song[]>;
+  bandSongListsByBandId: Record<string, SongList[]>;
+  bandSetlistsByBandId: Record<string, Setlist[]>;
   loading: boolean;
   cloudRequired: boolean;
   createBand: (name: string, description?: string, icon?: string) => Promise<{ bandId: string | null; error: string | null }>;
@@ -157,9 +258,24 @@ interface BandsContextValue {
   removeMember: (bandId: string, memberId: string) => Promise<string | null>;
   leaveBand: (bandId: string) => Promise<string | null>;
   refreshBandSongs: (bandId: string) => Promise<void>;
+  refreshBandSongLists: (bandId: string) => Promise<void>;
+  refreshBandSetlists: (bandId: string) => Promise<void>;
   addSongToBandLibrary: (bandId: string, song: Song) => Promise<string | null>;
   removeSongFromBandLibrary: (bandId: string, songId: string) => Promise<string | null>;
   moveBandSong: (bandId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
+  addBandSongList: (bandId: string, name: string) => Promise<{ songListId: string | null; error: string | null }>;
+  renameBandSongList: (bandId: string, songListId: string, name: string) => Promise<string | null>;
+  deleteBandSongList: (bandId: string, songListId: string) => Promise<string | null>;
+  addSongToBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
+  removeSongFromBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
+  moveSongInBandSongList: (bandId: string, songListId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
+  addBandSetlist: (bandId: string, name: string) => Promise<{ setlistId: string | null; error: string | null }>;
+  renameBandSetlist: (bandId: string, setlistId: string, name: string) => Promise<string | null>;
+  updateBandSetlistIcon: (bandId: string, setlistId: string, icon?: string) => Promise<string | null>;
+  deleteBandSetlist: (bandId: string, setlistId: string) => Promise<string | null>;
+  addSongToBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
+  removeSongFromBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
+  moveSongInBandSetlist: (bandId: string, setlistId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
 }
 
 const BandsContext = createContext<BandsContextValue | null>(null);
@@ -173,12 +289,16 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const userAvatar = user?.avatar ?? '';
   const [bands, setBands] = useState<Band[]>([]);
   const [bandSongsByBandId, setBandSongsByBandId] = useState<Record<string, Song[]>>({});
+  const [bandSongListsByBandId, setBandSongListsByBandId] = useState<Record<string, SongList[]>>({});
+  const [bandSetlistsByBandId, setBandSetlistsByBandId] = useState<Record<string, Setlist[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
 
   useEffect(() => {
     if (!db || !userId) {
       setBands([]);
       setBandSongsByBandId({});
+      setBandSongListsByBandId({});
+      setBandSetlistsByBandId({});
       setLoading(false);
       return;
     }
@@ -211,6 +331,34 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     setBandSongsByBandId((prev) => ({
       ...prev,
       [bandId]: songs,
+    }));
+  }, [userId]);
+
+  const refreshBandSongLists = useCallback(async (bandId: string) => {
+    if (!db || !userId) return;
+
+    const snapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION));
+    const songLists = sortBandSongLists(
+      snapshot.docs.map((entry) => normalizeBandSongList(entry.id, entry.data() as Record<string, unknown>))
+    );
+
+    setBandSongListsByBandId((prev) => ({
+      ...prev,
+      [bandId]: songLists,
+    }));
+  }, [userId]);
+
+  const refreshBandSetlists = useCallback(async (bandId: string) => {
+    if (!db || !userId) return;
+
+    const snapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION));
+    const setlists = sortBandSetlists(
+      snapshot.docs.map((entry) => normalizeBandSetlist(entry.id, entry.data() as Record<string, unknown>))
+    );
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: setlists,
     }));
   }, [userId]);
 
@@ -299,6 +447,16 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         delete next[bandId];
         return next;
       });
+      setBandSongListsByBandId((prev) => {
+        const next = { ...prev };
+        delete next[bandId];
+        return next;
+      });
+      setBandSetlistsByBandId((prev) => {
+        const next = { ...prev };
+        delete next[bandId];
+        return next;
+      });
       return null;
     } catch (serverError) {
       if (!db) {
@@ -311,11 +469,25 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
       try {
         const songsSnapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION));
+        const songListsSnapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION));
+        const setlistsSnapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION));
         await Promise.all(songsSnapshot.docs.map((entry) => deleteDoc(entry.ref)));
+        await Promise.all(songListsSnapshot.docs.map((entry) => deleteDoc(entry.ref)));
+        await Promise.all(setlistsSnapshot.docs.map((entry) => deleteDoc(entry.ref)));
         await deleteDoc(doc(db, BANDS_COLLECTION, bandId));
 
         setBands((prev) => prev.filter((entry) => entry.id !== bandId));
         setBandSongsByBandId((prev) => {
+          const next = { ...prev };
+          delete next[bandId];
+          return next;
+        });
+        setBandSongListsByBandId((prev) => {
+          const next = { ...prev };
+          delete next[bandId];
+          return next;
+        });
+        setBandSetlistsByBandId((prev) => {
           const next = { ...prev };
           delete next[bandId];
           return next;
@@ -580,9 +752,580 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandSongsByBandId, bands, userId]);
 
+  const addBandSongList = useCallback(async (bandId: string, name: string) => {
+    if (!db || !userId) {
+      return { songListId: null, error: 'Band songlists require cloud sync.' };
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return { songListId: null, error: 'Band not found.' };
+    }
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return { songListId: null, error: 'You do not have permission to edit this band.' };
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return { songListId: null, error: 'Songlist name is required.' };
+    }
+
+    const songListId = crypto.randomUUID();
+    const currentSongLists = bandSongListsByBandId[bandId] ?? [];
+    const nextSongList: SongList = {
+      id: songListId,
+      name: trimmedName,
+      songIds: [],
+      sortOrder: currentSongLists.length,
+      ownerId: band.ownerId,
+      collaboratorIds: band.memberIds,
+      collaborationPermissions: Object.fromEntries(
+        band.memberIds.map((memberId) => [memberId, band.memberRoles[memberId] ?? 'viewer'])
+      ),
+      accessRole: 'owner',
+    };
+
+    try {
+      const { id, accessRole, ...payload } = nextSongList;
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), payload);
+      await refreshBandSongLists(bandId);
+      return { songListId, error: null };
+    } catch (error) {
+      return {
+        songListId: null,
+        error: error instanceof Error ? error.message : 'Failed to create band songlist.',
+      };
+    }
+  }, [bandSongListsByBandId, bands, refreshBandSongLists, userId]);
+
+  const renameBandSongList = useCallback(async (bandId: string, songListId: string, name: string) => {
+    if (!db || !userId) {
+      return 'Band songlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return 'Songlist name is required.';
+    }
+
+    const previousSongLists = bandSongListsByBandId[bandId] ?? [];
+    const nextSongLists = previousSongLists.map((songList) => (
+      songList.id === songListId ? { ...songList, name: trimmedName } : songList
+    ));
+
+    setBandSongListsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSongLists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), {
+        name: trimmedName,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSongListsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSongLists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to rename band songlist.';
+    }
+  }, [bandSongListsByBandId, bands, userId]);
+
+  const deleteBandSongList = useCallback(async (bandId: string, songListId: string) => {
+    if (!db || !userId) {
+      return 'Band songlists require cloud sync.';
+    }
+
+    const firestore = db;
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const previousSongLists = bandSongListsByBandId[bandId] ?? [];
+    const nextSongLists = withSequentialSongListSortOrder(
+      previousSongLists.filter((songList) => songList.id !== songListId)
+    );
+
+    setBandSongListsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSongLists,
+    }));
+
+    try {
+      await Promise.all([
+        deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId)),
+        ...nextSongLists.map((songList) => setDoc(
+          doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songList.id),
+          { sortOrder: songList.sortOrder ?? 0 },
+          { merge: true }
+        )),
+      ]);
+      return null;
+    } catch (error) {
+      setBandSongListsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSongLists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to delete band songlist.';
+    }
+  }, [bandSongListsByBandId, bands, userId]);
+
+  const addSongToBandSongList = useCallback(async (bandId: string, songListId: string, songId: string) => {
+    if (!db || !userId) {
+      return 'Band songlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousSongLists = bandSongListsByBandId[bandId] ?? [];
+    const targetSongList = previousSongLists.find((songList) => songList.id === songListId);
+    if (!targetSongList || targetSongList.songIds.includes(songId)) {
+      return null;
+    }
+
+    const nextSongList = { ...targetSongList, songIds: [...targetSongList.songIds, songId] };
+    const nextSongLists = previousSongLists.map((songList) => (
+      songList.id === songListId ? nextSongList : songList
+    ));
+
+    setBandSongListsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSongLists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), {
+        songIds: nextSongList.songIds,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSongListsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSongLists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band songlist.';
+    }
+  }, [bandSongListsByBandId, bands, userId]);
+
+  const removeSongFromBandSongList = useCallback(async (bandId: string, songListId: string, songId: string) => {
+    if (!db || !userId) {
+      return 'Band songlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousSongLists = bandSongListsByBandId[bandId] ?? [];
+    const targetSongList = previousSongLists.find((songList) => songList.id === songListId);
+    if (!targetSongList) return null;
+
+    const nextSongList = {
+      ...targetSongList,
+      songIds: targetSongList.songIds.filter((entry) => entry !== songId),
+    };
+    const nextSongLists = previousSongLists.map((songList) => (
+      songList.id === songListId ? nextSongList : songList
+    ));
+
+    setBandSongListsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSongLists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), {
+        songIds: nextSongList.songIds,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSongListsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSongLists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band songlist.';
+    }
+  }, [bandSongListsByBandId, bands, userId]);
+
+  const moveSongInBandSongList = useCallback(async (bandId: string, songListId: string, songId: string, beforeSongId: string | null) => {
+    if (!db || !userId) {
+      return 'Band songlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousSongLists = bandSongListsByBandId[bandId] ?? [];
+    const targetSongList = previousSongLists.find((songList) => songList.id === songListId);
+    if (!targetSongList) return null;
+
+    const nextSongIds = moveSongId(targetSongList.songIds, songId, beforeSongId);
+    if (nextSongIds === targetSongList.songIds) {
+      return null;
+    }
+
+    const nextSongList = { ...targetSongList, songIds: nextSongIds };
+    const nextSongLists = previousSongLists.map((songList) => (
+      songList.id === songListId ? nextSongList : songList
+    ));
+
+    setBandSongListsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSongLists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), {
+        songIds: nextSongIds,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSongListsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSongLists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to reorder band songlist.';
+    }
+  }, [bandSongListsByBandId, bands, userId]);
+
+  const addBandSetlist = useCallback(async (bandId: string, name: string) => {
+    if (!db || !userId) {
+      return { setlistId: null, error: 'Band setlists require cloud sync.' };
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return { setlistId: null, error: 'Band not found.' };
+    }
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return { setlistId: null, error: 'You do not have permission to edit this band.' };
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return { setlistId: null, error: 'Setlist name is required.' };
+    }
+
+    const setlistId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const currentSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const nextSetlist: Setlist = {
+      id: setlistId,
+      name: trimmedName,
+      songIds: [],
+      sortOrder: currentSetlists.length,
+      createdAt: now,
+      updatedAt: now,
+      ownerId: band.ownerId,
+      collaboratorIds: band.memberIds,
+      collaborationPermissions: Object.fromEntries(
+        band.memberIds.map((memberId) => [memberId, band.memberRoles[memberId] ?? 'viewer'])
+      ),
+      accessRole: 'owner',
+    };
+
+    try {
+      const { id, accessRole, ...payload } = nextSetlist;
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), payload);
+      await refreshBandSetlists(bandId);
+      return { setlistId, error: null };
+    } catch (error) {
+      return {
+        setlistId: null,
+        error: error instanceof Error ? error.message : 'Failed to create band setlist.',
+      };
+    }
+  }, [bandSetlistsByBandId, bands, refreshBandSetlists, userId]);
+
+  const renameBandSetlist = useCallback(async (bandId: string, setlistId: string, name: string) => {
+    if (!db || !userId) {
+      return 'Band setlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const trimmedName = name.trim();
+    if (!trimmedName) return 'Setlist name is required.';
+
+    const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    const nextSetlists = previousSetlists.map((setlist) => (
+      setlist.id === setlistId ? { ...setlist, name: trimmedName, updatedAt: now } : setlist
+    ));
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSetlists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), {
+        name: trimmedName,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSetlistsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSetlists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to rename band setlist.';
+    }
+  }, [bandSetlistsByBandId, bands, userId]);
+
+  const updateBandSetlistIcon = useCallback(async (bandId: string, setlistId: string, icon?: string) => {
+    if (!db || !userId) {
+      return 'Band setlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    const nextSetlists = previousSetlists.map((setlist) => (
+      setlist.id === setlistId ? { ...setlist, icon, updatedAt: now } : setlist
+    ));
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSetlists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), {
+        icon,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSetlistsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSetlists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band setlist icon.';
+    }
+  }, [bandSetlistsByBandId, bands, userId]);
+
+  const deleteBandSetlist = useCallback(async (bandId: string, setlistId: string) => {
+    if (!db || !userId) {
+      return 'Band setlists require cloud sync.';
+    }
+
+    const firestore = db;
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const nextSetlists = withSequentialSetlistSortOrder(
+      previousSetlists.filter((setlist) => setlist.id !== setlistId)
+    );
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSetlists,
+    }));
+
+    try {
+      await Promise.all([
+        deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId)),
+        ...nextSetlists.map((setlist) => setDoc(
+          doc(firestore, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlist.id),
+          { sortOrder: setlist.sortOrder ?? 0 },
+          { merge: true }
+        )),
+      ]);
+      return null;
+    } catch (error) {
+      setBandSetlistsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSetlists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to delete band setlist.';
+    }
+  }, [bandSetlistsByBandId, bands, userId]);
+
+  const addSongToBandSetlist = useCallback(async (bandId: string, setlistId: string, songId: string) => {
+    if (!db || !userId) {
+      return 'Band setlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const targetSetlist = previousSetlists.find((setlist) => setlist.id === setlistId);
+    if (!targetSetlist || targetSetlist.songIds.includes(songId)) return null;
+
+    const now = new Date().toISOString();
+    const nextSetlist = {
+      ...targetSetlist,
+      songIds: [...targetSetlist.songIds, songId],
+      updatedAt: now,
+    };
+    const nextSetlists = previousSetlists.map((setlist) => (
+      setlist.id === setlistId ? nextSetlist : setlist
+    ));
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSetlists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), {
+        songIds: nextSetlist.songIds,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSetlistsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSetlists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band setlist.';
+    }
+  }, [bandSetlistsByBandId, bands, userId]);
+
+  const removeSongFromBandSetlist = useCallback(async (bandId: string, setlistId: string, songId: string) => {
+    if (!db || !userId) {
+      return 'Band setlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const targetSetlist = previousSetlists.find((setlist) => setlist.id === setlistId);
+    if (!targetSetlist) return null;
+
+    const now = new Date().toISOString();
+    const nextSetlist = {
+      ...targetSetlist,
+      songIds: targetSetlist.songIds.filter((entry) => entry !== songId),
+      updatedAt: now,
+    };
+    const nextSetlists = previousSetlists.map((setlist) => (
+      setlist.id === setlistId ? nextSetlist : setlist
+    ));
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSetlists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), {
+        songIds: nextSetlist.songIds,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSetlistsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSetlists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band setlist.';
+    }
+  }, [bandSetlistsByBandId, bands, userId]);
+
+  const moveSongInBandSetlist = useCallback(async (bandId: string, setlistId: string, songId: string, beforeSongId: string | null) => {
+    if (!db || !userId) {
+      return 'Band setlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const targetSetlist = previousSetlists.find((setlist) => setlist.id === setlistId);
+    if (!targetSetlist) return null;
+
+    const nextSongIds = moveSongId(targetSetlist.songIds, songId, beforeSongId);
+    if (nextSongIds === targetSetlist.songIds) {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+    const nextSetlist = { ...targetSetlist, songIds: nextSongIds, updatedAt: now };
+    const nextSetlists = previousSetlists.map((setlist) => (
+      setlist.id === setlistId ? nextSetlist : setlist
+    ));
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSetlists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), {
+        songIds: nextSongIds,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSetlistsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSetlists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to reorder band setlist.';
+    }
+  }, [bandSetlistsByBandId, bands, userId]);
+
   const value = useMemo<BandsContextValue>(() => ({
     bands,
     bandSongsByBandId,
+    bandSongListsByBandId,
+    bandSetlistsByBandId,
     loading,
     cloudRequired: !firebaseEnabled,
     createBand,
@@ -593,24 +1336,56 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     removeMember,
     leaveBand,
     refreshBandSongs,
+    refreshBandSongLists,
+    refreshBandSetlists,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
     moveBandSong,
+    addBandSongList,
+    renameBandSongList,
+    deleteBandSongList,
+    addSongToBandSongList,
+    removeSongFromBandSongList,
+    moveSongInBandSongList,
+    addBandSetlist,
+    renameBandSetlist,
+    updateBandSetlistIcon,
+    deleteBandSetlist,
+    addSongToBandSetlist,
+    removeSongFromBandSetlist,
+    moveSongInBandSetlist,
   }), [
+    addBandSetlist,
+    addBandSongList,
+    addSongToBandSetlist,
+    addSongToBandSongList,
     addSongToBandLibrary,
+    bandSetlistsByBandId,
+    bandSongListsByBandId,
     bandSongsByBandId,
     bands,
     changeMemberRole,
     createBand,
+    deleteBandSetlist,
+    deleteBandSongList,
     deleteBand,
     inviteMember,
     leaveBand,
     loading,
+    moveSongInBandSetlist,
+    moveSongInBandSongList,
     moveBandSong,
+    refreshBandSetlists,
+    refreshBandSongLists,
     renameBand,
+    renameBandSetlist,
+    renameBandSongList,
     refreshBandSongs,
     removeMember,
+    removeSongFromBandSetlist,
+    removeSongFromBandSongList,
     removeSongFromBandLibrary,
+    updateBandSetlistIcon,
   ]);
 
   return <BandsContext.Provider value={value}>{children}</BandsContext.Provider>;

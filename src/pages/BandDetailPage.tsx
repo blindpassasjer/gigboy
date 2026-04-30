@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { UserPlus, Users, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
@@ -12,15 +12,20 @@ import { showConfirmToast } from '../utils/toastDialogs';
 
 export default function BandDetailPage() {
   const { id } = useParams();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { songs, deleteSong } = useSongs();
   const {
     bands,
     bandSongsByBandId,
+    bandSongListsByBandId,
+    bandSetlistsByBandId,
     loading,
     renameBand,
     refreshBandSongs,
+    refreshBandSongLists,
+    refreshBandSetlists,
     inviteMember,
     changeMemberRole,
     removeMember,
@@ -29,10 +34,23 @@ export default function BandDetailPage() {
     addSongToBandLibrary,
     removeSongFromBandLibrary,
     moveBandSong,
+    renameBandSongList,
+    deleteBandSongList,
+    addSongToBandSongList,
+    removeSongFromBandSongList,
+    moveSongInBandSongList,
+    renameBandSetlist,
+    updateBandSetlistIcon,
+    deleteBandSetlist,
+    addSongToBandSetlist,
+    removeSongFromBandSetlist,
+    moveSongInBandSetlist,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
   const bandSongs = id ? (bandSongsByBandId[id] ?? []) : [];
+  const bandSongLists = id ? (bandSongListsByBandId[id] ?? []) : [];
+  const bandSetlists = id ? (bandSetlistsByBandId[id] ?? []) : [];
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviteRole, setInviteRole] = useState<CollaborationPermission>('viewer');
@@ -46,6 +64,24 @@ export default function BandDetailPage() {
     return songs.filter((song) => song.ownerId === user.id);
   }, [songs, user?.id]);
 
+  const routeSegments = pathname.split('/').filter(Boolean);
+  const routeBandId = routeSegments[0] === 'bands' ? routeSegments[1] : null;
+  const bandSection = routeBandId === id ? (routeSegments[2] ?? 'library') : 'library';
+  const bandResourceId = routeBandId === id ? (routeSegments[3] ?? null) : null;
+
+  const activeBandSongList = bandSection === 'songlists'
+    ? bandSongLists.find((entry) => entry.id === bandResourceId) ?? null
+    : null;
+  const activeBandSetlist = bandSection === 'setlists'
+    ? bandSetlists.find((entry) => entry.id === bandResourceId) ?? null
+    : null;
+  const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
+  const sectionTitle = bandSection === 'songlists'
+    ? 'Band Songlist'
+    : bandSection === 'setlists'
+      ? 'Band Setlist'
+      : 'Band Library';
+
   useEffect(() => {
     if (!id || !band) return;
     void refreshBandSongs(id).catch((error) => {
@@ -53,6 +89,20 @@ export default function BandDetailPage() {
       toast.error('Failed to load band library.');
     });
   }, [band, id, refreshBandSongs]);
+
+  useEffect(() => {
+    if (!id || !band) return;
+    void refreshBandSongLists(id).catch((error) => {
+      console.error('Failed to load band songlists.', error);
+    });
+  }, [band, id, refreshBandSongLists]);
+
+  useEffect(() => {
+    if (!id || !band) return;
+    void refreshBandSetlists(id).catch((error) => {
+      console.error('Failed to load band setlists.', error);
+    });
+  }, [band, id, refreshBandSetlists]);
 
   useEffect(() => {
     if (!showMembersModal) return;
@@ -217,8 +267,134 @@ export default function BandDetailPage() {
     toast.success('Band renamed.');
   };
 
+  const handleDeleteBandSongList = async () => {
+    if (!activeBandSongList) return;
+
+    const confirmed = await showConfirmToast(`Delete songlist "${activeBandSongList.name}"? This cannot be undone.`, {
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
+
+    const error = await deleteBandSongList(band.id, activeBandSongList.id);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    navigate(`/bands/${band.id}/library`);
+  };
+
+  const handleDeleteBandSetlist = async () => {
+    if (!activeBandSetlist) return;
+
+    const confirmed = await showConfirmToast(`Delete setlist "${activeBandSetlist.name}"? This cannot be undone.`, {
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
+
+    const error = await deleteBandSetlist(band.id, activeBandSetlist.id);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    navigate(`/bands/${band.id}/library`);
+  };
+
+  if (bandSection === 'songlists') {
+    if (!activeBandSongList) {
+      return (
+        <section className="bands-page">
+          <p className="bands-status">Band songlist not found.</p>
+          <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">Back to band library</Link>
+        </section>
+      );
+    }
+
+    const songListSongs = activeBandSongList.songIds
+      .map((songId) => songsById.get(songId))
+      .filter((song): song is Song => Boolean(song));
+
+    return (
+      <section className="bands-page bands-page--library">
+        <p className="bands-section-kicker">{band.name} · {sectionTitle}</p>
+        <SongList
+          songs={songListSongs}
+          listName={activeBandSongList.name}
+          listIcon={activeBandSongList.icon}
+          headerMeta={`${band.name} songlist`}
+          headerVariant="bands"
+          allSongs={bandSongs}
+          onAddSong={(songId) => {
+            void addSongToBandSongList(band.id, activeBandSongList.id, songId);
+          }}
+          onDeleteSong={handleDeleteSong}
+          onMoveSong={(songId, beforeSongId) => {
+            void moveSongInBandSongList(band.id, activeBandSongList.id, songId, beforeSongId);
+          }}
+          onRenameList={(name) => {
+            void renameBandSongList(band.id, activeBandSongList.id, name);
+          }}
+          onDeleteList={() => void handleDeleteBandSongList()}
+          deleteListLabel={`Delete songlist ${activeBandSongList.name}`}
+          onRemoveSong={(song) => {
+            void removeSongFromBandSongList(band.id, activeBandSongList.id, song.id);
+          }}
+        />
+      </section>
+    );
+  }
+
+  if (bandSection === 'setlists') {
+    if (!activeBandSetlist) {
+      return (
+        <section className="bands-page">
+          <p className="bands-status">Band setlist not found.</p>
+          <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">Back to band library</Link>
+        </section>
+      );
+    }
+
+    const setlistSongs = activeBandSetlist.songIds
+      .map((songId) => songsById.get(songId))
+      .filter((song): song is Song => Boolean(song));
+
+    return (
+      <section className="bands-page bands-page--library">
+        <p className="bands-section-kicker">{band.name} · {sectionTitle}</p>
+        <SongList
+          songs={setlistSongs}
+          listName={activeBandSetlist.name}
+          listIcon={activeBandSetlist.icon}
+          headerMeta={`${band.name} setlist`}
+          headerVariant="bands"
+          allSongs={bandSongs}
+          onAddSong={(songId) => {
+            void addSongToBandSetlist(band.id, activeBandSetlist.id, songId);
+          }}
+          onDeleteSong={handleDeleteSong}
+          onMoveSong={(songId, beforeSongId) => {
+            void moveSongInBandSetlist(band.id, activeBandSetlist.id, songId, beforeSongId);
+          }}
+          onRenameList={(name) => {
+            void renameBandSetlist(band.id, activeBandSetlist.id, name);
+          }}
+          onDeleteList={() => void handleDeleteBandSetlist()}
+          deleteListLabel={`Delete setlist ${activeBandSetlist.name}`}
+          onUpdateListAppearance={(appearance) => {
+            void updateBandSetlistIcon(band.id, activeBandSetlist.id, appearance.icon);
+          }}
+          onRemoveSong={(song) => {
+            void removeSongFromBandSetlist(band.id, activeBandSetlist.id, song.id);
+          }}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="bands-page bands-page--library">
+      <p className="bands-section-kicker">{band.name} · {sectionTitle}</p>
       <SongList
         songs={bandSongs}
         listName={band.name}

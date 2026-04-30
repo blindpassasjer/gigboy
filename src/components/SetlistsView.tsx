@@ -1,6 +1,7 @@
 import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { GripVertical, Trash2, Music, Plus, Search, X, Printer, PenLine, Play, Smile } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
@@ -15,6 +16,7 @@ interface Props {
   onMoveSong: (songId: string, beforeSongId: string | null) => void;
   onRemoveSong: (songId: string) => void;
   onAddSong: (songId: string) => void;
+  extraActions?: ReactNode;
 }
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
@@ -35,6 +37,7 @@ export default function SetlistsView({
   onMoveSong,
   onRemoveSong,
   onAddSong,
+  extraActions,
 }: Props) {
   const { renameSetlist, updateSetlistIcon, deleteSetlist, setlists } = useSetlists();
   const currentSetlist = setlists.find((l) => l.id === setlistId);
@@ -270,6 +273,7 @@ export default function SetlistsView({
             </p>
           </div>
           <div className="setlist-header-actions">
+            {extraActions}
             {songs.length > 0 ? (
               <Link
                 className="setlist-action-btn setlist-action-btn--concert"

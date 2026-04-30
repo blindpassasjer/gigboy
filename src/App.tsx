@@ -40,7 +40,7 @@ function AuthenticatedApp() {
                 <Route path="/songs/:id/edit" element={<EditSongPage />} />
                 <Route path="/add" element={<AddSongPage />} />
                 <Route path="/bands" element={<BandsPage />} />
-                <Route path="/bands/:id" element={<BandDetailPage />} />
+                <Route path="/bands/:id/*" element={<BandDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/profile/invites" element={<ProfileInvitesPage />} />
                 <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />

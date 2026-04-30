@@ -169,6 +169,16 @@ service cloud.firestore {
         allow read: if isBandMember(bandId);
         allow create, update, delete: if isBandEditor(bandId);
       }
+
+      match /songLists/{songListId} {
+        allow read: if isBandMember(bandId);
+        allow create, update, delete: if isBandEditor(bandId);
+      }
+
+      match /setlists/{setlistId} {
+        allow read: if isBandMember(bandId);
+        allow create, update, delete: if isBandEditor(bandId);
+      }
     }
 
     match /bandInvites/{inviteId} {

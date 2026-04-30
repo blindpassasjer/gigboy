@@ -41,7 +41,7 @@ export default function BandsPage() {
     toast.success('Band created.');
 
     if (result.bandId) {
-      navigate(`/bands/${result.bandId}`);
+      navigate(`/bands/${result.bandId}/library`);
     }
   };
 
@@ -119,7 +119,7 @@ export default function BandsPage() {
 
             return (
               <li key={band.id} className="bands-card">
-                <Link to={`/bands/${band.id}`} className="bands-card-main">
+                <Link to={`/bands/${band.id}/library`} className="bands-card-main">
                   <div className="bands-card-icon" aria-hidden="true">
                     {band.icon ? <span>{band.icon}</span> : <Music2 size={18} />}
                   </div>

@@ -157,6 +157,8 @@ firebase deploy --only firestore:rules
 
 This project expects rules from [firestore.rules](firestore.rules), including access for:
 - `/bands/{bandId}` and `/bands/{bandId}/songs/{songId}`
+- `/bands/{bandId}/songLists/{songListId}`
+- `/bands/{bandId}/setlists/{setlistId}`
 - `/bandInvites/{inviteId}`
 - `/collaborationInvites/{inviteId}`
 - `/users/{userId}/{songs|songLists|setlists}`
@@ -166,6 +168,8 @@ This project expects rules from [firestore.rules](firestore.rules), including ac
 Collections are created automatically on first write, but your deployment must allow writes to:
 
 - `bands`
+- `bands/{bandId}/songLists`
+- `bands/{bandId}/setlists`
 - `bandInvites`
 - `collaborationInvites`
 - `users/{uid}/songs`
@@ -181,7 +185,9 @@ Collections are created automatically on first write, but your deployment must a
 2. Create a band in the app.
 3. Invite another user to the band.
 4. Share a song/setlist/songlist with another user.
-5. Sign in as the recipient and accept from `/profile/invites`.
+5. Copy a personal songlist to a band songlist from the songlist header action.
+6. Copy a personal setlist to a band setlist from the setlist header action.
+7. Sign in as the recipient and accept from `/profile/invites`.
 
 ### 5. Optional but Recommended Hardening
 
