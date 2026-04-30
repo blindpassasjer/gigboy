@@ -22,6 +22,7 @@ export default function HomePage() {
     addSongToList,
     moveSongInList,
     removeSongFromList,
+    deleteSongList,
     renameSongList,
     updateSongListAppearance,
   } = useSongLists();
@@ -114,6 +115,17 @@ export default function HomePage() {
     await deleteSong(song.id);
   }
 
+  async function handleDeleteActiveSongList() {
+    if (!activeList) return;
+
+    const confirmed = await showConfirmToast(`Delete songlist "${activeList.name}"? This cannot be undone.`, {
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
+
+    deleteSongList(activeList.id);
+  }
+
   return (
     <SongList
       songs={displayedSongs}
@@ -129,6 +141,8 @@ export default function HomePage() {
           ? (name) => renameSongList(activeList.id, name)
           : undefined
       }
+      onDeleteList={activeList ? handleDeleteActiveSongList : undefined}
+      deleteListLabel={activeList ? `Delete songlist ${activeList.name}` : undefined}
       onUpdateListAppearance={
         activeList
           ? (appearance) => updateSongListAppearance(activeList.id, appearance)

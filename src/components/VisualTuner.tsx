@@ -7,15 +7,6 @@ interface Props {
 
 const NOTE_LABELS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-const GUITAR_STRINGS = [
-  { key: 'E2', label: 'Low E', frequency: 82.41 },
-  { key: 'A2', label: 'A', frequency: 110.0 },
-  { key: 'D3', label: 'D', frequency: 146.83 },
-  { key: 'G3', label: 'G', frequency: 196.0 },
-  { key: 'B3', label: 'B', frequency: 246.94 },
-  { key: 'E4', label: 'High E', frequency: 329.63 },
-] as const;
-
 function autocorrelate(buffer: Float32Array, sampleRate: number): number | null {
   const size = buffer.length;
   let rms = 0;
@@ -89,12 +80,16 @@ function centsOff(frequency: number, referenceFrequency: number): number {
   return Math.round(1200 * Math.log2(frequency / referenceFrequency));
 }
 
+function midiToFrequency(midi: number): number {
+  return 440 * (2 ** ((midi - 69) / 12));
+}
+
 export default function VisualTuner({ className = '' }: Props) {
   const [isListening, setIsListening] = useState(false);
-  const [selectedStringIndex, setSelectedStringIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [detectedHz, setDetectedHz] = useState<number | null>(null);
   const [detectedNote, setDetectedNote] = useState<string | null>(null);
+  const [detectedOctave, setDetectedOctave] = useState<number | null>(null);
   const [cents, setCents] = useState<number | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -144,13 +139,16 @@ export default function VisualTuner({ className = '' }: Props) {
           if (frequency && Number.isFinite(frequency)) {
             const midi = frequencyToMidi(frequency);
             const noteName = NOTE_LABELS[((midi % 12) + 12) % 12];
-            const targetFrequency = GUITAR_STRINGS[selectedStringIndex].frequency;
+            const octave = Math.floor(midi / 12) - 1;
+            const targetFrequency = midiToFrequency(midi);
             setDetectedHz(frequency);
             setDetectedNote(noteName);
+            setDetectedOctave(octave);
             setCents(centsOff(frequency, targetFrequency));
           } else {
             setDetectedHz(null);
             setDetectedNote(null);
+            setDetectedOctave(null);
             setCents(null);
           }
 
@@ -185,18 +183,15 @@ export default function VisualTuner({ className = '' }: Props) {
         audioContextRef.current = null;
       }
     };
-  }, [isListening, selectedStringIndex]);
+  }, [isListening]);
 
-  const selectedString = GUITAR_STRINGS[selectedStringIndex];
   const centsValue = cents ?? 0;
   const clamped = Math.max(-50, Math.min(50, centsValue));
   const needleLeftPercent = ((clamped + 50) / 100) * 100;
   const hasSignal = detectedHz !== null;
   const inTune = hasSignal && Math.abs(centsValue) <= 5;
-  const closeToTune = hasSignal && Math.abs(centsValue) > 5 && Math.abs(centsValue) <= 12;
-  const gaugeClass = inTune ? 'is-in-tune' : closeToTune ? 'is-close' : '';
   const tuningCue = !hasSignal
-    ? 'Pluck the selected string'
+    ? 'Play a note'
     : inTune
       ? 'In tune'
       : centsValue < 0
@@ -209,7 +204,8 @@ export default function VisualTuner({ className = '' }: Props) {
       : centsValue < 0
         ? 'is-up'
         : 'is-down';
-  const centsLabel = hasSignal ? `${centsValue > 0 ? '+' : ''}${centsValue}c` : '--';
+  const centsLabel = hasSignal ? `${centsValue > 0 ? '+' : ''}${centsValue} cents` : '-- cents';
+  const detectedLabel = detectedNote ? `${detectedNote}${detectedOctave ?? ''}` : '--';
 
   return (
     <div className={`visual-tuner ${className}`.trim()}>
@@ -223,55 +219,29 @@ export default function VisualTuner({ className = '' }: Props) {
         {isListening ? 'Stop tuner' : 'Start tuner'}
       </button>
 
-      <div className="visual-tuner-strings" role="tablist" aria-label="Guitar strings">
-        {GUITAR_STRINGS.map((stringInfo, index) => {
-          const selected = index === selectedStringIndex;
-          return (
-            <button
-              key={stringInfo.key}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              className={`visual-tuner-string-btn${selected ? ' is-active' : ''}`}
-              onClick={() => setSelectedStringIndex(index)}
-            >
-              {stringInfo.label}
-            </button>
-          );
-        })}
-      </div>
-
       <div className="visual-tuner-readout">
-        <span className={`visual-tuner-status${inTune ? ' is-in-tune' : ''}${closeToTune ? ' is-close' : ''}`} aria-live="polite">
-          {selectedString.key}
+        <span className="visual-tuner-label" aria-hidden="true">Note</span>
+        <span className={`visual-tuner-status${inTune ? ' is-in-tune' : ''}`} aria-live="polite">
+          {detectedLabel}
         </span>
-        <span className="visual-tuner-detected" aria-live="polite">
-          {detectedNote || '--'}
+        <span className="visual-tuner-cents" aria-live="polite">
+          {centsLabel}
         </span>
       </div>
 
       <div className="visual-tuner-cue-row" aria-live="polite">
-        <span className="visual-tuner-side visual-tuner-side--left">Flat</span>
+        <span className="visual-tuner-side">Flat</span>
         <span className={`visual-tuner-cue ${tuningCueClass}`.trim()}>{tuningCue}</span>
-        <span className="visual-tuner-side visual-tuner-side--right">Sharp</span>
+        <span className="visual-tuner-side">Sharp</span>
       </div>
 
-      <div className={`visual-tuner-gauge ${gaugeClass}`.trim()} aria-label="Tuning deviation in cents">
+      <div className={`visual-tuner-gauge${inTune ? ' is-in-tune' : ''}`.trim()} aria-label="Tuning deviation in cents">
         <span className="visual-tuner-center" />
         <span className="visual-tuner-needle" style={{ left: `${needleLeftPercent}%` }} />
       </div>
 
-      <div className="visual-tuner-footer">
-        <span className="visual-tuner-cents">{centsLabel}</span>
-        <span className="visual-tuner-target">Target {selectedString.frequency.toFixed(2)} Hz</span>
-        {detectedHz ? <span className="visual-tuner-hz">Input {detectedHz.toFixed(2)} Hz</span> : null}
-        {error ? <span className="visual-tuner-error">{error}</span> : null}
-      </div>
-
-      <div className="visual-tuner-direction-help" aria-hidden="true">
-        <span>Flat - tighten (pitch up)</span>
-        <span>Sharp - loosen (pitch down)</span>
-      </div>
+      {detectedHz ? <div className="visual-tuner-hz">{detectedHz.toFixed(1)} Hz</div> : null}
+      {error ? <div className="visual-tuner-error">{error}</div> : null}
     </div>
   );
 }

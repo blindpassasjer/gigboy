@@ -5,6 +5,7 @@ import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
 import ShareMenu from './ShareMenu';
+import { showConfirmToast } from '../utils/toastDialogs';
 
 interface Props {
   setlistId: string;
@@ -35,7 +36,7 @@ export default function SetlistsView({
   onRemoveSong,
   onAddSong,
 }: Props) {
-  const { renameSetlist, updateSetlistIcon, setlists } = useSetlists();
+  const { renameSetlist, updateSetlistIcon, deleteSetlist, setlists } = useSetlists();
   const currentSetlist = setlists.find((l) => l.id === setlistId);
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
@@ -103,6 +104,15 @@ export default function SetlistsView({
 
   const handlePrintSetlist = () => {
     window.print();
+  };
+
+  const handleDeleteSetlist = async () => {
+    const confirmed = await showConfirmToast(`Delete setlist "${setlistName}"? This cannot be undone.`, {
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
+
+    deleteSetlist(setlistId);
   };
 
   const handleRenameCommit = () => {
@@ -301,6 +311,14 @@ export default function SetlistsView({
             title="Set setlist icon"
           >
             <Smile size={14} />
+          </button>
+          <button
+            className="setlist-action-btn setlist-action-btn--secondary"
+            onClick={() => void handleDeleteSetlist()}
+            title={`Delete setlist ${setlistName}`}
+            aria-label={`Delete setlist ${setlistName}`}
+          >
+            <Trash2 size={14} />
           </button>
         </div>
       </div>

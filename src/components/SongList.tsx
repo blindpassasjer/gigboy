@@ -80,6 +80,8 @@ interface Props {
   headerMeta?: string;
   headerVariant?: 'songlist' | 'bands';
   headerActions?: ReactNode;
+  onDeleteList?: () => void | Promise<void>;
+  deleteListLabel?: string;
   listIcon?: string;
   allSongs?: Song[];
   onMoveSong?: (songId: string, beforeSongId: string | null) => void;
@@ -102,6 +104,8 @@ export default function SongList({
   headerMeta,
   headerVariant = 'songlist',
   headerActions,
+  onDeleteList,
+  deleteListLabel,
   listIcon,
   allSongs,
   onMoveSong,
@@ -145,7 +149,7 @@ export default function SongList({
 
   const canAddSongsToList = Boolean(allSongs && onAddSong);
   const canTriggerAddSongs = canAddSongsToList || Boolean(onAddSongsClick);
-  const showShareAction = canAddSongsToList || Boolean(shareConfig);
+  const showShareAction = headerVariant !== 'bands' && (canAddSongsToList || Boolean(shareConfig));
 
   const languages = useMemo(
     () => Array.from(new Set(songs.map((s) => s.language))).sort(),
@@ -410,6 +414,17 @@ export default function SongList({
         </div>
         <div className="setlist-header-actions">
           {headerActions}
+          {onDeleteList && (
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => void onDeleteList()}
+              title={deleteListLabel ?? `Delete ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
+              aria-label={deleteListLabel ?? `Delete ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
           {onUpdateListAppearance && listName && (
             <button
               type="button"

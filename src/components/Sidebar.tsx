@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Folder, FolderOpen, Trash2, X, ListMusic, ListMusicIcon, Users, Plus } from 'lucide-react';
+import { Folder, FolderOpen, X, ListMusic, ListMusicIcon, Users, Plus } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
@@ -32,7 +32,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     songLists,
     activeSongListId,
     addSongList,
-    deleteSongList,
     addSongToList,
     clearActiveSelection,
     setActiveSongListId,
@@ -42,7 +41,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     setlists,
     activeSetlistId,
     addSetlist,
-    deleteSetlist,
     addSongToSetlist,
     setActiveSetlistId,
   } = useSetlists();
@@ -183,7 +181,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             onDragLeave={() => setSongDropTargetId((c) => (c === list.id ? null : c))}
             onDrop={(e) => handleDrop(e, list.id)}
             onSelect={() => { setActiveSongListId(list.id); setActiveSetlistId(null); goToLibraryView(); }}
-            onDelete={() => deleteSongList(list.id)}
           />
         ))}
 
@@ -265,7 +262,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               onDragLeave={() => setSetlistDropTargetId((c) => (c === setlist.id ? null : c))}
               onDrop={(e) => handleSetlistDrop(e, setlist.id)}
               onSelect={() => { setActiveSetlistId(setlist.id); setActiveSongListId(null); clearActiveSelection(); goToLibraryView(); }}
-              onDelete={() => deleteSetlist(setlist.id)}
             />
           ))}
 
@@ -296,7 +292,6 @@ interface FolderItemProps {
   onDragLeave: () => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
   onSelect: () => void;
-  onDelete: () => void;
 }
 
 function FolderItem({
@@ -309,7 +304,6 @@ function FolderItem({
   onDragLeave,
   onDrop,
   onSelect,
-  onDelete,
 }: FolderItemProps) {
   return (
     <div
@@ -327,9 +321,6 @@ function FolderItem({
         <span className="sidebar-list-name">{name}</span>
         {count > 0 && <span className="sidebar-list-count">{count}</span>}
       </button>
-      <button className="sidebar-list-delete" title="Delete folder" onClick={onDelete}>
-        <Trash2 size={12} />
-      </button>
     </div>
   );
 }
@@ -345,7 +336,6 @@ interface SetlistItemProps {
   onDragLeave: () => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
   onSelect: () => void;
-  onDelete: () => void;
 }
 
 function SetlistItem({
@@ -358,7 +348,6 @@ function SetlistItem({
   onDragLeave,
   onDrop,
   onSelect,
-  onDelete,
 }: SetlistItemProps) {
   return (
     <div
@@ -372,9 +361,6 @@ function SetlistItem({
         <span className="sidebar-setlist-name">{name}</span>
         {songDropTarget && <span className="sidebar-setlist-drop-label">Drop song</span>}
         {count > 0 && <span className="sidebar-setlist-count">{count}</span>}
-      </button>
-      <button className="sidebar-setlist-delete" title="Delete setlist" onClick={onDelete}>
-        <Trash2 size={12} />
       </button>
     </div>
   );
