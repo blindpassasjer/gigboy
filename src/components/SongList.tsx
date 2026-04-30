@@ -544,96 +544,23 @@ export default function SongList({
       </div>
       </div>{/* end song-list-sticky */}
 
-      {filtered.length === 0 ? (
-        <div className="empty-state">
-          <Music size={48} />
-          <p>No songs found.</p>
-        </div>
-      ) : viewMode === 'cards' ? (
-        <div className="song-card-grid" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
-          {filtered.map((song) => {
-            const songPageState = songPageStateBase
-              ? { ...songPageStateBase }
-              : undefined;
+      <div className="song-list-results">
+        {filtered.length === 0 ? (
+          <div className="empty-state">
+            <Music size={48} />
+            <p>No songs found.</p>
+          </div>
+        ) : viewMode === 'cards' ? (
+          <div className="song-card-grid" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
+            {filtered.map((song) => {
+              const songPageState = songPageStateBase
+                ? { ...songPageStateBase }
+                : undefined;
 
-            return (
-            <article
-              key={song.id}
-              className={`song-preview-card${dropTargetSongId === song.id ? ' drop-before' : ''}`}
-              onDragOver={(event) => handleSongDragOver(song.id, event)}
-              onDrop={(event) => handleSongDrop(song.id, event)}
-            >
-              {sortBy === 'custom' && onMoveSong && (
-              <button
-                type="button"
-                className="song-drag-handle"
-                draggable
-                onDragStart={(event) => handleSongDragStart(song, event)}
-                onDragEnd={handleSongDragEnd}
-                aria-label={`Drag ${song.title}`}
-              >
-                <GripVertical size={16} />
-              </button>
-              )}
-              <Link to={`/songs/${song.id}`} state={songPageState} className="song-preview-card-link">
-                <div className="song-preview-card-main">
-                  <span className="song-card-title">{song.title}</span>
-                  {song.artist && <span className="song-card-artist">{song.artist}</span>}
-                </div>
-                <p className="song-preview-text">{songPreviews[song.id]}</p>
-                <div className="song-card-meta">
-                  <LanguageBadge code={song.language} size="sm" />
-                  {song.tags?.map((tag) => (
-                    <span key={tag} className="tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </Link>
-              <div className="song-actions song-actions--stacked">
-                <Link
-                  to={`/songs/${song.id}/edit`}
-                  className="song-action-btn song-action-btn--edit"
-                  title={`Edit ${song.title}`}
-                  aria-label={`Edit ${song.title}`}
-                >
-                  <SquarePen size={14} />
-                </Link>
-                {onRemoveSong && (
-                  <button
-                    className="song-action-btn song-action-btn--remove"
-                    onClick={() => onRemoveSong(song)}
-                    title={`Remove ${song.title}`}
-                    aria-label={`Remove ${song.title}`}
-                  >
-                    <ListMinus size={14} />
-                  </button>
-                )}
-                <button
-                  className="song-action-btn song-action-btn--delete"
-                  onClick={() => onDeleteSong(song)}
-                  title={`Delete ${song.title}`}
-                  aria-label={`Delete ${song.title}`}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </article>
-            );
-          })}
-          {filtered.length > 0 && <div className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
-        </div>
-      ) : (
-        <ul className="song-list" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
-          {filtered.map((song) => {
-            const songPageState = songPageStateBase
-              ? { ...songPageStateBase }
-              : undefined;
-
-            return (
-            <li key={song.id} className={dropTargetSongId === song.id ? 'drop-before' : ''}>
-              <div
-                className="song-card"
+              return (
+              <article
+                key={song.id}
+                className={`song-preview-card${dropTargetSongId === song.id ? ' drop-before' : ''}`}
                 onDragOver={(event) => handleSongDragOver(song.id, event)}
                 onDrop={(event) => handleSongDrop(song.id, event)}
               >
@@ -649,11 +576,12 @@ export default function SongList({
                   <GripVertical size={16} />
                 </button>
                 )}
-                <Link to={`/songs/${song.id}`} state={songPageState} className="song-card-link">
-                  <div className="song-card-main">
+                <Link to={`/songs/${song.id}`} state={songPageState} className="song-preview-card-link">
+                  <div className="song-preview-card-main">
                     <span className="song-card-title">{song.title}</span>
                     {song.artist && <span className="song-card-artist">{song.artist}</span>}
                   </div>
+                  <p className="song-preview-text">{songPreviews[song.id]}</p>
                   <div className="song-card-meta">
                     <LanguageBadge code={song.language} size="sm" />
                     {song.tags?.map((tag) => (
@@ -663,7 +591,7 @@ export default function SongList({
                     ))}
                   </div>
                 </Link>
-                <div className="song-actions">
+                <div className="song-actions song-actions--stacked">
                   <Link
                     to={`/songs/${song.id}/edit`}
                     className="song-action-btn song-action-btn--edit"
@@ -691,13 +619,87 @@ export default function SongList({
                     <Trash2 size={14} />
                   </button>
                 </div>
-              </div>
-            </li>
-            );
-          })}
-          {filtered.length > 0 && <li className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
-        </ul>
-      )}
+              </article>
+              );
+            })}
+            {filtered.length > 0 && <div className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
+          </div>
+        ) : (
+          <ul className="song-list" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
+            {filtered.map((song) => {
+              const songPageState = songPageStateBase
+                ? { ...songPageStateBase }
+                : undefined;
+
+              return (
+              <li key={song.id} className={dropTargetSongId === song.id ? 'drop-before' : ''}>
+                <div
+                  className="song-card"
+                  onDragOver={(event) => handleSongDragOver(song.id, event)}
+                  onDrop={(event) => handleSongDrop(song.id, event)}
+                >
+                  {sortBy === 'custom' && onMoveSong && (
+                  <button
+                    type="button"
+                    className="song-drag-handle"
+                    draggable
+                    onDragStart={(event) => handleSongDragStart(song, event)}
+                    onDragEnd={handleSongDragEnd}
+                    aria-label={`Drag ${song.title}`}
+                  >
+                    <GripVertical size={16} />
+                  </button>
+                  )}
+                  <Link to={`/songs/${song.id}`} state={songPageState} className="song-card-link">
+                    <div className="song-card-main">
+                      <span className="song-card-title">{song.title}</span>
+                      {song.artist && <span className="song-card-artist">{song.artist}</span>}
+                    </div>
+                    <div className="song-card-meta">
+                      <LanguageBadge code={song.language} size="sm" />
+                      {song.tags?.map((tag) => (
+                        <span key={tag} className="tag">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </Link>
+                  <div className="song-actions">
+                    <Link
+                      to={`/songs/${song.id}/edit`}
+                      className="song-action-btn song-action-btn--edit"
+                      title={`Edit ${song.title}`}
+                      aria-label={`Edit ${song.title}`}
+                    >
+                      <SquarePen size={14} />
+                    </Link>
+                    {onRemoveSong && (
+                      <button
+                        className="song-action-btn song-action-btn--remove"
+                        onClick={() => onRemoveSong(song)}
+                        title={`Remove ${song.title}`}
+                        aria-label={`Remove ${song.title}`}
+                      >
+                        <ListMinus size={14} />
+                      </button>
+                    )}
+                    <button
+                      className="song-action-btn song-action-btn--delete"
+                      onClick={() => onDeleteSong(song)}
+                      title={`Delete ${song.title}`}
+                      aria-label={`Delete ${song.title}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </li>
+              );
+            })}
+            {filtered.length > 0 && <li className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
+          </ul>
+        )}
+      </div>
 
       {showSongPicker && canAddSongsToList && (
         <div className="song-picker-overlay" role="dialog" aria-modal="true" aria-label="Add songs to songlist">

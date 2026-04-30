@@ -329,7 +329,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 /* ─── Song List ─────────────────────────────────────────────────────────────── */
-.song-list-page { display: flex; flex-direction: column; }
+.song-list-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  background: var(--bg);
+}
+
+.song-list-results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
 
 .songlist-header {
   flex-wrap: wrap;
