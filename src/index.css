@@ -95,11 +95,17 @@ button { cursor: pointer; font: inherit; border: none; background: none; }
 input, select, textarea { font: inherit; color: var(--text); }
 
 /* ─── App Shell ─────────────────────────────────────────────────────────────── */
-.app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
 
 .app-body {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   position: relative;
 }
@@ -225,6 +231,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .main-content {
   flex: 1;
+  min-height: 0;
   min-width: 0;
   padding: 1.5rem 1.5rem;
   overflow-y: auto;

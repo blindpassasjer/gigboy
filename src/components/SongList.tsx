@@ -140,6 +140,10 @@ export default function SongList({
   const [pickerQuery, setPickerQuery] = useState('');
   const [showListAppearanceEditor, setShowListAppearanceEditor] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [canDragReorder, setCanDragReorder] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return !window.matchMedia('(pointer: coarse)').matches;
+  });
   const [renameValue, setRenameValue] = useState(listName ?? '');
   const [listIconDraft, setListIconDraft] = useState(listIcon ?? '🎵');
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -228,6 +232,19 @@ export default function SongList({
   }, [listName]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(pointer: coarse)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setCanDragReorder(!event.matches);
+    };
+
+    setCanDragReorder(!mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
     if (!isRenaming) return;
     renameInputRef.current?.focus();
     renameInputRef.current?.select();
@@ -293,6 +310,10 @@ export default function SongList({
   };
 
   const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
+    if (!canDragReorder) {
+      return;
+    }
+
     setDraggingSongId(song.id);
     setDropTargetSongId(null);
     setDropAtEnd(false);
@@ -309,7 +330,7 @@ export default function SongList({
   };
 
   const handleSongDragOver = (songId: string, event: React.DragEvent<HTMLElement>) => {
-    if (!onMoveSong || !event.dataTransfer.types.includes(SONG_DRAG_MIME)) {
+    if (!onMoveSong || !canDragReorder || !event.dataTransfer.types.includes(SONG_DRAG_MIME)) {
       return;
     }
 
@@ -341,7 +362,7 @@ export default function SongList({
   };
 
   const handleListEndDragOver = (event: React.DragEvent<HTMLElement>) => {
-    if (!onMoveSong || !event.dataTransfer.types.includes(SONG_DRAG_MIME)) {
+    if (!onMoveSong || !canDragReorder || !event.dataTransfer.types.includes(SONG_DRAG_MIME)) {
       return;
     }
 
@@ -564,7 +585,7 @@ export default function SongList({
                 onDragOver={(event) => handleSongDragOver(song.id, event)}
                 onDrop={(event) => handleSongDrop(song.id, event)}
               >
-                {sortBy === 'custom' && onMoveSong && (
+                {sortBy === 'custom' && onMoveSong && canDragReorder && (
                 <button
                   type="button"
                   className="song-drag-handle"
@@ -638,7 +659,7 @@ export default function SongList({
                   onDragOver={(event) => handleSongDragOver(song.id, event)}
                   onDrop={(event) => handleSongDrop(song.id, event)}
                 >
-                  {sortBy === 'custom' && onMoveSong && (
+                  {sortBy === 'custom' && onMoveSong && canDragReorder && (
                   <button
                     type="button"
                     className="song-drag-handle"
