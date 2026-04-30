@@ -423,10 +423,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-list-sticky {
   position: sticky;
-  top: -1.5rem;
+  top: .25rem;
   z-index: 80;
   background: var(--bg);
-  margin: -1.5rem -1.5rem .75rem;
+  margin: 0 -1.5rem .75rem;
   padding: 0 0 .9rem;
   display: flex;
   flex-direction: column;
@@ -3609,9 +3609,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky {
-    margin: -1.25rem -1rem .75rem;
+    margin: 0 -1rem .75rem;
     padding: 0 0 .85rem;
-    top: -1.25rem;
+    top: .25rem;
   }
 
   .song-list-sticky > .setlist-header {
