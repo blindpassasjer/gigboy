@@ -291,6 +291,15 @@ export default function SetlistConcertPage() {
         </button>
         <button
           type="button"
+          className="concert-chip-btn"
+          onClick={() => setShowSongNavigator((value) => !value)}
+          aria-label={showSongNavigator ? 'Hide song navigator' : 'Show song navigator'}
+        >
+          <List size={14} />
+          {showSongNavigator ? 'Hide songs' : 'Show songs'}
+        </button>
+        <button
+          type="button"
           className="concert-chip-btn concert-chip-btn--danger"
           onClick={() => { void handleStopConcert(); }}
           aria-label="Stop concert mode"
