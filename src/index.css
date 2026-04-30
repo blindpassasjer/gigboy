@@ -435,6 +435,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   order: -1;
 }
 
+.song-list-sticky > .setlist-header {
+  margin: 0 1.5rem;
+  width: auto;
+}
+
 .song-list-controls {
   display: flex;
   gap: .75rem;
@@ -3608,6 +3613,10 @@ input, select, textarea { font: inherit; color: var(--text); }
     margin: -1.25rem -1rem .75rem;
     padding: 0 0 .85rem;
     top: -1.25rem;
+  }
+
+  .song-list-sticky > .setlist-header {
+    margin: 0 1rem;
   }
 
   .song-list-controls {
