@@ -20,6 +20,8 @@ export interface CollaborationInvite {
   id: string;
   ownerId: string;
   ownerEmail: string;
+  recipientUsername?: string;
+  recipientUsernameLower?: string;
   recipientEmail: string;
   recipientEmailLower: string;
   recipientUid?: string;

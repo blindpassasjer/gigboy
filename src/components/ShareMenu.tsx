@@ -8,6 +8,8 @@ import { isValidEmail } from '../lib/collaboration';
 import { createInviteOnServer } from '../lib/shareApi';
 import type { CollaborationPermission, ShareResourceType } from '../types';
 
+const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_.-]{1,22}[a-z0-9])?$/;
+
 interface ShareMenuProps {
   resourceType: ShareResourceType;
   resourceId: string;
@@ -32,7 +34,7 @@ export default function ShareMenu({
   const { user } = useAuth();
   const { bands } = useBands();
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState('');
+  const [recipientQuery, setRecipientQuery] = useState('');
   const [permission, setPermission] = useState<CollaborationPermission>('viewer');
   const [submittingInvite, setSubmittingInvite] = useState(false);
   const [sharingBandId, setSharingBandId] = useState<string | null>(null);
@@ -50,11 +52,36 @@ export default function ShareMenu({
     return () => document.removeEventListener('mousedown', onPointerDown);
   }, [open]);
 
-  const normalizedEmail = useMemo(() => email.trim(), [email]);
+  const normalizedRecipientQuery = useMemo(() => recipientQuery.trim(), [recipientQuery]);
   const shareableBands = useMemo(
     () => bands.filter((band) => band.memberIds.some((memberId) => memberId !== user?.id)),
     [bands, user?.id]
   );
+  const usernameSuggestions = useMemo(() => {
+    const seen = new Set<string>();
+    const entries: string[] = [];
+
+    bands.forEach((band) => {
+      band.memberIds.forEach((memberId) => {
+        if (memberId === user?.id) return;
+        const username = band.memberUsernames[memberId]?.trim();
+        if (!username) return;
+        const key = username.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        entries.push(username);
+      });
+    });
+
+    return entries.sort((a, b) => a.localeCompare(b));
+  }, [bands, user?.id]);
+  const autocompleteUsernames = useMemo(() => {
+    const query = normalizedRecipientQuery.toLowerCase();
+    if (!query) return usernameSuggestions.slice(0, 10);
+    return usernameSuggestions
+      .filter((username) => username.toLowerCase().includes(query))
+      .slice(0, 10);
+  }, [normalizedRecipientQuery, usernameSuggestions]);
 
   const validate = () => {
     if (!user?.id || !user.email) {
@@ -62,8 +89,21 @@ export default function ShareMenu({
       return false;
     }
 
-    if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
-      toast.error('Please enter a valid email.');
+    if (!normalizedRecipientQuery) {
+      toast.error('Please enter an email or username.');
+      return false;
+    }
+
+    if (normalizedRecipientQuery.includes('@')) {
+      if (!isValidEmail(normalizedRecipientQuery)) {
+        toast.error('Please enter a valid email.');
+        return false;
+      }
+      return true;
+    }
+
+    if (!USERNAME_PATTERN.test(normalizedRecipientQuery.toLowerCase())) {
+      toast.error('Please enter a valid username.');
       return false;
     }
 
@@ -78,7 +118,7 @@ export default function ShareMenu({
       await createInviteOnServer({
         userId: user.id,
         userEmail: user.email,
-        recipientEmail: normalizedEmail,
+        recipientQuery: normalizedRecipientQuery,
         resourceType,
         resourceId,
         resourceName,
@@ -86,7 +126,7 @@ export default function ShareMenu({
       });
 
       toast.success('Invite sent.');
-      setEmail('');
+      setRecipientQuery('');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to send invite.';
       toast.error(message);
@@ -125,7 +165,7 @@ export default function ShareMenu({
         await createInviteOnServer({
           userId: user.id,
           userEmail: user.email,
-          recipientEmail,
+          recipientQuery: recipientEmail,
           resourceType,
           resourceId,
           resourceName,
@@ -167,16 +207,24 @@ export default function ShareMenu({
           <p className="share-menu-title">Share {resourceName}</p>
 
           <label className="share-menu-field">
-            <span>Email</span>
+            <span>Email or username</span>
             <div className="share-menu-input-wrap">
               <Mail size={14} />
               <input
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                type="text"
+                placeholder="name@example.com or username"
+                value={recipientQuery}
+                onChange={(event) => setRecipientQuery(event.target.value)}
+                list="share-menu-username-suggestions"
               />
             </div>
+            {autocompleteUsernames.length > 0 ? (
+              <datalist id="share-menu-username-suggestions">
+                {autocompleteUsernames.map((username) => (
+                  <option key={username} value={username} />
+                ))}
+              </datalist>
+            ) : null}
           </label>
 
           <label className="share-menu-field">

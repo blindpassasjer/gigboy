@@ -32,7 +32,7 @@ async function postJson<T>(path: string, body: Record<string, unknown>, headers:
 export async function createInviteOnServer(params: {
   userId: string;
   userEmail: string;
-  recipientEmail: string;
+  recipientQuery: string;
   resourceType: ShareResourceType;
   resourceId: string;
   resourceName: string;

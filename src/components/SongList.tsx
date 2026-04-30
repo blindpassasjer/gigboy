@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -13,6 +13,7 @@ import {
   SquarePen,
   Trash2,
   ListMinus,
+  Smile,
 } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
@@ -82,9 +83,11 @@ interface Props {
   allSongs?: Song[];
   onMoveSong?: (songId: string, beforeSongId: string | null) => void;
   onDeleteSong: (song: Song) => void | Promise<void>;
+  onRenameList?: (name: string) => void | Promise<void>;
   onUpdateListAppearance?: (appearance: { icon?: string }) => void;
   onRemoveSong?: (song: Song) => void;
   onAddSong?: (songId: string) => void;
+  onAddSongsClick?: () => void;
   shareConfig?: {
     resourceId: string;
     resourceName: string;
@@ -102,9 +105,11 @@ export default function SongList({
   allSongs,
   onMoveSong,
   onDeleteSong,
+  onRenameList,
   onUpdateListAppearance,
   onRemoveSong,
   onAddSong,
+  onAddSongsClick,
   shareConfig,
 }: Props) {
   const [query, setQuery] = useState('');
@@ -129,12 +134,17 @@ export default function SongList({
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
   const [showListAppearanceEditor, setShowListAppearanceEditor] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(listName ?? '');
   const [listIconDraft, setListIconDraft] = useState(listIcon ?? '🎵');
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const songPageStateBase = onRemoveSong && listName
     ? { backTo: '/', backLabel: listName }
     : undefined;
 
-  const canAddSongs = Boolean(allSongs && onAddSong);
+  const canAddSongsToList = Boolean(allSongs && onAddSong);
+  const canTriggerAddSongs = canAddSongsToList || Boolean(onAddSongsClick);
+  const showShareAction = canAddSongsToList || Boolean(shareConfig);
 
   const languages = useMemo(
     () => Array.from(new Set(songs.map((s) => s.language))).sort(),
@@ -209,6 +219,16 @@ export default function SongList({
   }, [listIcon]);
 
   useEffect(() => {
+    setRenameValue(listName ?? '');
+  }, [listName]);
+
+  useEffect(() => {
+    if (!isRenaming) return;
+    renameInputRef.current?.focus();
+    renameInputRef.current?.select();
+  }, [isRenaming]);
+
+  useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
 
@@ -250,6 +270,21 @@ export default function SongList({
     onUpdateListAppearance({ icon: undefined });
     setListIconDraft('🎵');
     setShowListAppearanceEditor(false);
+  };
+
+  const commitRename = () => {
+    if (!onRenameList || !listName) {
+      setIsRenaming(false);
+      return;
+    }
+
+    const trimmed = renameValue.trim();
+    if (trimmed && trimmed !== listName) {
+      void onRenameList(trimmed);
+    }
+
+    setRenameValue(listName);
+    setIsRenaming(false);
   };
 
   const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
@@ -333,10 +368,41 @@ export default function SongList({
       <div className={`${headerVariant === 'bands' ? 'bands-header' : 'songlist-header'} setlist-header`}>
         <div className="setlist-title-block">
           {listName && (
-            <h2 className="song-list-heading setlist-title">
-              {listIcon && <span className="song-list-heading-icon" aria-hidden="true">{listIcon}</span>}
-              <span>{listName}</span>
-            </h2>
+            isRenaming ? (
+              <input
+                ref={renameInputRef}
+                type="text"
+                value={renameValue}
+                onChange={(event) => setRenameValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') commitRename();
+                  if (event.key === 'Escape') {
+                    setRenameValue(listName);
+                    setIsRenaming(false);
+                  }
+                }}
+                onBlur={commitRename}
+                className="setlist-name-input"
+              />
+            ) : (
+              <div className="song-list-title-row">
+                <h2 className="song-list-heading setlist-title">
+                  {listIcon && <span className="song-list-heading-icon" aria-hidden="true">{listIcon}</span>}
+                  <span>{listName}</span>
+                </h2>
+                {onRenameList && (
+                  <button
+                    type="button"
+                    className="title-rename-btn"
+                    onClick={() => setIsRenaming(true)}
+                    title={`Rename ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
+                    aria-label={`Rename ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
+                  >
+                    <SquarePen size={14} />
+                  </button>
+                )}
+              </div>
+            )
           )}
           <p className="song-list-summary setlist-song-count">{filtered.length} song{filtered.length === 1 ? '' : 's'}</p>
           {headerMeta ? <p className="song-list-summary setlist-song-count">{headerMeta}</p> : null}
@@ -350,10 +416,10 @@ export default function SongList({
               onClick={() => setShowListAppearanceEditor((value) => !value)}
               title="Set songlist icon"
             >
-              Set icon
+              <Smile size={14} />
             </button>
           )}
-          {canAddSongs && (
+          {showShareAction && (
             <ShareMenu
               resourceType="songlist"
               resourceId={shareConfig?.resourceId ?? ''}
@@ -364,14 +430,14 @@ export default function SongList({
               iconOnly
             />
           )}
-          {canAddSongs && (
+          {canTriggerAddSongs && (
             <button
               type="button"
               className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={openSongPicker}
+              onClick={canAddSongsToList ? openSongPicker : onAddSongsClick}
               title="Add songs"
             >
-              <Plus size={14} /> Add songs
+              <Plus size={14} />
             </button>
           )}
           <div className="view-toggle" role="tablist" aria-label="Song view mode">
@@ -381,7 +447,7 @@ export default function SongList({
               onClick={() => handleSetViewMode('list')}
               aria-pressed={viewMode === 'list'}
             >
-              <Rows3 size={15} /> List
+              <Rows3 size={15} />
             </button>
             <button
               type="button"
@@ -389,7 +455,7 @@ export default function SongList({
               onClick={() => handleSetViewMode('cards')}
               aria-pressed={viewMode === 'cards'}
             >
-              <LayoutGrid size={15} /> Cards
+              <LayoutGrid size={15} />
             </button>
           </div>
         </div>
@@ -617,7 +683,7 @@ export default function SongList({
         </ul>
       )}
 
-      {showSongPicker && canAddSongs && (
+      {showSongPicker && canAddSongsToList && (
         <div className="song-picker-overlay" role="dialog" aria-modal="true" aria-label="Add songs to songlist">
           <div className="song-picker-panel">
             <div className="song-picker-header">

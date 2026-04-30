@@ -4,6 +4,7 @@ import { Folder, FolderOpen, Trash2, X, ListMusic, ListMusicIcon, Users, Plus } 
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
+import { useSongs } from '../context/SongsContext';
 
 const SONG_DRAG_MIME = 'application/x-folio-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
@@ -26,6 +27,7 @@ interface Props {
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { songs } = useSongs();
   const {
     songLists,
     activeSongListId,
@@ -45,7 +47,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     setActiveSetlistId,
   } = useSetlists();
 
-  const { bands, createBand } = useBands();
+  const { bands, bandSongsByBandId, refreshBandSongs, createBand } = useBands();
 
   const [addingFolder, setAddingFolder] = useState(false);
   const [addingSetlist, setAddingSetlist] = useState(false);
@@ -54,6 +56,20 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [songDropTargetId, setSongDropTargetId] = useState<string | null>(null);
   const [setlistDropTargetId, setSetlistDropTargetId] = useState<string | null>(null);
   const setlistDropActive = setlistDropTargetId !== null;
+
+  useEffect(() => {
+    const missingBandSongCollections = bands
+      .map((band) => band.id)
+      .filter((bandId) => bandSongsByBandId[bandId] === undefined);
+
+    if (missingBandSongCollections.length === 0) return;
+
+    missingBandSongCollections.forEach((bandId) => {
+      void refreshBandSongs(bandId).catch(() => {
+        // Sidebar counts are best-effort; detailed errors are handled on band pages.
+      });
+    });
+  }, [bands, bandSongsByBandId, refreshBandSongs]);
 
   const goToLibraryView = () => {
     if (pathname !== '/') {
@@ -150,6 +166,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           >
             <ListMusic size={14} />
             <span className="sidebar-list-name">All songs</span>
+            {songs.length > 0 && <span className="sidebar-list-count">{songs.length}</span>}
           </button>
         </div>
 
@@ -204,6 +221,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               >
                 {band.icon ? <span className="sidebar-list-icon" aria-hidden="true">{band.icon}</span> : <Users size={14} />}
                 <span className="sidebar-band-name">{band.name}</span>
+                {(bandSongsByBandId[band.id]?.length ?? 0) > 0 && (
+                  <span className="sidebar-band-count">{bandSongsByBandId[band.id]?.length ?? 0}</span>
+                )}
               </button>
             </div>
           ))}

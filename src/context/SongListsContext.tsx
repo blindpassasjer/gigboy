@@ -145,6 +145,7 @@ interface SongListsContextValue {
   deleteCategory: (id: string) => void;
   addSongList: (name: string, folderId?: string) => void;
   deleteSongList: (id: string) => void;
+  renameSongList: (id: string, name: string) => void;
   addSongToList: (listId: string, songId: string) => void;
   removeSongFromList: (listId: string, songId: string) => void;
   moveSongInList: (listId: string, songId: string, beforeSongId: string | null) => void;
@@ -323,6 +324,30 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     setActiveSongListId((prev) => (prev === id ? null : prev));
   }, [userId]);
 
+  const renameSongList = useCallback((id: string, name: string) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+
+    setSongLists((prev) => {
+      const list = prev.find((l) => l.id === id);
+      if (!list) return prev;
+      if (!canEditSongList(list, userId)) return prev;
+      if (list.name === trimmedName) return prev;
+
+      const nextList = { ...list, name: trimmedName };
+      const nextLists = prev.map((l) => (l.id === id ? nextList : l));
+
+      if (db && userId) {
+        void writeSongList(nextList, userId).catch((error) => {
+          console.error('Failed to rename song list in Firestore.', error);
+          setSongLists(prev);
+        });
+      }
+
+      return nextLists;
+    });
+  }, [userId]);
+
   const setActiveCategoryId = useCallback((id: string | null) => {
     setActiveCategoryState(id);
     setActiveSongListId(null);
@@ -472,6 +497,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
         deleteCategory,
         addSongList,
         deleteSongList,
+        renameSongList,
         addSongToList,
         removeSongFromList,
         moveSongInList,

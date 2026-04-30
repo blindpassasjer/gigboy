@@ -1,6 +1,6 @@
 import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Trash2, Music, Plus, Search, X, Printer } from 'lucide-react';
+import { GripVertical, Trash2, Music, Plus, Search, X, Printer, SquarePen, Play, Smile } from 'lucide-react';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
@@ -233,10 +233,21 @@ export default function SetlistsView({
               className="setlist-name-input"
             />
           ) : (
-            <h1 className="song-list-heading setlist-title" onDoubleClick={() => setIsRenaming(true)}>
-              {currentSetlist?.icon ? <span className="song-list-heading-icon" aria-hidden="true">{currentSetlist.icon}</span> : null}
-              {setlistName}
-            </h1>
+            <div className="song-list-title-row">
+              <h1 className="song-list-heading setlist-title" onDoubleClick={() => setIsRenaming(true)}>
+                {currentSetlist?.icon ? <span className="song-list-heading-icon" aria-hidden="true">{currentSetlist.icon}</span> : null}
+                {setlistName}
+              </h1>
+              <button
+                type="button"
+                className="title-rename-btn"
+                onClick={() => setIsRenaming(true)}
+                title="Rename setlist"
+                aria-label="Rename setlist"
+              >
+                <SquarePen size={14} />
+              </button>
+            </div>
           )}
           <p className="song-list-summary setlist-song-count">
             {songs.length} song{songs.length === 1 ? '' : 's'}
@@ -249,7 +260,7 @@ export default function SetlistsView({
               to={`/setlists/${setlistId}/concert`}
               title={`Start concert for ${setlistName}`}
             >
-              Start Concert
+              <Play size={14} />
             </Link>
           ) : (
             <button
@@ -258,7 +269,7 @@ export default function SetlistsView({
               disabled
               title="Add songs to enable concert mode"
             >
-              Start Concert
+              <Play size={14} />
             </button>
           )}
           <button
@@ -267,7 +278,7 @@ export default function SetlistsView({
             onClick={handlePrintSetlist}
             title={`Print ${setlistName}`}
           >
-            <Printer size={14} /> Print
+            <Printer size={14} />
           </button>
           <ShareMenu
             resourceType="setlist"
@@ -282,21 +293,14 @@ export default function SetlistsView({
             onClick={openSongPicker}
             title="Add songs"
           >
-            <Plus size={14} /> Add songs
+            <Plus size={14} />
           </button>
           <button
             className="setlist-action-btn setlist-action-btn--secondary"
             onClick={() => setShowIconEditor((value) => !value)}
             title="Set setlist icon"
           >
-            Set icon
-          </button>
-          <button
-            className="setlist-action-btn"
-            onClick={() => setIsRenaming(true)}
-            title="Rename setlist"
-          >
-            Rename
+            <Smile size={14} />
           </button>
         </div>
       </div>

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSongs } from '../context/SongsContext';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
@@ -7,8 +9,10 @@ import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 
 const INTERNAL_SONGLISTS_CATEGORY_ID = 'songlists-default';
+const ALL_SONGS_ICON_KEY = 'folio-all-songs-icon';
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const { songs, deleteSong, moveSong } = useSongs();
   const {
     activeCategoryId,
@@ -18,6 +22,7 @@ export default function HomePage() {
     addSongToList,
     moveSongInList,
     removeSongFromList,
+    renameSongList,
     updateSongListAppearance,
   } = useSongLists();
   const {
@@ -32,6 +37,10 @@ export default function HomePage() {
   const activeSetlist = setlists.find((s) => s.id === activeSetlistId) ?? null;
   const activeCategory = categories.find((category) => category.id === activeCategoryId) ?? null;
   const songsById = new Map(songs.map((song) => [song.id, song]));
+  const [allSongsIcon, setAllSongsIcon] = useState<string | undefined>(() => {
+    const stored = window.localStorage.getItem(ALL_SONGS_ICON_KEY)?.trim();
+    return stored ? stored : undefined;
+  });
   
   // If viewing a setlist, show SetlistsView
   if (activeSetlist) {
@@ -74,6 +83,19 @@ export default function HomePage() {
     : activeCategorySongIds
       ? songs.filter((song) => activeCategorySongIds.has(song.id))
       : songs;
+  const isAllSongsView = !activeList && !activeCategorySongIds;
+
+  function handleUpdateAllSongsAppearance(appearance: { icon?: string }) {
+    const icon = appearance.icon?.trim();
+    if (!icon) {
+      window.localStorage.removeItem(ALL_SONGS_ICON_KEY);
+      setAllSongsIcon(undefined);
+      return;
+    }
+
+    window.localStorage.setItem(ALL_SONGS_ICON_KEY, icon);
+    setAllSongsIcon(icon);
+  }
 
   function handleMoveSong(songId: string, beforeSongId: string | null) {
     if (activeList) {
@@ -96,15 +118,23 @@ export default function HomePage() {
     <SongList
       songs={displayedSongs}
       listName={activeList?.name ?? activeCategory?.name ?? 'All Songs'}
+      listIcon={activeList?.icon ?? (isAllSongsView ? allSongsIcon : undefined)}
       allSongs={activeList ? songs : undefined}
       onAddSong={activeList ? (songId) => addSongToList(activeList.id, songId) : undefined}
+      onAddSongsClick={isAllSongsView ? () => navigate('/add') : undefined}
       onMoveSong={handleMoveSong}
       onDeleteSong={handleDeleteSong}
-      listIcon={activeList?.icon}
+      onRenameList={
+        activeList
+          ? (name) => renameSongList(activeList.id, name)
+          : undefined
+      }
       onUpdateListAppearance={
         activeList
           ? (appearance) => updateSongListAppearance(activeList.id, appearance)
-          : undefined
+          : isAllSongsView
+            ? handleUpdateAllSongsAppearance
+            : undefined
       }
       onRemoveSong={activeList ? (song) => removeSongFromList(activeList.id, song.id) : undefined}
       shareConfig={
@@ -113,7 +143,13 @@ export default function HomePage() {
               resourceId: activeList.id,
               resourceName: activeList.name,
             }
-          : undefined
+          : isAllSongsView
+            ? {
+                resourceId: '',
+                resourceName: 'All Songs',
+                disabled: true,
+              }
+            : undefined
       }
     />
   );

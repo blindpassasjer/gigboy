@@ -8,16 +8,18 @@ import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
 import UserAvatar from '../components/UserAvatar';
 import type { CollaborationPermission, Song } from '../types';
+import { showConfirmToast } from '../utils/toastDialogs';
 
 export default function BandDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { songs } = useSongs();
+  const { songs, deleteSong } = useSongs();
   const {
     bands,
     bandSongsByBandId,
     loading,
+    renameBand,
     refreshBandSongs,
     inviteMember,
     removeMember,
@@ -147,11 +149,36 @@ export default function BandDetailPage() {
     toast.success('Song removed from band library.');
   };
 
+  const handleDeleteSong = async (song: Song) => {
+    if (!user?.id || song.ownerId !== user.id) {
+      toast.error('Only the song owner can delete this song from the database.');
+      return;
+    }
+
+    const confirmed = await showConfirmToast(`Delete "${song.title}" from the database? This cannot be undone.`, {
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
+
+    await deleteSong(song.id);
+    toast.success('Song deleted from database.');
+  };
+
   const handleMoveSong = async (songId: string, beforeSongId: string | null) => {
     const error = await moveBandSong(band.id, songId, beforeSongId);
     if (error) {
       toast.error(error);
     }
+  };
+
+  const handleRenameBand = async (name: string) => {
+    const error = await renameBand(band.id, name);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    toast.success('Band renamed.');
   };
 
   return (
@@ -161,6 +188,7 @@ export default function BandDetailPage() {
         listName={band.name}
         headerMeta={`${band.memberIds.length} member${band.memberIds.length === 1 ? '' : 's'} in this band.`}
         headerVariant="bands"
+        onRenameList={canEditBand ? (name) => void handleRenameBand(name) : undefined}
         headerActions={(
           <button
             type="button"
@@ -168,11 +196,12 @@ export default function BandDetailPage() {
             onClick={() => setShowMembersModal(true)}
             title="Manage band members"
           >
-            <Users size={14} /> Members
+            <Users size={14} />
           </button>
         )}
         allSongs={ownedSongs}
-        onDeleteSong={canEditBand ? handleRemoveSong : async () => {}}
+        onDeleteSong={canEditBand ? handleDeleteSong : async () => {}}
+        onRemoveSong={canEditBand ? handleRemoveSong : undefined}
         onAddSong={canEditBand ? handleAddSong : undefined}
         onMoveSong={canEditBand ? handleMoveSong : undefined}
       />

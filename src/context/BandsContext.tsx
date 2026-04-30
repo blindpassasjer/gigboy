@@ -143,6 +143,7 @@ interface BandsContextValue {
   cloudRequired: boolean;
   createBand: (name: string, description?: string, icon?: string) => Promise<{ bandId: string | null; error: string | null }>;
   deleteBand: (bandId: string) => Promise<string | null>;
+  renameBand: (bandId: string, name: string) => Promise<string | null>;
   inviteMember: (bandId: string, recipientUsername: string, role: CollaborationPermission) => Promise<string | null>;
   removeMember: (bandId: string, memberId: string) => Promise<string | null>;
   leaveBand: (bandId: string) => Promise<string | null>;
@@ -317,6 +318,46 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [bands, userEmail, userId]);
+
+  const renameBand = useCallback(async (bandId: string, name: string) => {
+    if (!db || !userId) {
+      return 'Bands require cloud sync.';
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return 'Band name is required.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return 'Band not found.';
+    }
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const previousBands = bands;
+    const now = new Date().toISOString();
+    const nextBands = bands
+      .map((entry) => (entry.id === bandId ? { ...entry, name: trimmedName, updatedAt: now } : entry))
+      .sort(compareBands);
+
+    setBands(nextBands);
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId), {
+        name: trimmedName,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBands(previousBands);
+      return error instanceof Error ? error.message : 'Failed to rename band.';
+    }
+  }, [bands, userId]);
 
   const inviteMember = useCallback(async (bandId: string, recipientUsername: string, role: CollaborationPermission) => {
     if (!userId) {
@@ -511,6 +552,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     cloudRequired: !firebaseEnabled,
     createBand,
     deleteBand,
+    renameBand,
     inviteMember,
     removeMember,
     leaveBand,
@@ -528,6 +570,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     leaveBand,
     loading,
     moveBandSong,
+    renameBand,
     refreshBandSongs,
     removeMember,
     removeSongFromBandLibrary,

@@ -153,7 +153,7 @@ export default function Layout({ children }: Props) {
         <main className="main-content">{children}</main>
       </div>
       {!isConcertRoute && !pathname.startsWith('/bands') && (
-        <Link to="/add" className="fab-add-song" title="Add song" aria-label="Add song">
+        <Link to="/add" className="fab-add-song" title="create song" aria-label="create song">
           <Plus size={22} />
         </Link>
       )}

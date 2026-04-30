@@ -304,6 +304,41 @@ input, select, textarea { font: inherit; color: var(--text); }
   line-height: 1;
 }
 
+.song-list-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+.title-rename-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  color: var(--muted);
+  border: 1px solid transparent;
+}
+
+.title-rename-btn:hover {
+  color: var(--text);
+  background: var(--bg);
+  border-color: var(--border);
+}
+
+.setlist-name-input {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: .65rem;
+  padding: .45rem .65rem;
+  min-width: 220px;
+  max-width: min(100%, 420px);
+  background: var(--surface);
+}
+
 .song-list-summary {
   margin-top: .25rem;
   color: var(--muted);
@@ -2313,7 +2348,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .35rem;
   flex: 1;
   padding: .3rem .4rem;
-  border-left: 3px solid color-mix(in srgb, var(--list-accent) 45%, transparent);
   border-radius: 5px;
   font-size: .85rem;
   color: var(--muted);
