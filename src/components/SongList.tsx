@@ -11,6 +11,7 @@ import {
   Plus,
   X,
   SquarePen,
+  PenLine,
   Trash2,
   ListMinus,
   Smile,
@@ -398,7 +399,7 @@ export default function SongList({
                     title={`Rename ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
                     aria-label={`Rename ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
                   >
-                    <SquarePen size={14} />
+                    <PenLine size={14} />
                   </button>
                 )}
               </div>

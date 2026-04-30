@@ -1,6 +1,6 @@
 import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Trash2, Music, Plus, Search, X, Printer, SquarePen, Play, Smile } from 'lucide-react';
+import { GripVertical, Trash2, Music, Plus, Search, X, Printer, PenLine, Play, Smile } from 'lucide-react';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
@@ -245,7 +245,7 @@ export default function SetlistsView({
                 title="Rename setlist"
                 aria-label="Rename setlist"
               >
-                <SquarePen size={14} />
+                <PenLine size={14} />
               </button>
             </div>
           )}

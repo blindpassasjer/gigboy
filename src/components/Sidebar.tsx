@@ -222,7 +222,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 {band.icon ? <span className="sidebar-list-icon" aria-hidden="true">{band.icon}</span> : <Users size={14} />}
                 <span className="sidebar-band-name">{band.name}</span>
                 {(bandSongsByBandId[band.id]?.length ?? 0) > 0 && (
-                  <span className="sidebar-band-count">{bandSongsByBandId[band.id]?.length ?? 0}</span>
+                  <span className="sidebar-list-count">{bandSongsByBandId[band.id]?.length ?? 0}</span>
                 )}
               </button>
             </div>
