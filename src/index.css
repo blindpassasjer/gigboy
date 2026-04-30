@@ -90,11 +90,13 @@ button { cursor: pointer; font: inherit; border: none; background: none; }
 input, select, textarea { font: inherit; color: var(--text); }
 
 /* ─── App Shell ─────────────────────────────────────────────────────────────── */
+/* Fixed-height shell keeps the sidebar + main-content inside the viewport on wide screens. */
 .app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .app-body {
@@ -105,6 +107,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   position: relative;
 }
 
+/* Narrow viewports (portrait tablet / phone): let the page scroll normally. */
 .app-body--narrow {
   overflow: visible;
 }
@@ -3631,6 +3634,14 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
+  /* Narrow layout: body/page scrolls — remove the fixed-height shell constraint. */
+  .app-shell {
+    height: auto;
+    min-height: 100svh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
   .topbar {
     padding: 0 1rem;
     gap: .75rem;
@@ -3646,6 +3657,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .main-content {
     padding: 1.25rem 1rem;
+    overflow-y: visible;
+    overscroll-behavior-y: auto;
   }
 
   .song-list-sticky {
