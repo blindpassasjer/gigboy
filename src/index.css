@@ -45,6 +45,50 @@ body {
 
 #root { min-height: 100vh; }
 
+/* Touch ergonomics and fewer accidental double-taps on mobile controls */
+:where(a, button, input, select, textarea, [role="button"]) {
+  touch-action: manipulation;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (pointer: coarse) {
+  :where(
+    .topbar-sidebar-toggle,
+    .topbar-icon-btn,
+    .sidebar-icon-btn,
+    .sidebar-list-delete,
+    .song-action-btn,
+    .song-picker-close,
+    .btn-primary,
+    .btn-secondary,
+    .setlist-action-btn,
+    .concert-nav-btn,
+    .fab-add-song,
+    .view-toggle-btn,
+    .transpose-btn,
+    .instrument-toggle-btn,
+    .visual-metronome-toggle,
+    .visual-metronome-tap,
+    .visual-tuner-toggle,
+    .visual-tuner-string-btn,
+    .tab-play-btn,
+    .sidebar-list-item-btn,
+    .sidebar-band-item-btn,
+    .sidebar-setlist-item-btn,
+    .list-dropdown-item,
+    .concert-chip-btn
+  ) {
+    min-height: 44px;
+  }
+}
+
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button { cursor: pointer; font: inherit; border: none; background: none; }
@@ -81,7 +125,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 .topbar-sidebar-toggle {
   display: flex;
   align-items: center;
-  padding: .3rem .4rem;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: .3rem;
   border-radius: 6px;
   color: var(--muted);
   transition: background .15s, color .15s;
@@ -128,7 +175,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 .topbar-icon-btn {
   display: flex;
   align-items: center;
-  padding: .3rem .5rem;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: .3rem;
   border-radius: 6px;
   color: var(--muted);
   transition: background .15s, color .15s;
@@ -183,7 +233,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 /* ─── Floating Add Song Button ───────────────────────────────────────────────── */
 .fab-add-song {
   position: fixed;
-  bottom: 1.75rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
   right: 1.75rem;
   z-index: 200;
   display: flex;
@@ -753,8 +803,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -1201,7 +1251,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 .visual-tuner-readout {
   display: inline-flex;
   align-items: baseline;
-  min-width: 1.8rem;
+  gap: .35rem;
+  min-width: 4rem;
 }
 
 .visual-tuner-status {
@@ -1217,6 +1268,76 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .visual-tuner-status.is-close {
   color: #a87412;
+}
+
+.visual-tuner-detected {
+  font-size: .75rem;
+  color: var(--muted);
+}
+
+.visual-tuner-strings {
+  display: inline-flex;
+  align-items: center;
+  gap: .24rem;
+  flex-wrap: wrap;
+}
+
+.visual-tuner-string-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: .17rem .45rem;
+  font-size: .67rem;
+  font-weight: 700;
+  letter-spacing: .01em;
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.visual-tuner-string-btn:hover {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+  color: var(--text);
+}
+
+.visual-tuner-string-btn.is-active {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
+  color: var(--text);
+}
+
+.visual-tuner-cue-row {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-width: 12rem;
+}
+
+.visual-tuner-side {
+  font-size: .66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+
+.visual-tuner-cue {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  min-width: 7.2rem;
+}
+
+.visual-tuner-cue.is-in-tune {
+  color: #1f8b4c;
+}
+
+.visual-tuner-cue.is-up {
+  color: #2f6bd6;
+}
+
+.visual-tuner-cue.is-down {
+  color: #c06d0d;
 }
 
 .visual-tuner-gauge {
@@ -1263,12 +1384,35 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .visual-tuner-footer {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  flex-wrap: wrap;
   min-height: 1rem;
+  font-size: .68rem;
+}
+
+.visual-tuner-cents {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.visual-tuner-target,
+.visual-tuner-hz {
+  color: var(--muted);
 }
 
 .visual-tuner-error {
   color: var(--danger);
   font-weight: 600;
+}
+
+.visual-tuner-direction-help {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+  font-size: .63rem;
+  color: var(--muted);
 }
 
 .song-view-header .visual-tuner {
@@ -1290,6 +1434,25 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .visual-tuner-status,
 .song-view-header .visual-tuner-footer {
   color: var(--song-item-chip-text);
+}
+
+.song-view-header .visual-tuner-detected,
+.song-view-header .visual-tuner-side,
+.song-view-header .visual-tuner-target,
+.song-view-header .visual-tuner-hz,
+.song-view-header .visual-tuner-direction-help {
+  color: color-mix(in srgb, var(--song-item-chip-text) 78%, black);
+}
+
+.song-view-header .visual-tuner-string-btn {
+  border-color: color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-item-bg) 80%, white);
+}
+
+.song-view-header .visual-tuner-string-btn.is-active {
+  background: color-mix(in srgb, var(--song-header-accent) 24%, var(--song-item-bg));
+  border-color: color-mix(in srgb, var(--song-header-accent) 52%, var(--song-item-border));
 }
 
 .concert-tuner {
@@ -2195,7 +2358,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 .sidebar-icon-btn {
   display: flex;
   align-items: center;
-  padding: .2rem .3rem;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: .2rem;
   border-radius: 4px;
   color: var(--muted);
   transition: background .15s, color .15s;
@@ -2391,7 +2557,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 .sidebar-list-delete {
   display: none;
   align-items: center;
-  padding: .2rem .25rem;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: .2rem;
   border-radius: 4px;
   color: var(--muted);
   transition: color .15s, background .15s;
@@ -2891,7 +3060,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .setlist-remove-btn {
   flex-shrink: 0;
-  padding: .4rem;
+  width: 2rem;
+  height: 2rem;
+  padding: .2rem;
   color: var(--song-item-muted);
   opacity: 0;
   transition: opacity .12s;
@@ -3548,6 +3719,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   .sidebar--mobile.sidebar--open {
     transform: translateX(0);
   }
+
+  .sidebar-list-delete,
+  .setlist-remove-btn,
+  .sidebar-setlist-delete {
+    display: flex;
+    opacity: .85;
+  }
 }
 
 @media (max-width: 600px) {
@@ -3568,7 +3746,16 @@ input, select, textarea { font: inherit; color: var(--text); }
   .topbar-nav a,
   .topbar-icon-btn,
   .topbar-sidebar-toggle {
-    padding: .35rem;
+    width: 2.6rem;
+    height: 2.6rem;
+    padding: .25rem;
+  }
+
+  .topbar-profile-link {
+    min-width: 2.6rem;
+    min-height: 2.6rem;
+    justify-content: center;
+    padding: .2rem;
   }
 
   .song-view-header { flex-direction: column; }
@@ -3627,6 +3814,18 @@ input, select, textarea { font: inherit; color: var(--text); }
     border-radius: 12px;
     justify-content: space-between;
     flex-wrap: wrap;
+  }
+
+  .visual-tuner-strings,
+  .visual-tuner-readout,
+  .visual-tuner-cue-row,
+  .visual-tuner-direction-help {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .visual-tuner-cue {
+    min-width: auto;
   }
 
   .visual-tuner-gauge {
@@ -3741,11 +3940,48 @@ input, select, textarea { font: inherit; color: var(--text); }
     width: 100%;
   }
   .song-action-btn {
-    width: 2rem;
-    height: 2rem;
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+
+  .fab-add-song {
+    width: 3.5rem;
+    height: 3.5rem;
+    right: 1rem;
   }
   .chord-display { padding: .75rem; font-size: .88rem; }
   .song-view-title { font-size: 1.3rem; }
+}
+
+@media (hover: none) {
+  a:hover,
+  .song-card:hover,
+  .song-preview-card:hover,
+  .topbar-nav a:hover,
+  .topbar-icon-btn:hover,
+  .topbar-sidebar-toggle:hover,
+  .sidebar-list-item-btn:hover,
+  .sidebar-band-item-btn:hover,
+  .sidebar-setlist-item:hover,
+  .sidebar-icon-btn:hover,
+  .song-action-btn:hover,
+  .setlist-song-item:hover .setlist-song-card,
+  .song-picker-item:hover,
+  .concert-chip-btn:hover,
+  .concert-nav-btn:hover {
+    background: initial;
+    color: inherit;
+    border-color: inherit;
+    box-shadow: none;
+    transform: none;
+    text-decoration: none;
+  }
+
+  .sidebar-list-item.active .sidebar-list-item-btn,
+  .sidebar-setlist-item.active,
+  .sidebar-band-item.active {
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  }
 }
 
 
@@ -3847,6 +4083,43 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 7px;
   padding: .55rem .65rem;
   background: var(--bg);
+}
+
+.share-menu-search-status {
+  margin: 0;
+  font-size: .78rem;
+  color: var(--muted);
+}
+
+.share-menu-recipient-results {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.share-menu-recipient-btn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  padding: .5rem .55rem;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.share-menu-recipient-btn:hover {
+  border-color: var(--accent);
+}
+
+.share-menu-recipient-btn span {
+  color: var(--muted);
+  font-size: .76rem;
 }
 
 .share-menu-actions {
@@ -4159,6 +4432,22 @@ input, select, textarea { font: inherit; color: var(--text); }
 .bands-library-copy span {
   color: var(--muted);
   font-size: .85rem;
+}
+
+.bands-member-role-select {
+  font-size: .8rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: .4rem;
+  padding: .2rem .4rem;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.bands-member-role-select:disabled {
+  opacity: .5;
+  cursor: not-allowed;
 }
 
 .bands-card-meta,

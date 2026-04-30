@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { useBands } from '../context/BandsContext';
 import { declineInvite, loadPendingInvites } from '../lib/collaboration';
 import { declineBandInvite, loadPendingBandInvites } from '../lib/bandInvites';
 import { acceptBandInviteOnServer } from '../lib/bandsApi';
@@ -10,10 +12,16 @@ import type { BandInvite, CollaborationInvite } from '../types';
 
 export default function ProfileInvitesPage() {
   const { user } = useAuth();
+  const { bands } = useBands();
   const [loading, setLoading] = useState(true);
   const [invites, setInvites] = useState<CollaborationInvite[]>([]);
   const [bandInvites, setBandInvites] = useState<BandInvite[]>([]);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
+  const [profilesByUserId, setProfilesByUserId] = useState<Record<string, {
+    fullName?: string;
+    username?: string;
+    email?: string;
+  }>>({});
 
   const refreshInvites = useCallback(async () => {
     if (!db || !user?.id) {
@@ -58,6 +66,66 @@ export default function ProfileInvitesPage() {
   useEffect(() => {
     void refreshInvites();
   }, [refreshInvites]);
+
+  useEffect(() => {
+    if (!db || !user?.id) {
+      setProfilesByUserId({});
+      return;
+    }
+
+    const firestore = db;
+
+    const targetUserIds = new Set<string>();
+    bands.forEach((band) => {
+      band.memberIds.forEach((memberId) => {
+        if (memberId !== user.id) {
+          targetUserIds.add(memberId);
+        }
+      });
+    });
+
+    invites.forEach((invite) => {
+      if (invite.ownerId && invite.ownerId !== user.id) {
+        targetUserIds.add(invite.ownerId);
+      }
+    });
+
+    if (targetUserIds.size === 0) {
+      setProfilesByUserId({});
+      return;
+    }
+
+    let active = true;
+    void Promise.allSettled(
+      [...targetUserIds].map(async (targetUserId) => {
+        const snapshot = await getDoc(doc(firestore, 'users', targetUserId));
+        const data = snapshot.data() as Record<string, unknown> | undefined;
+        return {
+          userId: targetUserId,
+          fullName: typeof data?.fullName === 'string' ? data.fullName : undefined,
+          username: typeof data?.username === 'string' ? data.username : undefined,
+          email: typeof data?.email === 'string' ? data.email : undefined,
+        };
+      })
+    ).then((results) => {
+      if (!active) return;
+
+      const next: Record<string, { fullName?: string; username?: string; email?: string }> = {};
+      results.forEach((result) => {
+        if (result.status !== 'fulfilled') return;
+        next[result.value.userId] = {
+          fullName: result.value.fullName,
+          username: result.value.username,
+          email: result.value.email,
+        };
+      });
+      setProfilesByUserId(next);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [bands, invites, user?.id, db]);
 
   const onAccept = async (invite: CollaborationInvite) => {
     if (!user?.id || !user.email) return;
@@ -133,12 +201,85 @@ export default function ProfileInvitesPage() {
 
   const hasAnyInvites = invites.length > 0 || bandInvites.length > 0;
 
+  const sharedPeople = (() => {
+    const people = new Map<string, {
+      userId: string;
+      username: string;
+      fullName?: string;
+      email?: string;
+      bands: string[];
+    }>();
+
+    bands.forEach((band) => {
+      band.memberIds.forEach((memberId) => {
+        if (!user?.id || memberId === user.id) return;
+
+        const existing = people.get(memberId);
+        if (existing) {
+          if (!existing.bands.includes(band.name)) {
+            existing.bands.push(band.name);
+          }
+          return;
+        }
+
+        const username = band.memberUsernames[memberId] ?? '';
+        if (!username) return;
+
+        people.set(memberId, {
+          userId: memberId,
+          username,
+          fullName: profilesByUserId[memberId]?.fullName || band.memberFullNames[memberId] || undefined,
+          email: profilesByUserId[memberId]?.email || band.memberEmails[memberId] || undefined,
+          bands: [band.name],
+        });
+      });
+    });
+
+    return [...people.values()].sort((a, b) => {
+      const aLabel = a.fullName || a.username;
+      const bLabel = b.fullName || b.username;
+      return aLabel.localeCompare(bLabel);
+    });
+  })();
+
+  const mutualBandNamesByUserId = bands.reduce<Record<string, string[]>>((acc, band) => {
+    band.memberIds.forEach((memberId) => {
+      if (!user?.id || memberId === user.id) return;
+      if (!acc[memberId]) {
+        acc[memberId] = [];
+      }
+      if (!acc[memberId].includes(band.name)) {
+        acc[memberId].push(band.name);
+      }
+    });
+    return acc;
+  }, {});
+
   return (
     <section className="profile-invites-page">
       <header className="profile-invites-header">
         <h1>Invites</h1>
         <p>Accept access to songs, songlists, setlists, and bands shared with you.</p>
       </header>
+
+      {sharedPeople.length > 0 ? (
+        <section className="profile-invites-section">
+          <h2>Users added</h2>
+          <ul className="profile-invites-list">
+            {sharedPeople.map((person) => (
+              <li key={person.userId} className="profile-invite-card">
+                <div className="profile-invite-main">
+                  <strong>{person.fullName || person.username}</strong>
+                  <span>@{person.username}{person.email ? ` • ${person.email}` : ''}</span>
+                  <span>
+                    Shared bands: {person.bands.join(', ')}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {loading ? (
         <p className="profile-invites-status">Loading invites…</p>
@@ -157,8 +298,11 @@ export default function ProfileInvitesPage() {
                       <div className="profile-invite-main">
                         <strong>{invite.resourceName}</strong>
                         <span>
-                          {invite.ownerEmail} shared a {invite.resourceType} with {invite.permission} access
+                          {invite.ownerFullName || profilesByUserId[invite.ownerId]?.fullName || invite.ownerEmail} shared a {invite.resourceType} with {invite.permission} access
                         </span>
+                        {invite.ownerId && mutualBandNamesByUserId[invite.ownerId]?.length ? (
+                          <span>Shared bands: {mutualBandNamesByUserId[invite.ownerId].join(', ')}</span>
+                        ) : null}
                       </div>
                       <div className="profile-invite-actions">
                         <button

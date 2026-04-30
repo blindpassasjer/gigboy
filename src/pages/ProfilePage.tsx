@@ -8,21 +8,23 @@ import { AVATAR_OPTIONS } from '../lib/avatars';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 
 export default function ProfilePage() {
-  const { user, updateEmailAddress, updatePassword, updateUsername, updateAvatar, logout } = useAuth();
+  const { user, updateEmailAddress, updatePassword, updateUsername, updateAvatar, updateFullName, logout } = useAuth();
 
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
+  const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar ?? AVATAR_OPTIONS[0]);
   const [busyEmail, setBusyEmail] = useState(false);
   const [busyUsername, setBusyUsername] = useState(false);
+  const [busyFullName, setBusyFullName] = useState(false);
   const [busyPassword, setBusyPassword] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [busyLogout, setBusyLogout] = useState(false);
 
-  const displayName = useMemo(() => user?.username || user?.email || 'User', [user?.email, user?.username]);
+  const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
 
   if (!user) {
     return <p className="profile-settings-status">You must be signed in to manage your profile.</p>;
@@ -66,6 +68,26 @@ export default function ProfilePage() {
 
     setUsername(candidate);
     toast.success('Username updated.');
+  };
+
+  const onFullNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const candidate = fullName.trim();
+    if (!candidate) {
+      toast.error('Full name is required.');
+      return;
+    }
+
+    setBusyFullName(true);
+    const error = await updateFullName(candidate);
+    setBusyFullName(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    setFullName(candidate);
+    toast.success('Full name updated.');
   };
 
   const onPasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -166,6 +188,26 @@ export default function ProfilePage() {
             </label>
             <button type="submit" className="setlist-action-btn" disabled={busyUsername}>
               {busyUsername ? 'Saving…' : 'Change username'}
+            </button>
+          </form>
+        </section>
+
+        <section className="profile-settings-card">
+          <h2><UserIcon size={16} /> Full name</h2>
+          <form className="profile-settings-form" onSubmit={onFullNameSubmit}>
+            <label className="form-field">
+              <span>Full name</span>
+              <input
+                type="text"
+                value={fullName}
+                autoComplete="name"
+                onChange={(event) => setFullName(event.target.value)}
+                required
+                maxLength={80}
+              />
+            </label>
+            <button type="submit" className="setlist-action-btn" disabled={busyFullName}>
+              {busyFullName ? 'Saving…' : 'Change full name'}
             </button>
           </form>
         </section>

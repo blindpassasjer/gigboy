@@ -65,3 +65,24 @@ export async function revokeInviteOnServer(params: {
     userEmail: params.userEmail,
   });
 }
+
+export interface ShareRecipientMatch {
+  userId: string;
+  username: string;
+  fullName?: string;
+  email?: string;
+  avatar?: string;
+}
+
+export async function searchShareRecipientsOnServer(params: {
+  userId: string;
+  userEmail: string;
+  query: string;
+}) {
+  return postJson<{ recipients: ShareRecipientMatch[] }>('/api/share/search-recipients', {
+    query: params.query,
+  }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}

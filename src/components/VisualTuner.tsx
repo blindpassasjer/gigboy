@@ -1,43 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 
 interface Props {
-  targetKey?: string;
   className?: string;
 }
 
-const NOTE_INDEX: Record<string, number> = {
-  C: 0,
-  'C#': 1,
-  Db: 1,
-  D: 2,
-  'D#': 3,
-  Eb: 3,
-  E: 4,
-  F: 5,
-  'F#': 6,
-  Gb: 6,
-  G: 7,
-  'G#': 8,
-  Ab: 8,
-  A: 9,
-  'A#': 10,
-  Bb: 10,
-  B: 11,
-};
-
 const NOTE_LABELS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-function extractRootNote(key?: string): string | null {
-  if (!key) return null;
-
-  const trimmed = key.trim();
-  const match = trimmed.match(/^([A-Ga-g])([#b]?)/);
-  if (!match) return null;
-
-  const normalized = `${match[1].toUpperCase()}${match[2] || ''}`;
-  return NOTE_INDEX[normalized] !== undefined ? normalized : null;
-}
+const GUITAR_STRINGS = [
+  { key: 'E2', label: 'Low E', frequency: 82.41 },
+  { key: 'A2', label: 'A', frequency: 110.0 },
+  { key: 'D3', label: 'D', frequency: 146.83 },
+  { key: 'G3', label: 'G', frequency: 196.0 },
+  { key: 'B3', label: 'B', frequency: 246.94 },
+  { key: 'E4', label: 'High E', frequency: 329.63 },
+] as const;
 
 function autocorrelate(buffer: Float32Array, sampleRate: number): number | null {
   const size = buffer.length;
@@ -108,42 +85,13 @@ function frequencyToMidi(frequency: number): number {
   return Math.round(69 + 12 * Math.log2(frequency / 440));
 }
 
-function midiToFrequency(midi: number): number {
-  return 440 * (2 ** ((midi - 69) / 12));
-}
-
 function centsOff(frequency: number, referenceFrequency: number): number {
   return Math.round(1200 * Math.log2(frequency / referenceFrequency));
 }
 
-function closestTargetFrequency(targetNoteIndex: number, frequency: number): number {
-  const detectedMidi = frequencyToMidi(frequency);
-  let bestFrequency = midiToFrequency(targetNoteIndex + 12 * 4);
-  let bestDistance = Number.POSITIVE_INFINITY;
-
-  for (let octave = 0; octave <= 8; octave += 1) {
-    const midi = targetNoteIndex + 12 * octave;
-    const freq = midiToFrequency(midi);
-    const distance = Math.abs(freq - frequency);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestFrequency = freq;
-    }
-  }
-
-  const candidateMidi = targetNoteIndex + 12 * Math.round(detectedMidi / 12);
-  const candidateFrequency = midiToFrequency(candidateMidi);
-  if (Math.abs(candidateFrequency - frequency) < Math.abs(bestFrequency - frequency)) {
-    return candidateFrequency;
-  }
-
-  return bestFrequency;
-}
-
-export default function VisualTuner({ targetKey, className = '' }: Props) {
-  const rootNote = useMemo(() => extractRootNote(targetKey), [targetKey]);
-  const targetNoteIndex = useMemo(() => (rootNote ? NOTE_INDEX[rootNote] : undefined), [rootNote]);
+export default function VisualTuner({ className = '' }: Props) {
   const [isListening, setIsListening] = useState(false);
+  const [selectedStringIndex, setSelectedStringIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [detectedHz, setDetectedHz] = useState<number | null>(null);
   const [detectedNote, setDetectedNote] = useState<string | null>(null);
@@ -196,14 +144,10 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
           if (frequency && Number.isFinite(frequency)) {
             const midi = frequencyToMidi(frequency);
             const noteName = NOTE_LABELS[((midi % 12) + 12) % 12];
+            const targetFrequency = GUITAR_STRINGS[selectedStringIndex].frequency;
             setDetectedHz(frequency);
             setDetectedNote(noteName);
-            if (targetNoteIndex === undefined) {
-              setCents(null);
-            } else {
-              const targetFrequency = closestTargetFrequency(targetNoteIndex, frequency);
-              setCents(centsOff(frequency, targetFrequency));
-            }
+            setCents(centsOff(frequency, targetFrequency));
           } else {
             setDetectedHz(null);
             setDetectedNote(null);
@@ -241,14 +185,31 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
         audioContextRef.current = null;
       }
     };
-  }, [isListening, targetNoteIndex]);
+  }, [isListening, selectedStringIndex]);
 
+  const selectedString = GUITAR_STRINGS[selectedStringIndex];
   const centsValue = cents ?? 0;
   const clamped = Math.max(-50, Math.min(50, centsValue));
   const needleLeftPercent = ((clamped + 50) / 100) * 100;
-  const inTune = targetNoteIndex !== undefined && detectedHz !== null && Math.abs(centsValue) <= 5;
-  const closeToTune = targetNoteIndex !== undefined && detectedHz !== null && Math.abs(centsValue) > 5 && Math.abs(centsValue) <= 12;
+  const hasSignal = detectedHz !== null;
+  const inTune = hasSignal && Math.abs(centsValue) <= 5;
+  const closeToTune = hasSignal && Math.abs(centsValue) > 5 && Math.abs(centsValue) <= 12;
   const gaugeClass = inTune ? 'is-in-tune' : closeToTune ? 'is-close' : '';
+  const tuningCue = !hasSignal
+    ? 'Pluck the selected string'
+    : inTune
+      ? 'In tune'
+      : centsValue < 0
+        ? 'Pitch up'
+        : 'Pitch down';
+  const tuningCueClass = !hasSignal
+    ? ''
+    : inTune
+      ? 'is-in-tune'
+      : centsValue < 0
+        ? 'is-up'
+        : 'is-down';
+  const centsLabel = hasSignal ? `${centsValue > 0 ? '+' : ''}${centsValue}c` : '--';
 
   return (
     <div className={`visual-tuner ${className}`.trim()}>
@@ -262,19 +223,54 @@ export default function VisualTuner({ targetKey, className = '' }: Props) {
         {isListening ? 'Stop tuner' : 'Start tuner'}
       </button>
 
+      <div className="visual-tuner-strings" role="tablist" aria-label="Guitar strings">
+        {GUITAR_STRINGS.map((stringInfo, index) => {
+          const selected = index === selectedStringIndex;
+          return (
+            <button
+              key={stringInfo.key}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              className={`visual-tuner-string-btn${selected ? ' is-active' : ''}`}
+              onClick={() => setSelectedStringIndex(index)}
+            >
+              {stringInfo.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="visual-tuner-readout">
-        <span className={`visual-tuner-status${inTune && detectedHz ? ' is-in-tune' : ''}${closeToTune ? ' is-close' : ''}`} aria-live="polite">
+        <span className={`visual-tuner-status${inTune ? ' is-in-tune' : ''}${closeToTune ? ' is-close' : ''}`} aria-live="polite">
+          {selectedString.key}
+        </span>
+        <span className="visual-tuner-detected" aria-live="polite">
           {detectedNote || '--'}
         </span>
       </div>
 
-      <div className={`visual-tuner-gauge ${gaugeClass}`.trim()} aria-hidden="true">
+      <div className="visual-tuner-cue-row" aria-live="polite">
+        <span className="visual-tuner-side visual-tuner-side--left">Flat</span>
+        <span className={`visual-tuner-cue ${tuningCueClass}`.trim()}>{tuningCue}</span>
+        <span className="visual-tuner-side visual-tuner-side--right">Sharp</span>
+      </div>
+
+      <div className={`visual-tuner-gauge ${gaugeClass}`.trim()} aria-label="Tuning deviation in cents">
         <span className="visual-tuner-center" />
         <span className="visual-tuner-needle" style={{ left: `${needleLeftPercent}%` }} />
       </div>
 
       <div className="visual-tuner-footer">
+        <span className="visual-tuner-cents">{centsLabel}</span>
+        <span className="visual-tuner-target">Target {selectedString.frequency.toFixed(2)} Hz</span>
+        {detectedHz ? <span className="visual-tuner-hz">Input {detectedHz.toFixed(2)} Hz</span> : null}
         {error ? <span className="visual-tuner-error">{error}</span> : null}
+      </div>
+
+      <div className="visual-tuner-direction-help" aria-hidden="true">
+        <span>Flat - tighten (pitch up)</span>
+        <span>Sharp - loosen (pitch down)</span>
       </div>
     </div>
   );

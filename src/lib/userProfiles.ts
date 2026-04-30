@@ -14,6 +14,7 @@ export interface UserProfile {
   usernameLower: string;
   email?: string;
   avatar?: string;
+  fullName?: string;
 }
 
 const USERS_COLLECTION = 'users';
@@ -54,6 +55,7 @@ function profileFromData(data: Record<string, unknown> | undefined | null): User
     usernameLower,
     email: typeof data.email === 'string' ? data.email : undefined,
     avatar: typeof data.avatar === 'string' ? data.avatar : undefined,
+    fullName: typeof data.fullName === 'string' ? data.fullName : undefined,
   };
 }
 
@@ -118,6 +120,7 @@ export async function updateProfileFields(db: Firestore, params: {
   userId: string;
   email?: string;
   avatar?: string;
+  fullName?: string | null;
 }) {
   const payload: Record<string, unknown> = {
     updatedAt: serverTimestamp(),
@@ -132,6 +135,14 @@ export async function updateProfileFields(db: Firestore, params: {
       throw new Error('Invalid avatar selection.');
     }
     payload.avatar = params.avatar;
+  }
+
+  if (params.fullName !== undefined) {
+    const trimmed = typeof params.fullName === 'string' ? params.fullName.trim() : '';
+    if (trimmed.length > 80) {
+      throw new Error('Full name must be 80 characters or fewer.');
+    }
+    payload.fullName = trimmed;
   }
 
   await setDoc(doc(db, USERS_COLLECTION, params.userId), payload, { merge: true });

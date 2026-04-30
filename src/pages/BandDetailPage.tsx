@@ -22,6 +22,7 @@ export default function BandDetailPage() {
     renameBand,
     refreshBandSongs,
     inviteMember,
+    changeMemberRole,
     removeMember,
     leaveBand,
     addSongToBandLibrary,
@@ -35,6 +36,7 @@ export default function BandDetailPage() {
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviteRole, setInviteRole] = useState<CollaborationPermission>('viewer');
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+  const [busyRoleId, setBusyRoleId] = useState<string | null>(null);
   const [busyInvite, setBusyInvite] = useState(false);
 
   const ownedSongs = useMemo(() => {
@@ -105,6 +107,19 @@ export default function BandDetailPage() {
     }
 
     toast.success('Member removed.');
+  };
+
+  const handleChangeRole = async (memberId: string, role: CollaborationPermission) => {
+    setBusyRoleId(memberId);
+    const error = await changeMemberRole(band.id, memberId, role);
+    setBusyRoleId(null);
+
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    toast.success('Role updated.');
   };
 
   const handleLeaveBand = async () => {
@@ -239,7 +254,22 @@ export default function BandDetailPage() {
                         <div className="bands-member-copy">
                           <strong>{username ?? email}</strong>
                           <span>{username ? email : ''}</span>
-                          <span>{role}</span>
+                          {memberId === band.ownerId ? (
+                            <span>{role}</span>
+                          ) : isOwner ? (
+                            <select
+                              className="bands-member-role-select"
+                              value={role}
+                              disabled={busyRoleId === memberId}
+                              onChange={(event) => void handleChangeRole(memberId, event.target.value as CollaborationPermission)}
+                              aria-label="Member role"
+                            >
+                              <option value="viewer">Viewer</option>
+                              <option value="editor">Editor</option>
+                            </select>
+                          ) : (
+                            <span>{role}</span>
+                          )}
                         </div>
                         <div className="bands-member-actions">
                           {canRemove ? (

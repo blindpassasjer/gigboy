@@ -56,6 +56,9 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const memberUsernames = typeof band.memberUsernames === 'object' && band.memberUsernames !== null
     ? { ...(band.memberUsernames as Record<string, unknown>) }
     : {};
+  const memberFullNames = typeof band.memberFullNames === 'object' && band.memberFullNames !== null
+    ? { ...(band.memberFullNames as Record<string, unknown>) }
+    : {};
   const memberAvatars = typeof band.memberAvatars === 'object' && band.memberAvatars !== null
     ? { ...(band.memberAvatars as Record<string, unknown>) }
     : {};
@@ -63,6 +66,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   delete memberRoles[memberId];
   delete memberEmails[memberId];
   delete memberUsernames[memberId];
+  delete memberFullNames[memberId];
   delete memberAvatars[memberId];
 
   await setFirestoreDocument(ctx.env, bandPath, {
@@ -71,6 +75,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     memberRoles,
     memberEmails,
     memberUsernames,
+    memberFullNames,
     memberAvatars,
     updatedAt: new Date().toISOString(),
   });

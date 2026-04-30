@@ -82,6 +82,19 @@ export async function removeBandMemberOnServer(params: {
   });
 }
 
+export async function changeBandMemberRoleOnServer(params: {
+  userId: string;
+  userEmail: string;
+  bandId: string;
+  memberId: string;
+  role: CollaborationPermission;
+}) {
+  await postJson('/api/bands/change-role', { bandId: params.bandId, memberId: params.memberId, role: params.role }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
 export async function deleteBandOnServer(params: {
   userId: string;
   userEmail: string;

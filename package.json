@@ -14,6 +14,8 @@
     "build:pages": "npm run build && node scripts/write-pages-redirects.mjs",
     "deploy:pages": "npm run build:pages && npx -y wrangler@4 pages deploy dist",
     "migrate:songs": "node scripts/migrate-songs-to-user.mjs",
+    "migrate:full-names": "node scripts/migrate-full-names.mjs",
+    "migrate:full-names:execute": "node scripts/migrate-full-names.mjs --execute",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

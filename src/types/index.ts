@@ -20,6 +20,7 @@ export interface CollaborationInvite {
   id: string;
   ownerId: string;
   ownerEmail: string;
+  ownerFullName?: string;
   recipientUsername?: string;
   recipientUsernameLower?: string;
   recipientEmail: string;
@@ -44,6 +45,7 @@ export interface Band {
   memberRoles: Record<string, CollaborationPermission>;
   memberEmails: Record<string, string>;
   memberUsernames: Record<string, string>;
+  memberFullNames: Record<string, string>;
   memberAvatars: Record<string, string>;
   createdAt: string;
   updatedAt?: string;

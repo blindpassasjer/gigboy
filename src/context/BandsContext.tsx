@@ -5,6 +5,7 @@ import { collection, deleteDoc, doc, getDocs, query, setDoc, where } from 'fireb
 import type { Band, CollaborationPermission, Song } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
 import {
+  changeBandMemberRoleOnServer,
   createBandOnServer,
   deleteBandOnServer,
   inviteBandMemberOnServer,
@@ -52,6 +53,13 @@ function normalizeBand(id: string, data: Record<string, unknown>): Band {
       ? Object.fromEntries(
           Object.entries(data.memberUsernames as Record<string, unknown>).filter(
             ([, username]) => typeof username === 'string'
+          )
+        ) as Record<string, string>
+      : {},
+    memberFullNames: typeof data.memberFullNames === 'object' && data.memberFullNames !== null
+      ? Object.fromEntries(
+          Object.entries(data.memberFullNames as Record<string, unknown>).filter(
+            ([, fullName]) => typeof fullName === 'string'
           )
         ) as Record<string, string>
       : {},
@@ -145,6 +153,7 @@ interface BandsContextValue {
   deleteBand: (bandId: string) => Promise<string | null>;
   renameBand: (bandId: string, name: string) => Promise<string | null>;
   inviteMember: (bandId: string, recipientUsername: string, role: CollaborationPermission) => Promise<string | null>;
+  changeMemberRole: (bandId: string, memberId: string, role: CollaborationPermission) => Promise<string | null>;
   removeMember: (bandId: string, memberId: string) => Promise<string | null>;
   leaveBand: (bandId: string) => Promise<string | null>;
   refreshBandSongs: (bandId: string) => Promise<void>;
@@ -160,6 +169,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const userId = user?.id ?? null;
   const userEmail = user?.email ?? '';
   const userUsername = user?.username ?? '';
+  const userFullName = user?.fullName ?? '';
   const userAvatar = user?.avatar ?? '';
   const [bands, setBands] = useState<Band[]>([]);
   const [bandSongsByBandId, setBandSongsByBandId] = useState<Record<string, Song[]>>({});
@@ -247,6 +257,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           },
           memberEmails: userEmail ? { [userId]: userEmail } : {},
           memberUsernames: userUsername ? { [userId]: userUsername } : {},
+          memberFullNames: userFullName ? { [userId]: userFullName } : {},
           memberAvatars: userAvatar ? { [userId]: userAvatar } : {},
           createdAt: now,
           updatedAt: now,
@@ -268,7 +279,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         };
       }
     }
-  }, [userAvatar, userEmail, userId, userUsername]);
+  }, [userAvatar, userEmail, userFullName, userId, userUsername]);
 
   const deleteBand = useCallback(async (bandId: string) => {
     if (!userId) {
@@ -383,6 +394,27 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bands, userEmail, userId]);
 
+  const changeMemberRole = useCallback(async (bandId: string, memberId: string, role: CollaborationPermission) => {
+    if (!userId) {
+      return 'Bands require a signed-in account.';
+    }
+
+    try {
+      await changeBandMemberRoleOnServer({ userId, userEmail, bandId, memberId, role });
+      setBands((prev) => prev.map((band) => {
+        if (band.id !== bandId) return band;
+        return {
+          ...band,
+          memberRoles: { ...band.memberRoles, [memberId]: role },
+          updatedAt: new Date().toISOString(),
+        };
+      }));
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Failed to change member role.';
+    }
+  }, [userEmail, userId]);
+
   const removeMember = useCallback(async (bandId: string, memberId: string) => {
     if (!userId) {
       return 'Bands require a signed-in account.';
@@ -396,10 +428,12 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         const nextMemberRoles = { ...band.memberRoles };
         const nextMemberEmails = { ...band.memberEmails };
         const nextMemberUsernames = { ...band.memberUsernames };
+        const nextMemberFullNames = { ...band.memberFullNames };
         const nextMemberAvatars = { ...band.memberAvatars };
         delete nextMemberRoles[memberId];
         delete nextMemberEmails[memberId];
         delete nextMemberUsernames[memberId];
+        delete nextMemberFullNames[memberId];
         delete nextMemberAvatars[memberId];
         return {
           ...band,
@@ -407,6 +441,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           memberRoles: nextMemberRoles,
           memberEmails: nextMemberEmails,
           memberUsernames: nextMemberUsernames,
+          memberFullNames: nextMemberFullNames,
           memberAvatars: nextMemberAvatars,
           updatedAt: new Date().toISOString(),
         };
@@ -554,6 +589,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     deleteBand,
     renameBand,
     inviteMember,
+    changeMemberRole,
     removeMember,
     leaveBand,
     refreshBandSongs,
@@ -564,6 +600,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     addSongToBandLibrary,
     bandSongsByBandId,
     bands,
+    changeMemberRole,
     createBand,
     deleteBand,
     inviteMember,

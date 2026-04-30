@@ -25,6 +25,7 @@ export interface User {
   email: string;
   username: string | null;
   avatar: string | null;
+  fullName: string | null;
 }
 
 interface AuthContextValue {
@@ -40,6 +41,7 @@ interface AuthContextValue {
   updateEmailAddress: (email: string) => Promise<string | null>;
   updateUsername: (username: string) => Promise<string | null>;
   updateAvatar: (avatar: string) => Promise<string | null>;
+  updateFullName: (fullName: string) => Promise<string | null>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
   logout: () => Promise<void>;
 }
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: firebaseUser.email ?? '',
           username: null,
           avatar: null,
+          fullName: null,
         });
         setLoading(false);
         return;
@@ -82,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: firebaseUser.email ?? '',
             username: profile?.username ?? null,
             avatar: profile?.avatar ?? null,
+            fullName: profile?.fullName ?? null,
           });
         })
         .catch((error) => {
@@ -91,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: firebaseUser.email ?? '',
             username: null,
             avatar: null,
+            fullName: null,
           });
         })
         .finally(() => {
@@ -244,6 +249,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateFullNameValue = useCallback(async (fullName: string) => {
+    if (!auth?.currentUser || !db) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+
+    const trimmed = fullName.trim();
+    if (!trimmed) {
+      return 'Full name is required.';
+    }
+
+    if (trimmed.length > 80) {
+      return 'Full name must be 80 characters or fewer.';
+    }
+
+    try {
+      await updateProfileFields(db, {
+        userId: auth.currentUser.uid,
+        fullName: trimmed,
+      });
+      setUser((current) => (current ? { ...current, fullName: trimmed } : current));
+      return null;
+    } catch (err: unknown) {
+      return err instanceof Error ? err.message : 'Failed to update full name.';
+    }
+  }, []);
+
   const updatePasswordValue = useCallback(async (currentPassword: string, newPassword: string) => {
     if (!auth?.currentUser) {
       return firebaseConfigError ?? 'Firebase authentication is not configured.';
@@ -297,6 +328,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateEmailAddress,
         updateUsername: updateUsernameValue,
         updateAvatar: updateAvatarValue,
+        updateFullName: updateFullNameValue,
         updatePassword: updatePasswordValue,
         logout,
       }}

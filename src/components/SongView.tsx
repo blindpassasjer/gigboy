@@ -219,10 +219,7 @@ export default function SongView({ song, accentColor }: Props) {
               timeSignature={song.timeSignature}
               className="song-view-metronome"
             />
-            <VisualTuner
-              targetKey={song.key ? (transpose === 0 ? song.key : transposeChord(song.key, transpose)) : undefined}
-              className="song-view-tuner"
-            />
+            <VisualTuner className="song-view-tuner" />
             {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
 
             <div className="add-to-list-wrap" ref={menuRef}>

@@ -54,6 +54,9 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Missing required fields.' }, { status: 400 });
   }
 
+  const ownerProfile = await getFirestoreDocument(ctx.env, ['users', userId]);
+  const ownerFullName = typeof ownerProfile?.fullName === 'string' ? ownerProfile.fullName.trim() : '';
+
   if (!['song', 'songlist', 'setlist'].includes(resourceType)) {
     return Response.json({ error: 'Invalid resource type.' }, { status: 400 });
   }
@@ -149,6 +152,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   await setFirestoreDocument(ctx.env, ['collaborationInvites', inviteId], {
     ownerId: userId,
     ownerEmail,
+    ...(ownerFullName ? { ownerFullName } : {}),
     recipientEmail,
     recipientEmailLower,
     ...(recipientUid ? { recipientUid } : {}),

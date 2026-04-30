@@ -447,12 +447,7 @@ export default function SetlistConcertPage() {
                 timeSignature={currentSong.timeSignature}
                 className="concert-metronome"
               />
-              <VisualTuner
-                targetKey={currentSong.key
-                  ? (transpose === 0 ? currentSong.key : transposeChord(currentSong.key, transpose))
-                  : undefined}
-                className="concert-tuner"
-              />
+              <VisualTuner className="concert-tuner" />
               {currentSong.timeSignature && <span className="meta-pill">{currentSong.timeSignature}</span>}
             </div>
           </div>

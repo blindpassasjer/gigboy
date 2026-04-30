@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import { isValidEmail } from '../lib/collaboration';
-import { createInviteOnServer } from '../lib/shareApi';
+import { createInviteOnServer, searchShareRecipientsOnServer, type ShareRecipientMatch } from '../lib/shareApi';
 import type { CollaborationPermission, ShareResourceType } from '../types';
 
 const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_.-]{1,22}[a-z0-9])?$/;
@@ -35,6 +35,9 @@ export default function ShareMenu({
   const { bands } = useBands();
   const [open, setOpen] = useState(false);
   const [recipientQuery, setRecipientQuery] = useState('');
+  const [selectedRecipient, setSelectedRecipient] = useState<ShareRecipientMatch | null>(null);
+  const [searchingRecipients, setSearchingRecipients] = useState(false);
+  const [recipientResults, setRecipientResults] = useState<ShareRecipientMatch[]>([]);
   const [permission, setPermission] = useState<CollaborationPermission>('viewer');
   const [submittingInvite, setSubmittingInvite] = useState(false);
   const [sharingBandId, setSharingBandId] = useState<string | null>(null);
@@ -57,31 +60,127 @@ export default function ShareMenu({
     () => bands.filter((band) => band.memberIds.some((memberId) => memberId !== user?.id)),
     [bands, user?.id]
   );
-  const usernameSuggestions = useMemo(() => {
-    const seen = new Set<string>();
-    const entries: string[] = [];
+  const bandPeopleByUserId = useMemo(() => {
+    const entries = new Map<string, ShareRecipientMatch & { mutualBands: string[] }>();
 
     bands.forEach((band) => {
       band.memberIds.forEach((memberId) => {
         if (memberId === user?.id) return;
-        const username = band.memberUsernames[memberId]?.trim();
+        const username = band.memberUsernames[memberId]?.trim() ?? '';
         if (!username) return;
-        const key = username.toLowerCase();
-        if (seen.has(key)) return;
-        seen.add(key);
-        entries.push(username);
+
+        const existing = entries.get(memberId);
+        if (existing) {
+          if (!existing.mutualBands.includes(band.name)) {
+            existing.mutualBands.push(band.name);
+          }
+          return;
+        }
+
+        entries.set(memberId, {
+          userId: memberId,
+          username,
+          fullName: band.memberFullNames[memberId]?.trim() || undefined,
+          email: band.memberEmails[memberId]?.trim() || undefined,
+          avatar: band.memberAvatars[memberId]?.trim() || undefined,
+          mutualBands: [band.name],
+        });
       });
     });
 
-    return entries.sort((a, b) => a.localeCompare(b));
+    return entries;
   }, [bands, user?.id]);
-  const autocompleteUsernames = useMemo(() => {
+
+  useEffect(() => {
+    if (!open || !user?.id || !user.email) {
+      setRecipientResults([]);
+      setSearchingRecipients(false);
+      return;
+    }
+
+    const query = normalizedRecipientQuery;
+    if (query.length < 2) {
+      setRecipientResults([]);
+      setSearchingRecipients(false);
+      return;
+    }
+
+    let active = true;
+    const handle = window.setTimeout(() => {
+      setSearchingRecipients(true);
+      void searchShareRecipientsOnServer({
+        userId: user.id,
+        userEmail: user.email,
+        query,
+      })
+        .then((response) => {
+          if (!active) return;
+          setRecipientResults(response.recipients);
+        })
+        .catch((error) => {
+          if (!active) return;
+          console.error('Failed to search recipients.', error);
+          setRecipientResults([]);
+        })
+        .finally(() => {
+          if (!active) return;
+          setSearchingRecipients(false);
+        });
+    }, 220);
+
+    return () => {
+      active = false;
+      window.clearTimeout(handle);
+    };
+  }, [normalizedRecipientQuery, open, user?.email, user?.id]);
+
+  const visibleRecipientSuggestions = useMemo(() => {
     const query = normalizedRecipientQuery.toLowerCase();
-    if (!query) return usernameSuggestions.slice(0, 10);
-    return usernameSuggestions
-      .filter((username) => username.toLowerCase().includes(query))
-      .slice(0, 10);
-  }, [normalizedRecipientQuery, usernameSuggestions]);
+    const merged = new Map<string, ShareRecipientMatch & { mutualBands: string[] }>();
+
+    bandPeopleByUserId.forEach((entry, userId) => {
+      const matches = !query
+        || entry.username.toLowerCase().includes(query)
+        || (entry.fullName?.toLowerCase().includes(query) ?? false)
+        || (entry.email?.toLowerCase().includes(query) ?? false);
+      if (matches) {
+        merged.set(userId, { ...entry, mutualBands: [...entry.mutualBands] });
+      }
+    });
+
+    recipientResults.forEach((entry) => {
+      const existing = merged.get(entry.userId);
+      if (existing) {
+        merged.set(entry.userId, {
+          ...existing,
+          username: existing.username || entry.username,
+          fullName: existing.fullName || entry.fullName,
+          email: existing.email || entry.email,
+          avatar: existing.avatar || entry.avatar,
+        });
+        return;
+      }
+
+      merged.set(entry.userId, {
+        ...entry,
+        mutualBands: bandPeopleByUserId.get(entry.userId)?.mutualBands ?? [],
+      });
+    });
+
+    return [...merged.values()]
+      .sort((a, b) => {
+        const aLabel = a.fullName || a.username;
+        const bLabel = b.fullName || b.username;
+        return aLabel.localeCompare(bLabel);
+      })
+      .slice(0, 8);
+  }, [bandPeopleByUserId, normalizedRecipientQuery, recipientResults]);
+
+  const inviteTarget = useMemo(() => {
+    if (selectedRecipient?.username) return selectedRecipient.username;
+    if (selectedRecipient?.email) return selectedRecipient.email;
+    return normalizedRecipientQuery;
+  }, [normalizedRecipientQuery, selectedRecipient]);
 
   const validate = () => {
     if (!user?.id || !user.email) {
@@ -89,21 +188,21 @@ export default function ShareMenu({
       return false;
     }
 
-    if (!normalizedRecipientQuery) {
-      toast.error('Please enter an email or username.');
+    if (!inviteTarget) {
+      toast.error('Please enter a name, email, or username.');
       return false;
     }
 
-    if (normalizedRecipientQuery.includes('@')) {
-      if (!isValidEmail(normalizedRecipientQuery)) {
+    if (inviteTarget.includes('@')) {
+      if (!isValidEmail(inviteTarget)) {
         toast.error('Please enter a valid email.');
         return false;
       }
       return true;
     }
 
-    if (!USERNAME_PATTERN.test(normalizedRecipientQuery.toLowerCase())) {
-      toast.error('Please enter a valid username.');
+    if (!USERNAME_PATTERN.test(inviteTarget.toLowerCase())) {
+      toast.error('Choose a recipient from search results, or enter a valid username.');
       return false;
     }
 
@@ -118,7 +217,7 @@ export default function ShareMenu({
       await createInviteOnServer({
         userId: user.id,
         userEmail: user.email,
-        recipientQuery: normalizedRecipientQuery,
+        recipientQuery: inviteTarget,
         resourceType,
         resourceId,
         resourceName,
@@ -127,6 +226,8 @@ export default function ShareMenu({
 
       toast.success('Invite sent.');
       setRecipientQuery('');
+      setSelectedRecipient(null);
+      setRecipientResults([]);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to send invite.';
       toast.error(message);
@@ -207,23 +308,52 @@ export default function ShareMenu({
           <p className="share-menu-title">Share {resourceName}</p>
 
           <label className="share-menu-field">
-            <span>Email or username</span>
+            <span>Search name, email, or username</span>
             <div className="share-menu-input-wrap">
               <Mail size={14} />
               <input
                 type="text"
-                placeholder="name@example.com or username"
+                placeholder="Start typing a name"
                 value={recipientQuery}
-                onChange={(event) => setRecipientQuery(event.target.value)}
-                list="share-menu-username-suggestions"
+                onChange={(event) => {
+                  setRecipientQuery(event.target.value);
+                  setSelectedRecipient(null);
+                }}
               />
             </div>
-            {autocompleteUsernames.length > 0 ? (
-              <datalist id="share-menu-username-suggestions">
-                {autocompleteUsernames.map((username) => (
-                  <option key={username} value={username} />
-                ))}
-              </datalist>
+            {searchingRecipients ? <p className="share-menu-search-status">Searching…</p> : null}
+            {visibleRecipientSuggestions.length > 0 ? (
+              <ul className="share-menu-recipient-results">
+                {visibleRecipientSuggestions.map((recipient) => {
+                  const label = recipient.fullName || recipient.username;
+                  const details = [recipient.username];
+                  if (recipient.email) details.push(recipient.email);
+                  if (recipient.mutualBands.length > 0) {
+                    details.push(`Shared bands: ${recipient.mutualBands.join(', ')}`);
+                  }
+
+                  return (
+                    <li key={recipient.userId}>
+                      <button
+                        type="button"
+                        className="share-menu-recipient-btn"
+                        onClick={() => {
+                          setSelectedRecipient(recipient);
+                          setRecipientQuery(label);
+                        }}
+                      >
+                        <strong>{label}</strong>
+                        <span>{details.join(' • ')}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            {selectedRecipient ? (
+              <p className="share-menu-search-status">
+                Sharing with {selectedRecipient.fullName || selectedRecipient.username} ({selectedRecipient.username})
+              </p>
             ) : null}
           </label>
 

@@ -113,6 +113,23 @@ Add the Firebase environment variables to your host's build environment if you w
 
 If you are deploying from the Cloudflare Pages dashboard, set build command `npm run build` and output directory `dist`.
 
+## Data migration helpers
+
+If you already have users and bands in Firestore, you can backfill new full-name fields:
+
+```bash
+# Dry run (no writes)
+npm run migrate:full-names -- --project <firebase-project-id> --credentials <service-account.json>
+
+# Execute writes
+npm run migrate:full-names:execute -- --project <firebase-project-id> --credentials <service-account.json>
+```
+
+This migration:
+- reports users missing `fullName`
+- syncs `bands.memberFullNames` from user profiles where `fullName` exists
+- optionally backfills missing user full names from usernames with `--also-fill-users-from-username`
+
 ## Project structure
 
 ```
