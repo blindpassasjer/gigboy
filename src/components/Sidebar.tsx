@@ -426,7 +426,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             </div>
 
             {soloSetlistsExpanded && (
-              <div className="sidebar-solo-list sidebar-setlists">
+              <div className="sidebar-solo-list sidebar-setlists sidebar-nested-group">
                 {setlists.map((setlist) => (
                   <SetlistItem
                     key={setlist.id}
