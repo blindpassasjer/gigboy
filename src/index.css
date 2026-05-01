@@ -2544,22 +2544,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .25rem;
 }
 
-.sidebar-folder-toggle {
+.sidebar-folder-label {
   display: flex;
   align-items: center;
   gap: .3rem;
-  flex: 1;
-  font-size: .85rem;
   color: var(--text);
-  text-align: left;
-  min-width: 0;
-  overflow: hidden;
-}
-.sidebar-folder-toggle:hover { color: var(--accent); }
-.sidebar-folder-toggle.active {
-  color: var(--accent);
-  background: var(--chord-bg);
-  border-radius: 5px;
 }
 
 .sidebar-folder-name {
@@ -2775,12 +2764,32 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: inline-flex;
   align-items: center;
   gap: .3rem;
+  flex: 1;
   min-width: 0;
+  padding: .3rem .4rem;
+  border-radius: 5px;
+  font-size: .85rem;
+  text-align: left;
   color: var(--muted);
+  transition: background .15s, color .15s;
 }
 
 .sidebar-section-toggle:hover {
-  color: var(--accent);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.sidebar-section-toggle .sidebar-section-title {
+  flex: 1;
+  font-size: inherit;
+  font-weight: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-section-title {
