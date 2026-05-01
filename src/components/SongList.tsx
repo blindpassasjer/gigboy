@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Search,
   Music,
@@ -117,6 +117,7 @@ export default function SongList({
   onAddSongsClick,
   shareConfig,
 }: Props) {
+  const { pathname } = useLocation();
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
@@ -145,8 +146,8 @@ export default function SongList({
   const renameInputRef = useRef<HTMLInputElement>(null);
   const songNodeRefs = useRef<Map<string, HTMLElement>>(new Map());
   const canDragReorder = Boolean(onMoveSong);
-  const songPageStateBase = onRemoveSong && listName
-    ? { backTo: '/', backLabel: listName }
+  const songPageStateBase = listName
+    ? { backTo: pathname, backLabel: listName }
     : undefined;
 
   const canAddSongsToList = Boolean(allSongs && onAddSong);

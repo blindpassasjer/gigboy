@@ -75,27 +75,6 @@ export default function HomePage() {
   const availableSongListsForBand = selectedBand ? (bandSongListsByBandId[selectedBand.id] ?? []) : [];
   const availableSetlistsForBand = selectedBand ? (bandSetlistsByBandId[selectedBand.id] ?? []) : [];
 
-  function openCopyDialog(mode: CopyMode, sourceName: string, songIds: string[]) {
-    if (bands.length === 0) {
-      toast.error('Create a band first.');
-      return;
-    }
-
-    const firstBandId = bands[0]?.id ?? '';
-    setCopyDialog({ mode, sourceName, songIds });
-    setCopyBandId(firstBandId);
-    setCopyTargetMode('new');
-    setCopyExistingTargetId('');
-    setCopyNameDraft(sourceName);
-
-    if (mode === 'songlist') {
-      void refreshBandSongLists(firstBandId);
-      return;
-    }
-
-    void refreshBandSetlists(firstBandId);
-  }
-
   function closeCopyDialog() {
     setCopyDialog(null);
     setCopyBandId('');
