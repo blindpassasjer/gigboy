@@ -76,11 +76,6 @@ export default function BandDetailPage() {
     ? bandSetlists.find((entry) => entry.id === bandResourceId) ?? null
     : null;
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
-  const sectionTitle = bandSection === 'songlists'
-    ? 'Band Songlist'
-    : bandSection === 'setlists'
-      ? 'Band Setlist'
-      : 'Band Library';
 
   useEffect(() => {
     if (!id || !band) return;
