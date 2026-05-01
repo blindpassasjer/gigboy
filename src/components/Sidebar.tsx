@@ -515,12 +515,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         <div className="sidebar-bands-list">
           {bands.filter((band) => band.id === activeBandId).map((band) => (
             <div key={band.id} className="sidebar-folder">
-              <div className="sidebar-folder-header">
-                <div className="sidebar-folder-label" aria-hidden="true">
-                  {band.icon ? <span className="sidebar-list-icon" aria-hidden="true">{band.icon}</span> : <Users size={14} />}
-                </div>
-              </div>
-
               <div className="sidebar-folder-children">
                 <div
                   className={`sidebar-list-item${(
