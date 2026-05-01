@@ -308,17 +308,86 @@ export default function SongView({ song, accentColor }: Props) {
                 </button>
 
                 {showNotes && (
-                  <label
-                    className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
-                    title="Enable touch drawing"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={drawEnabled}
-                      onChange={(e) => handleToggleDraw(e.target.checked)}
-                    />
-                    Draw
-                  </label>
+                  <div className="song-notes-panel">
+                    <label
+                      className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
+                      title="Enable touch drawing"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={drawEnabled}
+                        onChange={(e) => handleToggleDraw(e.target.checked)}
+                      />
+                      Draw
+                    </label>
+
+                    {drawEnabled && (
+                      <>
+                        <button
+                          className="notes-toolbar-btn"
+                          onClick={handleUndoStroke}
+                          disabled={undoStack.length === 0}
+                          title="Undo last stroke"
+                        >
+                          Undo
+                        </button>
+                        <button
+                          className="notes-toolbar-btn notes-toolbar-btn--danger"
+                          onClick={handleClearNotes}
+                          disabled={handNotes.myStrokes.length === 0}
+                          title="Clear my notes"
+                        >
+                          Clear
+                        </button>
+                      </>
+                    )}
+
+                    {handNotes.saveState === 'saving' && (
+                      <span className="notes-save-status notes-save-status--saving">Saving…</span>
+                    )}
+                    {handNotes.saveState === 'saved' && (
+                      <span className="notes-save-status notes-save-status--saved">Saved</span>
+                    )}
+                    {handNotes.saveState === 'error' && (
+                      <span className="notes-save-status notes-save-status--error">Failed to save</span>
+                    )}
+
+                    {handNotes.authors.length > 1 && (
+                      <div className="notes-author-filters">
+                        <button
+                          className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
+                          onClick={handNotes.showAll}
+                          title="Show all users' notes"
+                        >
+                          All
+                        </button>
+                        <button
+                          className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
+                          onClick={handNotes.showMineOnly}
+                          title="Show only my notes"
+                        >
+                          Mine
+                        </button>
+                        {handNotes.authors.map((author) => (
+                          <button
+                            key={author.uid}
+                            className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
+                            onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
+                            title={`Toggle notes by ${author.name}`}
+                          >
+                            {author.avatar ? (
+                              <span className="notes-author-chip-avatar">{author.avatar}</span>
+                            ) : (
+                              <span className="notes-author-chip-initials">
+                                {author.name.slice(0, 1).toUpperCase()}
+                              </span>
+                            )}
+                            {author.uid === user.id ? 'Me' : author.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -330,7 +399,7 @@ export default function SongView({ song, accentColor }: Props) {
                 onClick={() => setListMenuOpen((v) => !v)}
                 title="Add to song list"
               >
-                <ListPlus size={15} /> Lists
+                <ListPlus size={15} /> Songlists
               </button>
               {listMenuOpen && (
                 <div className="list-dropdown">
@@ -405,76 +474,6 @@ export default function SongView({ song, accentColor }: Props) {
             </div>
           </div>
 
-          {user && showNotes && (
-            <div className="song-toolbar-row song-toolbar-row--notes">
-              {drawEnabled && (
-                <>
-                  <button
-                    className="notes-toolbar-btn"
-                    onClick={handleUndoStroke}
-                    disabled={undoStack.length === 0}
-                    title="Undo last stroke"
-                  >
-                    Undo
-                  </button>
-                  <button
-                    className="notes-toolbar-btn notes-toolbar-btn--danger"
-                    onClick={handleClearNotes}
-                    disabled={handNotes.myStrokes.length === 0}
-                    title="Clear my notes"
-                  >
-                    Clear
-                  </button>
-                </>
-              )}
-
-              {handNotes.saveState === 'saving' && (
-                <span className="notes-save-status notes-save-status--saving">Saving…</span>
-              )}
-              {handNotes.saveState === 'saved' && (
-                <span className="notes-save-status notes-save-status--saved">Saved</span>
-              )}
-              {handNotes.saveState === 'error' && (
-                <span className="notes-save-status notes-save-status--error">Failed to save</span>
-              )}
-
-              {handNotes.authors.length > 1 && (
-                <div className="notes-author-filters">
-                  <button
-                    className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
-                    onClick={handNotes.showAll}
-                    title="Show all users' notes"
-                  >
-                    All
-                  </button>
-                  <button
-                    className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
-                    onClick={handNotes.showMineOnly}
-                    title="Show only my notes"
-                  >
-                    Mine
-                  </button>
-                  {handNotes.authors.map((author) => (
-                    <button
-                      key={author.uid}
-                      className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
-                      onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
-                      title={`Toggle notes by ${author.name}`}
-                    >
-                      {author.avatar ? (
-                        <span className="notes-author-chip-avatar">{author.avatar}</span>
-                      ) : (
-                        <span className="notes-author-chip-initials">
-                          {author.name.slice(0, 1).toUpperCase()}
-                        </span>
-                      )}
-                      {author.uid === user.id ? 'Me' : author.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 

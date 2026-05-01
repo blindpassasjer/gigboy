@@ -1314,6 +1314,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--chord-bg);
 }
 
+.song-notes-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem;
+  min-width: min(440px, calc(100vw - 4rem));
+  padding: .38rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 85%, var(--bg));
+}
+
 .song-toolbar-tool-btn--active,
 .song-toolbar-tool-btn--active:hover {
   color: var(--accent-contrast);
@@ -1331,6 +1343,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--song-item-chip-text);
   border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
   background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+}
+
+.song-view-header .song-notes-panel {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  background: color-mix(in srgb, var(--song-header-accent) 8%, var(--song-item-bg));
 }
 
 .song-view-header .song-notes-draw-toggle:hover {
