@@ -66,7 +66,7 @@ export default function SongView({ song, accentColor }: Props) {
     enabled: showNotes,
   });
 
-  const saveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
 
   const handleStrokesChange = useCallback((strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
     setUndoStack((prev) => [...prev, handNotes.myStrokes]);

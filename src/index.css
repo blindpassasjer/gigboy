@@ -677,6 +677,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
   cursor: grab;
   flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   transition: color .15s, background .15s, border-color .15s;
 }
 
@@ -2770,7 +2773,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   align-items: center;
   gap: .4rem;
-  padding: .4rem .6rem;
+  padding: .1rem .5rem .1rem .75rem;
   border-radius: 5px;
   transition: background .12s;
 }
@@ -2793,7 +2796,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   gap: .5rem;
   flex: 1;
-  padding: 0;
+  padding: .3rem .4rem;
   font-size: .88rem;
   color: inherit;
   text-align: left;

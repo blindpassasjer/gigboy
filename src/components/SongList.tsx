@@ -140,13 +140,11 @@ export default function SongList({
   const [pickerQuery, setPickerQuery] = useState('');
   const [showListAppearanceEditor, setShowListAppearanceEditor] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
-  const [canDragReorder, setCanDragReorder] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  });
   const [renameValue, setRenameValue] = useState(listName ?? '');
   const [listIconDraft, setListIconDraft] = useState(listIcon ?? '🎵');
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const songNodeRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const canDragReorder = Boolean(onMoveSong);
   const songPageStateBase = onRemoveSong && listName
     ? { backTo: '/', backLabel: listName }
     : undefined;
@@ -230,19 +228,6 @@ export default function SongList({
   useEffect(() => {
     setRenameValue(listName ?? '');
   }, [listName]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setCanDragReorder(event.matches);
-    };
-
-    setCanDragReorder(mediaQuery.matches);
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
 
   useEffect(() => {
     if (!isRenaming) return;
@@ -385,6 +370,96 @@ export default function SongList({
 
     event.preventDefault();
     onMoveSong(sourceSongId, null);
+    handleSongDragEnd();
+  };
+
+  const setSongNodeRef = (songId: string, node: HTMLElement | null) => {
+    if (node) {
+      songNodeRefs.current.set(songId, node);
+      return;
+    }
+
+    songNodeRefs.current.delete(songId);
+  };
+
+  const resolveTouchDropTarget = (touchY: number) => {
+    const entries = filtered
+      .map((song) => {
+        const node = songNodeRefs.current.get(song.id);
+        if (!node) return null;
+        return {
+          id: song.id,
+          midpoint: node.getBoundingClientRect().top + (node.getBoundingClientRect().height / 2),
+        };
+      })
+      .filter((entry): entry is { id: string; midpoint: number } => Boolean(entry));
+
+    for (const entry of entries) {
+      if (touchY <= entry.midpoint) {
+        return {
+          beforeSongId: entry.id,
+          highlightSongId: entry.id,
+          atEnd: false,
+        };
+      }
+    }
+
+    return {
+      beforeSongId: null,
+      highlightSongId: null,
+      atEnd: true,
+    };
+  };
+
+  const updateTouchDropPreview = (touchY: number) => {
+    const nextTarget = resolveTouchDropTarget(touchY);
+    setDropTargetSongId(nextTarget.highlightSongId);
+    setDropAtEnd(nextTarget.atEnd);
+  };
+
+  const handleSongTouchStart = (song: Song, event: React.TouchEvent<HTMLButtonElement>) => {
+    if (!onMoveSong || event.touches.length !== 1) {
+      return;
+    }
+
+    event.preventDefault();
+    setDraggingSongId(song.id);
+    updateTouchDropPreview(event.touches[0].clientY);
+  };
+
+  const handleSongTouchMove = (event: React.TouchEvent<HTMLButtonElement>) => {
+    if (!onMoveSong || !draggingSongId || event.touches.length !== 1) {
+      return;
+    }
+
+    event.preventDefault();
+    updateTouchDropPreview(event.touches[0].clientY);
+  };
+
+  const handleSongTouchEnd = (event: React.TouchEvent<HTMLButtonElement>) => {
+    if (!onMoveSong || !draggingSongId) {
+      handleSongDragEnd();
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    const nextTarget = touch ? resolveTouchDropTarget(touch.clientY) : null;
+    const beforeSongId = nextTarget
+      ? nextTarget.beforeSongId
+      : dropAtEnd
+        ? null
+        : dropTargetSongId;
+
+    if (beforeSongId && beforeSongId === draggingSongId) {
+      handleSongDragEnd();
+      return;
+    }
+
+    onMoveSong(draggingSongId, beforeSongId ?? null);
+    handleSongDragEnd();
+  };
+
+  const handleSongTouchCancel = () => {
     handleSongDragEnd();
   };
 
@@ -582,6 +657,7 @@ export default function SongList({
               <article
                 key={song.id}
                 className={`song-preview-card${dropTargetSongId === song.id ? ' drop-before' : ''}`}
+                ref={(node) => setSongNodeRef(song.id, node)}
                 onDragOver={(event) => handleSongDragOver(song.id, event)}
                 onDrop={(event) => handleSongDrop(song.id, event)}
               >
@@ -592,6 +668,10 @@ export default function SongList({
                   draggable
                   onDragStart={(event) => handleSongDragStart(song, event)}
                   onDragEnd={handleSongDragEnd}
+                  onTouchStart={(event) => handleSongTouchStart(song, event)}
+                  onTouchMove={handleSongTouchMove}
+                  onTouchEnd={handleSongTouchEnd}
+                  onTouchCancel={handleSongTouchCancel}
                   aria-label={`Drag ${song.title}`}
                 >
                   <GripVertical size={16} />
@@ -653,7 +733,11 @@ export default function SongList({
                 : undefined;
 
               return (
-              <li key={song.id} className={dropTargetSongId === song.id ? 'drop-before' : ''}>
+              <li
+                key={song.id}
+                className={dropTargetSongId === song.id ? 'drop-before' : ''}
+                ref={(node) => setSongNodeRef(song.id, node)}
+              >
                 <div
                   className="song-card"
                   onDragOver={(event) => handleSongDragOver(song.id, event)}
@@ -666,6 +750,10 @@ export default function SongList({
                     draggable
                     onDragStart={(event) => handleSongDragStart(song, event)}
                     onDragEnd={handleSongDragEnd}
+                    onTouchStart={(event) => handleSongTouchStart(song, event)}
+                    onTouchMove={handleSongTouchMove}
+                    onTouchEnd={handleSongTouchEnd}
+                    onTouchCancel={handleSongTouchCancel}
                     aria-label={`Drag ${song.title}`}
                   >
                     <GripVertical size={16} />
