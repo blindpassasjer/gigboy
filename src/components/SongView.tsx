@@ -14,7 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import type { Song } from '../types';
+import type { HandNoteStroke, Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
@@ -24,9 +24,12 @@ import { transposeChord } from '../utils/chordParser';
 import type { ChordNotation } from '../utils/chordParser';
 import { useSongLists } from '../context/SongListsContext';
 import { useSongs } from '../context/SongsContext';
+import { useAuth } from '../context/AuthContext';
+import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import ShareMenu from './ShareMenu';
+import SongHandNotesOverlay from './SongHandNotesOverlay';
 
 interface Props {
   song: Song;
@@ -49,6 +52,65 @@ export default function SongView({ song, accentColor }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const { updateSong, deleteSong } = useSongs();
   const { songLists, addSongToList, removeSongFromList } = useSongLists();
+  const { user } = useAuth();
+
+  // Hand notes state
+  const [showNotes, setShowNotes] = useState(false);
+  const [drawEnabled, setDrawEnabled] = useState(false);
+  const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
+
+  const handNotes = useSongHandNotes({
+    ownerId: song.ownerId ?? null,
+    songId: song.id,
+    user,
+    enabled: showNotes,
+  });
+
+  const saveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+
+  const handleStrokesChange = useCallback((strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
+    setUndoStack((prev) => [...prev, handNotes.myStrokes]);
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+    saveTimerRef.current = window.setTimeout(() => {
+      handNotes.saveMyNotes(strokes, viewport);
+    }, 700);
+  }, [handNotes]);
+
+  const handleUndoStroke = useCallback(() => {
+    setUndoStack((prev) => {
+      if (prev.length === 0) return prev;
+      const before = prev[prev.length - 1];
+      const next = prev.slice(0, prev.length - 1);
+      const canvas = document.querySelector('.song-hand-notes-overlay') as HTMLDivElement | null;
+      const rect = canvas?.getBoundingClientRect();
+      handNotes.saveMyNotes(before ?? [], {
+        width: rect?.width ?? window.innerWidth,
+        height: rect?.height ?? window.innerHeight,
+      });
+      return next;
+    });
+  }, [handNotes]);
+
+  const handleClearNotes = useCallback(async () => {
+    setUndoStack([]);
+    await handNotes.clearMyNotes();
+  }, [handNotes]);
+
+  const handleToggleNotes = useCallback((next: boolean) => {
+    setShowNotes(next);
+    if (!next) {
+      setDrawEnabled(false);
+    }
+  }, []);
+
+  const handleToggleDraw = useCallback((next: boolean) => {
+    setDrawEnabled(next);
+    if (next && !showNotes) {
+      setShowNotes(true);
+    }
+  }, [showNotes]);
 
   useEffect(() => {
     if (!listMenuOpen) return;
@@ -296,19 +358,121 @@ export default function SongView({ song, accentColor }: Props) {
               </button>
             </div>
           </div>
+
+          {user && (
+            <div className="song-toolbar-row song-toolbar-row--notes">
+              <label className="toggle-label" title="Show/hide handwritten notes">
+                <input
+                  type="checkbox"
+                  checked={showNotes}
+                  onChange={(e) => handleToggleNotes(e.target.checked)}
+                />
+                Notes
+              </label>
+
+              {showNotes && (
+                <>
+                  <label className="toggle-label" title="Enable touch drawing">
+                    <input
+                      type="checkbox"
+                      checked={drawEnabled}
+                      onChange={(e) => handleToggleDraw(e.target.checked)}
+                    />
+                    Draw
+                  </label>
+
+                  {drawEnabled && (
+                    <>
+                      <button
+                        className="notes-toolbar-btn"
+                        onClick={handleUndoStroke}
+                        disabled={undoStack.length === 0}
+                        title="Undo last stroke"
+                      >
+                        Undo
+                      </button>
+                      <button
+                        className="notes-toolbar-btn notes-toolbar-btn--danger"
+                        onClick={handleClearNotes}
+                        disabled={handNotes.myStrokes.length === 0}
+                        title="Clear my notes"
+                      >
+                        Clear
+                      </button>
+                    </>
+                  )}
+
+                  {handNotes.saveState === 'saving' && (
+                    <span className="notes-save-status notes-save-status--saving">Saving…</span>
+                  )}
+                  {handNotes.saveState === 'saved' && (
+                    <span className="notes-save-status notes-save-status--saved">Saved</span>
+                  )}
+                  {handNotes.saveState === 'error' && (
+                    <span className="notes-save-status notes-save-status--error">Failed to save</span>
+                  )}
+
+                  {handNotes.authors.length > 1 && (
+                    <div className="notes-author-filters">
+                      <button
+                        className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
+                        onClick={handNotes.showAll}
+                        title="Show all users' notes"
+                      >
+                        All
+                      </button>
+                      <button
+                        className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
+                        onClick={handNotes.showMineOnly}
+                        title="Show only my notes"
+                      >
+                        Mine
+                      </button>
+                      {handNotes.authors.map((author) => (
+                        <button
+                          key={author.uid}
+                          className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
+                          onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
+                          title={`Toggle notes by ${author.name}`}
+                        >
+                          {author.avatar ? (
+                            <span className="notes-author-chip-avatar">{author.avatar}</span>
+                          ) : (
+                            <span className="notes-author-chip-initials">
+                              {author.name.slice(0, 1).toUpperCase()}
+                            </span>
+                          )}
+                          {author.uid === user.id ? 'Me' : author.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="song-view-body">
-        <ChordDisplay
-          chordpro={song.chordpro}
-          transpose={transpose}
-          showChords={showChords}
-          notation={chordNotation}
-          timeSignature={song.timeSignature}
-          instrument={chordInstrument}
-          onChordClick={showChords ? handleChordClick : undefined}
-        />
+        <div className="song-notes-stage">
+          <ChordDisplay
+            chordpro={song.chordpro}
+            transpose={transpose}
+            showChords={showChords}
+            notation={chordNotation}
+            timeSignature={song.timeSignature}
+            instrument={chordInstrument}
+            onChordClick={showChords && !drawEnabled ? handleChordClick : undefined}
+          />
+          <SongHandNotesOverlay
+            visible={showNotes}
+            drawEnabled={drawEnabled}
+            notes={handNotes.visibleNotes}
+            myStrokes={handNotes.myStrokes}
+            onMyStrokesChange={handleStrokesChange}
+          />
+        </div>
       </div>
 
       {activeChord && (

@@ -117,6 +117,33 @@ export interface Song extends CollaborationMetadata {
   updatedAt?: string;
 }
 
+export interface HandNoteStroke {
+  id: string;
+  color: string;
+  width: number;
+  /** Normalized points [x0, y0, x1, y1, ...] in 0..1 space */
+  points: number[];
+  createdAt: string;
+}
+
+export interface SongHandNoteDocument {
+  authorUid: string;
+  authorName?: string | null;
+  authorAvatar?: string | null;
+  updatedAt: string;
+  viewport: {
+    width: number;
+    height: number;
+  };
+  strokes: HandNoteStroke[];
+}
+
+export interface SongHandNoteAuthor {
+  uid: string;
+  name: string;
+  avatar?: string | null;
+}
+
 export interface ParsedLine {
   type: 'chord-lyric' | 'directive' | 'comment' | 'empty' | 'tab';
   segments?: ChordSegment[];

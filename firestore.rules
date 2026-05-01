@@ -77,6 +77,22 @@ service cloud.firestore {
         allow create: if isOwner(userId) && request.resource.data.ownerId == request.auth.uid;
         allow update: if canUpdateResource(userId);
         allow delete: if isOwner(userId);
+
+        // Per-user handwritten notes. Each user writes only their own doc (noteId == uid).
+        match /handNotes/{noteId} {
+          allow read: if canReadResource(userId);
+          allow create: if isSignedIn()
+            && canReadResource(userId)
+            && noteId == request.auth.uid
+            && request.resource.data.authorUid == request.auth.uid;
+          allow update: if isSignedIn()
+            && canReadResource(userId)
+            && noteId == request.auth.uid
+            && resource.data.authorUid == request.auth.uid
+            && request.resource.data.authorUid == request.auth.uid;
+          allow delete: if isSignedIn()
+            && noteId == request.auth.uid;
+        }
       }
 
       match /songListCategories/{categoryId} {

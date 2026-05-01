@@ -1676,6 +1676,130 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-family: inherit;
 }
 
+/* ─── Song hand notes ────────────────────────────────────────────────────────── */
+.song-notes-stage {
+  position: relative;
+}
+
+.song-hand-notes-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+
+.song-hand-notes-overlay--drawing {
+  pointer-events: all;
+  cursor: crosshair;
+}
+
+.song-hand-notes-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.notes-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .22rem .65rem;
+  font-size: .78rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--muted);
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.notes-toolbar-btn:hover:not(:disabled) {
+  background: var(--chord-bg);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.notes-toolbar-btn:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+
+.notes-toolbar-btn--danger:hover:not(:disabled) {
+  background: #fde8e8;
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+}
+
+.notes-save-status {
+  font-size: .78rem;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: .1rem .55rem;
+}
+
+.notes-save-status--saving { color: var(--muted); }
+.notes-save-status--saved { color: #27ae60; }
+.notes-save-status--error { color: var(--danger); }
+
+.notes-author-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.notes-author-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .18rem .55rem;
+  font-size: .76rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--bg);
+  color: var(--muted);
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.notes-author-chip:hover {
+  background: var(--chord-bg);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.notes-author-chip--active,
+.notes-author-chip--on {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
+}
+
+.notes-author-chip--active:hover,
+.notes-author-chip--on:hover {
+  background: var(--accent-h);
+  border-color: var(--accent-h);
+  color: var(--accent-contrast);
+}
+
+.notes-author-chip-initials,
+.notes-author-chip-avatar {
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-contrast) 20%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .72em;
+  font-weight: 700;
+}
+
 /* ─── Tab Block ──────────────────────────────────────────────────────────────── */
 .tab-block {
   margin: .75rem 0;
@@ -4041,6 +4165,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   .sidebar-anim,
   .sidebar-backdrop,
   .song-view-toolbar,
+  .song-toolbar-row--notes,
+  .song-hand-notes-overlay,
   .song-action-btn { display: none !important; }
 
   body { background: white; color: black; }
