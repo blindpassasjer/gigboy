@@ -48,7 +48,7 @@ export default function SongHandNotesOverlay({
   drawEnabled,
   notes,
   myStrokes,
-  strokeColor = '#c0392b',
+  strokeColor = '#22c55e',
   strokeWidth = 2.5,
   onMyStrokesChange,
 }: Props) {

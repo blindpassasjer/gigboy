@@ -473,7 +473,7 @@ export default function SongView({ song, accentColor }: Props) {
             drawEnabled={drawEnabled}
             notes={handNotes.visibleNotes}
             myStrokes={handNotes.myStrokes}
-            strokeColor="#27ae60"
+            strokeColor="#22c55e"
             onMyStrokesChange={handleStrokesChange}
           />
         </div>

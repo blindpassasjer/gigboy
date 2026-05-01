@@ -396,19 +396,26 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           </div>
         )}
 
-        <div className="sidebar-setlists-header">
+        <div className="sidebar-list-item sidebar-list-item--section">
           <button
-            className="sidebar-section-toggle"
+            className="sidebar-icon-btn"
             onClick={() => setSoloSetlistsExpanded((current) => !current)}
             aria-expanded={soloSetlistsExpanded}
+            aria-label={soloSetlistsExpanded ? 'Collapse setlists' : 'Expand setlists'}
           >
             {soloSetlistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span className="sidebar-section-title">Setlists</span>
+          </button>
+          <button
+            className="sidebar-list-item-btn"
+            onClick={() => setSoloSetlistsExpanded((current) => !current)}
+          >
+            <ListMusicIcon size={14} />
+            <span className="sidebar-list-name">Setlists</span>
           </button>
           <button
             className="sidebar-icon-btn"
             title="New setlist"
-            onClick={() => { setAddingSetlist(true); setDraftName(''); }}
+            onClick={() => { setSoloSetlistsExpanded(true); setAddingSetlist(true); setDraftName(''); }}
           >
             <Plus size={15} />
           </button>
