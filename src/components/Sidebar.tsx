@@ -393,60 +393,60 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 placeholder="Songlist name..."
               />
             )}
-          </div>
-        )}
 
-        <div className="sidebar-list-item sidebar-list-item--section">
-          <button
-            className="sidebar-icon-btn"
-            onClick={() => setSoloSetlistsExpanded((current) => !current)}
-            aria-expanded={soloSetlistsExpanded}
-            aria-label={soloSetlistsExpanded ? 'Collapse setlists' : 'Expand setlists'}
-          >
-            {soloSetlistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-          <button
-            className="sidebar-list-item-btn"
-            onClick={() => setSoloSetlistsExpanded((current) => !current)}
-          >
-            <ListMusicIcon size={14} />
-            <span className="sidebar-list-name">Setlists</span>
-          </button>
-          <button
-            className="sidebar-icon-btn"
-            title="New setlist"
-            onClick={() => { setSoloSetlistsExpanded(true); setAddingSetlist(true); setDraftName(''); }}
-          >
-            <Plus size={15} />
-          </button>
-        </div>
+            <div className="sidebar-list-item sidebar-list-item--section">
+              <button
+                className="sidebar-icon-btn"
+                onClick={() => setSoloSetlistsExpanded((current) => !current)}
+                aria-expanded={soloSetlistsExpanded}
+                aria-label={soloSetlistsExpanded ? 'Collapse setlists' : 'Expand setlists'}
+              >
+                {soloSetlistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </button>
+              <button
+                className="sidebar-list-item-btn"
+                onClick={() => setSoloSetlistsExpanded((current) => !current)}
+              >
+                <ListMusicIcon size={14} />
+                <span className="sidebar-list-name">Setlists</span>
+              </button>
+              <button
+                className="sidebar-icon-btn"
+                title="New setlist"
+                onClick={() => { setSoloSetlistsExpanded(true); setAddingSetlist(true); setDraftName(''); }}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
 
-        {soloSetlistsExpanded && (
-          <div className="sidebar-setlists">
-            {setlists.map((setlist) => (
-              <SetlistItem
-                key={setlist.id}
-                setlistId={setlist.id}
-                name={setlist.name}
-                icon={setlist.icon}
-                count={setlist.songIds.length}
-                active={activeSetlistId === setlist.id}
-                songDropTarget={setlistDropTargetId === setlist.id}
-                onDragOver={(e) => handleSetlistDragOver(e, setlist.id)}
-                onDragLeave={() => setSetlistDropTargetId((c) => (c === setlist.id ? null : c))}
-                onDrop={(e) => handleSetlistDrop(e, setlist.id)}
-                onSelect={() => { setActiveSetlistId(setlist.id); setActiveSongListId(null); clearActiveSelection(); goToLibraryView(); }}
-              />
-            ))}
+            {soloSetlistsExpanded && (
+              <div className="sidebar-setlists">
+                {setlists.map((setlist) => (
+                  <SetlistItem
+                    key={setlist.id}
+                    setlistId={setlist.id}
+                    name={setlist.name}
+                    icon={setlist.icon}
+                    count={setlist.songIds.length}
+                    active={activeSetlistId === setlist.id}
+                    songDropTarget={setlistDropTargetId === setlist.id}
+                    onDragOver={(e) => handleSetlistDragOver(e, setlist.id)}
+                    onDragLeave={() => setSetlistDropTargetId((c) => (c === setlist.id ? null : c))}
+                    onDrop={(e) => handleSetlistDrop(e, setlist.id)}
+                    onSelect={() => { setActiveSetlistId(setlist.id); setActiveSongListId(null); clearActiveSelection(); goToLibraryView(); }}
+                  />
+                ))}
 
-            {addingSetlist && (
-              <InlineInput
-                value={draftName}
-                onChange={setDraftName}
-                onCommit={commitSetlist}
-                onCancel={() => setAddingSetlist(false)}
-                placeholder="Setlist name..."
-              />
+                {addingSetlist && (
+                  <InlineInput
+                    value={draftName}
+                    onChange={setDraftName}
+                    onCommit={commitSetlist}
+                    onCancel={() => setAddingSetlist(false)}
+                    placeholder="Setlist name..."
+                  />
+                )}
+              </div>
             )}
           </div>
         )}

@@ -1697,6 +1697,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-hand-notes-overlay {
   position: absolute;
   inset: 0;
+  z-index: 1;
   border-radius: var(--radius);
   touch-action: none;
   user-select: none;
