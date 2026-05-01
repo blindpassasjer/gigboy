@@ -8,6 +8,7 @@ import TabDisplay from './TabDisplay';
 import { LANGUAGE_NAMES } from '../utils/languages';
 import { parsePastedSong } from '../utils/chordFormatParser';
 import { extractTabBlocks } from '../utils/tabParser';
+import { parseSongMedia } from '../utils/songMedia';
 
 interface Props {
   onSave: (song: Song) => Promise<string | null>;
@@ -42,6 +43,7 @@ export default function AddSongForm({
   const navigate = useNavigate();
   const [title, setTitle] = useState(initialSong?.title ?? '');
   const [artist, setArtist] = useState(initialSong?.artist ?? '');
+  const [playbackUrl, setPlaybackUrl] = useState(initialSong?.playbackUrl ?? '');
   const [language, setLanguage] = useState(initialSong?.language ?? 'en');
   const [tags, setTags] = useState((initialSong?.tags ?? []).join(', '));
   const [key, setKey] = useState(initialSong?.key ?? '');
@@ -60,6 +62,9 @@ export default function AddSongForm({
     const errs: string[] = [];
     if (!title.trim()) errs.push('Title is required.');
     if (!chordpro.trim()) errs.push('Song content (ChordPro) is required.');
+    if (playbackUrl.trim() && !parseSongMedia(playbackUrl)) {
+      errs.push('Playback link must be a valid YouTube or Spotify URL.');
+    }
     return errs;
   }
 
@@ -90,6 +95,7 @@ export default function AddSongForm({
       id: initialSong?.id ?? crypto.randomUUID(),
       title: title.trim(),
       artist: artist.trim() || undefined,
+      playbackUrl: playbackUrl.trim() || undefined,
       language,
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       key: key.trim() || undefined,
@@ -161,6 +167,16 @@ export default function AddSongForm({
             <label>Time Signature</label>
             <input value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} placeholder="4/4" maxLength={7} />
           </div>
+        </div>
+
+        <div className="form-field">
+          <label>Playback Link (YouTube or Spotify)</label>
+          <input
+            value={playbackUrl}
+            onChange={(e) => setPlaybackUrl(e.target.value)}
+            placeholder="https://youtube.com/watch?v=... or https://open.spotify.com/track/..."
+          />
+          <p className="form-hint">This adds an inline mini player button to the song toolbar.</p>
         </div>
 
         <div className="form-field">

@@ -102,6 +102,8 @@ export interface Song extends CollaborationMetadata {
   id: string;
   title: string;
   artist?: string;
+  /** Optional playback URL from YouTube or Spotify. */
+  playbackUrl?: string;
   language: Language;
   /** Additional languages present in the song (e.g. bilingual) */
   secondaryLanguages?: Language[];

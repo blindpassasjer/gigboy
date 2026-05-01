@@ -12,6 +12,8 @@ import {
   SquarePen,
   PenLine,
   Trash2,
+  Play,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { HandNoteStroke, Song } from '../types';
@@ -30,6 +32,8 @@ import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import ShareMenu from './ShareMenu';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
+import SongMediaPlayer from './SongMediaPlayer';
+import { parseSongMedia } from '../utils/songMedia';
 
 interface Props {
   song: Song;
@@ -58,6 +62,8 @@ export default function SongView({ song, accentColor }: Props) {
   const [showNotes, setShowNotes] = useState(false);
   const [drawEnabled, setDrawEnabled] = useState(false);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
+  const [showMediaPlayer, setShowMediaPlayer] = useState(false);
+  const media = song.playbackUrl ? parseSongMedia(song.playbackUrl) : null;
 
   const handNotes = useSongHandNotes({
     ownerId: song.ownerId ?? user?.id ?? null,
@@ -118,6 +124,7 @@ export default function SongView({ song, accentColor }: Props) {
 
   // Close chord diagram when song changes
   useEffect(() => { setActiveChord(null); }, [song.id]);
+  useEffect(() => { setShowMediaPlayer(false); }, [song.id]);
 
   const handleChordClick = useCallback((chord: string, rect: DOMRect) => {
     setActiveChord(prev =>
@@ -275,17 +282,45 @@ export default function SongView({ song, accentColor }: Props) {
               className="song-view-metronome"
             />
             <VisualTuner className="song-view-tuner" />
-            {user && (
+            {media && (
               <button
                 type="button"
-                className={`song-toolbar-tool-btn${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
-                onClick={() => handleToggleNotes(!showNotes)}
-                title={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
-                aria-label={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
+                className={`song-toolbar-tool-btn${showMediaPlayer ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => setShowMediaPlayer((prev) => !prev)}
+                title={showMediaPlayer ? 'Hide player' : 'Open player'}
+                aria-label={showMediaPlayer ? 'Hide player' : 'Open player'}
               >
-                <PenLine size={14} />
-                Notes
+                {showMediaPlayer ? <X size={14} /> : <Play size={14} />}
+                Player
               </button>
+            )}
+            {user && (
+              <div className={`song-notes-control${showNotes ? ' song-notes-control--open' : ''}`}>
+                <button
+                  type="button"
+                  className={`song-toolbar-tool-btn song-toolbar-tool-btn--notes${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
+                  onClick={() => handleToggleNotes(!showNotes)}
+                  title={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
+                  aria-label={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
+                >
+                  <PenLine size={14} />
+                  Notes
+                </button>
+
+                {showNotes && (
+                  <label
+                    className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
+                    title="Enable touch drawing"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={drawEnabled}
+                      onChange={(e) => handleToggleDraw(e.target.checked)}
+                    />
+                    Draw
+                  </label>
+                )}
+              </div>
             )}
             {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
 
@@ -327,6 +362,12 @@ export default function SongView({ song, accentColor }: Props) {
             </div>
           </div>
 
+          {media && showMediaPlayer && song.playbackUrl && (
+            <div className="song-toolbar-row song-toolbar-row--media">
+              <SongMediaPlayer mediaUrl={song.playbackUrl} />
+            </div>
+          )}
+
           <div className="song-toolbar-row song-toolbar-row--actions">
             <div className="song-actions">
               <button
@@ -366,18 +407,6 @@ export default function SongView({ song, accentColor }: Props) {
 
           {user && showNotes && (
             <div className="song-toolbar-row song-toolbar-row--notes">
-              <label
-                className={`toggle-label toggle-label--draw${drawEnabled ? ' toggle-label--draw-active' : ''}`}
-                title="Enable touch drawing"
-              >
-                <input
-                  type="checkbox"
-                  checked={drawEnabled}
-                  onChange={(e) => handleToggleDraw(e.target.checked)}
-                />
-                Draw
-              </label>
-
               {drawEnabled && (
                 <>
                   <button

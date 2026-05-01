@@ -1046,6 +1046,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: flex-start;
 }
 
+.song-toolbar-row--media {
+  width: 100%;
+}
+
 .song-view-header .transpose-control,
 .song-view-header .instrument-toggle {
   background: color-mix(in srgb, var(--song-item-bg) 84%, white);
@@ -1286,6 +1290,30 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--chord-bg);
 }
 
+.song-notes-control {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: .28rem;
+}
+
+.song-notes-draw-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: .74rem;
+  font-weight: 600;
+  padding: .2rem .45rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.song-notes-draw-toggle:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--chord-bg);
+}
+
 .song-toolbar-tool-btn--active,
 .song-toolbar-tool-btn--active:hover {
   color: var(--accent-contrast);
@@ -1299,6 +1327,40 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--song-item-bg) 75%, white);
 }
 
+.song-view-header .song-notes-draw-toggle {
+  color: var(--song-item-chip-text);
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+}
+
+.song-view-header .song-notes-draw-toggle:hover {
+  color: var(--song-item-chip-text);
+  border-color: color-mix(in srgb, var(--song-header-accent) 44%, var(--song-item-border));
+  background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
+}
+
+.song-view-header .song-notes-draw-toggle.toggle-label--draw-active,
+.song-view-header .song-notes-draw-toggle.toggle-label--draw-active:hover {
+  color: var(--song-item-accent-contrast, var(--accent-contrast));
+  border-color: color-mix(in srgb, var(--notes-draw) 70%, black);
+  background: var(--notes-draw);
+}
+
+.song-view-header .song-toolbar-tool-btn--notes,
+.song-view-header .song-toolbar-tool-btn--notes:hover,
+.song-view-header .song-toolbar-tool-btn--notes.song-toolbar-tool-btn--active,
+.song-view-header .song-toolbar-tool-btn--notes.song-toolbar-tool-btn--active:hover {
+  color: var(--accent-contrast);
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.song-view-header .song-toolbar-tool-btn--notes:hover,
+.song-view-header .song-toolbar-tool-btn--notes.song-toolbar-tool-btn--active:hover {
+  background: var(--accent-h);
+  border-color: var(--accent-h);
+}
+
 .song-view-header .song-toolbar-tool-btn:hover {
   color: var(--song-item-chip-text);
   background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
@@ -1309,6 +1371,143 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--song-item-accent-contrast, var(--accent-contrast));
   border-color: color-mix(in srgb, var(--song-header-accent) 74%, black);
   background: var(--song-header-accent);
+}
+
+.song-media-player {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 82%, var(--bg));
+  padding: .55rem .65rem;
+}
+
+.song-media-player--spotify {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.song-media-player--spotify iframe {
+  border: 0;
+  border-radius: 8px;
+}
+
+.song-media-external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  width: fit-content;
+  font-size: .72rem;
+  color: var(--muted);
+}
+
+.song-media-external-link:hover {
+  color: var(--accent);
+}
+
+.song-media-player--youtube {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  position: relative;
+}
+
+.song-media-hidden-host {
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.song-media-play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.song-media-play-btn:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--chord-bg);
+}
+
+.song-media-play-btn:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.song-media-progress-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.song-media-progress {
+  width: 100%;
+}
+
+.song-media-time {
+  font-size: .68rem;
+  color: var(--muted);
+}
+
+.song-media-external-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.song-media-external-icon:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--chord-bg);
+}
+
+.song-media-error {
+  color: var(--danger);
+  font-size: .7rem;
+}
+
+.song-view-header .song-media-player {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  background: var(--song-item-chip-bg);
+}
+
+.song-view-header .song-media-play-btn,
+.song-view-header .song-media-external-icon {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+}
+
+.song-view-header .song-media-play-btn:hover:not(:disabled),
+.song-view-header .song-media-external-icon:hover {
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
+}
+
+.song-view-header .song-media-time,
+.song-view-header .song-media-external-link,
+.song-view-header .song-media-external-link:hover {
+  color: var(--song-item-chip-text);
 }
 
 .concert-metronome {
