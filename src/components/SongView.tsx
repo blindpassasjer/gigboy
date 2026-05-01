@@ -60,7 +60,7 @@ export default function SongView({ song, accentColor }: Props) {
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
 
   const handNotes = useSongHandNotes({
-    ownerId: song.ownerId ?? null,
+    ownerId: song.ownerId ?? user?.id ?? null,
     songId: song.id,
     user,
     enabled: showNotes,

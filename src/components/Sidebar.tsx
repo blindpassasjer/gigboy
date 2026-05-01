@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Folder, FolderOpen, ListMusic, ListMusicIcon, Plus, Users, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Folder, FolderOpen, ListMusic, ListMusicIcon, Plus, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
@@ -76,6 +76,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [soloSetlistsExpanded, setSoloSetlistsExpanded] = useState(true);
   const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
+  const [activeBandId, setActiveBandId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try { return window.localStorage.getItem('folio-active-band-id'); } catch { return null; }
+  });
+  const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
+  const bandSwitcherRef = useRef<HTMLDivElement>(null);
   const [expandedBandIds, setExpandedBandIds] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
 
@@ -92,6 +98,28 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('folio-expanded-band-ids', JSON.stringify(expandedBandIds));
   }, [expandedBandIds]);
+
+  // Auto-select first band if active band is missing
+  useEffect(() => {
+    if (bands.length === 0) return;
+    if (activeBandId && bands.some((b) => b.id === activeBandId)) return;
+    const firstId = bands[0].id;
+    setActiveBandId(firstId);
+    setExpandedBandIds((prev) => prev.includes(firstId) ? prev : [...prev, firstId]);
+    if (typeof window !== 'undefined') window.localStorage.setItem('folio-active-band-id', firstId);
+  }, [bands, activeBandId]);
+
+  // Close band switcher on outside click
+  useEffect(() => {
+    if (!bandSwitcherOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (bandSwitcherRef.current && !bandSwitcherRef.current.contains(e.target as Node)) {
+        setBandSwitcherOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [bandSwitcherOpen]);
 
   useEffect(() => {
     const missingBandSongCollections = bands
@@ -459,8 +487,56 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       </div>
 
       <div className="sidebar-bands-section">
-        <div className="sidebar-bands-header">
-          <h3 className="sidebar-section-title">Bands</h3>
+        <div className="sidebar-bands-header" ref={bandSwitcherRef}>
+          {bands.length === 0 ? (
+            <h3 className="sidebar-section-title">Bands</h3>
+          ) : (
+            <div className="sidebar-band-switcher">
+              <button
+                className="sidebar-band-switcher-btn"
+                onClick={() => setBandSwitcherOpen((o) => !o)}
+                title="Switch band"
+                aria-haspopup="listbox"
+                aria-expanded={bandSwitcherOpen}
+              >
+                {(() => {
+                  const ab = bands.find((b) => b.id === activeBandId);
+                  return ab?.icon
+                    ? <span className="sidebar-list-icon" aria-hidden="true">{ab.icon}</span>
+                    : <Users size={13} />;
+                })()}
+                <span className="sidebar-band-switcher-name">
+                  {bands.find((b) => b.id === activeBandId)?.name ?? 'Bands'}
+                </span>
+                <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
+              </button>
+
+              {bandSwitcherOpen && (
+                <div className="sidebar-band-switcher-dropdown" role="listbox">
+                  {bands.map((band) => (
+                    <button
+                      key={band.id}
+                      className={`sidebar-band-switcher-option${band.id === activeBandId ? ' active' : ''}`}
+                      role="option"
+                      aria-selected={band.id === activeBandId}
+                      onClick={() => {
+                        setActiveBandId(band.id);
+                        if (typeof window !== 'undefined') window.localStorage.setItem('folio-active-band-id', band.id);
+                        // Auto-expand the newly selected band
+                        setExpandedBandIds((prev) => prev.includes(band.id) ? prev : [...prev, band.id]);
+                        setBandSwitcherOpen(false);
+                      }}
+                    >
+                      {band.icon
+                        ? <span className="sidebar-list-icon" aria-hidden="true">{band.icon}</span>
+                        : <Users size={13} />}
+                      <span className="sidebar-band-switcher-option-name">{band.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <button
             className="sidebar-icon-btn"
             title="New band"
@@ -470,7 +546,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           </button>
         </div>
         <div className="sidebar-bands-list">
-          {bands.map((band) => (
+          {bands.filter((band) => band.id === activeBandId).map((band) => (
             <div key={band.id} className="sidebar-folder">
               <div className="sidebar-folder-header">
                 <button

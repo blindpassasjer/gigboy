@@ -50,9 +50,23 @@ function normalizeStroke(raw: unknown): HandNoteStroke | null {
 function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocument {
   const data = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
 
-  const authorUid = typeof data.authorUid === 'string' ? data.authorUid : docId;
-  const authorName = typeof data.authorName === 'string' ? data.authorName : null;
-  const authorAvatar = typeof data.authorAvatar === 'string' ? data.authorAvatar : null;
+  const authorUid = typeof data.authorUid === 'string'
+    ? data.authorUid
+    : typeof data.authorId === 'string'
+      ? data.authorId
+      : typeof data.uid === 'string'
+        ? data.uid
+        : docId;
+  const authorName = typeof data.authorName === 'string'
+    ? data.authorName
+    : typeof data.name === 'string'
+      ? data.name
+      : null;
+  const authorAvatar = typeof data.authorAvatar === 'string'
+    ? data.authorAvatar
+    : typeof data.avatar === 'string'
+      ? data.avatar
+      : null;
   const updatedAt = typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString();
 
   const viewportData = data.viewport && typeof data.viewport === 'object'

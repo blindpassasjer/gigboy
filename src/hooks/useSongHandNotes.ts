@@ -57,10 +57,16 @@ export function useSongHandNotes(params: {
     }
 
     setVisibleAuthorIds((prev) => {
-      if (prev.length === 0) return [userId];
+      if (prev.length === 0) {
+        const authorIds = notes.map((note) => note.authorUid).filter(Boolean);
+        if (authorIds.length > 0) {
+          return Array.from(new Set(authorIds));
+        }
+        return [userId];
+      }
       return prev;
     });
-  }, [userId]);
+  }, [notes, userId]);
 
   const authors = useMemo<SongHandNoteAuthor[]>(() => {
     return notes.map((note) => ({
@@ -71,7 +77,7 @@ export function useSongHandNotes(params: {
   }, [notes, user, userId]);
 
   const visibleNotes = useMemo(() => {
-    if (visibleAuthorIds.length === 0) return [];
+    if (visibleAuthorIds.length === 0) return notes;
     const visible = new Set(visibleAuthorIds);
     return notes.filter((note) => visible.has(note.authorUid));
   }, [notes, visibleAuthorIds]);

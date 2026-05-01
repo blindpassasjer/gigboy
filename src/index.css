@@ -2915,6 +2915,95 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: space-between;
   padding: 0 .75rem;
   margin-bottom: .5rem;
+  position: relative;
+}
+
+.sidebar-band-switcher {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-band-switcher-btn {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  width: 100%;
+  padding: .2rem .25rem;
+  border-radius: 5px;
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  text-align: left;
+  transition: background .12s, color .12s;
+  overflow: hidden;
+}
+
+.sidebar-band-switcher-btn:hover {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.sidebar-band-switcher-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-band-switcher-chevron {
+  flex-shrink: 0;
+  opacity: .6;
+}
+
+.sidebar-band-switcher-dropdown {
+  position: absolute;
+  top: calc(100% + .25rem);
+  left: 0;
+  z-index: 200;
+  min-width: 12rem;
+  background: var(--surface, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  padding: .25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sidebar-band-switcher-option {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  width: 100%;
+  padding: .4rem .5rem;
+  border-radius: 5px;
+  font-size: .82rem;
+  color: var(--fg);
+  text-align: left;
+  transition: background .1s;
+  overflow: hidden;
+}
+
+.sidebar-band-switcher-option:hover {
+  background: var(--bg);
+}
+
+.sidebar-band-switcher-option.active {
+  background: var(--sidebar-active, var(--border));
+  font-weight: 600;
+}
+
+.sidebar-band-switcher-option-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-bands-list {

@@ -317,7 +317,6 @@ export default function BandDetailPage() {
 
     return (
       <section className="bands-page bands-page--library">
-        <p className="bands-section-kicker">{band.name} · {sectionTitle}</p>
         <SongList
           songs={songListSongs}
           listName={activeBandSongList.name}
@@ -361,12 +360,10 @@ export default function BandDetailPage() {
 
     return (
       <section className="bands-page bands-page--library">
-        <p className="bands-section-kicker">{band.name} · {sectionTitle}</p>
         <SongList
           songs={setlistSongs}
           listName={activeBandSetlist.name}
           listIcon={activeBandSetlist.icon}
-          headerMeta={`${band.name} setlist`}
           headerVariant="bands"
           allSongs={bandSongs}
           onAddSong={(songId) => {
@@ -394,7 +391,6 @@ export default function BandDetailPage() {
 
   return (
     <section className="bands-page bands-page--library">
-      <p className="bands-section-kicker">{band.name} · {sectionTitle}</p>
       <SongList
         songs={bandSongs}
         listName={band.name}
