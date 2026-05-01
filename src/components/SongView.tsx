@@ -298,7 +298,7 @@ export default function SongView({ song, accentColor }: Props) {
               <div className={`song-notes-control${showNotes ? ' song-notes-control--open' : ''}`}>
                 <button
                   type="button"
-                  className={`song-toolbar-tool-btn song-toolbar-tool-btn--notes${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
+                  className={`song-toolbar-tool-btn${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
                   onClick={() => handleToggleNotes(!showNotes)}
                   title={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
                   aria-label={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}

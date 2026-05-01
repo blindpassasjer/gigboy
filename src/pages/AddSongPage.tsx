@@ -10,6 +10,7 @@ type AddSongScopeState = {
     kind: 'solo' | 'band';
     bandId?: string;
   };
+  initialSongListId?: string;
 };
 
 export default function AddSongPage() {
@@ -44,7 +45,9 @@ export default function AddSongPage() {
       };
     });
 
-  const initialSongListId = activeBandId ? '' : (activeSongListId ?? '');
+  const initialSongListId = activeBandId
+    ? (pageState?.initialSongListId ?? '')
+    : (activeSongListId ?? '');
 
   async function handleAdd(song: Song): Promise<string | null> {
     const error = await addSong(song);

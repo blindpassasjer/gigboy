@@ -17,7 +17,10 @@ export default function Layout({ children }: Props) {
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
   const isBandRoute = pathname.startsWith('/bands');
   const isBandLibraryRoute = /^\/bands\/[^/]+(?:\/library)?$/.test(pathname);
+  const isBandSonglistRoute = /^\/bands\/[^/]+\/songlists\/[^/]+/.test(pathname);
+  const isBandSetlistRoute = /^\/bands\/[^/]+\/setlists\/[^/]+/.test(pathname);
   const activeBandIdFromPath = pathname.match(/^\/bands\/([^/]+)/)?.[1] ?? null;
+  const bandSonglistIdFromPath = pathname.match(/^\/bands\/[^/]+\/songlists\/([^/]+)/)?.[1] ?? null;
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -155,13 +158,14 @@ export default function Layout({ children }: Props) {
         )}
         <main className={`main-content${isConcertRoute ? ' main-content--concert' : ''}`}>{children}</main>
       </div>
-      {!isConcertRoute && (!isBandRoute || isBandLibraryRoute) && (
+      {!isConcertRoute && (!isBandRoute || isBandLibraryRoute || isBandSonglistRoute || isBandSetlistRoute) && (
         <Link
           to="/add"
           state={{
             addSongScope: activeBandIdFromPath
               ? { kind: 'band', bandId: activeBandIdFromPath }
               : { kind: 'solo' },
+            ...(bandSonglistIdFromPath ? { initialSongListId: bandSonglistIdFromPath } : {}),
           }}
           className="fab-add-song"
           title="create song"
