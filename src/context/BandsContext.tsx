@@ -265,6 +265,7 @@ interface BandsContextValue {
   moveBandSong: (bandId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
   addBandSongList: (bandId: string, name: string) => Promise<{ songListId: string | null; error: string | null }>;
   renameBandSongList: (bandId: string, songListId: string, name: string) => Promise<string | null>;
+  updateBandLibraryIcon: (bandId: string, icon?: string) => Promise<string | null>;
   deleteBandSongList: (bandId: string, songListId: string) => Promise<string | null>;
   addSongToBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
   removeSongFromBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
@@ -539,6 +540,41 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       setBands(previousBands);
       return error instanceof Error ? error.message : 'Failed to rename band.';
+    }
+  }, [bands, userId]);
+
+  const updateBandLibraryIcon = useCallback(async (bandId: string, icon?: string) => {
+    if (!db || !userId) {
+      return 'Bands require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return 'Band not found.';
+    }
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const previousBands = bands;
+    const now = new Date().toISOString();
+    const nextBands = bands
+      .map((entry) => (entry.id === bandId ? { ...entry, icon, updatedAt: now } : entry))
+      .sort(compareBands);
+
+    setBands(nextBands);
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId), {
+        icon,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBands(previousBands);
+      return error instanceof Error ? error.message : 'Failed to update band library icon.';
     }
   }, [bands, userId]);
 
@@ -1340,6 +1376,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBandSetlists,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
+    updateBandLibraryIcon,
     moveBandSong,
     addBandSongList,
     renameBandSongList,
@@ -1385,6 +1422,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     removeSongFromBandSetlist,
     removeSongFromBandSongList,
     removeSongFromBandLibrary,
+    updateBandLibraryIcon,
     updateBandSetlistIcon,
   ]);
 

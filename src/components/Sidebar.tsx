@@ -361,7 +361,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
       <div className="sidebar-folders">
         <div className="sidebar-setlists-header">
-          <h3 className="sidebar-section-title">Solo</h3>
+          <h3 className="sidebar-section-title">🎤 Solo</h3>
         </div>
 
         <div className="sidebar-solo-sections">
@@ -431,21 +431,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           </section>
 
           <section className="sidebar-solo-section">
-            <div className="sidebar-list-item sidebar-list-item--section">
+            <div className="sidebar-setlists-header">
               <button
-                className="sidebar-icon-btn"
+                className="sidebar-section-toggle"
                 onClick={() => setSoloSetlistsExpanded((current) => !current)}
                 aria-expanded={soloSetlistsExpanded}
-                aria-label={soloSetlistsExpanded ? 'Collapse setlists' : 'Expand setlists'}
               >
                 {soloSetlistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </button>
-              <button
-                className="sidebar-list-item-btn"
-                onClick={() => setSoloSetlistsExpanded((current) => !current)}
-              >
-                <ListMusicIcon size={14} />
-                <span className="sidebar-list-name">Setlists</span>
+                <span className="sidebar-section-title">Setlists</span>
               </button>
               <button
                 className="sidebar-icon-btn"
@@ -558,7 +551,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 >
                   {expandedBandIds.includes(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   {band.icon ? <span className="sidebar-list-icon" aria-hidden="true">{band.icon}</span> : <Users size={14} />}
-                  <span className="sidebar-folder-name">{band.name}</span>
                 </button>
               </div>
 

@@ -35,6 +35,7 @@ export default function BandDetailPage() {
     removeSongFromBandLibrary,
     moveBandSong,
     renameBandSongList,
+    updateBandLibraryIcon,
     deleteBandSongList,
     addSongToBandSongList,
     removeSongFromBandSongList,
@@ -389,6 +390,7 @@ export default function BandDetailPage() {
       <SongList
         songs={bandSongs}
         listName={band.name}
+        listIcon={band.icon}
         headerMeta={`${band.memberIds.length} member${band.memberIds.length === 1 ? '' : 's'} in this band.`}
         headerVariant="bands"
         onRenameList={canEditBand ? (name) => void handleRenameBand(name) : undefined}
@@ -407,6 +409,9 @@ export default function BandDetailPage() {
         onRemoveSong={canEditBand ? handleRemoveSong : undefined}
         onAddSong={canEditBand ? handleAddSong : undefined}
         onMoveSong={canEditBand ? handleMoveSong : undefined}
+        onUpdateListAppearance={canEditBand ? (appearance) => {
+          void updateBandLibraryIcon(band.id, appearance.icon);
+        } : undefined}
       />
 
       {showMembersModal && (

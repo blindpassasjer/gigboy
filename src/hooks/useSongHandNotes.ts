@@ -31,6 +31,20 @@ export function useSongHandNotes(params: {
   const [visibleAuthorIds, setVisibleAuthorIds] = useState<string[]>([]);
 
   useEffect(() => {
+    if (!enabled) {
+      setVisibleAuthorIds([]);
+      return;
+    }
+
+    if (!userId) {
+      setVisibleAuthorIds([]);
+      return;
+    }
+
+    setVisibleAuthorIds([userId]);
+  }, [enabled, ownerId, songId, userId]);
+
+  useEffect(() => {
     if (!enabled || !db || !ownerId) {
       setNotes([]);
       setLoading(false);
@@ -64,7 +78,20 @@ export function useSongHandNotes(params: {
         }
         return [userId];
       }
-      return prev;
+
+      const validIds = new Set(notes.map((note) => note.authorUid));
+      validIds.add(userId);
+      const next = prev.filter((authorId) => validIds.has(authorId));
+
+      if (next.length > 0) {
+        return next;
+      }
+
+      const authorIds = notes.map((note) => note.authorUid).filter(Boolean);
+      if (authorIds.length > 0) {
+        return Array.from(new Set(authorIds));
+      }
+      return [userId];
     });
   }, [notes, userId]);
 
@@ -98,6 +125,12 @@ export function useSongHandNotes(params: {
       viewport,
       strokes,
     };
+
+    setVisibleAuthorIds((prev) => {
+      if (prev.includes(userId)) return prev;
+      if (prev.length === 0) return [userId];
+      return [...prev, userId];
+    });
 
     setNotes((prev) => {
       const withoutMine = prev.filter((entry) => entry.authorUid !== userId);
