@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
-import ShareMenu from './ShareMenu';
 import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
 
@@ -91,11 +90,6 @@ interface Props {
   onRemoveSong?: (song: Song) => void;
   onAddSong?: (songId: string) => void;
   onAddSongsClick?: () => void;
-  shareConfig?: {
-    resourceId: string;
-    resourceName: string;
-    disabled?: boolean;
-  };
 }
 
 export default function SongList({
@@ -115,7 +109,6 @@ export default function SongList({
   onRemoveSong,
   onAddSong,
   onAddSongsClick,
-  shareConfig,
 }: Props) {
   const { pathname } = useLocation();
   const [query, setQuery] = useState('');
@@ -152,7 +145,6 @@ export default function SongList({
 
   const canAddSongsToList = Boolean(allSongs && onAddSong);
   const canTriggerAddSongs = canAddSongsToList || Boolean(onAddSongsClick);
-  const showShareAction = headerVariant !== 'bands' && (canAddSongsToList || Boolean(shareConfig));
 
   const languages = useMemo(
     () => Array.from(new Set(songs.map((s) => s.language))).sort(),
@@ -520,17 +512,6 @@ export default function SongList({
             >
               <Smile size={14} />
             </button>
-          )}
-          {showShareAction && (
-            <ShareMenu
-              resourceType="songlist"
-              resourceId={shareConfig?.resourceId ?? ''}
-              resourceName={shareConfig?.resourceName ?? listName ?? 'Songlist'}
-              disabled={shareConfig?.disabled ?? !shareConfig?.resourceId}
-              buttonClassName="setlist-action-btn setlist-action-btn--secondary"
-              buttonTitle="Share this songlist"
-              iconOnly
-            />
           )}
           {canTriggerAddSongs && (
             <button

@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
-import ShareMenu from './ShareMenu';
 import { showConfirmToast } from '../utils/toastDialogs';
 
 interface Props {
@@ -300,14 +299,6 @@ export default function SetlistsView({
             >
               <Printer size={14} />
             </button>
-            <ShareMenu
-              resourceType="setlist"
-              resourceId={setlistId}
-              resourceName={currentSetlist?.name ?? setlistName}
-              buttonClassName="setlist-action-btn setlist-action-btn--secondary"
-              buttonTitle="Share this setlist"
-              iconOnly
-            />
             <button
               className="setlist-action-btn setlist-action-btn--secondary"
               onClick={openSongPicker}

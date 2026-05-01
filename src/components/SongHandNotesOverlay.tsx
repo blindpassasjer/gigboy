@@ -78,6 +78,20 @@ export default function SongHandNotesOverlay({
   const [viewport, setViewport] = useState({ width: 1, height: 1 });
   const [revision, setRevision] = useState(0);
 
+  const syncViewportFromStage = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const rect = stage.getBoundingClientRect();
+    const width = Math.max(Math.round(rect.width), 1);
+    const height = Math.max(Math.round(rect.height), 1);
+
+    setViewport((current) => {
+      if (current.width === width && current.height === height) return current;
+      return { width, height };
+    });
+  }, []);
+
   useEffect(() => {
     myStrokesRef.current = myStrokes;
   }, [myStrokes]);
@@ -87,6 +101,8 @@ export default function SongHandNotesOverlay({
   }, [notes]);
 
   useEffect(() => {
+    syncViewportFromStage();
+
     const element = stageRef.current;
     if (!element) return;
 
@@ -103,7 +119,15 @@ export default function SongHandNotesOverlay({
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [syncViewportFromStage]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleWindowResize = () => syncViewportFromStage();
+    window.addEventListener('resize', handleWindowResize);
+    return () => window.removeEventListener('resize', handleWindowResize);
+  }, [visible, syncViewportFromStage]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -165,6 +189,9 @@ export default function SongHandNotesOverlay({
     if (!drawEnabled) return;
     if (pointerIdRef.current !== null) return;
 
+    // Ensure first stroke frame renders with real stage size instead of fallback 1x1.
+    syncViewportFromStage();
+
     const point = pointFromPointerEvent(event);
     if (!point) return;
 
@@ -181,7 +208,7 @@ export default function SongHandNotesOverlay({
     };
 
     setRevision((prev) => prev + 1);
-  }, [drawEnabled, pointFromPointerEvent, strokeColor, strokeWidth]);
+  }, [drawEnabled, pointFromPointerEvent, strokeColor, strokeWidth, syncViewportFromStage]);
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!drawEnabled) return;
