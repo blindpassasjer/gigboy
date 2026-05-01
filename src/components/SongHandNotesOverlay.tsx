@@ -26,13 +26,29 @@ function clamp01(value: number) {
 }
 
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: HandNoteStroke | ActiveStrokeState, width: number, height: number) {
-  if (stroke.points.length < 4) return;
+  if (stroke.points.length < 2) return;
+
+  // Show a visible dot as soon as the pointer touches down.
+  if (stroke.points.length < 4) {
+    const x = stroke.points[0] * width;
+    const y = stroke.points[1] * height;
+    const radius = Math.max(stroke.width * 0.8, 1.6);
+
+    ctx.beginPath();
+    ctx.fillStyle = stroke.color;
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
 
   ctx.beginPath();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = stroke.color;
   ctx.lineWidth = stroke.width;
+  // Subtle glow helps strokes stand out on mixed lyric/chord backgrounds.
+  ctx.shadowColor = stroke.color;
+  ctx.shadowBlur = Math.max(stroke.width * 0.75, 1);
 
   ctx.moveTo(stroke.points[0] * width, stroke.points[1] * height);
 
@@ -41,6 +57,7 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: HandNoteStroke | Acti
   }
 
   ctx.stroke();
+  ctx.shadowBlur = 0;
 }
 
 export default function SongHandNotesOverlay({
@@ -193,9 +210,20 @@ export default function SongHandNotesOverlay({
     if (!drawEnabled) return;
     if (pointerIdRef.current !== event.pointerId) return;
 
+    const active = activeStrokeRef.current;
+    const point = pointFromPointerEvent(event);
+    if (active && point) {
+      const total = active.points.length;
+      const lastX = active.points[total - 2];
+      const lastY = active.points[total - 1];
+      if (lastX !== point.x || lastY !== point.y) {
+        active.points.push(point.x, point.y);
+      }
+    }
+
     event.preventDefault();
     finishStroke();
-  }, [drawEnabled, finishStroke]);
+  }, [drawEnabled, finishStroke, pointFromPointerEvent]);
 
   const handlePointerCancel = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (pointerIdRef.current !== event.pointerId) return;

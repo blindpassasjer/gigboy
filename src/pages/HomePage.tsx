@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useSongs } from '../context/SongsContext';
 import { useSongLists } from '../context/SongListsContext';
@@ -23,7 +22,6 @@ interface CopyDialogState {
 }
 
 export default function HomePage() {
-  const navigate = useNavigate();
   const { songs, deleteSong, moveSong } = useSongs();
   const {
     activeCategoryId,
@@ -342,16 +340,7 @@ export default function HomePage() {
           onAddSong={(songId) => addSongToSetlist(activeSetlist.id, songId)}
           onMoveSong={(songId, beforeSongId) => moveSongInSetlist(activeSetlist.id, songId, beforeSongId)}
           onRemoveSong={(songId) => removeSongFromSetlist(activeSetlist.id, songId)}
-          extraActions={(
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => openCopyDialog('setlist', activeSetlist.name, activeSetlist.songIds)}
-              title="Copy this setlist to a band"
-            >
-              Copy to band
-            </button>
-          )}
+
         />
         {copyDialogNode}
       </>
@@ -447,18 +436,7 @@ export default function HomePage() {
             : undefined
       }
       onRemoveSong={activeList ? (song) => removeSongFromList(activeList.id, song.id) : undefined}
-      headerActions={
-        activeList ? (
-          <button
-            type="button"
-            className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={() => openCopyDialog('songlist', activeList.name, activeList.songIds)}
-            title="Copy this songlist to a band"
-          >
-            Copy to band
-          </button>
-        ) : undefined
-      }
+      headerActions={undefined}
     />
       {copyDialogNode}
     </>

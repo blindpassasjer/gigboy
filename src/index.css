@@ -1708,6 +1708,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-hand-notes-overlay--drawing {
   pointer-events: all;
   cursor: crosshair;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .song-hand-notes-canvas {
