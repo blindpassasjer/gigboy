@@ -1266,6 +1266,51 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--song-item-chip-text);
 }
 
+.song-toolbar-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: .25rem .55rem;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.song-toolbar-tool-btn:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--chord-bg);
+}
+
+.song-toolbar-tool-btn--active,
+.song-toolbar-tool-btn--active:hover {
+  color: var(--accent-contrast);
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+  background: var(--accent);
+}
+
+.song-view-header .song-toolbar-tool-btn {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+}
+
+.song-view-header .song-toolbar-tool-btn:hover {
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
+}
+
+.song-view-header .song-toolbar-tool-btn--active,
+.song-view-header .song-toolbar-tool-btn--active:hover {
+  color: var(--song-item-accent-contrast, var(--accent-contrast));
+  border-color: color-mix(in srgb, var(--song-header-accent) 74%, black);
+  background: var(--song-header-accent);
+}
+
 .concert-metronome {
   background: color-mix(in srgb, var(--surface) 82%, var(--bg));
 }
@@ -3501,6 +3546,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 1rem 0;
   text-align: center;
   color: var(--muted);
+}
+
+.song-picker-source-note {
+  margin: 0;
+  padding: .5rem 1rem .25rem;
+  font-size: .8rem;
+  color: var(--muted);
+  font-style: italic;
 }
 
 .song-picker-footer {

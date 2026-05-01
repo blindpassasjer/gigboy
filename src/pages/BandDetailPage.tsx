@@ -318,7 +318,7 @@ export default function BandDetailPage() {
           songs={songListSongs}
           listName={activeBandSongList.name}
           listIcon={activeBandSongList.icon}
-          headerMeta={`${band.name} songlist`}
+          headerMeta={undefined}
           headerVariant="bands"
           allSongs={bandSongs}
           onAddSong={(songId) => {

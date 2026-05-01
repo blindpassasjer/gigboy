@@ -801,6 +801,9 @@ export default function SongList({
                 <X size={16} />
               </button>
             </div>
+            {headerVariant === 'bands' && (
+              <p className="song-picker-source-note">Showing songs from your personal library. Selected songs will be copied to the band library.</p>
+            )}
 
             <div className="song-picker-search-wrap">
               <Search size={15} className="song-picker-search-icon" />

@@ -275,6 +275,18 @@ export default function SongView({ song, accentColor }: Props) {
               className="song-view-metronome"
             />
             <VisualTuner className="song-view-tuner" />
+            {user && (
+              <button
+                type="button"
+                className={`song-toolbar-tool-btn${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => handleToggleNotes(!showNotes)}
+                title={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
+                aria-label={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
+              >
+                <PenLine size={14} />
+                Notes
+              </button>
+            )}
             {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
 
             <div className="add-to-list-wrap" ref={menuRef}>
@@ -352,98 +364,85 @@ export default function SongView({ song, accentColor }: Props) {
             </div>
           </div>
 
-          {user && (
+          {user && showNotes && (
             <div className="song-toolbar-row song-toolbar-row--notes">
-              <label className="toggle-label" title="Show/hide handwritten notes">
+              <label
+                className={`toggle-label toggle-label--draw${drawEnabled ? ' toggle-label--draw-active' : ''}`}
+                title="Enable touch drawing"
+              >
                 <input
                   type="checkbox"
-                  checked={showNotes}
-                  onChange={(e) => handleToggleNotes(e.target.checked)}
+                  checked={drawEnabled}
+                  onChange={(e) => handleToggleDraw(e.target.checked)}
                 />
-                Notes
+                Draw
               </label>
 
-              {showNotes && (
+              {drawEnabled && (
                 <>
-                  <label
-                    className={`toggle-label toggle-label--draw${drawEnabled ? ' toggle-label--draw-active' : ''}`}
-                    title="Enable touch drawing"
+                  <button
+                    className="notes-toolbar-btn"
+                    onClick={handleUndoStroke}
+                    disabled={undoStack.length === 0}
+                    title="Undo last stroke"
                   >
-                    <input
-                      type="checkbox"
-                      checked={drawEnabled}
-                      onChange={(e) => handleToggleDraw(e.target.checked)}
-                    />
-                    Draw
-                  </label>
-
-                  {drawEnabled && (
-                    <>
-                      <button
-                        className="notes-toolbar-btn"
-                        onClick={handleUndoStroke}
-                        disabled={undoStack.length === 0}
-                        title="Undo last stroke"
-                      >
-                        Undo
-                      </button>
-                      <button
-                        className="notes-toolbar-btn notes-toolbar-btn--danger"
-                        onClick={handleClearNotes}
-                        disabled={handNotes.myStrokes.length === 0}
-                        title="Clear my notes"
-                      >
-                        Clear
-                      </button>
-                    </>
-                  )}
-
-                  {handNotes.saveState === 'saving' && (
-                    <span className="notes-save-status notes-save-status--saving">Saving…</span>
-                  )}
-                  {handNotes.saveState === 'saved' && (
-                    <span className="notes-save-status notes-save-status--saved">Saved</span>
-                  )}
-                  {handNotes.saveState === 'error' && (
-                    <span className="notes-save-status notes-save-status--error">Failed to save</span>
-                  )}
-
-                  {handNotes.authors.length > 1 && (
-                    <div className="notes-author-filters">
-                      <button
-                        className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
-                        onClick={handNotes.showAll}
-                        title="Show all users' notes"
-                      >
-                        All
-                      </button>
-                      <button
-                        className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
-                        onClick={handNotes.showMineOnly}
-                        title="Show only my notes"
-                      >
-                        Mine
-                      </button>
-                      {handNotes.authors.map((author) => (
-                        <button
-                          key={author.uid}
-                          className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
-                          onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
-                          title={`Toggle notes by ${author.name}`}
-                        >
-                          {author.avatar ? (
-                            <span className="notes-author-chip-avatar">{author.avatar}</span>
-                          ) : (
-                            <span className="notes-author-chip-initials">
-                              {author.name.slice(0, 1).toUpperCase()}
-                            </span>
-                          )}
-                          {author.uid === user.id ? 'Me' : author.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    Undo
+                  </button>
+                  <button
+                    className="notes-toolbar-btn notes-toolbar-btn--danger"
+                    onClick={handleClearNotes}
+                    disabled={handNotes.myStrokes.length === 0}
+                    title="Clear my notes"
+                  >
+                    Clear
+                  </button>
                 </>
+              )}
+
+              {handNotes.saveState === 'saving' && (
+                <span className="notes-save-status notes-save-status--saving">Saving…</span>
+              )}
+              {handNotes.saveState === 'saved' && (
+                <span className="notes-save-status notes-save-status--saved">Saved</span>
+              )}
+              {handNotes.saveState === 'error' && (
+                <span className="notes-save-status notes-save-status--error">Failed to save</span>
+              )}
+
+              {handNotes.authors.length > 1 && (
+                <div className="notes-author-filters">
+                  <button
+                    className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
+                    onClick={handNotes.showAll}
+                    title="Show all users' notes"
+                  >
+                    All
+                  </button>
+                  <button
+                    className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
+                    onClick={handNotes.showMineOnly}
+                    title="Show only my notes"
+                  >
+                    Mine
+                  </button>
+                  {handNotes.authors.map((author) => (
+                    <button
+                      key={author.uid}
+                      className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
+                      onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
+                      title={`Toggle notes by ${author.name}`}
+                    >
+                      {author.avatar ? (
+                        <span className="notes-author-chip-avatar">{author.avatar}</span>
+                      ) : (
+                        <span className="notes-author-chip-initials">
+                          {author.name.slice(0, 1).toUpperCase()}
+                        </span>
+                      )}
+                      {author.uid === user.id ? 'Me' : author.name}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           )}
