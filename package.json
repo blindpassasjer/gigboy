@@ -7,7 +7,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "deploy": "npm run deploy:pages",
     "deploy:workers": "npm run build && npx -y wrangler@4 deploy",

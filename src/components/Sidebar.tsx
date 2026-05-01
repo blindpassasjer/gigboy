@@ -336,7 +336,15 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           <h3 className="sidebar-section-title">Solo</h3>
         </div>
 
-        <div className={`sidebar-list-item sidebar-list-item--pinned${isMyAllSongsActive ? ' active' : ''}`}>
+        <div className={`sidebar-list-item${isMyAllSongsActive ? ' active' : ''}`}>
+          <button
+            className="sidebar-icon-btn"
+            onClick={() => setSoloSonglistsExpanded((current) => !current)}
+            aria-expanded={soloSonglistsExpanded}
+            aria-label={soloSonglistsExpanded ? 'Collapse songlists' : 'Expand songlists'}
+          >
+            {soloSonglistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
           <button
             className="sidebar-list-item-btn"
             onClick={() => { clearActiveSelection(); setActiveSetlistId(null); goToLibraryView(); }}
@@ -345,28 +353,21 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             <span className="sidebar-list-name">All songs</span>
             {songs.length > 0 && <span className="sidebar-list-count">{songs.length}</span>}
           </button>
-        </div>
-
-        <div className="sidebar-setlists-header">
-          <button
-            className="sidebar-section-toggle"
-            onClick={() => setSoloSonglistsExpanded((current) => !current)}
-            aria-expanded={soloSonglistsExpanded}
-          >
-            {soloSonglistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span className="sidebar-section-title">Songlists</span>
-          </button>
           <button
             className="sidebar-icon-btn"
             title="New songlist"
-            onClick={() => { setAddingSongList(true); setDraftName(''); }}
+            onClick={() => {
+              setSoloSonglistsExpanded(true);
+              setAddingSongList(true);
+              setDraftName('');
+            }}
           >
             <Plus size={15} />
           </button>
         </div>
 
         {soloSonglistsExpanded && (
-          <>
+          <div className="sidebar-nested-group">
             {songLists.map((list) => (
               <FolderItem
                 key={list.id}
@@ -392,11 +393,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 placeholder="Songlist name..."
               />
             )}
-          </>
+          </div>
         )}
-      </div>
 
-      <div className="sidebar-setlists-section">
         <div className="sidebar-setlists-header">
           <button
             className="sidebar-section-toggle"
@@ -487,6 +486,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     onDrop={(event) => void handleBandLibraryDrop(event, band.id)}
                   >
                     <button
+                      className="sidebar-icon-btn"
+                      onClick={() => toggleBandSonglistsExpanded(band.id)}
+                      aria-expanded={isBandSonglistsExpanded(band.id)}
+                      aria-label={isBandSonglistsExpanded(band.id) ? 'Collapse songlists' : 'Expand songlists'}
+                    >
+                      {isBandSonglistsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                    <button
                       className="sidebar-list-item-btn"
                       onClick={() => { navigate(`/bands/${band.id}/library`); onNavigate?.(); }}
                     >
@@ -496,28 +503,21 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                         <span className="sidebar-list-count">{bandSongsByBandId[band.id]?.length ?? 0}</span>
                       )}
                     </button>
-                  </div>
-
-                  <div className="sidebar-setlists-header">
-                    <button
-                      className="sidebar-section-toggle"
-                      onClick={() => toggleBandSonglistsExpanded(band.id)}
-                      aria-expanded={isBandSonglistsExpanded(band.id)}
-                    >
-                      {isBandSonglistsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                      <span className="sidebar-section-title">Songlists</span>
-                    </button>
                     <button
                       className="sidebar-icon-btn"
                       title="New band songlist"
-                      onClick={() => { setAddingBandSongListId(band.id); setDraftName(''); }}
+                      onClick={() => {
+                        setCollapsedBandSonglistIds((prev) => prev.filter((entry) => entry !== band.id));
+                        setAddingBandSongListId(band.id);
+                        setDraftName('');
+                      }}
                     >
                       <Plus size={14} />
                     </button>
                   </div>
 
                   {isBandSonglistsExpanded(band.id) && (
-                    <>
+                    <div className="sidebar-nested-group">
                       {(bandSongListsByBandId[band.id] ?? []).map((songList) => (
                         <div
                           key={songList.id}
@@ -551,7 +551,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                           placeholder="Band songlist name..."
                         />
                       )}
-                    </>
+                    </div>
                   )}
 
                   <div className="sidebar-setlists-header">
