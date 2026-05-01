@@ -586,7 +586,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   </div>
 
                   {isBandSetlistsExpanded(band.id) && (
-                    <>
+                    <div className="sidebar-nested-group">
                       {(bandSetlistsByBandId[band.id] ?? []).map((setlist) => (
                         <div
                           key={setlist.id}
@@ -620,7 +620,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                           placeholder="Band setlist name..."
                         />
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
               )}
