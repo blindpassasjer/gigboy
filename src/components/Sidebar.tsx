@@ -336,7 +336,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           <h3 className="sidebar-section-title">Solo</h3>
         </div>
 
-        <div className={`sidebar-list-item${isMyAllSongsActive ? ' active' : ''}`}>
+        <div className={`sidebar-list-item sidebar-list-item--section${isMyAllSongsActive ? ' active' : ''}`}>
           <button
             className="sidebar-icon-btn"
             onClick={() => setSoloSonglistsExpanded((current) => !current)}

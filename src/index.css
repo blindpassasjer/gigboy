@@ -11,6 +11,7 @@
   --accent-h:   #4a3f87;
   --accent-contrast: #ffffff;
   --danger:     #c0392b;
+  --notes-draw: #27ae60;
   --chord:      #5c4fa6;
   --chord-bg:   #ede9f8;
   --radius:     8px;
@@ -29,6 +30,7 @@
   --accent-h:   #b3a9e8;
   --accent-contrast: #1c1a18;
   --danger:     #e05c4e;
+  --notes-draw: #5be39a;
   --chord:      #9d91e0;
   --chord-bg:   #2e2840;
   --shadow:     0 1px 4px rgba(0,0,0,.3);
@@ -1064,6 +1066,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   accent-color: var(--song-header-accent);
 }
 
+.song-view-header .toggle-label--draw input {
+  accent-color: var(--notes-draw);
+}
+
 .song-view-header .instrument-toggle-btn:hover {
   background: var(--song-item-chip-bg);
   color: var(--song-item-chip-text);
@@ -1113,6 +1119,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   user-select: none;
 }
 .toggle-label input { accent-color: var(--accent); width: 15px; height: 15px; }
+
+.toggle-label--draw-active {
+  color: var(--notes-draw);
+}
 
 .capo-badge, .meta-pill {
   background: var(--chord-bg);

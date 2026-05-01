@@ -372,7 +372,10 @@ export default function SongView({ song, accentColor }: Props) {
 
               {showNotes && (
                 <>
-                  <label className="toggle-label" title="Enable touch drawing">
+                  <label
+                    className={`toggle-label toggle-label--draw${drawEnabled ? ' toggle-label--draw-active' : ''}`}
+                    title="Enable touch drawing"
+                  >
                     <input
                       type="checkbox"
                       checked={drawEnabled}
@@ -470,6 +473,7 @@ export default function SongView({ song, accentColor }: Props) {
             drawEnabled={drawEnabled}
             notes={handNotes.visibleNotes}
             myStrokes={handNotes.myStrokes}
+            strokeColor="#27ae60"
             onMyStrokesChange={handleStrokesChange}
           />
         </div>
