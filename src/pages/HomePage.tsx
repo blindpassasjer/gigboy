@@ -430,7 +430,6 @@ export default function HomePage() {
       listIcon={activeList?.icon ?? (isAllSongsView ? allSongsIcon : undefined)}
       allSongs={activeList ? songs : undefined}
       onAddSong={activeList ? (songId) => addSongToList(activeList.id, songId) : undefined}
-      onAddSongsClick={isAllSongsView ? () => navigate('/add') : undefined}
       onMoveSong={handleMoveSong}
       onDeleteSong={handleDeleteSong}
       onRenameList={
@@ -448,20 +447,6 @@ export default function HomePage() {
             : undefined
       }
       onRemoveSong={activeList ? (song) => removeSongFromList(activeList.id, song.id) : undefined}
-      shareConfig={
-        activeList
-          ? {
-              resourceId: activeList.id,
-              resourceName: activeList.name,
-            }
-          : isAllSongsView
-            ? {
-                resourceId: '',
-                resourceName: 'All Songs',
-                disabled: true,
-              }
-            : undefined
-      }
       headerActions={
         activeList ? (
           <button

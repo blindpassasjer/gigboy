@@ -2757,6 +2757,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   justify-content: space-between;
   padding: 0 .75rem;
+  margin-top: .2rem;
   margin-bottom: .3rem;
 }
 
@@ -2938,7 +2939,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   gap: .35rem;
   width: 100%;
-  padding: .2rem .25rem;
+  padding: .2rem .25rem .2rem 0;
   border-radius: 5px;
   font-size: .75rem;
   font-weight: 600;

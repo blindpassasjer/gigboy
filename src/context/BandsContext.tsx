@@ -265,6 +265,7 @@ interface BandsContextValue {
   moveBandSong: (bandId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
   addBandSongList: (bandId: string, name: string) => Promise<{ songListId: string | null; error: string | null }>;
   renameBandSongList: (bandId: string, songListId: string, name: string) => Promise<string | null>;
+  updateBandSongListIcon: (bandId: string, songListId: string, icon?: string) => Promise<string | null>;
   updateBandLibraryIcon: (bandId: string, icon?: string) => Promise<string | null>;
   deleteBandSongList: (bandId: string, songListId: string) => Promise<string | null>;
   addSongToBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
@@ -878,6 +879,43 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandSongListsByBandId, bands, userId]);
 
+  const updateBandSongListIcon = useCallback(async (bandId: string, songListId: string, icon?: string) => {
+    if (!db || !userId) {
+      return 'Band songlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const previousSongLists = bandSongListsByBandId[bandId] ?? [];
+    const nextSongLists = previousSongLists.map((songList) => (
+      songList.id === songListId ? { ...songList, icon } : songList
+    ));
+
+    setBandSongListsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSongLists,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), {
+        icon,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSongListsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSongLists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band songlist icon.';
+    }
+  }, [bandSongListsByBandId, bands, userId]);
+
   const deleteBandSongList = useCallback(async (bandId: string, songListId: string) => {
     if (!db || !userId) {
       return 'Band songlists require cloud sync.';
@@ -1380,6 +1418,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     moveBandSong,
     addBandSongList,
     renameBandSongList,
+    updateBandSongListIcon,
     deleteBandSongList,
     addSongToBandSongList,
     removeSongFromBandSongList,
@@ -1417,6 +1456,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     renameBand,
     renameBandSetlist,
     renameBandSongList,
+    updateBandSongListIcon,
     refreshBandSongs,
     removeMember,
     removeSongFromBandSetlist,

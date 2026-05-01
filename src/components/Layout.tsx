@@ -15,6 +15,8 @@ export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
+  const isBandRoute = pathname.startsWith('/bands');
+  const isBandLibraryRoute = /^\/bands\/[^/]+(?:\/library)?$/.test(pathname);
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -152,7 +154,7 @@ export default function Layout({ children }: Props) {
         )}
         <main className={`main-content${isConcertRoute ? ' main-content--concert' : ''}`}>{children}</main>
       </div>
-      {!isConcertRoute && !pathname.startsWith('/bands') && (
+      {!isConcertRoute && (!isBandRoute || isBandLibraryRoute) && (
         <Link to="/add" className="fab-add-song" title="create song" aria-label="create song">
           <Plus size={22} />
         </Link>

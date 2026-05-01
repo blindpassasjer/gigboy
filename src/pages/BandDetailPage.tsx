@@ -35,6 +35,7 @@ export default function BandDetailPage() {
     removeSongFromBandLibrary,
     moveBandSong,
     renameBandSongList,
+    updateBandSongListIcon,
     updateBandLibraryIcon,
     deleteBandSongList,
     addSongToBandSongList,
@@ -329,6 +330,9 @@ export default function BandDetailPage() {
           }}
           onRenameList={(name) => {
             void renameBandSongList(band.id, activeBandSongList.id, name);
+          }}
+          onUpdateListAppearance={(appearance) => {
+            void updateBandSongListIcon(band.id, activeBandSongList.id, appearance.icon);
           }}
           onDeleteList={() => void handleDeleteBandSongList()}
           deleteListLabel={`Delete songlist ${activeBandSongList.name}`}
