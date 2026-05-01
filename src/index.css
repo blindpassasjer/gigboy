@@ -2731,6 +2731,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-bottom: .5rem;
 }
 
+.sidebar-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  min-width: 0;
+  color: var(--muted);
+}
+
+.sidebar-section-toggle:hover {
+  color: var(--accent);
+}
+
 .sidebar-section-title {
   font-size: .75rem;
   font-weight: 700;

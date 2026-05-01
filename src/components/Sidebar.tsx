@@ -72,6 +72,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [bandLibraryDropTargetId, setBandLibraryDropTargetId] = useState<string | null>(null);
   const [bandSongListDropTargetId, setBandSongListDropTargetId] = useState<string | null>(null);
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
+  const [soloSonglistsExpanded, setSoloSonglistsExpanded] = useState(true);
+  const [soloSetlistsExpanded, setSoloSetlistsExpanded] = useState(true);
+  const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
+  const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
   const [expandedBandIds, setExpandedBandIds] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
 
@@ -236,6 +240,26 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     ));
   };
 
+  const isBandSonglistsExpanded = (bandId: string) => !collapsedBandSonglistIds.includes(bandId);
+
+  const isBandSetlistsExpanded = (bandId: string) => !collapsedBandSetlistIds.includes(bandId);
+
+  const toggleBandSonglistsExpanded = (bandId: string) => {
+    setCollapsedBandSonglistIds((prev) => (
+      prev.includes(bandId)
+        ? prev.filter((entry) => entry !== bandId)
+        : [...prev, bandId]
+    ));
+  };
+
+  const toggleBandSetlistsExpanded = (bandId: string) => {
+    setCollapsedBandSetlistIds((prev) => (
+      prev.includes(bandId)
+        ? prev.filter((entry) => entry !== bandId)
+        : [...prev, bandId]
+    ));
+  };
+
   const findSongById = (songId: string) => songs.find((entry) => entry.id === songId);
 
   const ensureBandLibraryHasSong = async (bandId: string, songId: string) => {
@@ -309,7 +333,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
       <div className="sidebar-folders">
         <div className="sidebar-setlists-header">
-          <h3 className="sidebar-section-title">Artist</h3>
+          <h3 className="sidebar-section-title">Solo</h3>
         </div>
 
         <div className={`sidebar-list-item sidebar-list-item--pinned${isMyAllSongsActive ? ' active' : ''}`}>
@@ -324,7 +348,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         </div>
 
         <div className="sidebar-setlists-header">
-          <h3 className="sidebar-section-title">Songlists</h3>
+          <button
+            className="sidebar-section-toggle"
+            onClick={() => setSoloSonglistsExpanded((current) => !current)}
+            aria-expanded={soloSonglistsExpanded}
+          >
+            {soloSonglistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <span className="sidebar-section-title">Songlists</span>
+          </button>
           <button
             className="sidebar-icon-btn"
             title="New songlist"
@@ -334,36 +365,47 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           </button>
         </div>
 
-        {songLists.map((list) => (
-          <FolderItem
-            key={list.id}
-            listId={list.id}
-            name={list.name}
-            icon={list.icon}
-            count={list.songIds.length}
-            active={activeSongListId === list.id}
-            songDropTarget={songDropTargetId === list.id}
-            onDragOver={(e) => handleDragOver(e, list.id)}
-            onDragLeave={() => setSongDropTargetId((c) => (c === list.id ? null : c))}
-            onDrop={(e) => handleDrop(e, list.id)}
-            onSelect={() => { setActiveSongListId(list.id); setActiveSetlistId(null); goToLibraryView(); }}
-          />
-        ))}
+        {soloSonglistsExpanded && (
+          <>
+            {songLists.map((list) => (
+              <FolderItem
+                key={list.id}
+                listId={list.id}
+                name={list.name}
+                icon={list.icon}
+                count={list.songIds.length}
+                active={activeSongListId === list.id}
+                songDropTarget={songDropTargetId === list.id}
+                onDragOver={(e) => handleDragOver(e, list.id)}
+                onDragLeave={() => setSongDropTargetId((c) => (c === list.id ? null : c))}
+                onDrop={(e) => handleDrop(e, list.id)}
+                onSelect={() => { setActiveSongListId(list.id); setActiveSetlistId(null); goToLibraryView(); }}
+              />
+            ))}
 
-        {addingSongList && (
-          <InlineInput
-            value={draftName}
-            onChange={setDraftName}
-            onCommit={commitSongList}
-            onCancel={() => setAddingSongList(false)}
-            placeholder="Songlist name..."
-          />
+            {addingSongList && (
+              <InlineInput
+                value={draftName}
+                onChange={setDraftName}
+                onCommit={commitSongList}
+                onCancel={() => setAddingSongList(false)}
+                placeholder="Songlist name..."
+              />
+            )}
+          </>
         )}
       </div>
 
       <div className="sidebar-setlists-section">
         <div className="sidebar-setlists-header">
-          <h3 className="sidebar-section-title">Setlists</h3>
+          <button
+            className="sidebar-section-toggle"
+            onClick={() => setSoloSetlistsExpanded((current) => !current)}
+            aria-expanded={soloSetlistsExpanded}
+          >
+            {soloSetlistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <span className="sidebar-section-title">Setlists</span>
+          </button>
           <button
             className="sidebar-icon-btn"
             title="New setlist"
@@ -373,33 +415,35 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           </button>
         </div>
 
-        <div className="sidebar-setlists">
-          {setlists.map((setlist) => (
-            <SetlistItem
-              key={setlist.id}
-              setlistId={setlist.id}
-              name={setlist.name}
-              icon={setlist.icon}
-              count={setlist.songIds.length}
-              active={activeSetlistId === setlist.id}
-              songDropTarget={setlistDropTargetId === setlist.id}
-              onDragOver={(e) => handleSetlistDragOver(e, setlist.id)}
-              onDragLeave={() => setSetlistDropTargetId((c) => (c === setlist.id ? null : c))}
-              onDrop={(e) => handleSetlistDrop(e, setlist.id)}
-              onSelect={() => { setActiveSetlistId(setlist.id); setActiveSongListId(null); clearActiveSelection(); goToLibraryView(); }}
-            />
-          ))}
+        {soloSetlistsExpanded && (
+          <div className="sidebar-setlists">
+            {setlists.map((setlist) => (
+              <SetlistItem
+                key={setlist.id}
+                setlistId={setlist.id}
+                name={setlist.name}
+                icon={setlist.icon}
+                count={setlist.songIds.length}
+                active={activeSetlistId === setlist.id}
+                songDropTarget={setlistDropTargetId === setlist.id}
+                onDragOver={(e) => handleSetlistDragOver(e, setlist.id)}
+                onDragLeave={() => setSetlistDropTargetId((c) => (c === setlist.id ? null : c))}
+                onDrop={(e) => handleSetlistDrop(e, setlist.id)}
+                onSelect={() => { setActiveSetlistId(setlist.id); setActiveSongListId(null); clearActiveSelection(); goToLibraryView(); }}
+              />
+            ))}
 
-          {addingSetlist && (
-            <InlineInput
-              value={draftName}
-              onChange={setDraftName}
-              onCommit={commitSetlist}
-              onCancel={() => setAddingSetlist(false)}
-              placeholder="Setlist name..."
-            />
-          )}
-        </div>
+            {addingSetlist && (
+              <InlineInput
+                value={draftName}
+                onChange={setDraftName}
+                onCommit={commitSetlist}
+                onCancel={() => setAddingSetlist(false)}
+                placeholder="Setlist name..."
+              />
+            )}
+          </div>
+        )}
       </div>
 
       <div className="sidebar-bands-section">
@@ -455,7 +499,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   </div>
 
                   <div className="sidebar-setlists-header">
-                    <h3 className="sidebar-section-title">Songlists</h3>
+                    <button
+                      className="sidebar-section-toggle"
+                      onClick={() => toggleBandSonglistsExpanded(band.id)}
+                      aria-expanded={isBandSonglistsExpanded(band.id)}
+                    >
+                      {isBandSonglistsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      <span className="sidebar-section-title">Songlists</span>
+                    </button>
                     <button
                       className="sidebar-icon-btn"
                       title="New band songlist"
@@ -465,42 +516,53 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     </button>
                   </div>
 
-                  {(bandSongListsByBandId[band.id] ?? []).map((songList) => (
-                    <div
-                      key={songList.id}
-                      className={`sidebar-list-item${pathname === `/bands/${band.id}/songlists/${songList.id}` ? ' active' : ''}${bandSongListDropTargetId === songList.id ? ' song-drop-target' : ''}`}
-                      onDragOver={(event) => {
-                        if (!isSongDrag(event.dataTransfer.types)) return;
-                        event.preventDefault();
-                        event.dataTransfer.dropEffect = 'copy';
-                        setBandSongListDropTargetId((current) => (current === songList.id ? current : songList.id));
-                      }}
-                      onDragLeave={() => setBandSongListDropTargetId((current) => (current === songList.id ? null : current))}
-                      onDrop={(event) => void handleBandSongListDrop(event, band.id, songList.id)}
-                    >
-                      <button
-                        className="sidebar-list-item-btn"
-                        onClick={() => { navigate(`/bands/${band.id}/songlists/${songList.id}`); onNavigate?.(); }}
-                      >
-                        {songList.icon ? <span className="sidebar-list-icon" aria-hidden="true">{songList.icon}</span> : <Folder size={14} />}
-                        <span className="sidebar-list-name">{songList.name}</span>
-                        {songList.songIds.length > 0 && <span className="sidebar-list-count">{songList.songIds.length}</span>}
-                      </button>
-                    </div>
-                  ))}
+                  {isBandSonglistsExpanded(band.id) && (
+                    <>
+                      {(bandSongListsByBandId[band.id] ?? []).map((songList) => (
+                        <div
+                          key={songList.id}
+                          className={`sidebar-list-item${pathname === `/bands/${band.id}/songlists/${songList.id}` ? ' active' : ''}${bandSongListDropTargetId === songList.id ? ' song-drop-target' : ''}`}
+                          onDragOver={(event) => {
+                            if (!isSongDrag(event.dataTransfer.types)) return;
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = 'copy';
+                            setBandSongListDropTargetId((current) => (current === songList.id ? current : songList.id));
+                          }}
+                          onDragLeave={() => setBandSongListDropTargetId((current) => (current === songList.id ? null : current))}
+                          onDrop={(event) => void handleBandSongListDrop(event, band.id, songList.id)}
+                        >
+                          <button
+                            className="sidebar-list-item-btn"
+                            onClick={() => { navigate(`/bands/${band.id}/songlists/${songList.id}`); onNavigate?.(); }}
+                          >
+                            {songList.icon ? <span className="sidebar-list-icon" aria-hidden="true">{songList.icon}</span> : <Folder size={14} />}
+                            <span className="sidebar-list-name">{songList.name}</span>
+                            {songList.songIds.length > 0 && <span className="sidebar-list-count">{songList.songIds.length}</span>}
+                          </button>
+                        </div>
+                      ))}
 
-                  {addingBandSongListId === band.id && (
-                    <InlineInput
-                      value={draftName}
-                      onChange={setDraftName}
-                      onCommit={() => void commitBandSongList(band.id)}
-                      onCancel={() => setAddingBandSongListId(null)}
-                      placeholder="Band songlist name..."
-                    />
+                      {addingBandSongListId === band.id && (
+                        <InlineInput
+                          value={draftName}
+                          onChange={setDraftName}
+                          onCommit={() => void commitBandSongList(band.id)}
+                          onCancel={() => setAddingBandSongListId(null)}
+                          placeholder="Band songlist name..."
+                        />
+                      )}
+                    </>
                   )}
 
                   <div className="sidebar-setlists-header">
-                    <h3 className="sidebar-section-title">Setlists</h3>
+                    <button
+                      className="sidebar-section-toggle"
+                      onClick={() => toggleBandSetlistsExpanded(band.id)}
+                      aria-expanded={isBandSetlistsExpanded(band.id)}
+                    >
+                      {isBandSetlistsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      <span className="sidebar-section-title">Setlists</span>
+                    </button>
                     <button
                       className="sidebar-icon-btn"
                       title="New band setlist"
@@ -510,38 +572,42 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     </button>
                   </div>
 
-                  {(bandSetlistsByBandId[band.id] ?? []).map((setlist) => (
-                    <div
-                      key={setlist.id}
-                      className={`sidebar-list-item${pathname === `/bands/${band.id}/setlists/${setlist.id}` ? ' active' : ''}${bandSetlistDropTargetId === setlist.id ? ' song-drop-target' : ''}`}
-                      onDragOver={(event) => {
-                        if (!isSongDrag(event.dataTransfer.types)) return;
-                        event.preventDefault();
-                        event.dataTransfer.dropEffect = 'copy';
-                        setBandSetlistDropTargetId((current) => (current === setlist.id ? current : setlist.id));
-                      }}
-                      onDragLeave={() => setBandSetlistDropTargetId((current) => (current === setlist.id ? null : current))}
-                      onDrop={(event) => void handleBandSetlistDrop(event, band.id, setlist.id)}
-                    >
-                      <button
-                        className="sidebar-list-item-btn"
-                        onClick={() => { navigate(`/bands/${band.id}/setlists/${setlist.id}`); onNavigate?.(); }}
-                      >
-                        {setlist.icon ? <span className="sidebar-list-icon" aria-hidden="true">{setlist.icon}</span> : <ListMusic size={14} />}
-                        <span className="sidebar-list-name">{setlist.name}</span>
-                        {setlist.songIds.length > 0 && <span className="sidebar-list-count">{setlist.songIds.length}</span>}
-                      </button>
-                    </div>
-                  ))}
+                  {isBandSetlistsExpanded(band.id) && (
+                    <>
+                      {(bandSetlistsByBandId[band.id] ?? []).map((setlist) => (
+                        <div
+                          key={setlist.id}
+                          className={`sidebar-list-item${pathname === `/bands/${band.id}/setlists/${setlist.id}` ? ' active' : ''}${bandSetlistDropTargetId === setlist.id ? ' song-drop-target' : ''}`}
+                          onDragOver={(event) => {
+                            if (!isSongDrag(event.dataTransfer.types)) return;
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = 'copy';
+                            setBandSetlistDropTargetId((current) => (current === setlist.id ? current : setlist.id));
+                          }}
+                          onDragLeave={() => setBandSetlistDropTargetId((current) => (current === setlist.id ? null : current))}
+                          onDrop={(event) => void handleBandSetlistDrop(event, band.id, setlist.id)}
+                        >
+                          <button
+                            className="sidebar-list-item-btn"
+                            onClick={() => { navigate(`/bands/${band.id}/setlists/${setlist.id}`); onNavigate?.(); }}
+                          >
+                            {setlist.icon ? <span className="sidebar-list-icon" aria-hidden="true">{setlist.icon}</span> : <ListMusic size={14} />}
+                            <span className="sidebar-list-name">{setlist.name}</span>
+                            {setlist.songIds.length > 0 && <span className="sidebar-list-count">{setlist.songIds.length}</span>}
+                          </button>
+                        </div>
+                      ))}
 
-                  {addingBandSetlistId === band.id && (
-                    <InlineInput
-                      value={draftName}
-                      onChange={setDraftName}
-                      onCommit={() => void commitBandSetlist(band.id)}
-                      onCancel={() => setAddingBandSetlistId(null)}
-                      placeholder="Band setlist name..."
-                    />
+                      {addingBandSetlistId === band.id && (
+                        <InlineInput
+                          value={draftName}
+                          onChange={setDraftName}
+                          onCommit={() => void commitBandSetlist(band.id)}
+                          onCancel={() => setAddingBandSetlistId(null)}
+                          placeholder="Band setlist name..."
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               )}

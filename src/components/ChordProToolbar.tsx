@@ -51,7 +51,7 @@ function insertSection(
   const block = `${prefix}{start_of_${sectionName}}\n\n{end_of_${sectionName}}\n`;
   // Place cursor on the blank line between start and end
   const cursorOffset = prefix.length + `{start_of_${sectionName}}\n`.length;
-  insertAtCursor(textarea, block, value, onChange, start + cursorOffset);
+  insertAtCursor(textarea, block, value, onChange, cursorOffset);
 }
 
 export default function ChordProToolbar({ textareaRef, value, onChange }: Props) {
@@ -73,7 +73,7 @@ export default function ChordProToolbar({ textareaRef, value, onChange }: Props)
     const block = `${prefix}{start_of_tab}\n${TEMPLATE}\n{end_of_tab}\n`;
     // Place cursor on the first tab line (after "{start_of_tab}\n")
     const cursorOffset = prefix.length + '{start_of_tab}\n'.length;
-    insertAtCursor(textarea, block, value, onChange, start + cursorOffset);
+    insertAtCursor(textarea, block, value, onChange, cursorOffset);
   }
 
   function handleChordInsert() {
