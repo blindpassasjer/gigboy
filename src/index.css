@@ -1363,21 +1363,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--notes-draw);
 }
 
-.song-view-header .song-toolbar-tool-btn--notes,
-.song-view-header .song-toolbar-tool-btn--notes:hover,
-.song-view-header .song-toolbar-tool-btn--notes.song-toolbar-tool-btn--active,
-.song-view-header .song-toolbar-tool-btn--notes.song-toolbar-tool-btn--active:hover {
-  color: var(--accent-contrast);
-  border-color: var(--accent);
-  background: var(--accent);
-}
-
-.song-view-header .song-toolbar-tool-btn--notes:hover,
-.song-view-header .song-toolbar-tool-btn--notes.song-toolbar-tool-btn--active:hover {
-  background: var(--accent-h);
-  border-color: var(--accent-h);
-}
-
 .song-view-header .song-toolbar-tool-btn:hover {
   color: var(--song-item-chip-text);
   background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
