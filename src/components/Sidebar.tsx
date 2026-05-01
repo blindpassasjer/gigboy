@@ -336,64 +336,70 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           <h3 className="sidebar-section-title">Solo</h3>
         </div>
 
-        <div className={`sidebar-list-item sidebar-list-item--section${isMyAllSongsActive ? ' active' : ''}`}>
-          <button
-            className="sidebar-icon-btn"
-            onClick={() => setSoloSonglistsExpanded((current) => !current)}
-            aria-expanded={soloSonglistsExpanded}
-            aria-label={soloSonglistsExpanded ? 'Collapse songlists' : 'Expand songlists'}
-          >
-            {soloSonglistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-          <button
-            className="sidebar-list-item-btn"
-            onClick={() => { clearActiveSelection(); setActiveSetlistId(null); goToLibraryView(); }}
-          >
-            <ListMusic size={14} />
-            <span className="sidebar-list-name">All songs</span>
-            {songs.length > 0 && <span className="sidebar-list-count">{songs.length}</span>}
-          </button>
-          <button
-            className="sidebar-icon-btn"
-            title="New songlist"
-            onClick={() => {
-              setSoloSonglistsExpanded(true);
-              setAddingSongList(true);
-              setDraftName('');
-            }}
-          >
-            <Plus size={15} />
-          </button>
-        </div>
+        <div className="sidebar-solo-sections">
+          <section className="sidebar-solo-section">
+            <div className={`sidebar-list-item sidebar-list-item--section${isMyAllSongsActive ? ' active' : ''}`}>
+              <button
+                className="sidebar-icon-btn"
+                onClick={() => setSoloSonglistsExpanded((current) => !current)}
+                aria-expanded={soloSonglistsExpanded}
+                aria-label={soloSonglistsExpanded ? 'Collapse songlists' : 'Expand songlists'}
+              >
+                {soloSonglistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </button>
+              <button
+                className="sidebar-list-item-btn"
+                onClick={() => { clearActiveSelection(); setActiveSetlistId(null); goToLibraryView(); }}
+              >
+                <ListMusic size={14} />
+                <span className="sidebar-list-name">All songs</span>
+                {songs.length > 0 && <span className="sidebar-list-count">{songs.length}</span>}
+              </button>
+              <button
+                className="sidebar-icon-btn"
+                title="New songlist"
+                onClick={() => {
+                  setSoloSonglistsExpanded(true);
+                  setAddingSongList(true);
+                  setDraftName('');
+                }}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
 
-        {soloSonglistsExpanded && (
-          <div className="sidebar-nested-group">
-            {songLists.map((list) => (
-              <FolderItem
-                key={list.id}
-                listId={list.id}
-                name={list.name}
-                icon={list.icon}
-                count={list.songIds.length}
-                active={activeSongListId === list.id}
-                songDropTarget={songDropTargetId === list.id}
-                onDragOver={(e) => handleDragOver(e, list.id)}
-                onDragLeave={() => setSongDropTargetId((c) => (c === list.id ? null : c))}
-                onDrop={(e) => handleDrop(e, list.id)}
-                onSelect={() => { setActiveSongListId(list.id); setActiveSetlistId(null); goToLibraryView(); }}
-              />
-            ))}
+            {soloSonglistsExpanded && (
+              <div className="sidebar-solo-list sidebar-nested-group">
+                {songLists.map((list) => (
+                  <FolderItem
+                    key={list.id}
+                    listId={list.id}
+                    name={list.name}
+                    icon={list.icon}
+                    count={list.songIds.length}
+                    active={activeSongListId === list.id}
+                    songDropTarget={songDropTargetId === list.id}
+                    onDragOver={(e) => handleDragOver(e, list.id)}
+                    onDragLeave={() => setSongDropTargetId((c) => (c === list.id ? null : c))}
+                    onDrop={(e) => handleDrop(e, list.id)}
+                    onSelect={() => { setActiveSongListId(list.id); setActiveSetlistId(null); goToLibraryView(); }}
+                  />
+                ))}
 
-            {addingSongList && (
-              <InlineInput
-                value={draftName}
-                onChange={setDraftName}
-                onCommit={commitSongList}
-                onCancel={() => setAddingSongList(false)}
-                placeholder="Songlist name..."
-              />
+                {addingSongList && (
+                  <InlineInput
+                    value={draftName}
+                    onChange={setDraftName}
+                    onCommit={commitSongList}
+                    onCancel={() => setAddingSongList(false)}
+                    placeholder="Songlist name..."
+                  />
+                )}
+              </div>
             )}
+          </section>
 
+          <section className="sidebar-solo-section">
             <div className="sidebar-list-item sidebar-list-item--section">
               <button
                 className="sidebar-icon-btn"
@@ -420,7 +426,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             </div>
 
             {soloSetlistsExpanded && (
-              <div className="sidebar-setlists">
+              <div className="sidebar-solo-list sidebar-setlists">
                 {setlists.map((setlist) => (
                   <SetlistItem
                     key={setlist.id}
@@ -448,8 +454,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 )}
               </div>
             )}
-          </div>
-        )}
+          </section>
+        </div>
       </div>
 
       <div className="sidebar-bands-section">
