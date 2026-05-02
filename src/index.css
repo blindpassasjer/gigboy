@@ -1621,17 +1621,39 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-view-header .song-toolbar-row--controls .instrument-toggle {
-  border: 1px solid color-mix(in srgb, var(--song-header-accent) 24%, var(--song-item-border));
+  border: 1px solid color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--song-header-accent) 8%, var(--song-item-bg));
+  background: color-mix(in srgb, var(--song-header-accent) 14%, var(--song-item-bg));
   overflow: hidden;
-  padding: .1rem;
-  gap: .25rem;
+  padding: .12rem;
+  gap: .12rem;
 }
 
 .song-view-header .song-toolbar-row--controls .transpose-btn,
 .song-view-header .song-toolbar-row--controls .instrument-toggle-btn {
   padding: .35rem .7rem;
+}
+
+.song-view-header .song-toolbar-row--controls .instrument-toggle-btn,
+.concert-tool-row .instrument-toggle-btn {
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--song-header-accent) 56%, var(--song-item-text));
+}
+
+.song-view-header .song-toolbar-row--controls .instrument-toggle-btn:hover,
+.concert-tool-row .instrument-toggle-btn:hover {
+  background: color-mix(in srgb, var(--song-header-accent) 22%, var(--song-item-chip-bg));
+  color: var(--song-item-chip-text);
+}
+
+.song-view-header .song-toolbar-row--controls .instrument-toggle-btn--active,
+.song-view-header .song-toolbar-row--controls .instrument-toggle-btn--active:hover,
+.concert-tool-row .instrument-toggle-btn--active,
+.concert-tool-row .instrument-toggle-btn--active:hover {
+  background: color-mix(in srgb, var(--song-header-accent) 84%, black);
+  color: var(--song-item-accent-contrast, var(--accent-contrast));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 16%, transparent);
 }
 
 .song-view-header .song-toolbar-row--controls .song-toolbar-setting-label {
@@ -1658,12 +1680,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .concert-tool-row .instrument-toggle {
-  border: 1px solid color-mix(in srgb, var(--song-header-accent) 24%, var(--song-item-border));
+  border: 1px solid color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--song-header-accent) 8%, var(--song-item-bg));
+  background: color-mix(in srgb, var(--song-header-accent) 14%, var(--song-item-bg));
   overflow: hidden;
-  padding: .1rem;
-  gap: .25rem;
+  padding: .12rem;
+  gap: .12rem;
 }
 
 .concert-tool-row .song-toolbar-setting-label {
