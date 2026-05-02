@@ -60,6 +60,18 @@ export async function inviteBandMemberOnServer(params: {
   });
 }
 
+export async function createBandInviteLinkOnServer(params: {
+  userId: string;
+  userEmail: string;
+  bandId: string;
+  role: CollaborationPermission;
+}) {
+  return postJson<{ inviteId: string; inviteUrl: string; expiresAt: string }>('/api/bands/invite-link', params, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
 export async function acceptBandInviteOnServer(params: {
   userId: string;
   userEmail: string;

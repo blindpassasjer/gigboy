@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +12,7 @@ import { acceptInviteOnServer } from '../lib/shareApi';
 import type { BandInvite, CollaborationInvite } from '../types';
 
 export default function ProfileInvitesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { bands, refreshBands } = useBands();
   const [loading, setLoading] = useState(true);
@@ -22,6 +24,7 @@ export default function ProfileInvitesPage() {
     username?: string;
     email?: string;
   }>>({});
+  const processedBandInviteIdRef = useRef<string | null>(null);
 
   const refreshInvites = useCallback(async () => {
     if (!db || !user?.id) {
@@ -66,6 +69,50 @@ export default function ProfileInvitesPage() {
   useEffect(() => {
     void refreshInvites();
   }, [refreshInvites]);
+
+  useEffect(() => {
+    const bandInviteId = searchParams.get('bandInvite')?.trim() ?? '';
+    if (!bandInviteId || !user?.id || !user.email) {
+      return;
+    }
+
+    if (processedBandInviteIdRef.current === bandInviteId) {
+      return;
+    }
+    processedBandInviteIdRef.current = bandInviteId;
+
+    let active = true;
+    setBusyInviteId(bandInviteId);
+
+    void (async () => {
+      try {
+        await acceptBandInviteOnServer({
+          userId: user.id,
+          userEmail: user.email,
+          inviteId: bandInviteId,
+        });
+        if (!active) return;
+
+        await refreshBands();
+        await refreshInvites();
+        toast.success('Joined band from invite link.');
+      } catch (error) {
+        if (!active) return;
+        const message = error instanceof Error ? error.message : 'Failed to accept band invite.';
+        toast.error(message);
+      } finally {
+        if (!active) return;
+        setBusyInviteId(null);
+        const nextSearchParams = new URLSearchParams(searchParams);
+        nextSearchParams.delete('bandInvite');
+        setSearchParams(nextSearchParams, { replace: true });
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [refreshBands, refreshInvites, searchParams, setSearchParams, user?.email, user?.id]);
 
   useEffect(() => {
     if (!db || !user?.id) {

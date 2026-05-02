@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import UserAvatar from '../components/UserAvatar';
 import type { CollaborationPermission } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
+import { createBandInviteLinkOnServer } from '../lib/bandsApi';
 
 export default function BandMembersPage() {
   const { id } = useParams();
@@ -28,7 +29,9 @@ export default function BandMembersPage() {
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
   const [busyRoleId, setBusyRoleId] = useState<string | null>(null);
   const [busyInvite, setBusyInvite] = useState(false);
+  const [busyInviteLink, setBusyInviteLink] = useState(false);
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
+  const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -72,6 +75,36 @@ export default function BandMembersPage() {
     }
 
     toast.success('Member removed.');
+  };
+
+  const handleCreateInviteLink = async () => {
+    if (!user?.id || !user.email) {
+      toast.error('You need to be signed in to create invite links.');
+      return;
+    }
+
+    setBusyInviteLink(true);
+    try {
+      const result = await createBandInviteLinkOnServer({
+        userId: user.id,
+        userEmail: user.email,
+        bandId: band.id,
+        role: inviteRole,
+      });
+
+      setLastInviteLink(result.inviteUrl);
+      try {
+        await navigator.clipboard.writeText(result.inviteUrl);
+        toast.success('Invite link copied to clipboard.');
+      } catch {
+        toast.success('Invite link created. Copy it from the field below.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create invite link.';
+      toast.error(message);
+    } finally {
+      setBusyInviteLink(false);
+    }
   };
 
   const handleChangeRole = async (memberId: string, role: CollaborationPermission) => {
@@ -161,7 +194,21 @@ export default function BandMembersPage() {
             <button type="submit" className="setlist-action-btn" disabled={!canEditBand || busyInvite}>
               <UserPlus size={15} /> {busyInvite ? 'Sending…' : 'Send invite'}
             </button>
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              disabled={!canEditBand || busyInviteLink}
+              onClick={() => { void handleCreateInviteLink(); }}
+            >
+              {busyInviteLink ? 'Creating link…' : 'Create invite link'}
+            </button>
           </form>
+          {lastInviteLink ? (
+            <label className="share-menu-field" style={{ marginTop: '0.75rem' }}>
+              <span>Latest invite link</span>
+              <input type="text" value={lastInviteLink} readOnly />
+            </label>
+          ) : null}
         </section>
 
         {isOwner && (

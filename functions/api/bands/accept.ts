@@ -30,9 +30,18 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Invite is no longer pending.' }, { status: 409 });
   }
 
+  const expiresAt = typeof invite.expiresAt === 'string' ? invite.expiresAt : null;
+  if (expiresAt) {
+    const expiresAtMs = Date.parse(expiresAt);
+    if (!Number.isNaN(expiresAtMs) && expiresAtMs < Date.now()) {
+      return Response.json({ error: 'Invite link has expired.' }, { status: 410 });
+    }
+  }
+
   const inviteRecipientUid = typeof invite.recipientUid === 'string' ? invite.recipientUid : null;
   const inviteRecipientEmail = typeof invite.recipientEmailLower === 'string' ? invite.recipientEmailLower : null;
-  const canAccept = inviteRecipientUid === userId || inviteRecipientEmail === userEmail;
+  const linkInvite = invite.linkInvite === true;
+  const canAccept = linkInvite || inviteRecipientUid === userId || inviteRecipientEmail === userEmail;
   if (!canAccept) {
     return Response.json({ error: 'Invite does not belong to this user.' }, { status: 403 });
   }
