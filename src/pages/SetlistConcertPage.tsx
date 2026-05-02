@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  AudioLines,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
   List,
   Maximize2,
+  Metronome,
   Minimize2,
   Pause,
   Play,
@@ -20,10 +22,12 @@ import type { Song } from '../types';
 import LanguageBadge from '../components/LanguageBadge';
 import ChordDisplay from '../components/ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from '../components/ChordDiagram';
+import SongMediaPlayer from '../components/SongMediaPlayer';
 import VisualMetronome from '../components/VisualMetronome';
 import VisualTuner from '../components/VisualTuner';
 import type { ChordNotation } from '../utils/chordParser';
 import { transposeChord } from '../utils/chordParser';
+import { parseSongMedia } from '../utils/songMedia';
 
 interface ActiveChord {
   chord: string;
@@ -53,6 +57,10 @@ export default function SetlistConcertPage() {
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [showTopbar, setShowTopbar] = useState(false);
   const [showSongNavigator, setShowSongNavigator] = useState(true);
+  const [showMetronome, setShowMetronome] = useState(false);
+  const [showTuner, setShowTuner] = useState(false);
+  const [showMediaPlayer, setShowMediaPlayer] = useState(false);
+  const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
   const [teleprompterActive, setTeleprompterActive] = useState(false);
   const [teleprompterSpeed, setTeleprompterSpeed] = useState(28);
   const [isFullscreen, setIsFullscreen] = useState(() => {
@@ -74,6 +82,8 @@ export default function SetlistConcertPage() {
   useEffect(() => {
     setTeleprompterActive(false);
     teleprompterLastTickRef.current = null;
+    setShowMediaPlayer(false);
+    setAutoPlayMediaOnOpen(false);
     if (songScrollRef.current) {
       songScrollRef.current.scrollTop = 0;
     }
@@ -276,6 +286,7 @@ export default function SetlistConcertPage() {
 
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < setlistSongs.length - 1;
+  const media = currentSong.playbackUrl ? parseSongMedia(currentSong.playbackUrl) : null;
 
   return (
     <section className="concert-mode">
@@ -415,6 +426,44 @@ export default function SetlistConcertPage() {
             <List size={14} /> Songs
           </button>
 
+          <button
+            type="button"
+            className={`concert-chip-btn${showTuner ? ' concert-chip-btn--active' : ''}`}
+            onClick={() => setShowTuner((value) => !value)}
+            title={showTuner ? 'Hide tuner' : 'Show tuner'}
+            aria-label={showTuner ? 'Hide tuner' : 'Show tuner'}
+          >
+            <AudioLines size={14} /> Tuner
+          </button>
+
+          <button
+            type="button"
+            className={`concert-chip-btn${showMetronome ? ' concert-chip-btn--active' : ''}`}
+            onClick={() => setShowMetronome((value) => !value)}
+            title={showMetronome ? 'Hide metronome' : 'Show metronome'}
+            aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
+          >
+            <Metronome size={14} /> Metronome
+          </button>
+
+          {media && (
+            <button
+              type="button"
+              className={`concert-chip-btn${showMediaPlayer ? ' concert-chip-btn--active' : ''}`}
+              onClick={() => {
+                setShowMediaPlayer((value) => {
+                  const next = !value;
+                  if (next) setAutoPlayMediaOnOpen(true);
+                  return next;
+                });
+              }}
+              title={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
+              aria-label={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
+            >
+              <Play size={14} /> Playback
+            </button>
+          )}
+
           <button type="button" className="concert-chip-btn" onClick={toggleFullscreen}>
             {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             {isFullscreen ? 'Exit full' : 'Full screen'}
@@ -460,6 +509,45 @@ export default function SetlistConcertPage() {
             <span className="concert-teleprompter-speed">{teleprompterSpeed}px/s</span>
           </div>
         </div>
+
+        {(showTuner || showMetronome || (media && showMediaPlayer && currentSong.playbackUrl)) && (
+          <div className="song-toolbar-tools-grid concert-toolbar-tools-grid">
+            {showTuner && (
+              <div className="song-toolbar-tool-card">
+                <span className="song-toolbar-tool-card-title">
+                  <AudioLines size={13} />
+                  Tuner
+                </span>
+                <VisualTuner className="song-view-tuner" />
+              </div>
+            )}
+
+            {showMetronome && (
+              <div className="song-toolbar-tool-card">
+                <span className="song-toolbar-tool-card-title">
+                  <Metronome size={13} />
+                  Metronome
+                </span>
+                <VisualMetronome
+                  tempo={currentSong.tempo}
+                  timeSignature={currentSong.timeSignature}
+                  className="song-view-metronome"
+                />
+              </div>
+            )}
+
+            {media && showMediaPlayer && currentSong.playbackUrl && (
+              <div className="song-toolbar-tool-card song-toolbar-tool-card--media">
+                <span className="song-toolbar-tool-card-title">Playback</span>
+                <SongMediaPlayer
+                  mediaUrl={currentSong.playbackUrl}
+                  autoPlay={autoPlayMediaOnOpen}
+                  onAutoPlayHandled={() => setAutoPlayMediaOnOpen(false)}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </header>
       )}
 
@@ -478,12 +566,6 @@ export default function SetlistConcertPage() {
               {currentSong.capo !== undefined && currentSong.capo > 0 && (
                 <span className="capo-badge">Capo {currentSong.capo}</span>
               )}
-              <VisualMetronome
-                tempo={currentSong.tempo}
-                timeSignature={currentSong.timeSignature}
-                className="concert-metronome"
-              />
-              <VisualTuner className="concert-tuner" />
               {currentSong.timeSignature && <span className="meta-pill">{currentSong.timeSignature}</span>}
             </div>
           </div>

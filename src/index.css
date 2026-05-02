@@ -4342,6 +4342,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
 }
 
+.concert-toolbar-tools-grid {
+  margin-top: .2rem;
+}
+
+.concert-topbar .song-toolbar-tool-card {
+  background: color-mix(in srgb, var(--surface) 84%, var(--bg));
+}
+
+.concert-topbar .song-toolbar-tool-card-title {
+  color: var(--text);
+}
+
 .concert-chords-stack {
   display: inline-flex;
   flex-direction: column;
