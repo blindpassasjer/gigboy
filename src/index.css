@@ -2332,6 +2332,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 .play-btn:hover { background: var(--accent-h); }
 .player-info { display: flex; flex-direction: column; min-width: 100px; }
 .player-name { font-size: .85rem; font-weight: 600; }
+.player-name-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: .85rem;
+  font-weight: 600;
+  padding: .2rem .45rem;
+}
 .player-date { font-size: .75rem; color: var(--muted); }
 .waveform-progress {
   flex: 1;

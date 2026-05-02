@@ -4,6 +4,7 @@ import { useSongRecordings } from '../hooks/useSongRecordings';
 import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
 import type { RecordingsScope, SongRecording } from '../lib/songRecordings';
+import { showConfirmToast } from '../utils/toastDialogs';
 
 const WAVEFORM_SAMPLES = 72;
 
@@ -183,8 +184,23 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
   }
 
   function confirmRename() {
-    onRename(recording, renameValue.trim() || recording.name);
+    const nextName = renameValue.trim() || recording.name;
+    onRename(recording, nextName);
     setRenaming(false);
+  }
+
+  function cancelRename() {
+    setRenameValue(recording.name);
+    setRenaming(false);
+  }
+
+  async function confirmDelete() {
+    const confirmed = await showConfirmToast(`Delete recording "${recording.name}"? This cannot be undone.`, {
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+    });
+    if (!confirmed) return;
+    onDelete(recording);
   }
 
   const canRename = !isBandContext || recording.recorder?.userId === currentUserId;
@@ -192,37 +208,6 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
 
   return (
     <li className="audio-player">
-      {renaming && (
-        <div className="recording-rename-row">
-          <input
-            ref={renameInputRef}
-            className="recording-rename-input"
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') confirmRename();
-              if (e.key === 'Escape') setRenaming(false);
-            }}
-            aria-label="Rename recording"
-          />
-          <button
-            className="icon-btn icon-btn--confirm"
-            onClick={confirmRename}
-            aria-label="Confirm rename"
-            title="Confirm"
-          >
-            <Check size={14} />
-          </button>
-          <button
-            className="icon-btn icon-btn--cancel"
-            onClick={() => setRenaming(false)}
-            aria-label="Cancel rename"
-            title="Cancel"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
       <audio
         ref={audioRef}
         src={recording.downloadUrl}
@@ -239,7 +224,22 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
       </button>
 
       <div className="player-info">
-        <span className="player-name" title={recording.name}>{recording.name}</span>
+        {renaming ? (
+          <input
+            ref={renameInputRef}
+            className="player-name-input"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={confirmRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') confirmRename();
+              if (e.key === 'Escape') cancelRename();
+            }}
+            aria-label="Rename recording"
+          />
+        ) : (
+          <span className="player-name" title={recording.name}>{recording.name}</span>
+        )}
         <span className="player-date">
           {new Date(recording.createdAt).toLocaleString()} · {formatFileSize(recording.sizeBytes)}
         </span>
@@ -260,20 +260,43 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
       )}
 
       {canRename && (
-        <button
-          className="icon-btn icon-btn--rename"
-          onClick={openRename}
-          aria-label={`Rename recording ${recording.name}`}
-          title="Rename"
-        >
-          <Pencil size={14} />
-        </button>
+        renaming ? (
+          <>
+            <button
+              className="icon-btn icon-btn--confirm"
+              onClick={confirmRename}
+              aria-label="Confirm rename"
+              title="Confirm"
+            >
+              <Check size={14} />
+            </button>
+            <button
+              className="icon-btn icon-btn--cancel"
+              onClick={cancelRename}
+              aria-label="Cancel rename"
+              title="Cancel"
+            >
+              <X size={14} />
+            </button>
+          </>
+        ) : (
+          <button
+            className="icon-btn icon-btn--rename"
+            onClick={openRename}
+            aria-label={`Rename recording ${recording.name}`}
+            title="Rename"
+          >
+            <Pencil size={14} />
+          </button>
+        )
       )}
 
       {canDelete && (
         <button
           className="icon-btn icon-btn--delete"
-          onClick={() => onDelete(recording)}
+          onClick={() => {
+            void confirmDelete();
+          }}
           aria-label={`Delete recording ${recording.name}`}
           title="Delete"
         >
