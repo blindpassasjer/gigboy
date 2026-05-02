@@ -16,6 +16,8 @@
     "migrate:songs": "node scripts/migrate-songs-to-user.mjs",
     "migrate:full-names": "node scripts/migrate-full-names.mjs",
     "migrate:full-names:execute": "node scripts/migrate-full-names.mjs --execute",
+    "migrate:member-emails": "node scripts/migrate-member-emails.mjs",
+    "migrate:member-emails:execute": "node scripts/migrate-member-emails.mjs --execute",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

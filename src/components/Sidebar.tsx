@@ -464,10 +464,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             <div className="sidebar-band-switcher">
               <button
                 className="sidebar-band-switcher-btn"
-                onClick={() => setBandSwitcherOpen((o) => !o)}
+                onClick={() => { if (bands.length > 1) setBandSwitcherOpen((o) => !o); }}
                 title="Switch band"
                 aria-haspopup="listbox"
                 aria-expanded={bandSwitcherOpen}
+                aria-disabled={bands.length <= 1}
               >
                 {effectiveActiveBand?.icon
                   ? <span className="sidebar-list-icon" aria-hidden="true">{effectiveActiveBand.icon}</span>
@@ -475,7 +476,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 <span className="sidebar-band-switcher-name">
                   {effectiveActiveBand?.name ?? ''}
                 </span>
-                <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
+                <ChevronsUpDown size={12} className={`sidebar-band-switcher-chevron${bands.length <= 1 ? ' sidebar-band-switcher-chevron--hidden' : ''}`} />
               </button>
 
               {bandSwitcherOpen && (
@@ -613,7 +614,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     className="sidebar-icon-btn"
                     title="New band setlist"
-                    onClick={() => { setAddingBandSetlistId(band.id); setDraftName(''); }}
+                    onClick={() => {
+                      setCollapsedBandSetlistIds((prev) => prev.filter((entry) => entry !== band.id));
+                      setAddingBandSetlistId(band.id);
+                      setDraftName('');
+                    }}
                   >
                     <Plus size={14} />
                   </button>

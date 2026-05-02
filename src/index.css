@@ -3330,6 +3330,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   opacity: .6;
 }
 
+.sidebar-band-switcher-chevron--hidden {
+  visibility: hidden;
+}
+
 .sidebar-band-switcher-dropdown {
   position: absolute;
   top: calc(100% + .25rem);
