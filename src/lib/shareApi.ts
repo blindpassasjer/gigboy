@@ -24,7 +24,10 @@ async function postJson<T>(path: string, body: Record<string, unknown>, headers:
     body: JSON.stringify(body),
   });
 
-  const payload = await response.json().catch(() => ({} as Record<string, unknown>));
+  const payload = await response.json().catch((err) => {
+    console.error(`Failed to parse JSON response from ${path}:`, err);
+    return ({} as Record<string, unknown>);
+  });
   if (!response.ok) {
     const errorMessage = typeof payload.error === 'string' ? payload.error : 'Request failed.';
     throw new Error(errorMessage);

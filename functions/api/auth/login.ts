@@ -1,7 +1,10 @@
 /// <reference types="@cloudflare/workers-types" />
 
 export const onRequestPost: PagesFunction<never> = async (ctx) => {
-  const body = await ctx.request.json<{ username: string; password: string }>().catch(() => null);
+  const body = await ctx.request.json<{ username: string; password: string }>().catch((err) => {
+    console.error('Failed to parse request body:', err);
+    return null;
+  });
   if (!body) return Response.json({ error: 'Invalid request body.' }, { status: 400 });
   const { username, password } = body;
 

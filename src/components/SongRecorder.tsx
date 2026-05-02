@@ -455,7 +455,10 @@ export default function SongRecorder({ song, user, bandId }: Props) {
         setPreviewWaveformBars(null);
         void computeWaveformPeaksFromBlob(blob)
           .then((bars) => setPreviewWaveformBars(bars))
-          .catch(() => setPreviewWaveformBars(null));
+          .catch((err) => {
+            console.error('Failed to compute waveform peaks:', err);
+            setPreviewWaveformBars(null);
+          });
         setPreviewName(`${song.title} - ${formatDateTime(new Date())}`);
         setPreviewProgress(0);
         setIsPreviewPlaying(false);
