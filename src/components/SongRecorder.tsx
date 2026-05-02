@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Play, Pause, Trash2, Save, X } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, Trash2, Save, X, Pencil, Check } from 'lucide-react';
 import { useSongRecordings } from '../hooks/useSongRecordings';
 import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
 import type { RecordingsScope, SongRecording } from '../lib/songRecordings';
+
+const WAVEFORM_SAMPLES = 72;
 
 interface Props {
   song: Song;
@@ -43,17 +45,120 @@ function RecorderAvatar({ avatar, name }: { avatar: string | null; name: string 
   return <span className="rec-avatar rec-avatar--initials" title={name}>{initials}</span>;
 }
 
+interface WaveformProgressProps {
+  audioUrl: string;
+  progress: number;
+  onSeek: (e: React.MouseEvent<HTMLDivElement>) => void;
+  ariaLabel: string;
+  className?: string;
+}
+
+function computeWaveformPeaks(channelData: Float32Array, samples = WAVEFORM_SAMPLES): number[] {
+  if (channelData.length === 0) {
+    return Array.from({ length: samples }, () => 0.12);
+  }
+
+  const blockSize = Math.max(1, Math.floor(channelData.length / samples));
+  const peaks = Array.from({ length: samples }, (_, index) => {
+    const start = index * blockSize;
+    const end = Math.min(channelData.length, start + blockSize);
+    let peak = 0;
+
+    for (let cursor = start; cursor < end; cursor += 1) {
+      const amplitude = Math.abs(channelData[cursor]);
+      if (amplitude > peak) peak = amplitude;
+    }
+
+    return peak;
+  });
+
+  const maxPeak = Math.max(...peaks, 0.01);
+
+  return peaks.map((peak) => {
+    const normalized = peak / maxPeak;
+    return Math.max(0.12, normalized * 0.94);
+  });
+}
+
+function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className }: WaveformProgressProps) {
+  const [bars, setBars] = useState<number[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadWaveform() {
+      try {
+        const response = await fetch(audioUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioContext = new AudioContext();
+
+        try {
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          if (cancelled) return;
+          setBars(computeWaveformPeaks(audioBuffer.getChannelData(0)));
+        } finally {
+          void audioContext.close();
+        }
+      } catch {
+        if (!cancelled) {
+          setBars(Array.from({ length: WAVEFORM_SAMPLES }, () => 0.3));
+        }
+      }
+    }
+
+    setBars(null);
+    void loadWaveform();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [audioUrl]);
+
+  const waveformBars = bars ?? Array.from({ length: WAVEFORM_SAMPLES }, () => 0.24);
+
+  return (
+    <div
+      className={`waveform-progress${className ? ` ${className}` : ''}`}
+      onClick={onSeek}
+      role="slider"
+      aria-label={ariaLabel}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(progress * 100)}
+    >
+      <div className="waveform-progress__bars" aria-hidden="true">
+        {waveformBars.map((height, index) => {
+          const playedThreshold = ((index + 1) / waveformBars.length);
+          const isPlayed = playedThreshold <= progress;
+
+          return (
+            <span
+              key={`${audioUrl}-${index}`}
+              className={`waveform-progress__bar${isPlayed ? ' waveform-progress__bar--played' : ''}`}
+              style={{ height: `${Math.round(height * 100)}%` }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 interface SavedPlayerProps {
   recording: SongRecording;
   currentUserId: string;
   isBandContext: boolean;
   onDelete: (r: SongRecording) => void;
+  onRename: (r: SongRecording, newName: string) => void;
 }
 
-function SavedPlayer({ recording, currentUserId, isBandContext, onDelete }: SavedPlayerProps) {
+function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRename }: SavedPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   function togglePlay() {
     if (!audioRef.current) return;
@@ -71,10 +176,53 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete }: Save
     audioRef.current.currentTime = ratio * (audioRef.current.duration || 0);
   }
 
+  function openRename() {
+    setRenameValue(recording.name);
+    setRenaming(true);
+    setTimeout(() => renameInputRef.current?.select(), 0);
+  }
+
+  function confirmRename() {
+    onRename(recording, renameValue.trim() || recording.name);
+    setRenaming(false);
+  }
+
+  const canRename = !isBandContext || recording.recorder?.userId === currentUserId;
   const canDelete = !isBandContext || recording.recorder?.userId === currentUserId;
 
   return (
     <li className="audio-player">
+      {renaming && (
+        <div className="recording-rename-row">
+          <input
+            ref={renameInputRef}
+            className="recording-rename-input"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') confirmRename();
+              if (e.key === 'Escape') setRenaming(false);
+            }}
+            aria-label="Rename recording"
+          />
+          <button
+            className="icon-btn icon-btn--confirm"
+            onClick={confirmRename}
+            aria-label="Confirm rename"
+            title="Confirm"
+          >
+            <Check size={14} />
+          </button>
+          <button
+            className="icon-btn icon-btn--cancel"
+            onClick={() => setRenaming(false)}
+            aria-label="Cancel rename"
+            title="Cancel"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
       <audio
         ref={audioRef}
         src={recording.downloadUrl}
@@ -97,9 +245,12 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete }: Save
         </span>
       </div>
 
-      <div className="progress-bar" onClick={handleSeek} role="slider" aria-label="Seek">
-        <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
-      </div>
+      <WaveformProgress
+        audioUrl={recording.downloadUrl}
+        progress={progress}
+        onSeek={handleSeek}
+        ariaLabel="Seek"
+      />
 
       {isBandContext && recording.recorder && (
         <RecorderAvatar
@@ -108,12 +259,23 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete }: Save
         />
       )}
 
+      {canRename && (
+        <button
+          className="icon-btn icon-btn--rename"
+          onClick={openRename}
+          aria-label={`Rename recording ${recording.name}`}
+          title="Rename"
+        >
+          <Pencil size={14} />
+        </button>
+      )}
+
       {canDelete && (
         <button
-          className="delete-btn"
+          className="icon-btn icon-btn--delete"
           onClick={() => onDelete(recording)}
           aria-label={`Delete recording ${recording.name}`}
-          title="Delete recording"
+          title="Delete"
         >
           <Trash2 size={14} />
         </button>
@@ -129,20 +291,21 @@ export default function SongRecorder({ song, user, bandId }: Props) {
     ? { type: 'band', bandId }
     : { type: 'user', ownerId: song.ownerId ?? user.id };
 
-  const { recordings, loading, uploading, uploadRecording, deleteRecording } = useSongRecordings({
+  const { recordings, loading, uploading, uploadError, uploadRecording, deleteRecording, renameRecording } = useSongRecordings({
     scope,
     songId: song.id,
   });
 
   const [recState, setRecState] = useState<RecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
+
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewName, setPreviewName] = useState('');
   const [previewDurationMs, setPreviewDurationMs] = useState(0);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [previewProgress, setPreviewProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(uploadError);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -327,14 +490,13 @@ export default function SongRecorder({ song, user, bandId }: Props) {
               >
                 {isPreviewPlaying ? <Pause size={14} /> : <Play size={14} />}
               </button>
-              <div
-                className="progress-bar recorder-preview-bar"
-                onClick={handlePreviewSeek}
-                role="slider"
-                aria-label="Seek preview"
-              >
-                <div className="progress-fill" style={{ width: `${previewProgress * 100}%` }} />
-              </div>
+              <WaveformProgress
+                audioUrl={previewUrl}
+                progress={previewProgress}
+                onSeek={handlePreviewSeek}
+                ariaLabel="Seek preview"
+                className="recorder-preview-bar"
+              />
             </div>
             <div className="recorder-save-form">
               <input
@@ -377,6 +539,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
                 currentUserId={user.id}
                 isBandContext={isBandContext}
                 onDelete={deleteRecording}
+                onRename={renameRecording}
               />
             ))}
           </ul>

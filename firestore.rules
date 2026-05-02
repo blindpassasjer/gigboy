@@ -78,6 +78,13 @@ service cloud.firestore {
         allow update: if canUpdateResource(userId);
         allow delete: if isOwner(userId);
 
+        match /recordings/{recordingId} {
+          allow read: if canReadResource(userId);
+          allow create: if isOwner(userId);
+          allow update: if isOwner(userId);
+          allow delete: if isOwner(userId);
+        }
+
         // Per-user handwritten notes. Each user writes only their own doc (noteId == uid).
         match /handNotes/{noteId} {
           allow read: if canReadResource(userId);
@@ -189,6 +196,9 @@ service cloud.firestore {
           allow read: if isBandMember(bandId);
           allow create: if isBandMember(bandId)
             && request.resource.data.recorder.userId == request.auth.uid;
+          allow update: if isBandMember(bandId)
+            && resource.data.recorder.userId == request.auth.uid
+            && request.resource.data.recorder.userId == resource.data.recorder.userId;
           allow delete: if isBandMember(bandId)
             && resource.data.recorder.userId == request.auth.uid;
         }

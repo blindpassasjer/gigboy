@@ -7,6 +7,7 @@ import {
   query,
   setDoc,
   type Firestore,
+  updateDoc,
 } from 'firebase/firestore';
 import {
   deleteObject,
@@ -142,4 +143,15 @@ export async function deleteSongRecording(
   }
   const docRef = recordingDocRef(db, scope, songId, recording.id);
   await deleteDoc(docRef);
+}
+
+export async function renameSongRecording(
+  db: Firestore,
+  scope: RecordingsScope,
+  songId: string,
+  recording: SongRecording,
+  newName: string,
+): Promise<void> {
+  const docRef = recordingDocRef(db, scope, songId, recording.id);
+  await updateDoc(docRef, { name: newName });
 }

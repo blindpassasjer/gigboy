@@ -2281,6 +2281,42 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: .6rem .8rem;
+  flex-wrap: wrap;
+}
+.recording-rename-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+}
+.recording-rename-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: .45rem .65rem;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  flex-shrink: 0;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.icon-btn:hover {
+  background: color-mix(in srgb, var(--surface) 75%, var(--accent));
+  border-color: color-mix(in srgb, var(--border) 60%, var(--accent));
+}
+.icon-btn--delete:hover {
+  color: #b42318;
 }
 .play-btn {
   display: flex;
@@ -2297,17 +2333,37 @@ input, select, textarea { font: inherit; color: var(--text); }
 .player-info { display: flex; flex-direction: column; min-width: 100px; }
 .player-name { font-size: .85rem; font-weight: 600; }
 .player-date { font-size: .75rem; color: var(--muted); }
-.progress-bar {
+.waveform-progress {
   flex: 1;
-  height: 6px;
-  background: var(--border);
-  border-radius: 3px;
+  min-width: 0;
+  height: 42px;
+  display: flex;
+  align-items: center;
   cursor: pointer;
-  overflow: hidden;
+  border-radius: 8px;
+  padding: .2rem .3rem;
+  background: color-mix(in srgb, var(--surface) 70%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
 }
-.progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .1s; }
-.delete-btn { color: var(--muted); padding: .25rem; border-radius: 4px; transition: color .15s; }
-.delete-btn:hover { color: var(--danger); }
+.waveform-progress__bars {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(72, minmax(0, 1fr));
+  align-items: center;
+  gap: 2px;
+}
+.waveform-progress__bar {
+  width: 100%;
+  min-height: 12%;
+  align-self: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 68%, var(--muted));
+  transition: background .12s ease;
+}
+.waveform-progress__bar--played {
+  background: var(--accent);
+}
 
 /* Audio Recorder */
 .audio-recorder {
@@ -2372,8 +2428,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .75rem;
 }
 .recorder-preview-bar {
-  flex: 1;
-  cursor: pointer;
+  height: 52px;
 }
 
 /* Recorder tool card — full width */
