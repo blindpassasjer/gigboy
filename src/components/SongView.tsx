@@ -204,7 +204,6 @@ export default function SongView({ song, accentColor }: Props) {
           <section className="song-toolbar-section song-toolbar-section--settings">
             <div className="song-toolbar-section-head">
               <h2 className="song-toolbar-section-title"><SlidersHorizontal size={14} /> Settings</h2>
-              <p className="song-toolbar-section-subtitle">Transpose, chord display and instrument view</p>
             </div>
 
             <div className="song-toolbar-row song-toolbar-row--controls">
@@ -337,7 +336,6 @@ export default function SongView({ song, accentColor }: Props) {
           <section className="song-toolbar-section song-toolbar-section--tools">
             <div className="song-toolbar-section-head">
               <h2 className="song-toolbar-section-title"><Wrench size={14} /> Tools</h2>
-              <p className="song-toolbar-section-subtitle">Quick controls for practice and performance</p>
             </div>
 
             <div className="song-toolbar-row song-toolbar-row--tool-switches">
