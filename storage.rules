@@ -14,9 +14,13 @@ service firebase.storage {
     }
 
     function isBandMember(bandId) {
+      let band = bandDocument(bandId).data;
       return isSignedIn()
-        && bandDocument(bandId).data.memberIds is list
-        && bandDocument(bandId).data.memberIds.hasAny([request.auth.uid]);
+        && (
+          (band.ownerId is string && band.ownerId == request.auth.uid)
+          || (band.memberIds is list && band.memberIds.hasAny([request.auth.uid]))
+          || (band.memberRoles is map && (band.memberRoles[request.auth.uid] == 'viewer' || band.memberRoles[request.auth.uid] == 'editor'))
+        );
     }
 
     // User-scoped song recordings
