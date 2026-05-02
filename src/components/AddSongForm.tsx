@@ -1,5 +1,5 @@
-import { useMemo, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useBeforeUnload, useBlocker, useNavigate } from 'react-router-dom';
 import { Save, Wand2 } from 'lucide-react';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
@@ -9,6 +9,7 @@ import { LANGUAGE_NAMES } from '../utils/languages';
 import { parsePastedSong } from '../utils/chordFormatParser';
 import { extractTabBlocks } from '../utils/tabParser';
 import { parseSongMedia } from '../utils/songMedia';
+import { showConfirmToast } from '../utils/toastDialogs';
 
 interface Props {
   onSave: (song: Song) => Promise<string | null>;
@@ -41,6 +42,7 @@ export default function AddSongForm({
   onSongListChange,
 }: Props) {
   const navigate = useNavigate();
+  const [allowNavigation, setAllowNavigation] = useState(false);
   const [title, setTitle] = useState(initialSong?.title ?? '');
   const [artist, setArtist] = useState(initialSong?.artist ?? '');
   const [playbackUrl, setPlaybackUrl] = useState(initialSong?.playbackUrl ?? '');
@@ -56,7 +58,78 @@ export default function AddSongForm({
   const [errors, setErrors] = useState<string[]>([]);
   const [songListId, setSongListId] = useState(initialSongListId ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isConfirmingNavigationRef = useRef(false);
   const tabBlocks = useMemo(() => extractTabBlocks(chordpro), [chordpro]);
+
+  const initialValues = useMemo(() => ({
+    title: initialSong?.title ?? '',
+    artist: initialSong?.artist ?? '',
+    playbackUrl: initialSong?.playbackUrl ?? '',
+    language: initialSong?.language ?? 'en',
+    tags: (initialSong?.tags ?? []).join(', '),
+    key: initialSong?.key ?? '',
+    capo: initialSong?.capo !== undefined ? String(initialSong.capo) : '',
+    tempo: initialSong?.tempo !== undefined ? String(initialSong.tempo) : '',
+    timeSignature: initialSong?.timeSignature ?? '',
+    chordpro: initialSong?.chordpro ?? '',
+    songListId: initialSongListId ?? '',
+  }), [initialSong, initialSongListId]);
+
+  const isDirty = useMemo(() => {
+    return title !== initialValues.title
+      || artist !== initialValues.artist
+      || playbackUrl !== initialValues.playbackUrl
+      || language !== initialValues.language
+      || tags !== initialValues.tags
+      || key !== initialValues.key
+      || capo !== initialValues.capo
+      || tempo !== initialValues.tempo
+      || timeSignature !== initialValues.timeSignature
+      || chordpro !== initialValues.chordpro
+      || songListId !== initialValues.songListId;
+  }, [
+    title,
+    artist,
+    playbackUrl,
+    language,
+    tags,
+    key,
+    capo,
+    tempo,
+    timeSignature,
+    chordpro,
+    songListId,
+    initialValues,
+  ]);
+
+  const shouldBlockNavigation = isDirty && !allowNavigation;
+  const blocker = useBlocker(shouldBlockNavigation);
+
+  useBeforeUnload((event) => {
+    if (!shouldBlockNavigation) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+
+  useEffect(() => {
+    if (blocker.state !== 'blocked' || isConfirmingNavigationRef.current) return;
+
+    isConfirmingNavigationRef.current = true;
+    void (async () => {
+      const shouldLeave = await showConfirmToast(
+        'You have unsaved changes. Leave without saving?',
+        { confirmLabel: 'Leave', cancelLabel: 'Stay' }
+      );
+
+      if (shouldLeave) {
+        blocker.proceed();
+      } else {
+        blocker.reset();
+      }
+
+      isConfirmingNavigationRef.current = false;
+    })();
+  }, [blocker]);
 
   function validate() {
     const errs: string[] = [];
@@ -117,6 +190,7 @@ export default function AddSongForm({
       onSongListChange?.(songListId, song.id);
     }
 
+    setAllowNavigation(true);
     navigate(`/songs/${song.id}`);
   }
 
@@ -203,6 +277,9 @@ export default function AddSongForm({
               </button>
               <button type="button" className="preview-toggle" onClick={() => setPreview((v) => !v)}>
                 {preview ? 'Edit' : 'Preview'}
+              </button>
+              <button type="submit" className="btn-primary form-submit-inline">
+                <Save size={14} /> {mode === 'edit' ? 'Update Song' : 'Save Song'}
               </button>
             </div>
           </div>

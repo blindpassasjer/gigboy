@@ -2500,6 +2500,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 .chordpro-label-actions {
   display: flex;
   gap: .4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .preview-toggle {
   font-size: .8rem;
@@ -2512,6 +2514,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   transition: background .15s;
 }
 .preview-toggle:hover { background: var(--accent); color: #fff; }
+
+.form-submit-inline {
+  min-height: auto;
+  padding: .3rem .65rem;
+  font-size: .82rem;
+}
 
 .chordpro-preview {
   border: 1px solid var(--border);
