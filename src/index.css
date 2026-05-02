@@ -996,6 +996,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   --song-item-muted: var(--muted);
   --song-item-chip-bg: color-mix(in srgb, var(--song-header-accent) 14%, var(--surface));
   --song-item-chip-text: color-mix(in srgb, var(--song-header-accent) 70%, var(--text));
+  --song-toolbar-elevated-bg: color-mix(in srgb, var(--song-item-bg) 84%, var(--bg));
+  --song-toolbar-elevated-text: color-mix(in srgb, var(--song-item-chip-text) 82%, var(--song-item-text));
   background: var(--song-item-bg);
   border: 1px solid var(--song-item-border);
   border-radius: var(--radius);
@@ -1044,7 +1046,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .7rem;
   border: 1px solid var(--song-item-border);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--song-item-bg) 82%, white);
+  background: var(--song-toolbar-elevated-bg);
 }
 
 .song-toolbar-section-head {
@@ -1068,7 +1070,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-toolbar-section-subtitle {
   font-size: .73rem;
-  color: color-mix(in srgb, var(--song-item-chip-text) 82%, black);
+  color: var(--song-toolbar-elevated-text);
 }
 
 .song-toolbar-row {
@@ -1102,7 +1104,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: .72rem;
   letter-spacing: .04em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--song-item-chip-text) 85%, black);
+  color: var(--song-toolbar-elevated-text);
   font-weight: 700;
 }
 
@@ -1124,7 +1126,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-view-header .transpose-control,
 .song-view-header .instrument-toggle {
-  background: color-mix(in srgb, var(--song-item-bg) 84%, white);
+  background: var(--song-toolbar-elevated-bg);
   border-color: var(--song-item-border);
 }
 
@@ -1343,19 +1345,19 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .visual-metronome-toggle {
   border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
   color: var(--song-item-chip-text);
-  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+  background: var(--song-toolbar-elevated-bg);
 }
 
 .song-view-header .visual-metronome-tap {
   border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
   color: var(--song-item-chip-text);
-  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+  background: var(--song-toolbar-elevated-bg);
 }
 
 .song-view-header .visual-metronome-sound {
   border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
   color: var(--song-item-chip-text);
-  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+  background: var(--song-toolbar-elevated-bg);
 }
 
 .song-view-header .visual-metronome-toggle:hover {
@@ -1448,13 +1450,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .song-toolbar-tool-btn {
   border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
   color: var(--song-item-chip-text);
-  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+  background: var(--song-toolbar-elevated-bg);
 }
 
 .song-view-header .song-notes-draw-toggle {
   color: var(--song-item-chip-text);
   border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
-  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+  background: var(--song-toolbar-elevated-bg);
 }
 
 .song-view-header .song-notes-panel {
@@ -1609,7 +1611,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .song-media-external-icon {
   border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
   color: var(--song-item-chip-text);
-  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+  background: var(--song-toolbar-elevated-bg);
 }
 
 .song-view-header .song-media-play-btn:hover:not(:disabled),
@@ -1795,7 +1797,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .visual-tuner-toggle {
   border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
   color: var(--song-item-chip-text);
-  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+  background: var(--song-toolbar-elevated-bg);
 }
 
 .song-view-header .visual-tuner-toggle:hover {
@@ -1812,7 +1814,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .visual-tuner-side,
 .song-view-header .visual-tuner-hz,
 .song-view-header .visual-tuner-cue {
-  color: color-mix(in srgb, var(--song-item-chip-text) 78%, black);
+  color: var(--song-toolbar-elevated-text);
 }
 
 .concert-tuner {

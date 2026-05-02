@@ -513,6 +513,15 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             <Plus size={15} />
           </button>
         </div>
+        {addingBand && (
+          <InlineInput
+            value={draftName}
+            onChange={setDraftName}
+            onCommit={commitBand}
+            onCancel={() => setAddingBand(false)}
+            placeholder="Band name..."
+          />
+        )}
         <div className="sidebar-bands-list">
           {bands.filter((band) => band.id === activeBandId).map((band) => (
             <div key={band.id} className="sidebar-folder">
@@ -664,15 +673,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               </div>
             </div>
           ))}
-          {addingBand && (
-            <InlineInput
-              value={draftName}
-              onChange={setDraftName}
-              onCommit={commitBand}
-              onCancel={() => setAddingBand(false)}
-              placeholder="Band name..."
-            />
-          )}
         </div>
       </div>
     </aside>
