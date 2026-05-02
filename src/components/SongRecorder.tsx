@@ -77,7 +77,11 @@ function computeWaveformPeaks(channelData: Float32Array, samples = WAVEFORM_SAMP
 
   return peaks.map((peak) => {
     const normalized = peak / maxPeak;
-    return Math.max(0.12, normalized * 0.94);
+    // Power curve < 1 expands quiet parts upward; > 1 exaggerates dynamics.
+    // 0.5 (sqrt) compresses — we want the opposite: use power > 1 so loud
+    // peaks stay tall and quiet parts shrink toward the floor.
+    const exaggerated = Math.pow(normalized, 1.8);
+    return Math.max(0.04, exaggerated * 0.96);
   });
 }
 

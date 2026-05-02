@@ -1,6 +1,7 @@
 import { useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { GUITAR_CHORDS } from '../data/guitarChords';
 
 export type DiagramInstrument = 'guitar' | 'piano';
 
@@ -11,98 +12,60 @@ interface Props {
   onClose: () => void;
 }
 
-// ─── Guitar chord data ────────────────────────────────────────────────────────
-// frets[i] = fret on string i (low E → high e): -1=muted, 0=open, n=fret n
-
-const GUITAR_CHORDS: Record<string, number[]> = {
-  // Major
-  C:      [-1, 3, 2, 0, 1, 0],
-  'C#':   [-1, 4, 6, 6, 6, 4],
-  D:      [-1,-1, 0, 2, 3, 2],
-  'D#':   [-1, 6, 8, 8, 8, 6],
-  E:      [ 0, 2, 2, 1, 0, 0],
-  F:      [ 1, 3, 3, 2, 1, 1],
-  'F#':   [ 2, 4, 4, 3, 2, 2],
-  G:      [ 3, 2, 0, 0, 0, 3],
-  'G#':   [ 4, 6, 6, 5, 4, 4],
-  A:      [-1, 0, 2, 2, 2, 0],
-  'A#':   [ 6, 8, 8, 7, 6, 6],
-  B:      [-1, 2, 4, 4, 4, 2],
-  // Minor
-  Cm:     [-1, 3, 5, 5, 4, 3],
-  'C#m':  [-1, 4, 6, 6, 5, 4],
-  Dm:     [-1,-1, 0, 2, 3, 1],
-  'D#m':  [-1, 6, 8, 8, 7, 6],
-  Em:     [ 0, 2, 2, 0, 0, 0],
-  Fm:     [ 1, 3, 3, 1, 1, 1],
-  'F#m':  [ 2, 4, 4, 2, 2, 2],
-  Gm:     [ 3, 5, 5, 3, 3, 3],
-  'G#m':  [ 4, 6, 6, 4, 4, 4],
-  Am:     [-1, 0, 2, 2, 1, 0],
-  'A#m':  [ 6, 8, 8, 6, 6, 6],
-  Bm:     [-1, 2, 4, 4, 3, 2],
-  // Dominant 7th
-  C7:     [-1, 3, 2, 3, 1, 0],
-  'C#7':  [-1, 4, 3, 4, 2, 0],
-  D7:     [-1,-1, 0, 2, 1, 2],
-  'D#7':  [-1, 6, 5, 6, 4, 6],
-  E7:     [ 0, 2, 0, 1, 0, 0],
-  F7:     [ 1, 3, 1, 2, 1, 1],
-  'F#7':  [ 2, 4, 2, 3, 2, 2],
-  G7:     [ 3, 2, 0, 0, 0, 1],
-  'G#7':  [ 4, 6, 4, 5, 4, 4],
-  A7:     [-1, 0, 2, 0, 2, 0],
-  'A#7':  [ 6, 8, 6, 7, 6, 6],
-  B7:     [-1, 2, 1, 2, 0, 2],
-  // Minor 7th
-  Cm7:    [-1, 3, 5, 3, 4, 3],
-  'C#m7': [-1, 4, 6, 4, 5, 4],
-  Dm7:    [-1,-1, 0, 2, 1, 1],
-  'D#m7': [-1, 6, 8, 6, 7, 6],
-  Em7:    [ 0, 2, 0, 0, 0, 0],
-  Fm7:    [ 1, 3, 1, 1, 1, 1],
-  'F#m7': [ 2, 4, 2, 2, 2, 2],
-  Gm7:    [ 3, 5, 3, 3, 3, 3],
-  'G#m7': [ 4, 6, 4, 4, 4, 4],
-  Am7:    [-1, 0, 2, 0, 1, 0],
-  'A#m7': [ 6, 8, 6, 6, 6, 6],
-  Bm7:    [-1, 2, 4, 2, 3, 2],
-  // Major 7th
-  Cmaj7:    [-1, 3, 2, 0, 0, 0],
-  'C#maj7': [-1, 4, 6, 6, 6, 3],
-  Dmaj7:    [-1,-1, 0, 2, 2, 2],
-  'D#maj7': [-1, 6, 5, 7, 7, 6],
-  Emaj7:    [ 0, 2, 1, 1, 0, 0],
-  Fmaj7:    [-1,-1, 3, 2, 1, 0],
-  'F#maj7': [ 2, 4, 3, 3, 2, 2],
-  Gmaj7:    [ 3, 2, 0, 0, 0, 2],
-  'G#maj7': [ 4, 6, 5, 5, 4, 4],
-  Amaj7:    [-1, 0, 2, 1, 2, 0],
-  'A#maj7': [-1, 1, 3, 2, 3, 1],
-  Bmaj7:    [-1, 2, 4, 3, 4, 2],
-  // Sus chords
-  Csus2:  [-1, 3, 0, 0, 1, 3],
-  Dsus2:  [-1,-1, 0, 2, 3, 0],
-  Esus2:  [ 0, 2, 2, 4, 0, 0],
-  Gsus2:  [ 3, 2, 0, 0, 3, 3],
-  Asus2:  [-1, 0, 2, 2, 0, 0],
-  Csus4:  [-1, 3, 3, 0, 1, 1],
-  Dsus4:  [-1,-1, 0, 2, 3, 3],
-  Esus4:  [ 0, 2, 2, 2, 0, 0],
-  Gsus4:  [ 3, 3, 0, 0, 1, 3],
-  Asus4:  [-1, 0, 2, 2, 3, 0],
-};
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const ROOT_LOOKUP_ALIAS: Record<string, string> = {
+  C: 'C',
+  'C#': 'C#',
+  Db: 'C#',
+  D: 'D',
+  'D#': 'D#',
+  Eb: 'D#',
+  E: 'E',
+  F: 'F',
+  'F#': 'F#',
+  Gb: 'F#',
+  G: 'G',
+  'G#': 'G#',
+  Ab: 'G#',
+  A: 'A',
+  'A#': 'A#',
+  Bb: 'A#',
+  B: 'B',
+};
+
+function normalizeQualityForLookup(suffix: string): string {
+  const compact = suffix.replace(/\s+/g, '');
+  const lower = compact.toLowerCase();
+
+  if (!compact) return '';
+
+  // Treat common major aliases as plain major triads when no 7th is present.
+  if (compact === 'M' || lower === 'maj') return '';
+
+  if (compact === 'M7' || compact === 'Δ7' || lower === 'maj7' || lower === 'ma7') return 'maj7';
+  if (lower === 'm7' || lower === 'min7' || lower === 'mi7' || compact === '-7') return 'm7';
+  if (lower === 'm' || lower === 'min' || lower === 'mi' || compact === '-') return 'm';
+  if (lower === 'sus') return 'sus4';
+
+  // Already canonical in our current lookup set.
+  if (lower === '7' || lower === 'sus2' || lower === 'sus4' || lower === 'maj7' || lower === 'm7' || lower === 'm') {
+    return lower;
+  }
+
+  return compact;
+}
+
 function normalizeForLookup(chord: string): string {
-  const base = chord.split('/')[0];
-  return base
-    .replace(/^Db/, 'C#')
-    .replace(/^Eb/, 'D#')
-    .replace(/^Gb/, 'F#')
-    .replace(/^Ab/, 'G#')
-    .replace(/^Bb/, 'A#');
+  const base = chord.split('/')[0].trim().replace(/♯/g, '#').replace(/♭/g, 'b');
+  const match = base.match(/^([A-Ga-g])([#b]?)(.*)$/);
+  if (!match) return base;
+
+  const root = `${match[1].toUpperCase()}${match[2]}`;
+  const normalizedRoot = ROOT_LOOKUP_ALIAS[root] ?? root;
+  const normalizedQuality = normalizeQualityForLookup(match[3] ?? '');
+
+  return `${normalizedRoot}${normalizedQuality}`;
 }
 
 const ROOT_MAP: Record<string, number> = {
