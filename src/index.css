@@ -1111,7 +1111,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-toolbar-tool-card--notes {
-  grid-column: 1 / -1;
+  min-width: 0;
 }
 
 .song-toolbar-row--actions .song-actions {
