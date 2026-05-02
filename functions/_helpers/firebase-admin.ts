@@ -49,18 +49,35 @@ function tryParseJsonObject(value: string): Record<string, unknown> | null {
 }
 
 function tryDecodeBase64Utf8(value: string): string | null {
-  if (!/^[A-Za-z0-9+/=\s]+$/.test(value)) {
+  if (!/^[A-Za-z0-9+/_=\-\s]+$/.test(value)) {
     return null;
   }
 
   try {
-    const normalized = value.replace(/\s+/g, '');
+    let normalized = value.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+    const remainder = normalized.length % 4;
+    if (remainder > 0) {
+      normalized += '='.repeat(4 - remainder);
+    }
     const binary = atob(normalized);
     const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
     return new TextDecoder().decode(bytes).trim();
   } catch {
     return null;
   }
+}
+
+function extractPrivateKeyFromJsonCandidate(value: string): string | null {
+  const parsedJson = tryParseJsonObject(value);
+  if (!parsedJson || typeof parsedJson.private_key !== 'string') {
+    return null;
+  }
+
+  return stripWrappingQuotes(parsedJson.private_key)
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\n')
+    .trim();
 }
 
 function normalizePrivateKey(privateKey: string) {
@@ -70,14 +87,19 @@ function normalizePrivateKey(privateKey: string) {
     .replace(/\\r/g, '\n')
     .trim();
 
-  // Accept passing the full service account JSON in FIREBASE_PRIVATE_KEY.
-  const parsedJson = tryParseJsonObject(normalized);
-  if (parsedJson && typeof parsedJson.private_key === 'string') {
-    normalized = stripWrappingQuotes(parsedJson.private_key)
+  if (normalized.startsWith('FIREBASE_PRIVATE_KEY=')) {
+    normalized = normalized.slice('FIREBASE_PRIVATE_KEY='.length).trim();
+    normalized = stripWrappingQuotes(normalized)
       .replace(/\\r\\n/g, '\n')
       .replace(/\\n/g, '\n')
       .replace(/\\r/g, '\n')
       .trim();
+  }
+
+  // Accept passing the full service account JSON in FIREBASE_PRIVATE_KEY.
+  const privateKeyFromJson = extractPrivateKeyFromJsonCandidate(normalized);
+  if (privateKeyFromJson) {
+    normalized = privateKeyFromJson;
   }
 
   if (
@@ -89,18 +111,25 @@ function normalizePrivateKey(privateKey: string) {
 
   // Accept base64-encoded full PEM blocks.
   const decodedPem = tryDecodeBase64Utf8(normalized);
-  if (
-    decodedPem
-    && decodedPem.startsWith('-----BEGIN PRIVATE KEY-----')
-    && decodedPem.endsWith('-----END PRIVATE KEY-----')
-  ) {
-    return decodedPem;
+  if (decodedPem) {
+    const decodedPrivateKeyFromJson = extractPrivateKeyFromJsonCandidate(decodedPem);
+    if (decodedPrivateKeyFromJson) {
+      return decodedPrivateKeyFromJson;
+    }
+
+    if (
+      decodedPem.startsWith('-----BEGIN PRIVATE KEY-----')
+      && decodedPem.endsWith('-----END PRIVATE KEY-----')
+    ) {
+      return decodedPem;
+    }
   }
 
   const base64Body = normalized.replace(/\s+/g, '');
-  const isLikelyBase64Body = /^[A-Za-z0-9+/=]+$/.test(base64Body) && base64Body.length > 0;
+  const isLikelyBase64Body = /^[A-Za-z0-9+/_=\-]+$/.test(base64Body) && base64Body.length > 0;
   if (isLikelyBase64Body) {
-    return `-----BEGIN PRIVATE KEY-----\n${base64Body}\n-----END PRIVATE KEY-----`;
+    const normalizedBase64Body = base64Body.replace(/-/g, '+').replace(/_/g, '/');
+    return `-----BEGIN PRIVATE KEY-----\n${normalizedBase64Body}\n-----END PRIVATE KEY-----`;
   }
 
   throw new Error(
