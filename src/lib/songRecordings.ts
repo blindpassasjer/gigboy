@@ -93,7 +93,7 @@ export async function loadSongRecordings(
         // Leave empty if file no longer exists or caller cannot read it.
       }
     }
-const rawWaveform = data.waveformBars;
+  const rawWaveform = data.waveformBars;
     const waveformBars = Array.isArray(rawWaveform)
       ? rawWaveform
           .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
@@ -116,8 +116,7 @@ const rawWaveform = data.waveformBars;
             avatar: typeof rawRecorder.avatar === 'string' ? rawRecorder.avatar : null,
           }
         : undefined,
-      waveformBars: waveformBars && waveformBars.length > 0 ? waveformBars   }
-        : undefined,
+      waveformBars: waveformBars && waveformBars.length > 0 ? waveformBars : undefined,
     };
   }));
 

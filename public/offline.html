@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Folio Offline</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --card: #111f3d;
+        --text: #e8efff;
+        --muted: #a3b3d8;
+        --accent: #3b82f6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "Noto Sans", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(1200px 500px at 10% -20%, #334f9f 0%, transparent 60%),
+          radial-gradient(900px 460px at 100% 120%, #1e3b7a 0%, transparent 55%),
+          var(--bg);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      main {
+        width: min(560px, 100%);
+        background: linear-gradient(180deg, #15274d, var(--card));
+        border: 1px solid #2d4684;
+        border-radius: 18px;
+        padding: 28px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.38);
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 1.6rem;
+      }
+
+      p {
+        margin: 0;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      a,
+      button {
+        border: 0;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 0.95rem;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      a {
+        background: var(--accent);
+        color: white;
+      }
+
+      button {
+        background: #22335d;
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You are offline</h1>
+      <p>
+        Folio is installed and can still open cached content. Reconnect to sync songs,
+        recordings, and shared updates.
+      </p>
+      <div class="actions">
+        <a href="/">Open Folio</a>
+        <button type="button" onclick="window.location.reload()">Try again</button>
+      </div>
+    </main>
+  </body>
+</html>

@@ -384,14 +384,20 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               <div className="song-toolbar-tools-grid">
                 {showTuner && (
                   <div className="song-toolbar-tool-card">
-                    <span className="song-toolbar-tool-card-title">Tuner</span>
+                    <span className="song-toolbar-tool-card-title">
+                      <AudioLines size={13} />
+                      Tuner
+                    </span>
                     <VisualTuner className="song-view-tuner" />
                   </div>
                 )}
 
                 {showMetronome && (
                   <div className="song-toolbar-tool-card">
-                    <span className="song-toolbar-tool-card-title">Metronome</span>
+                    <span className="song-toolbar-tool-card-title">
+                      <Metronome size={13} />
+                      Metronome
+                    </span>
                     <VisualMetronome
                       tempo={song.tempo}
                       timeSignature={song.timeSignature}
