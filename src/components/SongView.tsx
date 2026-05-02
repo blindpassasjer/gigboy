@@ -201,6 +201,139 @@ export default function SongView({ song, accentColor }: Props) {
         </div>
 
         <div className="song-view-toolbar">
+          <section className="song-toolbar-section song-toolbar-section--settings">
+            <div className="song-toolbar-section-head">
+              <h2 className="song-toolbar-section-title"><SlidersHorizontal size={14} /> Settings</h2>
+              <p className="song-toolbar-section-subtitle">Transpose, chord display and instrument view</p>
+            </div>
+
+            <div className="song-toolbar-row song-toolbar-row--controls">
+              <div className="transpose-control">
+                <button
+                  onClick={() => setTranspose((t) => t - 1)}
+                  aria-label="Transpose down"
+                  className="transpose-btn"
+                >
+                  <ChevronDown size={16} />
+                </button>
+                <span className="transpose-label">
+                  {song.key
+                    ? transpose === 0
+                      ? `Key of ${song.key}`
+                      : `Key of ${transposeChord(song.key, transpose)}`
+                    : transpose === 0
+                      ? 'Original key'
+                      : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
+                </span>
+                <button
+                  onClick={() => setTranspose((t) => t + 1)}
+                  aria-label="Transpose up"
+                  className="transpose-btn"
+                >
+                  <ChevronUp size={16} />
+                </button>
+                {transpose !== 0 && (
+                  <button
+                    onClick={() => setTranspose(0)}
+                    aria-label="Reset transpose"
+                    className="transpose-btn transpose-btn--reset"
+                    title="Reset to original key"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                )}
+              </div>
+
+              <label className="toggle-label">
+                <input
+                  type="checkbox"
+                  checked={showChords}
+                  onChange={(e) => {
+                    setShowChords(e.target.checked);
+                    if (!e.target.checked) setActiveChord(null);
+                  }}
+                />
+                Show chords
+              </label>
+
+              {showChords && (
+                <div className="instrument-toggle">
+                  <button
+                    className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
+                    onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
+                  >
+                    Guitar
+                  </button>
+                  <button
+                    className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
+                    onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
+                  >
+                    Piano
+                  </button>
+                </div>
+              )}
+
+              <div className="instrument-toggle">
+                <button
+                  className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => setChordNotation('anglo')}
+                >
+                  C D E
+                </button>
+                <button
+                  className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => setChordNotation('spanish')}
+                >
+                  Do Re Mi
+                </button>
+              </div>
+            </div>
+
+            <div className="song-toolbar-row song-toolbar-row--meta">
+              {song.capo !== undefined && song.capo > 0 && (
+                <span className="capo-badge">Capo {song.capo}</span>
+              )}
+              {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
+
+              <div className="add-to-list-wrap" ref={menuRef}>
+                <button
+                  className="rec-btn rec-btn--toggle"
+                  onClick={() => setListMenuOpen((v) => !v)}
+                  title="Add to song list"
+                >
+                  <ListPlus size={15} /> Songlists
+                </button>
+                {listMenuOpen && (
+                  <div className="list-dropdown">
+                    {songLists.length === 0 ? (
+                      <p className="list-dropdown-empty">No lists yet — create one in the sidebar</p>
+                    ) : (
+                      songLists.map((list) => {
+                        const inList = list.songIds.includes(song.id);
+                        return (
+                          <button
+                            key={list.id}
+                            className={`list-dropdown-item${inList ? ' in-list' : ''}`}
+                            onClick={() => {
+                              if (inList) {
+                                removeSongFromList(list.id, song.id);
+                              } else {
+                                addSongToList(list.id, song.id);
+                              }
+                            }}
+                          >
+                            {inList ? <Check size={13} /> : <Plus size={13} />}
+                            {list.name}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
           <section className="song-toolbar-section song-toolbar-section--tools">
             <div className="song-toolbar-section-head">
               <h2 className="song-toolbar-section-title"><Wrench size={14} /> Tools</h2>
@@ -381,139 +514,6 @@ export default function SongView({ song, accentColor }: Props) {
                 )}
               </div>
             )}
-          </section>
-
-          <section className="song-toolbar-section song-toolbar-section--settings">
-            <div className="song-toolbar-section-head">
-              <h2 className="song-toolbar-section-title"><SlidersHorizontal size={14} /> Settings</h2>
-              <p className="song-toolbar-section-subtitle">Transpose, chord display and instrument view</p>
-            </div>
-
-            <div className="song-toolbar-row song-toolbar-row--controls">
-              <div className="transpose-control">
-                <button
-                  onClick={() => setTranspose((t) => t - 1)}
-                  aria-label="Transpose down"
-                  className="transpose-btn"
-                >
-                  <ChevronDown size={16} />
-                </button>
-                <span className="transpose-label">
-                  {song.key
-                    ? transpose === 0
-                      ? `Key of ${song.key}`
-                      : `Key of ${transposeChord(song.key, transpose)}`
-                    : transpose === 0
-                      ? 'Original key'
-                      : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
-                </span>
-                <button
-                  onClick={() => setTranspose((t) => t + 1)}
-                  aria-label="Transpose up"
-                  className="transpose-btn"
-                >
-                  <ChevronUp size={16} />
-                </button>
-                {transpose !== 0 && (
-                  <button
-                    onClick={() => setTranspose(0)}
-                    aria-label="Reset transpose"
-                    className="transpose-btn transpose-btn--reset"
-                    title="Reset to original key"
-                  >
-                    <RotateCcw size={13} />
-                  </button>
-                )}
-              </div>
-
-              <label className="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={showChords}
-                  onChange={(e) => {
-                    setShowChords(e.target.checked);
-                    if (!e.target.checked) setActiveChord(null);
-                  }}
-                />
-                Show chords
-              </label>
-
-              {showChords && (
-                <div className="instrument-toggle">
-                  <button
-                    className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
-                    onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
-                  >
-                    Guitar
-                  </button>
-                  <button
-                    className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
-                    onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
-                  >
-                    Piano
-                  </button>
-                </div>
-              )}
-
-              <div className="instrument-toggle">
-                <button
-                  className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
-                  onClick={() => setChordNotation('anglo')}
-                >
-                  C D E
-                </button>
-                <button
-                  className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
-                  onClick={() => setChordNotation('spanish')}
-                >
-                  Do Re Mi
-                </button>
-              </div>
-            </div>
-
-            <div className="song-toolbar-row song-toolbar-row--meta">
-              {song.capo !== undefined && song.capo > 0 && (
-                <span className="capo-badge">Capo {song.capo}</span>
-              )}
-              {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
-
-              <div className="add-to-list-wrap" ref={menuRef}>
-                <button
-                  className="rec-btn rec-btn--toggle"
-                  onClick={() => setListMenuOpen((v) => !v)}
-                  title="Add to song list"
-                >
-                  <ListPlus size={15} /> Songlists
-                </button>
-                {listMenuOpen && (
-                  <div className="list-dropdown">
-                    {songLists.length === 0 ? (
-                      <p className="list-dropdown-empty">No lists yet — create one in the sidebar</p>
-                    ) : (
-                      songLists.map((list) => {
-                        const inList = list.songIds.includes(song.id);
-                        return (
-                          <button
-                            key={list.id}
-                            className={`list-dropdown-item${inList ? ' in-list' : ''}`}
-                            onClick={() => {
-                              if (inList) {
-                                removeSongFromList(list.id, song.id);
-                              } else {
-                                addSongToList(list.id, song.id);
-                              }
-                            }}
-                          >
-                            {inList ? <Check size={13} /> : <Plus size={13} />}
-                            {list.name}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
           </section>
 
           <div className="song-toolbar-row song-toolbar-row--actions">

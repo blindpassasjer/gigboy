@@ -15,6 +15,7 @@ export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
+  const isEditSongRoute = /^\/songs\/[^/]+\/edit$/.test(pathname);
   const isBandRoute = pathname.startsWith('/bands');
   const isBandLibraryRoute = /^\/bands\/[^/]+(?:\/library)?$/.test(pathname);
   const isBandSonglistRoute = /^\/bands\/[^/]+\/songlists\/[^/]+/.test(pathname);
@@ -158,7 +159,7 @@ export default function Layout({ children }: Props) {
         )}
         <main className={`main-content${isConcertRoute ? ' main-content--concert' : ''}`}>{children}</main>
       </div>
-      {!isConcertRoute && (!isBandRoute || isBandLibraryRoute || isBandSonglistRoute || isBandSetlistRoute) && (
+      {!isConcertRoute && !isEditSongRoute && (!isBandRoute || isBandLibraryRoute || isBandSonglistRoute || isBandSetlistRoute) && (
         <Link
           to="/add"
           state={{
