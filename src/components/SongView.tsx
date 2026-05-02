@@ -251,38 +251,40 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 )}
               </div>
 
-              <button
-                type="button"
-                className={`song-toolbar-tool-btn${showChords ? ' song-toolbar-tool-btn--active' : ''}`}
-                onClick={() => {
-                  setShowChords((prev) => {
-                    const next = !prev;
-                    if (!next) setActiveChord(null);
-                    return next;
-                  });
-                }}
-                aria-label={showChords ? 'Hide chords' : 'Show chords'}
-                title={showChords ? 'Hide chords' : 'Show chords'}
-              >
-                Chords
-              </button>
+              <div className="chords-group">
+                <button
+                  type="button"
+                  className={`song-toolbar-tool-btn${showChords ? ' song-toolbar-tool-btn--active' : ''}`}
+                  onClick={() => {
+                    setShowChords((prev) => {
+                      const next = !prev;
+                      if (!next) setActiveChord(null);
+                      return next;
+                    });
+                  }}
+                  aria-label={showChords ? 'Hide chords' : 'Show chords'}
+                  title={showChords ? 'Hide chords' : 'Show chords'}
+                >
+                  Chords
+                </button>
 
-              {showChords && (
-                <div className="instrument-toggle song-toolbar-controls-group">
-                  <button
-                    className={`instrument-toggle-btn song-toolbar-tool-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
-                    onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
-                  >
-                    Guitar
-                  </button>
-                  <button
-                    className={`instrument-toggle-btn song-toolbar-tool-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
-                    onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
-                  >
-                    Piano
-                  </button>
-                </div>
-              )}
+                {showChords && (
+                  <div className="instrument-toggle chords-group__instrument">
+                    <button
+                      className={`instrument-toggle-btn song-toolbar-tool-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
+                      onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
+                    >
+                      Guitar
+                    </button>
+                    <button
+                      className={`instrument-toggle-btn song-toolbar-tool-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
+                      onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
+                    >
+                      Piano
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <div className="instrument-toggle song-toolbar-controls-group">
                 <button
