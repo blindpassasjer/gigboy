@@ -492,6 +492,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                         setActiveBandId(band.id);
                         if (typeof window !== 'undefined') window.localStorage.setItem('folio-active-band-id', band.id);
                         setBandSwitcherOpen(false);
+                        navigate(`/bands/${band.id}/library`);
+                        onNavigate?.();
                       }}
                     >
                       {band.icon
