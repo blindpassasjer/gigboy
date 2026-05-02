@@ -74,6 +74,7 @@ textarea {
     .instrument-toggle-btn,
     .visual-metronome-toggle,
     .visual-metronome-tap,
+    .visual-metronome-sound,
     .visual-tuner-toggle,
     .visual-tuner-string-btn,
     .tab-play-btn,
@@ -1258,6 +1259,30 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--chord-bg);
 }
 
+.visual-metronome-sound {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .2rem .35rem;
+  color: var(--muted);
+  background: var(--surface);
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.visual-metronome-sound:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--chord-bg);
+}
+
+.visual-metronome-sound.is-active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
 .visual-metronome-readout {
   display: inline-flex;
   align-items: center;
@@ -1327,6 +1352,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--song-item-bg) 75%, white);
 }
 
+.song-view-header .visual-metronome-sound {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-item-bg) 75%, white);
+}
+
 .song-view-header .visual-metronome-toggle:hover {
   color: var(--song-item-chip-text);
   background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
@@ -1335,6 +1366,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .visual-metronome-tap:hover {
   color: var(--song-item-chip-text);
   background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
+}
+
+.song-view-header .visual-metronome-sound:hover,
+.song-view-header .visual-metronome-sound.is-active {
+  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
+  border-color: color-mix(in srgb, var(--song-header-accent) 40%, var(--song-item-border));
 }
 
 .song-view-header .visual-metronome-tempo {

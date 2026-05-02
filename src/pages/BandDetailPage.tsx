@@ -402,7 +402,7 @@ export default function BandDetailPage() {
           <button
             type="button"
             className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={() => setShowMembersModal(true)}
+            onClick={() => navigate(`/bands/${band.id}/members`)}
             title="Manage band members"
           >
             <Users size={14} />

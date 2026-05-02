@@ -10,6 +10,7 @@ import UsernameSetupPage from './pages/UsernameSetupPage';
 import SetlistConcertPage from './pages/SetlistConcertPage';
 import BandsPage from './pages/BandsPage';
 import BandDetailPage from './pages/BandDetailPage';
+import BandMembersPage from './pages/BandMembersPage';
 import ProfileInvitesPage from './pages/ProfileInvitesPage';
 import ProfilePage from './pages/ProfilePage';
 import { SongsProvider } from './context/SongsContext';
@@ -40,6 +41,7 @@ function AuthenticatedApp() {
                 <Route path="/songs/:id/edit" element={<EditSongPage />} />
                 <Route path="/add" element={<AddSongPage />} />
                 <Route path="/bands" element={<BandsPage />} />
+                <Route path="/bands/:id/members" element={<BandMembersPage />} />
                 <Route path="/bands/:id/*" element={<BandDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/profile/invites" element={<ProfileInvitesPage />} />

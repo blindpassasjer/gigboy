@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Hand, Pause, Play } from 'lucide-react';
+import { Hand, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 
 interface Props {
   tempo?: number;
@@ -24,7 +24,30 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
   const beatsPerBar = useMemo(() => parseBeatsPerBar(timeSignature), [timeSignature]);
   const [isRunning, setIsRunning] = useState(false);
   const [activeBeat, setActiveBeat] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const tapTimesRef = useRef<number[]>([]);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  function playClick(isDownbeat: boolean) {
+    if (!soundEnabled) return;
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      }
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = isDownbeat ? 1000 : 800;
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.06);
+    } catch {
+      // AudioContext may be unavailable in some environments
+    }
+  }
 
   useEffect(() => {
     if (!baseBpm) return;
@@ -40,11 +63,16 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
 
     const intervalMs = Math.max(80, Math.round(60000 / bpm));
     const intervalId = window.setInterval(() => {
-      setActiveBeat((previous) => (previous + 1) % beatsPerBar);
+      setActiveBeat((previous) => {
+        const next = (previous + 1) % beatsPerBar;
+        playClick(next === 0);
+        return next;
+      });
     }, intervalMs);
 
     return () => window.clearInterval(intervalId);
-  }, [bpm, beatsPerBar, isRunning]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bpm, beatsPerBar, isRunning, soundEnabled]);
 
   const handleTapTempo = () => {
     const now = Date.now();
@@ -84,6 +112,16 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
       >
         <Hand size={13} />
         Tap
+      </button>
+
+      <button
+        type="button"
+        className={`visual-metronome-sound${soundEnabled ? ' is-active' : ''}`}
+        onClick={() => setSoundEnabled((v) => !v)}
+        aria-label={soundEnabled ? 'Disable metronome sound' : 'Enable metronome sound'}
+        title={soundEnabled ? 'Sound on' : 'Sound off'}
+      >
+        {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
       </button>
 
       <div className="visual-metronome-readout">
