@@ -138,7 +138,7 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
     };
   }, [audioUrl, waveformBars]);
 
-  const waveformBars = bars ?? Array.from({ length: WAVEFORM_SAMPLES }, () => 0.24);
+  const renderedBars = bars ?? Array.from({ length: WAVEFORM_SAMPLES }, () => 0.24);
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -158,8 +158,8 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
       aria-valuenow={Math.round(progress * 100)}
     >
       <div className="waveform-progress__bars" aria-hidden="true">
-        {waveformBars.map((height, index) => {
-          const barRatio = (index + 1) / waveformBars.length;
+        {renderedBars.map((height, index) => {
+          const barRatio = (index + 1) / renderedBars.length;
           const isPlayed = barRatio <= progress;
           const isHovered = !isPlayed && hoverRatio !== null && barRatio <= hoverRatio;
 

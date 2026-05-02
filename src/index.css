@@ -2447,7 +2447,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
 }
 .recorder-preview-bar {
-  height: 52px;
+  height: 58px;
 }
 
 /* Recorder tool card — full width */
