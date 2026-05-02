@@ -4,6 +4,8 @@ import { parseSongMedia } from '../utils/songMedia';
 
 interface Props {
   mediaUrl: string;
+  autoPlay?: boolean;
+  onAutoPlayHandled?: () => void;
 }
 
 type YTPlayer = {
@@ -98,7 +100,7 @@ function formatDuration(seconds: number) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export default function SongMediaPlayer({ mediaUrl }: Props) {
+export default function SongMediaPlayer({ mediaUrl, autoPlay = false, onAutoPlayHandled }: Props) {
   const media = useMemo(() => parseSongMedia(mediaUrl), [mediaUrl]);
   const hiddenPlayerHostRef = useRef<HTMLDivElement | null>(null);
   const [player, setPlayer] = useState<YTPlayer | null>(null);
@@ -127,7 +129,7 @@ export default function SongMediaPlayer({ mediaUrl }: Props) {
           height: '1',
           videoId: media.videoId,
           playerVars: {
-            autoplay: 0,
+            autoplay: autoPlay ? 1 : 0,
             controls: 0,
             disablekb: 1,
             rel: 0,
@@ -139,6 +141,10 @@ export default function SongMediaPlayer({ mediaUrl }: Props) {
               if (cancelled || !localPlayer) return;
               setIsReady(true);
               setDuration(localPlayer.getDuration() || 0);
+              if (autoPlay) {
+                localPlayer.playVideo();
+                onAutoPlayHandled?.();
+              }
             },
             onStateChange: (event) => {
               if (cancelled) return;
@@ -169,7 +175,13 @@ export default function SongMediaPlayer({ mediaUrl }: Props) {
       }
       setPlayer(null);
     };
-  }, [media]);
+  }, [media, autoPlay, onAutoPlayHandled]);
+
+  useEffect(() => {
+    if (!autoPlay || !player || !isReady) return;
+    player.playVideo();
+    onAutoPlayHandled?.();
+  }, [autoPlay, player, isReady, onAutoPlayHandled]);
 
   useEffect(() => {
     if (!player || !isReady) return;

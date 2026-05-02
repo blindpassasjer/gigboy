@@ -70,6 +70,7 @@ textarea {
     .fab-add-song,
     .view-toggle-btn,
     .transpose-btn,
+    .song-toolbar-tool-btn,
     .instrument-toggle-btn,
     .visual-metronome-toggle,
     .visual-metronome-tap,
@@ -1035,11 +1036,81 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
 }
 
+.song-toolbar-section {
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  padding: .7rem;
+  border: 1px solid var(--song-item-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--song-item-bg) 82%, white);
+}
+
+.song-toolbar-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+
+.song-toolbar-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--song-item-chip-text);
+  text-transform: uppercase;
+}
+
+.song-toolbar-section-subtitle {
+  font-size: .73rem;
+  color: color-mix(in srgb, var(--song-item-chip-text) 82%, black);
+}
+
 .song-toolbar-row {
   display: flex;
   align-items: center;
   gap: .55rem;
   flex-wrap: wrap;
+}
+
+.song-toolbar-row--tool-switches {
+  gap: .45rem;
+}
+
+.song-toolbar-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: .55rem;
+}
+
+.song-toolbar-tool-card {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  padding: .5rem;
+  border: 1px solid color-mix(in srgb, var(--song-header-accent) 26%, var(--song-item-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--song-header-accent) 8%, var(--song-item-bg));
+}
+
+.song-toolbar-tool-card-title {
+  font-size: .72rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--song-item-chip-text) 85%, black);
+  font-weight: 700;
+}
+
+.song-toolbar-tool-card--media {
+  grid-column: 1 / -1;
+}
+
+.song-toolbar-tool-card--notes {
+  grid-column: 1 / -1;
 }
 
 .song-toolbar-row--actions .song-actions {
@@ -1273,11 +1344,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-toolbar-tool-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: .25rem;
   border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: .25rem .55rem;
-  font-size: .72rem;
+  border-radius: 9px;
+  min-height: 2.35rem;
+  padding: .35rem .75rem;
+  font-size: .76rem;
   font-weight: 600;
   color: var(--muted);
   background: var(--surface);
@@ -1319,7 +1392,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-wrap: wrap;
   align-items: center;
   gap: .35rem;
-  min-width: min(440px, calc(100vw - 4rem));
+  min-width: 0;
+  width: 100%;
   padding: .38rem;
   border: 1px solid var(--border);
   border-radius: 10px;
