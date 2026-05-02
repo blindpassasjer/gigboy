@@ -355,21 +355,40 @@ export default function SetlistConcertPage() {
             )}
           </div>
 
-          <button
-            type="button"
-            className={`concert-chip-btn${showChords ? ' concert-chip-btn--active' : ''}`}
-            onClick={() => {
-              setShowChords((prev) => {
-                const next = !prev;
-                if (!next) setActiveChord(null);
-                return next;
-              });
-            }}
-            aria-label={showChords ? 'Hide chords' : 'Show chords'}
-            title={showChords ? 'Hide chords' : 'Show chords'}
-          >
-            Chords
-          </button>
+          <div className="concert-chords-stack">
+            <button
+              type="button"
+              className={`concert-chip-btn${showChords ? ' concert-chip-btn--active' : ''}`}
+              onClick={() => {
+                setShowChords((prev) => {
+                  const next = !prev;
+                  if (!next) setActiveChord(null);
+                  return next;
+                });
+              }}
+              aria-label={showChords ? 'Hide chords' : 'Show chords'}
+              title={showChords ? 'Hide chords' : 'Show chords'}
+            >
+              Chords
+            </button>
+
+            {showChords && (
+              <div className="instrument-toggle song-toolbar-controls-group concert-notation-toggle">
+                <button
+                  className={`instrument-toggle-btn concert-chip-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active concert-chip-btn--active' : ''}`}
+                  onClick={() => setChordNotation('anglo')}
+                >
+                  C D E
+                </button>
+                <button
+                  className={`instrument-toggle-btn concert-chip-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active concert-chip-btn--active' : ''}`}
+                  onClick={() => setChordNotation('spanish')}
+                >
+                  Do Re Mi
+                </button>
+              </div>
+            )}
+          </div>
 
           {showChords && (
             <div className="instrument-toggle song-toolbar-controls-group">
@@ -387,21 +406,6 @@ export default function SetlistConcertPage() {
               </button>
             </div>
           )}
-
-          <div className="instrument-toggle song-toolbar-controls-group">
-            <button
-              className={`instrument-toggle-btn concert-chip-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active concert-chip-btn--active' : ''}`}
-              onClick={() => setChordNotation('anglo')}
-            >
-              C D E
-            </button>
-            <button
-              className={`instrument-toggle-btn concert-chip-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active concert-chip-btn--active' : ''}`}
-              onClick={() => setChordNotation('spanish')}
-            >
-              Do Re Mi
-            </button>
-          </div>
 
           <button
             type="button"

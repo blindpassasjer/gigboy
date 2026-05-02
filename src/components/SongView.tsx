@@ -362,11 +362,11 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                       return next;
                     });
                   }}
-                  title={showMediaPlayer ? 'Hide player' : 'Open player and play'}
-                  aria-label={showMediaPlayer ? 'Hide player' : 'Open player and play'}
+                  title={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
+                  aria-label={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
                 >
                   <Play size={14} />
-                  Player
+                  Playback
                 </button>
               )}
 
@@ -498,7 +498,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
                 {media && showMediaPlayer && song.playbackUrl && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--media">
-                    <span className="song-toolbar-tool-card-title">Player</span>
+                    <span className="song-toolbar-tool-card-title">Playback</span>
                     <SongMediaPlayer
                       mediaUrl={song.playbackUrl}
                       autoPlay={autoPlayMediaOnOpen}

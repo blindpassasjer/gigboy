@@ -238,8 +238,8 @@ function GuitarDiagram({ frets }: { frets: number[] }) {
   const minFret = played.length ? Math.min(...played) : 0;
   const maxFret = played.length ? Math.max(...played) : 4;
 
-  // Start from fret 1 for open-position chords, otherwise from the min fret
-  const startFret = minFret <= 1 ? 1 : minFret;
+  // Keep most shapes anchored to the first fret, except third-fret shapes.
+  const startFret = minFret === 3 ? 3 : 1;
   const showNut = startFret === 1;
 
   // Expand window if chord spans more than FRETS_SHOWN

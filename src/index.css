@@ -4342,6 +4342,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
 }
 
+.concert-chords-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .3rem;
+}
+
+.concert-chords-stack .concert-notation-toggle {
+  margin-left: .45rem;
+}
+
 .concert-chip-btn {
   display: inline-flex;
   align-items: center;
