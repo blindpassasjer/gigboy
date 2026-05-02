@@ -33,6 +33,7 @@ export interface SongRecording {
   mimeType: string;
   createdAt: string;
   recorder?: RecorderIdentity;
+  waveformBars?: number[];
 }
 
 export type RecordingsScope =
@@ -92,6 +93,12 @@ export async function loadSongRecordings(
         // Leave empty if file no longer exists or caller cannot read it.
       }
     }
+const rawWaveform = data.waveformBars;
+    const waveformBars = Array.isArray(rawWaveform)
+      ? rawWaveform
+          .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+          .map((value) => Math.min(1, Math.max(0, value)))
+      : undefined;
 
     return {
       id: d.id,
@@ -109,6 +116,8 @@ export async function loadSongRecordings(
             avatar: typeof rawRecorder.avatar === 'string' ? rawRecorder.avatar : null,
           }
         : undefined,
+      waveformBars: waveformBars && waveformBars.length > 0 ? waveformBars   }
+        : undefined,
     };
   }));
 
@@ -124,6 +133,7 @@ export async function uploadSongRecording(
   name: string,
   durationMs: number,
   recorder: RecorderIdentity,
+  waveformBars?: number[],
 ): Promise<SongRecording> {
   const id = crypto.randomUUID();
   const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
@@ -143,6 +153,7 @@ export async function uploadSongRecording(
     mimeType: blob.type,
     createdAt: new Date().toISOString(),
     recorder,
+    waveformBars: waveformBars && waveformBars.length > 0 ? waveformBars : undefined,
   };
 
   const docRef = recordingDocRef(db, scope, songId, id);

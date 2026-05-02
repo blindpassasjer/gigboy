@@ -37,12 +37,12 @@ export function useSongRecordings({ scope, songId }: Params) {
   }, [scopeKey, songId]);
 
   const uploadRecording = useCallback(
-    async (blob: Blob, name: string, durationMs: number, recorder: RecorderIdentity) => {
+    async (blob: Blob, name: string, durationMs: number, recorder: RecorderIdentity, waveformBars?: number[]) => {
       if (!db || !storage) return;
       setUploading(true);
       setUploadError(null);
       try {
-        const rec = await uploadSongRecording(db, storage, scope, songId, blob, name, durationMs, recorder);
+        const rec = await uploadSongRecording(db, storage, scope, songId, blob, name, durationMs, recorder, waveformBars);
         setRecordings((prev) => [rec, ...prev]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to save recording';

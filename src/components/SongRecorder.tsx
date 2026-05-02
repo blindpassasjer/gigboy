@@ -52,6 +52,7 @@ interface WaveformProgressProps {
   onSeek: (e: React.MouseEvent<HTMLDivElement>) => void;
   ariaLabel: string;
   className?: string;
+  waveformBars?: number[];
 }
 
 function computeWaveformPeaks(channelData: Float32Array, samples = WAVEFORM_SAMPLES): number[] {
@@ -85,7 +86,19 @@ function computeWaveformPeaks(channelData: Float32Array, samples = WAVEFORM_SAMP
   });
 }
 
-function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className }: WaveformProgressProps) {
+async function computeWaveformPeaksFromBlob(blob: Blob, samples = WAVEFORM_SAMPLES): Promise<number[]> {
+  const arrayBuffer = await blob.arrayBuffer();
+  const audioContext = new AudioContext();
+
+  try {
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    return computeWaveformPeaks(audioBuffer.getChannelData(0), samples);
+  } finally {
+    void audioContext.close();
+  }
+}
+
+function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, waveformBars }: WaveformProgressProps) {
   const [bars, setBars] = useState<number[] | null>(null);
   const [hoverRatio, setHoverRatio] = useState<number | null>(null);
 
@@ -93,6 +106,11 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className }: 
     let cancelled = false;
 
     async function loadWaveform() {
+      if (waveformBars && waveformBars.length > 0) {
+        setBars(waveformBars);
+        return;
+      }
+
       try {
         const response = await fetch(audioUrl);
         const arrayBuffer = await response.arrayBuffer();
@@ -118,7 +136,7 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className }: 
     return () => {
       cancelled = true;
     };
-  }, [audioUrl]);
+  }, [audioUrl, waveformBars]);
 
   const waveformBars = bars ?? Array.from({ length: WAVEFORM_SAMPLES }, () => 0.24);
 
@@ -243,6 +261,7 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
           onSeek={handleSeek}
           ariaLabel="Seek"
           className="recorder-preview-bar"
+          waveformBars={recording.waveformBars}
         />
 
         <span className="recorder-elapsed" title="Duration">{formatTime(recording.durationMs)}</span>
@@ -346,6 +365,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewName, setPreviewName] = useState('');
   const [previewDurationMs, setPreviewDurationMs] = useState(0);
+  const [previewWaveformBars, setPreviewWaveformBars] = useState<number[] | null>(null);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [previewProgress, setPreviewProgress] = useState(0);
   const [error, setError] = useState<string | null>(uploadError);
@@ -432,6 +452,10 @@ export default function SongRecorder({ song, user, bandId }: Props) {
         setPreviewUrl(url);
         setPreviewBlob(blob);
         setPreviewDurationMs(durationMs);
+        setPreviewWaveformBars(null);
+        void computeWaveformPeaksFromBlob(blob)
+          .then((bars) => setPreviewWaveformBars(bars))
+          .catch(() => setPreviewWaveformBars(null));
         setPreviewName(`${song.title} - ${formatDateTime(new Date())}`);
         setPreviewProgress(0);
         setIsPreviewPlaying(false);
@@ -465,6 +489,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setPreviewBlob(null);
+    setPreviewWaveformBars(null);
     setIsPreviewPlaying(false);
     setPreviewProgress(0);
     setRecState('idle');
@@ -480,6 +505,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
         previewName.trim() || `${song.title} - ${formatDateTime(new Date())}`,
         previewDurationMs,
         { userId: user.id, displayName, avatar: user.avatar },
+        previewWaveformBars ?? undefined,
       );
       discardPreview();
     } catch (err) {
@@ -551,6 +577,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
                 onSeek={handlePreviewSeek}
                 ariaLabel="Seek preview"
                 className="recorder-preview-bar"
+                waveformBars={previewWaveformBars ?? undefined}
               />
             </div>
             <div className="recorder-save-form">
