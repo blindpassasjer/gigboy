@@ -293,43 +293,6 @@ export default function SongView({ song, accentColor }: Props) {
                 <span className="capo-badge">Capo {song.capo}</span>
               )}
               {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
-
-              <div className="add-to-list-wrap" ref={menuRef}>
-                <button
-                  className="rec-btn rec-btn--toggle"
-                  onClick={() => setListMenuOpen((v) => !v)}
-                  title="Add to song list"
-                >
-                  <ListPlus size={15} /> Songlists
-                </button>
-                {listMenuOpen && (
-                  <div className="list-dropdown">
-                    {songLists.length === 0 ? (
-                      <p className="list-dropdown-empty">No lists yet — create one in the sidebar</p>
-                    ) : (
-                      songLists.map((list) => {
-                        const inList = list.songIds.includes(song.id);
-                        return (
-                          <button
-                            key={list.id}
-                            className={`list-dropdown-item${inList ? ' in-list' : ''}`}
-                            onClick={() => {
-                              if (inList) {
-                                removeSongFromList(list.id, song.id);
-                              } else {
-                                addSongToList(list.id, song.id);
-                              }
-                            }}
-                          >
-                            {inList ? <Check size={13} /> : <Plus size={13} />}
-                            {list.name}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
           </section>
 
@@ -516,6 +479,44 @@ export default function SongView({ song, accentColor }: Props) {
 
           <div className="song-toolbar-row song-toolbar-row--actions">
             <div className="song-actions">
+              <div className="add-to-list-wrap" ref={menuRef}>
+                <button
+                  className="rec-btn rec-btn--toggle"
+                  onClick={() => setListMenuOpen((v) => !v)}
+                  title="Manage songlists"
+                  aria-label="Manage songlists"
+                >
+                  <ListPlus size={15} /> Songlists
+                </button>
+                {listMenuOpen && (
+                  <div className="list-dropdown">
+                    {songLists.length === 0 ? (
+                      <p className="list-dropdown-empty">No lists yet — create one in the sidebar</p>
+                    ) : (
+                      songLists.map((list) => {
+                        const inList = list.songIds.includes(song.id);
+                        return (
+                          <button
+                            key={list.id}
+                            className={`list-dropdown-item${inList ? ' in-list' : ''}`}
+                            onClick={() => {
+                              if (inList) {
+                                removeSongFromList(list.id, song.id);
+                              } else {
+                                addSongToList(list.id, song.id);
+                              }
+                            }}
+                          >
+                            {inList ? <Check size={13} /> : <Plus size={13} />}
+                            {list.name}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+
               <button
                 className="song-action-btn song-action-btn--edit"
                 onClick={() => navigate(`/songs/${song.id}/edit`)}
