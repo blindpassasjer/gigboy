@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // Set base to './' for GitHub Pages subdirectory deployment.
 // Override with VITE_BASE env var if deploying to a custom domain root.
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     VitePWA({
@@ -91,12 +91,14 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: true,
+        // Avoid noisy dev-only SW registration and no-op fetch warnings.
+        enabled: false,
       },
     }),
   ],
-  base: process.env.VITE_BASE ?? '/',
+  // Use relative assets in dev so reverse-proxy paths like /5173/ resolve correctly.
+  base: process.env.VITE_BASE ?? (command === 'serve' ? './' : '/'),
   server: {
     allowedHosts: ['code.manriquez.no', 'localhost', '127.0.0.1'],
   },
-})
+}))

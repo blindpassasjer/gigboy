@@ -1611,14 +1611,22 @@ input, select, textarea { font: inherit; color: var(--text); }
   row-gap: .45rem;
 }
 
-.song-view-header .song-toolbar-row--controls .transpose-control,
-.song-view-header .song-toolbar-row--controls .instrument-toggle {
+.song-view-header .song-toolbar-row--controls .transpose-control {
   border: 0;
   border-radius: 0;
   background: transparent;
   padding: 0;
   overflow: visible;
   gap: .45rem;
+}
+
+.song-view-header .song-toolbar-row--controls .instrument-toggle {
+  border: 1px solid color-mix(in srgb, var(--song-header-accent) 24%, var(--song-item-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--song-header-accent) 8%, var(--song-item-bg));
+  overflow: hidden;
+  padding: .1rem;
+  gap: .25rem;
 }
 
 .song-view-header .song-toolbar-row--controls .transpose-btn,
@@ -1640,14 +1648,22 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, #b91c1c 70%, #111);
 }
 
-.concert-tool-row .transpose-control,
-.concert-tool-row .instrument-toggle {
+.concert-tool-row .transpose-control {
   border: 0;
   border-radius: 0;
   background: transparent;
   padding: 0;
   overflow: visible;
   gap: .35rem;
+}
+
+.concert-tool-row .instrument-toggle {
+  border: 1px solid color-mix(in srgb, var(--song-header-accent) 24%, var(--song-item-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--song-header-accent) 8%, var(--song-item-bg));
+  overflow: hidden;
+  padding: .1rem;
+  gap: .25rem;
 }
 
 .concert-tool-row .song-toolbar-setting-label {
