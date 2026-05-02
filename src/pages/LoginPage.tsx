@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
@@ -39,6 +40,7 @@ function GitHubIcon() {
 
 export default function LoginPage() {
   const { login, register, loginWithGoogle, loginWithGithub, pendingLinkEmail, linkWithPassword, cancelPendingLink } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -75,6 +77,8 @@ export default function LoginPage() {
     if (err) {
       setError(err);
       setBusy(false);
+    } else {
+      navigate('/');
     }
   }
 
@@ -86,7 +90,7 @@ export default function LoginPage() {
       setError(err);
       setBusy(false);
     } else if (!pendingLinkEmail) {
-      // signed in successfully, nothing more to do
+      navigate('/');
     }
     setBusy(false);
   }
