@@ -2280,7 +2280,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: .6rem .8rem;
+  padding: .8rem .9rem;
   flex-wrap: wrap;
 }
 .recording-rename-row {
@@ -2347,12 +2347,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 .waveform-progress {
   flex: 1;
   min-width: 0;
-  height: 42px;
+  height: 58px;
   display: flex;
   align-items: center;
   cursor: pointer;
   border-radius: 8px;
-  padding: .2rem .3rem;
+  padding: .3rem .35rem;
   background: color-mix(in srgb, var(--surface) 70%, var(--bg));
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
 }
