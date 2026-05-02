@@ -27,10 +27,12 @@ type SortBy =
   | 'name-desc'
   | 'artist-asc'
   | 'artist-desc'
-  | 'language';
+  | 'language'
+  | 'date-asc'
+  | 'date-desc';
 
-const SORT_OPTIONS_WITH_CUSTOM: SortBy[] = ['custom', 'name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language'];
-const SORT_OPTIONS_NO_CUSTOM: SortBy[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language'];
+const SORT_OPTIONS_WITH_CUSTOM: SortBy[] = ['custom', 'name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language', 'date-asc', 'date-desc'];
+const SORT_OPTIONS_NO_CUSTOM: SortBy[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language', 'date-asc', 'date-desc'];
 
 function getInitialSortBy(canUseCustomOrder: boolean): SortBy {
   const fallback: SortBy = canUseCustomOrder ? 'custom' : 'name-asc';
@@ -208,6 +210,10 @@ export default function SongList({
       });
     } else if (sortBy === 'language') {
       sorted.sort((a, b) => languageName(a.language).localeCompare(languageName(b.language)) || a.title.localeCompare(b.title));
+    } else if (sortBy === 'date-asc') {
+      sorted.sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || a.title.localeCompare(b.title));
+    } else if (sortBy === 'date-desc') {
+      sorted.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || a.title.localeCompare(b.title));
     }
     return sorted;
   }, [songs, query, langFilter, sortBy]);
@@ -620,6 +626,8 @@ export default function SongList({
             <option value="artist-asc">Artist A → Z</option>
             <option value="artist-desc">Artist Z → A</option>
             <option value="language">Language</option>
+            <option value="date-desc">Date added (newest first)</option>
+            <option value="date-asc">Date added (oldest first)</option>
           </select>
         </div>
       </div>
