@@ -1640,6 +1640,30 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, #b91c1c 70%, #111);
 }
 
+.concert-tool-row .transpose-control,
+.concert-tool-row .instrument-toggle {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  overflow: visible;
+  gap: .35rem;
+}
+
+.concert-tool-row .song-toolbar-setting-label {
+  cursor: default;
+  min-width: 9.25rem;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.concert-tool-row .transpose-btn--reset.concert-chip-btn,
+.concert-tool-row .transpose-btn--reset.concert-chip-btn:hover {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+}
+
 .song-media-player {
   width: 100%;
   border: 1px solid var(--border);
@@ -4296,6 +4320,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
   background: var(--chord-bg);
+}
+
+.concert-chip-btn--active,
+.concert-chip-btn--active:hover {
+  color: var(--accent-contrast);
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+  background: var(--accent);
 }
 
 .concert-chip-btn--danger {
