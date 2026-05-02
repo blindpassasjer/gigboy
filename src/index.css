@@ -2359,21 +2359,23 @@ input, select, textarea { font: inherit; color: var(--text); }
 .waveform-progress__bars {
   width: 100%;
   height: 100%;
-  display: grid;
-  grid-template-columns: repeat(72, minmax(0, 1fr));
+  display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 1.5px;
 }
 .waveform-progress__bar {
-  width: 100%;
+  flex: 1;
   min-height: 12%;
   align-self: center;
   border-radius: 999px;
   background: color-mix(in srgb, var(--border) 68%, var(--muted));
-  transition: background .12s ease;
+  transition: background .08s ease;
 }
 .waveform-progress__bar--played {
   background: var(--accent);
+}
+.waveform-progress__bar--hover {
+  background: color-mix(in srgb, var(--accent) 48%, var(--border) 52%);
 }
 
 /* Audio Recorder */

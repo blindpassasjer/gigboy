@@ -66,8 +66,12 @@ export default function App() {
             background: 'var(--surface)',
             color: 'var(--text)',
             boxShadow: 'var(--shadow)',
+            padding: '0.7rem 0.8rem',
+            minWidth: '280px',
+            maxWidth: '420px',
           },
         }}
+        position="top-center"
       />
       <BrowserRouter>
         <Routes>

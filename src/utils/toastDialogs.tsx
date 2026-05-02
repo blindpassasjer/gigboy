@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import toast from 'react-hot-toast';
+import { getActiveToastAnchor, getAnchoredToastStyle } from './toastAnchor';
 
 const toastCardStyle = {
   border: '1px solid var(--border)',
@@ -44,6 +45,7 @@ export function showConfirmToast(
   options?: { confirmLabel?: string; cancelLabel?: string }
 ): Promise<boolean> {
   return new Promise((resolve) => {
+    const anchor = getActiveToastAnchor();
     let toastId = '';
     let settled = false;
 
@@ -59,7 +61,7 @@ export function showConfirmToast(
 
     toastId = toast.custom(
       () => (
-        <div style={toastCardStyle} role="dialog" aria-live="assertive">
+        <div style={{ ...toastCardStyle, ...getAnchoredToastStyle(anchor) }} role="dialog" aria-live="assertive">
           <p>{message}</p>
           <div style={toastActionsStyle}>
             <button style={toastBtnStyle} onClick={() => settle(false)}>
@@ -83,6 +85,7 @@ interface PromptToastProps {
   placeholder?: string;
   confirmLabel: string;
   cancelLabel: string;
+  anchorStyle: CSSProperties;
   onSubmit: (value: string | null) => void;
 }
 
@@ -93,6 +96,7 @@ function PromptToast({
   placeholder,
   confirmLabel,
   cancelLabel,
+  anchorStyle,
   onSubmit,
 }: PromptToastProps) {
   const [value, setValue] = useState(initialValue);
@@ -100,7 +104,7 @@ function PromptToast({
   const submit = () => onSubmit(value);
 
   return (
-    <div style={toastCardStyle} role="dialog" aria-live="assertive">
+    <div style={{ ...toastCardStyle, ...anchorStyle }} role="dialog" aria-live="assertive">
       <label style={{ display: 'block', fontSize: '0.88rem' }}>
         {label}
         <input
@@ -157,6 +161,7 @@ export function showPromptToast(
   }
 ): Promise<string | null> {
   return new Promise((resolve) => {
+    const anchor = getActiveToastAnchor();
     let toastId = '';
     let settled = false;
 
@@ -179,6 +184,7 @@ export function showPromptToast(
           placeholder={options?.placeholder}
           confirmLabel={options?.confirmLabel ?? 'Save'}
           cancelLabel={options?.cancelLabel ?? 'Cancel'}
+          anchorStyle={getAnchoredToastStyle(anchor)}
           onSubmit={settle}
         />
       ),

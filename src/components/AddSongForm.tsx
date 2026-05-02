@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useBeforeUnload, useNavigate, useBlocker } from 'react-router-dom';
 import { Save, Wand2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../utils/anchoredToast';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordProToolbar from './ChordProToolbar';

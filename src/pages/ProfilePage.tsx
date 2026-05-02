@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { KeyRound, LogOut, Mail, User as UserIcon } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import UserAvatar from '../components/UserAvatar';
 import { AVATAR_OPTIONS } from '../lib/avatars';

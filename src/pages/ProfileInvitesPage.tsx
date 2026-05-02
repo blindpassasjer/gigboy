@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../utils/anchoredToast';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';

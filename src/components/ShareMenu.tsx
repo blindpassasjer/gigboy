@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Mail, Send, Share2, Users } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import { isValidEmail } from '../lib/collaboration';

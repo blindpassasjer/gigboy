@@ -6,7 +6,7 @@ import type { User } from '../context/AuthContext';
 import type { RecordingsScope, SongRecording } from '../lib/songRecordings';
 import { showConfirmToast } from '../utils/toastDialogs';
 
-const WAVEFORM_SAMPLES = 72;
+const WAVEFORM_SAMPLES = 100;
 
 interface Props {
   song: Song;
@@ -83,6 +83,7 @@ function computeWaveformPeaks(channelData: Float32Array, samples = WAVEFORM_SAMP
 
 function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className }: WaveformProgressProps) {
   const [bars, setBars] = useState<number[] | null>(null);
+  const [hoverRatio, setHoverRatio] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,10 +118,17 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className }: 
 
   const waveformBars = bars ?? Array.from({ length: WAVEFORM_SAMPLES }, () => 0.24);
 
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoverRatio((e.clientX - rect.left) / rect.width);
+  }
+
   return (
     <div
       className={`waveform-progress${className ? ` ${className}` : ''}`}
       onClick={onSeek}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHoverRatio(null)}
       role="slider"
       aria-label={ariaLabel}
       aria-valuemin={0}
@@ -129,13 +137,14 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className }: 
     >
       <div className="waveform-progress__bars" aria-hidden="true">
         {waveformBars.map((height, index) => {
-          const playedThreshold = ((index + 1) / waveformBars.length);
-          const isPlayed = playedThreshold <= progress;
+          const barRatio = (index + 1) / waveformBars.length;
+          const isPlayed = barRatio <= progress;
+          const isHovered = !isPlayed && hoverRatio !== null && barRatio <= hoverRatio;
 
           return (
             <span
               key={`${audioUrl}-${index}`}
-              className={`waveform-progress__bar${isPlayed ? ' waveform-progress__bar--played' : ''}`}
+              className={`waveform-progress__bar${isPlayed ? ' waveform-progress__bar--played' : isHovered ? ' waveform-progress__bar--hover' : ''}`}
               style={{ height: `${Math.round(height * 100)}%` }}
             />
           );

@@ -17,7 +17,7 @@ import {
   Play,
   Mic,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../utils/anchoredToast';
 import type { HandNoteStroke, Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
