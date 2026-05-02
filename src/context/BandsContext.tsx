@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { collection, deleteDoc, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 import type { Band, CollaborationPermission, Setlist, Song, SongList } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
 import {
@@ -321,13 +321,23 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
 
-    refreshBands()
-      .catch((error) => {
-        console.error('Failed to load bands from Firestore.', error);
-      })
-      .finally(() => {
+    const bandsQuery = query(collection(db, BANDS_COLLECTION), where('memberIds', 'array-contains', userId));
+    const unsubscribe = onSnapshot(
+      bandsQuery,
+      (snapshot) => {
+        const nextBands = snapshot.docs
+          .map((entry) => normalizeBand(entry.id, entry.data() as Record<string, unknown>))
+          .sort(compareBands);
+        setBands(nextBands);
         setLoading(false);
-      });
+      },
+      (error) => {
+        console.error('Failed to subscribe to bands from Firestore.', error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
   }, [refreshBands, userId]);
 
   const refreshBandSongs = useCallback(async (bandId: string) => {

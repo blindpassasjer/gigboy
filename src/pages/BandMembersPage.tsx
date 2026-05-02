@@ -211,20 +211,6 @@ export default function BandMembersPage() {
           ) : null}
         </section>
 
-        {isOwner && (
-          <section className="bands-panel bands-panel--danger">
-            <h3>Danger zone</h3>
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--danger"
-              disabled={busyDeleteBand}
-              onClick={() => void handleDeleteBand()}
-            >
-              {busyDeleteBand ? 'Deleting…' : 'Delete band'}
-            </button>
-          </section>
-        )}
-
         <section className="bands-panel">
           <h3>Members</h3>
           <ul className="bands-members-list">
@@ -286,6 +272,20 @@ export default function BandMembersPage() {
             })}
           </ul>
         </section>
+
+        {isOwner && (
+          <section className="bands-panel bands-panel--danger">
+            <h3>Danger zone</h3>
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--danger"
+              disabled={busyDeleteBand}
+              onClick={() => void handleDeleteBand()}
+            >
+              {busyDeleteBand ? 'Deleting…' : 'Delete band'}
+            </button>
+          </section>
+        )}
       </div>
     </section>
   );

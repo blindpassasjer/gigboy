@@ -317,6 +317,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   );
 
   const isMyAllSongsActive = pathname === '/' && activeSongListId === null && activeSetlistId === null;
+  const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
 
   return (
     <div className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}`}>
@@ -468,14 +469,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 aria-haspopup="listbox"
                 aria-expanded={bandSwitcherOpen}
               >
-                {(() => {
-                  const ab = bands.find((b) => b.id === activeBandId);
-                  return ab?.icon
-                    ? <span className="sidebar-list-icon" aria-hidden="true">{ab.icon}</span>
-                    : <Users size={13} />;
-                })()}
+                {effectiveActiveBand?.icon
+                  ? <span className="sidebar-list-icon" aria-hidden="true">{effectiveActiveBand.icon}</span>
+                  : <Users size={13} />}
                 <span className="sidebar-band-switcher-name">
-                  {bands.find((b) => b.id === activeBandId)?.name ?? 'Bands'}
+                  {effectiveActiveBand?.name ?? ''}
                 </span>
                 <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
               </button>
