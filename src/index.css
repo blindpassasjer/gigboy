@@ -2283,6 +2283,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .8rem .9rem;
   flex-wrap: wrap;
 }
+.audio-player--saved {
+  flex-direction: column;
+  align-items: stretch;
+  gap: .6rem;
+}
 .recording-rename-row {
   display: flex;
   align-items: center;
@@ -2330,7 +2335,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   transition: background .15s;
 }
 .play-btn:hover { background: var(--accent-h); }
-.player-info { display: flex; flex-direction: column; min-width: 100px; }
+.player-info { display: flex; flex-direction: column; min-width: 100px; flex: 1; }
 .player-name { font-size: .85rem; font-weight: 600; }
 .player-name-input {
   width: 100%;
@@ -2439,6 +2444,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   align-items: center;
   gap: .75rem;
+  width: 100%;
 }
 .recorder-preview-bar {
   height: 52px;

@@ -220,7 +220,7 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
   const canDelete = !isBandContext || recording.recorder?.userId === currentUserId;
 
   return (
-    <li className="audio-player">
+    <li className="audio-player audio-player--saved">
       <audio
         ref={audioRef}
         src={recording.downloadUrl}
@@ -232,90 +232,97 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
           if (el && el.duration > 0) setProgress(el.currentTime / el.duration);
         }}
       />
-      <button className="play-btn" onClick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Play'}>
-        {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-      </button>
+      <div className="recorder-preview-playback">
+        <button className="play-btn" onClick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Play'}>
+          {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+        </button>
 
-      <div className="player-info">
-        {renaming ? (
-          <input
-            ref={renameInputRef}
-            className="player-name-input"
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onBlur={confirmRename}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') confirmRename();
-              if (e.key === 'Escape') cancelRename();
-            }}
-            aria-label="Rename recording"
-          />
-        ) : (
-          <span className="player-name" title={recording.name}>{recording.name}</span>
-        )}
-        <span className="player-date">
-          {new Date(recording.createdAt).toLocaleString()} · {formatFileSize(recording.sizeBytes)}
-        </span>
+        <WaveformProgress
+          audioUrl={recording.downloadUrl}
+          progress={progress}
+          onSeek={handleSeek}
+          ariaLabel="Seek"
+          className="recorder-preview-bar"
+        />
+
+        <span className="recorder-elapsed" title="Duration">{formatTime(recording.durationMs)}</span>
       </div>
 
-      <WaveformProgress
-        audioUrl={recording.downloadUrl}
-        progress={progress}
-        onSeek={handleSeek}
-        ariaLabel="Seek"
-      />
+      <div className="recording-rename-row">
+        <div className="player-info">
+          {renaming ? (
+            <input
+              ref={renameInputRef}
+              className="player-name-input"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onBlur={confirmRename}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmRename();
+                if (e.key === 'Escape') cancelRename();
+              }}
+              aria-label="Rename recording"
+            />
+          ) : (
+            <span className="player-name" title={recording.name}>{recording.name}</span>
+          )}
+          <span className="player-date">
+            {new Date(recording.createdAt).toLocaleString()} · {formatFileSize(recording.sizeBytes)}
+          </span>
+        </div>
 
-      {isBandContext && recording.recorder && (
-        <RecorderAvatar
-          avatar={recording.recorder.avatar}
-          name={recording.recorder.displayName}
-        />
-      )}
+        {isBandContext && recording.recorder && (
+          <RecorderAvatar
+            avatar={recording.recorder.avatar}
+            name={recording.recorder.displayName}
+          />
+        )}
 
-      {canRename && (
-        renaming ? (
-          <>
+        {canRename && (
+          renaming ? (
+            <>
+              <button
+                className="icon-btn icon-btn--confirm"
+                onClick={confirmRename}
+                aria-label="Confirm rename"
+                title="Confirm"
+              >
+                <Check size={14} />
+              </button>
+              <button
+                className="icon-btn icon-btn--cancel"
+                onClick={cancelRename}
+                aria-label="Cancel rename"
+                title="Cancel"
+              >
+                <X size={14} />
+              </button>
+            </>
+          ) : (
             <button
-              className="icon-btn icon-btn--confirm"
-              onClick={confirmRename}
-              aria-label="Confirm rename"
-              title="Confirm"
+              className="icon-btn icon-btn--rename"
+              onClick={openRename}
+              aria-label={`Rename recording ${recording.name}`}
+              title="Rename"
             >
-              <Check size={14} />
+              <Pencil size={14} />
             </button>
-            <button
-              className="icon-btn icon-btn--cancel"
-              onClick={cancelRename}
-              aria-label="Cancel rename"
-              title="Cancel"
-            >
-              <X size={14} />
-            </button>
-          </>
-        ) : (
+          )
+        )}
+
+        {canDelete && (
           <button
-            className="icon-btn icon-btn--rename"
-            onClick={openRename}
-            aria-label={`Rename recording ${recording.name}`}
-            title="Rename"
+            className="icon-btn icon-btn--delete"
+            onClick={() => {
+              void confirmDelete();
+            }}
+            aria-label={`Delete recording ${recording.name}`}
+            title="Delete"
           >
-            <Pencil size={14} />
+            <Trash2 size={14} />
           </button>
-        )
-      )}
-
-      {canDelete && (
-        <button
-          className="icon-btn icon-btn--delete"
-          onClick={() => {
-            void confirmDelete();
-          }}
-          aria-label={`Delete recording ${recording.name}`}
-          title="Delete"
-        >
-          <Trash2 size={14} />
-        </button>
-      )}
+        )}
+      </div>
     </li>
   );
 }
