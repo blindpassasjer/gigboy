@@ -359,17 +359,6 @@ export default function SongView({ song, accentColor }: Props) {
 
             {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes)) && (
               <div className="song-toolbar-tools-grid">
-                {showMetronome && (
-                  <div className="song-toolbar-tool-card">
-                    <span className="song-toolbar-tool-card-title">Metronome</span>
-                    <VisualMetronome
-                      tempo={song.tempo}
-                      timeSignature={song.timeSignature}
-                      className="song-view-metronome"
-                    />
-                  </div>
-                )}
-
                 {showTuner && (
                   <div className="song-toolbar-tool-card">
                     <span className="song-toolbar-tool-card-title">Tuner</span>
@@ -377,13 +366,13 @@ export default function SongView({ song, accentColor }: Props) {
                   </div>
                 )}
 
-                {media && showMediaPlayer && song.playbackUrl && (
-                  <div className="song-toolbar-tool-card song-toolbar-tool-card--media">
-                    <span className="song-toolbar-tool-card-title">Player</span>
-                    <SongMediaPlayer
-                      mediaUrl={song.playbackUrl}
-                      autoPlay={autoPlayMediaOnOpen}
-                      onAutoPlayHandled={() => setAutoPlayMediaOnOpen(false)}
+                {showMetronome && (
+                  <div className="song-toolbar-tool-card">
+                    <span className="song-toolbar-tool-card-title">Metronome</span>
+                    <VisualMetronome
+                      tempo={song.tempo}
+                      timeSignature={song.timeSignature}
+                      className="song-view-metronome"
                     />
                   </div>
                 )}
@@ -471,6 +460,17 @@ export default function SongView({ song, accentColor }: Props) {
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {media && showMediaPlayer && song.playbackUrl && (
+                  <div className="song-toolbar-tool-card song-toolbar-tool-card--media">
+                    <span className="song-toolbar-tool-card-title">Player</span>
+                    <SongMediaPlayer
+                      mediaUrl={song.playbackUrl}
+                      autoPlay={autoPlayMediaOnOpen}
+                      onAutoPlayHandled={() => setAutoPlayMediaOnOpen(false)}
+                    />
                   </div>
                 )}
               </div>
