@@ -268,26 +268,36 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               </button>
 
               {showChords && (
-                <button
-                  type="button"
-                  className="instrument-toggle-btn song-toolbar-tool-btn song-toolbar-tool-btn--active"
-                  onClick={() => { setChordInstrument((i) => i === 'guitar' ? 'piano' : 'guitar'); setActiveChord(null); }}
-                  aria-label="Toggle instrument"
-                  title="Toggle instrument"
-                >
-                  {chordInstrument === 'guitar' ? 'Guitar' : 'Piano'}
-                </button>
+                <div className="instrument-toggle">
+                  <button
+                    className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
+                    onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
+                  >
+                    Guitar
+                  </button>
+                  <button
+                    className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
+                    onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
+                  >
+                    Piano
+                  </button>
+                </div>
               )}
 
-              <button
-                type="button"
-                className="song-toolbar-tool-btn song-toolbar-tool-btn--active"
-                onClick={() => setChordNotation((n) => n === 'anglo' ? 'spanish' : 'anglo')}
-                aria-label="Toggle chord notation"
-                title="Toggle chord notation"
-              >
-                {chordNotation === 'anglo' ? 'C D E' : 'Do Re Mi'}
-              </button>
+              <div className="instrument-toggle">
+                <button
+                  className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => setChordNotation('anglo')}
+                >
+                  C D E
+                </button>
+                <button
+                  className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => setChordNotation('spanish')}
+                >
+                  Do Re Mi
+                </button>
+              </div>
             </div>
 
             <div className="song-toolbar-row song-toolbar-row--meta">

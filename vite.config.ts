@@ -97,6 +97,6 @@ export default defineConfig({
   ],
   base: process.env.VITE_BASE ?? '/',
   server: {
-    allowedHosts: ['code.manriquez.no'],
+    allowedHosts: ['code.manriquez.no', 'localhost', '127.0.0.1'],
   },
 })
