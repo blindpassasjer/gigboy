@@ -1,26 +1,31 @@
 /// <reference types="@cloudflare/workers-types" />
-import { getToken, getSession } from '../_helpers/auth';
+import { verifyFirebaseIdToken } from '../_helpers/auth';
+
+interface Env {
+  FIREBASE_PROJECT_ID?: string;
+}
 
 interface Data extends Record<string, unknown> {
   userId?: string;
 }
 
-export const onRequest: PagesFunction<never, never, Data> = async (ctx) => {
+export const onRequest: PagesFunction<Env, never, Data> = async (ctx) => {
   const path = new URL(ctx.request.url).pathname;
   if (path.startsWith('/api/auth/') || path.startsWith('/api/health/')) return ctx.next();
 
-  const fallbackUserId = ctx.request.headers.get('x-folio-user-id')?.trim();
-  if (fallbackUserId) {
-    ctx.data.userId = fallbackUserId;
-    return ctx.next();
+  const authHeader = ctx.request.headers.get('Authorization');
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+  if (!bearerToken) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const projectId = ctx.env.FIREBASE_PROJECT_ID;
+  if (!projectId) {
+    console.error('FIREBASE_PROJECT_ID is not configured');
+    return Response.json({ error: 'Server misconfiguration' }, { status: 500 });
   }
 
-  const token = getToken(ctx.request);
-  if (!token) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const result = await verifyFirebaseIdToken(bearerToken, projectId);
+  if (!result) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const session = await getSession(token);
-  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-  ctx.data.userId = session.user_id;
+  ctx.data.userId = result.uid;
   return ctx.next();
 };

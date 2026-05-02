@@ -12,7 +12,7 @@ import type { BandInvite, CollaborationInvite } from '../types';
 
 export default function ProfileInvitesPage() {
   const { user } = useAuth();
-  const { bands } = useBands();
+  const { bands, refreshBands } = useBands();
   const [loading, setLoading] = useState(true);
   const [invites, setInvites] = useState<CollaborationInvite[]>([]);
   const [bandInvites, setBandInvites] = useState<BandInvite[]>([]);
@@ -174,6 +174,7 @@ export default function ProfileInvitesPage() {
         inviteId: invite.id,
       });
       setBandInvites((prev) => prev.filter((entry) => entry.id !== invite.id));
+      await refreshBands();
       toast.success('Band invite accepted.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to accept band invite.';

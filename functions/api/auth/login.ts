@@ -1,7 +1,9 @@
 /// <reference types="@cloudflare/workers-types" />
 
 export const onRequestPost: PagesFunction<never> = async (ctx) => {
-  const { username, password } = await ctx.request.json<{ username: string; password: string }>();
+  const body = await ctx.request.json<{ username: string; password: string }>().catch(() => null);
+  if (!body) return Response.json({ error: 'Invalid request body.' }, { status: 400 });
+  const { username, password } = body;
 
   if (!username?.trim() || !password) {
     return Response.json({ error: 'Username and password required' }, { status: 400 });

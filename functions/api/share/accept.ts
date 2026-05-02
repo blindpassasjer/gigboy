@@ -19,7 +19,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   }
 
   const userEmail = ctx.request.headers.get('x-folio-user-email')?.trim().toLowerCase() ?? '';
-  const body = await ctx.request.json<{ inviteId?: string }>();
+  const body = await ctx.request.json<{ inviteId?: string }>().catch(() => null);
+  if (!body) return Response.json({ error: 'Invalid request body.' }, { status: 400 });
   const inviteId = body.inviteId?.trim();
 
   if (!inviteId) {

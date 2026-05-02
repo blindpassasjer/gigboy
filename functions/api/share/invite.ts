@@ -42,7 +42,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     resourceId?: string;
     resourceName?: string;
     permission?: 'viewer' | 'editor';
-  }>();
+  }>().catch(() => null);
+  if (!body) return Response.json({ error: 'Invalid request body.' }, { status: 400 });
 
   const recipientQuery = body.recipientQuery?.trim() ?? body.recipientEmail?.trim() ?? '';
   const resourceType = body.resourceType;

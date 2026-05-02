@@ -1,22 +1,23 @@
 import type { CollaborationPermission } from '../types';
+import { auth } from './firebase';
 
 interface ApiHeaders {
   userId: string;
   userEmail: string;
 }
 
-function buildHeaders(headers: ApiHeaders) {
+async function buildHeaders(_headers: ApiHeaders) {
+  const token = await auth?.currentUser?.getIdToken();
   return {
     'Content-Type': 'application/json',
-    'x-folio-user-id': headers.userId,
-    'x-folio-user-email': headers.userEmail,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
 async function postJson<T>(path: string, body: Record<string, unknown>, headers: ApiHeaders): Promise<T> {
   const response = await fetch(path, {
     method: 'POST',
-    headers: buildHeaders(headers),
+    headers: await buildHeaders(headers),
     body: JSON.stringify(body),
   });
 

@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import type { ReactNode } from 'react';
 import {
   EmailAuthProvider,
+  type AuthProvider,
   GithubAuthProvider,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
@@ -12,9 +13,11 @@ import {
   updateEmail,
   updatePassword,
   signInWithPopup,
+  signInWithRedirect,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
+import type { FirebaseError } from 'firebase/app';
 import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { changeUsername, claimUsername, loadUserProfile, updateProfileFields } from '../lib/userProfiles';
@@ -140,31 +143,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loginWithGoogle = useCallback(async (): Promise<string | null> => {
+  const formatAuthError = useCallback((err: unknown, providerLabel?: string): string => {
+    const fallback = providerLabel ? `${providerLabel} sign-in failed` : 'Authentication failed';
+
+    if (!(err instanceof Error)) {
+      return fallback;
+    }
+
+    const code = (err as FirebaseError).code;
+    if (!code) {
+      return err.message || fallback;
+    }
+
+    if (code === 'auth/unauthorized-domain') {
+      return 'This domain is not authorized for Firebase Authentication. Add it under Firebase Console -> Authentication -> Settings -> Authorized domains.';
+    }
+
+    if (code === 'auth/operation-not-allowed') {
+      return providerLabel
+        ? `${providerLabel} sign-in is not enabled in Firebase Console.`
+        : 'This sign-in method is not enabled in Firebase Console.';
+    }
+
+    if (code === 'auth/popup-closed-by-user') {
+      return 'Sign-in popup was closed before completing authentication.';
+    }
+
+    if (code === 'auth/account-exists-with-different-credential') {
+      return 'An account already exists with this email using a different sign-in method.';
+    }
+
+    return err.message || fallback;
+  }, []);
+
+  const loginWithProvider = useCallback(async (provider: AuthProvider, providerLabel: string): Promise<string | null> => {
     if (!auth) {
       return firebaseConfigError ?? 'Firebase authentication is not configured.';
     }
 
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      await signInWithPopup(auth, provider);
       return null;
     } catch (err: unknown) {
-      return err instanceof Error ? err.message : 'Google sign-in failed';
+      const code = err instanceof Error ? (err as FirebaseError).code : undefined;
+      const shouldFallbackToRedirect = code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request';
+
+      if (shouldFallbackToRedirect) {
+        try {
+          await signInWithRedirect(auth, provider);
+          return null;
+        } catch (redirectError: unknown) {
+          return formatAuthError(redirectError, providerLabel);
+        }
+      }
+
+      return formatAuthError(err, providerLabel);
     }
-  }, []);
+  }, [formatAuthError]);
+
+  const loginWithGoogle = useCallback(async (): Promise<string | null> => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    return loginWithProvider(provider, 'Google');
+  }, [loginWithProvider]);
 
   const loginWithGithub = useCallback(async (): Promise<string | null> => {
-    if (!auth) {
-      return firebaseConfigError ?? 'Firebase authentication is not configured.';
-    }
-
-    try {
-      await signInWithPopup(auth, new GithubAuthProvider());
-      return null;
-    } catch (err: unknown) {
-      return err instanceof Error ? err.message : 'GitHub sign-in failed';
-    }
-  }, []);
+    return loginWithProvider(new GithubAuthProvider(), 'GitHub');
+  }, [loginWithProvider]);
 
   const completeUsername = useCallback(async (username: string) => {
     if (!db || !auth?.currentUser) {

@@ -15,7 +15,7 @@ function songHandNotesPath(ownerId: string, songId: string) {
   return ['users', ownerId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION] as const;
 }
 
-function clamp01(value: number) {
+export function clamp01(value: number) {
   if (!Number.isFinite(value)) return 0;
   if (value < 0) return 0;
   if (value > 1) return 1;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { clamp01 } from '../lib/songHandNotes';
 import type { HandNoteStroke, SongHandNoteDocument } from '../types';
 
 interface Props {
@@ -17,12 +18,6 @@ interface ActiveStrokeState {
   width: number;
   points: number[];
   createdAt: string;
-}
-
-function clamp01(value: number) {
-  if (value < 0) return 0;
-  if (value > 1) return 1;
-  return value;
 }
 
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: HandNoteStroke | ActiveStrokeState, width: number, height: number) {

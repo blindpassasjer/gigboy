@@ -20,7 +20,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     bandId?: string;
     recipientUsername?: string;
     role?: 'viewer' | 'editor';
-  }>();
+  }>().catch(() => null);
+  if (!body) return Response.json({ error: 'Invalid request body.' }, { status: 400 });
 
   const bandId = body.bandId?.trim() ?? '';
   const recipientUsername = body.recipientUsername?.trim() ?? '';

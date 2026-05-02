@@ -19,7 +19,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await ctx.request.json<{ query?: string }>();
+  const body = await ctx.request.json<{ query?: string }>().catch(() => null);
+  if (!body) return Response.json({ error: 'Invalid request body.' }, { status: 400 });
   const query = normalize(body.query ?? '');
   if (query.length < 2) {
     return Response.json({ recipients: [] });

@@ -250,6 +250,7 @@ interface BandsContextValue {
   bandSetlistsByBandId: Record<string, Setlist[]>;
   loading: boolean;
   cloudRequired: boolean;
+  refreshBands: () => Promise<void>;
   createBand: (name: string, description?: string, icon?: string) => Promise<{ bandId: string | null; error: string | null }>;
   deleteBand: (bandId: string) => Promise<string | null>;
   renameBand: (bandId: string, name: string) => Promise<string | null>;
@@ -295,6 +296,19 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandSetlistsByBandId, setBandSetlistsByBandId] = useState<Record<string, Setlist[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
 
+  const refreshBands = useCallback(async () => {
+    if (!db || !userId) {
+      setBands([]);
+      return;
+    }
+
+    const snapshot = await getDocs(query(collection(db, BANDS_COLLECTION), where('memberIds', 'array-contains', userId)));
+    const nextBands = snapshot.docs
+      .map((entry) => normalizeBand(entry.id, entry.data() as Record<string, unknown>))
+      .sort(compareBands);
+    setBands(nextBands);
+  }, [userId]);
+
   useEffect(() => {
     if (!db || !userId) {
       setBands([]);
@@ -307,20 +321,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
 
-    getDocs(query(collection(db, BANDS_COLLECTION), where('memberIds', 'array-contains', userId)))
-      .then((snapshot) => {
-        const nextBands = snapshot.docs
-          .map((entry) => normalizeBand(entry.id, entry.data() as Record<string, unknown>))
-          .sort(compareBands);
-        setBands(nextBands);
-      })
+    refreshBands()
       .catch((error) => {
         console.error('Failed to load bands from Firestore.', error);
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [userId]);
+  }, [refreshBands, userId]);
 
   const refreshBandSongs = useCallback(async (bandId: string) => {
     if (!db || !userId) return;
@@ -1402,6 +1410,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     bandSetlistsByBandId,
     loading,
     cloudRequired: !firebaseEnabled,
+    refreshBands,
     createBand,
     deleteBand,
     renameBand,
@@ -1441,6 +1450,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     bandSongsByBandId,
     bands,
     changeMemberRole,
+    refreshBands,
     createBand,
     deleteBandSetlist,
     deleteBandSongList,
