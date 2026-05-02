@@ -72,8 +72,10 @@ export default function Layout({ children }: Props) {
   useEffect(() => {
     const leavingConcertRoute = wasConcertRouteRef.current && !isConcertRoute;
 
-    if (isNarrowViewport || isConcertRoute || leavingConcertRoute) {
+    if (isNarrowViewport || isConcertRoute) {
       setSidebarOpen(false);
+    } else if (leavingConcertRoute) {
+      setSidebarOpen(true);
     }
 
     wasConcertRouteRef.current = isConcertRoute;

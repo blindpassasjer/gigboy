@@ -3913,6 +3913,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   gap: .5rem;
   flex-wrap: wrap;
+  margin-top: .65rem;
 }
 
 .concert-topbar-toggle-row--with-topbar {
@@ -4477,6 +4478,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .concert-mode {
     gap: .75rem;
+  }
+
+  .concert-topbar-toggle-row {
+    margin-top: .45rem;
   }
 
   .concert-topbar-toggle-row--with-topbar {
