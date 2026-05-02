@@ -16,6 +16,8 @@ import {
   Trash2,
   Play,
   Mic,
+  Gauge,
+  Clock3,
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { HandNoteStroke, Song } from '../types';
@@ -315,6 +317,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 title={showTuner ? 'Hide tuner' : 'Show tuner'}
                 aria-label={showTuner ? 'Hide tuner' : 'Show tuner'}
               >
+                <Gauge size={14} />
                 Tuner
               </button>
 
@@ -325,6 +328,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 title={showMetronome ? 'Hide metronome' : 'Show metronome'}
                 aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
               >
+                <Clock3 size={14} />
                 Metronome
               </button>
 
