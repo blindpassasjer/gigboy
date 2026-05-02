@@ -251,55 +251,43 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 )}
               </div>
 
-              <div className="chords-group">
+              <button
+                type="button"
+                className={`song-toolbar-tool-btn${showChords ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => {
+                  setShowChords((prev) => {
+                    const next = !prev;
+                    if (!next) setActiveChord(null);
+                    return next;
+                  });
+                }}
+                aria-label={showChords ? 'Hide chords' : 'Show chords'}
+                title={showChords ? 'Hide chords' : 'Show chords'}
+              >
+                Chords
+              </button>
+
+              {showChords && (
                 <button
                   type="button"
-                  className={`song-toolbar-tool-btn${showChords ? ' song-toolbar-tool-btn--active' : ''}`}
-                  onClick={() => {
-                    setShowChords((prev) => {
-                      const next = !prev;
-                      if (!next) setActiveChord(null);
-                      return next;
-                    });
-                  }}
-                  aria-label={showChords ? 'Hide chords' : 'Show chords'}
-                  title={showChords ? 'Hide chords' : 'Show chords'}
+                  className="instrument-toggle-btn song-toolbar-tool-btn song-toolbar-tool-btn--active"
+                  onClick={() => { setChordInstrument((i) => i === 'guitar' ? 'piano' : 'guitar'); setActiveChord(null); }}
+                  aria-label="Toggle instrument"
+                  title="Toggle instrument"
                 >
-                  Chords
+                  {chordInstrument === 'guitar' ? 'Guitar' : 'Piano'}
                 </button>
+              )}
 
-                {showChords && (
-                  <div className="instrument-toggle chords-group__instrument">
-                    <button
-                      className={`instrument-toggle-btn song-toolbar-tool-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
-                      onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
-                    >
-                      Guitar
-                    </button>
-                    <button
-                      className={`instrument-toggle-btn song-toolbar-tool-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
-                      onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
-                    >
-                      Piano
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="instrument-toggle song-toolbar-controls-group">
-                <button
-                  className={`instrument-toggle-btn song-toolbar-tool-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
-                  onClick={() => setChordNotation('anglo')}
-                >
-                  C D E
-                </button>
-                <button
-                  className={`instrument-toggle-btn song-toolbar-tool-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
-                  onClick={() => setChordNotation('spanish')}
-                >
-                  Do Re Mi
-                </button>
-              </div>
+              <button
+                type="button"
+                className="song-toolbar-tool-btn song-toolbar-tool-btn--active"
+                onClick={() => setChordNotation((n) => n === 'anglo' ? 'spanish' : 'anglo')}
+                aria-label="Toggle chord notation"
+                title="Toggle chord notation"
+              >
+                {chordNotation === 'anglo' ? 'C D E' : 'Do Re Mi'}
+              </button>
             </div>
 
             <div className="song-toolbar-row song-toolbar-row--meta">
