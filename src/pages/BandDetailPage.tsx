@@ -339,6 +339,7 @@ export default function BandDetailPage() {
           onRemoveSong={(song) => {
             void removeSongFromBandSongList(band.id, activeBandSongList.id, song.id);
           }}
+          bandId={band.id}
         />
       </section>
     );
@@ -384,6 +385,7 @@ export default function BandDetailPage() {
           onRemoveSong={(song) => {
             void removeSongFromBandSetlist(band.id, activeBandSetlist.id, song.id);
           }}
+          bandId={band.id}
         />
       </section>
     );
@@ -416,6 +418,7 @@ export default function BandDetailPage() {
         onUpdateListAppearance={canEditBand ? (appearance) => {
           void updateBandLibraryIcon(band.id, appearance.icon);
         } : undefined}
+        bandId={band.id}
       />
 
       {showMembersModal && (

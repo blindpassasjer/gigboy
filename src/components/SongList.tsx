@@ -90,6 +90,8 @@ interface Props {
   onRemoveSong?: (song: Song) => void;
   onAddSong?: (songId: string) => void;
   onAddSongsClick?: () => void;
+  /** When songs belong to a band, pass the bandId so SongView can use band recordings */
+  bandId?: string;
 }
 
 export default function SongList({
@@ -109,6 +111,7 @@ export default function SongList({
   onRemoveSong,
   onAddSong,
   onAddSongsClick,
+  bandId,
 }: Props) {
   const { pathname } = useLocation();
   const [query, setQuery] = useState('');
@@ -140,7 +143,7 @@ export default function SongList({
   const songNodeRefs = useRef<Map<string, HTMLElement>>(new Map());
   const canDragReorder = Boolean(onMoveSong);
   const songPageStateBase = listName
-    ? { backTo: pathname, backLabel: listName }
+    ? { backTo: pathname, backLabel: listName, bandId: bandId ?? undefined }
     : undefined;
 
   const canAddSongsToList = Boolean(allSongs && onAddSong);

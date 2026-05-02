@@ -41,6 +41,8 @@ import { parseSongMedia } from '../utils/songMedia';
 interface Props {
   song: Song;
   accentColor?: string;
+  /** Present when song is viewed from a band context */
+  bandId?: string;
 }
 
 interface ActiveChord {
@@ -48,7 +50,7 @@ interface ActiveChord {
   rect: DOMRect;
 }
 
-export default function SongView({ song, accentColor }: Props) {
+export default function SongView({ song, accentColor, bandId }: Props) {
   const navigate = useNavigate();
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
@@ -493,7 +495,7 @@ export default function SongView({ song, accentColor }: Props) {
 
                 {user && showRecorder && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--recorder">
-                    <SongRecorder song={song} user={user} />
+                    <SongRecorder song={song} user={user} bandId={bandId} />
                   </div>
                 )}
               </div>

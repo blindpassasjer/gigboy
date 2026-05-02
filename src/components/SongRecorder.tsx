@@ -3,11 +3,13 @@ import { Mic, MicOff, Play, Pause, Trash2, Save, X } from 'lucide-react';
 import { useSongRecordings } from '../hooks/useSongRecordings';
 import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
-import type { SongRecording } from '../lib/songRecordings';
+import type { RecordingsScope, SongRecording } from '../lib/songRecordings';
 
 interface Props {
   song: Song;
   user: User;
+  /** Present when viewing a band song — recordings are stored under the band */
+  bandId?: string;
 }
 
 type RecorderState = 'idle' | 'recording' | 'preview';
@@ -33,12 +35,22 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function RecorderAvatar({ avatar, name }: { avatar: string | null; name: string }) {
+  if (avatar) {
+    return <span className="rec-avatar rec-avatar--emoji" title={name}>{avatar}</span>;
+  }
+  const initials = name.trim().slice(0, 1).toUpperCase();
+  return <span className="rec-avatar rec-avatar--initials" title={name}>{initials}</span>;
+}
+
 interface SavedPlayerProps {
   recording: SongRecording;
+  currentUserId: string;
+  isBandContext: boolean;
   onDelete: (r: SongRecording) => void;
 }
 
-function SavedPlayer({ recording, onDelete }: SavedPlayerProps) {
+function SavedPlayer({ recording, currentUserId, isBandContext, onDelete }: SavedPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -59,6 +71,8 @@ function SavedPlayer({ recording, onDelete }: SavedPlayerProps) {
     audioRef.current.currentTime = ratio * (audioRef.current.duration || 0);
   }
 
+  const canDelete = !isBandContext || recording.recorder?.userId === currentUserId;
+
   return (
     <li className="audio-player">
       <audio
@@ -75,33 +89,49 @@ function SavedPlayer({ recording, onDelete }: SavedPlayerProps) {
       <button className="play-btn" onClick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Play'}>
         {isPlaying ? <Pause size={14} /> : <Play size={14} />}
       </button>
+
       <div className="player-info">
         <span className="player-name" title={recording.name}>{recording.name}</span>
         <span className="player-date">
           {new Date(recording.createdAt).toLocaleString()} · {formatFileSize(recording.sizeBytes)}
         </span>
       </div>
+
       <div className="progress-bar" onClick={handleSeek} role="slider" aria-label="Seek">
         <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
       </div>
-      <button
-        className="delete-btn"
-        onClick={() => onDelete(recording)}
-        aria-label={`Delete recording ${recording.name}`}
-        title="Delete recording"
-      >
-        <Trash2 size={14} />
-      </button>
+
+      {isBandContext && recording.recorder && (
+        <RecorderAvatar
+          avatar={recording.recorder.avatar}
+          name={recording.recorder.displayName}
+        />
+      )}
+
+      {canDelete && (
+        <button
+          className="delete-btn"
+          onClick={() => onDelete(recording)}
+          aria-label={`Delete recording ${recording.name}`}
+          title="Delete recording"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </li>
   );
 }
 
-export default function SongRecorder({ song, user }: Props) {
-  const ownerId = song.ownerId ?? user.id;
+export default function SongRecorder({ song, user, bandId }: Props) {
+  const isBandContext = Boolean(bandId);
+
+  const scope: RecordingsScope = bandId
+    ? { type: 'band', bandId }
+    : { type: 'user', ownerId: song.ownerId ?? user.id };
+
   const { recordings, loading, uploading, uploadRecording, deleteRecording } = useSongRecordings({
-    ownerId,
+    scope,
     songId: song.id,
-    userId: user.id,
   });
 
   const [recState, setRecState] = useState<RecorderState>('idle');
@@ -131,7 +161,6 @@ export default function SongRecorder({ song, user }: Props) {
     }
   }, []);
 
-  // Reset on song change
   useEffect(() => {
     return () => {
       stopStream();
@@ -154,12 +183,10 @@ export default function SongRecorder({ song, user }: Props) {
       const ctx = new AudioContext({ sampleRate: 48000 });
       const source = ctx.createMediaStreamSource(stream);
 
-      // 80 Hz high-pass to cut room rumble
       const hpf = ctx.createBiquadFilter();
       hpf.type = 'highpass';
       hpf.frequency.value = 80;
 
-      // Brickwall limiter for loud rehearsal environments
       const limiter = ctx.createDynamicsCompressor();
       limiter.threshold.value = -6;
       limiter.knee.value = 0;
@@ -233,7 +260,13 @@ export default function SongRecorder({ song, user }: Props) {
 
   async function saveRecording() {
     if (!previewBlob) return;
-    await uploadRecording(previewBlob, previewName.trim() || `${song.title} - ${formatDateTime(new Date())}`, previewDurationMs);
+    const displayName = user.fullName?.trim() || user.username?.trim() || user.email;
+    await uploadRecording(
+      previewBlob,
+      previewName.trim() || `${song.title} - ${formatDateTime(new Date())}`,
+      previewDurationMs,
+      { userId: user.id, displayName, avatar: user.avatar },
+    );
     discardPreview();
   }
 
@@ -338,7 +371,13 @@ export default function SongRecorder({ song, user }: Props) {
         ) : (
           <ul className="recordings-list">
             {recordings.map((rec) => (
-              <SavedPlayer key={rec.id} recording={rec} onDelete={deleteRecording} />
+              <SavedPlayer
+                key={rec.id}
+                recording={rec}
+                currentUserId={user.id}
+                isBandContext={isBandContext}
+                onDelete={deleteRecording}
+              />
             ))}
           </ul>
         )}
@@ -346,3 +385,4 @@ export default function SongRecorder({ song, user }: Props) {
     </div>
   );
 }
+

@@ -2381,6 +2381,29 @@ input, select, textarea { font: inherit; color: var(--text); }
   grid-column: 1 / -1;
 }
 
+/* Recorder avatar badge (band context) */
+.rec-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-size: .85rem;
+  line-height: 1;
+  cursor: default;
+}
+.rec-avatar--emoji {
+  background: var(--chord-bg);
+}
+.rec-avatar--initials {
+  background: var(--accent);
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
 /* Buttons */
 .rec-btn {
   display: inline-flex;

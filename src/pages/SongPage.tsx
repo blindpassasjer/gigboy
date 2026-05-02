@@ -6,6 +6,7 @@ import SongView from '../components/SongView';
 type SongPageState = {
   backTo?: string;
   backLabel?: string;
+  bandId?: string;
 };
 
 export default function SongPage() {
@@ -16,6 +17,7 @@ export default function SongPage() {
   const pageState = location.state as SongPageState | null;
   const backTo = pageState?.backTo ?? '/';
   const backLabel = pageState?.backLabel?.trim();
+  const bandId = pageState?.bandId;
   const backLinkText = backLabel ? `Return to ${backLabel}` : 'All songs';
 
   if (!song) {
@@ -30,7 +32,7 @@ export default function SongPage() {
   return (
     <div>
       <Link to={backTo} className="back-link"><ArrowLeft size={16} /> {backLinkText}</Link>
-      <SongView song={song} />
+      <SongView song={song} bandId={bandId} />
     </div>
   );
 }

@@ -184,6 +184,14 @@ service cloud.firestore {
       match /songs/{songId} {
         allow read: if isBandMember(bandId);
         allow create, update, delete: if isBandEditor(bandId);
+
+        match /recordings/{recordingId} {
+          allow read: if isBandMember(bandId);
+          allow create: if isBandMember(bandId)
+            && request.resource.data.recorder.userId == request.auth.uid;
+          allow delete: if isBandMember(bandId)
+            && resource.data.recorder.userId == request.auth.uid;
+        }
       }
 
       match /songLists/{songListId} {

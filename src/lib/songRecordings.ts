@@ -16,6 +16,12 @@ import {
   type FirebaseStorage,
 } from 'firebase/storage';
 
+export interface RecorderIdentity {
+  userId: string;
+  displayName: string;
+  avatar: string | null;
+}
+
 export interface SongRecording {
   id: string;
   name: string;
@@ -25,22 +31,45 @@ export interface SongRecording {
   sizeBytes: number;
   mimeType: string;
   createdAt: string;
+  recorder?: RecorderIdentity;
 }
 
-function recordingsPath(ownerId: string, songId: string) {
-  return ['users', ownerId, 'songs', songId, 'recordings'] as const;
+export type RecordingsScope =
+  | { type: 'user'; ownerId: string }
+  | { type: 'band'; bandId: string };
+
+function recordingsCollectionRef(db: Firestore, scope: RecordingsScope, songId: string) {
+  if (scope.type === 'band') {
+    return collection(db, 'bands', scope.bandId, 'songs', songId, 'recordings');
+  }
+  return collection(db, 'users', scope.ownerId, 'songs', songId, 'recordings');
+}
+
+function recordingDocRef(db: Firestore, scope: RecordingsScope, songId: string, id: string) {
+  if (scope.type === 'band') {
+    return doc(db, 'bands', scope.bandId, 'songs', songId, 'recordings', id);
+  }
+  return doc(db, 'users', scope.ownerId, 'songs', songId, 'recordings', id);
+}
+
+function storageBasePath(scope: RecordingsScope, songId: string) {
+  if (scope.type === 'band') {
+    return `bands/${scope.bandId}/songs/${songId}/recordings`;
+  }
+  return `users/${scope.ownerId}/songs/${songId}/recordings`;
 }
 
 export async function loadSongRecordings(
   db: Firestore,
-  ownerId: string,
+  scope: RecordingsScope,
   songId: string,
 ): Promise<SongRecording[]> {
-  const col = collection(db, ...recordingsPath(ownerId, songId));
+  const col = recordingsCollectionRef(db, scope, songId);
   const q = query(col, orderBy('createdAt', 'desc'));
   const snap = await getDocs(q);
   return snap.docs.map((d) => {
     const data = d.data();
+    const rawRecorder = data.recorder as Record<string, unknown> | undefined;
     return {
       id: d.id,
       name: typeof data.name === 'string' ? data.name : 'Untitled',
@@ -50,6 +79,13 @@ export async function loadSongRecordings(
       sizeBytes: typeof data.sizeBytes === 'number' ? data.sizeBytes : 0,
       mimeType: typeof data.mimeType === 'string' ? data.mimeType : 'audio/webm',
       createdAt: typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString(),
+      recorder: rawRecorder && typeof rawRecorder.userId === 'string'
+        ? {
+            userId: rawRecorder.userId,
+            displayName: typeof rawRecorder.displayName === 'string' ? rawRecorder.displayName : 'Unknown',
+            avatar: typeof rawRecorder.avatar === 'string' ? rawRecorder.avatar : null,
+          }
+        : undefined,
     };
   });
 }
@@ -57,15 +93,16 @@ export async function loadSongRecordings(
 export async function uploadSongRecording(
   db: Firestore,
   storage: FirebaseStorage,
-  ownerId: string,
+  scope: RecordingsScope,
   songId: string,
   blob: Blob,
   name: string,
   durationMs: number,
+  recorder: RecorderIdentity,
 ): Promise<SongRecording> {
   const id = crypto.randomUUID();
   const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
-  const storagePath = `users/${ownerId}/songs/${songId}/recordings/${id}.${ext}`;
+  const storagePath = `${storageBasePath(scope, songId)}/${id}.${ext}`;
   const storageRef = ref(storage, storagePath);
 
   await uploadBytes(storageRef, blob, { contentType: blob.type });
@@ -80,9 +117,10 @@ export async function uploadSongRecording(
     sizeBytes: blob.size,
     mimeType: blob.type,
     createdAt: new Date().toISOString(),
+    recorder,
   };
 
-  const docRef = doc(db, ...recordingsPath(ownerId, songId), id);
+  const docRef = recordingDocRef(db, scope, songId, id);
   await setDoc(docRef, recording);
 
   return recording;
@@ -91,7 +129,7 @@ export async function uploadSongRecording(
 export async function deleteSongRecording(
   db: Firestore,
   storage: FirebaseStorage,
-  ownerId: string,
+  scope: RecordingsScope,
   songId: string,
   recording: SongRecording,
 ): Promise<void> {
@@ -102,6 +140,6 @@ export async function deleteSongRecording(
       // File may already be gone; continue to remove Firestore doc
     }
   }
-  const docRef = doc(db, ...recordingsPath(ownerId, songId), recording.id);
+  const docRef = recordingDocRef(db, scope, songId, recording.id);
   await deleteDoc(docRef);
 }

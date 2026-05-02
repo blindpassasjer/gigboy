@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useBeforeUnload, useNavigate } from 'react-router-dom';
+import { useBeforeUnload, useNavigate, useBlocker } from 'react-router-dom';
 import { Save, Wand2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordProToolbar from './ChordProToolbar';
@@ -9,7 +10,6 @@ import { LANGUAGE_NAMES } from '../utils/languages';
 import { parsePastedSong } from '../utils/chordFormatParser';
 import { extractTabBlocks } from '../utils/tabParser';
 import { parseSongMedia } from '../utils/songMedia';
-import { showConfirmToast } from '../utils/toastDialogs';
 
 interface Props {
   onSave: (song: Song) => Promise<string | null>;
@@ -32,6 +32,8 @@ const PLACEHOLDER = `{title: My Song}
 [D]I once was [G]lost but [C]now am [G]found
 Was [Em]blind but [D]now I [G]see
 {end_of_chorus}`;
+
+const UNSAVED_CHANGES_WARNING = 'You have unsaved changes.';
 
 export default function AddSongForm({
   onSave,
@@ -58,7 +60,6 @@ export default function AddSongForm({
   const [errors, setErrors] = useState<string[]>([]);
   const [songListId, setSongListId] = useState(initialSongListId ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const isConfirmingNavigationRef = useRef(false);
   const tabBlocks = useMemo(() => extractTabBlocks(chordpro), [chordpro]);
 
   const initialValues = useMemo(() => ({
@@ -103,6 +104,7 @@ export default function AddSongForm({
   ]);
 
   const shouldBlockNavigation = isDirty && !allowNavigation;
+  const blocker = useBlocker(shouldBlockNavigation);
 
   useBeforeUnload((event) => {
     if (!shouldBlockNavigation) return;
@@ -111,60 +113,31 @@ export default function AddSongForm({
   });
 
   useEffect(() => {
-    function canInterceptClick(event: MouseEvent) {
-      if (event.defaultPrevented) return false;
-      if (event.button !== 0) return false;
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
-      return true;
-    }
+    if (blocker.state !== 'blocked') return;
+    toast(UNSAVED_CHANGES_WARNING, { icon: '!' });
+    blocker.reset();
+  }, [blocker]);
 
-    async function confirmAndNavigate(targetUrl: URL) {
-      if (isConfirmingNavigationRef.current) return;
-      isConfirmingNavigationRef.current = true;
+  useEffect(() => {
+    if (mode !== 'edit') return;
 
-      const shouldLeave = await showConfirmToast(
-        'You have unsaved changes. Leave without saving?',
-        { confirmLabel: 'Leave', cancelLabel: 'Stay' }
-      );
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
 
-      if (shouldLeave) {
-        setAllowNavigation(true);
-        navigate(`${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`);
+      if (isDirty) {
+        toast(UNSAVED_CHANGES_WARNING, { icon: '!' });
       }
 
-      isConfirmingNavigationRef.current = false;
-    }
-
-    function onDocumentClick(event: MouseEvent) {
-      if (!shouldBlockNavigation || !canInterceptClick(event)) return;
-
-      const target = event.target as HTMLElement | null;
-      const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
-      if (!anchor) return;
-      if (anchor.target && anchor.target !== '_self') return;
-      if (anchor.hasAttribute('download')) return;
-
-      const href = anchor.getAttribute('href');
-      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
-
-      const nextUrl = new URL(anchor.href, window.location.href);
-      const currentUrl = new URL(window.location.href);
-      if (nextUrl.origin !== currentUrl.origin) return;
-
-      const nextPath = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
-      const currentPath = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
-      if (nextPath === currentPath) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      void confirmAndNavigate(nextUrl);
-    }
-
-    document.addEventListener('click', onDocumentClick, true);
-    return () => {
-      document.removeEventListener('click', onDocumentClick, true);
+      setAllowNavigation(true);
+      navigate(initialSong?.id ? `/songs/${initialSong.id}` : '/');
     };
-  }, [navigate, shouldBlockNavigation]);
+
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [mode, isDirty, navigate, initialSong?.id]);
 
   function validate() {
     const errs: string[] = [];
