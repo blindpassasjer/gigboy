@@ -36,6 +36,22 @@ function stripWrappingQuotes(value: string) {
   return trimmed;
 }
 
+function normalizeLineBreakEscapes(value: string) {
+  return value
+    .replace(/\\\\r\\\\n/g, '\n')
+    .replace(/\\\\n/g, '\n')
+    .replace(/\\\\r/g, '\n')
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\n');
+}
+
+function extractPkcs8PemBlock(value: string): string | null {
+  const match = value.match(/-----BEGIN PRIVATE KEY-----[\s\S]+?-----END PRIVATE KEY-----/);
+  if (!match) return null;
+  return match[0].trim();
+}
+
 function tryParseJsonObject(value: string): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(value) as unknown;
@@ -73,33 +89,28 @@ function extractPrivateKeyFromJsonCandidate(value: string): string | null {
     return null;
   }
 
-  return stripWrappingQuotes(parsedJson.private_key)
-    .replace(/\\r\\n/g, '\n')
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\n')
-    .trim();
+  const normalized = normalizeLineBreakEscapes(stripWrappingQuotes(parsedJson.private_key)).trim();
+  const pemFromPayload = extractPkcs8PemBlock(normalized);
+  return pemFromPayload ?? normalized;
 }
 
 function normalizePrivateKey(privateKey: string) {
-  let normalized = stripWrappingQuotes(privateKey)
-    .replace(/\\r\\n/g, '\n')
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\n')
-    .trim();
+  let normalized = normalizeLineBreakEscapes(stripWrappingQuotes(privateKey)).trim();
 
   if (normalized.startsWith('FIREBASE_PRIVATE_KEY=')) {
     normalized = normalized.slice('FIREBASE_PRIVATE_KEY='.length).trim();
-    normalized = stripWrappingQuotes(normalized)
-      .replace(/\\r\\n/g, '\n')
-      .replace(/\\n/g, '\n')
-      .replace(/\\r/g, '\n')
-      .trim();
+    normalized = normalizeLineBreakEscapes(stripWrappingQuotes(normalized)).trim();
   }
 
   // Accept passing the full service account JSON in FIREBASE_PRIVATE_KEY.
   const privateKeyFromJson = extractPrivateKeyFromJsonCandidate(normalized);
   if (privateKeyFromJson) {
     normalized = privateKeyFromJson;
+  }
+
+  const embeddedPem = extractPkcs8PemBlock(normalized);
+  if (embeddedPem) {
+    return embeddedPem;
   }
 
   if (
@@ -115,6 +126,11 @@ function normalizePrivateKey(privateKey: string) {
     const decodedPrivateKeyFromJson = extractPrivateKeyFromJsonCandidate(decodedPem);
     if (decodedPrivateKeyFromJson) {
       return decodedPrivateKeyFromJson;
+    }
+
+    const embeddedDecodedPem = extractPkcs8PemBlock(decodedPem);
+    if (embeddedDecodedPem) {
+      return embeddedDecodedPem;
     }
 
     if (
