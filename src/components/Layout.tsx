@@ -32,6 +32,8 @@ export default function Layout({ children }: Props) {
     return !window.matchMedia('(max-width: 900px)').matches;
   });
   const { dark, toggle: toggleDark } = useDarkMode();
+  const mainContentRef = useRef<HTMLElement>(null);
+  const swipeRef = useRef<{ x: number; y: number; fromEdge: boolean } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(() => {
     if (typeof document === 'undefined') return false;
     return Boolean(document.fullscreenElement);
@@ -93,6 +95,21 @@ export default function Layout({ children }: Props) {
   }, [sidebarOpen, isNarrowViewport]);
 
   useEffect(() => {
+    if (typeof document === 'undefined' || !isNarrowViewport) return;
+
+    const originalOverflow = document.body.style.overflow;
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = originalOverflow;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [sidebarOpen, isNarrowViewport]);
+
+  useEffect(() => {
     if (typeof document === 'undefined') return;
 
     const handleFullscreenChange = () => {
@@ -107,12 +124,26 @@ export default function Layout({ children }: Props) {
 
   return (
     <div className="app-shell">
+      <a
+        href="#main-content"
+        className="skip-link"
+        onClick={() => {
+          window.requestAnimationFrame(() => {
+            mainContentRef.current?.focus();
+          });
+        }}
+      >
+        Skip to main content
+      </a>
       <header className="topbar">
         <button
+          type="button"
           className="topbar-sidebar-toggle"
           onClick={() => setSidebarOpen((v) => !v)}
-          title="Toggle sidebar"
+          title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
           aria-pressed={sidebarOpen}
+          aria-controls="app-sidebar"
         >
           <Menu size={20} />
         </button>
@@ -121,27 +152,40 @@ export default function Layout({ children }: Props) {
           <span>Folio</span>
         </Link>
         <nav className="topbar-nav">
-          <Link to="/profile/invites" className={pathname === '/profile/invites' ? 'active' : ''}>
+          <Link
+            to="/profile/invites"
+            className={pathname === '/profile/invites' ? 'active' : ''}
+            aria-current={pathname === '/profile/invites' ? 'page' : undefined}
+          >
             <User size={16} /> <span>Invites</span>
           </Link>
           <button
+            type="button"
             onClick={toggleDark}
             className="topbar-icon-btn"
             title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-pressed={dark}
           >
             {dark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <button
+            type="button"
             onClick={toggleFullscreen}
             className="topbar-icon-btn"
             title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
             aria-pressed={isFullscreen}
           >
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
           {user && (
-            <Link to="/profile" className={pathname === '/profile' ? 'active topbar-profile-link' : 'topbar-profile-link'} title={`Open profile (${user.email})`}>
+            <Link
+              to="/profile"
+              className={pathname === '/profile' ? 'active topbar-profile-link' : 'topbar-profile-link'}
+              title={`Open profile (${user.email})`}
+              aria-current={pathname === '/profile' ? 'page' : undefined}
+            >
               <UserAvatar avatar={user.avatar} label={user.username ?? user.email} size="sm" />
               <span>Profile</span>
             </Link>
@@ -149,7 +193,28 @@ export default function Layout({ children }: Props) {
         </nav>
       </header>
 
-      <div className={`app-body${isNarrowViewport ? ' app-body--narrow' : ''}`}>
+      <div
+        className={`app-body${isNarrowViewport ? ' app-body--narrow' : ''}`}
+        onPointerDown={(event) => {
+          if (!isNarrowViewport || event.pointerType === 'mouse') return;
+          swipeRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+            fromEdge: event.clientX <= 32,
+          };
+        }}
+        onPointerUp={(event) => {
+          if (!swipeRef.current || event.pointerType === 'mouse') return;
+          const { x, y, fromEdge } = swipeRef.current;
+          swipeRef.current = null;
+          const dx = event.clientX - x;
+          const dy = event.clientY - y;
+          // Require clear horizontal dominance and ≥55 px travel
+          if (Math.abs(dy) > Math.abs(dx) * 0.75 || Math.abs(dx) < 55) return;
+          if (!sidebarOpen && fromEdge && dx > 0) setSidebarOpen(true);
+          else if (sidebarOpen && dx < 0) setSidebarOpen(false);
+        }}
+      >
         <Sidebar open={sidebarOpen} mobile={isNarrowViewport} onNavigate={isNarrowViewport ? () => setSidebarOpen(false) : undefined} onClose={() => setSidebarOpen(false)} />
         {isNarrowViewport && sidebarOpen && (
           <button
@@ -159,7 +224,14 @@ export default function Layout({ children }: Props) {
             onClick={() => setSidebarOpen(false)}
           />
         )}
-        <main className={`main-content${isConcertRoute ? ' main-content--concert' : ''}`}>{children}</main>
+        <main
+          id="main-content"
+          ref={mainContentRef}
+          tabIndex={-1}
+          className={`main-content${isConcertRoute ? ' main-content--concert' : ''}`}
+        >
+          {children}
+        </main>
       </div>
       {!isConcertRoute && !isEditSongRoute && (!isBandRoute || isBandLibraryRoute || isBandSonglistRoute || isBandSetlistRoute) && (
         <Link

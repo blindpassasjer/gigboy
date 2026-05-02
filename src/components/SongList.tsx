@@ -641,7 +641,7 @@ export default function SongList({
               return (
               <article
                 key={song.id}
-                className={`song-preview-card${dropTargetSongId === song.id ? ' drop-before' : ''}`}
+                className={`song-preview-card${dropTargetSongId === song.id ? ' drop-before' : ''}${draggingSongId === song.id ? ' is-dragging' : ''}`}
                 ref={(node) => setSongNodeRef(song.id, node)}
                 onDragOver={(event) => handleSongDragOver(song.id, event)}
                 onDrop={(event) => handleSongDrop(song.id, event)}
@@ -724,7 +724,7 @@ export default function SongList({
                 ref={(node) => setSongNodeRef(song.id, node)}
               >
                 <div
-                  className="song-card"
+                  className={`song-card${draggingSongId === song.id ? ' is-dragging' : ''}`}
                   onDragOver={(event) => handleSongDragOver(song.id, event)}
                   onDrop={(event) => handleSongDrop(song.id, event)}
                 >

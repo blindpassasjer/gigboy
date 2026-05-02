@@ -4,6 +4,12 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --topbar-height: 56px;
+  --sidebar-width: 220px;
   --bg:         #f9f7f4;
   --surface:    #ffffff;
   --border:     #e2ddd8;
@@ -48,6 +54,39 @@ body {
 }
 
 #root { min-height: 100vh; }
+
+.skip-link {
+  position: fixed;
+  top: .5rem;
+  left: .5rem;
+  z-index: 1000;
+  padding: .45rem .7rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  transform: translateY(-150%);
+  transition: transform .15s ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  text-decoration: none;
+}
+
+:where(
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [tabindex]:not([tabindex="-1"])
+):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  outline-offset: 2px;
+}
 
 button,
 a,
@@ -121,11 +160,11 @@ input, select, textarea { font: inherit; color: var(--text); }
 .topbar {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 0 1.5rem;
+  padding: var(--safe-top) calc(1.5rem + var(--safe-right)) 0 calc(1.5rem + var(--safe-left));
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  height: 56px;
+  height: calc(var(--topbar-height) + var(--safe-top));
   position: sticky;
   top: 0;
   z-index: 100;
@@ -237,11 +276,15 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 1;
   min-height: 0;
   min-width: 0;
-  padding: 1.5rem 1.5rem;
+  padding: 1.5rem calc(1.5rem + var(--safe-right)) calc(1.5rem + var(--safe-bottom)) calc(1.5rem + var(--safe-left));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
   touch-action: pan-y;
+}
+
+.main-content:focus-visible {
+  outline: none;
 }
 
 .main-content--concert {
@@ -251,8 +294,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 /* ─── Floating Add Song Button ───────────────────────────────────────────────── */
 .fab-add-song {
   position: fixed;
-  bottom: calc(1rem + env(safe-area-inset-bottom));
-  right: 1.75rem;
+  bottom: calc(1rem + var(--safe-bottom));
+  right: calc(1.75rem + var(--safe-right));
   z-index: 200;
   display: flex;
   align-items: center;
@@ -276,7 +319,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .sidebar-backdrop {
   position: fixed;
-  inset: 56px 0 0;
+  inset: calc(var(--topbar-height) + var(--safe-top)) 0 0;
   background: rgba(26, 26, 26, .4);
   backdrop-filter: blur(2px);
   z-index: 89;
@@ -697,6 +740,15 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-drag-handle:active { cursor: grabbing; }
 
+/* ─── Drag-and-drop active states ───────────────────────────────────────────── */
+.song-card.is-dragging,
+.song-preview-card.is-dragging {
+  opacity: .45;
+  transform: scale(.97);
+  box-shadow: none;
+  pointer-events: none;
+}
+
 .song-card-link {
   display: flex;
   align-items: center;
@@ -989,6 +1041,54 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 /* ─── Song View ─────────────────────────────────────────────────────────────── */
 .song-view { display: flex; flex-direction: column; gap: 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
+
+@media (min-width: 901px) and (max-width: 1200px) {
+  :root {
+    --sidebar-width: 240px;
+  }
+
+  .topbar {
+    gap: 1rem;
+    padding: var(--safe-top) calc(1.1rem + var(--safe-right)) 0 calc(1.1rem + var(--safe-left));
+  }
+
+  .topbar-nav {
+    gap: .6rem;
+  }
+
+  .topbar-nav a {
+    padding: .35rem .6rem;
+  }
+
+  .main-content {
+    padding: 1.25rem calc(1.1rem + var(--safe-right)) calc(1.25rem + var(--safe-bottom)) calc(1.1rem + var(--safe-left));
+  }
+
+  .song-list-sticky {
+    margin: -1.25rem calc(-1.1rem - var(--safe-right)) .75rem calc(-1.1rem - var(--safe-left));
+    top: -1.25rem;
+  }
+
+  .song-list-sticky > .setlist-header,
+  .song-list-controls,
+  .list-appearance-editor {
+    margin-left: calc(1.1rem + var(--safe-left));
+    margin-right: calc(1.1rem + var(--safe-right));
+  }
+
+  .song-list-controls {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .song-view {
+    max-width: 1000px;
+  }
+
+  .song-card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+}
 
 .song-view-header {
   --song-header-accent: var(--accent);
@@ -2956,11 +3056,11 @@ input, select, textarea { font: inherit; color: var(--text); }
 .sidebar-anim {
   flex-shrink: 0;
   overflow: hidden;
-  width: 220px;
+  width: var(--sidebar-width);
   transition: width 0.18s ease-in-out;
   position: sticky;
-  top: 56px;
-  height: calc(100vh - 56px);
+  top: calc(var(--topbar-height) + var(--safe-top));
+  height: calc(100dvh - var(--topbar-height) - var(--safe-top));
   align-self: flex-start;
 }
 .sidebar-anim:not(.sidebar-anim--open) {
@@ -2968,8 +3068,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar {
-  width: 220px;
-  min-width: 220px;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex;
@@ -4468,7 +4568,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .topbar {
-    padding: 0 1rem;
+    padding: var(--safe-top) calc(1rem + var(--safe-right)) 0 calc(1rem + var(--safe-left));
     gap: .75rem;
   }
 
@@ -4481,7 +4581,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .main-content {
-    padding: 1.25rem 1rem;
+    padding: 1.25rem calc(1rem + var(--safe-right)) calc(1.25rem + var(--safe-bottom)) calc(1rem + var(--safe-left));
     overflow-y: visible;
     overscroll-behavior-y: auto;
   }
@@ -4491,21 +4591,21 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky {
-    margin: -1.25rem -1rem .75rem;
+    margin: -1.25rem calc(-1rem - var(--safe-right)) .75rem calc(-1rem - var(--safe-left));
     padding: 0 0 .85rem;
     top: -1.25rem;
   }
 
   .song-list-sticky > .setlist-header {
-    margin: 0 1rem;
+    margin: 0 calc(1rem + var(--safe-right)) 0 calc(1rem + var(--safe-left));
   }
 
   .song-list-controls {
-    padding: 0 1rem;
+    padding: 0 calc(1rem + var(--safe-right)) 0 calc(1rem + var(--safe-left));
   }
 
   .list-appearance-editor {
-    margin: 0 1rem;
+    margin: 0 calc(1rem + var(--safe-right)) 0 calc(1rem + var(--safe-left));
   }
 
   .song-list-controls > * {
@@ -4550,10 +4650,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .sidebar--mobile {
     position: fixed;
-    top: 56px;
-    left: 0;
+    top: calc(var(--topbar-height) + var(--safe-top));
+    left: var(--safe-left);
     bottom: 0;
-    width: min(320px, calc(100vw - 2.5rem));
+    width: min(320px, calc(100vw - 2.5rem - var(--safe-left) - var(--safe-right)));
     min-width: 0;
     z-index: 310;
     box-shadow: 0 10px 30px rgba(0,0,0,.18);
@@ -4579,7 +4679,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 @media (max-width: 600px) {
   .topbar {
-    padding: 0 .75rem;
+    padding: var(--safe-top) calc(.75rem + var(--safe-right)) 0 calc(.75rem + var(--safe-left));
     gap: .5rem;
   }
 
@@ -4804,10 +4904,84 @@ input, select, textarea { font: inherit; color: var(--text); }
   .fab-add-song {
     width: 3.5rem;
     height: 3.5rem;
-    right: 1rem;
+    right: calc(1rem + var(--safe-right));
   }
   .chord-display { padding: .75rem; font-size: .88rem; }
   .song-view-title { font-size: 1.3rem; }
+}
+
+/* ─── Touch/coarse-pointer: drag handle and song picker improvements ────────── */
+@media (pointer: coarse) {
+  /* Larger drag handle so it's easy to grab on finger on tablet or phone */
+  .song-drag-handle {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: .5rem;
+  }
+
+  /* Larger drag handle icon */
+  .song-drag-handle svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Bottom-sheet song picker: slides up from the bottom on touch devices */
+  .song-picker-overlay {
+    align-items: flex-end;
+    padding: 0;
+    /* Add a subtle slide-in from the bottom */
+    animation: sheet-slide-in .22s cubic-bezier(.32,.72,0,1);
+  }
+
+  .song-picker-panel {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    max-height: 88dvh;
+    padding-bottom: var(--safe-bottom);
+    box-shadow: 0 -6px 40px rgba(0,0,0,.24);
+  }
+
+  .song-picker-panel::before {
+    content: '';
+    display: block;
+    width: 2.5rem;
+    height: .28rem;
+    border-radius: 999px;
+    background: var(--border);
+    margin: .65rem auto .25rem;
+    flex-shrink: 0;
+  }
+
+  /* Give song-picker-header a little extra top space on touch */
+  .song-picker-header {
+    padding-top: .65rem;
+  }
+
+  /* Make song-picker items easier to tap */
+  .song-picker-item {
+    padding: .85rem .75rem;
+  }
+
+  /* Make list-dropdown items taller on touch */
+  .list-dropdown-item {
+    padding: .75rem .85rem;
+  }
+}
+
+@keyframes sheet-slide-in {
+  from { transform: translateY(100%); opacity: .6; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media (hover: none) {

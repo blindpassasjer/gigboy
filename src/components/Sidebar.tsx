@@ -321,12 +321,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   return (
     <div className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}`}>
-    <aside className={`sidebar${mobile ? ' sidebar--mobile' : ''}${open ? ' sidebar--open' : ''}`}>
+    <aside id="app-sidebar" className={`sidebar${mobile ? ' sidebar--mobile' : ''}${open ? ' sidebar--open' : ''}`}>
       <div className="sidebar-header">
         <span className="sidebar-title"></span>
         <div className="sidebar-header-actions">
           {mobile && onClose && (
-            <button className="sidebar-icon-btn" title="Close sidebar" onClick={onClose}>
+            <button type="button" className="sidebar-icon-btn" title="Close sidebar" aria-label="Close sidebar" onClick={onClose}>
               <X size={15} />
             </button>
           )}
@@ -353,6 +353,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
             <div className="sidebar-setlists-header">
               <button
+                type="button"
                 className="sidebar-section-toggle"
                 onClick={() => setSoloSonglistsExpanded((current) => !current)}
                 aria-expanded={soloSonglistsExpanded}
@@ -361,8 +362,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 <span className="sidebar-section-title">Songlists</span>
               </button>
               <button
+                type="button"
                 className="sidebar-icon-btn"
                 title="New songlist"
+                aria-label="Create new songlist"
                 onClick={() => {
                   setSoloSonglistsExpanded(true);
                   setAddingSongList(true);
@@ -407,6 +410,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           <section className="sidebar-solo-section">
             <div className="sidebar-setlists-header">
               <button
+                type="button"
                 className="sidebar-section-toggle"
                 onClick={() => setSoloSetlistsExpanded((current) => !current)}
                 aria-expanded={soloSetlistsExpanded}
@@ -415,8 +419,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 <span className="sidebar-section-title">Setlists</span>
               </button>
               <button
+                type="button"
                 className="sidebar-icon-btn"
                 title="New setlist"
+                aria-label="Create new setlist"
                 onClick={() => { setSoloSetlistsExpanded(true); setAddingSetlist(true); setDraftName(''); }}
               >
                 <Plus size={15} />
@@ -463,9 +469,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           ) : (
             <div className="sidebar-band-switcher">
               <button
+                type="button"
                 className="sidebar-band-switcher-btn"
                 onClick={() => { if (bands.length > 1) setBandSwitcherOpen((o) => !o); }}
                 title="Switch band"
+                aria-label="Switch active band"
                 aria-haspopup="listbox"
                 aria-expanded={bandSwitcherOpen}
                 aria-disabled={bands.length <= 1}
@@ -483,6 +491,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 <div className="sidebar-band-switcher-dropdown" role="listbox">
                   {bands.map((band) => (
                     <button
+                      type="button"
                       key={band.id}
                       className={`sidebar-band-switcher-option${band.id === activeBandId ? ' active' : ''}`}
                       role="option"
@@ -506,8 +515,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             </div>
           )}
           <button
+            type="button"
             className="sidebar-icon-btn"
             title="New band"
+            aria-label="Create new band"
             onClick={() => { setAddingBand(true); setDraftName(''); }}
           >
             <Plus size={15} />
@@ -553,6 +564,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
                 <div className="sidebar-setlists-header">
                   <button
+                    type="button"
                     className="sidebar-section-toggle"
                     onClick={() => toggleBandSonglistsExpanded(band.id)}
                     aria-expanded={isBandSonglistsExpanded(band.id)}
@@ -561,8 +573,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     <span className="sidebar-section-title">Songlists</span>
                   </button>
                   <button
+                    type="button"
                     className="sidebar-icon-btn"
                     title="New band songlist"
+                    aria-label="Create new band songlist"
                     onClick={() => {
                       setCollapsedBandSonglistIds((prev) => prev.filter((entry) => entry !== band.id));
                       setAddingBandSongListId(band.id);
@@ -613,6 +627,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
                 <div className="sidebar-setlists-header">
                   <button
+                    type="button"
                     className="sidebar-section-toggle"
                     onClick={() => toggleBandSetlistsExpanded(band.id)}
                     aria-expanded={isBandSetlistsExpanded(band.id)}
@@ -621,8 +636,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     <span className="sidebar-section-title">Setlists</span>
                   </button>
                   <button
+                    type="button"
                     className="sidebar-icon-btn"
                     title="New band setlist"
+                    aria-label="Create new band setlist"
                     onClick={() => {
                       setCollapsedBandSetlistIds((prev) => prev.filter((entry) => entry !== band.id));
                       setAddingBandSetlistId(band.id);
@@ -711,7 +728,7 @@ function FolderItem({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <button className="sidebar-list-item-btn" onClick={onSelect}>
+      <button type="button" className="sidebar-list-item-btn" onClick={onSelect}>
         {icon ? (
           <span className="sidebar-list-icon" aria-hidden="true">{icon}</span>
         ) : (
@@ -755,7 +772,7 @@ function SetlistItem({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <button className="sidebar-setlist-item-btn" onClick={onSelect}>
+      <button type="button" className="sidebar-setlist-item-btn" onClick={onSelect}>
         {icon ? <span className="sidebar-list-icon" aria-hidden="true">{icon}</span> : active ? <ListMusicIcon size={14} /> : <ListMusic size={14} />}
         <span className="sidebar-setlist-name">{name}</span>
         {songDropTarget && <span className="sidebar-setlist-drop-label">Drop song</span>}
