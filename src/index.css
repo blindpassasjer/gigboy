@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
 /* ─── Reset & tokens ────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -16,7 +18,7 @@
   --chord-bg:   #ede9f8;
   --radius:     8px;
   --shadow:     0 1px 4px rgba(0,0,0,.08);
-  --font-mono:  'Courier New', Courier, monospace;
+  --font-mono:  'JetBrains Mono', 'Courier New', Courier, monospace;
   font-size: 16px;
 }
 
@@ -1082,6 +1084,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-toolbar-row--tool-switches {
   gap: .45rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .song-toolbar-tools-grid {
@@ -1224,10 +1229,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 .visual-metronome-toggle {
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
+  justify-content: center;
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: .2rem .55rem;
+  padding: .2rem;
+  width: 1.85rem;
+  height: 1.85rem;
   font-size: .73rem;
   font-weight: 600;
   color: var(--muted);
@@ -1386,6 +1393,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   justify-content: center;
   gap: .25rem;
+  flex: 0 0 auto;
+  white-space: nowrap;
   border: 1px solid var(--border);
   border-radius: 9px;
   min-height: 2.35rem;

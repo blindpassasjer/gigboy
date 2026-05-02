@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Hand, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
 
 interface Props {
   tempo?: number;
@@ -25,7 +25,6 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
   const [isRunning, setIsRunning] = useState(false);
   const [activeBeat, setActiveBeat] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const tapTimesRef = useRef<number[]>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   function playClick(isDownbeat: boolean) {
@@ -74,21 +73,6 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bpm, beatsPerBar, isRunning, soundEnabled]);
 
-  const handleTapTempo = () => {
-    const now = Date.now();
-    const recent = [...tapTimesRef.current, now].filter((stamp) => now - stamp <= 2200).slice(-6);
-    tapTimesRef.current = recent;
-
-    if (recent.length < 2) return;
-
-    const intervals = recent.slice(1).map((stamp, index) => stamp - recent[index]);
-    const averageInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
-    if (!Number.isFinite(averageInterval) || averageInterval <= 0) return;
-
-    const tappedBpm = Math.round(60000 / averageInterval);
-    setBpm(Math.max(30, Math.min(260, tappedBpm)));
-  };
-
   const playState = isRunning ? 'running' : 'paused';
 
   return (
@@ -98,20 +82,9 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
         className="visual-metronome-toggle"
         onClick={() => setIsRunning((value) => !value)}
         aria-label={isRunning ? 'Pause visual metronome' : 'Start visual metronome'}
+        title={isRunning ? 'Pause metronome' : 'Start metronome'}
       >
         {isRunning ? <Pause size={14} /> : <Play size={14} />}
-        {isRunning ? 'Pause' : 'Start'}
-      </button>
-
-      <button
-        type="button"
-        className="visual-metronome-tap"
-        onClick={handleTapTempo}
-        aria-label="Tap to set metronome tempo"
-        title="Tap to set tempo"
-      >
-        <Hand size={13} />
-        Tap
       </button>
 
       <button
