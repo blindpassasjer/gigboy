@@ -7,10 +7,7 @@ import {
   ChevronRight,
   ChevronsUpDown,
   List,
-  Maximize2,
   Metronome,
-  Minimize2,
-  Pause,
   Play,
   RotateCcw,
   SlidersHorizontal,
@@ -61,16 +58,8 @@ export default function SetlistConcertPage() {
   const [showTuner, setShowTuner] = useState(false);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
   const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
-  const [teleprompterActive, setTeleprompterActive] = useState(false);
-  const [teleprompterSpeed, setTeleprompterSpeed] = useState(28);
-  const [isFullscreen, setIsFullscreen] = useState(() => {
-    if (typeof document === 'undefined') return false;
-    return Boolean(document.fullscreenElement);
-  });
   const songScrollRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
-  const teleprompterFrameRef = useRef<number | null>(null);
-  const teleprompterLastTickRef = useRef<number | null>(null);
 
   useEffect(() => {
     setCurrentIndex((current) => {
@@ -80,8 +69,6 @@ export default function SetlistConcertPage() {
   }, [setlistSongs.length]);
 
   useEffect(() => {
-    setTeleprompterActive(false);
-    teleprompterLastTickRef.current = null;
     setShowMediaPlayer(false);
     setAutoPlayMediaOnOpen(false);
     if (songScrollRef.current) {
@@ -90,86 +77,7 @@ export default function SetlistConcertPage() {
     setActiveChord(null);
   }, [currentIndex]);
 
-  useEffect(() => {
-    if (!teleprompterActive) {
-      teleprompterLastTickRef.current = null;
-      if (teleprompterFrameRef.current !== null) {
-        window.cancelAnimationFrame(teleprompterFrameRef.current);
-        teleprompterFrameRef.current = null;
-      }
-      return;
-    }
-
-    const tick = (timestamp: number) => {
-      const scrollElement = songScrollRef.current;
-      if (!scrollElement) {
-        setTeleprompterActive(false);
-        return;
-      }
-
-      if (teleprompterLastTickRef.current === null) {
-        teleprompterLastTickRef.current = timestamp;
-      }
-
-      const deltaSeconds = (timestamp - teleprompterLastTickRef.current) / 1000;
-      teleprompterLastTickRef.current = timestamp;
-      scrollElement.scrollTop += teleprompterSpeed * deltaSeconds;
-
-      const maxScrollTop = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight);
-      if (scrollElement.scrollTop >= maxScrollTop - 1) {
-        setTeleprompterActive(false);
-        return;
-      }
-
-      teleprompterFrameRef.current = window.requestAnimationFrame(tick);
-    };
-
-    teleprompterFrameRef.current = window.requestAnimationFrame(tick);
-
-    return () => {
-      if (teleprompterFrameRef.current !== null) {
-        window.cancelAnimationFrame(teleprompterFrameRef.current);
-        teleprompterFrameRef.current = null;
-      }
-    };
-  }, [teleprompterActive, teleprompterSpeed, currentIndex]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-
-    const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    handleFullscreenChange();
-
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  const toggleFullscreen = useCallback(async () => {
-    if (typeof document === 'undefined') return;
-
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      } else {
-        await document.documentElement.requestFullscreen();
-      }
-    } catch {
-      // Ignore failures when fullscreen is unavailable.
-    }
-  }, []);
-
   const handleStopConcert = useCallback(async () => {
-    setTeleprompterActive(false);
-    if (typeof document !== 'undefined' && document.fullscreenElement) {
-      try {
-        await document.exitFullscreen();
-      } catch {
-        // Ignore failures when fullscreen is unavailable.
-      }
-    }
     navigate('/');
   }, [navigate]);
 
@@ -236,20 +144,6 @@ export default function SetlistConcertPage() {
         setShowSongNavigator((value) => !value);
       }
 
-      if (event.code === 'Space') {
-        event.preventDefault();
-        setTeleprompterActive((value) => !value);
-      }
-
-      if (event.key === '[') {
-        event.preventDefault();
-        setTeleprompterSpeed((value) => Math.max(6, value - 4));
-      }
-
-      if (event.key === ']') {
-        event.preventDefault();
-        setTeleprompterSpeed((value) => Math.min(120, value + 4));
-      }
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -329,225 +223,189 @@ export default function SetlistConcertPage() {
           </p>
         </div>
 
-        <div className="concert-tool-row">
-          <div className="transpose-control song-toolbar-controls-group">
-            <button
-              onClick={() => setTranspose((value) => value - 1)}
-              aria-label="Transpose down"
-              className="transpose-btn concert-chip-btn song-toolbar-setting-btn"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="transpose-label concert-chip-btn song-toolbar-setting-label">
-              {currentSong.key
-                ? transpose === 0
-                  ? `Key of ${currentSong.key}`
-                  : `Key of ${transposeChord(currentSong.key, transpose)}`
-                : transpose === 0
-                  ? 'Original key'
-                  : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
-            </span>
-            <button
-              onClick={() => setTranspose((value) => value + 1)}
-              aria-label="Transpose up"
-              className="transpose-btn concert-chip-btn song-toolbar-setting-btn"
-            >
-              <ChevronRight size={16} />
-            </button>
-            {transpose !== 0 && (
-              <button
-                onClick={() => setTranspose(0)}
-                aria-label="Reset transpose"
-                className="transpose-btn transpose-btn--reset concert-chip-btn song-toolbar-setting-btn"
-                title="Reset to original key"
-              >
-                <RotateCcw size={13} />
-              </button>
-            )}
-          </div>
-
-          <div className="concert-chords-stack">
-            <button
-              type="button"
-              className={`concert-chip-btn${showChords ? ' concert-chip-btn--active' : ''}`}
-              onClick={() => {
-                setShowChords((prev) => {
-                  const next = !prev;
-                  if (!next) setActiveChord(null);
-                  return next;
-                });
-              }}
-              aria-label={showChords ? 'Hide chords' : 'Show chords'}
-              title={showChords ? 'Hide chords' : 'Show chords'}
-            >
-              Chords
-            </button>
-
-            {showChords && (
-              <div className="instrument-toggle song-toolbar-controls-group concert-notation-toggle">
-                <button
-                  className={`instrument-toggle-btn concert-chip-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active concert-chip-btn--active' : ''}`}
-                  onClick={() => setChordNotation('anglo')}
-                >
-                  C D E
-                </button>
-                <button
-                  className={`instrument-toggle-btn concert-chip-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active concert-chip-btn--active' : ''}`}
-                  onClick={() => setChordNotation('spanish')}
-                >
-                  Do Re Mi
-                </button>
-              </div>
-            )}
-          </div>
-
-          {showChords && (
-            <div className="instrument-toggle song-toolbar-controls-group">
-              <button
-                className={`instrument-toggle-btn concert-chip-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active concert-chip-btn--active' : ''}`}
-                onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
-              >
-                Guitar
-              </button>
-              <button
-                className={`instrument-toggle-btn concert-chip-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active concert-chip-btn--active' : ''}`}
-                onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
-              >
-                Piano
-              </button>
+        <div className="song-view-toolbar concert-song-view-toolbar">
+          <section className="song-toolbar-section song-toolbar-section--settings">
+            <div className="song-toolbar-section-head">
+              <h2 className="song-toolbar-section-title"><SlidersHorizontal size={14} /> Settings</h2>
             </div>
-          )}
 
-          <button
-            type="button"
-            className="concert-chip-btn"
-            onClick={() => setShowSongNavigator((value) => !value)}
-          >
-            <List size={14} /> Songs
-          </button>
+            <div className="song-toolbar-row song-toolbar-row--controls">
+              <div className="transpose-control song-toolbar-controls-group">
+                <button
+                  onClick={() => setTranspose((value) => value - 1)}
+                  aria-label="Transpose down"
+                  className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="transpose-label song-toolbar-tool-btn song-toolbar-setting-label">
+                  {currentSong.key
+                    ? transpose === 0
+                      ? `Key of ${currentSong.key}`
+                      : `Key of ${transposeChord(currentSong.key, transpose)}`
+                    : transpose === 0
+                      ? 'Original key'
+                      : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
+                </span>
+                <button
+                  onClick={() => setTranspose((value) => value + 1)}
+                  aria-label="Transpose up"
+                  className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
+                >
+                  <ChevronRight size={16} />
+                </button>
+                {transpose !== 0 && (
+                  <button
+                    onClick={() => setTranspose(0)}
+                    aria-label="Reset transpose"
+                    className="transpose-btn transpose-btn--reset song-toolbar-tool-btn song-toolbar-setting-btn"
+                    title="Reset to original key"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                )}
+              </div>
 
-          <button
-            type="button"
-            className={`concert-chip-btn${showTuner ? ' concert-chip-btn--active' : ''}`}
-            onClick={() => setShowTuner((value) => !value)}
-            title={showTuner ? 'Hide tuner' : 'Show tuner'}
-            aria-label={showTuner ? 'Hide tuner' : 'Show tuner'}
-          >
-            <AudioLines size={14} /> Tuner
-          </button>
+              <button
+                type="button"
+                className={`song-toolbar-tool-btn${showChords ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => {
+                  setShowChords((prev) => {
+                    const next = !prev;
+                    if (!next) setActiveChord(null);
+                    return next;
+                  });
+                }}
+                aria-label={showChords ? 'Hide chords' : 'Show chords'}
+                title={showChords ? 'Hide chords' : 'Show chords'}
+              >
+                Chords
+              </button>
 
-          <button
-            type="button"
-            className={`concert-chip-btn${showMetronome ? ' concert-chip-btn--active' : ''}`}
-            onClick={() => setShowMetronome((value) => !value)}
-            title={showMetronome ? 'Hide metronome' : 'Show metronome'}
-            aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
-          >
-            <Metronome size={14} /> Metronome
-          </button>
+              {showChords && (
+                <>
+                  <div className="instrument-toggle song-toolbar-controls-group">
+                    <button
+                      className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
+                      onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
+                    >
+                      Guitar
+                    </button>
+                    <button
+                      className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
+                      onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
+                    >
+                      Piano
+                    </button>
+                  </div>
 
-          {media && (
-            <button
-              type="button"
-              className={`concert-chip-btn${showMediaPlayer ? ' concert-chip-btn--active' : ''}`}
-              onClick={() => {
-                setShowMediaPlayer((value) => {
-                  const next = !value;
-                  if (next) setAutoPlayMediaOnOpen(true);
-                  return next;
-                });
-              }}
-              title={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
-              aria-label={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
-            >
-              <Play size={14} /> Playback
-            </button>
-          )}
+                  <div className="instrument-toggle song-toolbar-controls-group">
+                    <button
+                      className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
+                      onClick={() => setChordNotation('anglo')}
+                    >
+                      C D E
+                    </button>
+                    <button
+                      className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
+                      onClick={() => setChordNotation('spanish')}
+                    >
+                      Do Re Mi
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
 
-          <button type="button" className="concert-chip-btn" onClick={toggleFullscreen}>
-            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            {isFullscreen ? 'Exit full' : 'Full screen'}
-          </button>
+          <section className="song-toolbar-section song-toolbar-section--tools">
+            <div className="song-toolbar-section-head">
+              <h2 className="song-toolbar-section-title"><List size={14} /> Tools</h2>
+            </div>
 
-          <div className="concert-teleprompter" aria-label="Auto scroll controls">
-            <button
-              type="button"
-              className="concert-chip-btn concert-chip-btn--compact"
-              onClick={() => setTeleprompterSpeed((value) => Math.max(6, value - 4))}
-              aria-label="Reduce scroll speed"
-            >
-              -
-            </button>
-            <button
-              type="button"
-              className="concert-chip-btn"
-              onClick={() => setTeleprompterActive((value) => !value)}
-              aria-label={teleprompterActive ? 'Pause auto scroll' : 'Start auto scroll'}
-            >
-              {teleprompterActive ? <Pause size={14} /> : <Play size={14} />}
-              {teleprompterActive ? 'Pause scroll' : 'Start scroll'}
-            </button>
-            <button
-              type="button"
-              className="concert-chip-btn concert-chip-btn--compact"
-              onClick={() => setTeleprompterSpeed((value) => Math.min(120, value + 4))}
-              aria-label="Increase scroll speed"
-            >
-              +
-            </button>
-            <button
-              type="button"
-              className="concert-chip-btn"
-              onClick={() => {
-                setTeleprompterActive(false);
-                if (songScrollRef.current) songScrollRef.current.scrollTop = 0;
-              }}
-              aria-label="Reset scroll"
-            >
-              <RotateCcw size={14} /> Reset scroll
-            </button>
-            <span className="concert-teleprompter-speed">{teleprompterSpeed}px/s</span>
-          </div>
+            <div className="song-toolbar-row song-toolbar-row--tool-switches">
+              <button
+                type="button"
+                className={`song-toolbar-tool-btn${showTuner ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => setShowTuner((value) => !value)}
+                title={showTuner ? 'Hide tuner' : 'Show tuner'}
+                aria-label={showTuner ? 'Hide tuner' : 'Show tuner'}
+              >
+                <AudioLines size={14} />
+                Tuner
+              </button>
+
+              <button
+                type="button"
+                className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => setShowMetronome((value) => !value)}
+                title={showMetronome ? 'Hide metronome' : 'Show metronome'}
+                aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
+              >
+                <Metronome size={14} />
+                Metronome
+              </button>
+
+              {media && (
+                <button
+                  type="button"
+                  className={`song-toolbar-tool-btn${showMediaPlayer ? ' song-toolbar-tool-btn--active' : ''}`}
+                  onClick={() => {
+                    setShowMediaPlayer((value) => {
+                      const next = !value;
+                      if (next) setAutoPlayMediaOnOpen(true);
+                      return next;
+                    });
+                  }}
+                  title={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
+                  aria-label={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
+                >
+                  <Play size={14} />
+                  Playback
+                </button>
+              )}
+            </div>
+
+            {(showTuner || showMetronome || (media && showMediaPlayer && currentSong.playbackUrl)) && (
+              <div className="song-toolbar-tools-grid concert-toolbar-tools-grid">
+                {showTuner && (
+                  <div className="song-toolbar-tool-card">
+                    <span className="song-toolbar-tool-card-title">
+                      <AudioLines size={13} />
+                      Tuner
+                    </span>
+                    <VisualTuner className="song-view-tuner" />
+                  </div>
+                )}
+
+                {showMetronome && (
+                  <div className="song-toolbar-tool-card">
+                    <span className="song-toolbar-tool-card-title">
+                      <Metronome size={13} />
+                      Metronome
+                    </span>
+                    <VisualMetronome
+                      tempo={currentSong.tempo}
+                      timeSignature={currentSong.timeSignature}
+                      className="song-view-metronome"
+                    />
+                  </div>
+                )}
+
+                {media && showMediaPlayer && currentSong.playbackUrl && (
+                  <div className="song-toolbar-tool-card song-toolbar-tool-card--media">
+                    <span className="song-toolbar-tool-card-title">Playback</span>
+                    <SongMediaPlayer
+                      mediaUrl={currentSong.playbackUrl}
+                      autoPlay={autoPlayMediaOnOpen}
+                      onAutoPlayHandled={() => setAutoPlayMediaOnOpen(false)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
         </div>
-
-        {(showTuner || showMetronome || (media && showMediaPlayer && currentSong.playbackUrl)) && (
-          <div className="song-toolbar-tools-grid concert-toolbar-tools-grid">
-            {showTuner && (
-              <div className="song-toolbar-tool-card">
-                <span className="song-toolbar-tool-card-title">
-                  <AudioLines size={13} />
-                  Tuner
-                </span>
-                <VisualTuner className="song-view-tuner" />
-              </div>
-            )}
-
-            {showMetronome && (
-              <div className="song-toolbar-tool-card">
-                <span className="song-toolbar-tool-card-title">
-                  <Metronome size={13} />
-                  Metronome
-                </span>
-                <VisualMetronome
-                  tempo={currentSong.tempo}
-                  timeSignature={currentSong.timeSignature}
-                  className="song-view-metronome"
-                />
-              </div>
-            )}
-
-            {media && showMediaPlayer && currentSong.playbackUrl && (
-              <div className="song-toolbar-tool-card song-toolbar-tool-card--media">
-                <span className="song-toolbar-tool-card-title">Playback</span>
-                <SongMediaPlayer
-                  mediaUrl={currentSong.playbackUrl}
-                  autoPlay={autoPlayMediaOnOpen}
-                  onAutoPlayHandled={() => setAutoPlayMediaOnOpen(false)}
-                />
-              </div>
-            )}
-          </div>
-        )}
       </header>
       )}
 
