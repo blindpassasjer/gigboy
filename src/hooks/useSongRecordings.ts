@@ -29,7 +29,7 @@ export function useSongRecordings({ scope, songId }: Params) {
       return;
     }
     setLoading(true);
-    loadSongRecordings(db, scope, songId)
+    loadSongRecordings(db, storage, scope, songId)
       .then(setRecordings)
       .catch((err) => console.error('Failed to load recordings', err))
       .finally(() => setLoading(false));

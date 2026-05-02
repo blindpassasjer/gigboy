@@ -60,25 +60,47 @@ function storageBasePath(scope: RecordingsScope, songId: string) {
   return `users/${scope.ownerId}/songs/${songId}/recordings`;
 }
 
+function readStringField(data: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const value = data[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+  }
+  return '';
+}
+
 export async function loadSongRecordings(
   db: Firestore,
+  storage: FirebaseStorage | null,
   scope: RecordingsScope,
   songId: string,
 ): Promise<SongRecording[]> {
   const col = recordingsCollectionRef(db, scope, songId);
   const q = query(col, orderBy('createdAt', 'desc'));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => {
+  const recordings = await Promise.all(snap.docs.map(async (d) => {
     const data = d.data();
     const rawRecorder = data.recorder as Record<string, unknown> | undefined;
+    const storagePath = readStringField(data, ['storagePath', 'path']);
+    let downloadUrl = readStringField(data, ['downloadUrl', 'downloadURL', 'audioUrl', 'url']);
+
+    if (!downloadUrl && storage && storagePath) {
+      try {
+        downloadUrl = await getDownloadURL(ref(storage, storagePath));
+      } catch {
+        // Leave empty if file no longer exists or caller cannot read it.
+      }
+    }
+
     return {
       id: d.id,
       name: typeof data.name === 'string' ? data.name : 'Untitled',
-      storagePath: typeof data.storagePath === 'string' ? data.storagePath : '',
-      downloadUrl: typeof data.downloadUrl === 'string' ? data.downloadUrl : '',
+      storagePath,
+      downloadUrl,
       durationMs: typeof data.durationMs === 'number' ? data.durationMs : 0,
-      sizeBytes: typeof data.sizeBytes === 'number' ? data.sizeBytes : 0,
-      mimeType: typeof data.mimeType === 'string' ? data.mimeType : 'audio/webm',
+      sizeBytes: typeof data.sizeBytes === 'number' ? data.sizeBytes : (typeof data.size === 'number' ? data.size : 0),
+      mimeType: typeof data.mimeType === 'string' ? data.mimeType : (typeof data.contentType === 'string' ? data.contentType : 'audio/webm'),
       createdAt: typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString(),
       recorder: rawRecorder && typeof rawRecorder.userId === 'string'
         ? {
@@ -88,7 +110,9 @@ export async function loadSongRecordings(
           }
         : undefined,
     };
-  });
+  }));
+
+  return recordings;
 }
 
 export async function uploadSongRecording(

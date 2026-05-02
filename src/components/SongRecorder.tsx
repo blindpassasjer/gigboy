@@ -307,6 +307,12 @@ export default function SongRecorder({ song, user, bandId }: Props) {
   const [previewProgress, setPreviewProgress] = useState(0);
   const [error, setError] = useState<string | null>(uploadError);
 
+  useEffect(() => {
+    if (uploadError) {
+      setError(uploadError);
+    }
+  }, [uploadError]);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -424,13 +430,19 @@ export default function SongRecorder({ song, user, bandId }: Props) {
   async function saveRecording() {
     if (!previewBlob) return;
     const displayName = user.fullName?.trim() || user.username?.trim() || user.email;
-    await uploadRecording(
-      previewBlob,
-      previewName.trim() || `${song.title} - ${formatDateTime(new Date())}`,
-      previewDurationMs,
-      { userId: user.id, displayName, avatar: user.avatar },
-    );
-    discardPreview();
+    setError(null);
+    try {
+      await uploadRecording(
+        previewBlob,
+        previewName.trim() || `${song.title} - ${formatDateTime(new Date())}`,
+        previewDurationMs,
+        { userId: user.id, displayName, avatar: user.avatar },
+      );
+      discardPreview();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save recording';
+      setError(message);
+    }
   }
 
   function togglePreviewPlay() {
