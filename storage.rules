@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function bandDocument(bandId) {
+      return firestore.get(/databases/(default)/documents/bands/$(bandId));
+    }
+
+    function isBandMember(bandId) {
+      return isSignedIn()
+        && bandDocument(bandId).data.memberIds is list
+        && bandDocument(bandId).data.memberIds.hasAny([request.auth.uid]);
+    }
+
+    // User-scoped song recordings
+    match /users/{userId}/songs/{songId}/recordings/{fileName} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Band-scoped song recordings
+    match /bands/{bandId}/songs/{songId}/recordings/{fileName} {
+      allow read, write: if isBandMember(bandId);
+    }
+
+    // Deny all other storage access by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
