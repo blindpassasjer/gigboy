@@ -215,15 +215,15 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             </div>
 
             <div className="song-toolbar-row song-toolbar-row--controls">
-              <div className="transpose-control">
+              <div className="transpose-control song-toolbar-controls-group">
                 <button
                   onClick={() => setTranspose((t) => t - 1)}
                   aria-label="Transpose down"
-                  className="transpose-btn"
+                  className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
                 >
                   <ChevronDown size={16} />
                 </button>
-                <span className="transpose-label">
+                <span className="transpose-label song-toolbar-tool-btn song-toolbar-setting-label">
                   {song.key
                     ? transpose === 0
                       ? `Key of ${song.key}`
@@ -235,7 +235,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 <button
                   onClick={() => setTranspose((t) => t + 1)}
                   aria-label="Transpose up"
-                  className="transpose-btn"
+                  className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
                 >
                   <ChevronUp size={16} />
                 </button>
@@ -243,7 +243,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   <button
                     onClick={() => setTranspose(0)}
                     aria-label="Reset transpose"
-                    className="transpose-btn transpose-btn--reset"
+                    className="transpose-btn transpose-btn--reset song-toolbar-tool-btn song-toolbar-setting-btn"
                     title="Reset to original key"
                   >
                     <RotateCcw size={13} />
@@ -251,28 +251,32 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 )}
               </div>
 
-              <label className="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={showChords}
-                  onChange={(e) => {
-                    setShowChords(e.target.checked);
-                    if (!e.target.checked) setActiveChord(null);
-                  }}
-                />
-                Show chords
-              </label>
+              <button
+                type="button"
+                className={`song-toolbar-tool-btn${showChords ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => {
+                  setShowChords((prev) => {
+                    const next = !prev;
+                    if (!next) setActiveChord(null);
+                    return next;
+                  });
+                }}
+                aria-label={showChords ? 'Hide chords' : 'Show chords'}
+                title={showChords ? 'Hide chords' : 'Show chords'}
+              >
+                Chords
+              </button>
 
               {showChords && (
-                <div className="instrument-toggle">
+                <div className="instrument-toggle song-toolbar-controls-group">
                   <button
-                    className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
+                    className={`instrument-toggle-btn song-toolbar-tool-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
                     onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
                   >
                     Guitar
                   </button>
                   <button
-                    className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
+                    className={`instrument-toggle-btn song-toolbar-tool-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
                     onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
                   >
                     Piano
@@ -280,15 +284,15 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 </div>
               )}
 
-              <div className="instrument-toggle">
+              <div className="instrument-toggle song-toolbar-controls-group">
                 <button
-                  className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
+                  className={`instrument-toggle-btn song-toolbar-tool-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
                   onClick={() => setChordNotation('anglo')}
                 >
                   C D E
                 </button>
                 <button
-                  className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
+                  className={`instrument-toggle-btn song-toolbar-tool-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active song-toolbar-tool-btn--active' : ''}`}
                   onClick={() => setChordNotation('spanish')}
                 >
                   Do Re Mi

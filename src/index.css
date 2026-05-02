@@ -1189,6 +1189,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   -webkit-overflow-scrolling: touch;
 }
 
+.song-toolbar-controls-group {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+}
+
 .song-toolbar-tools-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1599,6 +1605,39 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--song-item-accent-contrast, var(--accent-contrast));
   border-color: color-mix(in srgb, var(--song-header-accent) 74%, black);
   background: var(--song-header-accent);
+}
+
+.song-view-header .song-toolbar-row--controls {
+  row-gap: .45rem;
+}
+
+.song-view-header .song-toolbar-row--controls .transpose-control,
+.song-view-header .song-toolbar-row--controls .instrument-toggle {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  overflow: visible;
+  gap: .45rem;
+}
+
+.song-view-header .song-toolbar-row--controls .transpose-btn,
+.song-view-header .song-toolbar-row--controls .instrument-toggle-btn {
+  padding: .35rem .7rem;
+}
+
+.song-view-header .song-toolbar-row--controls .song-toolbar-setting-label {
+  cursor: default;
+  min-width: 9.25rem;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.song-view-header .song-toolbar-row--controls .transpose-btn--reset,
+.song-view-header .song-toolbar-row--controls .transpose-btn--reset:hover {
+  color: color-mix(in srgb, #fff 92%, #b91c1c);
+  border-color: color-mix(in srgb, #b91c1c 45%, var(--song-item-border));
+  background: color-mix(in srgb, #b91c1c 70%, #111);
 }
 
 .song-media-player {
@@ -2159,6 +2198,34 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .15rem .55rem;
   margin: .75rem 0 .3rem;
   font-family: inherit;
+}
+
+@media (max-width: 900px) {
+  .song-view .chord-display {
+    overflow-x: hidden;
+  }
+
+  .song-view .chord-line {
+    flex-wrap: wrap;
+    white-space: normal;
+    align-items: flex-start;
+    row-gap: .2rem;
+  }
+
+  .song-view .chord-segment {
+    white-space: pre-wrap;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .song-view .lyric-text {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .song-view .chord-name-btn {
+    white-space: normal;
+  }
 }
 
 /* ─── Song hand notes ────────────────────────────────────────────────────────── */
@@ -3076,6 +3143,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-direction: column;
   overflow-y: auto;
   padding-bottom: 1rem;
+  font-family: inherit;
+  font-size: 1rem;
 }
 
 .sidebar-header {
@@ -3097,10 +3166,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-title {
-  font-size: .8rem;
+  font-size: 1rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .07em;
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--muted);
 }
 
@@ -3279,7 +3348,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 1;
   padding: .3rem .4rem;
   border-radius: 5px;
-  font-size: .85rem;
+  font-size: 1rem;
   color: var(--muted);
   text-align: left;
   min-width: 0;
@@ -3344,7 +3413,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--accent);
   border-radius: 5px;
   background: var(--bg);
-  font-size: .85rem;
+  font-size: 1rem;
   outline: none;
 }
 
@@ -3355,7 +3424,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .35rem;
   width: 100%;
   padding: .45rem .75rem;
-  font-size: .82rem;
+  font-size: 1rem;
   color: var(--muted);
   text-align: left;
   margin-top: auto;
@@ -3391,7 +3460,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-width: 0;
   padding: .3rem .4rem;
   border-radius: 5px;
-  font-size: .85rem;
+  font-size: 1rem;
   text-align: left;
   color: var(--muted);
   transition: background .15s, color .15s;
@@ -3416,10 +3485,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-section-title {
-  font-size: .75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .05em;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--muted);
   margin: 0;
 }
@@ -3462,7 +3531,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 1;
   padding: .3rem .4rem;
   border-radius: 5px;
-  font-size: .85rem;
+  font-size: 1rem;
   color: var(--muted);
   text-align: left;
   min-width: 0;
@@ -3523,7 +3592,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .35rem;
   width: 100%;
   padding: .45rem .75rem;
-  font-size: .82rem;
+  font-size: 1rem;
   color: var(--muted);
   text-align: left;
   transition: color .15s;
@@ -3563,10 +3632,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
   padding: .2rem .25rem .2rem 0;
   border-radius: 5px;
-  font-size: .75rem;
+  font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .04em;
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--muted);
   text-align: left;
   transition: background .12s, color .12s;
@@ -3618,7 +3687,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
   padding: .4rem .5rem;
   border-radius: 5px;
-  font-size: .82rem;
+  font-size: 1rem;
   color: var(--fg);
   text-align: left;
   transition: background .1s;
@@ -3666,7 +3735,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 1;
   min-width: 0;
   padding: .45rem .5rem;
-  font-size: .82rem;
+  font-size: 1rem;
   color: inherit;
   text-align: left;
   border-radius: 5px;
