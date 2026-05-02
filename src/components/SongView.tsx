@@ -304,6 +304,16 @@ export default function SongView({ song, accentColor }: Props) {
             <div className="song-toolbar-row song-toolbar-row--tool-switches">
               <button
                 type="button"
+                className={`song-toolbar-tool-btn${showTuner ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => setShowTuner((prev) => !prev)}
+                title={showTuner ? 'Hide tuner' : 'Show tuner'}
+                aria-label={showTuner ? 'Hide tuner' : 'Show tuner'}
+              >
+                Tuner
+              </button>
+
+              <button
+                type="button"
                 className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}`}
                 onClick={() => setShowMetronome((prev) => !prev)}
                 title={showMetronome ? 'Hide metronome' : 'Show metronome'}
@@ -312,15 +322,18 @@ export default function SongView({ song, accentColor }: Props) {
                 Metronome
               </button>
 
-              <button
-                type="button"
-                className={`song-toolbar-tool-btn${showTuner ? ' song-toolbar-tool-btn--active' : ''}`}
-                onClick={() => setShowTuner((prev) => !prev)}
-                title={showTuner ? 'Hide tuner' : 'Show tuner'}
-                aria-label={showTuner ? 'Hide tuner' : 'Show tuner'}
-              >
-                Tuner
-              </button>
+              {user && (
+                <button
+                  type="button"
+                  className={`song-toolbar-tool-btn${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
+                  onClick={() => handleToggleNotes(!showNotes)}
+                  title={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
+                  aria-label={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
+                >
+                  <PenLine size={14} />
+                  Notes
+                </button>
+              )}
 
               {media && (
                 <button
@@ -340,19 +353,6 @@ export default function SongView({ song, accentColor }: Props) {
                 >
                   <Play size={14} />
                   Player
-                </button>
-              )}
-
-              {user && (
-                <button
-                  type="button"
-                  className={`song-toolbar-tool-btn${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
-                  onClick={() => handleToggleNotes(!showNotes)}
-                  title={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
-                  aria-label={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
-                >
-                  <PenLine size={14} />
-                  Notes
                 </button>
               )}
             </div>
