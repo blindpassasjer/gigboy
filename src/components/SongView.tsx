@@ -15,6 +15,7 @@ import {
   PenLine,
   Trash2,
   Play,
+  Mic,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { HandNoteStroke, Song } from '../types';
@@ -34,6 +35,7 @@ import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import ShareMenu from './ShareMenu';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import SongMediaPlayer from './SongMediaPlayer';
+import SongRecorder from './SongRecorder';
 import { parseSongMedia } from '../utils/songMedia';
 
 interface Props {
@@ -66,6 +68,7 @@ export default function SongView({ song, accentColor }: Props) {
   const [showMetronome, setShowMetronome] = useState(false);
   const [showTuner, setShowTuner] = useState(false);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
+  const [showRecorder, setShowRecorder] = useState(false);
   const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
   const media = song.playbackUrl ? parseSongMedia(song.playbackUrl) : null;
 
@@ -132,6 +135,7 @@ export default function SongView({ song, accentColor }: Props) {
     setShowMetronome(false);
     setShowTuner(false);
     setShowMediaPlayer(false);
+    setShowRecorder(false);
     setAutoPlayMediaOnOpen(false);
     setShowNotes(false);
     setDrawEnabled(false);
@@ -355,9 +359,22 @@ export default function SongView({ song, accentColor }: Props) {
                   Player
                 </button>
               )}
+
+              {user && (
+                <button
+                  type="button"
+                  className={`song-toolbar-tool-btn${showRecorder ? ' song-toolbar-tool-btn--active' : ''}`}
+                  onClick={() => setShowRecorder((prev) => !prev)}
+                  title={showRecorder ? 'Hide recorder' : 'Show recorder'}
+                  aria-label={showRecorder ? 'Hide recorder' : 'Show recorder'}
+                >
+                  <Mic size={14} />
+                  Recorder
+                </button>
+              )}
             </div>
 
-            {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes)) && (
+            {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes) || (user && showRecorder)) && (
               <div className="song-toolbar-tools-grid">
                 {showTuner && (
                   <div className="song-toolbar-tool-card">
@@ -471,6 +488,12 @@ export default function SongView({ song, accentColor }: Props) {
                       autoPlay={autoPlayMediaOnOpen}
                       onAutoPlayHandled={() => setAutoPlayMediaOnOpen(false)}
                     />
+                  </div>
+                )}
+
+                {user && showRecorder && (
+                  <div className="song-toolbar-tool-card song-toolbar-tool-card--recorder">
+                    <SongRecorder song={song} user={user} />
                   </div>
                 )}
               </div>

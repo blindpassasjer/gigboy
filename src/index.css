@@ -2317,6 +2317,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-bottom: .75rem;
 }
 .recorder-title { font-size: .9rem; font-weight: 700; margin-bottom: .75rem; }
+
+/* SongRecorder root */
+.song-recorder {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  width: 100%;
+}
 .recorder-controls { display: flex; flex-direction: column; gap: .75rem; }
 .recorder-status { color: var(--muted); font-size: .9rem; }
 .recorder-indicator {
@@ -2338,6 +2346,40 @@ input, select, textarea { font: inherit; color: var(--text); }
 .recorder-save-form { display: flex; flex-direction: column; gap: .5rem; }
 .recorder-save-actions { display: flex; gap: .5rem; }
 .recorder-error { color: var(--danger); font-size: .85rem; }
+
+/* Recorder — new sub-layouts */
+.recorder-recording-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+.recorder-elapsed {
+  font-variant-numeric: tabular-nums;
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 2.5rem;
+}
+.recorder-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+.recorder-preview-playback {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.recorder-preview-bar {
+  flex: 1;
+  cursor: pointer;
+}
+
+/* Recorder tool card — full width */
+.song-toolbar-tool-card--recorder {
+  grid-column: 1 / -1;
+}
 
 /* Buttons */
 .rec-btn {

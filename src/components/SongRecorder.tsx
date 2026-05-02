@@ -1,0 +1,348 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Mic, MicOff, Play, Pause, Trash2, Save, X } from 'lucide-react';
+import { useSongRecordings } from '../hooks/useSongRecordings';
+import type { Song } from '../types';
+import type { User } from '../context/AuthContext';
+import type { SongRecording } from '../lib/songRecordings';
+
+interface Props {
+  song: Song;
+  user: User;
+}
+
+type RecorderState = 'idle' | 'recording' | 'preview';
+
+function formatTime(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function formatDateTime(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+interface SavedPlayerProps {
+  recording: SongRecording;
+  onDelete: (r: SongRecording) => void;
+}
+
+function SavedPlayer({ recording, onDelete }: SavedPlayerProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  function togglePlay() {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      void audioRef.current.play();
+    }
+  }
+
+  function handleSeek(e: React.MouseEvent<HTMLDivElement>) {
+    if (!audioRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    audioRef.current.currentTime = ratio * (audioRef.current.duration || 0);
+  }
+
+  return (
+    <li className="audio-player">
+      <audio
+        ref={audioRef}
+        src={recording.downloadUrl}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => { setIsPlaying(false); setProgress(0); }}
+        onTimeUpdate={() => {
+          const el = audioRef.current;
+          if (el && el.duration > 0) setProgress(el.currentTime / el.duration);
+        }}
+      />
+      <button className="play-btn" onClick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Play'}>
+        {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+      </button>
+      <div className="player-info">
+        <span className="player-name" title={recording.name}>{recording.name}</span>
+        <span className="player-date">
+          {new Date(recording.createdAt).toLocaleString()} · {formatFileSize(recording.sizeBytes)}
+        </span>
+      </div>
+      <div className="progress-bar" onClick={handleSeek} role="slider" aria-label="Seek">
+        <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
+      </div>
+      <button
+        className="delete-btn"
+        onClick={() => onDelete(recording)}
+        aria-label={`Delete recording ${recording.name}`}
+        title="Delete recording"
+      >
+        <Trash2 size={14} />
+      </button>
+    </li>
+  );
+}
+
+export default function SongRecorder({ song, user }: Props) {
+  const ownerId = song.ownerId ?? user.id;
+  const { recordings, loading, uploading, uploadRecording, deleteRecording } = useSongRecordings({
+    ownerId,
+    songId: song.id,
+    userId: user.id,
+  });
+
+  const [recState, setRecState] = useState<RecorderState>('idle');
+  const [elapsed, setElapsed] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewName, setPreviewName] = useState('');
+  const [previewDurationMs, setPreviewDurationMs] = useState(0);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const [previewProgress, setPreviewProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const elapsedStartRef = useRef<number>(0);
+  const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement>(null);
+
+  const stopStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (audioCtxRef.current) {
+      void audioCtxRef.current.close();
+      audioCtxRef.current = null;
+    }
+  }, []);
+
+  // Reset on song change
+  useEffect(() => {
+    return () => {
+      stopStream();
+      if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
+    };
+  }, [stopStream]);
+
+  async function startRecording() {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          sampleRate: 48000,
+        },
+      });
+
+      const ctx = new AudioContext({ sampleRate: 48000 });
+      const source = ctx.createMediaStreamSource(stream);
+
+      // 80 Hz high-pass to cut room rumble
+      const hpf = ctx.createBiquadFilter();
+      hpf.type = 'highpass';
+      hpf.frequency.value = 80;
+
+      // Brickwall limiter for loud rehearsal environments
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -6;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.1;
+
+      const dest = ctx.createMediaStreamDestination();
+      source.connect(hpf);
+      hpf.connect(limiter);
+      limiter.connect(dest);
+
+      streamRef.current = stream;
+      audioCtxRef.current = ctx;
+
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+
+      const recorder = new MediaRecorder(dest.stream, { mimeType: mime });
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const durationMs = Date.now() - elapsedStartRef.current;
+        const blob = new Blob(chunksRef.current, { type: mime });
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+        setPreviewBlob(blob);
+        setPreviewDurationMs(durationMs);
+        setPreviewName(`${song.title} - ${formatDateTime(new Date())}`);
+        setPreviewProgress(0);
+        setIsPreviewPlaying(false);
+        setRecState('preview');
+        stopStream();
+        if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
+        setElapsed(0);
+      };
+
+      recorder.start(1000);
+      mediaRecorderRef.current = recorder;
+      elapsedStartRef.current = Date.now();
+      elapsedTimerRef.current = setInterval(() => {
+        setElapsed(Date.now() - elapsedStartRef.current);
+      }, 500);
+
+      setRecState('recording');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg.toLowerCase().includes('denied') ? 'Microphone access denied' : `Mic error: ${msg}`);
+    }
+  }
+
+  function stopRecording() {
+    if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+  }
+
+  function discardPreview() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setPreviewBlob(null);
+    setIsPreviewPlaying(false);
+    setPreviewProgress(0);
+    setRecState('idle');
+  }
+
+  async function saveRecording() {
+    if (!previewBlob) return;
+    await uploadRecording(previewBlob, previewName.trim() || `${song.title} - ${formatDateTime(new Date())}`, previewDurationMs);
+    discardPreview();
+  }
+
+  function togglePreviewPlay() {
+    if (!previewAudioRef.current) return;
+    if (isPreviewPlaying) {
+      previewAudioRef.current.pause();
+    } else {
+      void previewAudioRef.current.play();
+    }
+  }
+
+  function handlePreviewSeek(e: React.MouseEvent<HTMLDivElement>) {
+    if (!previewAudioRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    previewAudioRef.current.currentTime = ratio * (previewAudioRef.current.duration || 0);
+  }
+
+  return (
+    <div className="song-recorder">
+      {/* ── Controls ─────────────────────────────────── */}
+      <div className="recorder-controls">
+        {recState === 'idle' && (
+          <button className="rec-btn rec-btn--start" onClick={startRecording}>
+            <Mic size={14} /> Start recording
+          </button>
+        )}
+
+        {recState === 'recording' && (
+          <div className="recorder-recording-row">
+            <span className="recorder-indicator">● REC</span>
+            <span className="recorder-elapsed">{formatTime(elapsed)}</span>
+            <button className="rec-btn rec-btn--stop" onClick={stopRecording}>
+              <MicOff size={14} /> Stop
+            </button>
+          </div>
+        )}
+
+        {recState === 'preview' && previewUrl && (
+          <div className="recorder-preview-section">
+            <audio
+              ref={previewAudioRef}
+              src={previewUrl}
+              onPlay={() => setIsPreviewPlaying(true)}
+              onPause={() => setIsPreviewPlaying(false)}
+              onEnded={() => { setIsPreviewPlaying(false); setPreviewProgress(0); }}
+              onTimeUpdate={() => {
+                const el = previewAudioRef.current;
+                if (el && el.duration > 0) setPreviewProgress(el.currentTime / el.duration);
+              }}
+            />
+            <div className="recorder-preview-playback">
+              <button
+                className="play-btn"
+                onClick={togglePreviewPlay}
+                aria-label={isPreviewPlaying ? 'Pause preview' : 'Play preview'}
+              >
+                {isPreviewPlaying ? <Pause size={14} /> : <Play size={14} />}
+              </button>
+              <div
+                className="progress-bar recorder-preview-bar"
+                onClick={handlePreviewSeek}
+                role="slider"
+                aria-label="Seek preview"
+              >
+                <div className="progress-fill" style={{ width: `${previewProgress * 100}%` }} />
+              </div>
+            </div>
+            <div className="recorder-save-form">
+              <input
+                className="recorder-name-input"
+                value={previewName}
+                onChange={(e) => setPreviewName(e.target.value)}
+                placeholder="Recording name"
+                aria-label="Recording name"
+              />
+              <div className="recorder-save-actions">
+                <button className="rec-btn rec-btn--save" onClick={saveRecording} disabled={uploading}>
+                  <Save size={14} /> {uploading ? 'Saving…' : 'Save'}
+                </button>
+                <button className="rec-btn rec-btn--reset" onClick={discardPreview}>
+                  <X size={14} /> Discard
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && <p className="recorder-error">{error}</p>}
+      </div>
+
+      {/* ── Recordings list ───────────────────────────── */}
+      <div className="recordings-section">
+        <div className="recordings-header">
+          <h2><span>Recordings</span></h2>
+        </div>
+        {loading ? (
+          <p className="no-recordings">Loading…</p>
+        ) : recordings.length === 0 ? (
+          <p className="no-recordings">No recordings yet</p>
+        ) : (
+          <ul className="recordings-list">
+            {recordings.map((rec) => (
+              <SavedPlayer key={rec.id} recording={rec} onDelete={deleteRecording} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
