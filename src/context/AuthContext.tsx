@@ -1,13 +1,15 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import {
   EmailAuthProvider,
   type AuthProvider,
+  type OAuthCredential,
   GithubAuthProvider,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   deleteUser,
+  linkWithCredential,
   onAuthStateChanged,
   reauthenticateWithCredential,
   updateEmail,
@@ -40,6 +42,9 @@ interface AuthContextValue {
   register: (email: string, password: string, username: string) => Promise<string | null>;
   loginWithGoogle: () => Promise<string | null>;
   loginWithGithub: () => Promise<string | null>;
+  pendingLinkEmail: string | null;
+  linkWithPassword: (password: string) => Promise<string | null>;
+  cancelPendingLink: () => void;
   completeUsername: (username: string) => Promise<string | null>;
   updateEmailAddress: (email: string) => Promise<string | null>;
   updateUsername: (username: string) => Promise<string | null>;
@@ -54,6 +59,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(firebaseEnabled);
+  const [pendingLinkEmail, setPendingLinkEmail] = useState<string | null>(null);
+  const pendingCredentialRef = useRef<OAuthCredential | null>(null);
 
   useEffect(() => {
     if (!auth) {
@@ -170,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (code === 'auth/account-exists-with-different-credential') {
-      return 'An account already exists with this email using a different sign-in method.';
+      return 'An account already exists with this email. Please sign in with your password to link your accounts.';
     }
 
     return err.message || fallback;
@@ -197,6 +204,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      if (code === 'auth/account-exists-with-different-credential') {
+        const firebaseErr = err as FirebaseError;
+        const email = firebaseErr.customData?.email as string | undefined;
+        const credential =
+          provider instanceof GoogleAuthProvider
+            ? GoogleAuthProvider.credentialFromError(firebaseErr)
+            : provider instanceof GithubAuthProvider
+              ? GithubAuthProvider.credentialFromError(firebaseErr)
+              : null;
+        if (email && credential) {
+          pendingCredentialRef.current = credential;
+          setPendingLinkEmail(email);
+          return null;
+        }
+      }
+
       return formatAuthError(err, providerLabel);
     }
   }, [formatAuthError]);
@@ -210,6 +233,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGithub = useCallback(async (): Promise<string | null> => {
     return loginWithProvider(new GithubAuthProvider(), 'GitHub');
   }, [loginWithProvider]);
+
+  const cancelPendingLink = useCallback(() => {
+    pendingCredentialRef.current = null;
+    setPendingLinkEmail(null);
+  }, []);
+
+  const linkWithPassword = useCallback(async (password: string): Promise<string | null> => {
+    const email = pendingLinkEmail;
+    const credential = pendingCredentialRef.current;
+    if (!auth || !email || !credential) {
+      return 'No pending account link.';
+    }
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await linkWithCredential(result.user, credential);
+      pendingCredentialRef.current = null;
+      setPendingLinkEmail(null);
+      return null;
+    } catch (err: unknown) {
+      return err instanceof Error ? err.message : 'Failed to link accounts.';
+    }
+  }, [pendingLinkEmail]);
 
   const completeUsername = useCallback(async (username: string) => {
     if (!db || !auth?.currentUser) {
@@ -369,6 +414,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         loginWithGoogle,
         loginWithGithub,
+        pendingLinkEmail,
+        linkWithPassword,
+        cancelPendingLink,
         completeUsername,
         updateEmailAddress,
         updateUsername: updateUsernameValue,

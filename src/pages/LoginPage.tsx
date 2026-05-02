@@ -38,13 +38,14 @@ function GitHubIcon() {
 }
 
 export default function LoginPage() {
-  const { login, register, loginWithGoogle, loginWithGithub } = useAuth();
+  const { login, register, loginWithGoogle, loginWithGithub, pendingLinkEmail, linkWithPassword, cancelPendingLink } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [linkPassword, setLinkPassword] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -84,7 +85,65 @@ export default function LoginPage() {
     if (err) {
       setError(err);
       setBusy(false);
+    } else if (!pendingLinkEmail) {
+      // signed in successfully, nothing more to do
     }
+    setBusy(false);
+  }
+
+  async function handleLinkAccounts(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    const err = await linkWithPassword(linkPassword);
+    if (err) {
+      setError(err);
+    } else {
+      setLinkPassword('');
+    }
+    setBusy(false);
+  }
+
+  if (pendingLinkEmail) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <div className="login-brand">
+            <BookOpen size={28} />
+            <span>Folio</span>
+          </div>
+          <h1 className="login-title">Link accounts</h1>
+          <p className="login-description">
+            An account with <strong>{pendingLinkEmail}</strong> already exists. Enter your password to link it with your new sign-in method.
+          </p>
+          <form className="login-form" onSubmit={handleLinkAccounts} noValidate>
+            <div className="form-field">
+              <label htmlFor="link-password">Password</label>
+              <input
+                id="link-password"
+                type="password"
+                autoComplete="current-password"
+                value={linkPassword}
+                onChange={(e) => { setLinkPassword(e.target.value); setError(''); }}
+                required
+              />
+            </div>
+            {error && <p className="login-error">{error}</p>}
+            <button type="submit" className="btn-primary login-submit" disabled={busy}>
+              {busy ? 'Linking…' : 'Link accounts'}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary login-submit"
+              onClick={() => { cancelPendingLink(); setError(''); setLinkPassword(''); }}
+              disabled={busy}
+            >
+              Cancel
+            </button>
+          </form>
+        </div>
+      </div>
+    );
   }
 
   return (
