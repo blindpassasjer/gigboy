@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useSongs } from '../context/SongsContext';
-import { useSongLists } from '../context/SongListsContext';
+import { useSongLists, SONGLISTS_CATEGORY_ID } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
@@ -15,7 +15,6 @@ import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 
-const INTERNAL_SONGLISTS_CATEGORY_ID = 'songlists-default';
 const ALL_SONGS_ICON_KEY = 'folio-all-songs-icon';
 
 type CopyMode = 'songlist' | 'setlist';
@@ -491,7 +490,7 @@ export default function HomePage() {
   }
 
   const shouldFilterByCategory = Boolean(
-    activeCategory && activeCategory.id !== INTERNAL_SONGLISTS_CATEGORY_ID
+    activeCategory && activeCategory.id !== SONGLISTS_CATEGORY_ID
   );
 
   const activeCategoryFilterId = shouldFilterByCategory

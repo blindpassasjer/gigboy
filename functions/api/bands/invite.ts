@@ -5,8 +5,8 @@ interface Data extends Record<string, unknown> {
   userId?: string;
 }
 
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
+function normalizeUsername(username: string) {
+  return username.trim().toLowerCase();
 }
 
 export const onRequestPost: PagesFunction<Record<string, string | undefined>, never, Data> = async (ctx) => {
@@ -35,7 +35,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       return Response.json({ error: 'Missing required fields.' }, { status: 400 });
     }
 
-    const normalizedRecipientUsername = normalizeEmail(recipientUsername);
+    const normalizedRecipientUsername = normalizeUsername(recipientUsername);
     if (!/^[a-z0-9](?:[a-z0-9_.-]{1,22}[a-z0-9])?$/.test(normalizedRecipientUsername)) {
       return Response.json({ error: 'Please provide a valid username.' }, { status: 400 });
     }
@@ -77,7 +77,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
     const existingMemberUsername = Object.values(memberUsernames)
       .filter((entry): entry is string => typeof entry === 'string')
-      .map((entry) => normalizeEmail(entry));
+      .map((entry) => normalizeUsername(entry));
     if (memberIds.includes(recipientUid) || existingMemberUsername.includes(normalizedRecipientUsername)) {
       return Response.json({ error: 'That user is already a member of this band.' }, { status: 409 });
     }

@@ -178,12 +178,6 @@ export default function SongMediaPlayer({ mediaUrl, autoPlay = false, onAutoPlay
   }, [media, autoPlay, onAutoPlayHandled]);
 
   useEffect(() => {
-    if (!autoPlay || !player || !isReady) return;
-    player.playVideo();
-    onAutoPlayHandled?.();
-  }, [autoPlay, player, isReady, onAutoPlayHandled]);
-
-  useEffect(() => {
     if (!player || !isReady) return;
 
     const interval = window.setInterval(() => {

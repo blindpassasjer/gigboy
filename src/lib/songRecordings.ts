@@ -93,7 +93,7 @@ export async function loadSongRecordings(
         // Leave empty if file no longer exists or caller cannot read it.
       }
     }
-  const rawWaveform = data.waveformBars;
+    const rawWaveform = data.waveformBars;
     const waveformBars = Array.isArray(rawWaveform)
       ? rawWaveform
           .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))

@@ -5,6 +5,7 @@ import SongHandNotesOverlay from './SongHandNotesOverlay';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { stageplotIconForKind } from '../lib/stageplotIcons';
 import { ICON_OPTIONS } from '../lib/iconOptions';
+import { clamp01 } from '../lib/songHandNotes';
 
 interface StageplotEditorProps {
   stageplot: Stageplot;
@@ -63,13 +64,6 @@ const PALETTE_CATEGORIES: PaletteCategory[] = [
     ],
   },
 ];
-
-function clamp01(value: number) {
-  if (!Number.isFinite(value)) return 0;
-  if (value < 0) return 0;
-  if (value > 1) return 1;
-  return value;
-}
 
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
@@ -371,7 +365,7 @@ export default function StageplotEditor({
   };
 
   return (
-    <section className="stageplot-view">
+    <section className="setlist-view stageplot-view">
       <div className="song-list-sticky">
         <div className="setlist-header songlist-header">
           <div className="setlist-title-block">
@@ -392,10 +386,10 @@ export default function StageplotEditor({
               />
             ) : (
               <div className="song-list-title-row">
-                <h2 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
+                <h1 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
                   {stageplot.icon ? <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
                   <span>{stageplot.name}</span>
-                </h2>
+                </h1>
                 {canEdit ? (
                   <button
                     type="button"

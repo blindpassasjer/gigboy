@@ -63,7 +63,6 @@ export function parseLine(raw: string): ParsedLine {
   return { type: 'chord-lyric', segments, raw };
 }
 
-/** Parse full ChordPro text into an array of lines. */
 /** Parse full ChordPro text into an array of lines.
  * Tab blocks ({start_of_tab}...{end_of_tab}) are collapsed into a single 'tab' line. */
 export function parseChordPro(text: string): ParsedLine[] {
