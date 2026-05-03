@@ -20,7 +20,8 @@
     "migrate:member-emails": "node scripts/migrate-member-emails.mjs",
     "migrate:member-emails:execute": "node scripts/migrate-member-emails.mjs --execute",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "firebase": "^11.0.0",
@@ -41,12 +42,16 @@
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "eslint": "^8.57.1",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.26",
     "firebase-admin": "^13.8.0",
     "typescript": "^5.0.2",
+    "vitest": "^2.1.9",
     "vite": "^4.5.5",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "jsdom": "^25.0.1"
   }
 }
