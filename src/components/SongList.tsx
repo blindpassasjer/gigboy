@@ -689,6 +689,7 @@ export default function SongList({
                 <div className="song-actions song-actions--stacked">
                   <Link
                     to={`/songs/${song.id}/edit`}
+                    state={songPageState}
                     className="song-action-btn song-action-btn--edit"
                     title={`Edit ${song.title}`}
                     aria-label={`Edit ${song.title}`}
@@ -772,6 +773,7 @@ export default function SongList({
                   <div className="song-actions">
                     <Link
                       to={`/songs/${song.id}/edit`}
+                      state={songPageState}
                       className="song-action-btn song-action-btn--edit"
                       title={`Edit ${song.title}`}
                       aria-label={`Edit ${song.title}`}

@@ -409,6 +409,7 @@ interface BandsContextValue {
   refreshBandTechnicalRiders: (bandId: string) => Promise<void>;
   refreshBandTrash: (bandId: string) => Promise<void>;
   addSongToBandLibrary: (bandId: string, song: Song) => Promise<string | null>;
+  updateBandSong: (bandId: string, song: Song) => Promise<string | null>;
   removeSongFromBandLibrary: (bandId: string, songId: string) => Promise<string | null>;
   moveBandSong: (bandId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
   addBandSongList: (bandId: string, name: string) => Promise<{ songListId: string | null; error: string | null }>;
@@ -1041,6 +1042,62 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return error instanceof Error ? error.message : 'Failed to add song to band library.';
     }
   }, [bandSongsByBandId, bands, refreshBandSongs, userId]);
+
+  const updateBandSong = useCallback(async (bandId: string, song: Song) => {
+    if (!db || !userId) {
+      return 'Band libraries require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return 'Band not found.';
+    }
+
+    const isMember = band.memberIds.includes(userId);
+    if (!isMember) {
+      return 'You do not have permission to edit this band library.';
+    }
+
+    const previousSongs = bandSongsByBandId[bandId] ?? [];
+    const existingSong = previousSongs.find((entry) => entry.id === song.id);
+    if (!existingSong) {
+      return 'Song not found in this band library.';
+    }
+
+    const nextSong: Song = {
+      ...song,
+      ownerId: existingSong.ownerId ?? band.ownerId,
+      collaboratorIds: existingSong.collaboratorIds ?? band.memberIds,
+      collaborationPermissions: existingSong.collaborationPermissions ?? Object.fromEntries(
+        band.memberIds.map((memberId) => [memberId, band.memberRoles[memberId] ?? 'viewer'])
+      ),
+      accessRole: 'owner',
+      sortOrder: song.sortOrder ?? existingSong.sortOrder,
+      createdAt: existingSong.createdAt ?? song.createdAt,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const nextSongs = previousSongs.map((entry) => (entry.id === nextSong.id ? nextSong : entry));
+    setBandSongsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSongs,
+    }));
+
+    try {
+      const { id, accessRole, ...rest } = nextSong;
+      const payload = Object.fromEntries(
+        Object.entries(rest).filter(([, value]) => value !== undefined)
+      );
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, id), payload);
+      return null;
+    } catch (error) {
+      setBandSongsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSongs,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band song.';
+    }
+  }, [bandSongsByBandId, bands, userId]);
 
   const removeSongFromBandLibrary = useCallback(async (bandId: string, songId: string) => {
     if (!db || !userId) {
@@ -2870,6 +2927,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBandTechnicalRiders,
     refreshBandTrash,
     addSongToBandLibrary,
+    updateBandSong,
     removeSongFromBandLibrary,
     updateBandLibraryIcon,
     moveBandSong,
@@ -2913,6 +2971,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     addSongToBandSetlist,
     addSongToBandSongList,
     addSongToBandLibrary,
+    updateBandSong,
     bandSetlistsByBandId,
     bandSongListsByBandId,
     bandSongsByBandId,

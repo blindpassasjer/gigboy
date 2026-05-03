@@ -48,6 +48,13 @@ export default function AddSongPage() {
   const initialSongListId = activeBandId
     ? (pageState?.initialSongListId ?? '')
     : (activeSongListId ?? '');
+  const songPageState = activeBandId
+    ? {
+      backTo: `/bands/${activeBandId}/library`,
+      backLabel: 'Band library',
+      bandId: activeBandId,
+    }
+    : undefined;
 
   async function handleAdd(song: Song): Promise<string | null> {
     const error = await addSong(song);
@@ -74,6 +81,7 @@ export default function AddSongPage() {
       songListOptions={songListOptions}
       initialSongListId={initialSongListId}
       onSongListChange={handleSongListChange}
+      songPageState={songPageState}
     />
   );
 }

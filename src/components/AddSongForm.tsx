@@ -19,6 +19,11 @@ interface Props {
   songListOptions?: Array<{ id: string; label: string }>;
   initialSongListId?: string;
   onSongListChange?: (songListId: string, songId: string) => void;
+  songPageState?: {
+    backTo?: string;
+    backLabel?: string;
+    bandId?: string;
+  };
 }
 
 const PLACEHOLDER = `{title: My Song}
@@ -43,6 +48,7 @@ export default function AddSongForm({
   songListOptions,
   initialSongListId,
   onSongListChange,
+  songPageState,
 }: Props) {
   const navigate = useNavigate();
   const [allowNavigation, setAllowNavigation] = useState(false);
@@ -137,14 +143,14 @@ export default function AddSongForm({
       flushSync(() => {
         setAllowNavigation(true);
       });
-      navigate(initialSong?.id ? `/songs/${initialSong.id}` : '/');
+      navigate(initialSong?.id ? `/songs/${initialSong.id}` : '/', { state: songPageState });
     };
 
     window.addEventListener('keydown', handleEscape);
     return () => {
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [mode, isDirty, navigate, initialSong?.id]);
+  }, [mode, isDirty, navigate, initialSong?.id, songPageState]);
 
   function validate() {
     const errs: string[] = [];
@@ -210,7 +216,7 @@ export default function AddSongForm({
     flushSync(() => {
       setAllowNavigation(true);
     });
-    navigate(`/songs/${song.id}`);
+    navigate(`/songs/${song.id}`, { state: songPageState });
   }
 
   return (
