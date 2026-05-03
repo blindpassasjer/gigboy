@@ -365,11 +365,13 @@ export default function StageplotEditor({
     await onDelete();
   };
 
+  const summaryLabel = `${items.length} item${items.length === 1 ? '' : 's'}${saving ? ' • Saving…' : ''}`;
+
   return (
-    <section className="stageplot-view">
-      <div className="stageplot-sticky">
-        <div className="stageplot-header">
-          <div className="stageplot-title-block">
+    <section className="setlist-view stageplot-view">
+      <div className="song-list-sticky stageplot-sticky">
+        <div className="setlist-header songlist-header">
+          <div className="setlist-title-block">
             {renaming ? (
               <input
                 type="text"
@@ -383,12 +385,12 @@ export default function StageplotEditor({
                   }
                 }}
                 onBlur={handleRenameCommit}
-                className="stageplot-name-input"
+                className="setlist-name-input"
               />
             ) : (
-              <div className="stageplot-title-row">
-                <h2 className="stageplot-heading" onDoubleClick={() => canEdit && setRenaming(true)}>
-                  {stageplot.icon ? <span className="stageplot-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
+              <div className="song-list-title-row">
+                <h2 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
+                  {stageplot.icon ? <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
                   <span>{stageplot.name}</span>
                 </h2>
                 {canEdit ? (
@@ -404,11 +406,9 @@ export default function StageplotEditor({
                 ) : null}
               </div>
             )}
-            <p className="stageplot-item-count">
-              {items.length} item{items.length === 1 ? '' : 's'}{saving ? ' • Saving…' : ''}
-            </p>
+            <p className="song-list-summary setlist-song-count">{summaryLabel}</p>
           </div>
-          <div className="stageplot-header-actions">
+          <div className="setlist-header-actions">
             {canEdit ? (
               <button
                 type="button"
@@ -504,8 +504,10 @@ export default function StageplotEditor({
         ) : null}
 
         {canEdit ? (
-          <div className="stageplot-toolbar">
-            <div className="stageplot-palette">
+          <div className="stageplot-toolbar" role="region" aria-label="Stageplot tools">
+            <div className="stageplot-toolbar-panel stageplot-palette-panel">
+              <div className="stageplot-toolbar-section-heading">Items</div>
+              <div className="stageplot-palette">
               {PALETTE_CATEGORIES.map((category) => (
                 <div key={category.name} className="stageplot-palette-category">
                   <div className="stageplot-palette-category-name">{category.name}</div>
@@ -557,23 +559,27 @@ export default function StageplotEditor({
                 </div>
               </div>
             </div>
-            <div className="stageplot-toolbar-actions">
-              <button
-                type="button"
-                className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
-                onClick={() => setDrawEnabled((prev) => !prev)}
-              >
-                <PenLine size={12} /> Draw
-              </button>
-              <button type="button" className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0}>
-                <Undo2 size={12} /> Undo
-              </button>
-              <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
-                <X size={12} /> Clear
-              </button>
-              <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
-                <Trash2 size={12} /> Remove
-              </button>
+            </div>
+            <div className="stageplot-toolbar-panel stageplot-toolbar-panel--actions">
+              <div className="stageplot-toolbar-section-heading">Annotations</div>
+              <div className="stageplot-toolbar-actions">
+                <button
+                  type="button"
+                  className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
+                  onClick={() => setDrawEnabled((prev) => !prev)}
+                >
+                  <PenLine size={12} /> Draw
+                </button>
+                <button type="button" className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0}>
+                  <Undo2 size={12} /> Undo
+                </button>
+                <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
+                  <X size={12} /> Clear
+                </button>
+                <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
+                  <Trash2 size={12} /> Remove
+                </button>
+              </div>
             </div>
           </div>
         ) : null}
