@@ -33,7 +33,6 @@ import { useAuth } from '../context/AuthContext';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
-import ShareMenu from './ShareMenu';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import SongMediaPlayer from './SongMediaPlayer';
 import SongRecorder from './SongRecorder';
@@ -575,13 +574,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 <SquarePen size={14} />
                 Edit
               </button>
-              <ShareMenu
-                resourceType="song"
-                resourceId={song.id}
-                resourceName={song.title}
-                buttonClassName="song-action-btn song-action-btn--labeled"
-                buttonTitle={`Share ${song.title}`}
-              />
               {canDeleteSong ? (
                 <button
                   className="song-action-btn song-action-btn--delete song-action-btn--labeled"

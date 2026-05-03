@@ -15,16 +15,16 @@
   --border:     #e2ddd8;
   --text:       #1a1a1a;
   --muted:      #6b6560;
-  --accent:     #5c4fa6;
-  --accent-h:   #4a3f87;
+  --accent:     #1a6fc4;
+  --accent-h:   #155aa0;
   --accent-contrast: #ffffff;
   --bands-hue:  #c33232;
   --bands-hue-soft: #fbeaea;
   --bands-hue-contrast: #ffffff;
   --danger:     #c0392b;
   --notes-draw: #27ae60;
-  --chord:      #5c4fa6;
-  --chord-bg:   #ede9f8;
+  --chord:      #1a6fc4;
+  --chord-bg:   #e6f0fb;
   --radius:     8px;
   --shadow:     0 1px 4px rgba(0,0,0,.08);
   --font-mono:  'JetBrains Mono', 'Courier New', Courier, monospace;
@@ -37,16 +37,16 @@
   --border:     #3b3733;
   --text:       #ede9e4;
   --muted:      #9e9890;
-  --accent:     #9d91e0;
-  --accent-h:   #b3a9e8;
-  --accent-contrast: #1c1a18;
+  --accent:     #6aadff;
+  --accent-h:   #89bfff;
+  --accent-contrast: #0d1f36;
   --bands-hue:  #ff7d7d;
   --bands-hue-soft: #3a2020;
   --bands-hue-contrast: #2a1010;
   --danger:     #e05c4e;
   --notes-draw: #5be39a;
-  --chord:      #9d91e0;
-  --chord-bg:   #2e2840;
+  --chord:      #6aadff;
+  --chord-bg:   #1a2e45;
   --shadow:     0 1px 4px rgba(0,0,0,.3);
 }
 
@@ -297,7 +297,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding-top: 0;
 }
 
-[data-library-mode="bands"] .app-shell {
+/* Chrome (topbar + sidebar) follows the Solo/Bands toggle */
+[data-library-mode="bands"] .topbar,
+[data-library-mode="bands"] .sidebar-anim {
   --accent: var(--bands-hue);
   --accent-h: color-mix(in srgb, var(--bands-hue) 84%, #000);
   --accent-contrast: var(--bands-hue-contrast);
@@ -306,9 +308,22 @@ input, select, textarea { font: inherit; color: var(--text); }
   --sidebar-active: color-mix(in srgb, var(--bands-hue) 18%, var(--surface));
 }
 
-[data-theme="dark"][data-library-mode="bands"] .app-shell {
+[data-theme="dark"] :is([data-library-mode="bands"] .topbar, [data-library-mode="bands"] .sidebar-anim) {
   --accent-h: color-mix(in srgb, var(--bands-hue) 90%, #fff);
   --sidebar-active: color-mix(in srgb, var(--bands-hue) 24%, var(--surface));
+}
+
+/* Main content follows the actual route context, independently of the toggle */
+.main-content--band {
+  --accent: var(--bands-hue);
+  --accent-h: color-mix(in srgb, var(--bands-hue) 84%, #000);
+  --accent-contrast: var(--bands-hue-contrast);
+  --chord: var(--bands-hue);
+  --chord-bg: var(--bands-hue-soft);
+}
+
+[data-theme="dark"] .main-content--band {
+  --accent-h: color-mix(in srgb, var(--bands-hue) 90%, #fff);
 }
 
 /* ─── Floating Add Song Button ───────────────────────────────────────────────── */

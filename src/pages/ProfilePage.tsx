@@ -92,11 +92,6 @@ export default function ProfilePage() {
 
   const onPasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!currentPassword) {
-      toast.error('Current password is required.');
-      return;
-    }
-
     if (newPassword.length < 8) {
       toast.error('Password must be at least 8 characters.');
       return;
@@ -236,15 +231,15 @@ export default function ProfilePage() {
 
         <section className="profile-settings-card">
           <h2><KeyRound size={16} /> Password</h2>
+          <p className="profile-settings-muted">Leave current password empty if you signed up with Google and are adding password login.</p>
           <form className="profile-settings-form" onSubmit={onPasswordSubmit}>
             <label className="form-field">
-              <span>Current password</span>
+              <span>Current password (optional for Google login)</span>
               <input
                 type="password"
                 value={currentPassword}
                 autoComplete="current-password"
                 onChange={(event) => setCurrentPassword(event.target.value)}
-                required
               />
             </label>
             <label className="form-field">

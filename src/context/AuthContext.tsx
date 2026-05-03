@@ -438,7 +438,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return 'Password changes are only available for email/password accounts.';
     }
 
-    if (!currentPassword) {
+    const hasPasswordProvider = auth.currentUser.providerData.some((provider) => provider.providerId === 'password');
+
+    if (hasPasswordProvider && !currentPassword) {
       return 'Current password is required.';
     }
 
@@ -447,20 +449,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
-      await reauthenticateWithCredential(auth.currentUser, credential);
+      if (hasPasswordProvider) {
+        const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+        await reauthenticateWithCredential(auth.currentUser, credential);
+      }
       await updatePassword(auth.currentUser, newPassword);
       return null;
     } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes('auth/wrong-password')) {
+      const code = getAuthErrorCode(err);
+      if (hasPasswordProvider && (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials')) {
         return 'Current password is incorrect.';
       }
-      if (err instanceof Error && err.message.includes('auth/requires-recent-login')) {
-        return 'Please sign in again, then retry changing your password.';
+      if (code === 'auth/requires-recent-login') {
+        return hasPasswordProvider
+          ? 'Please sign in again, then retry changing your password.'
+          : 'Please sign in with Google again, then retry setting a password.';
+      }
+      if (code === 'auth/weak-password') {
+        return 'Password must be at least 8 characters.';
       }
       return err instanceof Error ? err.message : 'Failed to update password.';
     }
-  }, []);
+  }, [getAuthErrorCode]);
 
   const logout = useCallback(async () => {
     if (!auth) return;

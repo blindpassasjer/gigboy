@@ -15,6 +15,7 @@ export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
+  const isBandRoute = pathname === '/bands' || pathname.startsWith('/bands/');
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -221,7 +222,7 @@ export default function Layout({ children }: Props) {
           id="main-content"
           ref={mainContentRef}
           tabIndex={-1}
-          className={`main-content${isConcertRoute ? ' main-content--concert' : ''}`}
+          className={`main-content${isConcertRoute ? ' main-content--concert' : ''}${isBandRoute ? ' main-content--band' : ''}`}
         >
           {children}
         </main>
