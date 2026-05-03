@@ -244,6 +244,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   ]);
 
   const goToLibraryView = () => {
+    setActiveStageplotId(null);
+    setActiveTechnicalRiderId(null);
     if (pathname !== '/') {
       navigate('/');
     }
@@ -499,7 +501,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   );
 
   const soloTrashCount = trashedSongs.length + trashedSongLists.length + trashedSetlists.length;
-  const isMyAllSongsActive = pathname === '/' && activeSongListId === null && activeSetlistId === null;
+  const isMyAllSongsActive = (
+    pathname === '/'
+    && activeSongListId === null
+    && activeSetlistId === null
+    && activeStageplotId === null
+    && activeTechnicalRiderId === null
+  );
   const isSoloTrashActive = pathname === '/trash';
   const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
 
@@ -565,6 +573,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 onClick={() => {
                   clearActiveSelection();
                   setActiveSetlistId(null);
+                  setActiveStageplotId(null);
+                  setActiveTechnicalRiderId(null);
                   navigate('/trash');
                   onNavigate?.();
                 }}
@@ -614,7 +624,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     onDragOver={(e) => handleDragOver(e, list.id)}
                     onDragLeave={() => setSongDropTargetId((c) => (c === list.id ? null : c))}
                     onDrop={(e) => handleDrop(e, list.id)}
-                    onSelect={() => { setActiveSongListId(list.id); setActiveSetlistId(null); goToLibraryView(); }}
+                    onSelect={() => {
+                      setActiveSongListId(list.id);
+                      setActiveSetlistId(null);
+                      setActiveStageplotId(null);
+                      setActiveTechnicalRiderId(null);
+                      goToLibraryView();
+                    }}
                   />
                 ))}
 
@@ -667,7 +683,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     onDragOver={(e) => handleSetlistDragOver(e, setlist.id)}
                     onDragLeave={() => setSetlistDropTargetId((c) => (c === setlist.id ? null : c))}
                     onDrop={(e) => handleSetlistDrop(e, setlist.id)}
-                    onSelect={() => { setActiveSetlistId(setlist.id); setActiveSongListId(null); clearActiveSelection(); goToLibraryView(); }}
+                    onSelect={() => {
+                      setActiveSetlistId(setlist.id);
+                      setActiveSongListId(null);
+                      clearActiveSelection();
+                      setActiveStageplotId(null);
+                      setActiveTechnicalRiderId(null);
+                      goToLibraryView();
+                    }}
                   />
                 ))}
 
@@ -722,6 +745,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       className="sidebar-list-item-btn"
                       onClick={() => {
                         setActiveStageplotId(stageplot.id);
+                        setActiveTechnicalRiderId(null);
                         setActiveSongListId(null);
                         setActiveSetlistId(null);
                         clearActiveSelection();
@@ -787,6 +811,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       className="sidebar-list-item-btn"
                       onClick={() => {
                         setActiveTechnicalRiderId(rider.id);
+                        setActiveStageplotId(null);
                         setActiveSongListId(null);
                         setActiveSetlistId(null);
                         clearActiveSelection();
