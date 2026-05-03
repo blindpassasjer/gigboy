@@ -150,7 +150,7 @@ export interface TechnicalRider extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'stageplot';
+export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'stageplot' | 'technicalRider';
 
 export interface TrashMetadata {
   trashId: string;
@@ -176,6 +176,11 @@ export interface TrashedSetlist extends TrashMetadata {
 export interface TrashedStageplot extends TrashMetadata {
   itemType: 'stageplot';
   stageplot: Stageplot;
+}
+
+export interface TrashedTechnicalRider extends TrashMetadata {
+  itemType: 'technicalRider';
+  technicalRider: TechnicalRider;
 }
 
 export type Language =

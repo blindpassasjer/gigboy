@@ -629,6 +629,16 @@ export default function BandDetailPage() {
         };
       }
 
+      if (entry.itemType === 'technicalRider') {
+        return {
+          trashId: entry.trashId,
+          itemType: 'technicalRider' as const,
+          name: entry.technicalRider.name,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
       return {
         itemType: 'setlist' as const,
         trashId: entry.trashId,

@@ -29,6 +29,7 @@ interface Props {
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const isBandsRoute = pathname === '/bands' || pathname.startsWith('/bands/');
   const { songs, trashedSongs } = useSongs();
   const {
     songLists,
@@ -108,6 +109,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
   const [collapsedBandStageplotIds, setCollapsedBandStageplotIds] = useState<string[]>([]);
   const [collapsedBandTechnicalRiderIds, setCollapsedBandTechnicalRiderIds] = useState<string[]>([]);
+  const [sidebarMode, setSidebarMode] = useState<'solo' | 'bands'>(() => {
+    if (typeof window !== 'undefined') {
+      const storedMode = window.localStorage.getItem('folio-sidebar-mode');
+      if (storedMode === 'solo' || storedMode === 'bands') return storedMode;
+    }
+    return isBandsRoute ? 'bands' : 'solo';
+  });
   const [activeBandId, setActiveBandId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     try { return window.localStorage.getItem('folio-active-band-id'); } catch { return null; }
@@ -134,6 +142,21 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [bandSwitcherOpen]);
+
+  useEffect(() => {
+    const nextMode: 'solo' | 'bands' = isBandsRoute ? 'bands' : 'solo';
+    setSidebarMode((current) => (current === nextMode ? current : nextMode));
+  }, [isBandsRoute]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('folio-sidebar-mode', sidebarMode);
+  }, [sidebarMode]);
+
+  useEffect(() => {
+    if (sidebarMode === 'bands') return;
+    setBandSwitcherOpen(false);
+  }, [sidebarMode]);
 
   useEffect(() => {
     const missingBandSongCollections = bands
@@ -494,6 +517,30 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         </div>
       </div>
 
+      <div className="sidebar-mode-toggle" role="tablist" aria-label="Sidebar sections">
+        <button
+          type="button"
+          className={`sidebar-mode-toggle-btn${sidebarMode === 'solo' ? ' active' : ''}`}
+          onClick={() => setSidebarMode('solo')}
+          aria-selected={sidebarMode === 'solo'}
+          role="tab"
+        >
+          <User size={14} />
+          <span>Solo</span>
+        </button>
+        <button
+          type="button"
+          className={`sidebar-mode-toggle-btn${sidebarMode === 'bands' ? ' active' : ''}`}
+          onClick={() => setSidebarMode('bands')}
+          aria-selected={sidebarMode === 'bands'}
+          role="tab"
+        >
+          <Users size={14} />
+          <span>Bands</span>
+        </button>
+      </div>
+
+      {sidebarMode === 'solo' && (
       <div className="sidebar-folders">
         <div className="sidebar-setlists-header">
           <h3 className="sidebar-section-title"><User size={14} /> Solo</h3>
@@ -768,7 +815,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           </section>
         </div>
       </div>
+      )}
 
+      {sidebarMode === 'bands' && (
       <div className="sidebar-bands-section">
         <div className="sidebar-bands-header" ref={bandSwitcherRef}>
           {bands.length === 0 ? (
@@ -1129,6 +1178,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           ))}
         </div>
       </div>
+      )}
     </aside>
     </div>
   );

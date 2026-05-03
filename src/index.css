@@ -3308,6 +3308,41 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .25rem;
 }
 
+.sidebar-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .35rem;
+  padding: .6rem .75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sidebar-mode-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  padding: .4rem .5rem;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  transition: color .15s, border-color .15s, background .15s;
+}
+
+.sidebar-mode-toggle-btn:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+
+.sidebar-mode-toggle-btn.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
 .sidebar-title {
   font-size: 1rem;
   font-weight: 700;
@@ -3747,9 +3782,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-bands-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
+  margin-top: 0;
+  padding-top: .5rem;
+  border-top: none;
   padding-bottom: .5rem;
 }
 

@@ -1,4 +1,4 @@
-import type { Setlist, Song, SongList, Stageplot, TrashItemType } from '../types';
+import type { Setlist, Song, SongList, Stageplot, TechnicalRider, TrashItemType } from '../types';
 
 export const TRASH_COLLECTION = 'trashItems';
 export const TRASH_RETENTION_DAYS = 30;
@@ -113,6 +113,23 @@ export function parseStageplotTrashRecord(id: string, raw: Record<string, unknow
   return {
     id,
     itemType: 'stageplot',
+    deletedAt: raw.deletedAt,
+    purgeAt: raw.purgeAt,
+    data,
+  };
+}
+
+export function parseTechnicalRiderTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<TechnicalRider> | null {
+  if (raw.itemType !== 'technicalRider') return null;
+  if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
+  if (!raw.data || typeof raw.data !== 'object') return null;
+
+  const data = raw.data as TechnicalRider;
+  if (typeof data.id !== 'string' || typeof data.name !== 'string' || !Array.isArray(data.lines)) return null;
+
+  return {
+    id,
+    itemType: 'technicalRider',
     deletedAt: raw.deletedAt,
     purgeAt: raw.purgeAt,
     data,

@@ -85,8 +85,8 @@ export default function TechnicalRiderEditor({
 
   const handleDeleteRider = async () => {
     if (!onDelete) return;
-    const confirmed = await showConfirmToast(`Delete rider "${rider.name}"?`, {
-      confirmLabel: 'Delete',
+    const confirmed = await showConfirmToast(`Move rider "${rider.name}" to trash?`, {
+      confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
     await onDelete();

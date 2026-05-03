@@ -5,7 +5,7 @@ import { showConfirmToast } from '../utils/toastDialogs';
 
 export interface TrashListItem {
   trashId: string;
-  itemType: 'song' | 'songlist' | 'setlist' | 'stageplot';
+  itemType: 'song' | 'songlist' | 'setlist' | 'stageplot' | 'technicalRider';
   name: string;
   deletedAt: string;
   purgeAt: string;
@@ -30,6 +30,7 @@ function labelForType(itemType: TrashListItem['itemType']) {
   if (itemType === 'song') return 'Song';
   if (itemType === 'songlist') return 'Songlist';
   if (itemType === 'stageplot') return 'Stageplot';
+  if (itemType === 'technicalRider') return 'Technical rider';
   return 'Setlist';
 }
 

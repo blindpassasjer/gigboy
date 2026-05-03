@@ -17,6 +17,7 @@ import type {
   TrashedSetlist,
   TrashedSong,
   TrashedSongList,
+  TrashedTechnicalRider,
 } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
 import {
@@ -34,6 +35,7 @@ import {
   parseSetlistTrashRecord,
   parseSongListTrashRecord,
   parseSongTrashRecord,
+  parseTechnicalRiderTrashRecord,
   TRASH_COLLECTION,
 } from '../lib/trash';
 import {
@@ -391,7 +393,8 @@ type BandTrashItem =
   | (TrashedSong & { bandId: string })
   | (TrashedSongList & { bandId: string })
   | (TrashedSetlist & { bandId: string })
-  | (TrashedStageplot & { bandId: string });
+  | (TrashedStageplot & { bandId: string })
+  | (TrashedTechnicalRider & { bandId: string });
 
 interface BandsContextValue {
   bands: Band[];
@@ -617,6 +620,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const parsedStageplots = snapshot.docs
       .map((entry) => parseStageplotTrashRecord(entry.id, entry.data() as Record<string, unknown>))
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+    const parsedTechnicalRiders = snapshot.docs
+      .map((entry) => parseTechnicalRiderTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
     const items: BandTrashItem[] = [
       ...parsedSongs.map((entry) => ({
@@ -650,6 +656,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         deletedAt: entry.deletedAt,
         purgeAt: entry.purgeAt,
         stageplot: entry.data,
+      })),
+      ...parsedTechnicalRiders.map((entry) => ({
+        bandId,
+        trashId: entry.id,
+        itemType: 'technicalRider' as const,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+        technicalRider: entry.data,
       })),
     ];
 
@@ -2428,6 +2442,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     if (role !== 'editor') return 'You do not have permission to edit this band.';
 
     const previousRiders = bandTechnicalRidersByBandId[bandId] ?? [];
+    const riderToDelete = previousRiders.find((rider) => rider.id === riderId);
+    if (!riderToDelete) {
+      return null;
+    }
+
+    const { deletedAt, purgeAt } = createTrashTimestamps();
+    const trashId = crypto.randomUUID();
     const nextRiders = withSequentialTechnicalRiderSortOrder(sortTechnicalRiders(
       previousRiders.filter((rider) => rider.id !== riderId)
     ));
@@ -2436,9 +2457,29 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       ...prev,
       [bandId]: nextRiders,
     }));
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: [
+        {
+          bandId,
+          trashId,
+          itemType: 'technicalRider' as const,
+          deletedAt,
+          purgeAt,
+          technicalRider: riderToDelete,
+        },
+        ...(prev[bandId] ?? []),
+      ].sort(compareTrashByDeletedAtDesc),
+    }));
 
     try {
       await Promise.all([
+        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
+          itemType: 'technicalRider',
+          deletedAt,
+          purgeAt,
+          data: riderToDelete,
+        }),
         deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, riderId)),
         ...nextRiders.map((rider) => setDoc(
           doc(firestore, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, rider.id),
@@ -2452,7 +2493,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         ...prev,
         [bandId]: previousRiders,
       }));
-      return error instanceof Error ? error.message : 'Failed to delete technical rider.';
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
+      }));
+      return error instanceof Error ? error.message : 'Failed to move technical rider to trash.';
     }
   }, [bandTechnicalRidersByBandId, bands, userId]);
 
@@ -2615,6 +2660,56 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    if (target.itemType === 'technicalRider') {
+      const previousRiders = bandTechnicalRidersByBandId[bandId] ?? [];
+      const restoredRider: TechnicalRider = {
+        ...target.technicalRider,
+        sortOrder: previousRiders.length,
+        updatedAt: new Date().toISOString(),
+      };
+      const nextRiders = withSequentialTechnicalRiderSortOrder(sortTechnicalRiders([
+        ...previousRiders.filter((entry) => entry.id !== restoredRider.id),
+        restoredRider,
+      ]));
+
+      setBandTechnicalRidersByBandId((prev) => ({
+        ...prev,
+        [bandId]: nextRiders,
+      }));
+
+      try {
+        const { id, accessRole: _accessRole, ...restoredPayload } = restoredRider;
+        void _accessRole;
+        const payload = Object.fromEntries(
+          Object.entries(restoredPayload).filter(([, value]) => value !== undefined)
+        );
+
+        await Promise.all([
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, id), payload),
+          ...nextRiders
+            .filter((entry) => entry.id !== id)
+            .map((entry) => setDoc(
+              doc(firestore, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, entry.id),
+              { sortOrder: entry.sortOrder ?? 0 },
+              { merge: true }
+            )),
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId)),
+        ]);
+
+        return null;
+      } catch (error) {
+        setBandTechnicalRidersByBandId((prev) => ({
+          ...prev,
+          [bandId]: previousRiders,
+        }));
+        setBandTrashByBandId((prev) => ({
+          ...prev,
+          [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
+        }));
+        return error instanceof Error ? error.message : 'Failed to restore band technical rider.';
+      }
+    }
+
     const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
     const restoredSetlist: Setlist = {
       ...target.setlist,
@@ -2662,7 +2757,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }));
       return error instanceof Error ? error.message : 'Failed to restore band setlist.';
     }
-  }, [bandSetlistsByBandId, bandSongListsByBandId, bandSongsByBandId, bandStageplotsByBandId, bandTrashByBandId, bands, userId]);
+  }, [bandSetlistsByBandId, bandSongListsByBandId, bandSongsByBandId, bandStageplotsByBandId, bandTechnicalRidersByBandId, bandTrashByBandId, bands, userId]);
 
   const deleteBandTrashItemPermanently = useCallback(async (bandId: string, trashId: string): Promise<string | null> => {
     if (!db || !userId) {
