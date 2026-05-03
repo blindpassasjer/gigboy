@@ -372,8 +372,8 @@ export default function HomePage() {
   }
 
   async function handleDeleteSong(song: Song) {
-    const confirmed = await showConfirmToast(`Delete "${song.title}"? This cannot be undone.`, {
-      confirmLabel: 'Delete',
+    const confirmed = await showConfirmToast(`Move "${song.title}" to trash? It will be automatically deleted after 30 days.`, {
+      confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
     await deleteSong(song.id);
@@ -382,8 +382,8 @@ export default function HomePage() {
   async function handleDeleteActiveSongList() {
     if (!activeList) return;
 
-    const confirmed = await showConfirmToast(`Delete songlist "${activeList.name}"? This cannot be undone.`, {
-      confirmLabel: 'Delete',
+    const confirmed = await showConfirmToast(`Move songlist "${activeList.name}" to trash? It will be automatically deleted after 30 days.`, {
+      confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
 

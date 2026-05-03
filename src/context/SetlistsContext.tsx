@@ -2,9 +2,16 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
-import type { Setlist } from '../types';
+import type { Setlist, TrashedSetlist } from '../types';
 import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db } from '../lib/firebase';
+import {
+  compareTrashByDeletedAtDesc,
+  createTrashTimestamps,
+  isTrashExpired,
+  parseSetlistTrashRecord,
+  TRASH_COLLECTION,
+} from '../lib/trash';
 import { useAuth } from './AuthContext';
 
 const KEY_SETLISTS = 'songbook-setlists';
@@ -112,9 +119,12 @@ function moveSongId(songIds: string[], songId: string, beforeSongId: string | nu
 
 interface SetlistsContextValue {
   setlists: Setlist[];
+  trashedSetlists: TrashedSetlist[];
   activeSetlistId: string | null;
   addSetlist: (name: string) => void;
   deleteSetlist: (id: string) => void;
+  restoreSetlistFromTrash: (trashId: string) => Promise<string | null>;
+  deleteSetlistPermanently: (trashId: string) => Promise<string | null>;
   renameSetlist: (id: string, name: string) => void;
   updateSetlistIcon: (id: string, icon?: string) => void;
   addSongToSetlist: (setlistId: string, songId: string) => void;
@@ -132,25 +142,73 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
   const [setlists, setSetlists] = useState<Setlist[]>(() =>
     normalizeSetlists(readLocal(KEY_SETLISTS, []))
   );
+  const [trashedSetlists, setTrashedSetlists] = useState<TrashedSetlist[]>([]);
   const [activeSetlistId, setActiveSetlistId] = useState<string | null>(() =>
     readLocal(KEY_ACTIVE_SETLIST, null)
   );
 
   useEffect(() => {
     if (!db || !userId) {
+      setTrashedSetlists([]);
       return;
     }
 
-    Promise.all([
-      getDocs(collection(db, 'users', userId, SETLISTS_COLLECTION)),
+    const firestore = db;
+
+    Promise.allSettled([
+      getDocs(collection(firestore, 'users', userId, SETLISTS_COLLECTION)),
       loadAcceptedSharedResources({
-        db,
+        db: firestore,
         userId,
         resourceType: 'setlist',
         mapResource: (invite, id, data) => setlistFromDoc(id, data, invite.ownerId, userId),
       }),
+      getDocs(collection(firestore, 'users', userId, TRASH_COLLECTION)),
     ])
-      .then(([ownedSnapshot, sharedSetlists]) => {
+      .then(([ownedResult, sharedResult, trashResult]) => {
+        const ownedSnapshot = ownedResult.status === 'fulfilled' ? ownedResult.value : null;
+        const sharedSetlists = sharedResult.status === 'fulfilled' ? sharedResult.value : [];
+        const trashDocs = trashResult.status === 'fulfilled' ? trashResult.value.docs : [];
+
+        const now = Date.now();
+        const parsedTrash = trashDocs
+          .map((entry) => parseSetlistTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+          .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+        const expiredTrash = parsedTrash.filter((entry) => isTrashExpired(entry.purgeAt, now));
+        const activeTrash = parsedTrash.filter((entry) => !isTrashExpired(entry.purgeAt, now));
+
+        if (expiredTrash.length > 0) {
+          void Promise.all(
+            expiredTrash.map((entry) => deleteDoc(doc(firestore, 'users', userId, TRASH_COLLECTION, entry.id)))
+          ).catch((error) => {
+            console.warn('Failed to purge expired setlist trash items.', error);
+          });
+        }
+
+        setTrashedSetlists(
+          activeTrash
+            .map((entry) => ({
+              trashId: entry.id,
+              itemType: 'setlist' as const,
+              deletedAt: entry.deletedAt,
+              purgeAt: entry.purgeAt,
+              setlist: entry.data,
+            }))
+            .sort(compareTrashByDeletedAtDesc)
+        );
+
+        if (!ownedSnapshot) {
+          if (ownedResult.status === 'rejected') {
+            if (isPermissionDeniedError(ownedResult.reason)) {
+              logSetlistsPermissionHelp(ownedResult.reason);
+            } else {
+              console.error('Failed to load setlists from Firestore. Falling back to local data.', ownedResult.reason);
+            }
+          }
+          return;
+        }
+
         const ownedSetlists = ownedSnapshot.docs.map((entry) =>
           setlistFromDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
         );
@@ -210,11 +268,24 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const deleteSetlist = useCallback((id: string) => {
+    let trashedEntry: TrashedSetlist | null = null;
+
     setSetlists((prev) => {
       const deleting = prev.find((list) => list.id === id);
       if (!deleting || !isSetlistOwner(deleting, userId)) {
         return prev;
       }
+
+      const { deletedAt, purgeAt } = createTrashTimestamps();
+      const trashId = crypto.randomUUID();
+      trashedEntry = {
+        trashId,
+        itemType: 'setlist',
+        deletedAt,
+        purgeAt,
+        setlist: deleting,
+      };
+      setTrashedSetlists((prevTrash) => [trashedEntry as TrashedSetlist, ...prevTrash].sort(compareTrashByDeletedAtDesc));
 
       const nextSetlists = normalizeSetlists(prev.filter((list) => list.id !== id));
       if (db && userId) {
@@ -224,21 +295,79 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
         });
 
         Promise.all([
+          setDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId), {
+            itemType: 'setlist',
+            deletedAt,
+            purgeAt,
+            data: deleting,
+          }),
           deleteDoc(doc(db, 'users', userId, SETLISTS_COLLECTION, id)),
           ...changed.map((list) => writeSetlist(list, userId)),
         ]).catch((error) => {
           if (isPermissionDeniedError(error)) {
             logSetlistsPermissionHelp(error);
           } else {
-            console.error('Failed to delete setlist in Firestore.', error);
+            console.error('Failed to move setlist to trash in Firestore.', error);
           }
           setSetlists(prev);
+          if (trashedEntry) {
+            setTrashedSetlists((prevTrash) => prevTrash.filter((entry) => entry.trashId !== trashedEntry?.trashId));
+          }
         });
       }
       return nextSetlists;
     });
     setActiveSetlistId((prev) => (prev === id ? null : prev));
   }, [userId]);
+
+  const restoreSetlistFromTrash = useCallback(async (trashId: string): Promise<string | null> => {
+    const trashed = trashedSetlists.find((entry) => entry.trashId === trashId);
+    if (!trashed) {
+      return 'Setlist was not found in trash.';
+    }
+
+    const restoredSetlist: Setlist = {
+      ...trashed.setlist,
+      ownerId: userId ?? trashed.setlist.ownerId,
+      accessRole: 'owner',
+    };
+
+    setTrashedSetlists((prev) => prev.filter((entry) => entry.trashId !== trashId));
+    setSetlists((prev) => normalizeSetlists([restoredSetlist, ...prev.filter((entry) => entry.id !== restoredSetlist.id)]));
+
+    if (!db || !userId) {
+      return null;
+    }
+
+    try {
+      await Promise.all([
+        writeSetlist(restoredSetlist, userId),
+        deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId)),
+      ]);
+      return null;
+    } catch (error) {
+      setSetlists((prev) => prev.filter((entry) => entry.id !== restoredSetlist.id));
+      setTrashedSetlists((prev) => [trashed, ...prev].sort(compareTrashByDeletedAtDesc));
+      return error instanceof Error ? error.message : 'Failed to restore setlist.';
+    }
+  }, [trashedSetlists, userId]);
+
+  const deleteSetlistPermanently = useCallback(async (trashId: string): Promise<string | null> => {
+    const previousTrash = trashedSetlists;
+    setTrashedSetlists((prev) => prev.filter((entry) => entry.trashId !== trashId));
+
+    if (!db || !userId) {
+      return null;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId));
+      return null;
+    } catch (error) {
+      setTrashedSetlists(previousTrash);
+      return error instanceof Error ? error.message : 'Failed to permanently delete setlist.';
+    }
+  }, [trashedSetlists, userId]);
 
   const renameSetlist = useCallback((id: string, name: string) => {
     setSetlists((prev) => {
@@ -375,9 +504,12 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     <SetlistsContext.Provider
       value={{
         setlists,
+        trashedSetlists,
         activeSetlistId,
         addSetlist,
         deleteSetlist,
+        restoreSetlistFromTrash,
+        deleteSetlistPermanently,
         renameSetlist,
         updateSetlistIcon,
         addSongToSetlist,

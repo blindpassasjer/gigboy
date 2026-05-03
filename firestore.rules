@@ -119,6 +119,10 @@ service cloud.firestore {
         allow update: if canUpdateResource(userId);
         allow delete: if isOwner(userId);
       }
+
+      match /trashItems/{trashId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     match /usernames/{usernameLower} {
@@ -210,6 +214,11 @@ service cloud.firestore {
       }
 
       match /setlists/{setlistId} {
+        allow read: if isBandMember(bandId);
+        allow create, update, delete: if isBandEditor(bandId);
+      }
+
+      match /trashItems/{trashId} {
         allow read: if isBandMember(bandId);
         allow create, update, delete: if isBandEditor(bandId);
       }

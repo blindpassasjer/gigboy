@@ -20,6 +20,8 @@ export default function Layout({ children }: Props) {
   const isBandLibraryRoute = /^\/bands\/[^/]+(?:\/library)?$/.test(pathname);
   const isBandSonglistRoute = /^\/bands\/[^/]+\/songlists\/[^/]+/.test(pathname);
   const isBandSetlistRoute = /^\/bands\/[^/]+\/setlists\/[^/]+/.test(pathname);
+  const isBandTrashRoute = /^\/bands\/[^/]+\/trash$/.test(pathname);
+  const isTrashRoute = pathname === '/trash' || isBandTrashRoute;
   const activeBandIdFromPath = pathname.match(/^\/bands\/([^/]+)/)?.[1] ?? null;
   const bandSonglistIdFromPath = pathname.match(/^\/bands\/[^/]+\/songlists\/([^/]+)/)?.[1] ?? null;
   const wasConcertRouteRef = useRef(isConcertRoute);
@@ -233,7 +235,7 @@ export default function Layout({ children }: Props) {
           {children}
         </main>
       </div>
-      {!isConcertRoute && !isEditSongRoute && (!isBandRoute || isBandLibraryRoute || isBandSonglistRoute || isBandSetlistRoute) && (
+      {!isConcertRoute && !isEditSongRoute && !isTrashRoute && (!isBandRoute || isBandLibraryRoute || isBandSonglistRoute || isBandSetlistRoute) && (
         <Link
           to="/add"
           state={{

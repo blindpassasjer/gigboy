@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Folder, FolderOpen, ListMusic, ListMusicIcon, Plus, User, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, Folder, FolderOpen, ListMusic, ListMusicIcon, Plus, Trash2, User, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
@@ -27,9 +27,10 @@ interface Props {
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { songs } = useSongs();
+  const { songs, trashedSongs } = useSongs();
   const {
     songLists,
+    trashedSongLists,
     activeSongListId,
     addSongList,
     addSongToList,
@@ -39,6 +40,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const {
     setlists,
+    trashedSetlists,
     activeSetlistId,
     addSetlist,
     addSongToSetlist,
@@ -50,9 +52,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     bandSongsByBandId,
     bandSongListsByBandId,
     bandSetlistsByBandId,
+    bandTrashByBandId,
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
+    refreshBandTrash,
     createBand,
     addSongToBandLibrary,
     addBandSongList,
@@ -116,10 +120,15 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       .map((band) => band.id)
       .filter((bandId) => bandSetlistsByBandId[bandId] === undefined);
 
+    const missingBandTrashCollections = bands
+      .map((band) => band.id)
+      .filter((bandId) => bandTrashByBandId[bandId] === undefined);
+
     if (
       missingBandSongCollections.length === 0
       && missingBandSongListCollections.length === 0
       && missingBandSetlistCollections.length === 0
+      && missingBandTrashCollections.length === 0
     ) return;
 
     missingBandSongCollections.forEach((bandId) => {
@@ -139,11 +148,19 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         // Sidebar counts are best-effort; detailed errors are handled on band pages.
       });
     });
+
+    missingBandTrashCollections.forEach((bandId) => {
+      void refreshBandTrash(bandId).catch(() => {
+        // Sidebar counts are best-effort; detailed errors are handled on band pages.
+      });
+    });
   }, [
+    bandTrashByBandId,
     bandSetlistsByBandId,
     bandSongListsByBandId,
     bandSongsByBandId,
     bands,
+    refreshBandTrash,
     refreshBandSetlists,
     refreshBandSongLists,
     refreshBandSongs,
@@ -324,7 +341,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     hasType(types, SONG_DRAG_MIME) || hasType(types, SONG_DRAG_FALLBACK_MIME)
   );
 
+  const soloTrashCount = trashedSongs.length + trashedSongLists.length + trashedSetlists.length;
   const isMyAllSongsActive = pathname === '/' && activeSongListId === null && activeSetlistId === null;
+  const isSoloTrashActive = pathname === '/trash';
   const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
 
   return (
@@ -356,6 +375,22 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 <ListMusic size={14} />
                 <span className="sidebar-list-name">Library</span>
                 {songs.length > 0 && <span className="sidebar-list-count">{songs.length}</span>}
+              </button>
+            </div>
+
+            <div className={`sidebar-list-item sidebar-list-item--section${isSoloTrashActive ? ' active' : ''}`}>
+              <button
+                className="sidebar-list-item-btn"
+                onClick={() => {
+                  clearActiveSelection();
+                  setActiveSetlistId(null);
+                  navigate('/trash');
+                  onNavigate?.();
+                }}
+              >
+                <Trash2 size={14} />
+                <span className="sidebar-list-name">Trash</span>
+                {soloTrashCount > 0 && <span className="sidebar-list-count">{soloTrashCount}</span>}
               </button>
             </div>
 
@@ -567,6 +602,25 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     <span className="sidebar-list-name">Library</span>
                     {(bandSongsByBandId[band.id]?.length ?? 0) > 0 && (
                       <span className="sidebar-list-count">{bandSongsByBandId[band.id]?.length ?? 0}</span>
+                    )}
+                  </button>
+                </div>
+
+                <div
+                  className={`sidebar-list-item${pathname === `/bands/${band.id}/trash` ? ' active' : ''}`}
+                >
+                  <button
+                    className="sidebar-list-item-btn"
+                    onClick={() => {
+                      clearSoloSelection();
+                      navigate(`/bands/${band.id}/trash`);
+                      onNavigate?.();
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    <span className="sidebar-list-name">Trash</span>
+                    {(bandTrashByBandId[band.id]?.length ?? 0) > 0 && (
+                      <span className="sidebar-list-count">{bandTrashByBandId[band.id]?.length ?? 0}</span>
                     )}
                   </button>
                 </div>

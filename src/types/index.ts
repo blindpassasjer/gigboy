@@ -87,6 +87,29 @@ export interface Setlist extends CollaborationMetadata {
   sortOrder?: number;
 }
 
+export type TrashItemType = 'song' | 'songlist' | 'setlist';
+
+export interface TrashMetadata {
+  trashId: string;
+  deletedAt: string;
+  purgeAt: string;
+}
+
+export interface TrashedSong extends TrashMetadata {
+  itemType: 'song';
+  song: Song;
+}
+
+export interface TrashedSongList extends TrashMetadata {
+  itemType: 'songlist';
+  songList: SongList;
+}
+
+export interface TrashedSetlist extends TrashMetadata {
+  itemType: 'setlist';
+  setlist: Setlist;
+}
+
 export type Language =
   | 'en'
   | 'es'

@@ -13,6 +13,7 @@ import BandDetailPage from './pages/BandDetailPage';
 import BandMembersPage from './pages/BandMembersPage';
 import ProfileInvitesPage from './pages/ProfileInvitesPage';
 import ProfilePage from './pages/ProfilePage';
+import TrashPage from './pages/TrashPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
@@ -45,6 +46,7 @@ function AuthenticatedApp() {
                 <Route path="/bands/:id/*" element={<BandDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/profile/invites" element={<ProfileInvitesPage />} />
+                <Route path="/trash" element={<TrashPage />} />
                 <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />
               </Routes>
             </Layout>

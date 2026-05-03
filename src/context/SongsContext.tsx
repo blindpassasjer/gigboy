@@ -11,9 +11,16 @@ import {
   where,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import type { Song } from '../types';
+import type { Song, TrashedSong } from '../types';
 import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db, firebaseEnabled } from '../lib/firebase';
+import {
+  compareTrashByDeletedAtDesc,
+  createTrashTimestamps,
+  isTrashExpired,
+  parseSongTrashRecord,
+  TRASH_COLLECTION,
+} from '../lib/trash';
 import { useAuth } from './AuthContext';
 
 const LOCAL_STORAGE_KEY = 'folio-local-songs';
@@ -80,10 +87,13 @@ function writeLocalSongs(songs: Song[]) {
 
 interface SongsContextValue {
   songs: Song[];
+  trashedSongs: TrashedSong[];
   loading: boolean;
   addSong: (song: Song) => Promise<string | null>;
   updateSong: (song: Song) => Promise<string | null>;
   deleteSong: (id: string) => Promise<void>;
+  restoreSongFromTrash: (trashId: string) => Promise<string | null>;
+  deleteSongPermanently: (trashId: string) => Promise<string | null>;
   moveSong: (songId: string, beforeSongId: string | null) => void;
 }
 
@@ -173,10 +183,12 @@ export function SongsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const [userSongs, setUserSongs] = useState<Song[]>(() => (firebaseEnabled ? [] : readLocalSongs()));
+  const [trashedSongs, setTrashedSongs] = useState<TrashedSong[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!db || !userId) {
+      setTrashedSongs([]);
       setLoading(false);
       return;
     }
@@ -191,10 +203,40 @@ export function SongsProvider({ children }: { children: ReactNode }) {
         resourceType: 'song',
         mapResource: (invite, id, data) => songFromOwnedDoc(id, data, invite.ownerId, userId),
       }),
+      getDocs(collection(firestore, 'users', userId, TRASH_COLLECTION)),
     ])
-      .then(async ([ownedResult, sharedResult]) => {
+      .then(async ([ownedResult, sharedResult, trashResult]) => {
         const ownedSnap = ownedResult.status === 'fulfilled' ? ownedResult.value : null;
         const sharedSongs = sharedResult.status === 'fulfilled' ? normalizeSongs(sharedResult.value) : [];
+        const trashDocs = trashResult.status === 'fulfilled' ? trashResult.value.docs : [];
+        const now = Date.now();
+
+        const parsedTrash = trashDocs
+          .map((entry) => parseSongTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+          .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+        const expiredTrash = parsedTrash.filter((entry) => isTrashExpired(entry.purgeAt, now));
+        const activeTrash = parsedTrash.filter((entry) => !isTrashExpired(entry.purgeAt, now));
+
+        if (expiredTrash.length > 0) {
+          void Promise.all(
+            expiredTrash.map((entry) => deleteDoc(doc(firestore, 'users', userId, TRASH_COLLECTION, entry.id)))
+          ).catch((error) => {
+            console.warn('Failed to purge expired song trash items.', error);
+          });
+        }
+
+        setTrashedSongs(
+          activeTrash
+            .map((entry) => ({
+              trashId: entry.id,
+              itemType: 'song' as const,
+              deletedAt: entry.deletedAt,
+              purgeAt: entry.purgeAt,
+              song: entry.data,
+            }))
+            .sort(compareTrashByDeletedAtDesc)
+        );
 
         if (ownedResult.status === 'rejected') {
           console.error('Failed to load owned songs from Firestore.', ownedResult.reason);
@@ -202,6 +244,10 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
         if (sharedResult.status === 'rejected') {
           console.warn('Failed to load shared songs from Firestore. Continuing with owned songs only.', sharedResult.reason);
+        }
+
+        if (trashResult.status === 'rejected') {
+          console.warn('Failed to load trashed songs from Firestore.', trashResult.reason);
         }
 
         const directSongs = normalizeSongs(
@@ -330,19 +376,96 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     }
 
     setUserSongs((prev) => prev.filter((s) => s.id !== id));
+
+    const now = new Date();
+    const trashId = crypto.randomUUID();
+    const { deletedAt, purgeAt } = createTrashTimestamps(now);
+    const trashedSong: TrashedSong = {
+      trashId,
+      itemType: 'song',
+      deletedAt,
+      purgeAt,
+      song: targetSong,
+    };
+    setTrashedSongs((prev) => [trashedSong, ...prev].sort(compareTrashByDeletedAtDesc));
+
     if (!db || !userId) {
       return;
     }
 
     try {
-      await deleteDoc(doc(db, ...songsCollectionPath(userId), id));
+      await Promise.all([
+        setDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId), {
+          itemType: 'song',
+          deletedAt,
+          purgeAt,
+          data: targetSong,
+        }),
+        deleteDoc(doc(db, ...songsCollectionPath(userId), id)),
+      ]);
     } catch (error) {
-      console.error('Failed to delete song in Firestore. Restoring list from server.', error);
+      console.error('Failed to move song to trash in Firestore. Restoring list from server.', error);
+      setTrashedSongs((prev) => prev.filter((entry) => entry.trashId !== trashId));
       getDocs(collection(db, ...songsCollectionPath(userId))).then((snap) => {
         setUserSongs(normalizeSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song)));
       });
     }
   }, [userId, userSongs]);
+
+  const restoreSongFromTrash = useCallback(async (trashId: string): Promise<string | null> => {
+    const trashed = trashedSongs.find((entry) => entry.trashId === trashId);
+    if (!trashed) {
+      return 'Song was not found in trash.';
+    }
+
+    const restoredSong: Song = {
+      ...trashed.song,
+      ownerId: userId ?? trashed.song.ownerId,
+      accessRole: 'owner',
+    };
+
+    setTrashedSongs((prev) => prev.filter((entry) => entry.trashId !== trashId));
+    setUserSongs((prev) => normalizeSongs([restoredSong, ...prev.filter((entry) => entry.id !== restoredSong.id)]));
+
+    if (!db || !userId) {
+      return null;
+    }
+
+    try {
+      const { id, ...rest } = restoredSong;
+      const firestoreData = Object.fromEntries(
+        Object.entries(rest).filter(([, value]) => value !== undefined)
+      );
+
+      await Promise.all([
+        setDoc(doc(db, ...songsCollectionPath(userId), restoredSong.id), firestoreData),
+        deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId)),
+      ]);
+
+      return null;
+    } catch (error) {
+      setUserSongs((prev) => prev.filter((entry) => entry.id !== restoredSong.id));
+      setTrashedSongs((prev) => [trashed, ...prev].sort(compareTrashByDeletedAtDesc));
+      return error instanceof Error ? error.message : 'Failed to restore song.';
+    }
+  }, [trashedSongs, userId]);
+
+  const deleteSongPermanently = useCallback(async (trashId: string): Promise<string | null> => {
+    const previousTrash = trashedSongs;
+    setTrashedSongs((prev) => prev.filter((entry) => entry.trashId !== trashId));
+
+    if (!db || !userId) {
+      return null;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId));
+      return null;
+    } catch (error) {
+      setTrashedSongs(previousTrash);
+      return error instanceof Error ? error.message : 'Failed to permanently delete song.';
+    }
+  }, [trashedSongs, userId]);
 
   const moveSong = useCallback((songId: string, beforeSongId: string | null) => {
     let previousSongs: Song[] = [];
@@ -397,7 +520,19 @@ export function SongsProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   return (
-    <SongsContext.Provider value={{ songs, loading, addSong, updateSong, deleteSong, moveSong }}>
+    <SongsContext.Provider
+      value={{
+        songs,
+        trashedSongs,
+        loading,
+        addSong,
+        updateSong,
+        deleteSong,
+        restoreSongFromTrash,
+        deleteSongPermanently,
+        moveSong,
+      }}
+    >
       {children}
     </SongsContext.Provider>
   );

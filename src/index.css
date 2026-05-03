@@ -5745,3 +5745,58 @@ input, select, textarea { font: inherit; color: var(--text); }
     justify-content: flex-start;
   }
 }
+
+.trash-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+  padding: 0;
+  margin: .8rem 0 0;
+}
+
+.trash-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: .8rem;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: .8rem .9rem;
+}
+
+.trash-item-copy {
+  min-width: 0;
+}
+
+.trash-item-title {
+  margin: 0;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.trash-item-meta {
+  margin: .2rem 0 0;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.trash-item-actions {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .trash-list-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .trash-item-actions {
+    justify-content: flex-start;
+  }
+}

@@ -2,7 +2,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
-import type { Band, CollaborationPermission, Setlist, Song, SongList } from '../types';
+import type {
+  Band,
+  CollaborationPermission,
+  Setlist,
+  Song,
+  SongList,
+  TrashedSetlist,
+  TrashedSong,
+  TrashedSongList,
+} from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
 import {
   changeBandMemberRoleOnServer,
@@ -11,6 +20,15 @@ import {
   inviteBandMemberOnServer,
   removeBandMemberOnServer,
 } from '../lib/bandsApi';
+import {
+  compareTrashByDeletedAtDesc,
+  createTrashTimestamps,
+  isTrashExpired,
+  parseSetlistTrashRecord,
+  parseSongListTrashRecord,
+  parseSongTrashRecord,
+  TRASH_COLLECTION,
+} from '../lib/trash';
 import { useAuth } from './AuthContext';
 
 const BANDS_COLLECTION = 'bands';
@@ -243,11 +261,17 @@ function moveSongId(songIds: string[], songId: string, beforeSongId: string | nu
   return nextSongIds;
 }
 
+type BandTrashItem =
+  | (TrashedSong & { bandId: string })
+  | (TrashedSongList & { bandId: string })
+  | (TrashedSetlist & { bandId: string });
+
 interface BandsContextValue {
   bands: Band[];
   bandSongsByBandId: Record<string, Song[]>;
   bandSongListsByBandId: Record<string, SongList[]>;
   bandSetlistsByBandId: Record<string, Setlist[]>;
+  bandTrashByBandId: Record<string, BandTrashItem[]>;
   loading: boolean;
   cloudRequired: boolean;
   refreshBands: () => Promise<void>;
@@ -261,6 +285,7 @@ interface BandsContextValue {
   refreshBandSongs: (bandId: string) => Promise<void>;
   refreshBandSongLists: (bandId: string) => Promise<void>;
   refreshBandSetlists: (bandId: string) => Promise<void>;
+  refreshBandTrash: (bandId: string) => Promise<void>;
   addSongToBandLibrary: (bandId: string, song: Song) => Promise<string | null>;
   removeSongFromBandLibrary: (bandId: string, songId: string) => Promise<string | null>;
   moveBandSong: (bandId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
@@ -279,6 +304,8 @@ interface BandsContextValue {
   addSongToBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
   removeSongFromBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
   moveSongInBandSetlist: (bandId: string, setlistId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
+  restoreBandTrashItem: (bandId: string, trashId: string) => Promise<string | null>;
+  deleteBandTrashItemPermanently: (bandId: string, trashId: string) => Promise<string | null>;
 }
 
 const BandsContext = createContext<BandsContextValue | null>(null);
@@ -294,6 +321,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandSongsByBandId, setBandSongsByBandId] = useState<Record<string, Song[]>>({});
   const [bandSongListsByBandId, setBandSongListsByBandId] = useState<Record<string, SongList[]>>({});
   const [bandSetlistsByBandId, setBandSetlistsByBandId] = useState<Record<string, Setlist[]>>({});
+  const [bandTrashByBandId, setBandTrashByBandId] = useState<Record<string, BandTrashItem[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
 
   const refreshBands = useCallback(async () => {
@@ -315,6 +343,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBandSongsByBandId({});
       setBandSongListsByBandId({});
       setBandSetlistsByBandId({});
+      setBandTrashByBandId({});
       setLoading(false);
       return;
     }
@@ -379,6 +408,68 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     setBandSetlistsByBandId((prev) => ({
       ...prev,
       [bandId]: setlists,
+    }));
+  }, [userId]);
+
+  const refreshBandTrash = useCallback(async (bandId: string) => {
+    if (!db || !userId) return;
+
+    const firestore = db;
+
+    const snapshot = await getDocs(collection(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION));
+    const now = Date.now();
+
+    const parsedSongs = snapshot.docs
+      .map((entry) => parseSongTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+    const parsedSongLists = snapshot.docs
+      .map((entry) => parseSongListTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+    const parsedSetlists = snapshot.docs
+      .map((entry) => parseSetlistTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+    const items: BandTrashItem[] = [
+      ...parsedSongs.map((entry) => ({
+        bandId,
+        trashId: entry.id,
+        itemType: 'song' as const,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+        song: entry.data,
+      })),
+      ...parsedSongLists.map((entry) => ({
+        bandId,
+        trashId: entry.id,
+        itemType: 'songlist' as const,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+        songList: entry.data,
+      })),
+      ...parsedSetlists.map((entry) => ({
+        bandId,
+        trashId: entry.id,
+        itemType: 'setlist' as const,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+        setlist: entry.data,
+      })),
+    ];
+
+    const expiredItems = items.filter((entry) => isTrashExpired(entry.purgeAt, now));
+    const activeItems = items.filter((entry) => !isTrashExpired(entry.purgeAt, now));
+
+    if (expiredItems.length > 0) {
+      void Promise.all(
+        expiredItems.map((entry) => deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, entry.trashId)))
+      ).catch((error) => {
+        console.warn('Failed to purge expired band trash items.', error);
+      });
+    }
+
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: activeItems.sort(compareTrashByDeletedAtDesc),
     }));
   }, [userId]);
 
@@ -477,6 +568,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         delete next[bandId];
         return next;
       });
+      setBandTrashByBandId((prev) => {
+        const next = { ...prev };
+        delete next[bandId];
+        return next;
+      });
       return null;
     } catch (serverError) {
       if (!db) {
@@ -508,6 +604,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           return next;
         });
         setBandSetlistsByBandId((prev) => {
+          const next = { ...prev };
+          delete next[bandId];
+          return next;
+        });
+        setBandTrashByBandId((prev) => {
           const next = { ...prev };
           delete next[bandId];
           return next;
@@ -735,6 +836,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return 'Band libraries require cloud sync.';
     }
 
+    const firestore = db;
+
     const band = bands.find((entry) => entry.id === bandId);
     if (!band) {
       return 'Band not found.';
@@ -745,17 +848,57 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return 'You do not have permission to edit this band library.';
     }
 
+    const previousSongs = bandSongsByBandId[bandId] ?? [];
+    const songToDelete = previousSongs.find((song) => song.id === songId);
+    if (!songToDelete) {
+      return null;
+    }
+
+    const { deletedAt, purgeAt } = createTrashTimestamps();
+    const trashId = crypto.randomUUID();
+
+    setBandSongsByBandId((prev) => ({
+      ...prev,
+      [bandId]: previousSongs.filter((song) => song.id !== songId),
+    }));
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: [
+        {
+          bandId,
+          trashId,
+          itemType: 'song' as const,
+          deletedAt,
+          purgeAt,
+          song: songToDelete,
+        },
+        ...(prev[bandId] ?? []),
+      ].sort(compareTrashByDeletedAtDesc),
+    }));
+
     try {
-      await deleteDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, songId));
-      setBandSongsByBandId((prev) => ({
-        ...prev,
-        [bandId]: (prev[bandId] ?? []).filter((song) => song.id !== songId),
-      }));
+      await Promise.all([
+        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
+          itemType: 'song',
+          deletedAt,
+          purgeAt,
+          data: songToDelete,
+        }),
+        deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, songId)),
+      ]);
       return null;
     } catch (error) {
+      setBandSongsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSongs,
+      }));
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
+      }));
       return error instanceof Error ? error.message : 'Failed to remove song from band library.';
     }
-  }, [bands, userId]);
+  }, [bandSongsByBandId, bands, userId]);
 
   const moveBandSong = useCallback(async (bandId: string, songId: string, beforeSongId: string | null) => {
     if (!db || !userId) {
@@ -950,6 +1093,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
 
     const previousSongLists = bandSongListsByBandId[bandId] ?? [];
+    const songListToDelete = previousSongLists.find((songList) => songList.id === songListId);
+    if (!songListToDelete) {
+      return null;
+    }
+
+    const { deletedAt, purgeAt } = createTrashTimestamps();
+    const trashId = crypto.randomUUID();
     const nextSongLists = withSequentialSongListSortOrder(
       previousSongLists.filter((songList) => songList.id !== songListId)
     );
@@ -958,9 +1108,29 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       ...prev,
       [bandId]: nextSongLists,
     }));
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: [
+        {
+          bandId,
+          trashId,
+          itemType: 'songlist' as const,
+          deletedAt,
+          purgeAt,
+          songList: songListToDelete,
+        },
+        ...(prev[bandId] ?? []),
+      ].sort(compareTrashByDeletedAtDesc),
+    }));
 
     try {
       await Promise.all([
+        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
+          itemType: 'songlist',
+          deletedAt,
+          purgeAt,
+          data: songListToDelete,
+        }),
         deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId)),
         ...nextSongLists.map((songList) => setDoc(
           doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songList.id),
@@ -973,6 +1143,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBandSongListsByBandId((prev) => ({
         ...prev,
         [bandId]: previousSongLists,
+      }));
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
       }));
       return error instanceof Error ? error.message : 'Failed to delete band songlist.';
     }
@@ -1249,6 +1423,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
 
     const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const setlistToDelete = previousSetlists.find((setlist) => setlist.id === setlistId);
+    if (!setlistToDelete) {
+      return null;
+    }
+
+    const { deletedAt, purgeAt } = createTrashTimestamps();
+    const trashId = crypto.randomUUID();
     const nextSetlists = withSequentialSetlistSortOrder(
       previousSetlists.filter((setlist) => setlist.id !== setlistId)
     );
@@ -1257,9 +1438,29 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       ...prev,
       [bandId]: nextSetlists,
     }));
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: [
+        {
+          bandId,
+          trashId,
+          itemType: 'setlist' as const,
+          deletedAt,
+          purgeAt,
+          setlist: setlistToDelete,
+        },
+        ...(prev[bandId] ?? []),
+      ].sort(compareTrashByDeletedAtDesc),
+    }));
 
     try {
       await Promise.all([
+        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
+          itemType: 'setlist',
+          deletedAt,
+          purgeAt,
+          data: setlistToDelete,
+        }),
         deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId)),
         ...nextSetlists.map((setlist) => setDoc(
           doc(firestore, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlist.id),
@@ -1272,6 +1473,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBandSetlistsByBandId((prev) => ({
         ...prev,
         [bandId]: previousSetlists,
+      }));
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
       }));
       return error instanceof Error ? error.message : 'Failed to delete band setlist.';
     }
@@ -1413,11 +1618,203 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandSetlistsByBandId, bands, userId]);
 
+  const restoreBandTrashItem = useCallback(async (bandId: string, trashId: string): Promise<string | null> => {
+    if (!db || !userId) {
+      return 'Band libraries require cloud sync.';
+    }
+
+    const firestore = db;
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const trashItems = bandTrashByBandId[bandId] ?? [];
+    const target = trashItems.find((entry) => entry.trashId === trashId);
+    if (!target) return 'Trash item not found.';
+
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
+    }));
+
+    if (target.itemType === 'song') {
+      const previousSongs = bandSongsByBandId[bandId] ?? [];
+      const restoredSong = { ...target.song };
+      const nextSongs = sortBandSongs([...previousSongs.filter((entry) => entry.id !== restoredSong.id), restoredSong]);
+
+      setBandSongsByBandId((prev) => ({
+        ...prev,
+        [bandId]: nextSongs,
+      }));
+
+      try {
+        const { id, accessRole: _accessRole, ...rest } = restoredSong;
+        void _accessRole;
+        const payload = Object.fromEntries(
+          Object.entries(rest).filter(([, value]) => value !== undefined)
+        );
+
+        await Promise.all([
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, id), payload),
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId)),
+        ]);
+
+        return null;
+      } catch (error) {
+        setBandSongsByBandId((prev) => ({
+          ...prev,
+          [bandId]: previousSongs,
+        }));
+        setBandTrashByBandId((prev) => ({
+          ...prev,
+          [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
+        }));
+        return error instanceof Error ? error.message : 'Failed to restore band song.';
+      }
+    }
+
+    if (target.itemType === 'songlist') {
+      const previousSongLists = bandSongListsByBandId[bandId] ?? [];
+      const restoredSongList: SongList = {
+        ...target.songList,
+        sortOrder: previousSongLists.length,
+      };
+      const nextSongLists = withSequentialSongListSortOrder([
+        ...previousSongLists.filter((entry) => entry.id !== restoredSongList.id),
+        restoredSongList,
+      ]);
+
+      setBandSongListsByBandId((prev) => ({
+        ...prev,
+        [bandId]: nextSongLists,
+      }));
+
+      try {
+        const { id, accessRole: _accessRole, ...restoredPayload } = restoredSongList;
+        void _accessRole;
+        const payload = Object.fromEntries(
+          Object.entries(restoredPayload).filter(([, value]) => value !== undefined)
+        );
+
+        await Promise.all([
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, id), payload),
+          ...nextSongLists
+            .filter((entry) => entry.id !== id)
+            .map((entry) => setDoc(
+              doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, entry.id),
+              { sortOrder: entry.sortOrder ?? 0 },
+              { merge: true }
+            )),
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId)),
+        ]);
+
+        return null;
+      } catch (error) {
+        setBandSongListsByBandId((prev) => ({
+          ...prev,
+          [bandId]: previousSongLists,
+        }));
+        setBandTrashByBandId((prev) => ({
+          ...prev,
+          [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
+        }));
+        return error instanceof Error ? error.message : 'Failed to restore band songlist.';
+      }
+    }
+
+    const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const restoredSetlist: Setlist = {
+      ...target.setlist,
+      sortOrder: previousSetlists.length,
+      updatedAt: new Date().toISOString(),
+    };
+    const nextSetlists = withSequentialSetlistSortOrder([
+      ...previousSetlists.filter((entry) => entry.id !== restoredSetlist.id),
+      restoredSetlist,
+    ]);
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSetlists,
+    }));
+
+    try {
+      const { id, accessRole: _accessRole, ...restoredPayload } = restoredSetlist;
+      void _accessRole;
+      const payload = Object.fromEntries(
+        Object.entries(restoredPayload).filter(([, value]) => value !== undefined)
+      );
+
+      await Promise.all([
+        setDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, id), payload),
+        ...nextSetlists
+          .filter((entry) => entry.id !== id)
+          .map((entry) => setDoc(
+            doc(firestore, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, entry.id),
+            { sortOrder: entry.sortOrder ?? 0 },
+            { merge: true }
+          )),
+        deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId)),
+      ]);
+
+      return null;
+    } catch (error) {
+      setBandSetlistsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSetlists,
+      }));
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
+      }));
+      return error instanceof Error ? error.message : 'Failed to restore band setlist.';
+    }
+  }, [bandSetlistsByBandId, bandSongListsByBandId, bandSongsByBandId, bandTrashByBandId, bands, userId]);
+
+  const deleteBandTrashItemPermanently = useCallback(async (bandId: string, trashId: string): Promise<string | null> => {
+    if (!db || !userId) {
+      return 'Band libraries require cloud sync.';
+    }
+
+    const firestore = db;
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const previousItems = bandTrashByBandId[bandId] ?? [];
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
+    }));
+
+    try {
+      await deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId));
+      return null;
+    } catch (error) {
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousItems,
+      }));
+      return error instanceof Error ? error.message : 'Failed to permanently delete trash item.';
+    }
+  }, [bandTrashByBandId, bands, userId]);
+
   const value = useMemo<BandsContextValue>(() => ({
     bands,
     bandSongsByBandId,
     bandSongListsByBandId,
     bandSetlistsByBandId,
+    bandTrashByBandId,
     loading,
     cloudRequired: !firebaseEnabled,
     refreshBands,
@@ -1431,6 +1828,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
+    refreshBandTrash,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
     updateBandLibraryIcon,
@@ -1449,6 +1847,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     addSongToBandSetlist,
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
+    restoreBandTrashItem,
+    deleteBandTrashItemPermanently,
   }), [
     addBandSetlist,
     addBandSongList,
@@ -1458,12 +1858,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     bandSetlistsByBandId,
     bandSongListsByBandId,
     bandSongsByBandId,
+    bandTrashByBandId,
     bands,
     changeMemberRole,
     refreshBands,
     createBand,
     deleteBandSetlist,
     deleteBandSongList,
+    deleteBandTrashItemPermanently,
     deleteBand,
     inviteMember,
     leaveBand,
@@ -1473,6 +1875,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     moveBandSong,
     refreshBandSetlists,
     refreshBandSongLists,
+    refreshBandTrash,
     renameBand,
     renameBandSetlist,
     renameBandSongList,
@@ -1482,6 +1885,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     removeSongFromBandSetlist,
     removeSongFromBandSongList,
     removeSongFromBandLibrary,
+    restoreBandTrashItem,
     updateBandLibraryIcon,
     updateBandSetlistIcon,
   ]);

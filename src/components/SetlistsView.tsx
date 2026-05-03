@@ -114,8 +114,8 @@ export default function SetlistsView({
   };
 
   const handleDeleteSetlist = async () => {
-    const confirmed = await showConfirmToast(`Delete setlist "${setlistName}"? This cannot be undone.`, {
-      confirmLabel: 'Delete',
+    const confirmed = await showConfirmToast(`Move setlist "${setlistName}" to trash? It will be automatically deleted after 30 days.`, {
+      confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
 

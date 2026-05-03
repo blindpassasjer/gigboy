@@ -170,8 +170,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   }
 
   async function handleDelete() {
-    const confirmed = await showConfirmToast(`Delete "${song.title}"? This cannot be undone.`, {
-      confirmLabel: 'Delete',
+    const confirmed = await showConfirmToast(`Move "${song.title}" to trash? It will be automatically deleted after 30 days.`, {
+      confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
     await deleteSong(song.id);

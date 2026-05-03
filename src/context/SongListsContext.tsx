@@ -2,9 +2,16 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
-import type { SongList, SongListCategory } from '../types';
+import type { SongList, SongListCategory, TrashedSongList } from '../types';
 import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db } from '../lib/firebase';
+import {
+  compareTrashByDeletedAtDesc,
+  createTrashTimestamps,
+  isTrashExpired,
+  parseSongListTrashRecord,
+  TRASH_COLLECTION,
+} from '../lib/trash';
 import { useAuth } from './AuthContext';
 
 const KEY_FOLDERS = 'folio-folders';
@@ -139,12 +146,15 @@ function findLastIndexByFolderId(songLists: SongList[], folderId: string | undef
 interface SongListsContextValue {
   categories: SongListCategory[];
   songLists: SongList[];
+  trashedSongLists: TrashedSongList[];
   activeCategoryId: string | null;
   activeSongListId: string | null;
   addCategory: (name: string) => void;
   deleteCategory: (id: string) => void;
   addSongList: (name: string, folderId?: string) => void;
   deleteSongList: (id: string) => void;
+  restoreSongListFromTrash: (trashId: string) => Promise<string | null>;
+  deleteSongListPermanently: (trashId: string) => Promise<string | null>;
   renameSongList: (id: string, name: string) => void;
   addSongToList: (listId: string, songId: string) => void;
   removeSongFromList: (listId: string, songId: string) => void;
@@ -169,23 +179,73 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
   const [songLists, setSongLists] = useState<SongList[]>(() =>
     normalizeSongLists(readLocal<SongList[]>(KEY_LISTS, []))
   );
+  const [trashedSongLists, setTrashedSongLists] = useState<TrashedSongList[]>([]);
   const [activeCategoryId, setActiveCategoryState] = useState<string | null>(null);
   const [activeSongListId, setActiveSongListId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!db || !userId) return;
+    if (!db || !userId) {
+      setTrashedSongLists([]);
+      return;
+    }
 
-    Promise.all([
-      getDocs(collection(db, 'users', userId, CATEGORIES_COLLECTION)),
-      getDocs(collection(db, 'users', userId, LISTS_COLLECTION)),
+    const firestore = db;
+
+    Promise.allSettled([
+      getDocs(collection(firestore, 'users', userId, CATEGORIES_COLLECTION)),
+      getDocs(collection(firestore, 'users', userId, LISTS_COLLECTION)),
       loadAcceptedSharedResources({
-        db,
+        db: firestore,
         userId,
         resourceType: 'songlist',
         mapResource: (invite, id, data) => songListFromDoc(id, data, invite.ownerId, userId),
       }),
+      getDocs(collection(firestore, 'users', userId, TRASH_COLLECTION)),
     ])
-      .then(([categorySnapshot, listSnapshot, sharedLists]) => {
+      .then(([categoryResult, listResult, sharedResult, trashResult]) => {
+        const categorySnapshot = categoryResult.status === 'fulfilled' ? categoryResult.value : null;
+        const listSnapshot = listResult.status === 'fulfilled' ? listResult.value : null;
+        const sharedLists = sharedResult.status === 'fulfilled' ? sharedResult.value : [];
+        const trashDocs = trashResult.status === 'fulfilled' ? trashResult.value.docs : [];
+
+        const now = Date.now();
+        const parsedTrash = trashDocs
+          .map((entry) => parseSongListTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+          .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+        const expiredTrash = parsedTrash.filter((entry) => isTrashExpired(entry.purgeAt, now));
+        const activeTrash = parsedTrash.filter((entry) => !isTrashExpired(entry.purgeAt, now));
+
+        if (expiredTrash.length > 0) {
+          void Promise.all(
+            expiredTrash.map((entry) => deleteDoc(doc(firestore, 'users', userId, TRASH_COLLECTION, entry.id)))
+          ).catch((error) => {
+            console.warn('Failed to purge expired songlist trash items.', error);
+          });
+        }
+
+        setTrashedSongLists(
+          activeTrash
+            .map((entry) => ({
+              trashId: entry.id,
+              itemType: 'songlist' as const,
+              deletedAt: entry.deletedAt,
+              purgeAt: entry.purgeAt,
+              songList: entry.data,
+            }))
+            .sort(compareTrashByDeletedAtDesc)
+        );
+
+        if (!categorySnapshot || !listSnapshot) {
+          if (categoryResult.status === 'rejected') {
+            console.error('Failed to load song list categories from Firestore.', categoryResult.reason);
+          }
+          if (listResult.status === 'rejected') {
+            console.error('Failed to load song lists from Firestore.', listResult.reason);
+          }
+          return;
+        }
+
         const fetchedCategories = categorySnapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }) as SongListCategory);
         const nextCategories = ensureSongListsCategory(fetchedCategories);
         const ownedLists = listSnapshot.docs.map((entry) =>
@@ -298,11 +358,25 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const deleteSongList = useCallback((id: string) => {
+    let trashedEntry: TrashedSongList | null = null;
+
     setSongLists((prev) => {
       const deleting = prev.find((list) => list.id === id);
       if (!deleting || !isSongListOwner(deleting, userId)) {
         return prev;
       }
+
+      const { deletedAt, purgeAt } = createTrashTimestamps();
+      const trashId = crypto.randomUUID();
+      trashedEntry = {
+        trashId,
+        itemType: 'songlist',
+        deletedAt,
+        purgeAt,
+        songList: deleting,
+      };
+
+      setTrashedSongLists((prevTrash) => [trashedEntry as TrashedSongList, ...prevTrash].sort(compareTrashByDeletedAtDesc));
 
       const nextLists = normalizeSongLists(prev.filter((list) => list.id !== id));
       if (db && userId) {
@@ -312,17 +386,75 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
         });
 
         Promise.all([
+          setDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId), {
+            itemType: 'songlist',
+            deletedAt,
+            purgeAt,
+            data: deleting,
+          }),
           deleteDoc(doc(db, 'users', userId, LISTS_COLLECTION, id)),
           ...changed.map((list) => writeSongList(list, userId)),
         ]).catch((error) => {
-          console.error('Failed to delete song list in Firestore.', error);
+          console.error('Failed to move song list to trash in Firestore.', error);
           setSongLists(prev);
+          if (trashedEntry) {
+            setTrashedSongLists((prevTrash) => prevTrash.filter((entry) => entry.trashId !== trashedEntry?.trashId));
+          }
         });
       }
       return nextLists;
     });
     setActiveSongListId((prev) => (prev === id ? null : prev));
   }, [userId]);
+
+  const restoreSongListFromTrash = useCallback(async (trashId: string): Promise<string | null> => {
+    const trashed = trashedSongLists.find((entry) => entry.trashId === trashId);
+    if (!trashed) {
+      return 'Songlist was not found in trash.';
+    }
+
+    const restoredSongList = {
+      ...trashed.songList,
+      ownerId: userId ?? trashed.songList.ownerId,
+      accessRole: 'owner' as const,
+    };
+
+    setTrashedSongLists((prev) => prev.filter((entry) => entry.trashId !== trashId));
+    setSongLists((prev) => normalizeSongLists([restoredSongList, ...prev.filter((entry) => entry.id !== restoredSongList.id)]));
+
+    if (!db || !userId) {
+      return null;
+    }
+
+    try {
+      await Promise.all([
+        writeSongList(restoredSongList, userId),
+        deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId)),
+      ]);
+      return null;
+    } catch (error) {
+      setSongLists((prev) => prev.filter((entry) => entry.id !== restoredSongList.id));
+      setTrashedSongLists((prev) => [trashed, ...prev].sort(compareTrashByDeletedAtDesc));
+      return error instanceof Error ? error.message : 'Failed to restore songlist.';
+    }
+  }, [trashedSongLists, userId]);
+
+  const deleteSongListPermanently = useCallback(async (trashId: string): Promise<string | null> => {
+    const previousTrash = trashedSongLists;
+    setTrashedSongLists((prev) => prev.filter((entry) => entry.trashId !== trashId));
+
+    if (!db || !userId) {
+      return null;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId));
+      return null;
+    } catch (error) {
+      setTrashedSongLists(previousTrash);
+      return error instanceof Error ? error.message : 'Failed to permanently delete songlist.';
+    }
+  }, [trashedSongLists, userId]);
 
   const renameSongList = useCallback((id: string, name: string) => {
     const trimmedName = name.trim();
@@ -491,12 +623,15 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
       value={{
         categories,
         songLists,
+        trashedSongLists,
         activeCategoryId,
         activeSongListId,
         addCategory,
         deleteCategory,
         addSongList,
         deleteSongList,
+        restoreSongListFromTrash,
+        deleteSongListPermanently,
         renameSongList,
         addSongToList,
         removeSongFromList,

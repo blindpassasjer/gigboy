@@ -6,6 +6,7 @@ import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
+import TrashView from '../components/TrashView';
 import UserAvatar from '../components/UserAvatar';
 import type { CollaborationPermission, Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
@@ -21,11 +22,13 @@ export default function BandDetailPage() {
     bandSongsByBandId,
     bandSongListsByBandId,
     bandSetlistsByBandId,
+    bandTrashByBandId,
     loading,
     renameBand,
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
+    refreshBandTrash,
     inviteMember,
     changeMemberRole,
     removeMember,
@@ -47,12 +50,15 @@ export default function BandDetailPage() {
     addSongToBandSetlist,
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
+    restoreBandTrashItem,
+    deleteBandTrashItemPermanently,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
   const bandSongs = id ? (bandSongsByBandId[id] ?? []) : [];
   const bandSongLists = id ? (bandSongListsByBandId[id] ?? []) : [];
   const bandSetlists = id ? (bandSetlistsByBandId[id] ?? []) : [];
+  const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviteRole, setInviteRole] = useState<CollaborationPermission>('viewer');
@@ -100,6 +106,13 @@ export default function BandDetailPage() {
       console.error('Failed to load band setlists.', error);
     });
   }, [band, id, refreshBandSetlists]);
+
+  useEffect(() => {
+    if (!id || !band) return;
+    void refreshBandTrash(id).catch((error) => {
+      console.error('Failed to load band trash.', error);
+    });
+  }, [band, id, refreshBandTrash]);
 
   useEffect(() => {
     if (!showMembersModal) return;
@@ -219,13 +232,13 @@ export default function BandDetailPage() {
       return;
     }
 
-    const confirmed = await showConfirmToast(`Delete "${song.title}" from the database? This cannot be undone.`, {
-      confirmLabel: 'Delete',
+    const confirmed = await showConfirmToast(`Move "${song.title}" to trash? It will be automatically deleted after 30 days.`, {
+      confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
 
     await deleteSong(song.id);
-    toast.success('Song deleted from database.');
+    toast.success('Song moved to trash.');
   };
 
   const handleMoveSong = async (songId: string, beforeSongId: string | null) => {
@@ -267,8 +280,8 @@ export default function BandDetailPage() {
   const handleDeleteBandSongList = async () => {
     if (!activeBandSongList) return;
 
-    const confirmed = await showConfirmToast(`Delete songlist "${activeBandSongList.name}"? This cannot be undone.`, {
-      confirmLabel: 'Delete',
+    const confirmed = await showConfirmToast(`Move songlist "${activeBandSongList.name}" to trash? It will be automatically deleted after 30 days.`, {
+      confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
 
@@ -284,8 +297,8 @@ export default function BandDetailPage() {
   const handleDeleteBandSetlist = async () => {
     if (!activeBandSetlist) return;
 
-    const confirmed = await showConfirmToast(`Delete setlist "${activeBandSetlist.name}"? This cannot be undone.`, {
-      confirmLabel: 'Delete',
+    const confirmed = await showConfirmToast(`Move setlist "${activeBandSetlist.name}" to trash? It will be automatically deleted after 30 days.`, {
+      confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
 
@@ -388,6 +401,48 @@ export default function BandDetailPage() {
           bandId={band.id}
         />
       </section>
+    );
+  }
+
+  if (bandSection === 'trash') {
+    const trashItems = bandTrash.map((entry) => {
+      if (entry.itemType === 'song') {
+        return {
+          trashId: entry.trashId,
+          itemType: 'song' as const,
+          name: entry.song.title,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
+      if (entry.itemType === 'songlist') {
+        return {
+          trashId: entry.trashId,
+          itemType: 'songlist' as const,
+          name: entry.songList.name,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
+      return {
+        trashId: entry.trashId,
+        itemType: 'setlist' as const,
+        name: entry.setlist.name,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+      };
+    });
+
+    return (
+      <TrashView
+        title={`${band.name} Trash`}
+        emptyMessage="Trash is empty."
+        items={trashItems}
+        onRestore={(trashId) => restoreBandTrashItem(band.id, trashId)}
+        onDeletePermanently={(trashId) => deleteBandTrashItemPermanently(band.id, trashId)}
+      />
     );
   }
 
