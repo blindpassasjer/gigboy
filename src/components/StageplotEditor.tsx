@@ -17,7 +17,6 @@ interface StageplotEditorProps {
   };
   onRename: (name: string) => void;
   onUpdateIcon: (icon?: string) => void;
-  onUpdateStageSettings: (shape?: 'rectangle' | 'oval' | 'circle', size?: 'small' | 'medium' | 'large') => void;
   onDelete: () => Promise<void>;
   onSaveContent: (items: StageplotItem[], drawingLayers: SongHandNoteDocument[]) => Promise<void>;
   onCopyPublicLink: () => Promise<void>;
@@ -89,7 +88,6 @@ export default function StageplotEditor({
   currentUser,
   onRename,
   onUpdateIcon,
-  onUpdateStageSettings,
   onDelete,
   onSaveContent,
   onCopyPublicLink,
@@ -103,22 +101,18 @@ export default function StageplotEditor({
   const [renaming, setRenaming] = useState(false);
   const [iconDraft, setIconDraft] = useState(stageplot.icon ?? '🎤');
   const [showIconEditor, setShowIconEditor] = useState(false);
-  const [stageShapeDraft, setStageShapeDraft] = useState<'rectangle' | 'oval' | 'circle'>(stageplot.stageShape ?? 'rectangle');
-  const [stageSizeDraft, setStageSizeDraft] = useState<'small' | 'medium' | 'large'>(stageplot.stageSize ?? 'medium');
   const [saving, setSaving] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
 
-  const stageShapePreview = stageShapeDraft;
-  const stageSizePreview = stageSizeDraft;
+  const stageShapePreview = stageplot.stageShape ?? 'rectangle';
+  const stageSizePreview = stageplot.stageSize ?? 'medium';
 
   useEffect(() => {
     setItems(stageplot.items);
     setDrawingLayers(stageplot.drawingLayers ?? []);
     setRenameValue(stageplot.name);
     setIconDraft(stageplot.icon ?? '🎤');
-    setStageShapeDraft(stageplot.stageShape ?? 'rectangle');
-    setStageSizeDraft(stageplot.stageSize ?? 'medium');
   }, [stageplot]);
 
   const myLayer = useMemo(() => userLayerFrom(drawingLayers, currentUser.id), [currentUser.id, drawingLayers]);
@@ -368,8 +362,8 @@ export default function StageplotEditor({
   return (
     <section className="stageplot-view">
       <div className="stageplot-sticky">
-        <div className="setlist-header songlist-header">
-          <div className="setlist-title-block">
+        <div className="stageplot-header">
+          <div className="stageplot-title-block">
             {renaming ? (
               <input
                 type="text"
@@ -383,12 +377,12 @@ export default function StageplotEditor({
                   }
                 }}
                 onBlur={handleRenameCommit}
-                className="setlist-name-input"
+                className="stageplot-name-input"
               />
             ) : (
-              <div className="song-list-title-row">
-                <h2 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
-                  {stageplot.icon ? <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
+              <div className="stageplot-title-row">
+                <h2 className="stageplot-heading" onDoubleClick={() => canEdit && setRenaming(true)}>
+                  {stageplot.icon ? <span className="stageplot-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
                   <span>{stageplot.name}</span>
                 </h2>
                 {canEdit ? (
@@ -404,11 +398,11 @@ export default function StageplotEditor({
                 ) : null}
               </div>
             )}
-            <p className="song-list-summary setlist-song-count">
+            <p className="stageplot-item-count">
               {items.length} item{items.length === 1 ? '' : 's'}{saving ? ' • Saving…' : ''}
             </p>
           </div>
-          <div className="setlist-header-actions">
+          <div className="stageplot-header-actions">
             {canEdit ? (
               <button
                 type="button"
@@ -464,44 +458,11 @@ export default function StageplotEditor({
                 })}
               </div>
             </div>
-            <div className="list-appearance-group">
-              <span className="list-appearance-label">Stage shape</span>
-              <div className="stageplot-settings-btn-group" role="group" aria-label="Stage shape">
-                {(['rectangle', 'oval', 'circle'] as const).map((shape) => (
-                  <button
-                    key={shape}
-                    type="button"
-                    className={`setlist-action-btn setlist-action-btn--secondary${stageShapeDraft === shape ? ' setlist-action-btn--active' : ''}`}
-                    onClick={() => setStageShapeDraft(shape)}
-                    aria-pressed={stageShapeDraft === shape}
-                  >
-                    {shape.charAt(0).toUpperCase() + shape.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="list-appearance-group">
-              <span className="list-appearance-label">Stage size</span>
-              <div className="stageplot-settings-btn-group" role="group" aria-label="Stage size">
-                {(['small', 'medium', 'large'] as const).map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    className={`setlist-action-btn setlist-action-btn--secondary${stageSizeDraft === size ? ' setlist-action-btn--active' : ''}`}
-                    onClick={() => setStageSizeDraft(size)}
-                    aria-pressed={stageSizeDraft === size}
-                  >
-                    {size.charAt(0).toUpperCase() + size.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
             <button
               type="button"
               className="setlist-action-btn"
               onClick={() => {
                 onUpdateIcon(normalizeEmojiIcon(iconDraft));
-                onUpdateStageSettings(stageShapeDraft, stageSizeDraft);
                 setShowIconEditor(false);
               }}
             >
