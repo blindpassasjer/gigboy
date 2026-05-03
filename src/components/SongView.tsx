@@ -74,6 +74,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const [showRecorder, setShowRecorder] = useState(false);
   const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
   const media = song.playbackUrl ? parseSongMedia(song.playbackUrl) : null;
+  const canDeleteSong = !song.ownerId || song.accessRole === 'owner';
 
   const handNotes = useSongHandNotes({
     ownerId: song.ownerId ?? user?.id ?? null,
@@ -169,6 +170,11 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   }
 
   async function handleDelete() {
+    if (!canDeleteSong) {
+      toast.error('Only the song owner can move this song to trash.');
+      return;
+    }
+
     const confirmed = await showConfirmToast(`Move "${song.title}" to trash? It will be automatically deleted after 30 days.`, {
       confirmLabel: 'Move to trash',
     });
@@ -574,14 +580,16 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 buttonTitle={`Share ${song.title}`}
                 iconOnly
               />
-              <button
-                className="song-action-btn song-action-btn--delete"
-                onClick={handleDelete}
-                title={`Delete ${song.title}`}
-                aria-label={`Delete ${song.title}`}
-              >
-                <Trash2 size={14} />
-              </button>
+              {canDeleteSong ? (
+                <button
+                  className="song-action-btn song-action-btn--delete"
+                  onClick={handleDelete}
+                  title={`Delete ${song.title}`}
+                  aria-label={`Delete ${song.title}`}
+                >
+                  <Trash2 size={14} />
+                </button>
+              ) : null}
             </div>
           </div>
 

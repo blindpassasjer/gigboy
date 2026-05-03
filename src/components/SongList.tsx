@@ -87,6 +87,7 @@ interface Props {
   allSongs?: Song[];
   onMoveSong?: (songId: string, beforeSongId: string | null) => void;
   onDeleteSong: (song: Song) => void | Promise<void>;
+  canDeleteSong?: (song: Song) => boolean;
   onRenameList?: (name: string) => void | Promise<void>;
   onUpdateListAppearance?: (appearance: { icon?: string }) => void;
   onRemoveSong?: (song: Song) => void;
@@ -108,6 +109,7 @@ export default function SongList({
   allSongs,
   onMoveSong,
   onDeleteSong,
+  canDeleteSong,
   onRenameList,
   onUpdateListAppearance,
   onRemoveSong,
@@ -704,14 +706,16 @@ export default function SongList({
                       <ListMinus size={14} />
                     </button>
                   )}
-                  <button
-                    className="song-action-btn song-action-btn--delete"
-                    onClick={() => onDeleteSong(song)}
-                    title={`Delete ${song.title}`}
-                    aria-label={`Delete ${song.title}`}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {(canDeleteSong?.(song) ?? true) ? (
+                    <button
+                      className="song-action-btn song-action-btn--delete"
+                      onClick={() => onDeleteSong(song)}
+                      title={`Delete ${song.title}`}
+                      aria-label={`Delete ${song.title}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  ) : null}
                 </div>
               </article>
               );
@@ -785,14 +789,16 @@ export default function SongList({
                         <ListMinus size={14} />
                       </button>
                     )}
-                    <button
-                      className="song-action-btn song-action-btn--delete"
-                      onClick={() => onDeleteSong(song)}
-                      title={`Delete ${song.title}`}
-                      aria-label={`Delete ${song.title}`}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {(canDeleteSong?.(song) ?? true) ? (
+                      <button
+                        className="song-action-btn song-action-btn--delete"
+                        onClick={() => onDeleteSong(song)}
+                        title={`Delete ${song.title}`}
+                        aria-label={`Delete ${song.title}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </li>

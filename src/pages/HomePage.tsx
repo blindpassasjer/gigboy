@@ -504,6 +504,12 @@ export default function HomePage() {
       : songs;
   const isAllSongsView = !activeList && !activeCategorySongIds;
 
+  function canDeleteLibrarySong(song: Song) {
+    return !song.ownerId || song.accessRole === 'owner';
+  }
+
+  const canDeleteActiveSongList = Boolean(activeList && (!activeList.ownerId || activeList.accessRole === 'owner'));
+
   function handleUpdateAllSongsAppearance(appearance: { icon?: string }) {
     const icon = appearance.icon?.trim();
     if (!icon) {
@@ -526,6 +532,11 @@ export default function HomePage() {
   }
 
   async function handleDeleteSong(song: Song) {
+    if (!canDeleteLibrarySong(song)) {
+      toast.error('Only the song owner can move this song to trash.');
+      return;
+    }
+
     const confirmed = await showConfirmToast(`Move "${song.title}" to trash? It will be automatically deleted after 30 days.`, {
       confirmLabel: 'Move to trash',
     });
@@ -535,6 +546,10 @@ export default function HomePage() {
 
   async function handleDeleteActiveSongList() {
     if (!activeList) return;
+    if (!canDeleteActiveSongList) {
+      toast.error('Only the songlist owner can move this songlist to trash.');
+      return;
+    }
 
     const confirmed = await showConfirmToast(`Move songlist "${activeList.name}" to trash? It will be automatically deleted after 30 days.`, {
       confirmLabel: 'Move to trash',
@@ -589,12 +604,13 @@ export default function HomePage() {
       onAddSong={activeList ? (songId) => addSongToList(activeList.id, songId) : undefined}
       onMoveSong={handleMoveSong}
       onDeleteSong={handleDeleteSong}
+      canDeleteSong={canDeleteLibrarySong}
       onRenameList={
         activeList
           ? (name) => renameSongList(activeList.id, name)
           : undefined
       }
-      onDeleteList={activeList ? handleDeleteActiveSongList : undefined}
+      onDeleteList={activeList && canDeleteActiveSongList ? handleDeleteActiveSongList : undefined}
       deleteListLabel={activeList ? `Delete songlist ${activeList.name}` : undefined}
       onUpdateListAppearance={
         activeList

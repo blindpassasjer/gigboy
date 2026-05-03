@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
+import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
 
 interface Props {
@@ -49,6 +50,7 @@ export default function SetlistsView({
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [iconDraft, setIconDraft] = useState(currentSetlist?.icon ?? '🎵');
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const canDeleteSetlist = !currentSetlist?.ownerId || currentSetlist.accessRole === 'owner';
 
   const startRenaming = () => {
     setRenameValue(setlistName);
@@ -110,6 +112,11 @@ export default function SetlistsView({
   };
 
   const handleDeleteSetlist = async () => {
+    if (!canDeleteSetlist) {
+      toast.error('Only the setlist owner can move this setlist to trash.');
+      return;
+    }
+
     const confirmed = await showConfirmToast(`Move setlist "${setlistName}" to trash? It will be automatically deleted after 30 days.`, {
       confirmLabel: 'Move to trash',
     });
@@ -301,14 +308,16 @@ export default function SetlistsView({
             >
               <Smile size={14} />
             </button>
-            <button
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => void handleDeleteSetlist()}
-              title={`Delete setlist ${setlistName}`}
-              aria-label={`Delete setlist ${setlistName}`}
-            >
-              <Trash2 size={14} />
-            </button>
+            {canDeleteSetlist ? (
+              <button
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => void handleDeleteSetlist()}
+                title={`Delete setlist ${setlistName}`}
+                aria-label={`Delete setlist ${setlistName}`}
+              >
+                <Trash2 size={14} />
+              </button>
+            ) : null}
           </div>
         </div>
 

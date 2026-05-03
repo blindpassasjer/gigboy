@@ -2321,6 +2321,33 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .lyric-text { line-height: 1.5; }
 
+/* Always wrap song body chord/lyric content to avoid horizontal scrolling in song view. */
+.song-view-body .chord-display {
+  overflow-x: hidden;
+}
+
+.song-view-body .chord-line {
+  flex-wrap: wrap;
+  white-space: normal;
+  align-items: flex-start;
+  row-gap: .2rem;
+}
+
+.song-view-body .chord-segment {
+  white-space: pre-wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.song-view-body .lyric-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.song-view-body .chord-name-btn {
+  white-space: normal;
+}
+
 .song-title-directive {
   font-size: 1.3rem;
   font-weight: 700;
