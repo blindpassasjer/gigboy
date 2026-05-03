@@ -73,7 +73,7 @@ export default function PublicUserTechnicalRiderPage() {
         <h1 className="public-setlist-title">{rider.name}</h1>
       </header>
 
-      <section className="technical-rider-section">
+      <section className="technical-rider-section technical-rider-public-section">
         <h2>Technical Lines</h2>
         <div className="technical-rider-table-wrap">
           <table className="technical-rider-table">
@@ -102,7 +102,7 @@ export default function PublicUserTechnicalRiderPage() {
         </div>
       </section>
 
-      <section className="technical-rider-section">
+      <section className="technical-rider-section technical-rider-public-section">
         <h2>Preferred Equipment</h2>
         <div className="technical-rider-table-wrap">
           <table className="technical-rider-table">
@@ -131,7 +131,7 @@ export default function PublicUserTechnicalRiderPage() {
         </div>
       </section>
 
-      <section className="technical-rider-section">
+      <section className="technical-rider-section technical-rider-public-section">
         <h2>We Bring (Inventory)</h2>
         <div className="technical-rider-table-wrap">
           <table className="technical-rider-table">

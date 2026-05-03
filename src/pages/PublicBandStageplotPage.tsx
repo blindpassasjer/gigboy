@@ -154,16 +154,12 @@ export default function PublicBandStageplotPage() {
               color: item.color ?? 'var(--text)',
             }}
           >
-            {item.kind === 'custom' && item.icon ? (
-              <span className="stageplot-custom-emoji">{item.icon}</span>
-            ) : (
-              <img
-                src={stageplotIconForKind(item.kind)}
-                alt=""
-                aria-hidden="true"
-                className="stageplot-instrument-icon"
-              />
-            )}
+            <img
+              src={stageplotIconForKind(item.kind)}
+              alt=""
+              aria-hidden="true"
+              className="stageplot-instrument-icon"
+            />
             <span>{item.label}</span>
           </div>
         ))}

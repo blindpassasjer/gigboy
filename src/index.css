@@ -1777,8 +1777,14 @@ input, select, textarea { font: inherit; color: var(--text); }
 .technical-rider-empty {
   color: var(--muted);
 }
-.technical-rider-public-page .technical-rider-section {
+.technical-rider-public-section {
   margin-top: .85rem;
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+}
+.technical-rider-public-section h2 {
+  margin: 0;
 }
 .song-media-player--spotify {
   display: flex;
@@ -6195,6 +6201,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .25rem;
 }
 
+.stageplot-palette-custom-controls {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
 .stageplot-palette-btn {
   display: inline-flex;
   align-items: center;
@@ -6233,12 +6246,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   height: 32px;
 }
 
-.stageplot-custom-emoji {
-  display: inline-block;
-  font-size: 2rem;
-  line-height: 1;
-  user-select: none;
-  -webkit-user-select: none;
+.stageplot-toolbar-input--custom {
+  min-width: 150px;
+  width: min(220px, 100%);
 }
 
 .stageplot-toolbar-actions {

@@ -20,6 +20,7 @@ import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
+import { ICON_OPTIONS } from '../lib/iconOptions';
 
 type SortBy =
   | 'custom'
@@ -52,8 +53,6 @@ function getInitialSortBy(canUseCustomOrder: boolean): SortBy {
 
 const SONG_DRAG_MIME = 'application/x-folio-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
-
-const EMOJI_OPTIONS = ['🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '📀', '✨', '🔥', '📁'] as const;
 
 function getSongPreview(song: Song): string {
   const lyricLines = parseChordPro(song.chordpro)
@@ -568,9 +567,9 @@ export default function SongList({
       {showListAppearanceEditor && onUpdateListAppearance && (
         <div className="list-appearance-editor" role="region" aria-label="Songlist icon settings">
           <div className="list-appearance-group">
-            <span className="list-appearance-label">Emoji</span>
-            <div className="emoji-choice-grid" role="listbox" aria-label="Songlist emoji options">
-              {EMOJI_OPTIONS.map((emoji) => {
+            <span className="list-appearance-label">Icon</span>
+            <div className="emoji-choice-grid" role="listbox" aria-label="Songlist icon options">
+              {ICON_OPTIONS.map((emoji) => {
                 const selected = listIconDraft === emoji;
                 return (
                   <button

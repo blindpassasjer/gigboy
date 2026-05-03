@@ -4,8 +4,7 @@ import toast from '../utils/anchoredToast';
 import { Music2, Users } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
-
-const EMOJI_OPTIONS = ['🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '📀', '✨', '🔥', '📁'] as const;
+import { ICON_OPTIONS } from '../lib/iconOptions';
 
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
@@ -94,7 +93,7 @@ export default function BandsPage() {
           <label className="share-menu-field">
             <span>Icon</span>
             <select value={icon} onChange={(event) => setIcon(event.target.value)}>
-              {EMOJI_OPTIONS.map((emoji) => (
+              {ICON_OPTIONS.map((emoji) => (
                 <option key={emoji} value={emoji}>{emoji}</option>
               ))}
             </select>

@@ -62,6 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [pendingLinkEmail, setPendingLinkEmail] = useState<string | null>(null);
   const pendingCredentialRef = useRef<OAuthCredential | null>(null);
 
+  const clearPendingLink = useCallback(() => {
+    pendingCredentialRef.current = null;
+    setPendingLinkEmail(null);
+  }, []);
+
   useEffect(() => {
     if (!auth) {
       setLoading(false);
@@ -120,12 +125,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+
+      const pendingCredential = pendingCredentialRef.current;
+      const pendingEmail = pendingLinkEmail;
+      const normalizedPendingEmail = pendingEmail?.trim().toLowerCase();
+      const normalizedEmail = email.trim().toLowerCase();
+      if (pendingCredential && normalizedPendingEmail === normalizedEmail) {
+        await linkWithCredential(result.user, pendingCredential);
+        clearPendingLink();
+      }
+
       return null;
     } catch (err: unknown) {
       return err instanceof Error ? err.message : 'Login failed';
     }
-  }, []);
+  }, [clearPendingLink, pendingLinkEmail]);
 
   const register = useCallback(async (email: string, password: string, username: string): Promise<string | null> => {
     if (!auth || !db) {
@@ -235,9 +250,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loginWithProvider]);
 
   const cancelPendingLink = useCallback(() => {
-    pendingCredentialRef.current = null;
-    setPendingLinkEmail(null);
-  }, []);
+    clearPendingLink();
+  }, [clearPendingLink]);
 
   const linkWithPassword = useCallback(async (password: string): Promise<string | null> => {
     const email = pendingLinkEmail;
@@ -248,13 +262,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       await linkWithCredential(result.user, credential);
-      pendingCredentialRef.current = null;
-      setPendingLinkEmail(null);
+      clearPendingLink();
       return null;
     } catch (err: unknown) {
       return err instanceof Error ? err.message : 'Failed to link accounts.';
     }
-  }, [pendingLinkEmail]);
+  }, [clearPendingLink, pendingLinkEmail]);
 
   const completeUsername = useCallback(async (username: string) => {
     if (!db || !auth?.currentUser) {

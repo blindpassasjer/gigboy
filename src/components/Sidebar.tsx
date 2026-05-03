@@ -753,8 +753,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                         onNavigate?.();
                       }}
                     >
-                      <Map size={14} />
-                      <span className="sidebar-list-name">{stageplot.icon ? `${stageplot.icon} ` : ''}{stageplot.name}</span>
+                      {stageplot.icon ? <span className="sidebar-list-icon" aria-hidden="true">{stageplot.icon}</span> : <Map size={14} />}
+                      <span className="sidebar-list-name">{stageplot.name}</span>
                       {stageplot.items.length > 0 ? <span className="sidebar-list-count">{stageplot.items.length}</span> : null}
                     </button>
                   </div>

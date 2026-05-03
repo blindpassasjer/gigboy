@@ -59,6 +59,7 @@ interface TechnicalRidersContextValue {
   setActiveTechnicalRiderId: (id: string | null) => void;
   addTechnicalRider: (name: string) => Promise<{ riderId: string | null; error: string | null }>;
   renameTechnicalRider: (id: string, name: string) => Promise<string | null>;
+  updateTechnicalRiderIcon: (id: string, icon?: string) => Promise<string | null>;
   deleteTechnicalRider: (id: string) => Promise<string | null>;
   updateTechnicalRiderContent: (params: {
     riderId: string;
@@ -161,6 +162,26 @@ export function TechnicalRidersProvider({ children }: { children: ReactNode }) {
     }
   }, [technicalRiders, userId]);
 
+  const updateTechnicalRiderIcon = useCallback(async (id: string, icon?: string) => {
+    const previousRiders = technicalRiders;
+    const now = new Date().toISOString();
+    const nextRiders = technicalRiders.map((rider) => (
+      rider.id === id ? { ...rider, icon, updatedAt: now } : rider
+    ));
+    setTechnicalRiders(nextRiders);
+
+    try {
+      const updated = nextRiders.find((rider) => rider.id === id);
+      if (updated && db && userId) {
+        await writeTechnicalRider(updated, userId);
+      }
+      return null;
+    } catch (error) {
+      setTechnicalRiders(previousRiders);
+      return error instanceof Error ? error.message : 'Failed to update rider icon.';
+    }
+  }, [technicalRiders, userId]);
+
   const deleteTechnicalRider = useCallback(async (id: string) => {
     const previousRiders = technicalRiders;
     const nextRiders = withSequentialTechnicalRiderSortOrder(
@@ -252,6 +273,7 @@ export function TechnicalRidersProvider({ children }: { children: ReactNode }) {
     setActiveTechnicalRiderId,
     addTechnicalRider,
     renameTechnicalRider,
+    updateTechnicalRiderIcon,
     deleteTechnicalRider,
     updateTechnicalRiderContent,
     setTechnicalRiderPublicShare,
@@ -262,6 +284,7 @@ export function TechnicalRidersProvider({ children }: { children: ReactNode }) {
     renameTechnicalRider,
     setTechnicalRiderPublicShare,
     technicalRiders,
+    updateTechnicalRiderIcon,
     updateTechnicalRiderContent,
   ]);
 

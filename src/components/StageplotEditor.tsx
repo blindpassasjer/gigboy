@@ -4,6 +4,7 @@ import type { HandNoteStroke, SongHandNoteDocument, Stageplot, StageplotItem } f
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { stageplotIconForKind } from '../lib/stageplotIcons';
+import { ICON_OPTIONS } from '../lib/iconOptions';
 
 interface StageplotEditorProps {
   stageplot: Stageplot;
@@ -22,7 +23,7 @@ interface StageplotEditorProps {
 }
 
 const ITEM_DRAG_MIME = 'application/x-folio-stageplot-item-template';
-const EMOJI_OPTIONS = ['🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '🔊', '📦', '✨'] as const;
+const CUSTOM_ITEM_TEMPLATE = { kind: 'custom', label: 'Custom item', color: '#6b7280' } as const;
 
 interface PaletteItem {
   kind: string;
@@ -99,12 +100,12 @@ export default function StageplotEditor({
   onSaveContent,
   onCopyPublicLink,
 }: StageplotEditorProps) {
+  void onUpdateStageSettings;
   const stageRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<StageplotItem[]>(stageplot.items);
   const [drawingLayers, setDrawingLayers] = useState<SongHandNoteDocument[]>(stageplot.drawingLayers ?? []);
   const [drawEnabled, setDrawEnabled] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
-  const [customIcon, setCustomIcon] = useState('📦');
   const [renameValue, setRenameValue] = useState(stageplot.name);
   const [renaming, setRenaming] = useState(false);
   const [iconDraft, setIconDraft] = useState(stageplot.icon ?? '🎤');
@@ -112,7 +113,6 @@ export default function StageplotEditor({
   const [stageShapeDraft, setStageShapeDraft] = useState<'rectangle' | 'oval' | 'circle'>(stageplot.stageShape ?? 'rectangle');
   const [saving, setSaving] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [showCustomIconEditor, setShowCustomIconEditor] = useState(false);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
 
   const stageShapePreview = stageShapeDraft;
@@ -244,7 +244,6 @@ export default function StageplotEditor({
         id: crypto.randomUUID(),
         kind: 'custom',
         label,
-        icon: customIcon,
         color: '#6b7280',
         x: 0.5,
         y: 0.5,
@@ -252,7 +251,6 @@ export default function StageplotEditor({
     ];
 
     setCustomLabel('');
-    setCustomIcon('📦');
     setItems(nextItems);
     void persistContent(nextItems, drawingLayers);
   };
@@ -394,12 +392,18 @@ export default function StageplotEditor({
               />
             ) : (
               <div className="song-list-title-row">
-                <h1 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
+                <h2 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
                   {stageplot.icon ? <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
-                  {stageplot.name}
-                </h1>
+                  <span>{stageplot.name}</span>
+                </h2>
                 {canEdit ? (
-                  <button type="button" className="title-rename-btn" onClick={() => setRenaming(true)} title="Rename stageplot">
+                  <button
+                    type="button"
+                    className="title-rename-btn"
+                    onClick={() => setRenaming(true)}
+                    title="Rename stageplot"
+                    aria-label="Rename stageplot"
+                  >
                     <PenLine size={14} />
                   </button>
                 ) : null}
@@ -410,33 +414,36 @@ export default function StageplotEditor({
             </p>
           </div>
           <div className="setlist-header-actions">
+            {canEdit ? (
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => setShowIconEditor((value) => !value)}
+                title="Set stageplot icon"
+                aria-label="Set stageplot icon"
+              >
+                <Smile size={14} />
+              </button>
+            ) : null}
             <button
               type="button"
               className={`setlist-action-btn setlist-action-btn--secondary${stageplot.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
               onClick={() => void onCopyPublicLink()}
               title={stageplot.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
+              aria-label={stageplot.publicShareEnabled ? 'Copy public link' : 'Create and copy public link'}
             >
               <Link2 size={14} />
             </button>
             {canEdit ? (
-              <>
-                <button
-                  type="button"
-                  className="setlist-action-btn setlist-action-btn--secondary"
-                  onClick={() => setShowIconEditor((value) => !value)}
-                  title="Set stageplot icon"
-                >
-                  <Smile size={14} />
-                </button>
-                <button
-                  type="button"
-                  className="setlist-action-btn setlist-action-btn--secondary"
-                  onClick={() => void handleDeleteStageplot()}
-                  title={`Delete stageplot ${stageplot.name}`}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </>
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => void handleDeleteStageplot()}
+                title={`Delete stageplot ${stageplot.name}`}
+                aria-label={`Delete stageplot ${stageplot.name}`}
+              >
+                <Trash2 size={14} />
+              </button>
             ) : null}
           </div>
         </div>
@@ -470,26 +477,32 @@ export default function StageplotEditor({
                   </div>
                 </div>
               ))}
+              <div className="stageplot-palette-category stageplot-palette-category--custom">
+                <div className="stageplot-palette-category-name">Custom</div>
+                <div className="stageplot-palette-custom-controls">
+                  <img
+                    src={stageplotIconForKind(CUSTOM_ITEM_TEMPLATE.kind)}
+                    alt=""
+                    aria-hidden="true"
+                    className="stageplot-instrument-icon stageplot-instrument-icon--palette"
+                  />
+                  <input
+                    type="text"
+                    value={customLabel}
+                    onChange={(event) => setCustomLabel(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') addCustomItem();
+                    }}
+                    placeholder="Custom item"
+                    className="stageplot-toolbar-input stageplot-toolbar-input--custom"
+                  />
+                  <button type="button" className="notes-toolbar-btn" onClick={addCustomItem}>
+                    <Plus size={12} /> Add
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="stageplot-toolbar-actions">
-              <input
-                type="text"
-                value={customLabel}
-                onChange={(event) => setCustomLabel(event.target.value)}
-                placeholder="Custom item"
-                className="stageplot-toolbar-input"
-              />
-              <button
-                type="button"
-                className="notes-toolbar-btn"
-                onClick={() => setShowCustomIconEditor((value) => !value)}
-                title="Pick icon for custom item"
-              >
-                {customIcon}
-              </button>
-              <button type="button" className="notes-toolbar-btn" onClick={addCustomItem}>
-                <Plus size={12} /> Add
-              </button>
               <button
                 type="button"
                 className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
@@ -513,9 +526,9 @@ export default function StageplotEditor({
         {showIconEditor && canEdit ? (
           <div className="list-appearance-editor" role="region" aria-label="Stageplot icon settings">
             <div className="list-appearance-group">
-              <span className="list-appearance-label">Emoji</span>
-              <div className="emoji-choice-grid" role="listbox" aria-label="Stageplot emoji options">
-                {EMOJI_OPTIONS.map((emoji) => {
+              <span className="list-appearance-label">Icon</span>
+              <div className="emoji-choice-grid" role="listbox" aria-label="Stageplot icon options">
+                {ICON_OPTIONS.map((emoji) => {
                   const selected = iconDraft === emoji;
                   return (
                     <button
@@ -546,38 +559,6 @@ export default function StageplotEditor({
             </button>
           </div>
         ) : null}
-
-        {showCustomIconEditor && canEdit ? (
-          <div className="list-appearance-editor" role="region" aria-label="Custom item icon settings">
-            <div className="list-appearance-group">
-              <span className="list-appearance-label">Icon</span>
-              <div className="emoji-choice-grid" role="listbox" aria-label="Custom item emoji options">
-                {EMOJI_OPTIONS.map((emoji) => {
-                  const selected = customIcon === emoji;
-                  return (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                      onClick={() => setCustomIcon(emoji)}
-                      aria-pressed={selected}
-                    >
-                      {emoji}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => setShowCustomIconEditor(false)}
-            >
-              Done
-            </button>
-          </div>
-        ) : null}
-
 
       </div>
 
@@ -617,17 +598,13 @@ export default function StageplotEditor({
             onClick={() => setSelectedItemId(item.id)}
             title={drawEnabled ? 'Disable drawing to move items' : item.label}
           >
-            {item.kind === 'custom' && item.icon ? (
-              <span className="stageplot-custom-emoji">{item.icon}</span>
-            ) : (
-              <img
-                src={stageplotIconForKind(item.kind)}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className="stageplot-instrument-icon stageplot-instrument-icon--item"
-              />
-            )}
+            <img
+              src={stageplotIconForKind(item.kind)}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="stageplot-instrument-icon stageplot-instrument-icon--item"
+            />
             <span>{item.label}</span>
           </button>
         ))}

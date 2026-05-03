@@ -65,6 +65,7 @@ export default function BandDetailPage() {
     updateBandStageplotContent,
     deleteBandStageplot,
     renameBandTechnicalRider,
+    updateBandTechnicalRiderIcon,
     setBandTechnicalRiderPublicShare,
     updateBandTechnicalRiderContent,
     deleteBandTechnicalRider,
@@ -615,6 +616,10 @@ export default function BandDetailPage() {
         canEdit={canEditBand}
         onRename={async (name) => {
           const error = await renameBandTechnicalRider(band.id, activeBandTechnicalRider.id, name);
+          if (error) toast.error(error);
+        }}
+        onUpdateIcon={async (icon) => {
+          const error = await updateBandTechnicalRiderIcon(band.id, activeBandTechnicalRider.id, icon);
           if (error) toast.error(error);
         }}
         onDelete={canEditBand ? async () => {

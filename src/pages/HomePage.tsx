@@ -64,6 +64,7 @@ export default function HomePage() {
     technicalRiders,
     activeTechnicalRiderId,
     renameTechnicalRider,
+    updateTechnicalRiderIcon,
     deleteTechnicalRider,
     updateTechnicalRiderContent,
     setTechnicalRiderPublicShare,
@@ -467,6 +468,10 @@ export default function HomePage() {
           const error = await renameTechnicalRider(activeTechnicalRider.id, name);
           if (error) toast.error(error);
         }}
+        onUpdateIcon={async (icon) => {
+          const error = await updateTechnicalRiderIcon(activeTechnicalRider.id, icon);
+          if (error) toast.error(error);
+        }}
         onDelete={async () => {
           const error = await deleteTechnicalRider(activeTechnicalRider.id);
           if (error) toast.error(error);
@@ -479,7 +484,6 @@ export default function HomePage() {
             inventoryEquipment: content.inventoryEquipment,
           });
           if (error) toast.error(error);
-          else toast.success('Technical rider updated.');
         }}
         onCopyPublicLink={handleShareTechnicalRider}
       />

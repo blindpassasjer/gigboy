@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link2, Plus, Trash2, PenLine } from 'lucide-react';
+import { Link2, Plus, Trash2, PenLine, Smile } from 'lucide-react';
 import type { RiderEquipmentItem, TechnicalRider, TechnicalRiderLine } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 
@@ -8,12 +8,21 @@ interface Props {
   canEdit: boolean;
   onRename: (name: string) => Promise<void> | void;
   onDelete?: () => Promise<void> | void;
+  onUpdateIcon: (icon?: string) => Promise<void> | void;
   onSaveContent: (params: {
     lines: TechnicalRiderLine[];
     preferredEquipment: RiderEquipmentItem[];
     inventoryEquipment: RiderEquipmentItem[];
   }) => Promise<void> | void;
   onCopyPublicLink: () => Promise<void> | void;
+}
+
+const EMOJI_OPTIONS = ['🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '🔊', '📦', '✨'] as const;
+
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
 }
 
 function createLine(): TechnicalRiderLine {
@@ -37,6 +46,7 @@ export default function TechnicalRiderEditor({
   canEdit,
   onRename,
   onDelete,
+  onUpdateIcon,
   onSaveContent,
   onCopyPublicLink,
 }: Props) {
@@ -45,7 +55,8 @@ export default function TechnicalRiderEditor({
   const [lines, setLines] = useState<TechnicalRiderLine[]>(rider.lines);
   const [preferredEquipment, setPreferredEquipment] = useState<RiderEquipmentItem[]>(rider.preferredEquipment);
   const [inventoryEquipment, setInventoryEquipment] = useState<RiderEquipmentItem[]>(rider.inventoryEquipment);
-  const [saving, setSaving] = useState(false);
+  const [showIconEditor, setShowIconEditor] = useState(false);
+  const [iconDraft, setIconDraft] = useState(rider.icon ?? '🎤');
 
   // Reset ALL local state when the active rider changes (different id).
   const prevRiderIdRef = useRef(rider.id);
@@ -56,6 +67,8 @@ export default function TechnicalRiderEditor({
     setLines(rider.lines);
     setPreferredEquipment(rider.preferredEquipment);
     setInventoryEquipment(rider.inventoryEquipment);
+    setIconDraft(rider.icon ?? '🎤');
+    setShowIconEditor(false);
   });
 
   // Keep the rename input in sync when a rename is committed externally.
@@ -63,6 +76,10 @@ export default function TechnicalRiderEditor({
     if (!isRenaming) setRenameValue(rider.name);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rider.name]);
+
+  useEffect(() => {
+    setIconDraft(rider.icon ?? '🎤');
+  }, [rider.icon]);
 
   const hasChanges = useMemo(() => {
     return JSON.stringify({ lines, preferredEquipment, inventoryEquipment }) !== JSON.stringify({
@@ -86,12 +103,15 @@ export default function TechnicalRiderEditor({
     setIsRenaming(false);
   };
 
-  const handleSave = async () => {
-    if (!hasChanges) return;
-    setSaving(true);
-    await onSaveContent({ lines, preferredEquipment, inventoryEquipment });
-    setSaving(false);
-  };
+  // Autosave with debounce whenever content changes.
+  useEffect(() => {
+    if (!canEdit || !hasChanges) return;
+    const timer = setTimeout(() => {
+      void onSaveContent({ lines, preferredEquipment, inventoryEquipment });
+    }, 1000);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lines, preferredEquipment, inventoryEquipment]);
 
   const handleDeleteRider = async () => {
     if (!onDelete) return;
@@ -124,7 +144,10 @@ export default function TechnicalRiderEditor({
               />
             ) : (
               <div className="song-list-title-row">
-                <h1 className="song-list-heading setlist-title">{rider.name}</h1>
+                <h1 className="song-list-heading setlist-title">
+                  {rider.icon ? <span className="song-list-heading-icon" aria-hidden="true">{rider.icon}</span> : null}
+                  {rider.name}
+                </h1>
                 {canEdit ? (
                   <button type="button" className="title-rename-btn" onClick={() => setIsRenaming(true)} title="Rename rider">
                     <PenLine size={14} />
@@ -137,6 +160,17 @@ export default function TechnicalRiderEditor({
             </p>
           </div>
           <div className="setlist-header-actions">
+            {canEdit ? (
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => setShowIconEditor((value) => !value)}
+                title="Set rider icon"
+                aria-label="Set rider icon"
+              >
+                <Smile size={14} />
+              </button>
+            ) : null}
             <button
               type="button"
               className={`setlist-action-btn setlist-action-btn--secondary${rider.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
@@ -147,14 +181,6 @@ export default function TechnicalRiderEditor({
             </button>
             {canEdit ? (
               <>
-                <button
-                  type="button"
-                  className="setlist-action-btn"
-                  onClick={() => void handleSave()}
-                  disabled={!hasChanges || saving}
-                >
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
                 {onDelete ? (
                   <button
                     type="button"
@@ -169,6 +195,47 @@ export default function TechnicalRiderEditor({
             ) : null}
           </div>
         </div>
+
+        {showIconEditor && canEdit ? (
+          <div className="list-appearance-editor" role="region" aria-label="Technical rider icon settings">
+            <div className="list-appearance-group">
+              <span className="list-appearance-label">Emoji</span>
+              <div className="emoji-choice-grid" role="listbox" aria-label="Technical rider emoji options">
+                {EMOJI_OPTIONS.map((emoji) => {
+                  const selected = iconDraft === emoji;
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                      onClick={() => setIconDraft(emoji)}
+                      aria-pressed={selected}
+                    >
+                      {emoji}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="setlist-action-btn"
+              onClick={() => {
+                void onUpdateIcon(normalizeEmojiIcon(iconDraft));
+                setShowIconEditor(false);
+              }}
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => setShowIconEditor(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <section className="technical-rider-section">

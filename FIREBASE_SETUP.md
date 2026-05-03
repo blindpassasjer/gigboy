@@ -144,8 +144,10 @@ Use this checklist after the basic credential setup so band creation, invites, a
 2. Go to **Authentication** -> **Sign-in method**.
 3. Enable at least one provider that yields verified emails (Google is recommended).
 4. In **Authentication** -> **Settings**, confirm your project domain(s) are authorized.
+5. In **Authentication** -> **Settings** -> **User account linking**, keep **One account per email address** enabled.
 
 Why this matters: invite matching uses the signed-in user UID and email.
+Using one-account-per-email is also required for password + Google sign-in on the same email to link into a single user account.
 
 ### 2. Publish Firestore Rules
 

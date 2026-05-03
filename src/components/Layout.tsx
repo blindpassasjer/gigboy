@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Plus, Menu, Sun, Moon, Maximize2, Minimize2, User } from 'lucide-react';
+import { BookOpen, Menu, Sun, Moon, Maximize2, Minimize2, User } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
@@ -15,15 +15,6 @@ export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
-  const isEditSongRoute = /^\/songs\/[^/]+\/edit$/.test(pathname);
-  const isBandRoute = pathname.startsWith('/bands');
-  const isBandLibraryRoute = /^\/bands\/[^/]+(?:\/library)?$/.test(pathname);
-  const isBandSonglistRoute = /^\/bands\/[^/]+\/songlists\/[^/]+/.test(pathname);
-  const isBandSetlistRoute = /^\/bands\/[^/]+\/setlists\/[^/]+/.test(pathname);
-  const isBandTrashRoute = /^\/bands\/[^/]+\/trash$/.test(pathname);
-  const isTrashRoute = pathname === '/trash' || isBandTrashRoute;
-  const activeBandIdFromPath = pathname.match(/^\/bands\/([^/]+)/)?.[1] ?? null;
-  const bandSonglistIdFromPath = pathname.match(/^\/bands\/[^/]+\/songlists\/([^/]+)/)?.[1] ?? null;
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -235,22 +226,6 @@ export default function Layout({ children }: Props) {
           {children}
         </main>
       </div>
-      {!isConcertRoute && !isEditSongRoute && !isTrashRoute && (!isBandRoute || isBandLibraryRoute || isBandSonglistRoute || isBandSetlistRoute) && (
-        <Link
-          to="/add"
-          state={{
-            addSongScope: activeBandIdFromPath
-              ? { kind: 'band', bandId: activeBandIdFromPath }
-              : { kind: 'solo' },
-            ...(bandSonglistIdFromPath ? { initialSongListId: bandSonglistIdFromPath } : {}),
-          }}
-          className="fab-add-song"
-          title="create song"
-          aria-label="create song"
-        >
-          <Plus size={22} />
-        </Link>
-      )}
     </div>
   );
 }

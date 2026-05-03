@@ -7,6 +7,7 @@ import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
 import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
+import { ICON_OPTIONS } from '../lib/iconOptions';
 
 interface Props {
   setlistId: string;
@@ -33,8 +34,6 @@ interface Props {
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-songbook-song-id';
-const EMOJI_OPTIONS = ['🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '📀', '✨', '🔥', '📁'] as const;
-
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -356,9 +355,9 @@ export default function SetlistsView({
         {showIconEditor ? (
           <div className="list-appearance-editor" role="region" aria-label="Setlist icon settings">
           <div className="list-appearance-group">
-            <span className="list-appearance-label">Emoji</span>
-            <div className="emoji-choice-grid" role="listbox" aria-label="Setlist emoji options">
-              {EMOJI_OPTIONS.map((emoji) => {
+            <span className="list-appearance-label">Icon</span>
+            <div className="emoji-choice-grid" role="listbox" aria-label="Setlist icon options">
+              {ICON_OPTIONS.map((emoji) => {
                 const selected = iconDraft === emoji;
                 return (
                   <button

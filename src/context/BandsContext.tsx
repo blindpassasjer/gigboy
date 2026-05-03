@@ -459,6 +459,7 @@ interface BandsContextValue {
   deleteBandStageplot: (bandId: string, stageplotId: string) => Promise<string | null>;
   addBandTechnicalRider: (bandId: string, name: string) => Promise<{ riderId: string | null; error: string | null }>;
   renameBandTechnicalRider: (bandId: string, riderId: string, name: string) => Promise<string | null>;
+  updateBandTechnicalRiderIcon: (bandId: string, riderId: string, icon?: string) => Promise<string | null>;
   setBandTechnicalRiderPublicShare: (bandId: string, riderId: string, enabled: boolean) => Promise<string | null>;
   updateBandTechnicalRiderContent: (params: {
     bandId: string;
@@ -2363,6 +2364,43 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandTechnicalRidersByBandId, bands, userId]);
 
+  const updateBandTechnicalRiderIcon = useCallback(async (bandId: string, riderId: string, icon?: string) => {
+    if (!db || !userId) {
+      return 'Band riders require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const isMember = band.memberIds.includes(userId);
+    if (!isMember) return 'You do not have permission to edit this band.';
+
+    const previousRiders = bandTechnicalRidersByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    const nextRiders = previousRiders.map((rider) => (
+      rider.id === riderId ? { ...rider, icon, updatedAt: now } : rider
+    ));
+
+    setBandTechnicalRidersByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextRiders,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, riderId), {
+        icon: icon ?? null,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandTechnicalRidersByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousRiders,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update technical rider icon.';
+    }
+  }, [bandTechnicalRidersByBandId, bands, userId]);
+
   const setBandTechnicalRiderPublicShare = useCallback(async (bandId: string, riderId: string, enabled: boolean) => {
     if (!db || !userId) {
       return 'Band riders require cloud sync.';
@@ -2877,6 +2915,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     deleteBandStageplot,
     addBandTechnicalRider,
     renameBandTechnicalRider,
+    updateBandTechnicalRiderIcon,
+    updateBandTechnicalRiderIcon,
     setBandTechnicalRiderPublicShare,
     updateBandTechnicalRiderContent,
     deleteBandTechnicalRider,
