@@ -6241,6 +6241,24 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 1 1 420px;
 }
 
+.stageplot-toolbar-sep {
+  width: 1px;
+  height: 1.4rem;
+  background: var(--border);
+  margin: 0 .15rem;
+  flex-shrink: 0;
+}
+
+.stageplot-shape-toggle {
+  padding: .3rem .45rem;
+}
+
+.stageplot-shape-toggle .stageplot-shape-glyph {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
 .stageplot-toolbar-input {
   padding: .4rem .6rem;
   font-size: .8rem;
@@ -6451,6 +6469,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   z-index: 10;
   user-select: none;
   -webkit-user-select: none;
+  touch-action: none;
 }
 
 .stageplot-item > * {
