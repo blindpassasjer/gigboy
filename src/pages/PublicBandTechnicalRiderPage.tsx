@@ -97,26 +97,60 @@ export default function PublicBandTechnicalRiderPage() {
 
       <section className="technical-rider-section">
         <h2>Preferred Equipment</h2>
-        <ul className="technical-rider-equipment-list">
-          {rider.preferredEquipment.map((item) => (
-            <li key={item.id} className="technical-rider-equipment-item">
-              <strong>{item.name}</strong>
-              {item.description ? <span>{item.description}</span> : null}
-            </li>
-          ))}
-        </ul>
+        <div className="technical-rider-table-wrap">
+          <table className="technical-rider-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rider.preferredEquipment.map((item, index) => (
+                <tr key={item.id}>
+                  <td>{index + 1}</td>
+                  <td>{item.name}</td>
+                  <td>{item.description || '-'}</td>
+                </tr>
+              ))}
+              {rider.preferredEquipment.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="technical-rider-empty-cell">No equipment listed.</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="technical-rider-section">
         <h2>We Bring (Inventory)</h2>
-        <ul className="technical-rider-equipment-list">
-          {rider.inventoryEquipment.map((item) => (
-            <li key={item.id} className="technical-rider-equipment-item">
-              <strong>{item.name}</strong>
-              {item.description ? <span>{item.description}</span> : null}
-            </li>
-          ))}
-        </ul>
+        <div className="technical-rider-table-wrap">
+          <table className="technical-rider-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rider.inventoryEquipment.map((item, index) => (
+                <tr key={item.id}>
+                  <td>{index + 1}</td>
+                  <td>{item.name}</td>
+                  <td>{item.description || '-'}</td>
+                </tr>
+              ))}
+              {rider.inventoryEquipment.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="technical-rider-empty-cell">No equipment listed.</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <footer className="public-setlist-footer">

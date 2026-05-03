@@ -1,4 +1,7 @@
 import amp from '../assets/stageplot-icons/amp.svg';
+import guitarAmp from '../assets/stageplot-icons/guitar-amp.svg';
+import bassAmp from '../assets/stageplot-icons/bass-amp.svg';
+import keyboardAmp from '../assets/stageplot-icons/keyboard-amp.svg';
 import bass from '../assets/stageplot-icons/bass.svg';
 import custom from '../assets/stageplot-icons/custom.svg';
 import drums from '../assets/stageplot-icons/drums.svg';
@@ -9,6 +12,9 @@ import vocals from '../assets/stageplot-icons/vocals.svg';
 
 const ICON_BY_KIND: Record<string, string> = {
   amp,
+  'guitar-amp': guitarAmp,
+  'bass-amp': bassAmp,
+  'keyboard-amp': keyboardAmp,
   bass,
   custom,
   drums,

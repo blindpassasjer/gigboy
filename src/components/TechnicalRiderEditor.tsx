@@ -249,14 +249,14 @@ export default function TechnicalRiderEditor({
         </div>
       </section>
 
-      <EquipmentListEditor
+      <EquipmentTableEditor
         title="Preferred Equipment"
         items={preferredEquipment}
         canEdit={canEdit}
         onChange={setPreferredEquipment}
       />
 
-      <EquipmentListEditor
+      <EquipmentTableEditor
         title="We Bring (Inventory)"
         items={inventoryEquipment}
         canEdit={canEdit}
@@ -266,14 +266,14 @@ export default function TechnicalRiderEditor({
   );
 }
 
-interface EquipmentListEditorProps {
+interface EquipmentTableEditorProps {
   title: string;
   items: RiderEquipmentItem[];
   canEdit: boolean;
   onChange: (items: RiderEquipmentItem[]) => void;
 }
 
-function EquipmentListEditor({ title, items, canEdit, onChange }: EquipmentListEditorProps) {
+function EquipmentTableEditor({ title, items, canEdit, onChange }: EquipmentTableEditorProps) {
   return (
     <section className="technical-rider-section">
       <div className="technical-rider-section-header">
@@ -284,48 +284,73 @@ function EquipmentListEditor({ title, items, canEdit, onChange }: EquipmentListE
           </button>
         ) : null}
       </div>
-      <ul className="technical-rider-equipment-list">
-        {items.map((item) => (
-          <li key={item.id} className="technical-rider-equipment-item">
-            {canEdit ? (
-              <>
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={(event) => {
-                    const name = event.target.value;
-                    onChange(items.map((entry) => (entry.id === item.id ? { ...entry, name } : entry)));
-                  }}
-                  placeholder="Equipment name"
-                />
-                <input
-                  type="text"
-                  value={item.description ?? ''}
-                  onChange={(event) => {
-                    const description = event.target.value;
-                    onChange(items.map((entry) => (entry.id === item.id ? { ...entry, description } : entry)));
-                  }}
-                  placeholder="Description"
-                />
-                <button
-                  type="button"
-                  className="setlist-action-btn setlist-action-btn--secondary"
-                  onClick={() => onChange(items.filter((entry) => entry.id !== item.id))}
-                  title="Delete equipment"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </>
-            ) : (
-              <>
-                <strong>{item.name}</strong>
-                {item.description ? <span>{item.description}</span> : null}
-              </>
-            )}
-          </li>
-        ))}
-        {items.length === 0 ? <li className="technical-rider-empty">No equipment listed.</li> : null}
-      </ul>
+
+      <div className="technical-rider-table-wrap">
+        <table className="technical-rider-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Description</th>
+              {canEdit ? <th aria-label="Actions" /> : null}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, index) => (
+              <tr key={item.id}>
+                <td>{index + 1}</td>
+                <td>
+                  {canEdit ? (
+                    <input
+                      type="text"
+                      value={item.name}
+                      onChange={(event) => {
+                        const name = event.target.value;
+                        onChange(items.map((entry) => (entry.id === item.id ? { ...entry, name } : entry)));
+                      }}
+                      placeholder="Equipment name"
+                    />
+                  ) : (
+                    item.name || '-'
+                  )}
+                </td>
+                <td>
+                  {canEdit ? (
+                    <input
+                      type="text"
+                      value={item.description ?? ''}
+                      onChange={(event) => {
+                        const description = event.target.value;
+                        onChange(items.map((entry) => (entry.id === item.id ? { ...entry, description } : entry)));
+                      }}
+                      placeholder="Description"
+                    />
+                  ) : (
+                    item.description || '-'
+                  )}
+                </td>
+                {canEdit ? (
+                  <td>
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      onClick={() => onChange(items.filter((entry) => entry.id !== item.id))}
+                      title="Delete equipment"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                ) : null}
+              </tr>
+            ))}
+            {items.length === 0 ? (
+              <tr>
+                <td colSpan={canEdit ? 4 : 3} className="technical-rider-empty-cell">No equipment listed.</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

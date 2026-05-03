@@ -105,6 +105,7 @@ export interface StageplotItem {
   x: number;
   y: number;
   color?: string;
+  icon?: string;
 }
 
 export interface Stageplot extends CollaborationMetadata {
@@ -114,6 +115,8 @@ export interface Stageplot extends CollaborationMetadata {
   items: StageplotItem[];
   drawingLayers?: SongHandNoteDocument[];
   publicShareEnabled?: boolean;
+  stageShape?: 'rectangle' | 'oval' | 'circle';
+  stageSize?: 'small' | 'medium' | 'large';
   /** Band name denormalized for unauthenticated public reads. */
   bandName?: string;
   createdAt?: string;

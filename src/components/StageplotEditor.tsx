@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link2, PenLine, Plus, Smile, Trash2, Undo2, X } from 'lucide-react';
+import { Link2, PenLine, Plus, Smile, Trash2, Undo2, X, Settings2 } from 'lucide-react';
 import type { HandNoteStroke, SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import { showConfirmToast } from '../utils/toastDialogs';
@@ -15,6 +15,7 @@ interface StageplotEditorProps {
   };
   onRename: (name: string) => void;
   onUpdateIcon: (icon?: string) => void;
+  onUpdateStageSettings: (shape?: 'rectangle' | 'oval' | 'circle', size?: 'small' | 'medium' | 'large') => void;
   onDelete: () => Promise<void>;
   onSaveContent: (items: StageplotItem[], drawingLayers: SongHandNoteDocument[]) => Promise<void>;
   onCopyPublicLink: () => Promise<void>;
@@ -30,7 +31,9 @@ const DEFAULT_PALETTE = [
   { kind: 'drums', label: 'Drums', color: '#ef4444' },
   { kind: 'keys', label: 'Keys', color: '#a855f7' },
   { kind: 'monitor', label: 'Monitor', color: '#f59e0b' },
-  { kind: 'amp', label: 'Amp', color: '#14b8a6' },
+  { kind: 'guitar-amp', label: 'Guitar Amp', color: '#14b8a6' },
+  { kind: 'bass-amp', label: 'Bass Amp', color: '#06b6d4' },
+  { kind: 'keyboard-amp', label: 'Keyboard Amp', color: '#8b5cf6' },
 ] as const;
 
 function clamp01(value: number) {
@@ -64,6 +67,7 @@ export default function StageplotEditor({
   currentUser,
   onRename,
   onUpdateIcon,
+  onUpdateStageSettings,
   onDelete,
   onSaveContent,
   onCopyPublicLink,
@@ -73,12 +77,17 @@ export default function StageplotEditor({
   const [drawingLayers, setDrawingLayers] = useState<SongHandNoteDocument[]>(stageplot.drawingLayers ?? []);
   const [drawEnabled, setDrawEnabled] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
+  const [customIcon, setCustomIcon] = useState('📦');
   const [renameValue, setRenameValue] = useState(stageplot.name);
   const [renaming, setRenaming] = useState(false);
   const [iconDraft, setIconDraft] = useState(stageplot.icon ?? '🎤');
   const [showIconEditor, setShowIconEditor] = useState(false);
+  const [showStageSettings, setShowStageSettings] = useState(false);
+  const [stageShapeDraft, setStageShapeDraft] = useState<'rectangle' | 'oval' | 'circle'>(stageplot.stageShape ?? 'rectangle');
+  const [stageSizeDraft, setStageSizeDraft] = useState<'small' | 'medium' | 'large'>(stageplot.stageSize ?? 'medium');
   const [saving, setSaving] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [showCustomIconEditor, setShowCustomIconEditor] = useState(false);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
 
   useEffect(() => {
@@ -86,6 +95,8 @@ export default function StageplotEditor({
     setDrawingLayers(stageplot.drawingLayers ?? []);
     setRenameValue(stageplot.name);
     setIconDraft(stageplot.icon ?? '🎤');
+    setStageShapeDraft(stageplot.stageShape ?? 'rectangle');
+    setStageSizeDraft(stageplot.stageSize ?? 'medium');
   }, [stageplot]);
 
   const myLayer = useMemo(() => userLayerFrom(drawingLayers, currentUser.id), [currentUser.id, drawingLayers]);
@@ -206,6 +217,7 @@ export default function StageplotEditor({
         id: crypto.randomUUID(),
         kind: 'custom',
         label,
+        icon: customIcon,
         color: '#6b7280',
         x: 0.5,
         y: 0.5,
@@ -213,6 +225,7 @@ export default function StageplotEditor({
     ];
 
     setCustomLabel('');
+    setCustomIcon('📦');
     setItems(nextItems);
     void persistContent(nextItems, drawingLayers);
   };
@@ -391,6 +404,14 @@ export default function StageplotEditor({
                 <button
                   type="button"
                   className="setlist-action-btn setlist-action-btn--secondary"
+                  onClick={() => setShowStageSettings((value) => !value)}
+                  title="Stage settings"
+                >
+                  <Settings2 size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="setlist-action-btn setlist-action-btn--secondary"
                   onClick={() => void handleDeleteStageplot()}
                   title={`Delete stageplot ${stageplot.name}`}
                 >
@@ -432,6 +453,14 @@ export default function StageplotEditor({
                 placeholder="Custom item"
                 className="setlist-name-input"
               />
+              <button
+                type="button"
+                className="notes-toolbar-btn"
+                onClick={() => setShowCustomIconEditor((value) => !value)}
+                title="Pick icon for custom item"
+              >
+                {customIcon}
+              </button>
               <button type="button" className="notes-toolbar-btn" onClick={addCustomItem}>
                 <Plus size={12} /> Add
               </button>
@@ -491,6 +520,87 @@ export default function StageplotEditor({
             </button>
           </div>
         ) : null}
+
+        {showCustomIconEditor && canEdit ? (
+          <div className="list-appearance-editor" role="region" aria-label="Custom item icon settings">
+            <div className="list-appearance-group">
+              <span className="list-appearance-label">Icon</span>
+              <div className="emoji-choice-grid" role="listbox" aria-label="Custom item emoji options">
+                {EMOJI_OPTIONS.map((emoji) => {
+                  const selected = customIcon === emoji;
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                      onClick={() => setCustomIcon(emoji)}
+                      aria-pressed={selected}
+                    >
+                      {emoji}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => setShowCustomIconEditor(false)}
+            >
+              Done
+            </button>
+          </div>
+        ) : null}
+
+        {showStageSettings && canEdit ? (
+          <div className="list-appearance-editor" role="region" aria-label="Stage settings">
+            <div className="list-appearance-group">
+              <span className="list-appearance-label">Stage Shape</span>
+              <div className="emoji-choice-grid">
+                {(['rectangle', 'oval', 'circle'] as const).map((shape) => (
+                  <button
+                    key={shape}
+                    type="button"
+                    className={`emoji-choice-btn${stageShapeDraft === shape ? ' active' : ''}`}
+                    onClick={() => setStageShapeDraft(shape)}
+                    aria-pressed={stageShapeDraft === shape}
+                  >
+                    {shape.charAt(0).toUpperCase() + shape.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="list-appearance-group">
+              <span className="list-appearance-label">Stage Size</span>
+              <div className="emoji-choice-grid">
+                {(['small', 'medium', 'large'] as const).map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    className={`emoji-choice-btn${stageSizeDraft === size ? ' active' : ''}`}
+                    onClick={() => setStageSizeDraft(size)}
+                    aria-pressed={stageSizeDraft === size}
+                  >
+                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="setlist-action-btn"
+              onClick={() => {
+                onUpdateStageSettings(stageShapeDraft, stageSizeDraft);
+                setShowStageSettings(false);
+              }}
+            >
+              Save
+            </button>
+            <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={() => setShowStageSettings(false)}>
+              Cancel
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div
@@ -529,13 +639,17 @@ export default function StageplotEditor({
             onClick={() => setSelectedItemId(item.id)}
             title={drawEnabled ? 'Disable drawing to move items' : item.label}
           >
-            <img
-              src={stageplotIconForKind(item.kind)}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              className="stageplot-instrument-icon stageplot-instrument-icon--item"
-            />
+            {item.kind === 'custom' && item.icon ? (
+              <span className="stageplot-custom-emoji">{item.icon}</span>
+            ) : (
+              <img
+                src={stageplotIconForKind(item.kind)}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="stageplot-instrument-icon stageplot-instrument-icon--item"
+              />
+            )}
             <span>{item.label}</span>
           </button>
         ))}

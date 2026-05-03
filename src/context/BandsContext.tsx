@@ -448,6 +448,7 @@ interface BandsContextValue {
   addBandStageplot: (bandId: string, name: string) => Promise<{ stageplotId: string | null; error: string | null }>;
   renameBandStageplot: (bandId: string, stageplotId: string, name: string) => Promise<string | null>;
   updateBandStageplotIcon: (bandId: string, stageplotId: string, icon?: string) => Promise<string | null>;
+  updateBandStageplotSettings: (bandId: string, stageplotId: string, stageShape?: 'rectangle' | 'oval' | 'circle', stageSize?: 'small' | 'medium' | 'large') => Promise<string | null>;
   setBandStageplotPublicShare: (bandId: string, stageplotId: string, enabled: boolean) => Promise<string | null>;
   updateBandStageplotContent: (params: {
     bandId: string;
@@ -2083,6 +2084,44 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandStageplotsByBandId, bands, userId]);
 
+  const updateBandStageplotSettings = useCallback(async (bandId: string, stageplotId: string, stageShape?: 'rectangle' | 'oval' | 'circle', stageSize?: 'small' | 'medium' | 'large') => {
+    if (!db || !userId) {
+      return 'Band stageplots require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const isMember = band.memberIds.includes(userId);
+    if (!isMember) return 'You do not have permission to edit this band.';
+
+    const previousStageplots = bandStageplotsByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    const nextStageplots = previousStageplots.map((stageplot) => (
+      stageplot.id === stageplotId ? { ...stageplot, stageShape, stageSize, updatedAt: now } : stageplot
+    ));
+
+    setBandStageplotsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextStageplots,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId), {
+        stageShape,
+        stageSize,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandStageplotsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousStageplots,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band stageplot settings.';
+    }
+  }, [bandStageplotsByBandId, bands, userId]);
+
   const updateBandStageplotContent = useCallback(async (params: {
     bandId: string;
     stageplotId: string;
@@ -2832,6 +2871,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     addBandStageplot,
     renameBandStageplot,
     updateBandStageplotIcon,
+    updateBandStageplotSettings,
     setBandStageplotPublicShare,
     updateBandStageplotContent,
     deleteBandStageplot,
@@ -2896,6 +2936,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     setBandSetlistPublicShare,
     updateBandStageplotContent,
     updateBandStageplotIcon,
+    updateBandStageplotSettings,
     updateBandTechnicalRiderContent,
   ]);
 

@@ -1767,29 +1767,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 .technical-rider-empty {
   color: var(--muted);
 }
-.technical-rider-equipment-list {
-  display: flex;
-  flex-direction: column;
-  gap: .5rem;
-  list-style: none;
-}
-.technical-rider-equipment-item {
-  display: grid;
-  grid-template-columns: 1.1fr 1.4fr auto;
-  gap: .5rem;
-  align-items: center;
-}
-.technical-rider-equipment-item span {
-  color: var(--muted);
-  font-size: .9rem;
-}
 .technical-rider-public-page .technical-rider-section {
   margin-top: .85rem;
-}
-@media (max-width: 700px) {
-  .technical-rider-equipment-item {
-    grid-template-columns: 1fr;
-  }
 }
 .song-media-player--spotify {
   display: flex;

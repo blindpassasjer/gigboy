@@ -122,6 +122,7 @@ interface StageplotsContextValue {
   addStageplot: (name: string) => Promise<{ stageplotId: string | null; error: string | null }>;
   renameStageplot: (id: string, name: string) => Promise<string | null>;
   updateStageplotIcon: (id: string, icon?: string) => Promise<string | null>;
+  updateStageplotSettings: (id: string, stageShape?: 'rectangle' | 'oval' | 'circle', stageSize?: 'small' | 'medium' | 'large') => Promise<string | null>;
   deleteStageplot: (id: string) => Promise<string | null>;
   updateStageplotContent: (params: {
     stageplotId: string;
@@ -245,6 +246,27 @@ export function StageplotsProvider({ children }: { children: ReactNode }) {
     }
   }, [stageplots, userId]);
 
+  const updateStageplotSettings = useCallback(async (id: string, stageShape?: 'rectangle' | 'oval' | 'circle', stageSize?: 'small' | 'medium' | 'large') => {
+    const previousStageplots = stageplots;
+    const now = new Date().toISOString();
+    const nextStageplots = stageplots.map((entry) => (
+      entry.id === id ? { ...entry, stageShape, stageSize, updatedAt: now } : entry
+    ));
+
+    setStageplots(nextStageplots);
+
+    try {
+      const updated = nextStageplots.find((entry) => entry.id === id);
+      if (updated && db && userId) {
+        await writeStageplot(updated, userId);
+      }
+      return null;
+    } catch (error) {
+      setStageplots(previousStageplots);
+      return error instanceof Error ? error.message : 'Failed to update stageplot settings.';
+    }
+  }, [stageplots, userId]);
+
   const deleteStageplot = useCallback(async (id: string) => {
     const previousStageplots = stageplots;
     const nextStageplots = withSequentialStageplotSortOrder(
@@ -325,6 +347,7 @@ export function StageplotsProvider({ children }: { children: ReactNode }) {
     addStageplot,
     renameStageplot,
     updateStageplotIcon,
+    updateStageplotSettings,
     deleteStageplot,
     updateStageplotContent,
     setStageplotPublicShare,
@@ -337,6 +360,7 @@ export function StageplotsProvider({ children }: { children: ReactNode }) {
     stageplots,
     updateStageplotContent,
     updateStageplotIcon,
+    updateStageplotSettings,
   ]);
 
   return <StageplotsContext.Provider value={value}>{children}</StageplotsContext.Provider>;
