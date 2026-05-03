@@ -19,7 +19,7 @@ export default function BandDetailPage() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { songs, deleteSong } = useSongs();
+  const { songs } = useSongs();
   const {
     bands,
     bandSongsByBandId,
@@ -267,18 +267,23 @@ export default function BandDetailPage() {
   };
 
   const handleDeleteSong = async (song: Song) => {
-    if (!user?.id || song.ownerId !== user.id) {
-      toast.error('Only the song owner can delete this song from the database.');
+    if (!canEditBand) {
+      toast.error('You do not have permission to edit this band library.');
       return;
     }
 
-    const confirmed = await showConfirmToast(`Move "${song.title}" to trash? It will be automatically deleted after 30 days.`, {
+    const confirmed = await showConfirmToast(`Remove "${song.title}" from this band library? It will be moved to band trash and automatically deleted after 30 days.`, {
       confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
 
-    await deleteSong(song.id);
-    toast.success('Song moved to trash.');
+    const error = await removeSongFromBandLibrary(band.id, song.id);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    toast.success('Song moved to band trash.');
   };
 
   const handleMoveSong = async (songId: string, beforeSongId: string | null) => {

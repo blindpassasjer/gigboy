@@ -2499,7 +2499,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .notes-save-status--saving { color: var(--muted); }
-.notes-save-status--idle { color: var(--muted); }
 .notes-save-status--saved { color: #27ae60; }
 .notes-save-status--error { color: var(--danger); }
 
@@ -3729,14 +3728,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0;
 }
 
-/* Keep standalone section headers (e.g. Solo) visually aligned with the band switcher trigger. */
-.sidebar-setlists-header > .sidebar-section-title {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  padding: .2rem .25rem .2rem 0;
-}
-
 .sidebar-setlists {
   display: flex;
   flex-direction: column;
@@ -4023,14 +4014,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: .88rem;
   color: var(--muted);
   margin: 0;
-}
-
-.autosave-status-row {
-  margin-top: .25rem;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .45rem;
 }
 
 .setlist-header-actions {
