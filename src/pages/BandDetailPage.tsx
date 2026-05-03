@@ -586,6 +586,7 @@ export default function BandDetailPage() {
           });
           if (error) {
             toast.error(error);
+            throw new Error(error);
           }
         }}
         onCopyPublicLink={handleShareStageplot}
@@ -631,8 +632,10 @@ export default function BandDetailPage() {
             preferredEquipment: content.preferredEquipment,
             inventoryEquipment: content.inventoryEquipment,
           });
-          if (error) toast.error(error);
-          else toast.success('Technical rider updated.');
+          if (error) {
+            toast.error(error);
+            throw new Error(error);
+          }
         }}
         onCopyPublicLink={handleShareTechnicalRider}
       />

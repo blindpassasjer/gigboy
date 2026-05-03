@@ -419,7 +419,10 @@ export default function HomePage() {
             items,
             drawingLayers,
           });
-          if (error) toast.error(error);
+          if (error) {
+            toast.error(error);
+            throw new Error(error);
+          }
         }}
         onCopyPublicLink={handleShareStageplot}
       />
@@ -476,7 +479,10 @@ export default function HomePage() {
             preferredEquipment: content.preferredEquipment,
             inventoryEquipment: content.inventoryEquipment,
           });
-          if (error) toast.error(error);
+          if (error) {
+            toast.error(error);
+            throw new Error(error);
+          }
         }}
         onCopyPublicLink={handleShareTechnicalRider}
       />

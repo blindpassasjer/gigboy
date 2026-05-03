@@ -56,6 +56,9 @@ export default function TechnicalRiderEditor({
   const [inventoryEquipment, setInventoryEquipment] = useState<RiderEquipmentItem[]>(rider.inventoryEquipment);
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [iconDraft, setIconDraft] = useState(rider.icon ?? '🎤');
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const saveStateResetTimerRef = useRef<number | null>(null);
+  const saveRequestIdRef = useRef(0);
 
   // Reset ALL local state when the active rider changes (different id).
   const prevRiderIdRef = useRef(rider.id);
@@ -67,8 +70,17 @@ export default function TechnicalRiderEditor({
     setPreferredEquipment(rider.preferredEquipment);
     setInventoryEquipment(rider.inventoryEquipment);
     setIconDraft(rider.icon ?? '🎤');
+    setSaveState('idle');
     setShowIconEditor(false);
   });
+
+  useEffect(() => {
+    return () => {
+      if (saveStateResetTimerRef.current !== null) {
+        window.clearTimeout(saveStateResetTimerRef.current);
+      }
+    };
+  }, []);
 
   // Keep the rename input in sync when a rename is committed externally.
   useEffect(() => {
@@ -105,12 +117,48 @@ export default function TechnicalRiderEditor({
   // Autosave with debounce whenever content changes.
   useEffect(() => {
     if (!canEdit || !hasChanges) return;
+
+    setSaveState('saving');
+    const requestId = saveRequestIdRef.current + 1;
+    saveRequestIdRef.current = requestId;
+
     const timer = setTimeout(() => {
-      void onSaveContent({ lines, preferredEquipment, inventoryEquipment });
+      void Promise.resolve(onSaveContent({ lines, preferredEquipment, inventoryEquipment }))
+        .then(() => {
+          if (requestId !== saveRequestIdRef.current) return;
+          setSaveState('saved');
+          if (saveStateResetTimerRef.current !== null) {
+            window.clearTimeout(saveStateResetTimerRef.current);
+          }
+          saveStateResetTimerRef.current = window.setTimeout(() => {
+            setSaveState((current) => (current === 'saved' ? 'idle' : current));
+          }, 1800);
+        })
+        .catch(() => {
+          if (requestId !== saveRequestIdRef.current) return;
+          setSaveState('error');
+        });
     }, 1000);
+
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lines, preferredEquipment, inventoryEquipment]);
+
+  const saveStatusLabel = saveState === 'saving'
+    ? 'Autosaving…'
+    : saveState === 'saved'
+      ? 'All changes saved'
+      : saveState === 'error'
+        ? 'Autosave failed'
+        : 'Autosave on';
+
+  const saveStatusClassName = saveState === 'saving'
+    ? 'notes-save-status notes-save-status--saving'
+    : saveState === 'saved'
+      ? 'notes-save-status notes-save-status--saved'
+      : saveState === 'error'
+        ? 'notes-save-status notes-save-status--error'
+        : 'notes-save-status notes-save-status--idle';
 
   const handleDeleteRider = async () => {
     if (!onDelete) return;
@@ -154,9 +202,14 @@ export default function TechnicalRiderEditor({
                 ) : null}
               </div>
             )}
-            <p className="song-list-summary setlist-song-count">
-              {lines.length} line{lines.length === 1 ? '' : 's'}
-            </p>
+            <div className="autosave-status-row">
+              <p className="song-list-summary setlist-song-count">
+                {lines.length} line{lines.length === 1 ? '' : 's'}
+              </p>
+              {canEdit ? (
+                <span className={saveStatusClassName} aria-live="polite">{saveStatusLabel}</span>
+              ) : null}
+            </div>
           </div>
           <div className="setlist-header-actions">
             {canEdit ? (

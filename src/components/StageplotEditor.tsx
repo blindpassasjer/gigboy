@@ -101,9 +101,10 @@ export default function StageplotEditor({
   const [renaming, setRenaming] = useState(false);
   const [iconDraft, setIconDraft] = useState(stageplot.icon ?? '🎤');
   const [showIconEditor, setShowIconEditor] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
+  const saveStateResetTimerRef = useRef<number | null>(null);
 
   const stageShapePreview = stageplot.stageShape ?? 'rectangle';
   const stageSizePreview = stageplot.stageSize ?? 'medium';
@@ -115,13 +116,31 @@ export default function StageplotEditor({
     setIconDraft(stageplot.icon ?? '🎤');
   }, [stageplot]);
 
+  useEffect(() => {
+    return () => {
+      if (saveStateResetTimerRef.current !== null) {
+        window.clearTimeout(saveStateResetTimerRef.current);
+      }
+    };
+  }, []);
+
   const myLayer = useMemo(() => userLayerFrom(drawingLayers, currentUser.id), [currentUser.id, drawingLayers]);
   const myStrokes = myLayer?.strokes ?? [];
 
   const persistContent = async (nextItems: StageplotItem[], nextLayers: SongHandNoteDocument[]) => {
-    setSaving(true);
-    await onSaveContent(nextItems, nextLayers);
-    setSaving(false);
+    setSaveState('saving');
+    try {
+      await onSaveContent(nextItems, nextLayers);
+      setSaveState('saved');
+      if (saveStateResetTimerRef.current !== null) {
+        window.clearTimeout(saveStateResetTimerRef.current);
+      }
+      saveStateResetTimerRef.current = window.setTimeout(() => {
+        setSaveState((current) => (current === 'saved' ? 'idle' : current));
+      }, 1800);
+    } catch {
+      setSaveState('error');
+    }
   };
 
   const makeItem = (template: { kind: string; label: string; color: string }, x: number, y: number): StageplotItem => ({
@@ -359,7 +378,23 @@ export default function StageplotEditor({
     await onDelete();
   };
 
-  const summaryLabel = `${items.length} item${items.length === 1 ? '' : 's'}${saving ? ' • Saving…' : ''}`;
+  const summaryLabel = `${items.length} item${items.length === 1 ? '' : 's'}`;
+
+  const saveStatusLabel = saveState === 'saving'
+    ? 'Autosaving…'
+    : saveState === 'saved'
+      ? 'All changes saved'
+      : saveState === 'error'
+        ? 'Autosave failed'
+        : 'Autosave on';
+
+  const saveStatusClassName = saveState === 'saving'
+    ? 'notes-save-status notes-save-status--saving'
+    : saveState === 'saved'
+      ? 'notes-save-status notes-save-status--saved'
+      : saveState === 'error'
+        ? 'notes-save-status notes-save-status--error'
+        : 'notes-save-status notes-save-status--idle';
 
   return (
     <section className="setlist-view stageplot-view">
@@ -400,7 +435,12 @@ export default function StageplotEditor({
                 ) : null}
               </div>
             )}
-            <p className="song-list-summary setlist-song-count">{summaryLabel}</p>
+            <div className="autosave-status-row">
+              <p className="song-list-summary setlist-song-count">{summaryLabel}</p>
+              {canEdit ? (
+                <span className={saveStatusClassName} aria-live="polite">{saveStatusLabel}</span>
+              ) : null}
+            </div>
           </div>
           <div className="setlist-header-actions">
             {canEdit ? (
