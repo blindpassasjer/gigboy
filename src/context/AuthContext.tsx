@@ -67,6 +67,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPendingLinkEmail(null);
   }, []);
 
+  const getAuthErrorCode = useCallback((err: unknown): string | null => {
+    if (!(err instanceof Error)) {
+      return null;
+    }
+
+    const typedCode = (err as FirebaseError).code;
+    if (typeof typedCode === 'string' && typedCode.length > 0) {
+      return typedCode;
+    }
+
+    const messageMatch = err.message.match(/\(auth\/[a-z0-9-]+\)/i);
+    if (messageMatch) {
+      return messageMatch[0].slice(1, -1).toLowerCase();
+    }
+
+    return null;
+  }, []);
+
   useEffect(() => {
     if (!auth) {
       setLoading(false);
@@ -138,9 +156,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return null;
     } catch (err: unknown) {
+      const code = getAuthErrorCode(err);
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-login-credentials') {
+        return 'Invalid email or password.';
+      }
       return err instanceof Error ? err.message : 'Login failed';
     }
-  }, [clearPendingLink, pendingLinkEmail]);
+  }, [clearPendingLink, getAuthErrorCode, pendingLinkEmail]);
 
   const register = useCallback(async (email: string, password: string, username: string): Promise<string | null> => {
     if (!auth || !db) {
@@ -172,7 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return fallback;
     }
 
-    const code = (err as FirebaseError).code;
+    const code = getAuthErrorCode(err);
     if (!code) {
       return err.message || fallback;
     }
@@ -195,8 +217,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return 'An account already exists with this email. Please sign in with your password to link your accounts.';
     }
 
+    if (code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials') {
+      return 'The sign-in credential is invalid or expired. Please try again.';
+    }
+
     return err.message || fallback;
-  }, []);
+  }, [getAuthErrorCode]);
 
   const loginWithProvider = useCallback(async (provider: AuthProvider, providerLabel: string): Promise<string | null> => {
     if (!auth) {
@@ -207,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithPopup(auth, provider);
       return null;
     } catch (err: unknown) {
-      const code = err instanceof Error ? (err as FirebaseError).code : undefined;
+      const code = getAuthErrorCode(err);
       const shouldFallbackToRedirect = code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request';
 
       if (shouldFallbackToRedirect) {
@@ -237,7 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return formatAuthError(err, providerLabel);
     }
-  }, [formatAuthError]);
+  }, [formatAuthError, getAuthErrorCode]);
 
   const loginWithGoogle = useCallback(async (): Promise<string | null> => {
     const provider = new GoogleAuthProvider();
@@ -255,19 +281,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const linkWithPassword = useCallback(async (password: string): Promise<string | null> => {
     const email = pendingLinkEmail;
-    const credential = pendingCredentialRef.current;
-    if (!auth || !email || !credential) {
+    if (!auth || !email) {
       return 'No pending account link.';
     }
+
+    let resultUser;
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      await linkWithCredential(result.user, credential);
+      resultUser = result.user;
+    } catch (err: unknown) {
+      const code = getAuthErrorCode(err);
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-login-credentials') {
+        return 'Incorrect password. Please try again.';
+      }
+      return err instanceof Error ? err.message : 'Failed to sign in.';
+    }
+
+    const pendingCredential = pendingCredentialRef.current;
+    if (!pendingCredential) {
+      return 'Link session expired. Click Cancel, then continue with Google or GitHub again.';
+    }
+
+    try {
+      await linkWithCredential(resultUser, pendingCredential);
       clearPendingLink();
       return null;
     } catch (err: unknown) {
+      const code = getAuthErrorCode(err);
+      if (code === 'auth/provider-already-linked' || code === 'auth/credential-already-in-use') {
+        clearPendingLink();
+        return null;
+      }
+      if (code === 'auth/invalid-credential') {
+        clearPendingLink();
+        return 'Link session expired. Please continue with Google or GitHub again, then link your password.';
+      }
       return err instanceof Error ? err.message : 'Failed to link accounts.';
     }
-  }, [clearPendingLink, pendingLinkEmail]);
+  }, [clearPendingLink, getAuthErrorCode, pendingLinkEmail]);
 
   const completeUsername = useCallback(async (username: string) => {
     if (!db || !auth?.currentUser) {
