@@ -106,10 +106,25 @@ export default function StageplotEditor({
     y,
   });
 
+  const addItemAtPosition = (template: { kind: string; label: string; color: string }, x: number, y: number) => {
+    const item = makeItem(template, x, y);
+    const nextItems = [...items, item];
+    setItems(nextItems);
+    void persistContent(nextItems, drawingLayers);
+  };
+
   const handlePaletteDragStart = (event: React.DragEvent<HTMLButtonElement>, template: { kind: string; label: string; color: string }) => {
+    // If drawing mode is active, the drawing overlay can intercept drag/drop.
+    // Disable it as soon as the user starts dragging a template.
+    setDrawEnabled(false);
     event.dataTransfer.effectAllowed = 'copy';
     event.dataTransfer.setData(ITEM_DRAG_MIME, JSON.stringify(template));
     event.dataTransfer.setData('text/plain', template.label);
+  };
+
+  const handlePaletteAddClick = (template: { kind: string; label: string; color: string }) => {
+    if (!canEdit) return;
+    addItemAtPosition(template, 0.5, 0.5);
   };
 
   const handleStageDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -125,7 +140,7 @@ export default function StageplotEditor({
     try {
       const template = JSON.parse(raw) as { kind?: unknown; label?: unknown; color?: unknown };
       if (typeof template.kind !== 'string' || typeof template.label !== 'string') return;
-      const item = makeItem(
+      addItemAtPosition(
         {
           kind: template.kind,
           label: template.label,
@@ -134,9 +149,6 @@ export default function StageplotEditor({
         clamp01((event.clientX - rect.left) / rect.width),
         clamp01((event.clientY - rect.top) / rect.height)
       );
-      const nextItems = [...items, item];
-      setItems(nextItems);
-      void persistContent(nextItems, drawingLayers);
     } catch {
       // Ignore malformed drag payloads.
     }
@@ -397,6 +409,7 @@ export default function StageplotEditor({
                     className="stageplot-palette-btn"
                     draggable
                     onDragStart={(event) => handlePaletteDragStart(event, entry)}
+                    onClick={() => handlePaletteAddClick(entry)}
                     title={`Drag ${entry.label} to stage`}
                   >
                     <img
@@ -491,6 +504,10 @@ export default function StageplotEditor({
         onDrop={handleStageDrop}
       >
         <div className="stageplot-stage-grid" />
+        <div className="stageplot-front-edge" aria-hidden="true" />
+        <div className="stageplot-audience-marker" aria-label="Audience-facing side">
+          Audience
+        </div>
         {items.map((item) => (
           <button
             key={item.id}

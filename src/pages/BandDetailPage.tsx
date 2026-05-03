@@ -655,7 +655,7 @@ export default function BandDetailPage() {
         items={trashItems}
         onRestore={(trashId) => restoreBandTrashItem(band.id, trashId)}
         onDeletePermanently={(trashId) => deleteBandTrashItemPermanently(band.id, trashId)}
-        onEmptyTrash={async () => {
+        onEmptyTrash={isOwner ? async () => {
           let failedCount = 0;
 
           for (const item of trashItems) {
@@ -668,7 +668,7 @@ export default function BandDetailPage() {
           if (failedCount === 0) return null;
           if (failedCount === trashItems.length) return 'Failed to empty trash.';
           return `Deleted ${trashItems.length - failedCount} item${trashItems.length - failedCount === 1 ? '' : 's'}, but ${failedCount} item${failedCount === 1 ? '' : 's'} could not be deleted.`;
-        }}
+        } : undefined}
       />
     );
   }
@@ -693,13 +693,13 @@ export default function BandDetailPage() {
           </button>
         )}
         allSongs={ownedSongs}
-        onDeleteSong={canEditBand ? handleDeleteSong : async () => {}}
-        onRemoveSong={canEditBand ? handleRemoveSong : undefined}
-        onAddSong={canEditBand ? handleAddSong : undefined}
-        onMoveSong={canEditBand ? handleMoveSong : undefined}
-        onUpdateListAppearance={canEditBand ? (appearance) => {
+        onDeleteSong={handleDeleteSong}
+        onRemoveSong={handleRemoveSong}
+        onAddSong={handleAddSong}
+        onMoveSong={handleMoveSong}
+        onUpdateListAppearance={(appearance) => {
           void updateBandLibraryIcon(band.id, appearance.icon);
-        } : undefined}
+        }}
         bandId={band.id}
       />
 

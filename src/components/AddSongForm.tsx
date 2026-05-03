@@ -48,6 +48,7 @@ export default function AddSongForm({
   const [allowNavigation, setAllowNavigation] = useState(false);
   const [title, setTitle] = useState(initialSong?.title ?? '');
   const [artist, setArtist] = useState(initialSong?.artist ?? '');
+  const [author, setAuthor] = useState(initialSong?.author ?? '');
   const [playbackUrl, setPlaybackUrl] = useState(initialSong?.playbackUrl ?? '');
   const [language, setLanguage] = useState(initialSong?.language ?? 'en');
   const [tags, setTags] = useState((initialSong?.tags ?? []).join(', '));
@@ -66,6 +67,7 @@ export default function AddSongForm({
   const initialValues = useMemo(() => ({
     title: initialSong?.title ?? '',
     artist: initialSong?.artist ?? '',
+    author: initialSong?.author ?? '',
     playbackUrl: initialSong?.playbackUrl ?? '',
     language: initialSong?.language ?? 'en',
     tags: (initialSong?.tags ?? []).join(', '),
@@ -80,6 +82,7 @@ export default function AddSongForm({
   const isDirty = useMemo(() => {
     return title !== initialValues.title
       || artist !== initialValues.artist
+      || author !== initialValues.author
       || playbackUrl !== initialValues.playbackUrl
       || language !== initialValues.language
       || tags !== initialValues.tags
@@ -92,6 +95,7 @@ export default function AddSongForm({
   }, [
     title,
     artist,
+    author,
     playbackUrl,
     language,
     tags,
@@ -161,6 +165,7 @@ export default function AddSongForm({
     const parsed = parsePastedSong(chordpro);
     if (parsed.title) setTitle(parsed.title);
     if (parsed.artist) setArtist(parsed.artist);
+    if (parsed.author) setAuthor(parsed.author);
     if (parsed.key) setKey(parsed.key);
     if (typeof parsed.capo === 'number') setCapo(String(parsed.capo));
     if (typeof parsed.tempo === 'number') setTempo(String(parsed.tempo));
@@ -179,6 +184,7 @@ export default function AddSongForm({
       id: initialSong?.id ?? crypto.randomUUID(),
       title: title.trim(),
       artist: artist.trim() || undefined,
+      author: author.trim() || undefined,
       playbackUrl: playbackUrl.trim() || undefined,
       language,
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
@@ -225,6 +231,10 @@ export default function AddSongForm({
           <div className="form-field">
             <label>Artist</label>
             <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist / band" />
+          </div>
+          <div className="form-field">
+            <label>Author</label>
+            <input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Songwriter" />
           </div>
         </div>
 

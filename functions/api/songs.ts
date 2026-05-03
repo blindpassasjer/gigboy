@@ -11,7 +11,7 @@ export const onRequestGet: PagesFunction<never, never, Data> = async () => {
 
 export const onRequestPost: PagesFunction<never, never, Data> = async (ctx) => {
   type Body = {
-    id: string; title: string; artist?: string; language: string;
+    id: string; title: string; artist?: string; author?: string; language: string;
     secondaryLanguages?: string[]; tags?: string[]; chordpro: string;
     capo?: number; key?: string; tempo?: number; timeSignature?: string; createdAt?: string;
   };

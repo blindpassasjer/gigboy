@@ -138,6 +138,10 @@ export default function PublicBandStageplotPage() {
 
       <div className="stageplot-stage song-notes-stage stageplot-stage--public">
         <div className="stageplot-stage-grid" />
+        <div className="stageplot-front-edge" aria-hidden="true" />
+        <div className="stageplot-audience-marker" aria-label="Audience-facing side">
+          Audience
+        </div>
         {stageplot.items.map((item) => (
           <div
             key={item.id}

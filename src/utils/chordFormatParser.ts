@@ -6,6 +6,7 @@
 export interface ParsedSong {
   title?: string;
   artist?: string;
+  author?: string;
   key?: string;
   capo?: number;
   tempo?: number;
@@ -294,6 +295,7 @@ export function parsePastedSong(text: string): ParsedImportResult {
   return {
     title: meta.title,
     artist: meta.artist,
+    author: undefined,
     chordpro: withDirectives,
     warnings,
   };
@@ -307,6 +309,7 @@ export function parseChordPro(text: string): ParsedSong {
   const lines = text.split('\n');
   let title = '';
   let artist = '';
+  let author = '';
   let key = '';
   let capo = 0;
   let tempo = 0;
@@ -325,6 +328,9 @@ export function parseChordPro(text: string): ParsedSong {
         case 'artist':
           artist = val;
           break;
+        case 'author':
+          author = val;
+          break;
         case 'key':
           key = val;
           break;
@@ -342,6 +348,7 @@ export function parseChordPro(text: string): ParsedSong {
   return {
     title: title || undefined,
     artist: artist || undefined,
+    author: author || undefined,
     key: key || undefined,
     capo: capo || undefined,
     tempo: tempo || undefined,

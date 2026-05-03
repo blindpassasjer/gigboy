@@ -3,6 +3,7 @@ import { PDFDocument, StandardFonts } from 'pdf-lib';
 interface PdfSong {
   title: string;
   artist?: string;
+  author?: string;
   chordpro?: string;
 }
 
@@ -37,6 +38,10 @@ export async function buildSongsPdfBase64(resourceName: string, songs: PdfSong[]
 
     if (song.artist) {
       writeLine(`Artist: ${song.artist}`, 10, 15);
+    }
+
+    if (song.author) {
+      writeLine(`Author: ${song.author}`, 10, 15);
     }
 
     const lines = (song.chordpro ?? '')

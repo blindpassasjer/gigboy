@@ -6231,6 +6231,36 @@ input, select, textarea { font: inherit; color: var(--text); }
   pointer-events: none;
 }
 
+.stageplot-front-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22px;
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--accent) 16%, transparent) 100%);
+  border-top: 1px dashed color-mix(in srgb, var(--accent) 46%, var(--border));
+  pointer-events: none;
+  z-index: 5;
+}
+
+.stageplot-audience-marker {
+  position: absolute;
+  left: 50%;
+  bottom: .35rem;
+  transform: translateX(-50%);
+  padding: .15rem .55rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--surface) 82%, #fff 18%);
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 6;
+}
+
 .stageplot-item {
   position: absolute;
   display: inline-grid;
