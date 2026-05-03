@@ -2916,7 +2916,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     addBandTechnicalRider,
     renameBandTechnicalRider,
     updateBandTechnicalRiderIcon,
-    updateBandTechnicalRiderIcon,
     setBandTechnicalRiderPublicShare,
     updateBandTechnicalRiderContent,
     deleteBandTechnicalRider,
