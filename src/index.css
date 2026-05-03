@@ -3728,6 +3728,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0;
 }
 
+.sidebar-folders > .sidebar-setlists-header > .sidebar-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 2rem;
+  padding: .35rem .25rem .35rem 0;
+}
+
 .sidebar-setlists {
   display: flex;
   flex-direction: column;
