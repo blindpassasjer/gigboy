@@ -318,9 +318,9 @@ export default function BandDetailPage() {
   const handleDeleteBandSongList = async () => {
     if (!activeBandSongList) return;
 
-    const confirmed = await showConfirmToast(`Move songlist "${activeBandSongList.name}" to trash? It will be automatically deleted after 30 days.`, {
-      confirmLabel: 'Move to trash',
-    });
+    const confirmed = window.confirm(
+      `Move songlist "${activeBandSongList.name}" to trash? It will be automatically deleted after 30 days.`
+    );
     if (!confirmed) return;
 
     const error = await deleteBandSongList(band.id, activeBandSongList.id);
@@ -335,9 +335,9 @@ export default function BandDetailPage() {
   const handleDeleteBandSetlist = async () => {
     if (!activeBandSetlist) return;
 
-    const confirmed = await showConfirmToast(`Move setlist "${activeBandSetlist.name}" to trash? It will be automatically deleted after 30 days.`, {
-      confirmLabel: 'Move to trash',
-    });
+    const confirmed = window.confirm(
+      `Move setlist "${activeBandSetlist.name}" to trash? It will be automatically deleted after 30 days.`
+    );
     if (!confirmed) return;
 
     const error = await deleteBandSetlist(band.id, activeBandSetlist.id);
