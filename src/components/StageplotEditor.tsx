@@ -24,17 +24,44 @@ interface StageplotEditorProps {
 const ITEM_DRAG_MIME = 'application/x-folio-stageplot-item-template';
 const EMOJI_OPTIONS = ['🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '🔊', '📦', '✨'] as const;
 
-const DEFAULT_PALETTE = [
-  { kind: 'vocals', label: 'Vocals', color: '#f97316' },
-  { kind: 'guitar', label: 'Guitar', color: '#22c55e' },
-  { kind: 'bass', label: 'Bass', color: '#0ea5e9' },
-  { kind: 'drums', label: 'Drums', color: '#ef4444' },
-  { kind: 'keys', label: 'Keys', color: '#a855f7' },
-  { kind: 'monitor', label: 'Monitor', color: '#f59e0b' },
-  { kind: 'guitar-amp', label: 'Guitar Amp', color: '#14b8a6' },
-  { kind: 'bass-amp', label: 'Bass Amp', color: '#06b6d4' },
-  { kind: 'keyboard-amp', label: 'Keyboard Amp', color: '#8b5cf6' },
-] as const;
+interface PaletteItem {
+  kind: string;
+  label: string;
+  color: string;
+}
+
+interface PaletteCategory {
+  name: string;
+  items: PaletteItem[];
+}
+
+const PALETTE_CATEGORIES: PaletteCategory[] = [
+  {
+    name: 'Instruments',
+    items: [
+      { kind: 'vocals', label: 'Vocals', color: '#f97316' },
+      { kind: 'guitar', label: 'Guitar', color: '#22c55e' },
+      { kind: 'bass', label: 'Bass', color: '#0ea5e9' },
+      { kind: 'drums', label: 'Drums', color: '#ef4444' },
+      { kind: 'keys', label: 'Keys', color: '#a855f7' },
+      { kind: 'violin', label: 'Violin', color: '#d946ef' },
+      { kind: 'trumpet', label: 'Trumpet', color: '#ea580c' },
+      { kind: 'saxophone', label: 'Saxophone', color: '#dc2626' },
+    ],
+  },
+  {
+    name: 'Speakers & Amps',
+    items: [
+      { kind: 'monitor', label: 'Monitor', color: '#f59e0b' },
+      { kind: 'pa', label: 'PA', color: '#059669' },
+      { kind: 'subs', label: 'Subs', color: '#1e40af' },
+      { kind: 'iem', label: 'IEM', color: '#7c3aed' },
+      { kind: 'guitar-amp', label: 'Guitar Amp', color: '#14b8a6' },
+      { kind: 'bass-amp', label: 'Bass Amp', color: '#06b6d4' },
+      { kind: 'keyboard-amp', label: 'Keyboard Amp', color: '#8b5cf6' },
+    ],
+  },
+];
 
 function clamp01(value: number) {
   if (!Number.isFinite(value)) return 0;
@@ -425,24 +452,31 @@ export default function StageplotEditor({
         {canEdit ? (
           <div className="stageplot-toolbar">
             <div className="stageplot-palette">
-              {DEFAULT_PALETTE.map((entry) => (
-                <button
-                  key={entry.kind}
-                  type="button"
-                  className="stageplot-palette-btn"
-                  draggable
-                  onDragStart={(event) => handlePaletteDragStart(event, entry)}
-                  onClick={() => handlePaletteAddClick(entry)}
-                  title={`Drag ${entry.label} to stage`}
-                >
-                  <img
-                    src={stageplotIconForKind(entry.kind)}
-                    alt=""
-                    aria-hidden="true"
-                    className="stageplot-instrument-icon stageplot-instrument-icon--palette"
-                  />
-                  <span>{entry.label}</span>
-                </button>
+              {PALETTE_CATEGORIES.map((category) => (
+                <div key={category.name} className="stageplot-palette-category">
+                  <div className="stageplot-palette-category-name">{category.name}</div>
+                  <div className="stageplot-palette-category-items">
+                    {category.items.map((entry) => (
+                      <button
+                        key={entry.kind}
+                        type="button"
+                        className="stageplot-palette-btn"
+                        draggable
+                        onDragStart={(event) => handlePaletteDragStart(event, entry)}
+                        onClick={() => handlePaletteAddClick(entry)}
+                        title={`Drag ${entry.label} to stage`}
+                      >
+                        <img
+                          src={stageplotIconForKind(entry.kind)}
+                          alt=""
+                          aria-hidden="true"
+                          className="stageplot-instrument-icon stageplot-instrument-icon--palette"
+                        />
+                        <span>{entry.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
             <div className="stageplot-toolbar-actions">
@@ -451,7 +485,7 @@ export default function StageplotEditor({
                 value={customLabel}
                 onChange={(event) => setCustomLabel(event.target.value)}
                 placeholder="Custom item"
-                className="setlist-name-input"
+                className="stageplot-toolbar-input"
               />
               <button
                 type="button"

@@ -9,6 +9,12 @@ import guitar from '../assets/stageplot-icons/guitar.svg';
 import keys from '../assets/stageplot-icons/keys.svg';
 import monitor from '../assets/stageplot-icons/monitor.svg';
 import vocals from '../assets/stageplot-icons/vocals.svg';
+import iem from '../assets/stageplot-icons/iem.svg';
+import pa from '../assets/stageplot-icons/pa.svg';
+import subs from '../assets/stageplot-icons/subs.svg';
+import violin from '../assets/stageplot-icons/violin.svg';
+import trumpet from '../assets/stageplot-icons/trumpet.svg';
+import saxophone from '../assets/stageplot-icons/saxophone.svg';
 
 const ICON_BY_KIND: Record<string, string> = {
   amp,
@@ -22,6 +28,12 @@ const ICON_BY_KIND: Record<string, string> = {
   keys,
   monitor,
   vocals,
+  iem,
+  pa,
+  subs,
+  violin,
+  trumpet,
+  saxophone,
 };
 
 export function stageplotIconForKind(kind: string) {

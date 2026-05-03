@@ -28,6 +28,7 @@ function normalizeItem(raw: unknown): StageplotItem | null {
     x: typeof data.x === 'number' ? data.x : 0.5,
     y: typeof data.y === 'number' ? data.y : 0.5,
     color: typeof data.color === 'string' ? data.color : undefined,
+    icon: typeof data.icon === 'string' ? data.icon : undefined,
   };
 }
 
@@ -153,12 +154,16 @@ export default function PublicBandStageplotPage() {
               color: item.color ?? 'var(--text)',
             }}
           >
-            <img
-              src={stageplotIconForKind(item.kind)}
-              alt=""
-              aria-hidden="true"
-              className="stageplot-instrument-icon"
-            />
+            {item.kind === 'custom' && item.icon ? (
+              <span className="stageplot-custom-emoji">{item.icon}</span>
+            ) : (
+              <img
+                src={stageplotIconForKind(item.kind)}
+                alt=""
+                aria-hidden="true"
+                className="stageplot-instrument-icon"
+              />
+            )}
             <span>{item.label}</span>
           </div>
         ))}
