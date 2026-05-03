@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useBeforeUnload, useNavigate, useBlocker } from 'react-router-dom';
+import { flushSync } from 'react-dom';
 import { Save, Wand2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { Song } from '../types';
@@ -129,7 +130,9 @@ export default function AddSongForm({
         toast(UNSAVED_CHANGES_WARNING, { icon: '!' });
       }
 
-      setAllowNavigation(true);
+      flushSync(() => {
+        setAllowNavigation(true);
+      });
       navigate(initialSong?.id ? `/songs/${initialSong.id}` : '/');
     };
 
@@ -198,7 +201,9 @@ export default function AddSongForm({
       onSongListChange?.(songListId, song.id);
     }
 
-    setAllowNavigation(true);
+    flushSync(() => {
+      setAllowNavigation(true);
+    });
     navigate(`/songs/${song.id}`);
   }
 

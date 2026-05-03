@@ -53,7 +53,7 @@ export function showConfirmToast(
       if (settled) return;
       settled = true;
       window.clearTimeout(timeoutId);
-      toast.dismiss(toastId);
+      toast.remove(toastId);
       resolve(value);
     };
 
@@ -137,7 +137,6 @@ function PromptToast({
         <button
           style={toastBtnStyle}
           onClick={() => {
-            toast.dismiss(id);
             onSubmit(null);
           }}
         >
@@ -169,7 +168,7 @@ export function showPromptToast(
       if (settled) return;
       settled = true;
       window.clearTimeout(timeoutId);
-      toast.dismiss(toastId);
+      toast.remove(toastId);
       resolve(value);
     };
 
