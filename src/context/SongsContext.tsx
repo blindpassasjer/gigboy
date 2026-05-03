@@ -16,6 +16,7 @@ import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db, firebaseEnabled } from '../lib/firebase';
 import {
   compareTrashByDeletedAtDesc,
+  createTrashPayload,
   createTrashTimestamps,
   isTrashExpired,
   parseSongTrashRecord,
@@ -395,12 +396,10 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
     try {
       await Promise.all([
-        setDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId), {
-          itemType: 'song',
-          deletedAt,
-          purgeAt,
-          data: targetSong,
-        }),
+        setDoc(
+          doc(db, 'users', userId, TRASH_COLLECTION, trashId),
+          createTrashPayload('song', deletedAt, purgeAt, targetSong)
+        ),
         deleteDoc(doc(db, ...songsCollectionPath(userId), id)),
       ]);
     } catch (error) {
@@ -432,13 +431,13 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { id, ...rest } = restoredSong;
+      const { id: restoredSongId, ...rest } = restoredSong;
       const firestoreData = Object.fromEntries(
         Object.entries(rest).filter(([, value]) => value !== undefined)
       );
 
       await Promise.all([
-        setDoc(doc(db, ...songsCollectionPath(userId), restoredSong.id), firestoreData),
+        setDoc(doc(db, ...songsCollectionPath(userId), restoredSongId), firestoreData),
         deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId)),
       ]);
 

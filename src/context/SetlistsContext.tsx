@@ -7,6 +7,7 @@ import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db } from '../lib/firebase';
 import {
   compareTrashByDeletedAtDesc,
+  createTrashPayload,
   createTrashTimestamps,
   isTrashExpired,
   parseSetlistTrashRecord,
@@ -295,12 +296,10 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
         });
 
         Promise.all([
-          setDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId), {
-            itemType: 'setlist',
-            deletedAt,
-            purgeAt,
-            data: deleting,
-          }),
+          setDoc(
+            doc(db, 'users', userId, TRASH_COLLECTION, trashId),
+            createTrashPayload('setlist', deletedAt, purgeAt, deleting)
+          ),
           deleteDoc(doc(db, 'users', userId, SETLISTS_COLLECTION, id)),
           ...changed.map((list) => writeSetlist(list, userId)),
         ]).catch((error) => {

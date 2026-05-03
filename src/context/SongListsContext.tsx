@@ -7,6 +7,7 @@ import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db } from '../lib/firebase';
 import {
   compareTrashByDeletedAtDesc,
+  createTrashPayload,
   createTrashTimestamps,
   isTrashExpired,
   parseSongListTrashRecord,
@@ -386,12 +387,10 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
         });
 
         Promise.all([
-          setDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId), {
-            itemType: 'songlist',
-            deletedAt,
-            purgeAt,
-            data: deleting,
-          }),
+          setDoc(
+            doc(db, 'users', userId, TRASH_COLLECTION, trashId),
+            createTrashPayload('songlist', deletedAt, purgeAt, deleting)
+          ),
           deleteDoc(doc(db, 'users', userId, LISTS_COLLECTION, id)),
           ...changed.map((list) => writeSongList(list, userId)),
         ]).catch((error) => {
