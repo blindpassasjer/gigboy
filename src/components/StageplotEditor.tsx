@@ -335,7 +335,7 @@ export default function StageplotEditor({
   return (
     <section className="stageplot-view">
       <div className="song-list-sticky">
-        <div className="setlist-header songlist-header stageplot-header">
+        <div className="setlist-header songlist-header">
           <div className="setlist-title-block">
             {renaming ? (
               <input
@@ -399,60 +399,61 @@ export default function StageplotEditor({
               </>
             ) : null}
           </div>
-          {canEdit ? (
-            <div className="stageplot-toolbar">
-              <div className="stageplot-palette">
-                {DEFAULT_PALETTE.map((entry) => (
-                  <button
-                    key={entry.kind}
-                    type="button"
-                    className="stageplot-palette-btn"
-                    draggable
-                    onDragStart={(event) => handlePaletteDragStart(event, entry)}
-                    onClick={() => handlePaletteAddClick(entry)}
-                    title={`Drag ${entry.label} to stage`}
-                  >
-                    <img
-                      src={stageplotIconForKind(entry.kind)}
-                      alt=""
-                      aria-hidden="true"
-                      className="stageplot-instrument-icon stageplot-instrument-icon--palette"
-                    />
-                    <span>{entry.label}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="stageplot-toolbar-actions">
-                <input
-                  type="text"
-                  value={customLabel}
-                  onChange={(event) => setCustomLabel(event.target.value)}
-                  placeholder="Custom item"
-                  className="setlist-name-input"
-                />
-                <button type="button" className="notes-toolbar-btn" onClick={addCustomItem}>
-                  <Plus size={12} /> Add
-                </button>
-                <button
-                  type="button"
-                  className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
-                  onClick={() => setDrawEnabled((prev) => !prev)}
-                >
-                  <PenLine size={12} /> Draw
-                </button>
-                <button type="button" className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0}>
-                  <Undo2 size={12} /> Undo
-                </button>
-                <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
-                  <X size={12} /> Clear
-                </button>
-                <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
-                  <Trash2 size={12} /> Remove
-                </button>
-              </div>
-            </div>
-          ) : null}
         </div>
+
+        {canEdit ? (
+          <div className="stageplot-toolbar">
+            <div className="stageplot-palette">
+              {DEFAULT_PALETTE.map((entry) => (
+                <button
+                  key={entry.kind}
+                  type="button"
+                  className="stageplot-palette-btn"
+                  draggable
+                  onDragStart={(event) => handlePaletteDragStart(event, entry)}
+                  onClick={() => handlePaletteAddClick(entry)}
+                  title={`Drag ${entry.label} to stage`}
+                >
+                  <img
+                    src={stageplotIconForKind(entry.kind)}
+                    alt=""
+                    aria-hidden="true"
+                    className="stageplot-instrument-icon stageplot-instrument-icon--palette"
+                  />
+                  <span>{entry.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="stageplot-toolbar-actions">
+              <input
+                type="text"
+                value={customLabel}
+                onChange={(event) => setCustomLabel(event.target.value)}
+                placeholder="Custom item"
+                className="setlist-name-input"
+              />
+              <button type="button" className="notes-toolbar-btn" onClick={addCustomItem}>
+                <Plus size={12} /> Add
+              </button>
+              <button
+                type="button"
+                className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
+                onClick={() => setDrawEnabled((prev) => !prev)}
+              >
+                <PenLine size={12} /> Draw
+              </button>
+              <button type="button" className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0}>
+                <Undo2 size={12} /> Undo
+              </button>
+              <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
+                <X size={12} /> Clear
+              </button>
+              <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
+                <Trash2 size={12} /> Remove
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {showIconEditor && canEdit ? (
           <div className="list-appearance-editor" role="region" aria-label="Stageplot icon settings">
@@ -512,6 +513,7 @@ export default function StageplotEditor({
           <button
             key={item.id}
             type="button"
+            draggable={false}
             className={`stageplot-item${selectedItemId === item.id ? ' stageplot-item--selected' : ''}`}
             style={{
               left: `${item.x * 100}%`,
@@ -520,6 +522,7 @@ export default function StageplotEditor({
               color: item.color ?? 'var(--text)',
             }}
             onPointerDown={(event) => {
+              event.preventDefault();
               setSelectedItemId(item.id);
               moveItem(item.id, event);
             }}
@@ -530,6 +533,7 @@ export default function StageplotEditor({
               src={stageplotIconForKind(item.kind)}
               alt=""
               aria-hidden="true"
+              draggable={false}
               className="stageplot-instrument-icon stageplot-instrument-icon--item"
             />
             <span>{item.label}</span>

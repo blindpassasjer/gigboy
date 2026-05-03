@@ -6132,23 +6132,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   overflow-x: hidden;
 }
 
-.stageplot-header {
-  flex-wrap: wrap;
-  row-gap: .8rem;
-  min-width: 0;
-}
-
 .stageplot-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: .55rem;
   align-items: flex-start;
   justify-content: space-between;
-  width: 100%;
   min-width: 0;
-  margin-top: .15rem;
-  padding-top: .65rem;
-  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  margin: 0 1.5rem;
+  padding: .65rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
 }
 
 .stageplot-palette {
@@ -6283,6 +6278,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   word-break: break-word;
   cursor: grab;
   z-index: 10;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.stageplot-item > * {
+  pointer-events: none;
 }
 
 .stageplot-item span {
