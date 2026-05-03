@@ -555,11 +555,17 @@ export default function BandDetailPage() {
           name: user?.fullName?.trim() || user?.username?.trim() || user?.email || 'Unknown user',
           avatar: user?.avatar,
         }}
-        onRename={(name) => {
-          void renameBandStageplot(band.id, activeBandStageplot.id, name);
+        onRename={async (name) => {
+          const error = await renameBandStageplot(band.id, activeBandStageplot.id, name);
+          if (error) {
+            toast.error(error);
+          }
         }}
-        onUpdateIcon={(icon) => {
-          void updateBandStageplotIcon(band.id, activeBandStageplot.id, icon);
+        onUpdateIcon={async (icon) => {
+          const error = await updateBandStageplotIcon(band.id, activeBandStageplot.id, icon);
+          if (error) {
+            toast.error(error);
+          }
         }}
         onDelete={async () => {
           const error = await deleteBandStageplot(band.id, activeBandStageplot.id);
