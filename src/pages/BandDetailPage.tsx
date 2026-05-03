@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
 import StageplotEditor from '../components/StageplotEditor';
+import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
 import TrashView from '../components/TrashView';
 import UserAvatar from '../components/UserAvatar';
 import type { CollaborationPermission, Song } from '../types';
@@ -24,6 +25,7 @@ export default function BandDetailPage() {
     bandSongListsByBandId,
     bandSetlistsByBandId,
     bandStageplotsByBandId,
+    bandTechnicalRidersByBandId,
     bandTrashByBandId,
     loading,
     renameBand,
@@ -31,6 +33,7 @@ export default function BandDetailPage() {
     refreshBandSongLists,
     refreshBandSetlists,
     refreshBandStageplots,
+    refreshBandTechnicalRiders,
     refreshBandTrash,
     inviteMember,
     changeMemberRole,
@@ -59,6 +62,10 @@ export default function BandDetailPage() {
     setBandStageplotPublicShare,
     updateBandStageplotContent,
     deleteBandStageplot,
+    renameBandTechnicalRider,
+    setBandTechnicalRiderPublicShare,
+    updateBandTechnicalRiderContent,
+    deleteBandTechnicalRider,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
   } = useBands();
@@ -68,6 +75,7 @@ export default function BandDetailPage() {
   const bandSongLists = id ? (bandSongListsByBandId[id] ?? []) : [];
   const bandSetlists = id ? (bandSetlistsByBandId[id] ?? []) : [];
   const bandStageplots = id ? (bandStageplotsByBandId[id] ?? []) : [];
+  const bandTechnicalRiders = id ? (bandTechnicalRidersByBandId[id] ?? []) : [];
   const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [inviteUsername, setInviteUsername] = useState('');
@@ -95,6 +103,9 @@ export default function BandDetailPage() {
     : null;
   const activeBandStageplot = bandSection === 'stageplots'
     ? bandStageplots.find((entry) => entry.id === bandResourceId) ?? null
+    : null;
+  const activeBandTechnicalRider = bandSection === 'riders'
+    ? bandTechnicalRiders.find((entry) => entry.id === bandResourceId) ?? null
     : null;
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
 
@@ -126,6 +137,13 @@ export default function BandDetailPage() {
       console.error('Failed to load band stageplots.', error);
     });
   }, [band, id, refreshBandStageplots]);
+
+  useEffect(() => {
+    if (!id || !band) return;
+    void refreshBandTechnicalRiders(id).catch((error) => {
+      console.error('Failed to load band technical riders.', error);
+    });
+  }, [band, id, refreshBandTechnicalRiders]);
 
   useEffect(() => {
     if (!id || !band) return;
@@ -367,6 +385,24 @@ export default function BandDetailPage() {
     }
   };
 
+  const handleShareTechnicalRider = async () => {
+    if (!activeBandTechnicalRider) return;
+    const publicUrl = `${window.location.origin}/public/bands/${band.id}/riders/${activeBandTechnicalRider.id}`;
+    if (!activeBandTechnicalRider.publicShareEnabled) {
+      const error = await setBandTechnicalRiderPublicShare(band.id, activeBandTechnicalRider.id, true);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success('Public link copied to clipboard!');
+    } catch {
+      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
+    }
+  };
+
   if (bandSection === 'songlists') {
     if (!activeBandSongList) {
       return (
@@ -515,6 +551,48 @@ export default function BandDetailPage() {
           }
         }}
         onCopyPublicLink={handleShareStageplot}
+      />
+    );
+  }
+
+  if (bandSection === 'riders') {
+    if (!activeBandTechnicalRider) {
+      return (
+        <section className="bands-page">
+          <p className="bands-status">Band technical rider not found.</p>
+          <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">Back to band library</Link>
+        </section>
+      );
+    }
+
+    return (
+      <TechnicalRiderEditor
+        rider={activeBandTechnicalRider}
+        canEdit={canEditBand}
+        onRename={async (name) => {
+          const error = await renameBandTechnicalRider(band.id, activeBandTechnicalRider.id, name);
+          if (error) toast.error(error);
+        }}
+        onDelete={canEditBand ? async () => {
+          const error = await deleteBandTechnicalRider(band.id, activeBandTechnicalRider.id);
+          if (error) {
+            toast.error(error);
+            return;
+          }
+          navigate(`/bands/${band.id}/library`);
+        } : undefined}
+        onSaveContent={async (content) => {
+          const error = await updateBandTechnicalRiderContent({
+            bandId: band.id,
+            riderId: activeBandTechnicalRider.id,
+            lines: content.lines,
+            preferredEquipment: content.preferredEquipment,
+            inventoryEquipment: content.inventoryEquipment,
+          });
+          if (error) toast.error(error);
+          else toast.success('Technical rider updated.');
+        }}
+        onCopyPublicLink={handleShareTechnicalRider}
       />
     );
   }

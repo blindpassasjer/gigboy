@@ -5,8 +5,11 @@ import { useSongs } from '../context/SongsContext';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
+import { useAuth } from '../context/AuthContext';
+import { useStageplots } from '../context/StageplotsContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
+import StageplotEditor from '../components/StageplotEditor';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 
@@ -23,6 +26,7 @@ interface CopyDialogState {
 }
 
 export default function HomePage() {
+  const { user } = useAuth();
   const { songs, deleteSong, moveSong } = useSongs();
   const {
     activeCategoryId,
@@ -45,6 +49,15 @@ export default function HomePage() {
     moveSongInSetlist,
   } = useSetlists();
   const {
+    stageplots,
+    activeStageplotId,
+    renameStageplot,
+    updateStageplotIcon,
+    deleteStageplot,
+    updateStageplotContent,
+    setStageplotPublicShare,
+  } = useStageplots();
+  const {
     bands,
     bandSongsByBandId,
     bandSongListsByBandId,
@@ -60,6 +73,7 @@ export default function HomePage() {
 
   const activeList = songLists.find((l) => l.id === activeSongListId) ?? null;
   const activeSetlist = setlists.find((s) => s.id === activeSetlistId) ?? null;
+  const activeStageplot = stageplots.find((entry) => entry.id === activeStageplotId) ?? null;
   const activeCategory = categories.find((category) => category.id === activeCategoryId) ?? null;
   const songsById = new Map(songs.map((song) => [song.id, song]));
   const [allSongsIcon, setAllSongsIcon] = useState<string | undefined>(() => {
@@ -335,6 +349,69 @@ export default function HomePage() {
         />
         {copyDialogNode}
       </>
+    );
+  }
+
+  async function handleShareStageplot() {
+    if (!activeStageplot) return;
+    const ownerId = activeStageplot.ownerId;
+    if (!ownerId) {
+      toast.error('This stageplot cannot be publicly shared yet. Please sync your account first.');
+      return;
+    }
+
+    const publicUrl = `${window.location.origin}/public/users/${ownerId}/stageplots/${activeStageplot.id}`;
+
+    if (!activeStageplot.publicShareEnabled) {
+      const error = await setStageplotPublicShare(activeStageplot.id, true);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success('Public link copied to clipboard!');
+    } catch {
+      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
+    }
+  }
+
+  if (activeStageplot) {
+    return (
+      <StageplotEditor
+        stageplot={activeStageplot}
+        canEdit
+        currentUser={{
+          id: user?.id ?? null,
+          name: user?.fullName ?? user?.username ?? user?.email ?? 'You',
+          avatar: user?.avatar ?? null,
+        }}
+        onRename={(name) => {
+          void renameStageplot(activeStageplot.id, name).then((error) => {
+            if (error) toast.error(error);
+          });
+        }}
+        onUpdateIcon={(icon) => {
+          void updateStageplotIcon(activeStageplot.id, icon).then((error) => {
+            if (error) toast.error(error);
+          });
+        }}
+        onDelete={async () => {
+          const error = await deleteStageplot(activeStageplot.id);
+          if (error) toast.error(error);
+        }}
+        onSaveContent={async (items, drawingLayers) => {
+          const error = await updateStageplotContent({
+            stageplotId: activeStageplot.id,
+            items,
+            drawingLayers,
+          });
+          if (error) toast.error(error);
+        }}
+        onCopyPublicLink={handleShareStageplot}
+      />
     );
   }
 

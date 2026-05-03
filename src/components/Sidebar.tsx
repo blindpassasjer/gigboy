@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Folder, FolderOpen, ListMusic, ListMusicIcon, Map, Plus, Trash2, User, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, Folder, FolderOpen, ListMusic, ListMusicIcon, Map, Plus, Trash2, User, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
+import { useTechnicalRiders } from '../context/TechnicalRidersContext';
+import { useStageplots } from '../context/StageplotsContext';
 
 const SONG_DRAG_MIME = 'application/x-folio-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
@@ -46,6 +48,18 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addSongToSetlist,
     setActiveSetlistId,
   } = useSetlists();
+  const {
+    technicalRiders,
+    activeTechnicalRiderId,
+    setActiveTechnicalRiderId,
+    addTechnicalRider,
+  } = useTechnicalRiders();
+  const {
+    stageplots,
+    activeStageplotId,
+    setActiveStageplotId,
+    addStageplot,
+  } = useStageplots();
 
   const {
     bands,
@@ -53,11 +67,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     bandSongListsByBandId,
     bandSetlistsByBandId,
     bandStageplotsByBandId,
+    bandTechnicalRidersByBandId,
     bandTrashByBandId,
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
     refreshBandStageplots,
+    refreshBandTechnicalRiders,
     refreshBandTrash,
     createBand,
     addSongToBandLibrary,
@@ -66,14 +82,18 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addBandSetlist,
     addSongToBandSetlist,
     addBandStageplot,
+    addBandTechnicalRider,
   } = useBands();
 
   const [addingSongList, setAddingSongList] = useState(false);
   const [addingSetlist, setAddingSetlist] = useState(false);
+  const [addingStageplot, setAddingStageplot] = useState(false);
   const [addingBand, setAddingBand] = useState(false);
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
   const [addingBandStageplotId, setAddingBandStageplotId] = useState<string | null>(null);
+  const [addingTechnicalRider, setAddingTechnicalRider] = useState(false);
+  const [addingBandTechnicalRiderId, setAddingBandTechnicalRiderId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
   const [songDropTargetId, setSongDropTargetId] = useState<string | null>(null);
   const [setlistDropTargetId, setSetlistDropTargetId] = useState<string | null>(null);
@@ -82,9 +102,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
   const [soloSonglistsExpanded, setSoloSonglistsExpanded] = useState(true);
   const [soloSetlistsExpanded, setSoloSetlistsExpanded] = useState(true);
+  const [soloStageplotsExpanded, setSoloStageplotsExpanded] = useState(true);
+  const [soloRidersExpanded, setSoloRidersExpanded] = useState(true);
   const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
   const [collapsedBandStageplotIds, setCollapsedBandStageplotIds] = useState<string[]>([]);
+  const [collapsedBandTechnicalRiderIds, setCollapsedBandTechnicalRiderIds] = useState<string[]>([]);
   const [activeBandId, setActiveBandId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     try { return window.localStorage.getItem('folio-active-band-id'); } catch { return null; }
@@ -133,12 +156,17 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       .map((band) => band.id)
       .filter((bandId) => bandTrashByBandId[bandId] === undefined);
 
+    const missingBandTechnicalRiderCollections = bands
+      .map((band) => band.id)
+      .filter((bandId) => bandTechnicalRidersByBandId[bandId] === undefined);
+
     if (
       missingBandSongCollections.length === 0
       && missingBandSongListCollections.length === 0
       && missingBandSetlistCollections.length === 0
       && missingBandStageplotCollections.length === 0
       && missingBandTrashCollections.length === 0
+      && missingBandTechnicalRiderCollections.length === 0
     ) return;
 
     missingBandSongCollections.forEach((bandId) => {
@@ -170,16 +198,24 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         // Sidebar counts are best-effort; detailed errors are handled on band pages.
       });
     });
+
+    missingBandTechnicalRiderCollections.forEach((bandId) => {
+      void refreshBandTechnicalRiders(bandId).catch(() => {
+        // Sidebar counts are best-effort; detailed errors are handled on band pages.
+      });
+    });
   }, [
     bandTrashByBandId,
     bandSetlistsByBandId,
     bandStageplotsByBandId,
+    bandTechnicalRidersByBandId,
     bandSongListsByBandId,
     bandSongsByBandId,
     bands,
     refreshBandTrash,
     refreshBandSetlists,
     refreshBandStageplots,
+    refreshBandTechnicalRiders,
     refreshBandSongLists,
     refreshBandSongs,
   ]);
@@ -194,6 +230,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const clearSoloSelection = () => {
     clearActiveSelection();
     setActiveSetlistId(null);
+    setActiveStageplotId(null);
+    setActiveTechnicalRiderId(null);
   };
 
   const commitSongList = () => {
@@ -206,6 +244,21 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (draftName.trim()) addSetlist(draftName.trim());
     setDraftName('');
     setAddingSetlist(false);
+  };
+
+  const commitTechnicalRider = async () => {
+    const name = draftName.trim();
+    setDraftName('');
+    setAddingTechnicalRider(false);
+    if (!name) return;
+
+    const result = await addTechnicalRider(name);
+    if (result.riderId) {
+      clearSoloSelection();
+      setActiveTechnicalRiderId(result.riderId);
+      navigate('/');
+      onNavigate?.();
+    }
   };
 
   const commitBand = async () => {
@@ -264,6 +317,20 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     }
   };
 
+  const commitBandTechnicalRider = async (bandId: string) => {
+    const name = draftName.trim();
+    setDraftName('');
+    setAddingBandTechnicalRiderId(null);
+    if (!name) return;
+
+    const result = await addBandTechnicalRider(bandId, name);
+    if (result.riderId) {
+      clearSoloSelection();
+      navigate(`/bands/${bandId}/riders/${result.riderId}`);
+      onNavigate?.();
+    }
+  };
+
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>, listId: string) => {
     const isSongDrop = hasType(event.dataTransfer.types, SONG_DRAG_MIME)
       || hasType(event.dataTransfer.types, SONG_DRAG_FALLBACK_MIME);
@@ -304,6 +371,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const isBandStageplotsExpanded = (bandId: string) => !collapsedBandStageplotIds.includes(bandId);
 
+  const isBandTechnicalRidersExpanded = (bandId: string) => !collapsedBandTechnicalRiderIds.includes(bandId);
+
   const toggleBandSonglistsExpanded = (bandId: string) => {
     setCollapsedBandSonglistIds((prev) => (
       prev.includes(bandId)
@@ -322,6 +391,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const toggleBandStageplotsExpanded = (bandId: string) => {
     setCollapsedBandStageplotIds((prev) => (
+      prev.includes(bandId)
+        ? prev.filter((entry) => entry !== bandId)
+        : [...prev, bandId]
+    ));
+  };
+
+  const toggleBandTechnicalRidersExpanded = (bandId: string) => {
+    setCollapsedBandTechnicalRiderIds((prev) => (
       prev.includes(bandId)
         ? prev.filter((entry) => entry !== bandId)
         : [...prev, bandId]
@@ -539,6 +616,71 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     onCommit={commitSetlist}
                     onCancel={() => setAddingSetlist(false)}
                     placeholder="Setlist name..."
+                  />
+                )}
+              </div>
+            )}
+          </section>
+
+          <section className="sidebar-solo-section">
+            <div className="sidebar-setlists-header">
+              <button
+                type="button"
+                className="sidebar-section-toggle"
+                onClick={() => setSoloRidersExpanded((current) => !current)}
+                aria-expanded={soloRidersExpanded}
+              >
+                {soloRidersExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <span className="sidebar-section-title">Technical Riders</span>
+              </button>
+              <button
+                type="button"
+                className="sidebar-icon-btn"
+                title="New technical rider"
+                aria-label="Create new technical rider"
+                onClick={() => {
+                  setSoloRidersExpanded(true);
+                  setAddingTechnicalRider(true);
+                  setDraftName('');
+                }}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+
+            {soloRidersExpanded && (
+              <div className="sidebar-solo-list sidebar-nested-group">
+                {technicalRiders.map((rider) => (
+                  <div
+                    key={rider.id}
+                    className={`sidebar-list-item${activeTechnicalRiderId === rider.id ? ' active' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="sidebar-list-item-btn"
+                      onClick={() => {
+                        setActiveTechnicalRiderId(rider.id);
+                        setActiveSongListId(null);
+                        setActiveSetlistId(null);
+                        clearActiveSelection();
+                        navigate('/');
+                        onNavigate?.();
+                      }}
+                    >
+                      <ClipboardList size={14} />
+                      <span className="sidebar-list-name">{rider.name}</span>
+                      {rider.lines.length > 0 ? <span className="sidebar-list-count">{rider.lines.length}</span> : null}
+                    </button>
+                  </div>
+                ))}
+
+                {addingTechnicalRider && (
+                  <InlineInput
+                    value={draftName}
+                    onChange={setDraftName}
+                    onCommit={() => void commitTechnicalRider()}
+                    onCancel={() => setAddingTechnicalRider(false)}
+                    placeholder="Technical rider name..."
                   />
                 )}
               </div>
@@ -843,6 +985,61 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                         onCommit={() => void commitBandStageplot(band.id)}
                         onCancel={() => setAddingBandStageplotId(null)}
                         placeholder="Band stageplot name..."
+                      />
+                    )}
+                  </div>
+                )}
+
+                <div className="sidebar-setlists-header">
+                  <button
+                    type="button"
+                    className="sidebar-section-toggle"
+                    onClick={() => toggleBandTechnicalRidersExpanded(band.id)}
+                    aria-expanded={isBandTechnicalRidersExpanded(band.id)}
+                  >
+                    {isBandTechnicalRidersExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span className="sidebar-section-title">Technical Riders</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New band technical rider"
+                    aria-label="Create new band technical rider"
+                    onClick={() => {
+                      setCollapsedBandTechnicalRiderIds((prev) => prev.filter((entry) => entry !== band.id));
+                      setAddingBandTechnicalRiderId(band.id);
+                      setDraftName('');
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                {isBandTechnicalRidersExpanded(band.id) && (
+                  <div className="sidebar-nested-group">
+                    {(bandTechnicalRidersByBandId[band.id] ?? []).map((rider) => (
+                      <div
+                        key={rider.id}
+                        className={`sidebar-list-item${pathname === `/bands/${band.id}/riders/${rider.id}` ? ' active' : ''}`}
+                      >
+                        <button
+                          className="sidebar-list-item-btn"
+                          onClick={() => { clearSoloSelection(); navigate(`/bands/${band.id}/riders/${rider.id}`); onNavigate?.(); }}
+                        >
+                          <ClipboardList size={14} />
+                          <span className="sidebar-list-name">{rider.name}</span>
+                          {rider.lines.length > 0 && <span className="sidebar-list-count">{rider.lines.length}</span>}
+                        </button>
+                      </div>
+                    ))}
+
+                    {addingBandTechnicalRiderId === band.id && (
+                      <InlineInput
+                        value={draftName}
+                        onChange={setDraftName}
+                        onCommit={() => void commitBandTechnicalRider(band.id)}
+                        onCancel={() => setAddingBandTechnicalRiderId(null)}
+                        placeholder="Band technical rider name..."
                       />
                     )}
                   </div>

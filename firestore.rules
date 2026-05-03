@@ -120,6 +120,18 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      match /stageplots/{stageplotId} {
+        allow read: if isOwner(userId)
+          || resource.data.publicShareEnabled == true;
+        allow create, update, delete: if isOwner(userId);
+      }
+
+      match /technicalRiders/{riderId} {
+        allow read: if isOwner(userId)
+          || resource.data.publicShareEnabled == true;
+        allow create, update, delete: if isOwner(userId);
+      }
+
       match /trashItems/{trashId} {
         allow read, write: if isOwner(userId);
       }
@@ -220,6 +232,12 @@ service cloud.firestore {
       }
 
       match /stageplots/{stageplotId} {
+        allow read: if isBandMember(bandId)
+          || resource.data.publicShareEnabled == true;
+        allow create, update, delete: if isBandEditor(bandId);
+      }
+
+      match /technicalRiders/{riderId} {
         allow read: if isBandMember(bandId)
           || resource.data.publicShareEnabled == true;
         allow create, update, delete: if isBandEditor(bandId);

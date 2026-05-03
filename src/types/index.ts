@@ -121,6 +121,35 @@ export interface Stageplot extends CollaborationMetadata {
   sortOrder?: number;
 }
 
+export interface TechnicalRiderLine {
+  id: string;
+  name: string;
+  description: string;
+  sortOrder?: number;
+}
+
+export interface RiderEquipmentItem {
+  id: string;
+  name: string;
+  description?: string;
+  sortOrder?: number;
+}
+
+export interface TechnicalRider extends CollaborationMetadata {
+  id: string;
+  name: string;
+  icon?: string;
+  lines: TechnicalRiderLine[];
+  preferredEquipment: RiderEquipmentItem[];
+  inventoryEquipment: RiderEquipmentItem[];
+  publicShareEnabled?: boolean;
+  /** Band name denormalized for unauthenticated public reads. */
+  bandName?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  sortOrder?: number;
+}
+
 export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'stageplot';
 
 export interface TrashMetadata {

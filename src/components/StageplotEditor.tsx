@@ -51,6 +51,13 @@ function userLayerFrom(layers: SongHandNoteDocument[], userId: string | null) {
   return layers.find((layer) => layer.authorUid === userId) ?? null;
 }
 
+function upsertLayer(layers: SongHandNoteDocument[], nextLayer: SongHandNoteDocument) {
+  return [
+    nextLayer,
+    ...layers.filter((layer) => layer.authorUid !== nextLayer.authorUid),
+  ];
+}
+
 export default function StageplotEditor({
   stageplot,
   canEdit,
@@ -200,10 +207,13 @@ export default function StageplotEditor({
 
   const removeSelectedItem = () => {
     if (!selectedItemId || !canEdit) return;
-    const nextItems = items.filter((item) => item.id !== selectedItemId);
-    setItems(nextItems);
+    const deletingId = selectedItemId;
+    setItems((prev) => {
+      const nextItems = prev.filter((item) => item.id !== deletingId);
+      void persistContent(nextItems, drawingLayers);
+      return nextItems;
+    });
     setSelectedItemId(null);
-    void persistContent(nextItems, drawingLayers);
   };
 
   useEffect(() => {
@@ -248,10 +258,7 @@ export default function StageplotEditor({
       strokes,
     };
 
-    const nextLayers = [
-      nextLayer,
-      ...drawingLayers.filter((layer) => layer.authorUid !== currentUser.id),
-    ];
+    const nextLayers = upsertLayer(drawingLayers, nextLayer);
 
     setDrawingLayers(nextLayers);
     void persistContent(items, nextLayers);
@@ -259,25 +266,50 @@ export default function StageplotEditor({
 
   const handleUndoStroke = () => {
     if (!currentUser.id) return;
-    setUndoStack((prev) => {
-      if (prev.length === 0) return prev;
-      const next = [...prev];
-      const lastStrokes = next.pop() ?? [];
-      const viewportRect = stageRef.current?.getBoundingClientRect();
-      handleStrokesChange(lastStrokes, {
+    if (undoStack.length === 0) return;
+
+    const nextUndoStack = undoStack.slice(0, undoStack.length - 1);
+    const lastStrokes = undoStack[undoStack.length - 1] ?? [];
+    const viewportRect = stageRef.current?.getBoundingClientRect();
+    const nextLayer: SongHandNoteDocument = {
+      authorUid: currentUser.id,
+      authorName: currentUser.name,
+      authorAvatar: currentUser.avatar ?? null,
+      updatedAt: new Date().toISOString(),
+      viewport: {
         width: viewportRect?.width ?? 1,
         height: viewportRect?.height ?? 1,
-      });
-      return next;
-    });
+      },
+      strokes: lastStrokes,
+    };
+
+    const nextLayers = upsertLayer(drawingLayers, nextLayer);
+    setUndoStack(nextUndoStack);
+    setDrawingLayers(nextLayers);
+    void persistContent(items, nextLayers);
   };
 
   const handleClearMyDrawing = () => {
+    if (!currentUser.id) return;
+    if (myStrokes.length === 0) return;
+
     const viewportRect = stageRef.current?.getBoundingClientRect();
-    handleStrokesChange([], {
-      width: viewportRect?.width ?? 1,
-      height: viewportRect?.height ?? 1,
-    });
+    const nextLayer: SongHandNoteDocument = {
+      authorUid: currentUser.id,
+      authorName: currentUser.name,
+      authorAvatar: currentUser.avatar ?? null,
+      updatedAt: new Date().toISOString(),
+      viewport: {
+        width: viewportRect?.width ?? 1,
+        height: viewportRect?.height ?? 1,
+      },
+      strokes: [],
+    };
+
+    const nextLayers = upsertLayer(drawingLayers, nextLayer);
+    setUndoStack((prev) => [...prev, myStrokes]);
+    setDrawingLayers(nextLayers);
+    void persistContent(items, nextLayers);
   };
 
   const handleDeleteStageplot = async () => {

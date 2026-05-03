@@ -12,6 +12,7 @@ import type {
   SongList,
   Stageplot,
   StageplotItem,
+  TechnicalRider,
   TrashedStageplot,
   TrashedSetlist,
   TrashedSong,
@@ -35,6 +36,13 @@ import {
   parseSongTrashRecord,
   TRASH_COLLECTION,
 } from '../lib/trash';
+import {
+  normalizeTechnicalRider,
+  sortTechnicalRiders,
+  withSequentialRiderEquipmentSortOrder,
+  withSequentialRiderLineSortOrder,
+  withSequentialTechnicalRiderSortOrder,
+} from '../lib/technicalRiders';
 import { useAuth } from './AuthContext';
 
 const BANDS_COLLECTION = 'bands';
@@ -42,6 +50,7 @@ const BAND_SONGS_COLLECTION = 'songs';
 const BAND_SONGLISTS_COLLECTION = 'songLists';
 const BAND_SETLISTS_COLLECTION = 'setlists';
 const BAND_STAGEPLOTS_COLLECTION = 'stageplots';
+const BAND_TECHNICAL_RIDERS_COLLECTION = 'technicalRiders';
 
 function compareBands(a: Band, b: Band) {
   const updatedAtA = a.updatedAt ?? a.createdAt;
@@ -390,6 +399,7 @@ interface BandsContextValue {
   bandSongListsByBandId: Record<string, SongList[]>;
   bandSetlistsByBandId: Record<string, Setlist[]>;
   bandStageplotsByBandId: Record<string, Stageplot[]>;
+  bandTechnicalRidersByBandId: Record<string, TechnicalRider[]>;
   bandTrashByBandId: Record<string, BandTrashItem[]>;
   loading: boolean;
   cloudRequired: boolean;
@@ -405,6 +415,7 @@ interface BandsContextValue {
   refreshBandSongLists: (bandId: string) => Promise<void>;
   refreshBandSetlists: (bandId: string) => Promise<void>;
   refreshBandStageplots: (bandId: string) => Promise<void>;
+  refreshBandTechnicalRiders: (bandId: string) => Promise<void>;
   refreshBandTrash: (bandId: string) => Promise<void>;
   addSongToBandLibrary: (bandId: string, song: Song) => Promise<string | null>;
   removeSongFromBandLibrary: (bandId: string, songId: string) => Promise<string | null>;
@@ -436,6 +447,17 @@ interface BandsContextValue {
     drawingLayers: SongHandNoteDocument[];
   }) => Promise<string | null>;
   deleteBandStageplot: (bandId: string, stageplotId: string) => Promise<string | null>;
+  addBandTechnicalRider: (bandId: string, name: string) => Promise<{ riderId: string | null; error: string | null }>;
+  renameBandTechnicalRider: (bandId: string, riderId: string, name: string) => Promise<string | null>;
+  setBandTechnicalRiderPublicShare: (bandId: string, riderId: string, enabled: boolean) => Promise<string | null>;
+  updateBandTechnicalRiderContent: (params: {
+    bandId: string;
+    riderId: string;
+    lines: TechnicalRider['lines'];
+    preferredEquipment: TechnicalRider['preferredEquipment'];
+    inventoryEquipment: TechnicalRider['inventoryEquipment'];
+  }) => Promise<string | null>;
+  deleteBandTechnicalRider: (bandId: string, riderId: string) => Promise<string | null>;
   restoreBandTrashItem: (bandId: string, trashId: string) => Promise<string | null>;
   deleteBandTrashItemPermanently: (bandId: string, trashId: string) => Promise<string | null>;
 }
@@ -454,6 +476,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandSongListsByBandId, setBandSongListsByBandId] = useState<Record<string, SongList[]>>({});
   const [bandSetlistsByBandId, setBandSetlistsByBandId] = useState<Record<string, Setlist[]>>({});
   const [bandStageplotsByBandId, setBandStageplotsByBandId] = useState<Record<string, Stageplot[]>>({});
+  const [bandTechnicalRidersByBandId, setBandTechnicalRidersByBandId] = useState<Record<string, TechnicalRider[]>>({});
   const [bandTrashByBandId, setBandTrashByBandId] = useState<Record<string, BandTrashItem[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
 
@@ -477,6 +500,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBandSongListsByBandId({});
       setBandSetlistsByBandId({});
       setBandStageplotsByBandId({});
+      setBandTechnicalRidersByBandId({});
       setBandTrashByBandId({});
       setLoading(false);
       return;
@@ -556,6 +580,20 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     setBandStageplotsByBandId((prev) => ({
       ...prev,
       [bandId]: stageplots,
+    }));
+  }, [userId]);
+
+  const refreshBandTechnicalRiders = useCallback(async (bandId: string) => {
+    if (!db || !userId) return;
+
+    const snapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION));
+    const riders = sortTechnicalRiders(
+      snapshot.docs.map((entry) => normalizeTechnicalRider(entry.id, entry.data() as Record<string, unknown>))
+    );
+
+    setBandTechnicalRidersByBandId((prev) => ({
+      ...prev,
+      [bandId]: riders,
     }));
   }, [userId]);
 
@@ -2168,6 +2206,256 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandStageplotsByBandId, bands, userId]);
 
+  const addBandTechnicalRider = useCallback(async (bandId: string, name: string) => {
+    if (!db || !userId) {
+      return { riderId: null, error: 'Band riders require cloud sync.' };
+    }
+
+    const firestore = db;
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return { riderId: null, error: 'Band not found.' };
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return { riderId: null, error: 'You do not have permission to edit this band.' };
+
+    const trimmed = name.trim();
+    if (!trimmed) return { riderId: null, error: 'Rider name is required.' };
+
+    const now = new Date().toISOString();
+    const riderId = crypto.randomUUID();
+    const previousRiders = bandTechnicalRidersByBandId[bandId] ?? [];
+    const nextRider: TechnicalRider = {
+      id: riderId,
+      name: trimmed,
+      lines: [],
+      preferredEquipment: [],
+      inventoryEquipment: [],
+      ownerId: band.ownerId,
+      accessRole: 'owner',
+      bandName: band.name,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const nextRiders = withSequentialTechnicalRiderSortOrder(sortTechnicalRiders([...previousRiders, nextRider]));
+
+    setBandTechnicalRidersByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextRiders,
+    }));
+
+    try {
+      await Promise.all(nextRiders.map((rider) => setDoc(
+        doc(firestore, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, rider.id),
+        {
+          name: rider.name,
+          icon: rider.icon ?? null,
+          lines: rider.lines,
+          preferredEquipment: rider.preferredEquipment,
+          inventoryEquipment: rider.inventoryEquipment,
+          publicShareEnabled: rider.publicShareEnabled || null,
+          bandName: rider.bandName ?? null,
+          ownerId: rider.ownerId ?? null,
+          sortOrder: rider.sortOrder ?? null,
+          createdAt: rider.createdAt,
+          updatedAt: rider.updatedAt,
+        },
+        { merge: true }
+      )));
+
+      return { riderId, error: null };
+    } catch (error) {
+      setBandTechnicalRidersByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousRiders,
+      }));
+      return { riderId: null, error: error instanceof Error ? error.message : 'Failed to create technical rider.' };
+    }
+  }, [bandTechnicalRidersByBandId, bands, userId]);
+
+  const renameBandTechnicalRider = useCallback(async (bandId: string, riderId: string, name: string) => {
+    if (!db || !userId) {
+      return 'Band riders require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const trimmed = name.trim();
+    if (!trimmed) return 'Rider name is required.';
+
+    const previousRiders = bandTechnicalRidersByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    const nextRiders = previousRiders.map((rider) => (
+      rider.id === riderId ? { ...rider, name: trimmed, updatedAt: now } : rider
+    ));
+
+    setBandTechnicalRidersByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextRiders,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, riderId), {
+        name: trimmed,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandTechnicalRidersByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousRiders,
+      }));
+      return error instanceof Error ? error.message : 'Failed to rename technical rider.';
+    }
+  }, [bandTechnicalRidersByBandId, bands, userId]);
+
+  const setBandTechnicalRiderPublicShare = useCallback(async (bandId: string, riderId: string, enabled: boolean) => {
+    if (!db || !userId) {
+      return 'Band riders require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousRiders = bandTechnicalRidersByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    const nextRiders = previousRiders.map((rider) => (
+      rider.id === riderId
+        ? { ...rider, publicShareEnabled: enabled || undefined, bandName: enabled ? band.name : undefined, updatedAt: now }
+        : rider
+    ));
+
+    setBandTechnicalRidersByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextRiders,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, riderId), {
+        publicShareEnabled: enabled || null,
+        bandName: enabled ? band.name : null,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandTechnicalRidersByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousRiders,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update technical rider sharing.';
+    }
+  }, [bandTechnicalRidersByBandId, bands, userId]);
+
+  const updateBandTechnicalRiderContent = useCallback(async (params: {
+    bandId: string;
+    riderId: string;
+    lines: TechnicalRider['lines'];
+    preferredEquipment: TechnicalRider['preferredEquipment'];
+    inventoryEquipment: TechnicalRider['inventoryEquipment'];
+  }) => {
+    const { bandId, riderId, lines, preferredEquipment, inventoryEquipment } = params;
+
+    if (!db || !userId) {
+      return 'Band riders require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousRiders = bandTechnicalRidersByBandId[bandId] ?? [];
+    const target = previousRiders.find((rider) => rider.id === riderId);
+    if (!target) return 'Technical rider not found.';
+
+    const now = new Date().toISOString();
+    const nextRiders = previousRiders.map((rider) => (
+      rider.id === riderId
+        ? {
+            ...rider,
+            lines: withSequentialRiderLineSortOrder(lines),
+            preferredEquipment: withSequentialRiderEquipmentSortOrder(preferredEquipment),
+            inventoryEquipment: withSequentialRiderEquipmentSortOrder(inventoryEquipment),
+            updatedAt: now,
+          }
+        : rider
+    ));
+
+    const next = nextRiders.find((rider) => rider.id === riderId);
+
+    setBandTechnicalRidersByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextRiders,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, riderId), {
+        lines: next?.lines ?? [],
+        preferredEquipment: next?.preferredEquipment ?? [],
+        inventoryEquipment: next?.inventoryEquipment ?? [],
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandTechnicalRidersByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousRiders,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update technical rider.';
+    }
+  }, [bandTechnicalRidersByBandId, bands, userId]);
+
+  const deleteBandTechnicalRider = useCallback(async (bandId: string, riderId: string) => {
+    if (!db || !userId) {
+      return 'Band riders require cloud sync.';
+    }
+
+    const firestore = db;
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousRiders = bandTechnicalRidersByBandId[bandId] ?? [];
+    const nextRiders = withSequentialTechnicalRiderSortOrder(sortTechnicalRiders(
+      previousRiders.filter((rider) => rider.id !== riderId)
+    ));
+
+    setBandTechnicalRidersByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextRiders,
+    }));
+
+    try {
+      await Promise.all([
+        deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, riderId)),
+        ...nextRiders.map((rider) => setDoc(
+          doc(firestore, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, rider.id),
+          { sortOrder: rider.sortOrder ?? 0 },
+          { merge: true }
+        )),
+      ]);
+      return null;
+    } catch (error) {
+      setBandTechnicalRidersByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousRiders,
+      }));
+      return error instanceof Error ? error.message : 'Failed to delete technical rider.';
+    }
+  }, [bandTechnicalRidersByBandId, bands, userId]);
+
   const restoreBandTrashItem = useCallback(async (bandId: string, trashId: string): Promise<string | null> => {
     if (!db || !userId) {
       return 'Band libraries require cloud sync.';
@@ -2415,6 +2703,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     bandSongListsByBandId,
     bandSetlistsByBandId,
     bandStageplotsByBandId,
+    bandTechnicalRidersByBandId,
     bandTrashByBandId,
     loading,
     cloudRequired: !firebaseEnabled,
@@ -2430,6 +2719,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBandSongLists,
     refreshBandSetlists,
     refreshBandStageplots,
+    refreshBandTechnicalRiders,
     refreshBandTrash,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
@@ -2456,13 +2746,20 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     setBandStageplotPublicShare,
     updateBandStageplotContent,
     deleteBandStageplot,
+    addBandTechnicalRider,
+    renameBandTechnicalRider,
+    setBandTechnicalRiderPublicShare,
+    updateBandTechnicalRiderContent,
+    deleteBandTechnicalRider,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
   }), [
     addBandStageplot,
     addBandSetlist,
     addBandSongList,
+    addBandTechnicalRider,
     bandStageplotsByBandId,
+    bandTechnicalRidersByBandId,
     addSongToBandSetlist,
     addSongToBandSongList,
     addSongToBandLibrary,
@@ -2476,6 +2773,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     createBand,
     deleteBandSetlist,
     deleteBandStageplot,
+    deleteBandTechnicalRider,
     deleteBandSongList,
     deleteBandTrashItemPermanently,
     deleteBand,
@@ -2488,11 +2786,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBandSetlists,
     refreshBandSongLists,
     refreshBandStageplots,
+    refreshBandTechnicalRiders,
     refreshBandTrash,
     renameBand,
     renameBandStageplot,
     renameBandSetlist,
     renameBandSongList,
+    renameBandTechnicalRider,
     updateBandSongListIcon,
     refreshBandSongs,
     removeMember,
@@ -2503,9 +2803,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateBandLibraryIcon,
     updateBandSetlistIcon,
     setBandStageplotPublicShare,
+    setBandTechnicalRiderPublicShare,
     setBandSetlistPublicShare,
     updateBandStageplotContent,
     updateBandStageplotIcon,
+    updateBandTechnicalRiderContent,
   ]);
 
   return <BandsContext.Provider value={value}>{children}</BandsContext.Provider>;
