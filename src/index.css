@@ -18,8 +18,8 @@
   --accent:     #5c4fa6;
   --accent-h:   #4a3f87;
   --accent-contrast: #ffffff;
-  --bands-hue:  #0f8a87;
-  --bands-hue-soft: #e7f5f4;
+  --bands-hue:  #c33232;
+  --bands-hue-soft: #fbeaea;
   --bands-hue-contrast: #ffffff;
   --danger:     #c0392b;
   --notes-draw: #27ae60;
@@ -40,9 +40,9 @@
   --accent:     #9d91e0;
   --accent-h:   #b3a9e8;
   --accent-contrast: #1c1a18;
-  --bands-hue:  #49c1bc;
-  --bands-hue-soft: #1f3536;
-  --bands-hue-contrast: #0f1f1e;
+  --bands-hue:  #ff7d7d;
+  --bands-hue-soft: #3a2020;
+  --bands-hue-contrast: #2a1010;
   --danger:     #e05c4e;
   --notes-draw: #5be39a;
   --chord:      #9d91e0;
@@ -295,6 +295,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .main-content--concert {
   padding-top: 0;
+}
+
+.app-shell--band {
+  --accent: var(--bands-hue);
+  --accent-h: color-mix(in srgb, var(--bands-hue) 84%, #000);
+  --accent-contrast: var(--bands-hue-contrast);
+  --chord: var(--bands-hue);
+  --chord-bg: var(--bands-hue-soft);
+  --sidebar-active: color-mix(in srgb, var(--bands-hue) 18%, var(--surface));
+}
+
+[data-theme="dark"] .app-shell--band {
+  --accent-h: color-mix(in srgb, var(--bands-hue) 90%, #fff);
+  --sidebar-active: color-mix(in srgb, var(--bands-hue) 24%, var(--surface));
 }
 
 /* ─── Floating Add Song Button ───────────────────────────────────────────────── */
