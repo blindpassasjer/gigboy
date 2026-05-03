@@ -28,8 +28,13 @@ interface Props {
 
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const isBandsRoute = pathname === '/bands' || pathname.startsWith('/bands/');
+  const { pathname, state } = useLocation();
+  const stateBandId = (() => {
+    if (!state || typeof state !== 'object') return null;
+    const candidate = (state as { bandId?: unknown }).bandId;
+    return typeof candidate === 'string' && candidate.trim() ? candidate : null;
+  })();
+  const isBandsRoute = pathname === '/bands' || pathname.startsWith('/bands/') || Boolean(stateBandId);
   const { songs, trashedSongs } = useSongs();
   const {
     songLists,
@@ -147,6 +152,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     const nextMode: 'solo' | 'bands' = isBandsRoute ? 'bands' : 'solo';
     setSidebarMode((current) => (current === nextMode ? current : nextMode));
   }, [isBandsRoute]);
+
+  useEffect(() => {
+    if (!stateBandId) return;
+    setActiveBandId((current) => (current === stateBandId ? current : stateBandId));
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('folio-active-band-id', stateBandId);
+    }
+  }, [stateBandId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
