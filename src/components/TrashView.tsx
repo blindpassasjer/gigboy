@@ -15,8 +15,8 @@ interface Props {
   title: string;
   emptyMessage: string;
   items: TrashListItem[];
-  onRestore: (trashId: string) => Promise<string | null>;
-  onDeletePermanently: (trashId: string) => Promise<string | null>;
+  onRestore?: (trashId: string) => Promise<string | null>;
+  onDeletePermanently?: (trashId: string) => Promise<string | null>;
   onEmptyTrash?: () => Promise<string | null>;
 }
 
@@ -53,6 +53,7 @@ export default function TrashView({
   const isBusy = busyItemId !== null || isEmptyingTrash;
 
   const handleRestore = async (trashId: string) => {
+    if (!onRestore) return;
     setBusyItemId(trashId);
     const error = await onRestore(trashId);
     setBusyItemId(null);
@@ -66,6 +67,7 @@ export default function TrashView({
   };
 
   const handleDeletePermanently = async (trashId: string) => {
+    if (!onDeletePermanently) return;
     const confirmed = await showConfirmToast('Delete permanently? This cannot be undone.', {
       confirmLabel: 'Delete forever',
     });
@@ -144,26 +146,32 @@ export default function TrashView({
                   Expires {formatDate(item.purgeAt)}
                 </p>
               </div>
-              <div className="trash-item-actions">
-                <button
-                  type="button"
-                  className="setlist-action-btn setlist-action-btn--secondary"
-                  onClick={() => void handleRestore(item.trashId)}
-                  disabled={isBusy}
-                >
-                  <RotateCcw size={14} />
-                  Restore
-                </button>
-                <button
-                  type="button"
-                  className="setlist-action-btn setlist-action-btn--danger"
-                  onClick={() => void handleDeletePermanently(item.trashId)}
-                  disabled={isBusy}
-                >
-                  <Trash2 size={14} />
-                  Delete forever
-                </button>
-              </div>
+              {onRestore || onDeletePermanently ? (
+                <div className="trash-item-actions">
+                  {onRestore ? (
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      onClick={() => void handleRestore(item.trashId)}
+                      disabled={isBusy}
+                    >
+                      <RotateCcw size={14} />
+                      Restore
+                    </button>
+                  ) : null}
+                  {onDeletePermanently ? (
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--danger"
+                      onClick={() => void handleDeletePermanently(item.trashId)}
+                      disabled={isBusy}
+                    >
+                      <Trash2 size={14} />
+                      Delete forever
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

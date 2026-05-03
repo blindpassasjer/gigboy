@@ -63,6 +63,11 @@ function compareBands(a: Band, b: Band) {
   return a.name.localeCompare(b.name);
 }
 
+function canEditBandLibrary(band: Band, userId: string | null) {
+  if (!userId) return false;
+  return band.ownerId === userId || band.memberRoles[userId] === 'editor';
+}
+
 function normalizeBand(id: string, data: Record<string, unknown>): Band {
   return {
     id,
@@ -861,8 +866,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return 'Band not found.';
     }
 
-    const isMember = band.memberIds.includes(userId);
-    if (!isMember) {
+    if (!canEditBandLibrary(band, userId)) {
       return 'You do not have permission to edit this band.';
     }
 
@@ -896,8 +900,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return 'Band not found.';
     }
 
-    const isMember = band.memberIds.includes(userId);
-    if (!isMember) {
+    if (!canEditBandLibrary(band, userId)) {
       return 'You do not have permission to edit this band.';
     }
 

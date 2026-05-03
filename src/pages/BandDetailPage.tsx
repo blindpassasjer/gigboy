@@ -653,8 +653,8 @@ export default function BandDetailPage() {
         title={`${band.name} Trash`}
         emptyMessage="Trash is empty."
         items={trashItems}
-        onRestore={(trashId) => restoreBandTrashItem(band.id, trashId)}
-        onDeletePermanently={(trashId) => deleteBandTrashItemPermanently(band.id, trashId)}
+        onRestore={canEditBand ? (trashId) => restoreBandTrashItem(band.id, trashId) : undefined}
+        onDeletePermanently={canEditBand ? (trashId) => deleteBandTrashItemPermanently(band.id, trashId) : undefined}
         onEmptyTrash={isOwner ? async () => {
           let failedCount = 0;
 
