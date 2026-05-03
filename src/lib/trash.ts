@@ -11,7 +11,7 @@ export interface TrashRecord<T> {
   data: T;
 }
 
-function omitUndefinedFields<T extends Record<string, unknown>>(data: T) {
+function omitUndefinedFields<T extends object>(data: T) {
   return Object.fromEntries(
     Object.entries(data).filter(([, value]) => value !== undefined)
   ) as T;
@@ -27,7 +27,7 @@ export function createTrashTimestamps(now = new Date()) {
   return { deletedAt, purgeAt };
 }
 
-export function createTrashPayload<T extends Record<string, unknown>>(
+export function createTrashPayload<T extends object>(
   itemType: TrashItemType,
   deletedAt: string,
   purgeAt: string,

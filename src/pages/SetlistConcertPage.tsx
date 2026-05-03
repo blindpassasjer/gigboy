@@ -156,18 +156,6 @@ export default function SetlistConcertPage() {
     });
   }, []);
 
-  const triggerPedalAction = useCallback((direction: 'previous' | 'next') => {
-    if (pedalControlModeRef.current === 'scroll') {
-      scrollByPedalStep(direction);
-      return;
-    }
-    if (direction === 'previous') {
-      goToPrevious();
-      return;
-    }
-    goToNext();
-  }, [goToNext, goToPrevious, scrollByPedalStep]);
-
   const goToSong = useCallback((index: number) => {
     setCurrentIndex(Math.min(Math.max(index, 0), setlistSongs.length - 1));
   }, [setlistSongs.length]);
@@ -179,6 +167,18 @@ export default function SetlistConcertPage() {
   const goToNext = useCallback(() => {
     setCurrentIndex((current) => Math.min(current + 1, setlistSongs.length - 1));
   }, [setlistSongs.length]);
+
+  const triggerPedalAction = useCallback((direction: 'previous' | 'next') => {
+    if (pedalControlModeRef.current === 'scroll') {
+      scrollByPedalStep(direction);
+      return;
+    }
+    if (direction === 'previous') {
+      goToPrevious();
+      return;
+    }
+    goToNext();
+  }, [goToNext, goToPrevious, scrollByPedalStep]);
 
   const onSwipeStart = useCallback((e: React.PointerEvent) => {
     swipeRef.current = { x: e.clientX, y: e.clientY };
