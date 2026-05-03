@@ -6,6 +6,7 @@ import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
+import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
 import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
 import TrashView from '../components/TrashView';
@@ -482,12 +483,47 @@ export default function BandDetailPage() {
 
     return (
       <section className="bands-page bands-page--library">
-        <SongList
+        <SetlistsView
+          setlistId={activeBandSetlist.id}
+          setlistName={activeBandSetlist.name}
           songs={setlistSongs}
-          listName={activeBandSetlist.name}
-          listIcon={activeBandSetlist.icon}
-          headerVariant="bands"
-          headerActions={(
+          allSongs={bandSongs}
+          setlistIconOverride={activeBandSetlist.icon}
+          canDeleteOverride={canEditBand}
+          concertRoute={`/bands/${band.id}/setlists/${activeBandSetlist.id}/concert`}
+          onRenameOverride={canEditBand ? async (name) => {
+            const error = await renameBandSetlist(band.id, activeBandSetlist.id, name);
+            if (error) {
+              toast.error(error);
+            }
+          } : undefined}
+          onDeleteOverride={canEditBand ? () => void handleDeleteBandSetlist() : undefined}
+          onUpdateIconOverride={canEditBand ? async (icon) => {
+            const error = await updateBandSetlistIcon(band.id, activeBandSetlist.id, icon);
+            if (error) {
+              toast.error(error);
+            }
+          } : undefined}
+          onAddSong={async (songId) => {
+            const error = await addSongToBandSetlist(band.id, activeBandSetlist.id, songId);
+            if (error) {
+              toast.error(error);
+            }
+          }}
+          onMoveSong={async (songId, beforeSongId) => {
+            const error = await moveSongInBandSetlist(band.id, activeBandSetlist.id, songId, beforeSongId);
+            if (error) {
+              toast.error(error);
+            }
+          }}
+          onRemoveSong={async (songId) => {
+            if (!canEditBand) return;
+            const error = await removeSongFromBandSetlist(band.id, activeBandSetlist.id, songId);
+            if (error) {
+              toast.error(error);
+            }
+          }}
+          extraActions={(
             <button
               type="button"
               className={`setlist-action-btn setlist-action-btn--secondary${activeBandSetlist.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
@@ -497,41 +533,6 @@ export default function BandDetailPage() {
               <Link2 size={14} />
             </button>
           )}
-          allSongs={bandSongs}
-          onAddSong={async (songId) => {
-            const error = await addSongToBandSetlist(band.id, activeBandSetlist.id, songId);
-            if (error) {
-              toast.error(error);
-            }
-          }}
-          onDeleteSong={handleDeleteSong}
-          onMoveSong={async (songId, beforeSongId) => {
-            const error = await moveSongInBandSetlist(band.id, activeBandSetlist.id, songId, beforeSongId);
-            if (error) {
-              toast.error(error);
-            }
-          }}
-          onRenameList={canEditBand ? async (name) => {
-            const error = await renameBandSetlist(band.id, activeBandSetlist.id, name);
-            if (error) {
-              toast.error(error);
-            }
-          } : undefined}
-          onDeleteList={canEditBand ? () => void handleDeleteBandSetlist() : undefined}
-          deleteListLabel={`Delete setlist ${activeBandSetlist.name}`}
-          onUpdateListAppearance={canEditBand ? async (appearance) => {
-            const error = await updateBandSetlistIcon(band.id, activeBandSetlist.id, appearance.icon);
-            if (error) {
-              toast.error(error);
-            }
-          } : undefined}
-          onRemoveSong={canEditBand ? async (song) => {
-            const error = await removeSongFromBandSetlist(band.id, activeBandSetlist.id, song.id);
-            if (error) {
-              toast.error(error);
-            }
-          } : undefined}
-          bandId={band.id}
         />
       </section>
     );

@@ -117,6 +117,9 @@ export default function StageplotEditor({
   const [showCustomIconEditor, setShowCustomIconEditor] = useState(false);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
 
+  const stageShapePreview = showStageSettings ? stageShapeDraft : (stageplot.stageShape ?? 'rectangle');
+  const stageSizePreview = showStageSettings ? stageSizeDraft : (stageplot.stageSize ?? 'medium');
+
   useEffect(() => {
     setItems(stageplot.items);
     setDrawingLayers(stageplot.drawingLayers ?? []);
@@ -590,32 +593,36 @@ export default function StageplotEditor({
           <div className="list-appearance-editor" role="region" aria-label="Stage settings">
             <div className="list-appearance-group">
               <span className="list-appearance-label">Stage Shape</span>
-              <div className="emoji-choice-grid">
+              <div className="stageplot-settings-grid" role="group" aria-label="Stage shape">
                 {(['rectangle', 'oval', 'circle'] as const).map((shape) => (
                   <button
                     key={shape}
                     type="button"
-                    className={`emoji-choice-btn${stageShapeDraft === shape ? ' active' : ''}`}
+                    className={`stageplot-setting-btn${stageShapeDraft === shape ? ' active' : ''}`}
                     onClick={() => setStageShapeDraft(shape)}
                     aria-pressed={stageShapeDraft === shape}
+                    aria-label={`Stage shape ${shape}`}
+                    title={`Stage shape: ${shape}`}
                   >
-                    {shape.charAt(0).toUpperCase() + shape.slice(1)}
+                    <span className={`stageplot-shape-glyph stageplot-shape-glyph--${shape}`} aria-hidden="true" />
                   </button>
                 ))}
               </div>
             </div>
             <div className="list-appearance-group">
               <span className="list-appearance-label">Stage Size</span>
-              <div className="emoji-choice-grid">
+              <div className="stageplot-settings-grid" role="group" aria-label="Stage size">
                 {(['small', 'medium', 'large'] as const).map((size) => (
                   <button
                     key={size}
                     type="button"
-                    className={`emoji-choice-btn${stageSizeDraft === size ? ' active' : ''}`}
+                    className={`stageplot-setting-btn${stageSizeDraft === size ? ' active' : ''}`}
                     onClick={() => setStageSizeDraft(size)}
                     aria-pressed={stageSizeDraft === size}
+                    aria-label={`Stage size ${size}`}
+                    title={`Stage size: ${size}`}
                   >
-                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                    <span className={`stageplot-size-glyph stageplot-size-glyph--${size}`} aria-hidden="true" />
                   </button>
                 ))}
               </div>
@@ -630,7 +637,15 @@ export default function StageplotEditor({
             >
               Save
             </button>
-            <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={() => setShowStageSettings(false)}>
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => {
+                setStageShapeDraft(stageplot.stageShape ?? 'rectangle');
+                setStageSizeDraft(stageplot.stageSize ?? 'medium');
+                setShowStageSettings(false);
+              }}
+            >
               Cancel
             </button>
           </div>
@@ -639,7 +654,7 @@ export default function StageplotEditor({
 
       <div
         ref={stageRef}
-        className="stageplot-stage song-notes-stage"
+        className={`stageplot-stage song-notes-stage stageplot-stage--shape-${stageShapePreview} stageplot-stage--size-${stageSizePreview}`}
         onDragOver={(event) => {
           if (!canEdit) return;
           if (!event.dataTransfer.types.includes(ITEM_DRAG_MIME)) return;

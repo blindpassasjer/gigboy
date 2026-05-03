@@ -17,6 +17,18 @@ interface Props {
   onRemoveSong: (songId: string) => void;
   onAddSong: (songId: string) => void;
   extraActions?: ReactNode;
+  /** Override the concert mode URL (defaults to /setlists/:id/concert) */
+  concertRoute?: string;
+  /** Override the icon displayed for this setlist */
+  setlistIconOverride?: string;
+  /** Override whether the delete button is shown */
+  canDeleteOverride?: boolean;
+  /** Override the rename handler (skips SetlistsContext) */
+  onRenameOverride?: (name: string) => void;
+  /** Override the delete handler (skips SetlistsContext) */
+  onDeleteOverride?: () => void | Promise<void>;
+  /** Override the update-icon handler (skips SetlistsContext) */
+  onUpdateIconOverride?: (icon: string | undefined) => void;
 }
 
 const SONG_DRAG_MIME = 'application/x-songbook-song-id';
@@ -38,9 +50,20 @@ export default function SetlistsView({
   onRemoveSong,
   onAddSong,
   extraActions,
+  concertRoute,
+  setlistIconOverride,
+  canDeleteOverride,
+  onRenameOverride,
+  onDeleteOverride,
+  onUpdateIconOverride,
 }: Props) {
   const { renameSetlist, updateSetlistIcon, deleteSetlist, setlists } = useSetlists();
   const currentSetlist = setlists.find((l) => l.id === setlistId);
+  const effectiveIcon = setlistIconOverride !== undefined ? setlistIconOverride : currentSetlist?.icon;
+  const canDeleteSetlist = canDeleteOverride !== undefined
+    ? canDeleteOverride
+    : (!currentSetlist?.ownerId || currentSetlist.accessRole === 'owner');
+  const effectiveConcertRoute = concertRoute ?? `/setlists/${setlistId}/concert`;
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -48,9 +71,8 @@ export default function SetlistsView({
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
   const [showIconEditor, setShowIconEditor] = useState(false);
-  const [iconDraft, setIconDraft] = useState(currentSetlist?.icon ?? '🎵');
+  const [iconDraft, setIconDraft] = useState(effectiveIcon ?? '🎵');
   const renameInputRef = useRef<HTMLInputElement>(null);
-  const canDeleteSetlist = !currentSetlist?.ownerId || currentSetlist.accessRole === 'owner';
 
   const startRenaming = () => {
     setRenameValue(setlistName);
@@ -58,8 +80,9 @@ export default function SetlistsView({
   };
 
   useEffect(() => {
-    setIconDraft(currentSetlist?.icon ?? '🎵');
-  }, [currentSetlist?.icon]);
+    setIconDraft(effectiveIcon ?? '🎵');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveIcon]);
 
   const availableSongs = useMemo(() => {
     const songIdsInSetlist = new Set(songs.map((song) => song.id));
@@ -117,6 +140,11 @@ export default function SetlistsView({
       return;
     }
 
+    if (onDeleteOverride) {
+      await onDeleteOverride();
+      return;
+    }
+
     const confirmed = await showConfirmToast(`Move setlist "${setlistName}" to trash? It will be automatically deleted after 30 days.`, {
       confirmLabel: 'Move to trash',
     });
@@ -128,7 +156,11 @@ export default function SetlistsView({
   const handleRenameCommit = () => {
     const trimmed = renameValue.trim();
     if (trimmed && trimmed !== setlistName) {
-      renameSetlist(setlistId, trimmed);
+      if (onRenameOverride) {
+        onRenameOverride(trimmed);
+      } else {
+        renameSetlist(setlistId, trimmed);
+      }
     }
     setRenameValue(setlistName);
     setIsRenaming(false);
@@ -256,7 +288,7 @@ export default function SetlistsView({
             ) : (
               <div className="song-list-title-row">
                 <h1 className="song-list-heading setlist-title" onDoubleClick={startRenaming}>
-                  {currentSetlist?.icon ? <span className="song-list-heading-icon" aria-hidden="true">{currentSetlist.icon}</span> : null}
+                  {effectiveIcon ? <span className="song-list-heading-icon" aria-hidden="true">{effectiveIcon}</span> : null}
                   {setlistName}
                 </h1>
                 <button
@@ -279,7 +311,7 @@ export default function SetlistsView({
             {songs.length > 0 ? (
               <Link
                 className="setlist-action-btn setlist-action-btn--concert"
-                to={`/setlists/${setlistId}/concert`}
+                to={effectiveConcertRoute}
                 title={`Start concert for ${setlistName}`}
               >
                 <Play size={14} />
@@ -347,7 +379,12 @@ export default function SetlistsView({
             type="button"
             className="setlist-action-btn"
             onClick={() => {
-              updateSetlistIcon(setlistId, normalizeEmojiIcon(iconDraft));
+              const icon = normalizeEmojiIcon(iconDraft);
+              if (onUpdateIconOverride) {
+                onUpdateIconOverride(icon);
+              } else {
+                updateSetlistIcon(setlistId, icon);
+              }
               setShowIconEditor(false);
             }}
           >
@@ -357,7 +394,11 @@ export default function SetlistsView({
             type="button"
             className="setlist-action-btn setlist-action-btn--secondary"
             onClick={() => {
-              updateSetlistIcon(setlistId, undefined);
+              if (onUpdateIconOverride) {
+                onUpdateIconOverride(undefined);
+              } else {
+                updateSetlistIcon(setlistId, undefined);
+              }
               setIconDraft('🎵');
               setShowIconEditor(false);
             }}

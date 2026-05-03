@@ -6262,9 +6262,89 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
 }
 
+.stageplot-settings-grid {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.stageplot-setting-btn {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color .12s, background .12s, transform .08s, color .12s;
+}
+
+.stageplot-setting-btn:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--chord-bg);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.stageplot-setting-btn.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+}
+
+.stageplot-shape-glyph {
+  display: inline-block;
+  border: 2px solid currentColor;
+  background: transparent;
+}
+
+.stageplot-shape-glyph--rectangle {
+  width: 1.25rem;
+  height: .75rem;
+  border-radius: .12rem;
+}
+
+.stageplot-shape-glyph--oval {
+  width: 1.25rem;
+  height: .75rem;
+  border-radius: 999px;
+}
+
+.stageplot-shape-glyph--circle {
+  width: .95rem;
+  height: .95rem;
+  border-radius: 999px;
+}
+
+.stageplot-size-glyph {
+  display: inline-block;
+  height: .62rem;
+  border: 2px solid currentColor;
+  border-radius: .12rem;
+}
+
+.stageplot-size-glyph--small {
+  width: .7rem;
+}
+
+.stageplot-size-glyph--medium {
+  width: 1rem;
+}
+
+.stageplot-size-glyph--large {
+  width: 1.28rem;
+}
+
 .stageplot-stage {
+  --stage-min-height: 56vh;
+  --stage-max-width: 860px;
   position: relative;
-  min-height: 56vh;
+  width: 100%;
+  max-width: min(100%, var(--stage-max-width));
+  min-height: var(--stage-min-height);
+  margin-inline: auto;
   border-radius: 14px;
   border: 1px solid var(--border);
   background:
@@ -6273,6 +6353,37 @@ input, select, textarea { font: inherit; color: var(--text); }
     linear-gradient(180deg, color-mix(in srgb, var(--surface) 74%, #000 26%) 0%, var(--surface) 100%);
   overflow: hidden;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.stageplot-stage--size-small {
+  --stage-min-height: 42vh;
+  --stage-max-width: 640px;
+}
+
+.stageplot-stage--size-medium {
+  --stage-min-height: 56vh;
+  --stage-max-width: 860px;
+}
+
+.stageplot-stage--size-large {
+  --stage-min-height: 68vh;
+  --stage-max-width: 1120px;
+}
+
+.stageplot-stage--shape-rectangle {
+  border-radius: 14px;
+  aspect-ratio: auto;
+}
+
+.stageplot-stage--shape-oval {
+  border-radius: 999px / 18%;
+  aspect-ratio: auto;
+}
+
+.stageplot-stage--shape-circle {
+  border-radius: 999px;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
 }
 
 .stageplot-stage-grid {
@@ -6375,6 +6486,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 @media (max-width: 600px) {
+  .stageplot-stage {
+    --stage-max-width: 100%;
+  }
+
+  .stageplot-stage--size-small,
+  .stageplot-stage--size-medium,
+  .stageplot-stage--size-large {
+    --stage-min-height: 52vh;
+  }
+
+  .stageplot-stage--shape-circle {
+    max-width: min(100%, 76vw);
+  }
+
   .stageplot-palette,
   .stageplot-toolbar-actions {
     flex-basis: 100%;
