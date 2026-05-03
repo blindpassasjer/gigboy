@@ -154,6 +154,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   }, [sidebarMode]);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.setAttribute('data-library-mode', sidebarMode);
+    return () => {
+      document.documentElement.removeAttribute('data-library-mode');
+    };
+  }, [sidebarMode]);
+
+  useEffect(() => {
     if (sidebarMode === 'bands') return;
     setBandSwitcherOpen(false);
   }, [sidebarMode]);

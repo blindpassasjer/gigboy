@@ -297,7 +297,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding-top: 0;
 }
 
-.app-shell--band {
+[data-library-mode="bands"] .app-shell {
   --accent: var(--bands-hue);
   --accent-h: color-mix(in srgb, var(--bands-hue) 84%, #000);
   --accent-contrast: var(--bands-hue-contrast);
@@ -306,7 +306,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   --sidebar-active: color-mix(in srgb, var(--bands-hue) 18%, var(--surface));
 }
 
-[data-theme="dark"] .app-shell--band {
+[data-theme="dark"][data-library-mode="bands"] .app-shell {
   --accent-h: color-mix(in srgb, var(--bands-hue) 90%, #fff);
   --sidebar-active: color-mix(in srgb, var(--bands-hue) 24%, var(--surface));
 }

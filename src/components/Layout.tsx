@@ -14,7 +14,6 @@ interface Props {
 export default function Layout({ children }: Props) {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const isBandRoute = pathname === '/bands' || pathname.startsWith('/bands/');
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
@@ -117,7 +116,7 @@ export default function Layout({ children }: Props) {
   }, []);
 
   return (
-    <div className={`app-shell${isBandRoute ? ' app-shell--band' : ''}`}>
+    <div className="app-shell">
       <a
         href="#main-content"
         className="skip-link"
