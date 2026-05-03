@@ -426,23 +426,38 @@ export default function BandDetailPage() {
           headerMeta={undefined}
           headerVariant="bands"
           allSongs={bandSongs}
-          onAddSong={(songId) => {
-            void addSongToBandSongList(band.id, activeBandSongList.id, songId);
+          onAddSong={async (songId) => {
+            const error = await addSongToBandSongList(band.id, activeBandSongList.id, songId);
+            if (error) {
+              toast.error(error);
+            }
           }}
           onDeleteSong={handleDeleteSong}
-          onMoveSong={(songId, beforeSongId) => {
-            void moveSongInBandSongList(band.id, activeBandSongList.id, songId, beforeSongId);
+          onMoveSong={async (songId, beforeSongId) => {
+            const error = await moveSongInBandSongList(band.id, activeBandSongList.id, songId, beforeSongId);
+            if (error) {
+              toast.error(error);
+            }
           }}
-          onRenameList={canEditBand ? (name) => {
-            void renameBandSongList(band.id, activeBandSongList.id, name);
+          onRenameList={canEditBand ? async (name) => {
+            const error = await renameBandSongList(band.id, activeBandSongList.id, name);
+            if (error) {
+              toast.error(error);
+            }
           } : undefined}
-          onUpdateListAppearance={canEditBand ? (appearance) => {
-            void updateBandSongListIcon(band.id, activeBandSongList.id, appearance.icon);
+          onUpdateListAppearance={canEditBand ? async (appearance) => {
+            const error = await updateBandSongListIcon(band.id, activeBandSongList.id, appearance.icon);
+            if (error) {
+              toast.error(error);
+            }
           } : undefined}
           onDeleteList={canEditBand ? () => void handleDeleteBandSongList() : undefined}
           deleteListLabel={`Delete songlist ${activeBandSongList.name}`}
-          onRemoveSong={canEditBand ? (song) => {
-            void removeSongFromBandSongList(band.id, activeBandSongList.id, song.id);
+          onRemoveSong={canEditBand ? async (song) => {
+            const error = await removeSongFromBandSongList(band.id, activeBandSongList.id, song.id);
+            if (error) {
+              toast.error(error);
+            }
           } : undefined}
           bandId={band.id}
         />
@@ -482,23 +497,38 @@ export default function BandDetailPage() {
             </button>
           )}
           allSongs={bandSongs}
-          onAddSong={(songId) => {
-            void addSongToBandSetlist(band.id, activeBandSetlist.id, songId);
+          onAddSong={async (songId) => {
+            const error = await addSongToBandSetlist(band.id, activeBandSetlist.id, songId);
+            if (error) {
+              toast.error(error);
+            }
           }}
           onDeleteSong={handleDeleteSong}
-          onMoveSong={(songId, beforeSongId) => {
-            void moveSongInBandSetlist(band.id, activeBandSetlist.id, songId, beforeSongId);
+          onMoveSong={async (songId, beforeSongId) => {
+            const error = await moveSongInBandSetlist(band.id, activeBandSetlist.id, songId, beforeSongId);
+            if (error) {
+              toast.error(error);
+            }
           }}
-          onRenameList={canEditBand ? (name) => {
-            void renameBandSetlist(band.id, activeBandSetlist.id, name);
+          onRenameList={canEditBand ? async (name) => {
+            const error = await renameBandSetlist(band.id, activeBandSetlist.id, name);
+            if (error) {
+              toast.error(error);
+            }
           } : undefined}
           onDeleteList={canEditBand ? () => void handleDeleteBandSetlist() : undefined}
           deleteListLabel={`Delete setlist ${activeBandSetlist.name}`}
-          onUpdateListAppearance={canEditBand ? (appearance) => {
-            void updateBandSetlistIcon(band.id, activeBandSetlist.id, appearance.icon);
+          onUpdateListAppearance={canEditBand ? async (appearance) => {
+            const error = await updateBandSetlistIcon(band.id, activeBandSetlist.id, appearance.icon);
+            if (error) {
+              toast.error(error);
+            }
           } : undefined}
-          onRemoveSong={canEditBand ? (song) => {
-            void removeSongFromBandSetlist(band.id, activeBandSetlist.id, song.id);
+          onRemoveSong={canEditBand ? async (song) => {
+            const error = await removeSongFromBandSetlist(band.id, activeBandSetlist.id, song.id);
+            if (error) {
+              toast.error(error);
+            }
           } : undefined}
           bandId={band.id}
         />
@@ -698,7 +728,12 @@ export default function BandDetailPage() {
         onAddSong={handleAddSong}
         onMoveSong={handleMoveSong}
         onUpdateListAppearance={(appearance) => {
-          void updateBandLibraryIcon(band.id, appearance.icon);
+          void (async () => {
+            const error = await updateBandLibraryIcon(band.id, appearance.icon);
+            if (error) {
+              toast.error(error);
+            }
+          })();
         }}
         bandId={band.id}
       />
