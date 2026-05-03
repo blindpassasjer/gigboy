@@ -6036,6 +6036,34 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .35rem;
 }
 
+.stageplot-palette-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .58rem;
+  font-size: .78rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--muted);
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+
+.stageplot-palette-btn:hover {
+  background: var(--chord-bg);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  transform: translateY(-1px);
+}
+
+.stageplot-instrument-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+  object-fit: contain;
+}
+
 .stageplot-toolbar-actions {
   display: flex;
   flex-wrap: wrap;
@@ -6069,6 +6097,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .stageplot-item {
   position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
   transform: translate(-50%, -50%);
   min-width: 68px;
   padding: .26rem .5rem;

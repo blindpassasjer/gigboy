@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link2, PenLine, Plus, Share2, Smile, Trash2, Undo2, X } from 'lucide-react';
+import { Link2, PenLine, Plus, Smile, Trash2, Undo2, X } from 'lucide-react';
 import type { HandNoteStroke, SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import { showConfirmToast } from '../utils/toastDialogs';
+import { stageplotIconForKind } from '../lib/stageplotIcons';
 
 interface StageplotEditorProps {
   stageplot: Stageplot;
@@ -205,6 +206,25 @@ export default function StageplotEditor({
     void persistContent(nextItems, drawingLayers);
   };
 
+  useEffect(() => {
+    if (!canEdit || !selectedItemId) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+
+      event.preventDefault();
+      const nextItems = items.filter((item) => item.id !== selectedItemId);
+      setItems(nextItems);
+      setSelectedItemId(null);
+      void persistContent(nextItems, drawingLayers);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [canEdit, selectedItemId, items, drawingLayers]);
+
   const handleRenameCommit = () => {
     const trimmed = renameValue.trim();
     if (trimmed && trimmed !== stageplot.name) {
@@ -381,13 +401,18 @@ export default function StageplotEditor({
                 <button
                   key={entry.kind}
                   type="button"
-                  className="notes-toolbar-btn"
+                  className="stageplot-palette-btn"
                   draggable
                   onDragStart={(event) => handlePaletteDragStart(event, entry)}
                   title={`Drag ${entry.label} to stage`}
                 >
-                  <Share2 size={12} />
-                  {entry.label}
+                  <img
+                    src={stageplotIconForKind(entry.kind)}
+                    alt=""
+                    aria-hidden="true"
+                    className="stageplot-instrument-icon"
+                  />
+                  <span>{entry.label}</span>
                 </button>
               ))}
             </div>
@@ -446,11 +471,20 @@ export default function StageplotEditor({
               borderColor: item.color ?? 'var(--border)',
               color: item.color ?? 'var(--text)',
             }}
-            onPointerDown={(event) => moveItem(item.id, event)}
+            onPointerDown={(event) => {
+              setSelectedItemId(item.id);
+              moveItem(item.id, event);
+            }}
             onClick={() => setSelectedItemId(item.id)}
             title={drawEnabled ? 'Disable drawing to move items' : item.label}
           >
-            {item.label}
+            <img
+              src={stageplotIconForKind(item.kind)}
+              alt=""
+              aria-hidden="true"
+              className="stageplot-instrument-icon"
+            />
+            <span>{item.label}</span>
           </button>
         ))}
 

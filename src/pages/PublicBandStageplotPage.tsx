@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import type { SongHandNoteDocument, StageplotItem } from '../types';
 import { db } from '../lib/firebase';
 import SongHandNotesOverlay from '../components/SongHandNotesOverlay';
+import { stageplotIconForKind } from '../lib/stageplotIcons';
 
 interface PublicStageplot {
   name: string;
@@ -148,7 +149,13 @@ export default function PublicBandStageplotPage() {
               color: item.color ?? 'var(--text)',
             }}
           >
-            {item.label}
+            <img
+              src={stageplotIconForKind(item.kind)}
+              alt=""
+              aria-hidden="true"
+              className="stageplot-instrument-icon"
+            />
+            <span>{item.label}</span>
           </div>
         ))}
 
