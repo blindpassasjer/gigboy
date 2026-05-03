@@ -79,7 +79,7 @@ export default function BandSetlistConcertPage() {
   const [chordNotation, setChordNotation] = useState<ChordNotation>('anglo');
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [showTopbar, setShowTopbar] = useState(false);
-  const [showSongNavigator, setShowSongNavigator] = useState(true);
+  const [showSongNavigator, setShowSongNavigator] = useState(false);
   const [showMetronome, setShowMetronome] = useState(false);
   const [showTuner, setShowTuner] = useState(false);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
@@ -574,21 +574,23 @@ export default function BandSetlistConcertPage() {
                 )}
               </div>
 
-              <button
-                type="button"
-                className={`song-toolbar-tool-btn${showChords ? ' song-toolbar-tool-btn--active' : ''}`}
-                onClick={() => {
-                  setShowChords((prev) => {
-                    const next = !prev;
-                    if (!next) setActiveChord(null);
-                    return next;
-                  });
-                }}
-                aria-label={showChords ? 'Hide chords' : 'Show chords'}
-                title={showChords ? 'Hide chords' : 'Show chords'}
-              >
-                Chords
-              </button>
+              <div className="instrument-toggle song-toolbar-controls-group">
+                <button
+                  type="button"
+                  className={`instrument-toggle-btn${showChords ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => {
+                    setShowChords((prev) => {
+                      const next = !prev;
+                      if (!next) setActiveChord(null);
+                      return next;
+                    });
+                  }}
+                  aria-label={showChords ? 'Hide chords' : 'Show chords'}
+                  title={showChords ? 'Hide chords' : 'Show chords'}
+                >
+                  Chords
+                </button>
+              </div>
 
               {showChords && (
                 <>

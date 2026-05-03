@@ -914,6 +914,16 @@ input, select, textarea { font: inherit; color: var(--text); }
   transition: background .12s, border-color .12s, color .12s, transform .08s;
 }
 
+.song-action-btn--labeled {
+  width: auto;
+  min-height: 2.25rem;
+  height: auto;
+  gap: .35rem;
+  padding: .45rem .85rem;
+  font-size: .875rem;
+  font-weight: 600;
+}
+
 .song-action-btn:hover {
   transform: translateY(-1px);
   text-decoration: none;

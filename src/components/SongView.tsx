@@ -257,21 +257,23 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 )}
               </div>
 
-              <button
-                type="button"
-                className={`song-toolbar-tool-btn${showChords ? ' song-toolbar-tool-btn--active' : ''}`}
-                onClick={() => {
-                  setShowChords((prev) => {
-                    const next = !prev;
-                    if (!next) setActiveChord(null);
-                    return next;
-                  });
-                }}
-                aria-label={showChords ? 'Hide chords' : 'Show chords'}
-                title={showChords ? 'Hide chords' : 'Show chords'}
-              >
-                Chords
-              </button>
+              <div className="instrument-toggle song-toolbar-controls-group">
+                <button
+                  type="button"
+                  className={`instrument-toggle-btn${showChords ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => {
+                    setShowChords((prev) => {
+                      const next = !prev;
+                      if (!next) setActiveChord(null);
+                      return next;
+                    });
+                  }}
+                  aria-label={showChords ? 'Hide chords' : 'Show chords'}
+                  title={showChords ? 'Hide chords' : 'Show chords'}
+                >
+                  Chords
+                </button>
+              </div>
 
               {showChords && (
                 <>
@@ -565,29 +567,30 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               </div>
 
               <button
-                className="song-action-btn song-action-btn--edit"
+                className="song-action-btn song-action-btn--edit song-action-btn--labeled"
                 onClick={() => navigate(`/songs/${song.id}/edit`)}
                 title={`Edit ${song.title}`}
                 aria-label={`Edit ${song.title}`}
               >
                 <SquarePen size={14} />
+                Edit
               </button>
               <ShareMenu
                 resourceType="song"
                 resourceId={song.id}
                 resourceName={song.title}
-                buttonClassName="song-action-btn"
+                buttonClassName="song-action-btn song-action-btn--labeled"
                 buttonTitle={`Share ${song.title}`}
-                iconOnly
               />
               {canDeleteSong ? (
                 <button
-                  className="song-action-btn song-action-btn--delete"
+                  className="song-action-btn song-action-btn--delete song-action-btn--labeled"
                   onClick={handleDelete}
                   title={`Delete ${song.title}`}
                   aria-label={`Delete ${song.title}`}
                 >
                   <Trash2 size={14} />
+                  Delete
                 </button>
               ) : null}
             </div>

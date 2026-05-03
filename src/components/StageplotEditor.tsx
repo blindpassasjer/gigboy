@@ -506,22 +506,6 @@ export default function StageplotEditor({
               <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
                 <Trash2 size={12} /> Remove
               </button>
-              <span className="stageplot-toolbar-sep" aria-hidden="true" />
-              {(['rectangle', 'oval', 'circle'] as const).map((shape) => (
-                <button
-                  key={shape}
-                  type="button"
-                  className={`notes-toolbar-btn stageplot-shape-toggle${stageShapeDraft === shape ? ' setlist-action-btn--active' : ''}`}
-                  onClick={() => {
-                    setStageShapeDraft(shape);
-                    onUpdateStageSettings(shape, stageplot.stageSize ?? 'medium');
-                  }}
-                  aria-pressed={stageShapeDraft === shape}
-                  title={`Stage shape: ${shape}`}
-                >
-                  <span className={`stageplot-shape-glyph stageplot-shape-glyph--${shape}`} aria-hidden="true" />
-                </button>
-              ))}
             </div>
           </div>
         ) : null}
