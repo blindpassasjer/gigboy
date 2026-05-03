@@ -156,6 +156,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     onNavigate?.();
   };
 
+  const clearSoloSelection = () => {
+    clearActiveSelection();
+    setActiveSetlistId(null);
+  };
+
   const commitSongList = () => {
     if (draftName.trim()) addSongList(draftName.trim());
     setDraftName('');
@@ -175,6 +180,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (name) {
       const result = await createBand(name);
       if (result.bandId) {
+        clearSoloSelection();
         navigate(`/bands/${result.bandId}/library`);
         onNavigate?.();
       }
@@ -189,6 +195,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addBandSongList(bandId, name);
     if (result.songListId) {
+      clearSoloSelection();
       navigate(`/bands/${bandId}/songlists/${result.songListId}`);
       onNavigate?.();
     }
@@ -202,6 +209,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addBandSetlist(bandId, name);
     if (result.setlistId) {
+      clearSoloSelection();
       navigate(`/bands/${bandId}/setlists/${result.setlistId}`);
       onNavigate?.();
     }
@@ -497,6 +505,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       role="option"
                       aria-selected={band.id === activeBandId}
                       onClick={() => {
+                        clearSoloSelection();
                         setActiveBandId(band.id);
                         if (typeof window !== 'undefined') window.localStorage.setItem('folio-active-band-id', band.id);
                         setBandSwitcherOpen(false);
@@ -552,7 +561,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 >
                   <button
                     className="sidebar-list-item-btn"
-                    onClick={() => { navigate(`/bands/${band.id}/library`); onNavigate?.(); }}
+                    onClick={() => { clearSoloSelection(); navigate(`/bands/${band.id}/library`); onNavigate?.(); }}
                   >
                     <ListMusic size={14} />
                     <span className="sidebar-list-name">Library</span>
@@ -604,7 +613,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       >
                         <button
                           className="sidebar-list-item-btn"
-                          onClick={() => { navigate(`/bands/${band.id}/songlists/${songList.id}`); onNavigate?.(); }}
+                          onClick={() => { clearSoloSelection(); navigate(`/bands/${band.id}/songlists/${songList.id}`); onNavigate?.(); }}
                         >
                           {songList.icon ? <span className="sidebar-list-icon" aria-hidden="true">{songList.icon}</span> : <Folder size={14} />}
                           <span className="sidebar-list-name">{songList.name}</span>
@@ -667,7 +676,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       >
                         <button
                           className="sidebar-list-item-btn"
-                          onClick={() => { navigate(`/bands/${band.id}/setlists/${setlist.id}`); onNavigate?.(); }}
+                          onClick={() => { clearSoloSelection(); navigate(`/bands/${band.id}/setlists/${setlist.id}`); onNavigate?.(); }}
                         >
                           {setlist.icon ? <span className="sidebar-list-icon" aria-hidden="true">{setlist.icon}</span> : <ListMusic size={14} />}
                           <span className="sidebar-list-name">{setlist.name}</span>

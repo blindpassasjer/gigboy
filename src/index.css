@@ -1189,6 +1189,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   -webkit-overflow-scrolling: touch;
 }
 
+@media (max-width: 900px) {
+  .song-toolbar-row--tool-switches {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
 .song-toolbar-controls-group {
   display: inline-flex;
   align-items: center;
