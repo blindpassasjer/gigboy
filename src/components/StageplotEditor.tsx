@@ -368,8 +368,8 @@ export default function StageplotEditor({
   return (
     <section className="stageplot-view">
       <div className="stageplot-sticky">
-        <div className="stageplot-header">
-          <div className="stageplot-title-block">
+        <div className="setlist-header songlist-header">
+          <div className="setlist-title-block">
             {renaming ? (
               <input
                 type="text"
@@ -383,14 +383,14 @@ export default function StageplotEditor({
                   }
                 }}
                 onBlur={handleRenameCommit}
-                className="stageplot-name-input"
+                className="setlist-name-input"
               />
             ) : (
-              <div className="stageplot-title-row">
-                <h1 className="stageplot-heading" onDoubleClick={() => canEdit && setRenaming(true)}>
-                  {stageplot.icon ? <span className="stageplot-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
+              <div className="song-list-title-row">
+                <h2 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
+                  {stageplot.icon ? <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
                   <span>{stageplot.name}</span>
-                </h1>
+                </h2>
                 {canEdit ? (
                   <button
                     type="button"
@@ -404,11 +404,11 @@ export default function StageplotEditor({
                 ) : null}
               </div>
             )}
-            <p className="stageplot-item-count">
+            <p className="song-list-summary setlist-song-count">
               {items.length} item{items.length === 1 ? '' : 's'}{saving ? ' • Saving…' : ''}
             </p>
           </div>
-          <div className="stageplot-header-actions">
+          <div className="setlist-header-actions">
             {canEdit ? (
               <button
                 type="button"
@@ -442,6 +442,76 @@ export default function StageplotEditor({
             ) : null}
           </div>
         </div>
+
+        {showIconEditor && canEdit ? (
+          <div className="list-appearance-editor" role="region" aria-label="Stageplot appearance settings">
+            <div className="list-appearance-group">
+              <span className="list-appearance-label">Icon</span>
+              <div className="emoji-choice-grid" role="listbox" aria-label="Stageplot icon options">
+                {ICON_OPTIONS.map((emoji) => {
+                  const selected = iconDraft === emoji;
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                      onClick={() => setIconDraft(emoji)}
+                      aria-pressed={selected}
+                    >
+                      {emoji}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="list-appearance-group">
+              <span className="list-appearance-label">Stage shape</span>
+              <div className="stageplot-settings-btn-group" role="group" aria-label="Stage shape">
+                {(['rectangle', 'oval', 'circle'] as const).map((shape) => (
+                  <button
+                    key={shape}
+                    type="button"
+                    className={`setlist-action-btn setlist-action-btn--secondary${stageShapeDraft === shape ? ' setlist-action-btn--active' : ''}`}
+                    onClick={() => setStageShapeDraft(shape)}
+                    aria-pressed={stageShapeDraft === shape}
+                  >
+                    {shape.charAt(0).toUpperCase() + shape.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="list-appearance-group">
+              <span className="list-appearance-label">Stage size</span>
+              <div className="stageplot-settings-btn-group" role="group" aria-label="Stage size">
+                {(['small', 'medium', 'large'] as const).map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    className={`setlist-action-btn setlist-action-btn--secondary${stageSizeDraft === size ? ' setlist-action-btn--active' : ''}`}
+                    onClick={() => setStageSizeDraft(size)}
+                    aria-pressed={stageSizeDraft === size}
+                  >
+                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="setlist-action-btn"
+              onClick={() => {
+                onUpdateIcon(normalizeEmojiIcon(iconDraft));
+                onUpdateStageSettings(stageShapeDraft, stageSizeDraft);
+                setShowIconEditor(false);
+              }}
+            >
+              Save
+            </button>
+            <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={() => setShowIconEditor(false)}>
+              Cancel
+            </button>
+          </div>
+        ) : null}
 
         {canEdit ? (
           <div className="stageplot-toolbar">
@@ -515,76 +585,6 @@ export default function StageplotEditor({
                 <Trash2 size={12} /> Remove
               </button>
             </div>
-          </div>
-        ) : null}
-
-        {showIconEditor && canEdit ? (
-          <div className="list-appearance-editor" role="region" aria-label="Stageplot appearance settings">
-            <div className="list-appearance-group">
-              <span className="list-appearance-label">Icon</span>
-              <div className="emoji-choice-grid" role="listbox" aria-label="Stageplot icon options">
-                {ICON_OPTIONS.map((emoji) => {
-                  const selected = iconDraft === emoji;
-                  return (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                      onClick={() => setIconDraft(emoji)}
-                      aria-pressed={selected}
-                    >
-                      {emoji}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="list-appearance-group">
-              <span className="list-appearance-label">Stage shape</span>
-              <div className="stageplot-settings-btn-group" role="group" aria-label="Stage shape">
-                {(['rectangle', 'oval', 'circle'] as const).map((shape) => (
-                  <button
-                    key={shape}
-                    type="button"
-                    className={`setlist-action-btn setlist-action-btn--secondary${stageShapeDraft === shape ? ' setlist-action-btn--active' : ''}`}
-                    onClick={() => setStageShapeDraft(shape)}
-                    aria-pressed={stageShapeDraft === shape}
-                  >
-                    {shape.charAt(0).toUpperCase() + shape.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="list-appearance-group">
-              <span className="list-appearance-label">Stage size</span>
-              <div className="stageplot-settings-btn-group" role="group" aria-label="Stage size">
-                {(['small', 'medium', 'large'] as const).map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    className={`setlist-action-btn setlist-action-btn--secondary${stageSizeDraft === size ? ' setlist-action-btn--active' : ''}`}
-                    onClick={() => setStageSizeDraft(size)}
-                    aria-pressed={stageSizeDraft === size}
-                  >
-                    {size.charAt(0).toUpperCase() + size.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="setlist-action-btn"
-              onClick={() => {
-                onUpdateIcon(normalizeEmojiIcon(iconDraft));
-                onUpdateStageSettings(stageShapeDraft, stageSizeDraft);
-                setShowIconEditor(false);
-              }}
-            >
-              Save
-            </button>
-            <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={() => setShowIconEditor(false)}>
-              Cancel
-            </button>
           </div>
         ) : null}
 

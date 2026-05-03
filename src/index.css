@@ -1080,6 +1080,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky > .setlist-header,
+  .stageplot-sticky > .setlist-header,
   .stageplot-sticky > .stageplot-header,
   .song-list-controls,
   .list-appearance-editor {
@@ -4997,6 +4998,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky > .setlist-header,
+  .stageplot-sticky > .setlist-header,
   .stageplot-sticky > .stageplot-header {
     margin: 0 calc(1rem + var(--safe-right)) 0 calc(1rem + var(--safe-left));
   }
@@ -6174,6 +6176,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   order: -1;
 }
 
+.stageplot-sticky > .setlist-header,
 .stageplot-sticky > .stageplot-header {
   margin: 0 1.5rem;
   width: auto;
