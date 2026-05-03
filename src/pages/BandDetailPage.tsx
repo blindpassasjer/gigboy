@@ -433,17 +433,17 @@ export default function BandDetailPage() {
           onMoveSong={(songId, beforeSongId) => {
             void moveSongInBandSongList(band.id, activeBandSongList.id, songId, beforeSongId);
           }}
-          onRenameList={(name) => {
+          onRenameList={canEditBand ? (name) => {
             void renameBandSongList(band.id, activeBandSongList.id, name);
-          }}
-          onUpdateListAppearance={(appearance) => {
+          } : undefined}
+          onUpdateListAppearance={canEditBand ? (appearance) => {
             void updateBandSongListIcon(band.id, activeBandSongList.id, appearance.icon);
-          }}
-          onDeleteList={() => void handleDeleteBandSongList()}
+          } : undefined}
+          onDeleteList={canEditBand ? () => void handleDeleteBandSongList() : undefined}
           deleteListLabel={`Delete songlist ${activeBandSongList.name}`}
-          onRemoveSong={(song) => {
+          onRemoveSong={canEditBand ? (song) => {
             void removeSongFromBandSongList(band.id, activeBandSongList.id, song.id);
-          }}
+          } : undefined}
           bandId={band.id}
         />
       </section>
@@ -489,17 +489,17 @@ export default function BandDetailPage() {
           onMoveSong={(songId, beforeSongId) => {
             void moveSongInBandSetlist(band.id, activeBandSetlist.id, songId, beforeSongId);
           }}
-          onRenameList={(name) => {
+          onRenameList={canEditBand ? (name) => {
             void renameBandSetlist(band.id, activeBandSetlist.id, name);
-          }}
-          onDeleteList={() => void handleDeleteBandSetlist()}
+          } : undefined}
+          onDeleteList={canEditBand ? () => void handleDeleteBandSetlist() : undefined}
           deleteListLabel={`Delete setlist ${activeBandSetlist.name}`}
-          onUpdateListAppearance={(appearance) => {
+          onUpdateListAppearance={canEditBand ? (appearance) => {
             void updateBandSetlistIcon(band.id, activeBandSetlist.id, appearance.icon);
-          }}
-          onRemoveSong={(song) => {
+          } : undefined}
+          onRemoveSong={canEditBand ? (song) => {
             void removeSongFromBandSetlist(band.id, activeBandSetlist.id, song.id);
-          }}
+          } : undefined}
           bandId={band.id}
         />
       </section>

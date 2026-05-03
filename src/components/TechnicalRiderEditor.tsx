@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link2, Plus, Trash2, PenLine } from 'lucide-react';
 import type { RiderEquipmentItem, TechnicalRider, TechnicalRiderLine } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
@@ -47,12 +47,22 @@ export default function TechnicalRiderEditor({
   const [inventoryEquipment, setInventoryEquipment] = useState<RiderEquipmentItem[]>(rider.inventoryEquipment);
   const [saving, setSaving] = useState(false);
 
+  // Reset ALL local state when the active rider changes (different id).
+  const prevRiderIdRef = useRef(rider.id);
   useEffect(() => {
+    if (prevRiderIdRef.current === rider.id) return;
+    prevRiderIdRef.current = rider.id;
     setRenameValue(rider.name);
     setLines(rider.lines);
     setPreferredEquipment(rider.preferredEquipment);
     setInventoryEquipment(rider.inventoryEquipment);
-  }, [rider]);
+  });
+
+  // Keep the rename input in sync when a rename is committed externally.
+  useEffect(() => {
+    if (!isRenaming) setRenameValue(rider.name);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rider.name]);
 
   const hasChanges = useMemo(() => {
     return JSON.stringify({ lines, preferredEquipment, inventoryEquipment }) !== JSON.stringify({

@@ -1310,8 +1310,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const band = bands.find((entry) => entry.id === bandId);
     if (!band) return 'Band not found.';
 
-    const isMember = band.memberIds.includes(userId);
-    if (!isMember) {
+    const isEditor = band.ownerId === userId || band.memberRoles[userId] === 'editor';
+    if (!isEditor) {
       return 'You do not have permission to edit this band.';
     }
 
@@ -1688,8 +1688,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const band = bands.find((entry) => entry.id === bandId);
     if (!band) return 'Band not found.';
 
-    const isMember = band.memberIds.includes(userId);
-    if (!isMember) {
+    const isEditor = band.ownerId === userId || band.memberRoles[userId] === 'editor';
+    if (!isEditor) {
       return 'You do not have permission to edit this band.';
     }
 
@@ -2155,8 +2155,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const band = bands.find((entry) => entry.id === bandId);
     if (!band) return 'Band not found.';
 
-    const isMember = band.memberIds.includes(userId);
-    if (!isMember) {
+    const isEditor = band.ownerId === userId || band.memberRoles[userId] === 'editor';
+    if (!isEditor) {
       return 'You do not have permission to edit this band.';
     }
 
@@ -2438,8 +2438,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const band = bands.find((entry) => entry.id === bandId);
     if (!band) return 'Band not found.';
 
-    const isMember = band.memberIds.includes(userId);
-    if (!isMember) return 'You do not have permission to edit this band.';
+    const isEditor = band.ownerId === userId || band.memberRoles[userId] === 'editor';
+    if (!isEditor) return 'You do not have permission to edit this band.';
 
     const previousRiders = bandTechnicalRidersByBandId[bandId] ?? [];
     const riderToDelete = previousRiders.find((rider) => rider.id === riderId);
