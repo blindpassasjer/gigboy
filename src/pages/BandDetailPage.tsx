@@ -60,6 +60,7 @@ export default function BandDetailPage() {
     moveSongInBandSetlist,
     renameBandStageplot,
     updateBandStageplotIcon,
+    updateBandStageplotSettings,
     setBandStageplotPublicShare,
     updateBandStageplotContent,
     deleteBandStageplot,
@@ -565,6 +566,12 @@ export default function BandDetailPage() {
         }}
         onUpdateIcon={async (icon) => {
           const error = await updateBandStageplotIcon(band.id, activeBandStageplot.id, icon);
+          if (error) {
+            toast.error(error);
+          }
+        }}
+        onUpdateStageSettings={async (shape, size) => {
+          const error = await updateBandStageplotSettings(band.id, activeBandStageplot.id, shape, size);
           if (error) {
             toast.error(error);
           }
