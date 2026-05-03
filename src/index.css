@@ -18,6 +18,9 @@
   --accent:     #5c4fa6;
   --accent-h:   #4a3f87;
   --accent-contrast: #ffffff;
+  --bands-hue:  #0f8a87;
+  --bands-hue-soft: #e7f5f4;
+  --bands-hue-contrast: #ffffff;
   --danger:     #c0392b;
   --notes-draw: #27ae60;
   --chord:      #5c4fa6;
@@ -37,6 +40,9 @@
   --accent:     #9d91e0;
   --accent-h:   #b3a9e8;
   --accent-contrast: #1c1a18;
+  --bands-hue:  #49c1bc;
+  --bands-hue-soft: #1f3536;
+  --bands-hue-contrast: #0f1f1e;
   --danger:     #e05c4e;
   --notes-draw: #5be39a;
   --chord:      #9d91e0;
@@ -3843,8 +3849,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-band-switcher-btn:hover {
-  background: var(--bg);
-  color: var(--fg);
+  background: color-mix(in srgb, var(--bands-hue-soft) 65%, var(--surface));
+  color: var(--bands-hue);
 }
 
 .sidebar-band-switcher-name {
@@ -3895,11 +3901,11 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-band-switcher-option:hover {
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bands-hue-soft) 65%, var(--surface));
 }
 
 .sidebar-band-switcher-option.active {
-  background: var(--sidebar-active, var(--border));
+  background: color-mix(in srgb, var(--bands-hue) 18%, var(--surface));
   font-weight: 600;
 }
 
@@ -3925,7 +3931,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-band-item.active {
-  background: var(--sidebar-active, var(--border));
+  background: color-mix(in srgb, var(--bands-hue) 18%, var(--surface));
 }
 
 .sidebar-band-item-btn {
@@ -5756,6 +5762,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 /* ─── Bands ────────────────────────────────────────────────────────────────── */
 .bands-page {
+  --bands-border: color-mix(in srgb, var(--bands-hue) 24%, var(--border));
+  --bands-soft-bg: color-mix(in srgb, var(--bands-hue-soft) 72%, var(--surface));
   max-width: 980px;
   margin: 0 auto;
   display: flex;
@@ -5794,7 +5802,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .bands-create-card,
 .bands-panel {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--bands-border);
   border-radius: 14px;
   padding: 1rem;
   display: flex;
@@ -5831,9 +5839,15 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   gap: .9rem;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--bands-border);
   border-radius: 14px;
   padding: .9rem 1rem;
+}
+
+.bands-card:hover,
+.bands-member-card:hover,
+.bands-library-card:hover {
+  background: var(--bands-soft-bg);
 }
 
 .bands-card-main {
@@ -5850,8 +5864,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: var(--chord-bg);
-  color: var(--accent);
+  background: var(--bands-hue-soft);
+  color: var(--bands-hue);
 }
 
 .bands-card-copy,
@@ -5875,9 +5889,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .bands-member-role-select {
   font-size: .8rem;
-  color: var(--muted);
+  color: var(--bands-hue);
   background: transparent;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--bands-hue) 28%, var(--border));
   border-radius: .4rem;
   padding: .2rem .4rem;
   cursor: pointer;
@@ -5909,9 +5923,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .3rem;
   padding: .3rem .55rem;
   border-radius: 999px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--muted);
+  background: color-mix(in srgb, var(--bands-hue-soft) 72%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--bands-hue) 22%, var(--border));
+  color: var(--bands-hue);
   font-size: .78rem;
   text-transform: capitalize;
 }
@@ -5925,17 +5939,43 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: inline-flex;
   align-items: center;
   gap: .45rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--bands-border);
   border-radius: 999px;
   background: var(--surface);
-  color: var(--muted);
+  color: var(--bands-hue);
   padding: .45rem .8rem;
 }
 
 .bands-tab.active {
-  background: var(--chord-bg);
-  color: var(--accent);
-  border-color: transparent;
+  background: var(--bands-hue-soft);
+  color: var(--bands-hue);
+  border-color: color-mix(in srgb, var(--bands-hue) 34%, var(--border));
+}
+
+.bands-page .setlist-action-btn {
+  background: var(--bands-hue);
+  border-color: var(--bands-hue);
+  color: var(--bands-hue-contrast);
+}
+
+.bands-page .setlist-action-btn:hover {
+  background: color-mix(in srgb, var(--bands-hue) 84%, #000);
+  border-color: color-mix(in srgb, var(--bands-hue) 84%, #000);
+}
+
+.bands-page .setlist-action-btn--secondary {
+  background: var(--surface);
+  color: var(--bands-hue);
+  border-color: color-mix(in srgb, var(--bands-hue) 28%, var(--border));
+}
+
+.bands-page .setlist-action-btn--secondary:hover {
+  background: var(--bands-hue-soft);
+}
+
+.bands-page .setlist-action-btn--danger,
+.bands-page .setlist-action-btn--danger:hover {
+  color: #fff;
 }
 
 .bands-invite-form {
