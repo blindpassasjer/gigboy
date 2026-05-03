@@ -29,6 +29,7 @@ import {
 } from '../lib/bandsApi';
 import {
   compareTrashByDeletedAtDesc,
+  createTrashPayload,
   createTrashTimestamps,
   isTrashExpired,
   parseStageplotTrashRecord,
@@ -1104,12 +1105,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await Promise.all([
-        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
-          itemType: 'song',
-          deletedAt,
-          purgeAt,
-          data: songToDelete,
-        }),
+        setDoc(
+          doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId),
+          createTrashPayload('song', deletedAt, purgeAt, songToDelete)
+        ),
         deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, songId)),
       ]);
       return null;
@@ -1351,12 +1350,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await Promise.all([
-        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
-          itemType: 'songlist',
-          deletedAt,
-          purgeAt,
-          data: songListToDelete,
-        }),
+        setDoc(
+          doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId),
+          createTrashPayload('songlist', deletedAt, purgeAt, songListToDelete)
+        ),
         deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId)),
         ...nextSongLists.map((songList) => setDoc(
           doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songList.id),
@@ -1729,12 +1726,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await Promise.all([
-        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
-          itemType: 'setlist',
-          deletedAt,
-          purgeAt,
-          data: setlistToDelete,
-        }),
+        setDoc(
+          doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId),
+          createTrashPayload('setlist', deletedAt, purgeAt, setlistToDelete)
+        ),
         deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId)),
         ...nextSetlists.map((setlist) => setDoc(
           doc(firestore, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlist.id),
@@ -2196,12 +2191,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await Promise.all([
-        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
-          itemType: 'stageplot',
-          deletedAt,
-          purgeAt,
-          data: stageplotToDelete,
-        }),
+        setDoc(
+          doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId),
+          createTrashPayload('stageplot', deletedAt, purgeAt, stageplotToDelete)
+        ),
         deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId)),
         ...nextStageplots.map((stageplot) => setDoc(
           doc(firestore, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplot.id),
@@ -2477,12 +2470,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await Promise.all([
-        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
-          itemType: 'technicalRider',
-          deletedAt,
-          purgeAt,
-          data: riderToDelete,
-        }),
+        setDoc(
+          doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId),
+          createTrashPayload('technicalRider', deletedAt, purgeAt, riderToDelete)
+        ),
         deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, riderId)),
         ...nextRiders.map((rider) => setDoc(
           doc(firestore, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, rider.id),
