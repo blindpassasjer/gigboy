@@ -6212,6 +6212,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-bottom: 0;
 }
 
+.stageplot-sticky > .setlist-header {
+  margin: 0 1.5rem;
+  width: auto;
+}
+
 .stageplot-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1.8fr) minmax(260px, 1fr);
