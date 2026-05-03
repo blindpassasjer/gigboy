@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { KeyRound, LogOut, Mail, User as UserIcon } from 'lucide-react';
+import { ChevronDown, ChevronUp, KeyRound, LogOut } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import UserAvatar from '../components/UserAvatar';
@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [busyPassword, setBusyPassword] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [busyLogout, setBusyLogout] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
 
@@ -140,76 +141,17 @@ export default function ProfilePage() {
 
   return (
     <section className="profile-settings-page">
-      <header className="profile-settings-header">
-        <UserAvatar avatar={user.avatar} label={displayName} size="lg" />
-        <div>
-          <h1>Profile</h1>
-          <p>Manage your account details, avatar, and security settings.</p>
-        </div>
-      </header>
-
       <div className="profile-settings-grid">
-        <section className="profile-settings-card">
-          <h2><Mail size={16} /> Email</h2>
-          <form className="profile-settings-form" onSubmit={onEmailSubmit}>
-            <label className="form-field">
-              <span>Email</span>
-              <input
-                type="email"
-                value={email}
-                autoComplete="email"
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn" disabled={busyEmail}>
-              {busyEmail ? 'Saving…' : 'Change email'}
-            </button>
-          </form>
-        </section>
 
-        <section className="profile-settings-card">
-          <h2><UserIcon size={16} /> Username</h2>
-          <form className="profile-settings-form" onSubmit={onUsernameSubmit}>
-            <label className="form-field">
-              <span>Username</span>
-              <input
-                type="text"
-                value={username}
-                autoComplete="username"
-                onChange={(event) => setUsername(event.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn" disabled={busyUsername}>
-              {busyUsername ? 'Saving…' : 'Change username'}
-            </button>
-          </form>
-        </section>
-
-        <section className="profile-settings-card">
-          <h2><UserIcon size={16} /> Full name</h2>
-          <form className="profile-settings-form" onSubmit={onFullNameSubmit}>
-            <label className="form-field">
-              <span>Full name</span>
-              <input
-                type="text"
-                value={fullName}
-                autoComplete="name"
-                onChange={(event) => setFullName(event.target.value)}
-                required
-                maxLength={80}
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn" disabled={busyFullName}>
-              {busyFullName ? 'Saving…' : 'Change full name'}
-            </button>
-          </form>
-        </section>
-
+        {/* Avatar */}
         <section className="profile-settings-card profile-settings-card--wide">
-          <h2>Avatar</h2>
-          <p className="profile-settings-muted">Choose how your account appears where your profile is shown.</p>
+          <div className="profile-settings-avatar-header">
+            <UserAvatar avatar={user.avatar} label={displayName} size="lg" />
+            <div>
+              <h1>Profile</h1>
+              <p className="profile-settings-muted">Choose how your account appears where your profile is shown.</p>
+            </div>
+          </div>
           <div className="avatar-grid" role="radiogroup" aria-label="Choose avatar">
             {AVATAR_OPTIONS.map((avatar) => {
               const isSelected = selectedAvatar === avatar;
@@ -229,55 +171,121 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <section className="profile-settings-card">
-          <h2><KeyRound size={16} /> Password</h2>
-          <p className="profile-settings-muted">Leave current password empty if you signed up with Google and are adding password login.</p>
-          <form className="profile-settings-form" onSubmit={onPasswordSubmit}>
+        {/* Information */}
+        <section className="profile-settings-card profile-settings-card--wide">
+          <h2>Information</h2>
+          <form className="profile-settings-form" onSubmit={onFullNameSubmit}>
             <label className="form-field">
-              <span>Current password (optional for Google login)</span>
+              <span>Full name</span>
               <input
-                type="password"
-                value={currentPassword}
-                autoComplete="current-password"
-                onChange={(event) => setCurrentPassword(event.target.value)}
-              />
-            </label>
-            <label className="form-field">
-              <span>New password</span>
-              <input
-                type="password"
-                value={newPassword}
-                autoComplete="new-password"
-                onChange={(event) => setNewPassword(event.target.value)}
+                type="text"
+                value={fullName}
+                autoComplete="name"
+                onChange={(event) => setFullName(event.target.value)}
                 required
-                minLength={8}
+                maxLength={80}
               />
             </label>
+            <button type="submit" className="setlist-action-btn" disabled={busyFullName}>
+              {busyFullName ? 'Saving…' : 'Save full name'}
+            </button>
+          </form>
+          <form className="profile-settings-form" onSubmit={onUsernameSubmit}>
             <label className="form-field">
-              <span>Confirm new password</span>
+              <span>Username</span>
               <input
-                type="password"
-                value={confirmNewPassword}
-                autoComplete="new-password"
-                onChange={(event) => setConfirmNewPassword(event.target.value)}
+                type="text"
+                value={username}
+                autoComplete="username"
+                onChange={(event) => setUsername(event.target.value)}
                 required
-                minLength={8}
               />
             </label>
-            <button type="submit" className="setlist-action-btn" disabled={busyPassword}>
-              {busyPassword ? 'Saving…' : 'Change password'}
+            <button type="submit" className="setlist-action-btn" disabled={busyUsername}>
+              {busyUsername ? 'Saving…' : 'Save username'}
+            </button>
+          </form>
+          <form className="profile-settings-form" onSubmit={onEmailSubmit}>
+            <label className="form-field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={email}
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </label>
+            <button type="submit" className="setlist-action-btn" disabled={busyEmail}>
+              {busyEmail ? 'Saving…' : 'Save email'}
             </button>
           </form>
         </section>
 
-        <section className="profile-settings-card">
-          <h2><LogOut size={16} /> Session</h2>
+        {/* Change password (collapsible) */}
+        <section className="profile-settings-card profile-settings-card--wide">
+          <button
+            type="button"
+            className="profile-settings-collapsible-toggle"
+            onClick={() => setPasswordOpen((o) => !o)}
+            aria-expanded={passwordOpen}
+          >
+            <h2><KeyRound size={16} /> Change password</h2>
+            {passwordOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {passwordOpen && (
+            <>
+              <p className="profile-settings-muted">Leave current password empty if you signed up with Google and are adding password login.</p>
+              <form className="profile-settings-form" onSubmit={onPasswordSubmit}>
+                <label className="form-field">
+                  <span>Current password (optional for Google login)</span>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    autoComplete="current-password"
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                  />
+                </label>
+                <label className="form-field">
+                  <span>New password</span>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    autoComplete="new-password"
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    required
+                    minLength={8}
+                  />
+                </label>
+                <label className="form-field">
+                  <span>Confirm new password</span>
+                  <input
+                    type="password"
+                    value={confirmNewPassword}
+                    autoComplete="new-password"
+                    onChange={(event) => setConfirmNewPassword(event.target.value)}
+                    required
+                    minLength={8}
+                  />
+                </label>
+                <button type="submit" className="setlist-action-btn" disabled={busyPassword}>
+                  {busyPassword ? 'Saving…' : 'Change password'}
+                </button>
+              </form>
+            </>
+          )}
+        </section>
+
+        {/* Log out */}
+        <section className="profile-settings-card profile-settings-card--wide">
+          <h2><LogOut size={16} /> Log out</h2>
           <p className="profile-settings-muted">Need to sign out on this device?</p>
           <button type="button" className="setlist-action-btn setlist-action-btn--secondary" disabled={busyLogout} onClick={() => { void onLogout(); }}>
             {busyLogout ? 'Signing out…' : 'Log out'}
           </button>
           <Link to="/profile/invites" className="profile-settings-link">View invites</Link>
         </section>
+
       </div>
     </section>
   );

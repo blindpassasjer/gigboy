@@ -308,9 +308,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     } catch (err: unknown) {
       const code = getAuthErrorCode(err);
-      if (code === 'auth/provider-already-linked' || code === 'auth/credential-already-in-use') {
+      if (code === 'auth/provider-already-linked') {
         clearPendingLink();
         return null;
+      }
+      if (code === 'auth/credential-already-in-use') {
+        clearPendingLink();
+        return 'This sign-in method is already connected to another account. Please sign in with Google and use the same account email.';
       }
       if (code === 'auth/invalid-credential') {
         clearPendingLink();

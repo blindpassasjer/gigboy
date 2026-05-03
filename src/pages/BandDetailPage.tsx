@@ -252,7 +252,7 @@ export default function BandDetailPage() {
       return;
     }
 
-    toast.success('Song added to band library.');
+    toast.success('Song copied to band library.');
   };
 
   const handleRemoveSong = async (song: Song) => {

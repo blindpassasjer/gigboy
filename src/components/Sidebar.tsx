@@ -519,6 +519,30 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const isSoloTrashActive = pathname === '/trash';
   const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
 
+  const switchToSoloLibrary = () => {
+    setSidebarMode('solo');
+    clearSoloSelection();
+    navigate('/');
+    onNavigate?.();
+  };
+
+  const switchToBandLibrary = () => {
+    setSidebarMode('bands');
+    clearSoloSelection();
+
+    if (effectiveActiveBand) {
+      setActiveBandId(effectiveActiveBand.id);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('folio-active-band-id', effectiveActiveBand.id);
+      }
+      navigate(`/bands/${effectiveActiveBand.id}/library`);
+    } else {
+      navigate('/bands');
+    }
+
+    onNavigate?.();
+  };
+
   return (
     <div className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}`}>
     <aside id="app-sidebar" className={`sidebar${mobile ? ' sidebar--mobile' : ''}${open ? ' sidebar--open' : ''}`}>
@@ -537,7 +561,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         <button
           type="button"
           className={`sidebar-mode-toggle-btn${sidebarMode === 'solo' ? ' active' : ''}`}
-          onClick={() => setSidebarMode('solo')}
+          onClick={switchToSoloLibrary}
           aria-selected={sidebarMode === 'solo'}
           role="tab"
         >
@@ -547,7 +571,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         <button
           type="button"
           className={`sidebar-mode-toggle-btn${sidebarMode === 'bands' ? ' active' : ''}`}
-          onClick={() => setSidebarMode('bands')}
+          onClick={switchToBandLibrary}
           aria-selected={sidebarMode === 'bands'}
           role="tab"
         >

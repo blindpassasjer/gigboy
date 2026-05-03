@@ -1,6 +1,7 @@
 import { useLocation, useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useSongs } from '../context/SongsContext';
+import { useBands } from '../context/BandsContext';
 import SongView from '../components/SongView';
 
 type SongPageState = {
@@ -13,11 +14,13 @@ export default function SongPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const { songs } = useSongs();
-  const song = songs.find((s) => s.id === id);
+  const { bandSongsByBandId } = useBands();
   const pageState = location.state as SongPageState | null;
   const backTo = pageState?.backTo ?? '/';
   const backLabel = pageState?.backLabel?.trim();
   const bandId = pageState?.bandId;
+  const bandSongs = bandId ? (bandSongsByBandId[bandId] ?? []) : [];
+  const song = (bandSongs.find((s) => s.id === id) ?? songs.find((s) => s.id === id));
   const backLinkText = backLabel ? `Return to ${backLabel}` : 'All songs';
 
   if (!song) {

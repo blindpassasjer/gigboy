@@ -5662,7 +5662,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .profile-settings-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -5677,7 +5677,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .profile-settings-card--wide {
-  grid-column: span 2;
+  grid-column: span 1;
 }
 
 .profile-settings-card h2 {
@@ -5685,6 +5685,33 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   gap: .4rem;
   font-size: 1.02rem;
+}
+
+.profile-settings-avatar-header {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+}
+
+.profile-settings-avatar-header h1 {
+  font-size: 1.45rem;
+}
+
+.profile-settings-collapsible-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+  width: 100%;
+  text-align: left;
+}
+
+.profile-settings-collapsible-toggle h2 {
+  margin: 0;
 }
 
 .profile-settings-form {

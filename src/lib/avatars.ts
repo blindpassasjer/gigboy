@@ -1,4 +1,5 @@
 export const AVATAR_OPTIONS = [
+  // Instruments
   '🎸',
   '🥁',
   '🎹',
@@ -8,9 +9,51 @@ export const AVATAR_OPTIONS = [
   '🪕',
   '🎻',
   '🪘',
+  '🪗',
+  '🪈',
+  // Music & sound
   '🎧',
   '🎼',
+  '🎵',
+  '🎶',
+  '🎙️',
+  '🎚️',
+  '🎛️',
+  '🔊',
+  // Performance
+  '🎭',
+  '🎬',
+  '🎪',
+  // Nature & animals
+  '🦋',
+  '🦅',
+  '🐉',
+  '🦁',
+  '🦊',
+  '🐺',
+  '🐸',
+  '🐧',
+  // Space & elements
+  '🌙',
+  '☀️',
   '⭐',
+  '🌟',
+  '✨',
+  '🔥',
+  '⚡',
+  '🌈',
+  '🌊',
+  '🚀',
+  // Fun & misc
+  '💎',
+  '🏆',
+  '🎯',
+  '🎮',
+  '🕹️',
+  '👾',
+  '🤖',
+  '💥',
+  '🎃',
 ] as const;
 
 export type AvatarOption = typeof AVATAR_OPTIONS[number];
