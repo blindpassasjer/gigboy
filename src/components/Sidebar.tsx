@@ -55,7 +55,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addTechnicalRider,
   } = useTechnicalRiders();
   const {
+    stageplots,
+    activeStageplotId,
     setActiveStageplotId,
+    addStageplot,
   } = useStageplots();
 
   const {
@@ -88,6 +91,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
   const [addingBandStageplotId, setAddingBandStageplotId] = useState<string | null>(null);
+  const [addingStageplot, setAddingStageplot] = useState(false);
   const [addingTechnicalRider, setAddingTechnicalRider] = useState(false);
   const [addingBandTechnicalRiderId, setAddingBandTechnicalRiderId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
@@ -98,6 +102,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
   const [soloSonglistsExpanded, setSoloSonglistsExpanded] = useState(true);
   const [soloSetlistsExpanded, setSoloSetlistsExpanded] = useState(true);
+  const [soloStageplotsExpanded, setSoloStageplotsExpanded] = useState(true);
   const [soloRidersExpanded, setSoloRidersExpanded] = useState(true);
   const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
@@ -239,6 +244,21 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (draftName.trim()) addSetlist(draftName.trim());
     setDraftName('');
     setAddingSetlist(false);
+  };
+
+  const commitStageplot = async () => {
+    const name = draftName.trim();
+    setDraftName('');
+    setAddingStageplot(false);
+    if (!name) return;
+
+    const result = await addStageplot(name);
+    if (result.stageplotId) {
+      clearSoloSelection();
+      setActiveStageplotId(result.stageplotId);
+      navigate('/');
+      onNavigate?.();
+    }
   };
 
   const commitTechnicalRider = async () => {
@@ -611,6 +631,71 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     onCommit={commitSetlist}
                     onCancel={() => setAddingSetlist(false)}
                     placeholder="Setlist name..."
+                  />
+                )}
+              </div>
+            )}
+          </section>
+
+          <section className="sidebar-solo-section">
+            <div className="sidebar-setlists-header">
+              <button
+                type="button"
+                className="sidebar-section-toggle"
+                onClick={() => setSoloStageplotsExpanded((current) => !current)}
+                aria-expanded={soloStageplotsExpanded}
+              >
+                {soloStageplotsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <span className="sidebar-section-title">Stageplots</span>
+              </button>
+              <button
+                type="button"
+                className="sidebar-icon-btn"
+                title="New stageplot"
+                aria-label="Create new stageplot"
+                onClick={() => {
+                  setSoloStageplotsExpanded(true);
+                  setAddingStageplot(true);
+                  setDraftName('');
+                }}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+
+            {soloStageplotsExpanded && (
+              <div className="sidebar-solo-list sidebar-nested-group">
+                {stageplots.map((stageplot) => (
+                  <div
+                    key={stageplot.id}
+                    className={`sidebar-list-item${activeStageplotId === stageplot.id ? ' active' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="sidebar-list-item-btn"
+                      onClick={() => {
+                        setActiveStageplotId(stageplot.id);
+                        setActiveSongListId(null);
+                        setActiveSetlistId(null);
+                        clearActiveSelection();
+                        navigate('/');
+                        onNavigate?.();
+                      }}
+                    >
+                      <Map size={14} />
+                      <span className="sidebar-list-name">{stageplot.icon ? `${stageplot.icon} ` : ''}{stageplot.name}</span>
+                      {stageplot.items.length > 0 ? <span className="sidebar-list-count">{stageplot.items.length}</span> : null}
+                    </button>
+                  </div>
+                ))}
+
+                {addingStageplot && (
+                  <InlineInput
+                    value={draftName}
+                    onChange={setDraftName}
+                    onCommit={() => void commitStageplot()}
+                    onCancel={() => setAddingStageplot(false)}
+                    placeholder="Stageplot name..."
                   />
                 )}
               </div>
