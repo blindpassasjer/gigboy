@@ -366,10 +366,10 @@ export default function StageplotEditor({
   };
 
   return (
-    <section className="setlist-view stageplot-view">
-      <div className="song-list-sticky">
-        <div className="setlist-header songlist-header">
-          <div className="setlist-title-block">
+    <section className="stageplot-view">
+      <div className="stageplot-sticky">
+        <div className="stageplot-header">
+          <div className="stageplot-title-block">
             {renaming ? (
               <input
                 type="text"
@@ -383,12 +383,12 @@ export default function StageplotEditor({
                   }
                 }}
                 onBlur={handleRenameCommit}
-                className="setlist-name-input"
+                className="stageplot-name-input"
               />
             ) : (
-              <div className="song-list-title-row">
-                <h1 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
-                  {stageplot.icon ? <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
+              <div className="stageplot-title-row">
+                <h1 className="stageplot-heading" onDoubleClick={() => canEdit && setRenaming(true)}>
+                  {stageplot.icon ? <span className="stageplot-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
                   <span>{stageplot.name}</span>
                 </h1>
                 {canEdit ? (
@@ -404,11 +404,11 @@ export default function StageplotEditor({
                 ) : null}
               </div>
             )}
-            <p className="song-list-summary setlist-song-count">
+            <p className="stageplot-item-count">
               {items.length} item{items.length === 1 ? '' : 's'}{saving ? ' • Saving…' : ''}
             </p>
           </div>
-          <div className="setlist-header-actions">
+          <div className="stageplot-header-actions">
             {canEdit ? (
               <button
                 type="button"
