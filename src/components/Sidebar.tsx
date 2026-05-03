@@ -55,10 +55,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addTechnicalRider,
   } = useTechnicalRiders();
   const {
-    stageplots,
-    activeStageplotId,
     setActiveStageplotId,
-    addStageplot,
   } = useStageplots();
 
   const {
@@ -87,7 +84,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const [addingSongList, setAddingSongList] = useState(false);
   const [addingSetlist, setAddingSetlist] = useState(false);
-  const [addingStageplot, setAddingStageplot] = useState(false);
   const [addingBand, setAddingBand] = useState(false);
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
@@ -102,7 +98,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
   const [soloSonglistsExpanded, setSoloSonglistsExpanded] = useState(true);
   const [soloSetlistsExpanded, setSoloSetlistsExpanded] = useState(true);
-  const [soloStageplotsExpanded, setSoloStageplotsExpanded] = useState(true);
   const [soloRidersExpanded, setSoloRidersExpanded] = useState(true);
   const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
