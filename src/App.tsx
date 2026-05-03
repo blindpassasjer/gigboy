@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
@@ -57,6 +57,10 @@ function AuthenticatedApp() {
   );
 }
 
+const router = createBrowserRouter([
+  { path: '*', element: <AuthenticatedApp /> },
+]);
+
 export default function App() {
   return (
     <AuthProvider>
@@ -75,11 +79,7 @@ export default function App() {
         }}
         position="top-center"
       />
-      <BrowserRouter>
-        <Routes>
-          <Route path="*" element={<AuthenticatedApp />} />
-        </Routes>
-      </BrowserRouter>
+      <RouterProvider router={router} />
     </AuthProvider>
   );
 }
