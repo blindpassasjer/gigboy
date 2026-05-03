@@ -1,4 +1,4 @@
-import type { Setlist, Song, SongList, TrashItemType } from '../types';
+import type { Setlist, Song, SongList, Stageplot, TrashItemType } from '../types';
 
 export const TRASH_COLLECTION = 'trashItems';
 export const TRASH_RETENTION_DAYS = 30;
@@ -96,6 +96,23 @@ export function parseSetlistTrashRecord(id: string, raw: Record<string, unknown>
   return {
     id,
     itemType: 'setlist',
+    deletedAt: raw.deletedAt,
+    purgeAt: raw.purgeAt,
+    data,
+  };
+}
+
+export function parseStageplotTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<Stageplot> | null {
+  if (raw.itemType !== 'stageplot') return null;
+  if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
+  if (!raw.data || typeof raw.data !== 'object') return null;
+
+  const data = raw.data as Stageplot;
+  if (typeof data.id !== 'string' || typeof data.name !== 'string' || !Array.isArray(data.items)) return null;
+
+  return {
+    id,
+    itemType: 'stageplot',
     deletedAt: raw.deletedAt,
     purgeAt: raw.purgeAt,
     data,

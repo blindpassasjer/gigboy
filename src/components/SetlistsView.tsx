@@ -1,6 +1,6 @@
 import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Trash2, Music, Plus, Search, X, Printer, PenLine, Play, Smile } from 'lucide-react';
+import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, Smile } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
@@ -107,10 +107,6 @@ export default function SetlistsView({
   const closeSongPicker = () => {
     setShowSongPicker(false);
     setPickerQuery('');
-  };
-
-  const handlePrintSetlist = () => {
-    window.print();
   };
 
   const handleDeleteSetlist = async () => {
@@ -291,14 +287,6 @@ export default function SetlistsView({
                 <Play size={14} />
               </button>
             )}
-            <button
-              className="setlist-action-btn setlist-action-btn--secondary"
-              type="button"
-              onClick={handlePrintSetlist}
-              title={`Print ${setlistName}`}
-            >
-              <Printer size={14} />
-            </button>
             <button
               className="setlist-action-btn setlist-action-btn--secondary"
               onClick={openSongPicker}

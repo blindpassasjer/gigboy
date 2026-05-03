@@ -14,6 +14,7 @@ import {
   TRASH_COLLECTION,
 } from '../lib/trash';
 import { useAuth } from './AuthContext';
+import type { PublicSongEntry } from '../types';
 
 const KEY_SETLISTS = 'songbook-setlists';
 const KEY_ACTIVE_SETLIST = 'songbook-active-setlist';
@@ -128,6 +129,7 @@ interface SetlistsContextValue {
   deleteSetlistPermanently: (trashId: string) => Promise<string | null>;
   renameSetlist: (id: string, name: string) => void;
   updateSetlistIcon: (id: string, icon?: string) => void;
+  setSetlistPublicShare: (id: string, enabled: boolean, publicSongs?: PublicSongEntry[]) => Promise<string | null>;
   addSongToSetlist: (setlistId: string, songId: string) => void;
   removeSongFromSetlist: (setlistId: string, songId: string) => void;
   moveSongInSetlist: (setlistId: string, songId: string, beforeSongId: string | null) => void;
@@ -415,6 +417,40 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
+  const setSetlistPublicShare = useCallback(async (id: string, enabled: boolean, publicSongs?: PublicSongEntry[]) => {
+    if (!db || !userId) {
+      return 'Setlists require cloud sync.';
+    }
+
+    const setlist = setlists.find((entry) => entry.id === id);
+    if (!setlist) return 'Setlist not found.';
+    if (!isSetlistOwner(setlist, userId)) return 'Only the owner can share setlists publicly.';
+
+    const nextSetlist = {
+      ...setlist,
+      publicShareEnabled: enabled || undefined,
+      publicSongs: enabled ? (publicSongs ?? setlist.publicSongs ?? []) : undefined,
+      updatedAt: new Date().toISOString(),
+    };
+    const previousSetlists = setlists;
+    const nextSetlists = setlists.map((entry) => (entry.id === id ? nextSetlist : entry));
+
+    setSetlists(nextSetlists);
+
+    try {
+      await writeSetlist(nextSetlist, userId);
+      return null;
+    } catch (error) {
+      setSetlists(previousSetlists);
+      if (isPermissionDeniedError(error)) {
+        logSetlistsPermissionHelp(error);
+      } else {
+        console.error('Failed to update setlist sharing in Firestore.', error);
+      }
+      return error instanceof Error ? error.message : 'Failed to update setlist sharing.';
+    }
+  }, [setlists, userId]);
+
   const addSongToSetlist = useCallback((setlistId: string, songId: string) => {
     setSetlists((prev) => {
       const setlist = prev.find((l) => l.id === setlistId);
@@ -511,6 +547,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
         deleteSetlistPermanently,
         renameSetlist,
         updateSetlistIcon,
+        setSetlistPublicShare,
         addSongToSetlist,
         removeSongFromSetlist,
         moveSongInSetlist,

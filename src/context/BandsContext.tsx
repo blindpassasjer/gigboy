@@ -5,10 +5,14 @@ import { collection, deleteDoc, doc, getDocs, onSnapshot, query, setDoc, where }
 import type {
   Band,
   CollaborationPermission,
+  SongHandNoteDocument,
   PublicSongEntry,
   Setlist,
   Song,
   SongList,
+  Stageplot,
+  StageplotItem,
+  TrashedStageplot,
   TrashedSetlist,
   TrashedSong,
   TrashedSongList,
@@ -25,6 +29,7 @@ import {
   compareTrashByDeletedAtDesc,
   createTrashTimestamps,
   isTrashExpired,
+  parseStageplotTrashRecord,
   parseSetlistTrashRecord,
   parseSongListTrashRecord,
   parseSongTrashRecord,
@@ -36,6 +41,7 @@ const BANDS_COLLECTION = 'bands';
 const BAND_SONGS_COLLECTION = 'songs';
 const BAND_SONGLISTS_COLLECTION = 'songLists';
 const BAND_SETLISTS_COLLECTION = 'setlists';
+const BAND_STAGEPLOTS_COLLECTION = 'stageplots';
 
 function compareBands(a: Band, b: Band) {
   const updatedAtA = a.updatedAt ?? a.createdAt;
@@ -200,6 +206,89 @@ function normalizeBandSetlist(id: string, data: Record<string, unknown>): Setlis
   };
 }
 
+function normalizeStageplotItem(raw: unknown): StageplotItem | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+  if (typeof data.id !== 'string') return null;
+
+  return {
+    id: data.id,
+    kind: typeof data.kind === 'string' ? data.kind : 'custom',
+    label: typeof data.label === 'string' ? data.label : 'Item',
+    x: typeof data.x === 'number' && Number.isFinite(data.x) ? data.x : 0.5,
+    y: typeof data.y === 'number' && Number.isFinite(data.y) ? data.y : 0.5,
+    color: typeof data.color === 'string' ? data.color : undefined,
+  };
+}
+
+function normalizeStageplotLayer(raw: unknown): SongHandNoteDocument | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+  if (typeof data.authorUid !== 'string') return null;
+
+  const viewportRaw = data.viewport && typeof data.viewport === 'object'
+    ? (data.viewport as Record<string, unknown>)
+    : {};
+
+  const viewport = {
+    width: typeof viewportRaw.width === 'number' && viewportRaw.width > 0 ? viewportRaw.width : 1,
+    height: typeof viewportRaw.height === 'number' && viewportRaw.height > 0 ? viewportRaw.height : 1,
+  };
+
+  const strokes = Array.isArray(data.strokes)
+    ? data.strokes.filter((stroke): stroke is SongHandNoteDocument['strokes'][number] => (
+      Boolean(stroke)
+      && typeof stroke === 'object'
+      && typeof (stroke as Record<string, unknown>).id === 'string'
+      && typeof (stroke as Record<string, unknown>).color === 'string'
+      && typeof (stroke as Record<string, unknown>).width === 'number'
+      && Array.isArray((stroke as Record<string, unknown>).points)
+      && typeof (stroke as Record<string, unknown>).createdAt === 'string'
+    ))
+    : [];
+
+  return {
+    authorUid: data.authorUid,
+    authorName: typeof data.authorName === 'string' ? data.authorName : null,
+    authorAvatar: typeof data.authorAvatar === 'string' ? data.authorAvatar : null,
+    updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString(),
+    viewport,
+    strokes,
+  };
+}
+
+function normalizeBandStageplot(id: string, data: Record<string, unknown>): Stageplot {
+  return {
+    id,
+    name: typeof data.name === 'string' ? data.name : 'Untitled stageplot',
+    icon: typeof data.icon === 'string' ? data.icon : undefined,
+    items: Array.isArray(data.items)
+      ? data.items.map(normalizeStageplotItem).filter((entry): entry is StageplotItem => Boolean(entry))
+      : [],
+    drawingLayers: Array.isArray(data.drawingLayers)
+      ? data.drawingLayers.map(normalizeStageplotLayer).filter((entry): entry is SongHandNoteDocument => Boolean(entry))
+      : [],
+    publicShareEnabled: data.publicShareEnabled === true ? true : undefined,
+    bandName: typeof data.bandName === 'string' ? data.bandName : undefined,
+    sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : undefined,
+    createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
+    updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,
+    ownerId: typeof data.ownerId === 'string' ? data.ownerId : undefined,
+    collaboratorIds: Array.isArray(data.collaboratorIds)
+      ? data.collaboratorIds.filter((entry): entry is string => typeof entry === 'string')
+      : undefined,
+    collaborationPermissions:
+      typeof data.collaborationPermissions === 'object' && data.collaborationPermissions !== null
+        ? Object.fromEntries(
+            Object.entries(data.collaborationPermissions as Record<string, unknown>).filter(
+              ([, permission]) => permission === 'viewer' || permission === 'editor'
+            )
+          ) as Record<string, CollaborationPermission>
+        : undefined,
+    accessRole: 'owner',
+  };
+}
+
 function sortBandSongLists(songLists: SongList[]) {
   return [...songLists].sort((a, b) => {
     const aSortOrder = typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
@@ -218,6 +307,15 @@ function buildPublicSongs(songIds: string[], songs: Song[]): PublicSongEntry[] {
 }
 
 function sortBandSetlists(setlists: Setlist[]) {  return [...setlists].sort((a, b) => {
+    const aSortOrder = typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
+    const bSortOrder = typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
+    if (aSortOrder !== bSortOrder) return aSortOrder - bSortOrder;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function sortBandStageplots(stageplots: Stageplot[]) {
+  return [...stageplots].sort((a, b) => {
     const aSortOrder = typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
     const bSortOrder = typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
     if (aSortOrder !== bSortOrder) return aSortOrder - bSortOrder;
@@ -257,6 +355,10 @@ function withSequentialSetlistSortOrder(setlists: Setlist[]) {
   return setlists.map((setlist, index) => ({ ...setlist, sortOrder: index }));
 }
 
+function withSequentialStageplotSortOrder(stageplots: Stageplot[]) {
+  return stageplots.map((stageplot, index) => ({ ...stageplot, sortOrder: index }));
+}
+
 function moveSongId(songIds: string[], songId: string, beforeSongId: string | null) {
   const currentIndex = songIds.indexOf(songId);
   if (currentIndex < 0) return songIds;
@@ -279,13 +381,15 @@ function moveSongId(songIds: string[], songId: string, beforeSongId: string | nu
 type BandTrashItem =
   | (TrashedSong & { bandId: string })
   | (TrashedSongList & { bandId: string })
-  | (TrashedSetlist & { bandId: string });
+  | (TrashedSetlist & { bandId: string })
+  | (TrashedStageplot & { bandId: string });
 
 interface BandsContextValue {
   bands: Band[];
   bandSongsByBandId: Record<string, Song[]>;
   bandSongListsByBandId: Record<string, SongList[]>;
   bandSetlistsByBandId: Record<string, Setlist[]>;
+  bandStageplotsByBandId: Record<string, Stageplot[]>;
   bandTrashByBandId: Record<string, BandTrashItem[]>;
   loading: boolean;
   cloudRequired: boolean;
@@ -300,6 +404,7 @@ interface BandsContextValue {
   refreshBandSongs: (bandId: string) => Promise<void>;
   refreshBandSongLists: (bandId: string) => Promise<void>;
   refreshBandSetlists: (bandId: string) => Promise<void>;
+  refreshBandStageplots: (bandId: string) => Promise<void>;
   refreshBandTrash: (bandId: string) => Promise<void>;
   addSongToBandLibrary: (bandId: string, song: Song) => Promise<string | null>;
   removeSongFromBandLibrary: (bandId: string, songId: string) => Promise<string | null>;
@@ -320,6 +425,17 @@ interface BandsContextValue {
   addSongToBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
   removeSongFromBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
   moveSongInBandSetlist: (bandId: string, setlistId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
+  addBandStageplot: (bandId: string, name: string) => Promise<{ stageplotId: string | null; error: string | null }>;
+  renameBandStageplot: (bandId: string, stageplotId: string, name: string) => Promise<string | null>;
+  updateBandStageplotIcon: (bandId: string, stageplotId: string, icon?: string) => Promise<string | null>;
+  setBandStageplotPublicShare: (bandId: string, stageplotId: string, enabled: boolean) => Promise<string | null>;
+  updateBandStageplotContent: (params: {
+    bandId: string;
+    stageplotId: string;
+    items: StageplotItem[];
+    drawingLayers: SongHandNoteDocument[];
+  }) => Promise<string | null>;
+  deleteBandStageplot: (bandId: string, stageplotId: string) => Promise<string | null>;
   restoreBandTrashItem: (bandId: string, trashId: string) => Promise<string | null>;
   deleteBandTrashItemPermanently: (bandId: string, trashId: string) => Promise<string | null>;
 }
@@ -337,6 +453,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandSongsByBandId, setBandSongsByBandId] = useState<Record<string, Song[]>>({});
   const [bandSongListsByBandId, setBandSongListsByBandId] = useState<Record<string, SongList[]>>({});
   const [bandSetlistsByBandId, setBandSetlistsByBandId] = useState<Record<string, Setlist[]>>({});
+  const [bandStageplotsByBandId, setBandStageplotsByBandId] = useState<Record<string, Stageplot[]>>({});
   const [bandTrashByBandId, setBandTrashByBandId] = useState<Record<string, BandTrashItem[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
 
@@ -359,6 +476,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBandSongsByBandId({});
       setBandSongListsByBandId({});
       setBandSetlistsByBandId({});
+      setBandStageplotsByBandId({});
       setBandTrashByBandId({});
       setLoading(false);
       return;
@@ -427,6 +545,20 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }));
   }, [userId]);
 
+  const refreshBandStageplots = useCallback(async (bandId: string) => {
+    if (!db || !userId) return;
+
+    const snapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION));
+    const stageplots = sortBandStageplots(
+      snapshot.docs.map((entry) => normalizeBandStageplot(entry.id, entry.data() as Record<string, unknown>))
+    );
+
+    setBandStageplotsByBandId((prev) => ({
+      ...prev,
+      [bandId]: stageplots,
+    }));
+  }, [userId]);
+
   const refreshBandTrash = useCallback(async (bandId: string) => {
     if (!db || !userId) return;
 
@@ -443,6 +575,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
     const parsedSetlists = snapshot.docs
       .map((entry) => parseSetlistTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+    const parsedStageplots = snapshot.docs
+      .map((entry) => parseStageplotTrashRecord(entry.id, entry.data() as Record<string, unknown>))
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
     const items: BandTrashItem[] = [
@@ -469,6 +604,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         deletedAt: entry.deletedAt,
         purgeAt: entry.purgeAt,
         setlist: entry.data,
+      })),
+      ...parsedStageplots.map((entry) => ({
+        bandId,
+        trashId: entry.id,
+        itemType: 'stageplot' as const,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+        stageplot: entry.data,
       })),
     ];
 
@@ -584,6 +727,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         delete next[bandId];
         return next;
       });
+      setBandStageplotsByBandId((prev) => {
+        const next = { ...prev };
+        delete next[bandId];
+        return next;
+      });
       setBandTrashByBandId((prev) => {
         const next = { ...prev };
         delete next[bandId];
@@ -603,9 +751,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         const songsSnapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION));
         const songListsSnapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION));
         const setlistsSnapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION));
+        const stageplotsSnapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION));
         await Promise.all(songsSnapshot.docs.map((entry) => deleteDoc(entry.ref)));
         await Promise.all(songListsSnapshot.docs.map((entry) => deleteDoc(entry.ref)));
         await Promise.all(setlistsSnapshot.docs.map((entry) => deleteDoc(entry.ref)));
+        await Promise.all(stageplotsSnapshot.docs.map((entry) => deleteDoc(entry.ref)));
         await deleteDoc(doc(db, BANDS_COLLECTION, bandId));
 
         setBands((prev) => prev.filter((entry) => entry.id !== bandId));
@@ -620,6 +770,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           return next;
         });
         setBandSetlistsByBandId((prev) => {
+          const next = { ...prev };
+          delete next[bandId];
+          return next;
+        });
+        setBandStageplotsByBandId((prev) => {
           const next = { ...prev };
           delete next[bandId];
           return next;
@@ -1706,6 +1861,313 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandSetlistsByBandId, bandSongsByBandId, bands, userId]);
 
+  const addBandStageplot = useCallback(async (bandId: string, name: string) => {
+    if (!db || !userId) {
+      return { stageplotId: null, error: 'Band stageplots require cloud sync.' };
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return { stageplotId: null, error: 'Band not found.' };
+    }
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return { stageplotId: null, error: 'You do not have permission to edit this band.' };
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return { stageplotId: null, error: 'Stageplot name is required.' };
+    }
+
+    const stageplotId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const currentStageplots = bandStageplotsByBandId[bandId] ?? [];
+    const nextStageplot: Stageplot = {
+      id: stageplotId,
+      name: trimmedName,
+      items: [],
+      drawingLayers: [],
+      sortOrder: currentStageplots.length,
+      createdAt: now,
+      updatedAt: now,
+      ownerId: band.ownerId,
+      collaboratorIds: band.memberIds,
+      collaborationPermissions: Object.fromEntries(
+        band.memberIds.map((memberId) => [memberId, band.memberRoles[memberId] ?? 'viewer'])
+      ),
+      accessRole: 'owner',
+    };
+
+    try {
+      const { id, accessRole, ...payload } = nextStageplot;
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId), payload);
+      await refreshBandStageplots(bandId);
+      return { stageplotId, error: null };
+    } catch (error) {
+      return {
+        stageplotId: null,
+        error: error instanceof Error ? error.message : 'Failed to create band stageplot.',
+      };
+    }
+  }, [bandStageplotsByBandId, bands, refreshBandStageplots, userId]);
+
+  const renameBandStageplot = useCallback(async (bandId: string, stageplotId: string, name: string) => {
+    if (!db || !userId) {
+      return 'Band stageplots require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const trimmedName = name.trim();
+    if (!trimmedName) return 'Stageplot name is required.';
+
+    const previousStageplots = bandStageplotsByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    const nextStageplots = previousStageplots.map((stageplot) => (
+      stageplot.id === stageplotId ? { ...stageplot, name: trimmedName, updatedAt: now } : stageplot
+    ));
+
+    setBandStageplotsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextStageplots,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId), {
+        name: trimmedName,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandStageplotsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousStageplots,
+      }));
+      return error instanceof Error ? error.message : 'Failed to rename band stageplot.';
+    }
+  }, [bandStageplotsByBandId, bands, userId]);
+
+  const updateBandStageplotIcon = useCallback(async (bandId: string, stageplotId: string, icon?: string) => {
+    if (!db || !userId) {
+      return 'Band stageplots require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousStageplots = bandStageplotsByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    const nextStageplots = previousStageplots.map((stageplot) => (
+      stageplot.id === stageplotId ? { ...stageplot, icon, updatedAt: now } : stageplot
+    ));
+
+    setBandStageplotsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextStageplots,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId), {
+        icon,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandStageplotsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousStageplots,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band stageplot icon.';
+    }
+  }, [bandStageplotsByBandId, bands, userId]);
+
+  const setBandStageplotPublicShare = useCallback(async (bandId: string, stageplotId: string, enabled: boolean) => {
+    if (!db || !userId) {
+      return 'Band stageplots require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousStageplots = bandStageplotsByBandId[bandId] ?? [];
+    const targetStageplot = previousStageplots.find((stageplot) => stageplot.id === stageplotId);
+    if (!targetStageplot) return 'Stageplot not found.';
+
+    const now = new Date().toISOString();
+    const nextStageplots = previousStageplots.map((stageplot) => (
+      stageplot.id === stageplotId
+        ? { ...stageplot, publicShareEnabled: enabled || undefined, bandName: enabled ? band.name : undefined, updatedAt: now }
+        : stageplot
+    ));
+
+    setBandStageplotsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextStageplots,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId), {
+        publicShareEnabled: enabled || null,
+        bandName: enabled ? band.name : null,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandStageplotsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousStageplots,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update stageplot sharing.';
+    }
+  }, [bandStageplotsByBandId, bands, userId]);
+
+  const updateBandStageplotContent = useCallback(async (params: {
+    bandId: string;
+    stageplotId: string;
+    items: StageplotItem[];
+    drawingLayers: SongHandNoteDocument[];
+  }) => {
+    const {
+      bandId,
+      stageplotId,
+      items,
+      drawingLayers,
+    } = params;
+
+    if (!db || !userId) {
+      return 'Band stageplots require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') return 'You do not have permission to edit this band.';
+
+    const previousStageplots = bandStageplotsByBandId[bandId] ?? [];
+    const targetStageplot = previousStageplots.find((stageplot) => stageplot.id === stageplotId);
+    if (!targetStageplot) return 'Stageplot not found.';
+
+    const now = new Date().toISOString();
+    const nextStageplot: Stageplot = {
+      ...targetStageplot,
+      items,
+      drawingLayers,
+      updatedAt: now,
+    };
+
+    const nextStageplots = previousStageplots.map((stageplot) => (
+      stageplot.id === stageplotId ? nextStageplot : stageplot
+    ));
+
+    setBandStageplotsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextStageplots,
+    }));
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId), {
+        items,
+        drawingLayers,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandStageplotsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousStageplots,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update stageplot.';
+    }
+  }, [bandStageplotsByBandId, bands, userId]);
+
+  const deleteBandStageplot = useCallback(async (bandId: string, stageplotId: string) => {
+    if (!db || !userId) {
+      return 'Band stageplots require cloud sync.';
+    }
+
+    const firestore = db;
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const role = band.ownerId === userId ? 'editor' : band.memberRoles[userId];
+    if (role !== 'editor') {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const previousStageplots = bandStageplotsByBandId[bandId] ?? [];
+    const stageplotToDelete = previousStageplots.find((stageplot) => stageplot.id === stageplotId);
+    if (!stageplotToDelete) {
+      return null;
+    }
+
+    const { deletedAt, purgeAt } = createTrashTimestamps();
+    const trashId = crypto.randomUUID();
+    const nextStageplots = withSequentialStageplotSortOrder(
+      previousStageplots.filter((stageplot) => stageplot.id !== stageplotId)
+    );
+
+    setBandStageplotsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextStageplots,
+    }));
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: [
+        {
+          bandId,
+          trashId,
+          itemType: 'stageplot' as const,
+          deletedAt,
+          purgeAt,
+          stageplot: stageplotToDelete,
+        },
+        ...(prev[bandId] ?? []),
+      ].sort(compareTrashByDeletedAtDesc),
+    }));
+
+    try {
+      await Promise.all([
+        setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), {
+          itemType: 'stageplot',
+          deletedAt,
+          purgeAt,
+          data: stageplotToDelete,
+        }),
+        deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId)),
+        ...nextStageplots.map((stageplot) => setDoc(
+          doc(firestore, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplot.id),
+          { sortOrder: stageplot.sortOrder ?? 0 },
+          { merge: true }
+        )),
+      ]);
+      return null;
+    } catch (error) {
+      setBandStageplotsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousStageplots,
+      }));
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
+      }));
+      return error instanceof Error ? error.message : 'Failed to delete band stageplot.';
+    }
+  }, [bandStageplotsByBandId, bands, userId]);
+
   const restoreBandTrashItem = useCallback(async (bandId: string, trashId: string): Promise<string | null> => {
     if (!db || !userId) {
       return 'Band libraries require cloud sync.';
@@ -1815,6 +2277,56 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    if (target.itemType === 'stageplot') {
+      const previousStageplots = bandStageplotsByBandId[bandId] ?? [];
+      const restoredStageplot: Stageplot = {
+        ...target.stageplot,
+        sortOrder: previousStageplots.length,
+        updatedAt: new Date().toISOString(),
+      };
+      const nextStageplots = withSequentialStageplotSortOrder([
+        ...previousStageplots.filter((entry) => entry.id !== restoredStageplot.id),
+        restoredStageplot,
+      ]);
+
+      setBandStageplotsByBandId((prev) => ({
+        ...prev,
+        [bandId]: nextStageplots,
+      }));
+
+      try {
+        const { id, accessRole: _accessRole, ...restoredPayload } = restoredStageplot;
+        void _accessRole;
+        const payload = Object.fromEntries(
+          Object.entries(restoredPayload).filter(([, value]) => value !== undefined)
+        );
+
+        await Promise.all([
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, id), payload),
+          ...nextStageplots
+            .filter((entry) => entry.id !== id)
+            .map((entry) => setDoc(
+              doc(firestore, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, entry.id),
+              { sortOrder: entry.sortOrder ?? 0 },
+              { merge: true }
+            )),
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId)),
+        ]);
+
+        return null;
+      } catch (error) {
+        setBandStageplotsByBandId((prev) => ({
+          ...prev,
+          [bandId]: previousStageplots,
+        }));
+        setBandTrashByBandId((prev) => ({
+          ...prev,
+          [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
+        }));
+        return error instanceof Error ? error.message : 'Failed to restore band stageplot.';
+      }
+    }
+
     const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
     const restoredSetlist: Setlist = {
       ...target.setlist,
@@ -1862,7 +2374,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }));
       return error instanceof Error ? error.message : 'Failed to restore band setlist.';
     }
-  }, [bandSetlistsByBandId, bandSongListsByBandId, bandSongsByBandId, bandTrashByBandId, bands, userId]);
+  }, [bandSetlistsByBandId, bandSongListsByBandId, bandSongsByBandId, bandStageplotsByBandId, bandTrashByBandId, bands, userId]);
 
   const deleteBandTrashItemPermanently = useCallback(async (bandId: string, trashId: string): Promise<string | null> => {
     if (!db || !userId) {
@@ -1902,6 +2414,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     bandSongsByBandId,
     bandSongListsByBandId,
     bandSetlistsByBandId,
+    bandStageplotsByBandId,
     bandTrashByBandId,
     loading,
     cloudRequired: !firebaseEnabled,
@@ -1916,6 +2429,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
+    refreshBandStageplots,
     refreshBandTrash,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
@@ -1936,11 +2450,19 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     addSongToBandSetlist,
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
+    addBandStageplot,
+    renameBandStageplot,
+    updateBandStageplotIcon,
+    setBandStageplotPublicShare,
+    updateBandStageplotContent,
+    deleteBandStageplot,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
   }), [
+    addBandStageplot,
     addBandSetlist,
     addBandSongList,
+    bandStageplotsByBandId,
     addSongToBandSetlist,
     addSongToBandSongList,
     addSongToBandLibrary,
@@ -1953,6 +2475,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBands,
     createBand,
     deleteBandSetlist,
+    deleteBandStageplot,
     deleteBandSongList,
     deleteBandTrashItemPermanently,
     deleteBand,
@@ -1964,8 +2487,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     moveBandSong,
     refreshBandSetlists,
     refreshBandSongLists,
+    refreshBandStageplots,
     refreshBandTrash,
     renameBand,
+    renameBandStageplot,
     renameBandSetlist,
     renameBandSongList,
     updateBandSongListIcon,
@@ -1977,7 +2502,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     restoreBandTrashItem,
     updateBandLibraryIcon,
     updateBandSetlistIcon,
+    setBandStageplotPublicShare,
     setBandSetlistPublicShare,
+    updateBandStageplotContent,
+    updateBandStageplotIcon,
   ]);
 
   return <BandsContext.Provider value={value}>{children}</BandsContext.Provider>;

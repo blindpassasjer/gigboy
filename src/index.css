@@ -6014,3 +6014,88 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--accent, #0f766e);
   border-color: var(--accent, #0f766e);
 }
+
+.stageplot-view {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+}
+
+.stageplot-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: .5rem;
+}
+
+.stageplot-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.stageplot-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  align-items: center;
+}
+
+.stageplot-stage {
+  position: relative;
+  min-height: 56vh;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at 14% 18%, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 48%),
+    radial-gradient(circle at 80% 82%, color-mix(in srgb, var(--text) 7%, transparent) 0%, transparent 46%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 74%, #000 26%) 0%, var(--surface) 100%);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.stageplot-stage-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--border) 35%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border) 35%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: .55;
+  pointer-events: none;
+}
+
+.stageplot-item {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 68px;
+  padding: .26rem .5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 90%, #fff 10%);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
+  font-size: .78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: grab;
+  z-index: 10;
+}
+
+.stageplot-item:active {
+  cursor: grabbing;
+}
+
+.stageplot-item--selected {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent), 0 8px 20px rgba(0, 0, 0, .16);
+}
+
+.stageplot-item--public {
+  pointer-events: none;
+  cursor: default;
+}
+
+.stageplot-stage--public {
+  min-height: 60vh;
+}

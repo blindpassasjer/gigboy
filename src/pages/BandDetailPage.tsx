@@ -6,6 +6,7 @@ import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
+import StageplotEditor from '../components/StageplotEditor';
 import TrashView from '../components/TrashView';
 import UserAvatar from '../components/UserAvatar';
 import type { CollaborationPermission, Song } from '../types';
@@ -22,12 +23,14 @@ export default function BandDetailPage() {
     bandSongsByBandId,
     bandSongListsByBandId,
     bandSetlistsByBandId,
+    bandStageplotsByBandId,
     bandTrashByBandId,
     loading,
     renameBand,
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
+    refreshBandStageplots,
     refreshBandTrash,
     inviteMember,
     changeMemberRole,
@@ -51,6 +54,11 @@ export default function BandDetailPage() {
     addSongToBandSetlist,
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
+    renameBandStageplot,
+    updateBandStageplotIcon,
+    setBandStageplotPublicShare,
+    updateBandStageplotContent,
+    deleteBandStageplot,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
   } = useBands();
@@ -59,6 +67,7 @@ export default function BandDetailPage() {
   const bandSongs = id ? (bandSongsByBandId[id] ?? []) : [];
   const bandSongLists = id ? (bandSongListsByBandId[id] ?? []) : [];
   const bandSetlists = id ? (bandSetlistsByBandId[id] ?? []) : [];
+  const bandStageplots = id ? (bandStageplotsByBandId[id] ?? []) : [];
   const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [inviteUsername, setInviteUsername] = useState('');
@@ -84,6 +93,9 @@ export default function BandDetailPage() {
   const activeBandSetlist = bandSection === 'setlists'
     ? bandSetlists.find((entry) => entry.id === bandResourceId) ?? null
     : null;
+  const activeBandStageplot = bandSection === 'stageplots'
+    ? bandStageplots.find((entry) => entry.id === bandResourceId) ?? null
+    : null;
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
 
   useEffect(() => {
@@ -107,6 +119,13 @@ export default function BandDetailPage() {
       console.error('Failed to load band setlists.', error);
     });
   }, [band, id, refreshBandSetlists]);
+
+  useEffect(() => {
+    if (!id || !band) return;
+    void refreshBandStageplots(id).catch((error) => {
+      console.error('Failed to load band stageplots.', error);
+    });
+  }, [band, id, refreshBandStageplots]);
 
   useEffect(() => {
     if (!id || !band) return;
@@ -330,6 +349,24 @@ export default function BandDetailPage() {
     }
   };
 
+  const handleShareStageplot = async () => {
+    if (!activeBandStageplot) return;
+    const publicUrl = `${window.location.origin}/public/bands/${band.id}/stageplots/${activeBandStageplot.id}`;
+    if (!activeBandStageplot.publicShareEnabled) {
+      const error = await setBandStageplotPublicShare(band.id, activeBandStageplot.id, true);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success('Public link copied to clipboard!');
+    } catch {
+      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
+    }
+  };
+
   if (bandSection === 'songlists') {
     if (!activeBandSongList) {
       return (
@@ -433,6 +470,55 @@ export default function BandDetailPage() {
     );
   }
 
+  if (bandSection === 'stageplots') {
+    if (!activeBandStageplot) {
+      return (
+        <section className="bands-page">
+          <p className="bands-status">Band stageplot not found.</p>
+          <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">Back to band library</Link>
+        </section>
+      );
+    }
+
+    return (
+      <StageplotEditor
+        stageplot={activeBandStageplot}
+        canEdit={canEditBand}
+        currentUser={{
+          id: user?.id ?? null,
+          name: user?.fullName?.trim() || user?.username?.trim() || user?.email || 'Unknown user',
+          avatar: user?.avatar,
+        }}
+        onRename={(name) => {
+          void renameBandStageplot(band.id, activeBandStageplot.id, name);
+        }}
+        onUpdateIcon={(icon) => {
+          void updateBandStageplotIcon(band.id, activeBandStageplot.id, icon);
+        }}
+        onDelete={async () => {
+          const error = await deleteBandStageplot(band.id, activeBandStageplot.id);
+          if (error) {
+            toast.error(error);
+            return;
+          }
+          navigate(`/bands/${band.id}/library`);
+        }}
+        onSaveContent={async (items, drawingLayers) => {
+          const error = await updateBandStageplotContent({
+            bandId: band.id,
+            stageplotId: activeBandStageplot.id,
+            items,
+            drawingLayers,
+          });
+          if (error) {
+            toast.error(error);
+          }
+        }}
+        onCopyPublicLink={handleShareStageplot}
+      />
+    );
+  }
+
   if (bandSection === 'trash') {
     const trashItems = bandTrash.map((entry) => {
       if (entry.itemType === 'song') {
@@ -455,9 +541,19 @@ export default function BandDetailPage() {
         };
       }
 
+      if (entry.itemType === 'stageplot') {
+        return {
+          trashId: entry.trashId,
+          itemType: 'stageplot' as const,
+          name: entry.stageplot.name,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
       return {
-        trashId: entry.trashId,
         itemType: 'setlist' as const,
+        trashId: entry.trashId,
         name: entry.setlist.name,
         deletedAt: entry.deletedAt,
         purgeAt: entry.purgeAt,

@@ -10,7 +10,6 @@ import {
   SlidersHorizontal,
   Check,
   Plus,
-  Printer,
   SquarePen,
   PenLine,
   Trash2,
@@ -566,19 +565,11 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               >
                 <SquarePen size={14} />
               </button>
-              <button
-                className="song-action-btn song-action-btn--print"
-                onClick={() => window.print()}
-                title="Print / Save as PDF"
-                aria-label="Print or save as PDF"
-              >
-                <Printer size={14} />
-              </button>
               <ShareMenu
                 resourceType="song"
                 resourceId={song.id}
                 resourceName={song.title}
-                buttonClassName="song-action-btn song-action-btn--print"
+                buttonClassName="song-action-btn"
                 buttonTitle={`Share ${song.title}`}
                 iconOnly
               />

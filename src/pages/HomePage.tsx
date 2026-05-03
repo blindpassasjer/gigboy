@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useSongs } from '../context/SongsContext';
 import { useSongLists } from '../context/SongListsContext';
@@ -38,6 +39,7 @@ export default function HomePage() {
   const {
     setlists,
     activeSetlistId,
+    setSetlistPublicShare,
     addSongToSetlist,
     removeSongFromSetlist,
     moveSongInSetlist,
@@ -319,6 +321,16 @@ export default function HomePage() {
           onAddSong={(songId) => addSongToSetlist(activeSetlist.id, songId)}
           onMoveSong={(songId, beforeSongId) => moveSongInSetlist(activeSetlist.id, songId, beforeSongId)}
           onRemoveSong={(songId) => removeSongFromSetlist(activeSetlist.id, songId)}
+          extraActions={(
+            <button
+              type="button"
+              className={`setlist-action-btn setlist-action-btn--secondary${activeSetlist.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
+              onClick={() => void handleShareSetlist()}
+              title={activeSetlist.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
+            >
+              <Link2 size={14} />
+            </button>
+          )}
 
         />
         {copyDialogNode}
@@ -388,6 +400,41 @@ export default function HomePage() {
     if (!confirmed) return;
 
     deleteSongList(activeList.id);
+  }
+
+  async function handleShareSetlist() {
+    if (!activeSetlist) return;
+    const ownerId = activeSetlist.ownerId;
+    if (!ownerId) {
+      toast.error('This setlist cannot be publicly shared yet. Please sync your account first.');
+      return;
+    }
+
+    const publicUrl = `${window.location.origin}/public/users/${ownerId}/setlists/${activeSetlist.id}`;
+
+    if (!activeSetlist.publicShareEnabled) {
+      const publicSongs = activeSetlist.songIds
+        .map((songId) => songsById.get(songId))
+        .filter((song): song is Song => Boolean(song))
+        .map((song) => ({
+          id: song.id,
+          title: song.title,
+          ...(song.artist ? { artist: song.artist } : {}),
+        }));
+
+      const error = await setSetlistPublicShare(activeSetlist.id, true, publicSongs);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success('Public link copied to clipboard!');
+    } catch {
+      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
+    }
   }
 
   return (

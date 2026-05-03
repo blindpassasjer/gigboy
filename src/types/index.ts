@@ -98,7 +98,30 @@ export interface Setlist extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export type TrashItemType = 'song' | 'songlist' | 'setlist';
+export interface StageplotItem {
+  id: string;
+  kind: string;
+  label: string;
+  x: number;
+  y: number;
+  color?: string;
+}
+
+export interface Stageplot extends CollaborationMetadata {
+  id: string;
+  name: string;
+  icon?: string;
+  items: StageplotItem[];
+  drawingLayers?: SongHandNoteDocument[];
+  publicShareEnabled?: boolean;
+  /** Band name denormalized for unauthenticated public reads. */
+  bandName?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  sortOrder?: number;
+}
+
+export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'stageplot';
 
 export interface TrashMetadata {
   trashId: string;
@@ -119,6 +142,11 @@ export interface TrashedSongList extends TrashMetadata {
 export interface TrashedSetlist extends TrashMetadata {
   itemType: 'setlist';
   setlist: Setlist;
+}
+
+export interface TrashedStageplot extends TrashMetadata {
+  itemType: 'stageplot';
+  stageplot: Stageplot;
 }
 
 export type Language =
