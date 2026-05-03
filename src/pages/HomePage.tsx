@@ -7,9 +7,11 @@ import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useStageplots } from '../context/StageplotsContext';
+import { useTechnicalRiders } from '../context/TechnicalRidersContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
+import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 
@@ -58,6 +60,14 @@ export default function HomePage() {
     setStageplotPublicShare,
   } = useStageplots();
   const {
+    technicalRiders,
+    activeTechnicalRiderId,
+    renameTechnicalRider,
+    deleteTechnicalRider,
+    updateTechnicalRiderContent,
+    setTechnicalRiderPublicShare,
+  } = useTechnicalRiders();
+  const {
     bands,
     bandSongsByBandId,
     bandSongListsByBandId,
@@ -74,6 +84,7 @@ export default function HomePage() {
   const activeList = songLists.find((l) => l.id === activeSongListId) ?? null;
   const activeSetlist = setlists.find((s) => s.id === activeSetlistId) ?? null;
   const activeStageplot = stageplots.find((entry) => entry.id === activeStageplotId) ?? null;
+  const activeTechnicalRider = technicalRiders.find((entry) => entry.id === activeTechnicalRiderId) ?? null;
   const activeCategory = categories.find((category) => category.id === activeCategoryId) ?? null;
   const songsById = new Map(songs.map((song) => [song.id, song]));
   const [allSongsIcon, setAllSongsIcon] = useState<string | undefined>(() => {
@@ -411,6 +422,60 @@ export default function HomePage() {
           if (error) toast.error(error);
         }}
         onCopyPublicLink={handleShareStageplot}
+      />
+    );
+  }
+
+  async function handleShareTechnicalRider() {
+    if (!activeTechnicalRider) return;
+    const ownerId = activeTechnicalRider.ownerId;
+    if (!ownerId) {
+      toast.error('This technical rider cannot be publicly shared yet. Please sync your account first.');
+      return;
+    }
+
+    const publicUrl = `${window.location.origin}/public/users/${ownerId}/riders/${activeTechnicalRider.id}`;
+
+    if (!activeTechnicalRider.publicShareEnabled) {
+      const error = await setTechnicalRiderPublicShare(activeTechnicalRider.id, true);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success('Public link copied to clipboard!');
+    } catch {
+      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
+    }
+  }
+
+  if (activeTechnicalRider) {
+    return (
+      <TechnicalRiderEditor
+        rider={activeTechnicalRider}
+        canEdit
+        onRename={async (name) => {
+          const error = await renameTechnicalRider(activeTechnicalRider.id, name);
+          if (error) toast.error(error);
+        }}
+        onDelete={async () => {
+          const error = await deleteTechnicalRider(activeTechnicalRider.id);
+          if (error) toast.error(error);
+        }}
+        onSaveContent={async (content) => {
+          const error = await updateTechnicalRiderContent({
+            riderId: activeTechnicalRider.id,
+            lines: content.lines,
+            preferredEquipment: content.preferredEquipment,
+            inventoryEquipment: content.inventoryEquipment,
+          });
+          if (error) toast.error(error);
+          else toast.success('Technical rider updated.');
+        }}
+        onCopyPublicLink={handleShareTechnicalRider}
       />
     );
   }
