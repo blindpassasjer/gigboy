@@ -57,6 +57,21 @@ export default function TrashPage() {
     return deleteSetlistPermanently(trashId);
   };
 
+  const handleEmptyTrash = async () => {
+    let failedCount = 0;
+
+    for (const item of items) {
+      const error = await handleDeletePermanently(item.trashId);
+      if (error) {
+        failedCount += 1;
+      }
+    }
+
+    if (failedCount === 0) return null;
+    if (failedCount === items.length) return 'Failed to empty trash.';
+    return `Deleted ${items.length - failedCount} item${items.length - failedCount === 1 ? '' : 's'}, but ${failedCount} item${failedCount === 1 ? '' : 's'} could not be deleted.`;
+  };
+
   return (
     <TrashView
       title="Solo Trash"
@@ -64,6 +79,7 @@ export default function TrashPage() {
       items={items}
       onRestore={handleRestore}
       onDeletePermanently={handleDeletePermanently}
+      onEmptyTrash={handleEmptyTrash}
     />
   );
 }

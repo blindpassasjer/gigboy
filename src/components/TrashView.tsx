@@ -17,6 +17,7 @@ interface Props {
   items: TrashListItem[];
   onRestore: (trashId: string) => Promise<string | null>;
   onDeletePermanently: (trashId: string) => Promise<string | null>;
+  onEmptyTrash?: () => Promise<string | null>;
 }
 
 function formatDate(iso: string) {
@@ -37,13 +38,17 @@ export default function TrashView({
   items,
   onRestore,
   onDeletePermanently,
+  onEmptyTrash,
 }: Props) {
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
+  const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
 
   const sortedItems = useMemo(
     () => [...items].sort((a, b) => b.deletedAt.localeCompare(a.deletedAt)),
     [items]
   );
+
+  const isBusy = busyItemId !== null || isEmptyingTrash;
 
   const handleRestore = async (trashId: string) => {
     setBusyItemId(trashId);
@@ -76,6 +81,29 @@ export default function TrashView({
     toast.success('Item permanently deleted.');
   };
 
+  const handleEmptyTrash = async () => {
+    if (!onEmptyTrash || sortedItems.length === 0) return;
+
+    const confirmed = await showConfirmToast(
+      `Empty trash and permanently delete ${sortedItems.length} item${sortedItems.length === 1 ? '' : 's'}? This cannot be undone.`,
+      {
+        confirmLabel: 'Empty trash',
+      }
+    );
+    if (!confirmed) return;
+
+    setIsEmptyingTrash(true);
+    const error = await onEmptyTrash();
+    setIsEmptyingTrash(false);
+
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    toast.success('Trash emptied.');
+  };
+
   return (
     <section className="bands-page bands-page--library trash-page">
       <div className="setlist-header songlist-header">
@@ -83,6 +111,19 @@ export default function TrashView({
           <h1 className="song-list-heading">{title}</h1>
           <p className="song-list-summary">Deleted items are automatically removed after 30 days.</p>
         </div>
+        {onEmptyTrash && sortedItems.length > 0 ? (
+          <div className="setlist-header-actions">
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--danger"
+              onClick={() => void handleEmptyTrash()}
+              disabled={isBusy}
+            >
+              <Trash2 size={14} />
+              Empty trash
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {sortedItems.length === 0 ? (
@@ -106,7 +147,7 @@ export default function TrashView({
                   type="button"
                   className="setlist-action-btn setlist-action-btn--secondary"
                   onClick={() => void handleRestore(item.trashId)}
-                  disabled={busyItemId === item.trashId}
+                  disabled={isBusy}
                 >
                   <RotateCcw size={14} />
                   Restore
@@ -115,7 +156,7 @@ export default function TrashView({
                   type="button"
                   className="setlist-action-btn setlist-action-btn--danger"
                   onClick={() => void handleDeletePermanently(item.trashId)}
-                  disabled={busyItemId === item.trashId}
+                  disabled={isBusy}
                 >
                   <Trash2 size={14} />
                   Delete forever
