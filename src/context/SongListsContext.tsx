@@ -14,6 +14,7 @@ import {
   TRASH_COLLECTION,
 } from '../lib/trash';
 import { useAuth } from './AuthContext';
+import { moveIdBefore } from '../utils/arrayUtils';
 
 const KEY_FOLDERS = 'folio-folders';
 const KEY_LISTS = 'folio-song-lists';
@@ -113,25 +114,6 @@ function isSongListOwner(songList: SongList, userId: string | null) {
 function songListFromDoc(id: string, data: Record<string, unknown>, ownerId: string, currentUserId: string): SongList {
   const songList = { id, ownerId, ...(data as Omit<SongList, 'id'>) } as SongList;
   return { ...songList, accessRole: roleForSongList(songList, currentUserId) };
-}
-
-function moveSongId(songIds: string[], songId: string, beforeSongId: string | null) {
-  const currentIndex = songIds.indexOf(songId);
-  if (currentIndex < 0) return songIds;
-
-  const nextSongIds = [...songIds];
-  nextSongIds.splice(currentIndex, 1);
-
-  if (beforeSongId === null) {
-    nextSongIds.push(songId);
-    return nextSongIds;
-  }
-
-  const targetIndex = nextSongIds.indexOf(beforeSongId);
-  if (targetIndex < 0) return songIds;
-
-  nextSongIds.splice(targetIndex, 0, songId);
-  return nextSongIds;
 }
 
 function findLastIndexByFolderId(songLists: SongList[], folderId: string | undefined) {
@@ -538,7 +520,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
       if (!list) return prev;
       if (!canEditSongList(list, userId)) return prev;
 
-      const nextSongIds = moveSongId(list.songIds, songId, beforeSongId);
+      const nextSongIds = moveIdBefore(list.songIds, songId, beforeSongId);
       if (nextSongIds === list.songIds) return prev;
 
       const nextList = { ...list, songIds: nextSongIds };

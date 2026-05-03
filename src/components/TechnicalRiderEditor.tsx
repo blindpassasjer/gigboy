@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link2, Plus, Trash2, PenLine, Smile } from 'lucide-react';
 import type { RiderEquipmentItem, TechnicalRider, TechnicalRiderLine } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
+import { ICON_OPTIONS } from '../lib/iconOptions';
 
 interface Props {
   rider: TechnicalRider;
@@ -16,8 +17,6 @@ interface Props {
   }) => Promise<void> | void;
   onCopyPublicLink: () => Promise<void> | void;
 }
-
-const EMOJI_OPTIONS = ['🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '🔊', '📦', '✨'] as const;
 
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
@@ -199,9 +198,9 @@ export default function TechnicalRiderEditor({
         {showIconEditor && canEdit ? (
           <div className="list-appearance-editor" role="region" aria-label="Technical rider icon settings">
             <div className="list-appearance-group">
-              <span className="list-appearance-label">Emoji</span>
+              <span className="list-appearance-label">Icon</span>
               <div className="emoji-choice-grid" role="listbox" aria-label="Technical rider emoji options">
-                {EMOJI_OPTIONS.map((emoji) => {
+                {ICON_OPTIONS.map((emoji) => {
                   const selected = iconDraft === emoji;
                   return (
                     <button

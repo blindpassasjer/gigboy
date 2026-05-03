@@ -47,6 +47,7 @@ import {
   withSequentialTechnicalRiderSortOrder,
 } from '../lib/technicalRiders';
 import { useAuth } from './AuthContext';
+import { moveIdBefore } from '../utils/arrayUtils';
 
 const BANDS_COLLECTION = 'bands';
 const BAND_SONGS_COLLECTION = 'songs';
@@ -374,25 +375,6 @@ function withSequentialSetlistSortOrder(setlists: Setlist[]) {
 
 function withSequentialStageplotSortOrder(stageplots: Stageplot[]) {
   return stageplots.map((stageplot, index) => ({ ...stageplot, sortOrder: index }));
-}
-
-function moveSongId(songIds: string[], songId: string, beforeSongId: string | null) {
-  const currentIndex = songIds.indexOf(songId);
-  if (currentIndex < 0) return songIds;
-
-  const nextSongIds = [...songIds];
-  nextSongIds.splice(currentIndex, 1);
-
-  if (beforeSongId === null) {
-    nextSongIds.push(songId);
-    return nextSongIds;
-  }
-
-  const targetIndex = nextSongIds.indexOf(beforeSongId);
-  if (targetIndex < 0) return songIds;
-
-  nextSongIds.splice(targetIndex, 0, songId);
-  return nextSongIds;
 }
 
 type BandTrashItem =
@@ -1475,7 +1457,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const targetSongList = previousSongLists.find((songList) => songList.id === songListId);
     if (!targetSongList) return null;
 
-    const nextSongIds = moveSongId(targetSongList.songIds, songId, beforeSongId);
+    const nextSongIds = moveIdBefore(targetSongList.songIds, songId, beforeSongId);
     if (nextSongIds === targetSongList.songIds) {
       return null;
     }
@@ -1872,7 +1854,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const targetSetlist = previousSetlists.find((setlist) => setlist.id === setlistId);
     if (!targetSetlist) return null;
 
-    const nextSongIds = moveSongId(targetSetlist.songIds, songId, beforeSongId);
+    const nextSongIds = moveIdBefore(targetSetlist.songIds, songId, beforeSongId);
     if (nextSongIds === targetSetlist.songIds) {
       return null;
     }

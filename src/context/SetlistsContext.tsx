@@ -15,6 +15,7 @@ import {
 } from '../lib/trash';
 import { useAuth } from './AuthContext';
 import type { PublicSongEntry } from '../types';
+import { moveIdBefore } from '../utils/arrayUtils';
 
 const KEY_SETLISTS = 'songbook-setlists';
 const KEY_ACTIVE_SETLIST = 'songbook-active-setlist';
@@ -98,25 +99,6 @@ function isSetlistOwner(setlist: Setlist, userId: string | null) {
 function setlistFromDoc(id: string, data: Record<string, unknown>, ownerId: string, userId: string): Setlist {
   const setlist = { id, ownerId, ...(data as Omit<Setlist, 'id'>) } as Setlist;
   return { ...setlist, accessRole: getRole(setlist, userId) };
-}
-
-function moveSongId(songIds: string[], songId: string, beforeSongId: string | null) {
-  const currentIndex = songIds.indexOf(songId);
-  if (currentIndex < 0) return songIds;
-
-  const nextSongIds = [...songIds];
-  nextSongIds.splice(currentIndex, 1);
-
-  if (beforeSongId === null) {
-    nextSongIds.push(songId);
-    return nextSongIds;
-  }
-
-  const targetIndex = nextSongIds.indexOf(beforeSongId);
-  if (targetIndex < 0) return songIds;
-
-  nextSongIds.splice(targetIndex, 0, songId);
-  return nextSongIds;
 }
 
 interface SetlistsContextValue {
@@ -511,7 +493,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       if (!setlist) return prev;
       if (!canEditSetlist(setlist, userId)) return prev;
 
-      const nextSongIds = moveSongId(setlist.songIds, songId, beforeSongId);
+      const nextSongIds = moveIdBefore(setlist.songIds, songId, beforeSongId);
       if (nextSongIds === setlist.songIds) return prev;
 
       const nextSetlist = { ...setlist, songIds: nextSongIds, updatedAt: new Date().toISOString() };

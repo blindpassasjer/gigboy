@@ -94,7 +94,6 @@ export default function StageplotEditor({
   onSaveContent,
   onCopyPublicLink,
 }: StageplotEditorProps) {
-  void onUpdateStageSettings;
   const stageRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<StageplotItem[]>(stageplot.items);
   const [drawingLayers, setDrawingLayers] = useState<SongHandNoteDocument[]>(stageplot.drawingLayers ?? []);
@@ -105,12 +104,13 @@ export default function StageplotEditor({
   const [iconDraft, setIconDraft] = useState(stageplot.icon ?? '🎤');
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [stageShapeDraft, setStageShapeDraft] = useState<'rectangle' | 'oval' | 'circle'>(stageplot.stageShape ?? 'rectangle');
+  const [stageSizeDraft, setStageSizeDraft] = useState<'small' | 'medium' | 'large'>(stageplot.stageSize ?? 'medium');
   const [saving, setSaving] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
 
   const stageShapePreview = stageShapeDraft;
-  const stageSizePreview = stageplot.stageSize ?? 'medium';
+  const stageSizePreview = stageSizeDraft;
 
   useEffect(() => {
     setItems(stageplot.items);
@@ -118,6 +118,7 @@ export default function StageplotEditor({
     setRenameValue(stageplot.name);
     setIconDraft(stageplot.icon ?? '🎤');
     setStageShapeDraft(stageplot.stageShape ?? 'rectangle');
+    setStageSizeDraft(stageplot.stageSize ?? 'medium');
   }, [stageplot]);
 
   const myLayer = useMemo(() => userLayerFrom(drawingLayers, currentUser.id), [currentUser.id, drawingLayers]);
@@ -518,7 +519,7 @@ export default function StageplotEditor({
         ) : null}
 
         {showIconEditor && canEdit ? (
-          <div className="list-appearance-editor" role="region" aria-label="Stageplot icon settings">
+          <div className="list-appearance-editor" role="region" aria-label="Stageplot appearance settings">
             <div className="list-appearance-group">
               <span className="list-appearance-label">Icon</span>
               <div className="emoji-choice-grid" role="listbox" aria-label="Stageplot icon options">
@@ -538,11 +539,44 @@ export default function StageplotEditor({
                 })}
               </div>
             </div>
+            <div className="list-appearance-group">
+              <span className="list-appearance-label">Stage shape</span>
+              <div className="stageplot-settings-btn-group" role="group" aria-label="Stage shape">
+                {(['rectangle', 'oval', 'circle'] as const).map((shape) => (
+                  <button
+                    key={shape}
+                    type="button"
+                    className={`setlist-action-btn setlist-action-btn--secondary${stageShapeDraft === shape ? ' setlist-action-btn--active' : ''}`}
+                    onClick={() => setStageShapeDraft(shape)}
+                    aria-pressed={stageShapeDraft === shape}
+                  >
+                    {shape.charAt(0).toUpperCase() + shape.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="list-appearance-group">
+              <span className="list-appearance-label">Stage size</span>
+              <div className="stageplot-settings-btn-group" role="group" aria-label="Stage size">
+                {(['small', 'medium', 'large'] as const).map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    className={`setlist-action-btn setlist-action-btn--secondary${stageSizeDraft === size ? ' setlist-action-btn--active' : ''}`}
+                    onClick={() => setStageSizeDraft(size)}
+                    aria-pressed={stageSizeDraft === size}
+                  >
+                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button
               type="button"
               className="setlist-action-btn"
               onClick={() => {
                 onUpdateIcon(normalizeEmojiIcon(iconDraft));
+                onUpdateStageSettings(stageShapeDraft, stageSizeDraft);
                 setShowIconEditor(false);
               }}
             >
