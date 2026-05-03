@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   AudioLines,
+  Bluetooth,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
@@ -31,6 +32,9 @@ interface ActiveChord {
   rect: DOMRect;
 }
 
+type PedalMappingTarget = 'previous' | 'next' | null;
+type PedalControlMode = 'song' | 'scroll';
+
 export default function SetlistConcertPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -58,8 +62,25 @@ export default function SetlistConcertPage() {
   const [showTuner, setShowTuner] = useState(false);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
   const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
+  const [isPedalConnected, setIsPedalConnected] = useState(false);
+  const [isPedalConnecting, setIsPedalConnecting] = useState(false);
+  const [pedalDeviceName, setPedalDeviceName] = useState('Pedal');
+  const [showPedalMapper, setShowPedalMapper] = useState(false);
+  const [pedalMappingTarget, setPedalMappingTarget] = useState<PedalMappingTarget>(null);
+  const [mappedPreviousCode, setMappedPreviousCode] = useState<number | null>(null);
+  const [mappedNextCode, setMappedNextCode] = useState<number | null>(null);
+  const [lastPedalSignalCode, setLastPedalSignalCode] = useState<number | null>(null);
+  const [pedalControlMode, setPedalControlMode] = useState<PedalControlMode>('song');
   const songScrollRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
+  const pedalDeviceRef = useRef<any>(null);
+  const pedalDisconnectHandlerRef = useRef<((event: Event) => void) | null>(null);
+  const pedalNotificationCleanupRef = useRef<(() => void) | null>(null);
+  const lastPedalTriggerAtRef = useRef(0);
+  const pedalMappingTargetRef = useRef<PedalMappingTarget>(null);
+  const mappedPreviousCodeRef = useRef<number | null>(null);
+  const mappedNextCodeRef = useRef<number | null>(null);
+  const pedalControlModeRef = useRef<PedalControlMode>('song');
 
   useEffect(() => {
     setCurrentIndex((current) => {
@@ -77,9 +98,75 @@ export default function SetlistConcertPage() {
     setActiveChord(null);
   }, [currentIndex]);
 
+  useEffect(() => {
+    pedalMappingTargetRef.current = pedalMappingTarget;
+  }, [pedalMappingTarget]);
+
+  useEffect(() => {
+    mappedPreviousCodeRef.current = mappedPreviousCode;
+  }, [mappedPreviousCode]);
+
+  useEffect(() => {
+    mappedNextCodeRef.current = mappedNextCode;
+  }, [mappedNextCode]);
+
+  useEffect(() => {
+    pedalControlModeRef.current = pedalControlMode;
+  }, [pedalControlMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('concertPedalMapping');
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { previous?: number | null; next?: number | null };
+      if (typeof parsed.previous === 'number') {
+        setMappedPreviousCode(parsed.previous);
+      }
+      if (typeof parsed.next === 'number') {
+        setMappedNextCode(parsed.next);
+      }
+    } catch {
+      // Ignore invalid mapping payloads from previous versions.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const payload = JSON.stringify({ previous: mappedPreviousCode, next: mappedNextCode });
+    window.localStorage.setItem('concertPedalMapping', payload);
+  }, [mappedNextCode, mappedPreviousCode]);
+
   const handleStopConcert = useCallback(async () => {
     navigate('/');
   }, [navigate]);
+
+  const formatPedalSignalCode = useCallback((value: number | null) => {
+    if (value === null) return 'Not set';
+    return `0x${value.toString(16).toUpperCase().padStart(2, '0')}`;
+  }, []);
+
+  const scrollByPedalStep = useCallback((direction: 'previous' | 'next') => {
+    const scrollRegion = songScrollRef.current;
+    if (!scrollRegion) return;
+    const step = Math.max(120, Math.round(scrollRegion.clientHeight * 0.22));
+    scrollRegion.scrollBy({
+      top: direction === 'previous' ? -step : step,
+      behavior: 'smooth',
+    });
+  }, []);
+
+  const triggerPedalAction = useCallback((direction: 'previous' | 'next') => {
+    if (pedalControlModeRef.current === 'scroll') {
+      scrollByPedalStep(direction);
+      return;
+    }
+    if (direction === 'previous') {
+      goToPrevious();
+      return;
+    }
+    goToNext();
+  }, [goToNext, goToPrevious, scrollByPedalStep]);
 
   const goToSong = useCallback((index: number) => {
     setCurrentIndex(Math.min(Math.max(index, 0), setlistSongs.length - 1));
@@ -107,6 +194,184 @@ export default function SetlistConcertPage() {
     else goToPrevious();
   }, [goToNext, goToPrevious]);
 
+  useEffect(() => () => {
+    if (pedalNotificationCleanupRef.current) {
+      pedalNotificationCleanupRef.current();
+      pedalNotificationCleanupRef.current = null;
+    }
+    const currentDevice = pedalDeviceRef.current;
+    const disconnectHandler = pedalDisconnectHandlerRef.current;
+    if (currentDevice && disconnectHandler && typeof currentDevice.removeEventListener === 'function') {
+      currentDevice.removeEventListener('gattserverdisconnected', disconnectHandler);
+    }
+  }, []);
+
+  const attachBluetoothPedalListeners = useCallback(async (device: any) => {
+    if (pedalNotificationCleanupRef.current) {
+      pedalNotificationCleanupRef.current();
+      pedalNotificationCleanupRef.current = null;
+    }
+
+    const gatt = device?.gatt;
+    if (!gatt || typeof gatt.getPrimaryServices !== 'function') return;
+
+    const cleanupCallbacks: Array<() => void> = [];
+    let foundNotificationCharacteristic = false;
+
+    const handleReport = (event: Event) => {
+      const target = event.target as { value?: DataView } | null;
+      const value = target?.value;
+      if (!value || value.byteLength === 0) return;
+
+      let hasPress = false;
+      for (let i = 0; i < value.byteLength; i += 1) {
+        if (value.getUint8(i) !== 0) {
+          hasPress = true;
+          break;
+        }
+      }
+      if (!hasPress) return;
+
+      const firstByte = value.getUint8(0);
+      setLastPedalSignalCode(firstByte);
+
+      const activeMappingTarget = pedalMappingTargetRef.current;
+      if (activeMappingTarget === 'previous') {
+        setMappedPreviousCode(firstByte);
+        setPedalMappingTarget(null);
+        return;
+      }
+      if (activeMappingTarget === 'next') {
+        setMappedNextCode(firstByte);
+        setPedalMappingTarget(null);
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastPedalTriggerAtRef.current < 180) return;
+      lastPedalTriggerAtRef.current = now;
+
+      const mappedPrevious = mappedPreviousCodeRef.current;
+      const mappedNext = mappedNextCodeRef.current;
+      if (mappedPrevious !== null || mappedNext !== null) {
+        if (mappedPrevious !== null && firstByte === mappedPrevious) {
+          triggerPedalAction('previous');
+          return;
+        }
+        if (mappedNext !== null && firstByte === mappedNext) {
+          triggerPedalAction('next');
+        }
+        return;
+      }
+
+      const shouldGoPrevious = firstByte === 2 || firstByte === 0x10 || (firstByte & 0x02) === 0x02;
+      if (shouldGoPrevious) {
+        triggerPedalAction('previous');
+        return;
+      }
+      triggerPedalAction('next');
+    };
+
+    try {
+      const services = await gatt.getPrimaryServices();
+      for (const service of services) {
+        if (typeof service.getCharacteristics !== 'function') continue;
+        const characteristics = await service.getCharacteristics();
+        for (const characteristic of characteristics) {
+          const properties = characteristic?.properties;
+          const canNotify = Boolean(properties?.notify || properties?.indicate);
+          if (!canNotify) continue;
+
+          await characteristic.startNotifications();
+          characteristic.addEventListener('characteristicvaluechanged', handleReport);
+          cleanupCallbacks.push(() => {
+            characteristic.removeEventListener('characteristicvaluechanged', handleReport);
+            if (typeof characteristic.stopNotifications === 'function') {
+              void characteristic.stopNotifications().catch(() => {});
+            }
+          });
+          foundNotificationCharacteristic = true;
+        }
+      }
+    } catch {
+      cleanupCallbacks.forEach((fn) => fn());
+      return;
+    }
+
+    if (!foundNotificationCharacteristic) {
+      cleanupCallbacks.forEach((fn) => fn());
+      return;
+    }
+
+    pedalNotificationCleanupRef.current = () => {
+      cleanupCallbacks.forEach((fn) => fn());
+    };
+  }, [triggerPedalAction]);
+
+  const handleSelectBluetoothPedal = useCallback(async () => {
+    if (!(navigator as Navigator & { bluetooth?: unknown }).bluetooth) {
+      setIsPedalConnected(false);
+      window.alert('Bluetooth is not available in this browser.');
+      return;
+    }
+
+    setIsPedalConnecting(true);
+    try {
+      const bluetoothNavigator = navigator as Navigator & {
+        bluetooth: {
+          requestDevice: (options: unknown) => Promise<any>;
+        };
+      };
+
+      const selectedDevice = await bluetoothNavigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['battery_service', 'human_interface_device'],
+      });
+
+      const previousDevice = pedalDeviceRef.current;
+      const previousDisconnectHandler = pedalDisconnectHandlerRef.current;
+      if (previousDevice && previousDisconnectHandler && typeof previousDevice.removeEventListener === 'function') {
+        previousDevice.removeEventListener('gattserverdisconnected', previousDisconnectHandler);
+      }
+
+      pedalDeviceRef.current = selectedDevice;
+      setPedalDeviceName(selectedDevice.name || 'Pedal');
+
+      const onDisconnect = () => {
+        setIsPedalConnected(false);
+        setShowPedalMapper(false);
+        setPedalMappingTarget(null);
+      };
+      pedalDisconnectHandlerRef.current = onDisconnect;
+      if (typeof selectedDevice.addEventListener === 'function') {
+        selectedDevice.addEventListener('gattserverdisconnected', onDisconnect);
+      }
+
+      if (selectedDevice.gatt && typeof selectedDevice.gatt.connect === 'function') {
+        await selectedDevice.gatt.connect();
+      }
+      await attachBluetoothPedalListeners(selectedDevice);
+      setIsPedalConnected(true);
+    } catch (error) {
+      const isAbort = error instanceof DOMException && error.name === 'NotFoundError';
+      if (!isAbort) {
+        setIsPedalConnected(false);
+        window.alert('Could not connect to Bluetooth pedal.');
+      }
+    } finally {
+      setIsPedalConnecting(false);
+    }
+  }, [attachBluetoothPedalListeners]);
+
+  const handlePedalButtonClick = useCallback(() => {
+    if (isPedalConnected) {
+      setShowPedalMapper((value) => !value);
+      setPedalMappingTarget(null);
+      return;
+    }
+    void handleSelectBluetoothPedal();
+  }, [handleSelectBluetoothPedal, isPedalConnected]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
@@ -124,9 +389,27 @@ export default function SetlistConcertPage() {
         goToNext();
       }
 
+      if (event.key === 'PageDown' || event.key === 'MediaTrackNext') {
+        event.preventDefault();
+        if (pedalControlMode === 'scroll') {
+          scrollByPedalStep('next');
+        } else {
+          goToNext();
+        }
+      }
+
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
         goToPrevious();
+      }
+
+      if (event.key === 'PageUp' || event.key === 'MediaTrackPrevious') {
+        event.preventDefault();
+        if (pedalControlMode === 'scroll') {
+          scrollByPedalStep('previous');
+        } else {
+          goToPrevious();
+        }
       }
 
       if (event.key === 'ArrowUp') {
@@ -148,7 +431,7 @@ export default function SetlistConcertPage() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [goToNext, goToPrevious]);
+  }, [goToNext, goToPrevious, pedalControlMode, scrollByPedalStep]);
 
   if (!setlist) {
     return (
@@ -495,6 +778,18 @@ export default function SetlistConcertPage() {
         </button>
         <button
           type="button"
+          className={`concert-nav-btn concert-nav-btn--pedal${isPedalConnected ? ' concert-nav-btn--pedal-connected' : ''}`}
+          onClick={handlePedalButtonClick}
+          aria-label={isPedalConnected ? 'Open pedal mapping' : 'Select and connect Bluetooth pedal'}
+          title={isPedalConnected ? `Connected: ${pedalDeviceName}. Click to map controls.` : 'Select Bluetooth pedal'}
+          disabled={isPedalConnecting}
+        >
+          <Bluetooth size={16} />
+          <span className={`concert-pedal-status${isPedalConnected ? ' concert-pedal-status--connected' : ''}`} aria-hidden="true" />
+          {isPedalConnecting ? 'Connecting...' : 'Pedal'}
+        </button>
+        <button
+          type="button"
           className="concert-nav-btn concert-nav-btn--primary"
           onClick={goToNext}
           disabled={!canGoNext}
@@ -503,6 +798,71 @@ export default function SetlistConcertPage() {
           Next <ChevronRight size={18} />
         </button>
       </footer>
+
+      {showPedalMapper && (
+        <section className="concert-pedal-mapper" aria-label="Bluetooth pedal mapping">
+          <div className="concert-pedal-mapper-head">
+            <h3>Pedal Mapping</h3>
+            <p>{pedalDeviceName}</p>
+          </div>
+          <div className="concert-pedal-mode-toggle" role="group" aria-label="Pedal action mode">
+            <button
+              type="button"
+              className={`concert-pedal-map-btn${pedalControlMode === 'song' ? ' concert-pedal-map-btn--active' : ''}`}
+              onClick={() => setPedalControlMode('song')}
+            >
+              Song Mode
+            </button>
+            <button
+              type="button"
+              className={`concert-pedal-map-btn${pedalControlMode === 'scroll' ? ' concert-pedal-map-btn--active' : ''}`}
+              onClick={() => setPedalControlMode('scroll')}
+            >
+              Scroll Mode
+            </button>
+          </div>
+          <div className="concert-pedal-mapper-actions">
+            <button
+              type="button"
+              className={`concert-pedal-map-btn${pedalMappingTarget === 'previous' ? ' concert-pedal-map-btn--active' : ''}`}
+              onClick={() => setPedalMappingTarget((value) => (value === 'previous' ? null : 'previous'))}
+            >
+              {pedalMappingTarget === 'previous' ? 'Press pedal now...' : pedalControlMode === 'scroll' ? 'Learn Scroll Up' : 'Learn Previous'}
+            </button>
+            <button
+              type="button"
+              className={`concert-pedal-map-btn${pedalMappingTarget === 'next' ? ' concert-pedal-map-btn--active' : ''}`}
+              onClick={() => setPedalMappingTarget((value) => (value === 'next' ? null : 'next'))}
+            >
+              {pedalMappingTarget === 'next' ? 'Press pedal now...' : pedalControlMode === 'scroll' ? 'Learn Scroll Down' : 'Learn Next'}
+            </button>
+            <button
+              type="button"
+              className="concert-pedal-map-btn"
+              onClick={() => { void handleSelectBluetoothPedal(); }}
+              disabled={isPedalConnecting}
+            >
+              {isPedalConnecting ? 'Connecting...' : 'Change Pedal'}
+            </button>
+            <button
+              type="button"
+              className="concert-pedal-map-btn"
+              onClick={() => {
+                setMappedPreviousCode(null);
+                setMappedNextCode(null);
+                setPedalMappingTarget(null);
+              }}
+            >
+              Clear Mapping
+            </button>
+          </div>
+          <div className="concert-pedal-mapper-meta">
+            <span>{pedalControlMode === 'scroll' ? 'Scroll up' : 'Previous'}: {formatPedalSignalCode(mappedPreviousCode)}</span>
+            <span>{pedalControlMode === 'scroll' ? 'Scroll down' : 'Next'}: {formatPedalSignalCode(mappedNextCode)}</span>
+            <span>Last signal: {formatPedalSignalCode(lastPedalSignalCode)}</span>
+          </div>
+        </section>
+      )}
 
       {activeChord && (
         <ChordDiagram

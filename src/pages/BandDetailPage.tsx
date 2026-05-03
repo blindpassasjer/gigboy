@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
-import { UserPlus, Users, X } from 'lucide-react';
+import { Link2, UserPlus, Users, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
@@ -46,6 +46,7 @@ export default function BandDetailPage() {
     moveSongInBandSongList,
     renameBandSetlist,
     updateBandSetlistIcon,
+    setBandSetlistPublicShare,
     deleteBandSetlist,
     addSongToBandSetlist,
     removeSongFromBandSetlist,
@@ -311,6 +312,24 @@ export default function BandDetailPage() {
     navigate(`/bands/${band.id}/library`);
   };
 
+  const handleShareSetlist = async () => {
+    if (!activeBandSetlist) return;
+    const publicUrl = `${window.location.origin}/public/bands/${band.id}/setlists/${activeBandSetlist.id}`;
+    if (!activeBandSetlist.publicShareEnabled) {
+      const error = await setBandSetlistPublicShare(band.id, activeBandSetlist.id, true);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success('Public link copied to clipboard!');
+    } catch {
+      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
+    }
+  };
+
   if (bandSection === 'songlists') {
     if (!activeBandSongList) {
       return (
@@ -379,6 +398,16 @@ export default function BandDetailPage() {
           listName={activeBandSetlist.name}
           listIcon={activeBandSetlist.icon}
           headerVariant="bands"
+          headerActions={(
+            <button
+              type="button"
+              className={`setlist-action-btn setlist-action-btn--secondary${activeBandSetlist.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
+              onClick={() => void handleShareSetlist()}
+              title={activeBandSetlist.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
+            >
+              <Link2 size={14} />
+            </button>
+          )}
           allSongs={bandSongs}
           onAddSong={(songId) => {
             void addSongToBandSetlist(band.id, activeBandSetlist.id, songId);

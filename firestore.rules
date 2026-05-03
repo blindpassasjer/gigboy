@@ -214,12 +214,8 @@ service cloud.firestore {
       }
 
       match /setlists/{setlistId} {
-        allow read: if isBandMember(bandId);
-        allow create, update, delete: if isBandEditor(bandId);
-      }
-
-      match /trashItems/{trashId} {
-        allow read: if isBandMember(bandId);
+        allow read: if isBandMember(bandId)
+          || resource.data.publicShareEnabled == true;
         allow create, update, delete: if isBandEditor(bandId);
       }
     }

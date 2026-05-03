@@ -4674,6 +4674,106 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--accent-h);
 }
 
+.concert-nav-btn--pedal {
+  min-width: 118px;
+}
+
+.concert-nav-btn--pedal-connected {
+  border-color: color-mix(in srgb, #16a34a 42%, var(--border));
+}
+
+.concert-pedal-status {
+  width: .58rem;
+  height: .58rem;
+  border-radius: 999px;
+  background: #dc2626;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .12);
+}
+
+.concert-pedal-status--connected {
+  background: #16a34a;
+}
+
+.concert-pedal-mapper {
+  position: fixed;
+  left: 50%;
+  bottom: 4.2rem;
+  transform: translateX(-50%);
+  width: min(640px, calc(100vw - 1.4rem));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, .18);
+  z-index: 13;
+  padding: .78rem;
+  display: grid;
+  gap: .62rem;
+}
+
+.concert-pedal-mapper-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .6rem;
+}
+
+.concert-pedal-mapper-head h3 {
+  margin: 0;
+  font-size: .92rem;
+}
+
+.concert-pedal-mapper-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.concert-pedal-mapper-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .44rem;
+}
+
+.concert-pedal-mode-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .44rem;
+}
+
+.concert-pedal-map-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: .36rem .62rem;
+  font-size: .78rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .12);
+}
+
+.concert-pedal-map-btn:hover {
+  background: var(--bg);
+}
+
+.concert-pedal-map-btn--active,
+.concert-pedal-map-btn--active:hover {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.concert-pedal-map-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.concert-pedal-mapper-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem .8rem;
+  color: var(--muted);
+  font-size: .74rem;
+}
+
 .concert-nav-btn:disabled {
   opacity: .55;
   cursor: not-allowed;
@@ -5799,4 +5899,118 @@ input, select, textarea { font: inherit; color: var(--text); }
   .trash-item-actions {
     justify-content: flex-start;
   }
+}
+
+/* ── Public band setlist page ────────────────────────────────────── */
+
+.public-setlist-page {
+  min-height: 100dvh;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+  font-family: inherit;
+  color: var(--text, #1a1a1a);
+}
+
+.public-setlist-header {
+  margin-bottom: 2rem;
+}
+
+.public-setlist-band {
+  font-size: .85rem;
+  color: var(--muted, #888);
+  margin: 0 0 .35rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.public-setlist-title {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0 0 .4rem;
+  line-height: 1.2;
+}
+
+.public-setlist-count {
+  font-size: .85rem;
+  color: var(--muted, #888);
+  margin: 0;
+}
+
+.public-setlist-status {
+  color: var(--muted, #888);
+  padding: 2rem 0;
+}
+
+.public-setlist-songs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.public-setlist-song {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .75rem 1rem;
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+}
+
+.public-setlist-song-position {
+  font-size: .8rem;
+  color: var(--muted, #888);
+  min-width: 1.4rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.public-setlist-song-info {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
+}
+
+.public-setlist-song-title {
+  font-weight: 600;
+  font-size: .95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.public-setlist-song-artist {
+  font-size: .82rem;
+  color: var(--muted, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.public-setlist-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border, #e5e5e5);
+  text-align: center;
+}
+
+.public-setlist-footer-link {
+  font-size: .85rem;
+  color: var(--muted, #888);
+  text-decoration: none;
+}
+
+.public-setlist-footer-link:hover {
+  color: var(--text, #1a1a1a);
+}
+
+/* Active state for share button (public link enabled) */
+.setlist-action-btn--active {
+  color: var(--accent, #0f766e);
+  border-color: var(--accent, #0f766e);
 }

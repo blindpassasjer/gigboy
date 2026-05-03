@@ -77,11 +77,22 @@ export interface SongList extends CollaborationMetadata {
   sortOrder?: number;
 }
 
+export interface PublicSongEntry {
+  id: string;
+  title: string;
+  artist?: string;
+}
+
 export interface Setlist extends CollaborationMetadata {
   id: string;
   name: string;
   icon?: string;
   songIds: string[];
+  publicShareEnabled?: boolean;
+  /** Denormalized song titles/artists for unauthenticated public reads. */
+  publicSongs?: PublicSongEntry[];
+  /** Band name denormalized into the setlist for unauthenticated public reads. */
+  bandName?: string;
   createdAt?: string;
   updatedAt?: string;
   sortOrder?: number;

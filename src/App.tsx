@@ -14,6 +14,7 @@ import BandMembersPage from './pages/BandMembersPage';
 import ProfileInvitesPage from './pages/ProfileInvitesPage';
 import ProfilePage from './pages/ProfilePage';
 import TrashPage from './pages/TrashPage';
+import PublicBandSetlistPage from './pages/PublicBandSetlistPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
@@ -58,6 +59,7 @@ function AuthenticatedApp() {
 }
 
 const router = createBrowserRouter([
+  { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage /> },
   { path: '*', element: <AuthenticatedApp /> },
 ]);
 
