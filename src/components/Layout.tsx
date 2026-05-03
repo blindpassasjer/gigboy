@@ -12,10 +12,15 @@ interface Props {
 }
 
 export default function Layout({ children }: Props) {
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
   const { user } = useAuth();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
-  const isBandRoute = pathname === '/bands' || pathname.startsWith('/bands/');
+  const stateBandId = (() => {
+    if (!state || typeof state !== 'object') return null;
+    const candidate = (state as { bandId?: unknown }).bandId;
+    return typeof candidate === 'string' && candidate.trim() ? candidate : null;
+  })();
+  const isBandRoute = pathname === '/bands' || pathname.startsWith('/bands/') || Boolean(stateBandId);
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
