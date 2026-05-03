@@ -14,7 +14,7 @@ describe('AddSongForm', () => {
 
     const randomUuidSpy = vi
       .spyOn(globalThis.crypto, 'randomUUID')
-      .mockReturnValue('song-save-id');
+      .mockReturnValue('00000000-0000-4000-8000-000000000000');
 
     const router = createMemoryRouter(
       [

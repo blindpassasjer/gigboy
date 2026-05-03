@@ -79,7 +79,6 @@ export function showConfirmToast(
 }
 
 interface PromptToastProps {
-  id: string;
   label: string;
   initialValue: string;
   placeholder?: string;
@@ -90,7 +89,6 @@ interface PromptToastProps {
 }
 
 function PromptToast({
-  id,
   label,
   initialValue,
   placeholder,
@@ -177,7 +175,6 @@ export function showPromptToast(
     toastId = toast.custom(
       () => (
         <PromptToast
-          id={toastId}
           label={label}
           initialValue={options?.initialValue ?? ''}
           placeholder={options?.placeholder}
