@@ -17,7 +17,6 @@ interface StageplotEditorProps {
   };
   onRename: (name: string) => void;
   onUpdateIcon: (icon?: string) => void;
-  onUpdateStageSettings: (shape?: NonNullable<Stageplot['stageShape']>, size?: NonNullable<Stageplot['stageSize']>) => void;
   onDelete: () => Promise<void>;
   onSaveContent: (items: StageplotItem[], drawingLayers: SongHandNoteDocument[]) => Promise<void>;
   onCopyPublicLink: () => Promise<void>;
@@ -89,7 +88,6 @@ export default function StageplotEditor({
   currentUser,
   onRename,
   onUpdateIcon,
-  onUpdateStageSettings,
   onDelete,
   onSaveContent,
   onCopyPublicLink,
@@ -102,8 +100,6 @@ export default function StageplotEditor({
   const [renameValue, setRenameValue] = useState(stageplot.name);
   const [renaming, setRenaming] = useState(false);
   const [iconDraft, setIconDraft] = useState(stageplot.icon ?? '🎤');
-  const [stageShapeDraft, setStageShapeDraft] = useState<NonNullable<Stageplot['stageShape']>>(stageplot.stageShape ?? 'rectangle');
-  const [stageSizeDraft, setStageSizeDraft] = useState<NonNullable<Stageplot['stageSize']>>(stageplot.stageSize ?? 'medium');
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -117,8 +113,6 @@ export default function StageplotEditor({
     setDrawingLayers(stageplot.drawingLayers ?? []);
     setRenameValue(stageplot.name);
     setIconDraft(stageplot.icon ?? '🎤');
-    setStageShapeDraft(stageplot.stageShape ?? 'rectangle');
-    setStageSizeDraft(stageplot.stageSize ?? 'medium');
   }, [stageplot]);
 
   const myLayer = useMemo(() => userLayerFrom(drawingLayers, currentUser.id), [currentUser.id, drawingLayers]);
@@ -464,34 +458,11 @@ export default function StageplotEditor({
                 })}
               </div>
             </div>
-            <label className="list-appearance-field">
-              Stage shape
-              <select
-                value={stageShapeDraft}
-                onChange={(event) => setStageShapeDraft(event.target.value as NonNullable<Stageplot['stageShape']>)}
-              >
-                <option value="rectangle">Rectangle</option>
-                <option value="oval">Oval</option>
-                <option value="circle">Circle</option>
-              </select>
-            </label>
-            <label className="list-appearance-field">
-              Stage size
-              <select
-                value={stageSizeDraft}
-                onChange={(event) => setStageSizeDraft(event.target.value as NonNullable<Stageplot['stageSize']>)}
-              >
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-              </select>
-            </label>
             <button
               type="button"
               className="setlist-action-btn"
               onClick={() => {
                 onUpdateIcon(normalizeEmojiIcon(iconDraft));
-                onUpdateStageSettings(stageShapeDraft, stageSizeDraft);
                 setShowIconEditor(false);
               }}
             >

@@ -54,7 +54,6 @@ export default function HomePage() {
     activeStageplotId,
     renameStageplot,
     updateStageplotIcon,
-    updateStageplotSettings,
     deleteStageplot,
     updateStageplotContent,
     setStageplotPublicShare,
@@ -407,11 +406,6 @@ export default function HomePage() {
         }}
         onUpdateIcon={(icon) => {
           void updateStageplotIcon(activeStageplot.id, icon).then((error) => {
-            if (error) toast.error(error);
-          });
-        }}
-        onUpdateStageSettings={(shape, size) => {
-          void updateStageplotSettings(activeStageplot.id, shape, size).then((error) => {
             if (error) toast.error(error);
           });
         }}

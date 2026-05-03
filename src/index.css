@@ -6280,7 +6280,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   align-items: center;
   gap: .45rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 
 .stageplot-palette-btn {
@@ -6324,7 +6325,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .stageplot-toolbar-input--custom {
   min-width: 150px;
-  width: min(220px, 100%);
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stageplot-palette-custom-controls .notes-toolbar-btn {
+  flex-shrink: 0;
 }
 
 .stageplot-toolbar-actions {
