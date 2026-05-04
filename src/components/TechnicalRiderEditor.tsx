@@ -293,11 +293,6 @@ export default function TechnicalRiderEditor({
       <section className="technical-rider-section">
         <div className="technical-rider-section-header">
           <h2>Technical Lines</h2>
-          {canEdit ? (
-            <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={() => setLines((prev) => [...prev, createLine()])}>
-              <Plus size={14} />
-            </button>
-          ) : null}
         </div>
 
         <div className="technical-rider-table-wrap">
@@ -363,6 +358,21 @@ export default function TechnicalRiderEditor({
                   <td colSpan={canEdit ? 4 : 3} className="technical-rider-empty-cell">No line items yet.</td>
                 </tr>
               ) : null}
+              {canEdit ? (
+                <tr>
+                  <td>
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      onClick={() => setLines((prev) => [...prev, createLine()])}
+                      title="Add row"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </td>
+                  <td colSpan={3} />
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
@@ -397,11 +407,6 @@ function EquipmentTableEditor({ title, items, canEdit, onChange }: EquipmentTabl
     <section className="technical-rider-section">
       <div className="technical-rider-section-header">
         <h2>{title}</h2>
-        {canEdit ? (
-          <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={() => onChange([...items, createEquipmentItem()])}>
-            <Plus size={14} />
-          </button>
-        ) : null}
       </div>
 
       <div className="technical-rider-table-wrap">
@@ -465,6 +470,21 @@ function EquipmentTableEditor({ title, items, canEdit, onChange }: EquipmentTabl
             {items.length === 0 ? (
               <tr>
                 <td colSpan={canEdit ? 4 : 3} className="technical-rider-empty-cell">No equipment listed.</td>
+              </tr>
+            ) : null}
+            {canEdit ? (
+              <tr>
+                <td>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => onChange([...items, createEquipmentItem()])}
+                    title="Add row"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </td>
+                <td colSpan={3} />
               </tr>
             ) : null}
           </tbody>
