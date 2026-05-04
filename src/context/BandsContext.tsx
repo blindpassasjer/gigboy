@@ -490,8 +490,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     if (!db || !userId || migrationRun) return;
 
     setMigrationRun(true);
-    void migrateSoloToSoloBand(db, userId, userEmail, userUsername, userFullName, userAvatar, true).catch((error) => {
-      console.warn('Solo to Solo band migration failed or not needed.', error);
+    void migrateSoloToSoloBand(db, userId, userEmail, userUsername, userFullName, userAvatar, true).then((result) => {
+      if (result.error) {
+        console.error('[Folio] Migration error:', result.error);
+      } else if (result.migrated) {
+        console.info('[Folio] Migration completed successfully');
+      }
+    }).catch((error) => {
+      console.error('[Folio] Migration exception:', error);
     });
   }, [userId, userEmail, userUsername, userFullName, userAvatar, migrationRun]);
 

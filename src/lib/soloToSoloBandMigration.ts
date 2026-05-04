@@ -53,6 +53,7 @@ export async function migrateSoloToSoloBand(
     );
 
     if (existingSoloBand.size > 0) {
+      console.info('[Folio] Solo band already exists. Migration skipped.');
       return { migrated: false, soloBandId: existingSoloBand.docs[0].id, error: null };
     }
 
@@ -73,8 +74,17 @@ export async function migrateSoloToSoloBand(
       soloRiders.size > 0;
 
     if (!hasSoloItems) {
+      console.info('[Folio] No solo items found. Migration not needed.');
       return { migrated: false, soloBandId: null, error: null };
     }
+
+    console.info('[Folio] Starting migration: Solo library to Solo band...', {
+      songs: soloSongs.size,
+      songLists: soloSongLists.size,
+      setlists: soloSetlists.size,
+      stageplots: soloStageplots.size,
+      technicalRiders: soloRiders.size,
+    });
 
     // Create "Solo" band
     const soloBandId = crypto.randomUUID();
@@ -95,6 +105,8 @@ export async function migrateSoloToSoloBand(
       updatedAt: now,
     });
 
+    console.info('[Folio] Solo band created:', soloBandId);
+
     // Migrate songs
     if (soloSongs.size > 0) {
       const batch = writeBatch(db);
@@ -105,6 +117,7 @@ export async function migrateSoloToSoloBand(
         );
       });
       await batch.commit();
+      console.info('[Folio] Migrated songs:', soloSongs.size);
     }
 
     // Migrate song lists
@@ -117,6 +130,7 @@ export async function migrateSoloToSoloBand(
         );
       });
       await batch.commit();
+      console.info('[Folio] Migrated songlists:', soloSongLists.size);
     }
 
     // Migrate setlists
@@ -129,6 +143,7 @@ export async function migrateSoloToSoloBand(
         );
       });
       await batch.commit();
+      console.info('[Folio] Migrated setlists:', soloSetlists.size);
     }
 
     // Migrate stageplots
@@ -141,6 +156,7 @@ export async function migrateSoloToSoloBand(
         );
       });
       await batch.commit();
+      console.info('[Folio] Migrated stageplots:', soloStageplots.size);
     }
 
     // Migrate technical riders
@@ -153,6 +169,7 @@ export async function migrateSoloToSoloBand(
         );
       });
       await batch.commit();
+      console.info('[Folio] Migrated technical riders:', soloRiders.size);
     }
 
     // Optionally delete original solo data
@@ -174,11 +191,14 @@ export async function migrateSoloToSoloBand(
         deleteBatch.delete(doc(db, 'users', userId, 'technicalRiders', riderDoc.id));
       });
       await deleteBatch.commit();
+      console.info('[Folio] Deleted original solo data');
     }
 
+    console.info('[Folio] ✅ Migration completed successfully! Solo band ID:', soloBandId);
     return { migrated: true, soloBandId, error: null };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('[Folio] ❌ Migration failed:', errorMessage, error);
     return { migrated: false, soloBandId: null, error: errorMessage };
   }
 }
