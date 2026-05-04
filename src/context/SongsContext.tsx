@@ -8,7 +8,6 @@ import {
   setDoc,
   deleteDoc,
 } from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
 import type { Song, TrashedSong } from '../types';
 import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db, firebaseEnabled } from '../lib/firebase';
@@ -99,10 +98,6 @@ interface SongsContextValue {
 const SongsContext = createContext<SongsContextValue | null>(null);
 const SONGS_COLLECTION = 'songs';
 
-function songFromDoc(id: string, data: Record<string, unknown>): Song {
-  return { id, ...(data as Omit<Song, 'id'>) };
-}
-
 function songFromOwnedDoc(id: string, data: Record<string, unknown>, ownerId: string, currentUserId: string): Song {
   const song = { id, ownerId, ...(data as Omit<Song, 'id'>) } as Song;
   const role = ownerId === currentUserId
@@ -121,19 +116,6 @@ function canEditSong(song: Song, userId: string | null) {
 
 function isSongOwner(song: Song, userId: string | null) {
   return Boolean(userId && song.ownerId === userId);
-}
-
-function mergeSongsById(songs: Song[]) {
-  const byId = new Map<string, Song>();
-  songs.forEach((song) => {
-    byId.set(song.id, song);
-  });
-  return [...byId.values()];
-}
-
-function isPermissionDeniedError(error: unknown) {
-  if (!error || typeof error !== 'object') return false;
-  return (error as { code?: unknown }).code === 'permission-denied';
 }
 
 function songsCollectionPath(userId: string) {
