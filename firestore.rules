@@ -101,6 +101,14 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      match /stageplots/{stageplotId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /technicalRiders/{riderId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
       match /trashItems/{trashId} {
         allow read, create, update, delete: if isOwner(userId);
       }
