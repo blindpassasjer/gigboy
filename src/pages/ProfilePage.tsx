@@ -34,12 +34,12 @@ export default function ProfilePage() {
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [busyLogout, setBusyLogout] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
-  const [passwordOpen, setPasswordOpen] = useState(false);
   const [bandName, setBandName] = useState('');
   const [bandDescription, setBandDescription] = useState('');
   const [bandIcon, setBandIcon] = useState('🎵');
   const [creatingBand, setCreatingBand] = useState(false);
   const [busyBandId, setBusyBandId] = useState<string | null>(null);
+  const [bandIconOpen, setBandIconOpen] = useState(false);
 
   const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
 
@@ -192,7 +192,7 @@ export default function ProfilePage() {
       <div className="profile-settings-grid">
 
         {/* Avatar */}
-        <section className="profile-settings-card profile-settings-card--wide">
+        <section className="profile-settings-card">
           <div className="profile-settings-avatar-header">
             <UserAvatar avatar={user.avatar} label={displayName} size="lg" />
             <div>
@@ -282,58 +282,46 @@ export default function ProfilePage() {
           </form>
         </section>
 
-        {/* Change password (collapsible) */}
-        <section className="profile-settings-card profile-settings-card--wide">
-          <button
-            type="button"
-            className="profile-settings-collapsible-toggle"
-            onClick={() => setPasswordOpen((o) => !o)}
-            aria-expanded={passwordOpen}
-          >
-            <h2><KeyRound size={16} /> Change password</h2>
-            {passwordOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-          {passwordOpen && (
-            <>
-              <p className="profile-settings-muted">Leave current password empty if you signed up with Google and are adding password login.</p>
-              <form className="profile-settings-form" onSubmit={onPasswordSubmit}>
-                <label className="form-field">
-                  <span>Current password (optional for Google login)</span>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    autoComplete="current-password"
-                    onChange={(event) => setCurrentPassword(event.target.value)}
-                  />
-                </label>
-                <label className="form-field">
-                  <span>New password</span>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    autoComplete="new-password"
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    required
-                    minLength={8}
-                  />
-                </label>
-                <label className="form-field">
-                  <span>Confirm new password</span>
-                  <input
-                    type="password"
-                    value={confirmNewPassword}
-                    autoComplete="new-password"
-                    onChange={(event) => setConfirmNewPassword(event.target.value)}
-                    required
-                    minLength={8}
-                  />
-                </label>
-                <button type="submit" className="setlist-action-btn" disabled={busyPassword}>
-                  {busyPassword ? 'Saving…' : 'Change password'}
-                </button>
-              </form>
-            </>
-          )}
+        {/* Change password */}
+        <section className="profile-settings-card">
+          <h2><KeyRound size={16} /> Change password</h2>
+          <p className="profile-settings-muted">Leave current password empty if you signed up with Google and are adding password login.</p>
+          <form className="profile-settings-form" onSubmit={onPasswordSubmit}>
+            <label className="form-field">
+              <span>Current password (optional for Google login)</span>
+              <input
+                type="password"
+                value={currentPassword}
+                autoComplete="current-password"
+                onChange={(event) => setCurrentPassword(event.target.value)}
+              />
+            </label>
+            <label className="form-field">
+              <span>New password</span>
+              <input
+                type="password"
+                value={newPassword}
+                autoComplete="new-password"
+                onChange={(event) => setNewPassword(event.target.value)}
+                required
+                minLength={8}
+              />
+            </label>
+            <label className="form-field">
+              <span>Confirm new password</span>
+              <input
+                type="password"
+                value={confirmNewPassword}
+                autoComplete="new-password"
+                onChange={(event) => setConfirmNewPassword(event.target.value)}
+                required
+                minLength={8}
+              />
+            </label>
+            <button type="submit" className="setlist-action-btn" disabled={busyPassword}>
+              {busyPassword ? 'Saving…' : 'Change password'}
+            </button>
+          </form>
         </section>
 
         {/* Bands */}
@@ -363,14 +351,38 @@ export default function ProfilePage() {
                   placeholder="Optional"
                 />
               </label>
-              <label className="share-menu-field">
-                <span>Icon</span>
-                <select value={bandIcon} onChange={(event) => setBandIcon(event.target.value)}>
-                  {ICON_OPTIONS.map((emoji) => (
-                    <option key={emoji} value={emoji}>{emoji}</option>
-                  ))}
-                </select>
-              </label>
+              <button
+                type="button"
+                className="profile-settings-collapsible-toggle"
+                onClick={() => setBandIconOpen((o) => !o)}
+                aria-expanded={bandIconOpen}
+                aria-controls="band-icon-options"
+                style={{ marginTop: '0.75rem', width: '100%', textAlign: 'left' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="list-appearance-label">Icon</span>
+                  {bandIconOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
+              </button>
+              {bandIconOpen && (
+                <div id="band-icon-options" className="emoji-choice-grid" role="listbox" aria-label="Band icon options" style={{ marginTop: '0.5rem' }}>
+                  {ICON_OPTIONS.map((emoji) => {
+                    const selected = bandIcon === emoji;
+                    return (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                        onClick={() => setBandIcon(emoji)}
+                        aria-label={`Choose icon ${emoji}`}
+                        aria-pressed={selected}
+                      >
+                        {emoji}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <div className="bands-create-actions">
               <button type="submit" className="setlist-action-btn" disabled={creatingBand || cloudRequired}>
@@ -426,7 +438,6 @@ export default function ProfilePage() {
           <button type="button" className="setlist-action-btn setlist-action-btn--secondary" disabled={busyLogout} onClick={() => { void onLogout(); }}>
             {busyLogout ? 'Signing out…' : 'Log out'}
           </button>
-          <Link to="/profile/invites" className="profile-settings-link">View invites</Link>
         </section>
 
       </div>

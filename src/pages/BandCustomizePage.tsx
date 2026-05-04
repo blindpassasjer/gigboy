@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
@@ -39,6 +40,8 @@ export default function BandCustomizePage() {
   const [customizeColor, setCustomizeColor] = useState('#c33232');
   const [useAutoColor, setUseAutoColor] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [iconOpen, setIconOpen] = useState(false);
+  const [colorOpen, setColorOpen] = useState(false);
 
   useEffect(() => {
     if (!band) return;
@@ -138,9 +141,21 @@ export default function BandCustomizePage() {
             />
           </div>
 
-          <div className="list-appearance-group" style={{ marginTop: '0.75rem' }}>
-            <span className="list-appearance-label">Icon</span>
-            <div className="emoji-choice-grid" role="listbox" aria-label="Band icon options">
+          <button
+            type="button"
+            className="profile-settings-collapsible-toggle"
+            onClick={() => setIconOpen((o) => !o)}
+            aria-expanded={iconOpen}
+            aria-controls="band-customize-icon-options"
+            style={{ marginTop: '0.75rem', width: '100%', textAlign: 'left', paddingLeft: 0, paddingRight: 0 }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 'inherit', fontWeight: 'inherit' }}>Icon</h3>
+              {iconOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </button>
+          {iconOpen && (
+            <div id="band-customize-icon-options" className="emoji-choice-grid" role="listbox" aria-label="Band icon options" style={{ marginTop: '0.5rem' }}>
               {ICON_OPTIONS.map((emoji) => {
                 const selected = customizeIcon === emoji;
                 return (
@@ -157,11 +172,24 @@ export default function BandCustomizePage() {
                 );
               })}
             </div>
-          </div>
+          )}
 
-          <div className="list-appearance-group" style={{ marginTop: '0.75rem' }}>
-            <span className="list-appearance-label">Color</span>
-            <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
+          <button
+            type="button"
+            className="profile-settings-collapsible-toggle"
+            onClick={() => setColorOpen((o) => !o)}
+            aria-expanded={colorOpen}
+            aria-controls="band-customize-color-options"
+            style={{ marginTop: '0.75rem', width: '100%', textAlign: 'left', paddingLeft: 0, paddingRight: 0 }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 'inherit', fontWeight: 'inherit' }}>Color</h3>
+              {colorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </button>
+          {colorOpen && (
+            <div id="band-customize-color-options" style={{ marginTop: '0.5rem' }}>
+              <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
               {BAND_COLOR_OPTIONS.map((colorHex) => {
                 const selected = !useAutoColor && customizeColor.toLowerCase() === colorHex.toLowerCase();
                 return (
@@ -179,8 +207,8 @@ export default function BandCustomizePage() {
                   />
                 );
               })}
-            </div>
-            <div className="share-menu-field" style={{ marginTop: '0.5rem' }}>
+              </div>
+              <div className="share-menu-field" style={{ marginTop: '0.5rem' }}>
               <span>Custom color</span>
               <input
                 type="color"
@@ -192,14 +220,15 @@ export default function BandCustomizePage() {
                 aria-label="Custom band color"
               />
             </div>
-            <button
-              type="button"
-              className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
-              onClick={() => setUseAutoColor(true)}
-            >
-              Use auto color
-            </button>
-          </div>
+              <button
+                type="button"
+                className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
+                onClick={() => setUseAutoColor(true)}
+              >
+                Use auto color
+              </button>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: '.5rem', marginTop: '1rem' }}>
             <button

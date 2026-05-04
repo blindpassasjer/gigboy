@@ -514,88 +514,88 @@ export default function StageplotEditor({
           </div>
         ) : null}
 
-        {canEdit ? (
-          <div className="stageplot-toolbar" role="region" aria-label="Stageplot tools">
-            <div className="stageplot-toolbar-panel stageplot-palette-panel">
-              <div className="stageplot-toolbar-section-heading">Items</div>
-              <div className="stageplot-palette">
-              {PALETTE_CATEGORIES.map((category) => (
-                <div key={category.name} className="stageplot-palette-category">
-                  <div className="stageplot-palette-category-name">{category.name}</div>
-                  <div className="stageplot-palette-category-items">
-                    {category.items.map((entry) => (
-                      <button
-                        key={entry.kind}
-                        type="button"
-                        className="stageplot-palette-btn"
-                        draggable
-                        onDragStart={(event) => handlePaletteDragStart(event, entry)}
-                        onClick={() => handlePaletteAddClick(entry)}
-                        title={`Drag ${entry.label} to stage`}
-                      >
-                        <img
-                          src={stageplotIconForKind(entry.kind)}
-                          alt=""
-                          aria-hidden="true"
-                          className="stageplot-instrument-icon stageplot-instrument-icon--palette"
-                        />
-                        <span>{entry.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <div className="stageplot-palette-category stageplot-palette-category--custom">
-                <div className="stageplot-palette-category-name">Custom</div>
-                <div className="stageplot-palette-custom-controls">
-                  <img
-                    src={stageplotIconForKind(CUSTOM_ITEM_TEMPLATE.kind)}
-                    alt=""
-                    aria-hidden="true"
-                    className="stageplot-instrument-icon stageplot-instrument-icon--palette"
-                  />
-                  <input
-                    type="text"
-                    value={customLabel}
-                    onChange={(event) => setCustomLabel(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') addCustomItem();
-                    }}
-                    placeholder="Custom item"
-                    className="stageplot-toolbar-input stageplot-toolbar-input--custom"
-                  />
-                  <button type="button" className="notes-toolbar-btn" onClick={addCustomItem}>
-                    <Plus size={12} /> Add
-                  </button>
+      </div>
+
+      {canEdit ? (
+        <div className="stageplot-toolbar" role="region" aria-label="Stageplot tools">
+          <div className="stageplot-toolbar-panel stageplot-palette-panel">
+            <div className="stageplot-toolbar-section-heading">Items</div>
+            <div className="stageplot-palette">
+            {PALETTE_CATEGORIES.map((category) => (
+              <div key={category.name} className="stageplot-palette-category">
+                <div className="stageplot-palette-category-name">{category.name}</div>
+                <div className="stageplot-palette-category-items">
+                  {category.items.map((entry) => (
+                    <button
+                      key={entry.kind}
+                      type="button"
+                      className="stageplot-palette-btn"
+                      draggable
+                      onDragStart={(event) => handlePaletteDragStart(event, entry)}
+                      onClick={() => handlePaletteAddClick(entry)}
+                      title={`Drag ${entry.label} to stage`}
+                    >
+                      <img
+                        src={stageplotIconForKind(entry.kind)}
+                        alt=""
+                        aria-hidden="true"
+                        className="stageplot-instrument-icon stageplot-instrument-icon--palette"
+                      />
+                      <span>{entry.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="stageplot-palette-category stageplot-palette-category--annotations">
-                <div className="stageplot-toolbar-section-heading">Annotations</div>
-                <div className="stageplot-toolbar-actions">
-                  <button
-                    type="button"
-                    className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
-                    onClick={() => setDrawEnabled((prev) => !prev)}
-                  >
-                    <PenLine size={12} /> Draw
-                  </button>
-                  <button type="button" className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0}>
-                    <Undo2 size={12} /> Undo
-                  </button>
-                  <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
-                    <X size={12} /> Clear
-                  </button>
-                  <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
-                    <Trash2 size={12} /> Remove
-                  </button>
-                </div>
+            ))}
+            <div className="stageplot-palette-category stageplot-palette-category--custom">
+              <div className="stageplot-palette-category-name">Custom</div>
+              <div className="stageplot-palette-custom-controls">
+                <img
+                  src={stageplotIconForKind(CUSTOM_ITEM_TEMPLATE.kind)}
+                  alt=""
+                  aria-hidden="true"
+                  className="stageplot-instrument-icon stageplot-instrument-icon--palette"
+                />
+                <input
+                  type="text"
+                  value={customLabel}
+                  onChange={(event) => setCustomLabel(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') addCustomItem();
+                  }}
+                  placeholder="Custom item"
+                  className="stageplot-toolbar-input stageplot-toolbar-input--custom"
+                />
+                <button type="button" className="notes-toolbar-btn" onClick={addCustomItem}>
+                  <Plus size={12} /> Add
+                </button>
               </div>
             </div>
+            <div className="stageplot-palette-category stageplot-palette-category--annotations">
+              <div className="stageplot-toolbar-section-heading">Annotations</div>
+              <div className="stageplot-toolbar-actions">
+                <button
+                  type="button"
+                  className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
+                  onClick={() => setDrawEnabled((prev) => !prev)}
+                >
+                  <PenLine size={12} /> Draw
+                </button>
+                <button type="button" className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0}>
+                  <Undo2 size={12} /> Undo
+                </button>
+                <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
+                  <X size={12} /> Clear
+                </button>
+                <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
+                  <Trash2 size={12} /> Remove
+                </button>
+              </div>
             </div>
           </div>
-        ) : null}
-
-      </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="stageplot-stage-wrap">
         <div

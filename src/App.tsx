@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider, Routes, Route, Navigate } from 're
 import { Toaster } from 'react-hot-toast';
 import { Theme } from '@radix-ui/themes';
 import { useEffect, useState } from 'react';
+import { useBands } from './context/BandsContext';
 
 /** Observes data-theme on <html> so Radix Theme stays in sync with our dark mode toggle. */
 function useHtmlDark() {
@@ -18,6 +19,27 @@ function useHtmlDark() {
   }, []);
   return dark;
 }
+
+/** Redirects to the last active band's library, or profile if no active band. */
+function RootRedirect() {
+  const { bands, loading } = useBands();
+
+  if (loading) {
+    return <div className="app-status">Loading Gigboy…</div>;
+  }
+
+  try {
+    const lastBandId = window.localStorage.getItem('gigboy-active-band-id')?.trim();
+    if (lastBandId && bands.some((band) => band.id === lastBandId)) {
+      return <Navigate to={`/bands/${lastBandId}/library`} replace state={{ bandId: lastBandId }} />;
+    }
+  } catch {
+    // Ignore localStorage failures and fall back to profile.
+  }
+
+  return <Navigate to="/profile" replace />;
+}
+
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import UsernameSetupPage from './pages/UsernameSetupPage';
@@ -60,8 +82,8 @@ function AuthenticatedApp() {
               <BandsProvider>
                 <Layout>
                   <Routes>
-                    <Route path="/" element={<Navigate to="/profile" replace />} />
-                    <Route path="/bands" element={<Navigate to="/profile" replace />} />
+                    <Route path="/" element={<RootRedirect />} />
+                    <Route path="/bands" element={<RootRedirect />} />
                     <Route path="/songs/new" element={<AddSongPage />} />
                     <Route path="/songs/:id" element={<SongPage />} />
                     <Route path="/songs/:id/edit" element={<EditSongPage />} />

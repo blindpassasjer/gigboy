@@ -8,6 +8,14 @@ import Sidebar from './Sidebar';
 import BrandMark from './BrandMark';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
+import { db } from '../lib/firebase';
+import { declineInvite, loadPendingInvites } from '../lib/collaboration';
+import { declineBandInvite, loadPendingBandInvites } from '../lib/bandInvites';
+import { acceptBandInviteOnServer } from '../lib/bandsApi';
+import { acceptInviteOnServer } from '../lib/shareApi';
+import { emitInviteNotificationsChanged } from '../lib/inviteNotifications';
+import toast from '../utils/anchoredToast';
+import type { BandInvite, CollaborationInvite } from '../types';
 import UserAvatar from './UserAvatar';
 
 interface Props {
@@ -25,9 +33,15 @@ function hashBandHue(seed: string) {
 
 export default function Layout({ children }: Props) {
   const { pathname, state } = useLocation();
-  const { bands } = useBands();
+  const { bands, refreshBands } = useBands();
   const { user } = useAuth();
-  const { pendingIncomingCount, unseenAcceptedOutgoing } = useInviteNotifications();
+  const {
+    pendingIncomingCount,
+    acceptedOutgoing,
+    unseenAcceptedOutgoing,
+    refresh: refreshInviteNotifications,
+    markAcceptedAsSeen,
+  } = useInviteNotifications();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
   const stateBandId = (() => {
     if (!state || typeof state !== 'object') return null;
@@ -90,6 +104,45 @@ export default function Layout({ children }: Props) {
     pendingIncomingCount > 0 ? `${pendingIncomingCount} pending` : null,
     unseenAcceptedCount > 0 ? `${unseenAcceptedCount} accepted` : null,
   ].filter(Boolean).join(', ');
+  const [invitesOpen, setInvitesOpen] = useState(false);
+  const [invitesLoading, setInvitesLoading] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<CollaborationInvite[]>([]);
+  const [pendingBandInvites, setPendingBandInvites] = useState<BandInvite[]>([]);
+  const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
+  const invitesPopoverRef = useRef<HTMLDivElement>(null);
+
+  const hasAnyPendingInvites = pendingInvites.length > 0 || pendingBandInvites.length > 0;
+  const hasAnyInviteContent = hasAnyPendingInvites || acceptedOutgoing.length > 0;
+
+  const refreshInvitesPopover = async () => {
+    if (!db || !user?.id) {
+      setPendingInvites([]);
+      setPendingBandInvites([]);
+      return;
+    }
+
+    setInvitesLoading(true);
+    try {
+      const [pendingInvitesResult, pendingBandInvitesResult] = await Promise.allSettled([
+        loadPendingInvites(db, user.id, user.email ?? ''),
+        loadPendingBandInvites(db, user.id, user.email ?? ''),
+      ]);
+
+      if (pendingInvitesResult.status === 'fulfilled') {
+        setPendingInvites(pendingInvitesResult.value);
+      } else {
+        setPendingInvites([]);
+      }
+
+      if (pendingBandInvitesResult.status === 'fulfilled') {
+        setPendingBandInvites(pendingBandInvitesResult.value);
+      } else {
+        setPendingBandInvites([]);
+      }
+    } finally {
+      setInvitesLoading(false);
+    }
+  };
 
   const toggleFullscreen = async () => {
     if (typeof document === 'undefined') return;
@@ -235,19 +288,122 @@ export default function Layout({ children }: Props) {
     rootStyle.setProperty('--bands-hue-contrast', contrast);
   }, [dark, themedBand?.color, themedBandId]);
 
+  useEffect(() => {
+    if (!invitesOpen) return;
+
+    if (unseenAcceptedOutgoing.length > 0) {
+      markAcceptedAsSeen(unseenAcceptedOutgoing);
+    }
+    void refreshInvitesPopover();
+  }, [invitesOpen, markAcceptedAsSeen, unseenAcceptedOutgoing, user?.email, user?.id]);
+
+  useEffect(() => {
+    if (!invitesOpen) return;
+
+    const handleWindowClick = (event: MouseEvent) => {
+      if (!invitesPopoverRef.current) return;
+      if (invitesPopoverRef.current.contains(event.target as Node)) return;
+      setInvitesOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setInvitesOpen(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handleWindowClick);
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.removeEventListener('mousedown', handleWindowClick);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [invitesOpen]);
+
+  const handleAcceptInvite = async (invite: CollaborationInvite) => {
+    if (!user?.id || !user.email) return;
+
+    setBusyInviteId(invite.id);
+    try {
+      await acceptInviteOnServer({
+        userId: user.id,
+        userEmail: user.email,
+        inviteId: invite.id,
+      });
+      setPendingInvites((current) => current.filter((entry) => entry.id !== invite.id));
+      emitInviteNotificationsChanged();
+      await refreshInviteNotifications();
+      toast.success('Invite accepted.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to accept invite.';
+      toast.error(message);
+    } finally {
+      setBusyInviteId(null);
+    }
+  };
+
+  const handleDeclineInvite = async (inviteId: string) => {
+    if (!db || !user?.id) return;
+
+    setBusyInviteId(inviteId);
+    try {
+      await declineInvite(db, inviteId, user.id);
+      setPendingInvites((current) => current.filter((entry) => entry.id !== inviteId));
+      emitInviteNotificationsChanged();
+      await refreshInviteNotifications();
+      toast.success('Invite declined.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to decline invite.';
+      toast.error(message);
+    } finally {
+      setBusyInviteId(null);
+    }
+  };
+
+  const handleAcceptBandInvite = async (invite: BandInvite) => {
+    if (!user?.id || !user.email) return;
+
+    setBusyInviteId(invite.id);
+    try {
+      await acceptBandInviteOnServer({
+        userId: user.id,
+        userEmail: user.email,
+        inviteId: invite.id,
+      });
+      setPendingBandInvites((current) => current.filter((entry) => entry.id !== invite.id));
+      await refreshBands();
+      emitInviteNotificationsChanged();
+      await refreshInviteNotifications();
+      toast.success('Band invite accepted.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to accept band invite.';
+      toast.error(message);
+    } finally {
+      setBusyInviteId(null);
+    }
+  };
+
+  const handleDeclineBandInvite = async (inviteId: string) => {
+    if (!db || !user?.id) return;
+
+    setBusyInviteId(inviteId);
+    try {
+      await declineBandInvite(db, inviteId, user.id);
+      setPendingBandInvites((current) => current.filter((entry) => entry.id !== inviteId));
+      emitInviteNotificationsChanged();
+      await refreshInviteNotifications();
+      toast.success('Band invite declined.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to decline band invite.';
+      toast.error(message);
+    } finally {
+      setBusyInviteId(null);
+    }
+  };
+
   return (
     <div className="app-shell" data-library-mode={themedBandId ? 'bands' : 'solo'}>
-      <a
-        href="#main-content"
-        className="skip-link"
-        onClick={() => {
-          window.requestAnimationFrame(() => {
-            mainContentRef.current?.focus();
-          });
-        }}
-      >
-        Skip to main content
-      </a>
       <header className="topbar">
         <button
           type="button"
@@ -264,26 +420,132 @@ export default function Layout({ children }: Props) {
           <BrandMark size={22} />
         </Link>
         <nav className="topbar-nav">
-          <Link
-            to="/profile/invites"
+          <div className="topbar-invites" ref={invitesPopoverRef}>
+            <button
+              type="button"
+              onClick={() => setInvitesOpen((current) => !current)}
             className={[
-              pathname === '/profile/invites' ? 'active' : '',
-              hasInviteNotifications ? 'topbar-link--has-notification' : '',
-            ].filter(Boolean).join(' ')}
-            aria-current={pathname === '/profile/invites' ? 'page' : undefined}
-            title={hasInviteNotifications ? `Invites (${inviteLabel})` : 'Invites'}
-          >
-            <Mail size={16} />
-            <span>Invites</span>
-            {hasInviteNotifications ? (
-              <span
-                className={`topbar-link-notice topbar-link-notice--${inviteNoticeVariant}`}
-                aria-label={`Invites: ${inviteLabel}`}
-              >
-                {inviteNotificationCount}
-              </span>
+                'topbar-invites-trigger',
+                invitesOpen ? 'active' : '',
+                hasInviteNotifications ? 'topbar-link--has-notification' : '',
+              ].filter(Boolean).join(' ')}
+              title={hasInviteNotifications ? `Invites (${inviteLabel})` : 'Invites'}
+              aria-expanded={invitesOpen}
+              aria-haspopup="dialog"
+              aria-controls="topbar-invites-popover"
+            >
+              <Mail size={16} />
+              <span>Invites</span>
+              {hasInviteNotifications ? (
+                <span
+                  className={`topbar-link-notice topbar-link-notice--${inviteNoticeVariant}`}
+                  aria-label={`Invites: ${inviteLabel}`}
+                >
+                  {inviteNotificationCount}
+                </span>
+              ) : null}
+            </button>
+
+            {invitesOpen ? (
+              <div id="topbar-invites-popover" className="topbar-invites-popover" role="dialog" aria-label="Invite notifications">
+                <div className="topbar-invites-popover-header">
+                  <h2>Invites</h2>
+                  {hasInviteNotifications ? <span>{inviteLabel}</span> : <span>All caught up</span>}
+                </div>
+                <div className="topbar-invites-popover-content">
+                  {invitesLoading ? (
+                    <p className="topbar-invites-empty">Loading invites...</p>
+                  ) : !hasAnyInviteContent ? (
+                    <p className="topbar-invites-empty">No pending invites right now.</p>
+                  ) : (
+                    <>
+                      {hasAnyPendingInvites ? (
+                        <section className="topbar-invites-group" aria-label="Pending invites">
+                          <h3>Pending</h3>
+                          <ul className="topbar-invites-list">
+                            {pendingInvites.map((invite) => {
+                              const busy = busyInviteId === invite.id;
+                              return (
+                                <li key={invite.id} className="topbar-invite-item">
+                                  <div className="topbar-invite-main">
+                                    <strong>{invite.resourceName}</strong>
+                                    <span>{invite.ownerFullName || invite.ownerEmail} shared a {invite.resourceType} with {invite.permission} access</span>
+                                  </div>
+                                  <div className="topbar-invite-actions">
+                                    <button
+                                      type="button"
+                                      className="setlist-action-btn"
+                                      disabled={busy}
+                                      onClick={() => void handleAcceptInvite(invite)}
+                                    >
+                                      {busy ? 'Working...' : 'Accept'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="setlist-action-btn setlist-action-btn--secondary"
+                                      disabled={busy}
+                                      onClick={() => void handleDeclineInvite(invite.id)}
+                                    >
+                                      Decline
+                                    </button>
+                                  </div>
+                                </li>
+                              );
+                            })}
+                            {pendingBandInvites.map((invite) => {
+                              const busy = busyInviteId === invite.id;
+                              return (
+                                <li key={invite.id} className="topbar-invite-item">
+                                  <div className="topbar-invite-main">
+                                    <strong>{invite.bandName}</strong>
+                                    <span>{invite.inviterEmail} invited you as {invite.role}</span>
+                                  </div>
+                                  <div className="topbar-invite-actions">
+                                    <button
+                                      type="button"
+                                      className="setlist-action-btn"
+                                      disabled={busy}
+                                      onClick={() => void handleAcceptBandInvite(invite)}
+                                    >
+                                      {busy ? 'Working...' : 'Accept'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="setlist-action-btn setlist-action-btn--secondary"
+                                      disabled={busy}
+                                      onClick={() => void handleDeclineBandInvite(invite.id)}
+                                    >
+                                      Decline
+                                    </button>
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </section>
+                      ) : null}
+
+                      {acceptedOutgoing.length > 0 ? (
+                        <section className="topbar-invites-group" aria-label="Recent invite responses">
+                          <h3>Recent responses</h3>
+                          <ul className="topbar-invites-list">
+                            {acceptedOutgoing.slice(0, 4).map((notification) => (
+                              <li key={notification.id} className="topbar-invite-item topbar-invite-item--accepted">
+                                <div className="topbar-invite-main">
+                                  <strong>{notification.title}</strong>
+                                  <span>{notification.description}</span>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </section>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              </div>
             ) : null}
-          </Link>
+          </div>
           <button
             type="button"
             onClick={toggleDark}
