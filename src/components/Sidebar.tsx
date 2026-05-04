@@ -550,6 +550,81 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         </div>
       </div>
 
+      <div className="sidebar-mode-switcher" ref={bandSwitcherRef}>
+        <button
+          type="button"
+          className="sidebar-band-switcher-btn"
+          onClick={() => setBandSwitcherOpen((o) => !o)}
+          title="Switch to Solo or Band"
+          aria-label="Switch to Solo or Band"
+          aria-haspopup="listbox"
+          aria-expanded={bandSwitcherOpen}
+        >
+          {sidebarMode === 'solo' ? (
+            <>
+              <User size={13} />
+              <span className="sidebar-band-switcher-name">Solo</span>
+            </>
+          ) : (
+            <>
+              {effectiveActiveBand?.icon
+                ? <span className="sidebar-list-icon" aria-hidden="true">{effectiveActiveBand.icon}</span>
+                : <Users size={13} />}
+              <span className="sidebar-band-switcher-name">
+                {effectiveActiveBand?.name ?? ''}
+              </span>
+            </>
+          )}
+          <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
+        </button>
+
+        {bandSwitcherOpen && (
+          <div className="sidebar-band-switcher-dropdown" role="listbox">
+            {!bands.some((band) => band.name === 'Solo') && (
+              <button
+                type="button"
+                className={`sidebar-band-switcher-option${sidebarMode === 'solo' ? ' active' : ''}`}
+                role="option"
+                aria-selected={sidebarMode === 'solo'}
+                onClick={() => {
+                  setSidebarMode('solo');
+                  setBandSwitcherOpen(false);
+                  clearSoloSelection();
+                  navigate('/');
+                  onNavigate?.();
+                }}
+              >
+                <User size={13} />
+                <span className="sidebar-band-switcher-option-name">Solo</span>
+              </button>
+            )}
+            {bands.map((band) => (
+              <button
+                type="button"
+                key={band.id}
+                className={`sidebar-band-switcher-option${band.id === activeBandId && sidebarMode === 'bands' ? ' active' : ''}`}
+                role="option"
+                aria-selected={band.id === activeBandId && sidebarMode === 'bands'}
+                onClick={() => {
+                  setSidebarMode('bands');
+                  clearSoloSelection();
+                  setActiveBandId(band.id);
+                  if (typeof window !== 'undefined') window.localStorage.setItem('folio-active-band-id', band.id);
+                  setBandSwitcherOpen(false);
+                  navigate(`/bands/${band.id}/library`);
+                  onNavigate?.();
+                }}
+              >
+                {band.icon
+                  ? <span className="sidebar-list-icon" aria-hidden="true">{band.icon}</span>
+                  : <Users size={13} />}
+                <span className="sidebar-band-switcher-option-name">{band.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {sidebarMode === 'solo' && (
       <div className="sidebar-folders">
         <div className="sidebar-setlists-header">
@@ -846,74 +921,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
       {sidebarMode === 'bands' && (
       <div className="sidebar-bands-section">
-        <div className="sidebar-bands-header" ref={bandSwitcherRef}>
-          <div className="sidebar-band-switcher">
-            <button
-              type="button"
-              className="sidebar-band-switcher-btn"
-              onClick={() => setBandSwitcherOpen((o) => !o)}
-              title="Switch to Solo or Band"
-              aria-label="Switch to Solo or Band"
-              aria-haspopup="listbox"
-              aria-expanded={bandSwitcherOpen}
-            >
-              <>
-                {effectiveActiveBand?.icon
-                  ? <span className="sidebar-list-icon" aria-hidden="true">{effectiveActiveBand.icon}</span>
-                  : <Users size={13} />}
-                <span className="sidebar-band-switcher-name">
-                  {effectiveActiveBand?.name ?? ''}
-                </span>
-              </>
-              <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
-            </button>
-
-            {bandSwitcherOpen && (
-              <div className="sidebar-band-switcher-dropdown" role="listbox">
-                {!bands.some((band) => band.name === 'Solo') && (
-                  <button
-                    type="button"
-                    className="sidebar-band-switcher-option"
-                    role="option"
-                    aria-selected={false}
-                    onClick={() => {
-                      setSidebarMode('solo');
-                      setBandSwitcherOpen(false);
-                      clearSoloSelection();
-                      navigate('/');
-                      onNavigate?.();
-                    }}
-                  >
-                    <User size={13} />
-                    <span className="sidebar-band-switcher-option-name">Solo</span>
-                  </button>
-                )}
-                {bands.map((band) => (
-                  <button
-                    type="button"
-                    key={band.id}
-                    className={`sidebar-band-switcher-option${band.id === activeBandId && sidebarMode === 'bands' ? ' active' : ''}`}
-                    role="option"
-                    aria-selected={band.id === activeBandId && sidebarMode === 'bands'}
-                    onClick={() => {
-                      setSidebarMode('bands');
-                      clearSoloSelection();
-                      setActiveBandId(band.id);
-                      if (typeof window !== 'undefined') window.localStorage.setItem('folio-active-band-id', band.id);
-                      setBandSwitcherOpen(false);
-                      navigate(`/bands/${band.id}/library`);
-                      onNavigate?.();
-                    }}
-                  >
-                    {band.icon
-                      ? <span className="sidebar-list-icon" aria-hidden="true">{band.icon}</span>
-                      : <Users size={13} />}
-                    <span className="sidebar-band-switcher-option-name">{band.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="sidebar-bands-header">
           <button
             type="button"
             className="sidebar-icon-btn"
