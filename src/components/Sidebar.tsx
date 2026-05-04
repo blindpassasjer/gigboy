@@ -857,21 +857,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               aria-haspopup="listbox"
               aria-expanded={bandSwitcherOpen}
             >
-              {sidebarMode === 'solo' ? (
-                <>
-                  <User size={13} />
-                  <span className="sidebar-band-switcher-name">Solo</span>
-                </>
-              ) : (
-                <>
-                  {effectiveActiveBand?.icon
-                    ? <span className="sidebar-list-icon" aria-hidden="true">{effectiveActiveBand.icon}</span>
-                    : <Users size={13} />}
-                  <span className="sidebar-band-switcher-name">
-                    {effectiveActiveBand?.name ?? ''}
-                  </span>
-                </>
-              )}
+              <>
+                {effectiveActiveBand?.icon
+                  ? <span className="sidebar-list-icon" aria-hidden="true">{effectiveActiveBand.icon}</span>
+                  : <Users size={13} />}
+                <span className="sidebar-band-switcher-name">
+                  {effectiveActiveBand?.name ?? ''}
+                </span>
+              </>
               <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
             </button>
 
@@ -880,9 +873,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 {!bands.some((band) => band.name === 'Solo') && (
                   <button
                     type="button"
-                    className={`sidebar-band-switcher-option${sidebarMode === 'solo' ? ' active' : ''}`}
+                    className="sidebar-band-switcher-option"
                     role="option"
-                    aria-selected={sidebarMode === 'solo'}
+                    aria-selected={false}
                     onClick={() => {
                       setSidebarMode('solo');
                       setBandSwitcherOpen(false);
