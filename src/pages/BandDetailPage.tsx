@@ -4,7 +4,6 @@ import toast from '../utils/anchoredToast';
 import { Link2, UserPlus, Users, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
-import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
@@ -19,7 +18,6 @@ export default function BandDetailPage() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { songs } = useSongs();
   const {
     bands,
     bandSongsByBandId,
@@ -88,10 +86,11 @@ export default function BandDetailPage() {
   const [busyInvite, setBusyInvite] = useState(false);
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
 
-  const ownedSongs = useMemo(() => {
-    if (!user?.id) return [];
-    return songs.filter((song) => song.ownerId === user.id);
-  }, [songs, user?.id]);
+  const allBandsSongs = useMemo(() => {
+    return Object.entries(bandSongsByBandId)
+      .filter(([bandId]) => bandId !== id)
+      .flatMap(([, bandSongList]) => bandSongList);
+  }, [bandSongsByBandId, id]);
 
   const routeSegments = pathname.split('/').filter(Boolean);
   const routeBandId = routeSegments[0] === 'bands' ? routeSegments[1] : null;
@@ -240,7 +239,7 @@ export default function BandDetailPage() {
   };
 
   const handleAddSong = async (songId: string) => {
-    const selectedSong = ownedSongs.find((song) => song.id === songId);
+    const selectedSong = allBandsSongs.find((song) => song.id === songId);
     if (!selectedSong) {
       toast.error('Select a song to add.');
       return;
@@ -434,6 +433,7 @@ export default function BandDetailPage() {
           headerMeta={undefined}
           headerVariant="bands"
           allSongs={bandSongs}
+          pickerSourceNote="Showing songs from this band's library."
           onAddSong={async (songId) => {
             const error = await addSongToBandSongList(band.id, activeBandSongList.id, songId);
             if (error) {
@@ -740,6 +740,7 @@ export default function BandDetailPage() {
       <SongList
         songs={bandSongs}
         listName={band.name}
+        listEntityLabel="band"
         listIcon={band.icon}
         headerMeta={`${band.memberIds.length} member${band.memberIds.length === 1 ? '' : 's'} in this band.`}
         headerVariant="bands"
@@ -754,7 +755,8 @@ export default function BandDetailPage() {
             <Users size={14} />
           </button>
         )}
-        allSongs={ownedSongs}
+        allSongs={allBandsSongs}
+        pickerSourceNote="Showing songs from all bands' libraries. Selected songs will be copied to this band's library."
         onDeleteSong={handleDeleteSong}
         onRemoveSong={handleRemoveSong}
         onAddSong={handleAddSong}

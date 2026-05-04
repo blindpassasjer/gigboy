@@ -77,6 +77,7 @@ function normalizeEmojiIcon(value: string): string | undefined {
 interface Props {
   songs: Song[];
   listName?: string;
+  listEntityLabel?: 'songlist' | 'band';
   headerMeta?: string;
   headerVariant?: 'songlist' | 'bands';
   headerActions?: ReactNode;
@@ -92,6 +93,7 @@ interface Props {
   onRemoveSong?: (song: Song) => void;
   onAddSong?: (songId: string) => void;
   onAddSongsClick?: () => void;
+  pickerSourceNote?: string;
   /** When songs belong to a band, pass the bandId so SongView can use band recordings */
   bandId?: string;
 }
@@ -99,6 +101,7 @@ interface Props {
 export default function SongList({
   songs,
   listName,
+  listEntityLabel = 'songlist',
   headerMeta,
   headerVariant = 'songlist',
   headerActions,
@@ -114,6 +117,7 @@ export default function SongList({
   onRemoveSong,
   onAddSong,
   onAddSongsClick,
+  pickerSourceNote,
   bandId,
 }: Props) {
   const { pathname } = useLocation();
@@ -272,18 +276,18 @@ export default function SongList({
     setPickerQuery('');
   };
 
-  const handleApplyListAppearance = () => {
+  const handleApplyListAppearance = async () => {
     if (!onUpdateListAppearance) return;
 
-    onUpdateListAppearance({
+    await onUpdateListAppearance({
       icon: normalizeEmojiIcon(listIconDraft),
     });
     setShowListAppearanceEditor(false);
   };
 
-  const handleResetListAppearance = () => {
+  const handleResetListAppearance = async () => {
     if (!onUpdateListAppearance) return;
-    onUpdateListAppearance({ icon: undefined });
+    await onUpdateListAppearance({ icon: undefined });
     setListIconDraft('🎵');
     setShowListAppearanceEditor(false);
   };
@@ -505,8 +509,8 @@ export default function SongList({
                     type="button"
                     className="title-rename-btn"
                     onClick={() => setIsRenaming(true)}
-                    title={`Rename ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
-                    aria-label={`Rename ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
+                    title={`Rename ${listEntityLabel}`}
+                    aria-label={`Rename ${listEntityLabel}`}
                   >
                     <PenLine size={14} />
                   </button>
@@ -524,7 +528,7 @@ export default function SongList({
               type="button"
               className="setlist-action-btn setlist-action-btn--secondary"
               onClick={() => setShowListAppearanceEditor((value) => !value)}
-              title="Set songlist icon"
+              title={`Set ${listEntityLabel} icon`}
             >
               <Smile size={14} />
             </button>
@@ -562,8 +566,8 @@ export default function SongList({
               type="button"
               className="setlist-action-btn setlist-action-btn--secondary"
               onClick={() => void onDeleteList()}
-              title={deleteListLabel ?? `Delete ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
-              aria-label={deleteListLabel ?? `Delete ${headerVariant === 'bands' ? 'band' : 'songlist'}`}
+              title={deleteListLabel ?? `Delete ${listEntityLabel}`}
+              aria-label={deleteListLabel ?? `Delete ${listEntityLabel}`}
             >
               <Trash2 size={14} />
             </button>
@@ -571,10 +575,10 @@ export default function SongList({
         </div>
       </div>
       {showListAppearanceEditor && onUpdateListAppearance && (
-        <div className="list-appearance-editor" role="region" aria-label="Songlist icon settings">
+        <div className="list-appearance-editor" role="region" aria-label={`${listEntityLabel} icon settings`}>
           <div className="list-appearance-group">
             <span className="list-appearance-label">Icon</span>
-            <div className="emoji-choice-grid" role="listbox" aria-label="Songlist icon options">
+            <div className="emoji-choice-grid" role="listbox" aria-label={`${listEntityLabel} icon options`}>
               {ICON_OPTIONS.map((emoji) => {
                 const selected = listIconDraft === emoji;
                 return (
@@ -592,8 +596,8 @@ export default function SongList({
               })}
             </div>
           </div>
-          <button type="button" className="setlist-action-btn" onClick={handleApplyListAppearance}>Save</button>
-          <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={handleResetListAppearance}>Reset</button>
+          <button type="button" className="setlist-action-btn" onClick={() => void handleApplyListAppearance()}>Save</button>
+          <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={() => void handleResetListAppearance()}>Reset</button>
         </div>
       )}
       <div className="song-list-controls">
@@ -825,8 +829,8 @@ export default function SongList({
                 <X size={16} />
               </button>
             </div>
-            {headerVariant === 'bands' && (
-              <p className="song-picker-source-note">Showing songs from All bands' library. Selected songs will be copied to this band's library.</p>
+            {headerVariant === 'bands' && pickerSourceNote && (
+              <p className="song-picker-source-note">{pickerSourceNote}</p>
             )}
 
             <div className="song-picker-search-wrap">
