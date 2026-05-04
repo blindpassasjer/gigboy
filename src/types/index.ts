@@ -40,6 +40,7 @@ export interface Band {
   name: string;
   description?: string;
   icon?: string;
+  color?: string;
   ownerId: string;
   memberIds: string[];
   memberRoles: Record<string, CollaborationPermission>;

@@ -115,6 +115,7 @@ function normalizeBand(id: string, data: Record<string, unknown>): Band {
     name: typeof data.name === 'string' ? data.name : 'Untitled band',
     description: typeof data.description === 'string' ? data.description : undefined,
     icon: typeof data.icon === 'string' ? data.icon : undefined,
+    color: typeof data.color === 'string' ? data.color : undefined,
     ownerId: typeof data.ownerId === 'string' ? data.ownerId : '',
     memberIds: Array.isArray(data.memberIds)
       ? data.memberIds.filter((entry): entry is string => typeof entry === 'string')

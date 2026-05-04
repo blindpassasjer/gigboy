@@ -3,9 +3,12 @@ import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import UsernameSetupPage from './pages/UsernameSetupPage';
+import AddSongPage from './pages/AddSongPage';
 import BandSetlistConcertPage from './pages/BandSetlistConcertPage';
 import BandDetailPage from './pages/BandDetailPage';
 import BandMembersPage from './pages/BandMembersPage';
+import SongPage from './pages/SongPage';
+import EditSongPage from './pages/EditSongPage';
 import ProfileInvitesPage from './pages/ProfileInvitesPage';
 import ProfilePage from './pages/ProfilePage';
 import PublicBandSetlistPage from './pages/PublicBandSetlistPage';
@@ -40,6 +43,9 @@ function AuthenticatedApp() {
                   <Routes>
                     <Route path="/" element={<Navigate to="/profile" replace />} />
                     <Route path="/bands" element={<Navigate to="/profile" replace />} />
+                    <Route path="/songs/new" element={<AddSongPage />} />
+                    <Route path="/songs/:id" element={<SongPage />} />
+                    <Route path="/songs/:id/edit" element={<EditSongPage />} />
                     <Route path="/bands/:id/members" element={<BandMembersPage />} />
                     <Route path="/bands/:bandId/setlists/:setlistId/concert" element={<BandSetlistConcertPage />} />
                     <Route path="/bands/:id/*" element={<BandDetailPage />} />

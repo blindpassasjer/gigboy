@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Menu, Sun, Moon, Maximize2, Minimize2, Mail } from 'lucide-react';
+import { BookOpen, Menu, Sun, Moon, Maximize2, Minimize2, Mail, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useBands } from '../context/BandsContext';
 import Sidebar from './Sidebar';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
@@ -12,8 +13,18 @@ interface Props {
   children: ReactNode;
 }
 
+function hashBandHue(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  }
+  const positiveHash = Math.abs(hash);
+  return positiveHash % 360;
+}
+
 export default function Layout({ children }: Props) {
   const { pathname, state } = useLocation();
+  const { bands } = useBands();
   const { user } = useAuth();
   const { pendingIncomingCount, unseenAcceptedOutgoing } = useInviteNotifications();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
@@ -23,6 +34,22 @@ export default function Layout({ children }: Props) {
     return typeof candidate === 'string' && candidate.trim() ? candidate : null;
   })();
   const isBandRoute = pathname === '/bands' || pathname.startsWith('/bands/') || Boolean(stateBandId);
+  const routeSegments = pathname.split('/').filter(Boolean);
+  const routeBandId = routeSegments[0] === 'bands' ? routeSegments[1] ?? null : null;
+  const themedBandId = routeBandId ?? stateBandId;
+  const themedBand = themedBandId ? bands.find((entry) => entry.id === themedBandId) ?? null : null;
+  const bandSection = routeBandId ? (routeSegments[2] ?? 'library') : null;
+  const bandSongListId = routeBandId && bandSection === 'songlists' ? (routeSegments[3] ?? null) : null;
+  const showAddSongFab = Boolean(routeBandId) && (bandSection === 'library' || bandSection === 'songlists');
+  const addSongFabState = routeBandId
+    ? {
+      addSongScope: {
+        kind: 'band' as const,
+        bandId: routeBandId,
+      },
+      ...(bandSongListId ? { initialSongListId: bandSongListId } : {}),
+    }
+    : undefined;
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -135,8 +162,41 @@ export default function Layout({ children }: Props) {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const rootStyle = document.documentElement.style;
+
+    if (!isBandRoute || !themedBandId) {
+      rootStyle.removeProperty('--bands-hue');
+      rootStyle.removeProperty('--bands-hue-soft');
+      rootStyle.removeProperty('--bands-hue-contrast');
+      return;
+    }
+
+    const hue = hashBandHue(themedBandId);
+    const fallbackHue = dark
+      ? `hsl(${hue} 78% 70%)`
+      : `hsl(${hue} 64% 46%)`;
+    const softHue = dark
+      ? `hsl(${hue} 40% 20%)`
+      : `hsl(${hue} 76% 94%)`;
+    const contrast = dark ? '#1b1512' : '#ffffff';
+
+    const bandColor = themedBand?.color?.trim();
+
+    rootStyle.setProperty('--bands-hue', bandColor || fallbackHue);
+    rootStyle.setProperty(
+      '--bands-hue-soft',
+      bandColor
+        ? `color-mix(in srgb, ${bandColor} ${dark ? '26%' : '16%'}, ${dark ? '#0f0f10' : '#ffffff'})`
+        : softHue
+    );
+    rootStyle.setProperty('--bands-hue-contrast', contrast);
+  }, [dark, isBandRoute, themedBand?.color, themedBandId]);
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-library-mode={isBandRoute ? 'bands' : 'solo'}>
       <a
         href="#main-content"
         className="skip-link"
@@ -258,6 +318,17 @@ export default function Layout({ children }: Props) {
         >
           {children}
         </main>
+        {showAddSongFab && (
+          <Link
+            to="/songs/new"
+            state={addSongFabState}
+            className="fab-add-song"
+            title="Add new song"
+            aria-label="Add new song"
+          >
+            <Plus size={20} />
+          </Link>
+        )}
       </div>
     </div>
   );
