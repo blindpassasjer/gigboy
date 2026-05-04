@@ -1,6 +1,6 @@
 import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, Smile } from 'lucide-react';
+import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, Smile, FileText } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Song } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
@@ -163,6 +163,17 @@ export default function SetlistsView({
       cancelEditingSongNote();
     } catch {
       toast.error('Failed to save song note.');
+    }
+  };
+
+  const deleteSongNote = async (songId: string) => {
+    if (!onUpdateSongNote) return;
+
+    try {
+      await onUpdateSongNote(songId, '');
+      cancelEditingSongNote();
+    } catch {
+      toast.error('Failed to delete song note.');
     }
   };
 
@@ -516,7 +527,7 @@ export default function SetlistsView({
                       title={note ? `Edit note for ${song.title}` : `Add note for ${song.title}`}
                       aria-label={note ? `Edit note for ${song.title}` : `Add note for ${song.title}`}
                     >
-                      <PenLine size={14} />
+                      <FileText size={14} />
                     </button>
                   ) : null}
 
@@ -547,6 +558,13 @@ export default function SetlistsView({
                           onClick={() => void saveSongNote(song.id)}
                         >
                           Save note
+                        </button>
+                        <button
+                          type="button"
+                          className="setlist-action-btn setlist-action-btn--secondary"
+                          onClick={() => void deleteSongNote(song.id)}
+                        >
+                          Delete note
                         </button>
                         <button
                           type="button"

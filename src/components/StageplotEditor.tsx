@@ -398,7 +398,7 @@ export default function StageplotEditor({
 
   return (
     <section className="setlist-view stageplot-view">
-      <div className="song-list-sticky stageplot-sticky">
+      <div className="song-list-sticky">
         <div className="setlist-header songlist-header">
           <div className="setlist-title-block">
             {renaming ? (
