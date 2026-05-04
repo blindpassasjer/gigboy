@@ -3355,7 +3355,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   position: sticky;
   top: 0;
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
   z-index: 1;
 }
 
@@ -3370,6 +3369,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   grid-template-columns: 1fr 1fr;
   gap: .35rem;
   padding: .6rem .75rem;
+  border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
 
