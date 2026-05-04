@@ -38,6 +38,26 @@ function GitHubIcon() {
   );
 }
 
+function getPostLoginDestination(): { path: string; state?: { bandId: string } } {
+  if (typeof window === 'undefined') {
+    return { path: '/profile' };
+  }
+
+  try {
+    const lastBandId = window.localStorage.getItem('gigboi-active-band-id')?.trim();
+    if (lastBandId) {
+      return {
+        path: `/bands/${lastBandId}/library`,
+        state: { bandId: lastBandId },
+      };
+    }
+  } catch {
+    // Ignore localStorage failures and fall back to profile.
+  }
+
+  return { path: '/profile' };
+}
+
 export default function LoginPage() {
   const { login, register, loginWithGoogle, loginWithGithub, pendingLinkEmail, linkWithPassword, cancelPendingLink } = useAuth();
   const navigate = useNavigate();
@@ -78,7 +98,8 @@ export default function LoginPage() {
       setError(err);
       setBusy(false);
     } else {
-      navigate('/');
+      const destination = getPostLoginDestination();
+      navigate(destination.path, destination.state ? { state: destination.state } : undefined);
     }
   }
 
@@ -90,7 +111,8 @@ export default function LoginPage() {
       setError(err);
       setBusy(false);
     } else if (!pendingLinkEmail) {
-      navigate('/');
+      const destination = getPostLoginDestination();
+      navigate(destination.path, destination.state ? { state: destination.state } : undefined);
     }
     setBusy(false);
   }

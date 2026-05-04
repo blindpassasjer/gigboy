@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Sun, Moon, Maximize2, Minimize2, Mail, Plus } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -258,7 +258,7 @@ export default function Layout({ children }: Props) {
           aria-pressed={sidebarOpen}
           aria-controls="app-sidebar"
         >
-          <Menu size={20} />
+          <PanelLeft size={20} />
         </button>
         <Link to={themedBandId ? `/bands/${themedBandId}/library` : '/'} className="topbar-brand">
           <BrandMark size={22} />
