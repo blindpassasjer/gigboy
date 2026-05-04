@@ -826,7 +826,7 @@ export default function SongList({
               </button>
             </div>
             {headerVariant === 'bands' && (
-              <p className="song-picker-source-note">Showing songs from Solo's library. Selected songs will be copied to the band library.</p>
+              <p className="song-picker-source-note">Showing songs from All bands' library. Selected songs will be copied to this band's library.</p>
             )}
 
             <div className="song-picker-search-wrap">

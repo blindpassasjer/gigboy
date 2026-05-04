@@ -71,10 +71,18 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     const nextMemberRoles = (memberRoles[userId] === 'editor' || memberRoles[userId] === 'viewer')
       ? memberRoles
       : { ...memberRoles, [userId]: 'editor' };
-    const nextMemberEmails = userEmail ? { ...memberEmails, [userId]: userEmail } : memberEmails;
-    const nextMemberUsernames = profileUsername ? { ...memberUsernames, [userId]: profileUsername } : memberUsernames;
-    const nextMemberFullNames = profileFullName ? { ...memberFullNames, [userId]: profileFullName } : memberFullNames;
-    const nextMemberAvatars = profileAvatar ? { ...memberAvatars, [userId]: profileAvatar } : memberAvatars;
+    const nextMemberEmails = userEmail && memberEmails[userId] !== userEmail
+      ? { ...memberEmails, [userId]: userEmail }
+      : memberEmails;
+    const nextMemberUsernames = profileUsername && memberUsernames[userId] !== profileUsername
+      ? { ...memberUsernames, [userId]: profileUsername }
+      : memberUsernames;
+    const nextMemberFullNames = profileFullName && memberFullNames[userId] !== profileFullName
+      ? { ...memberFullNames, [userId]: profileFullName }
+      : memberFullNames;
+    const nextMemberAvatars = profileAvatar && memberAvatars[userId] !== profileAvatar
+      ? { ...memberAvatars, [userId]: profileAvatar }
+      : memberAvatars;
 
     const nextOwnerId = claimOwnership ? userId : ownerId;
 

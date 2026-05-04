@@ -57,6 +57,32 @@ const BAND_SONGLISTS_COLLECTION = 'songLists';
 const BAND_SETLISTS_COLLECTION = 'setlists';
 const BAND_STAGEPLOTS_COLLECTION = 'stageplots';
 const BAND_TECHNICAL_RIDERS_COLLECTION = 'technicalRiders';
+const MIGRATION_MARKER_PREFIX = 'folio-bands-migration';
+const SOLO_CLEANUP_MARKER = 'solo-cleanup-v1';
+const SERVER_REPAIR_MARKER = 'server-repair-v1';
+const CLIENT_REPAIR_MARKER = 'client-repair-v1';
+
+function migrationMarkerKey(marker: string, userId: string) {
+  return `${MIGRATION_MARKER_PREFIX}:${marker}:${userId}`;
+}
+
+function hasMigrationMarker(marker: string, userId: string) {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(migrationMarkerKey(marker, userId)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setMigrationMarker(marker: string, userId: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(migrationMarkerKey(marker, userId), '1');
+  } catch {
+    // Ignore storage write failures to keep app flow non-blocking.
+  }
+}
 
 function compareBands(a: Band, b: Band) {
   const updatedAtA = a.updatedAt ?? a.createdAt;
@@ -502,12 +528,17 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   // One-time cleanup for legacy solo data now that the app is bands-only.
   useEffect(() => {
     if (!userId || soloCleanupUserId === userId) return;
+    if (hasMigrationMarker(SOLO_CLEANUP_MARKER, userId)) {
+      setSoloCleanupUserId(userId);
+      return;
+    }
 
     setSoloCleanupUserId(userId);
     void cleanupLegacySoloDataOnServer({
       userId,
       userEmail,
     }).then((result) => {
+      setMigrationMarker(SOLO_CLEANUP_MARKER, userId);
       if (result.deletedSoloBands > 0 || result.deletedUserDocs > 0) {
         console.info(
           `[Folio] Cleaned legacy solo data: bands=${result.deletedSoloBands}, userDocs=${result.deletedUserDocs}`
@@ -521,6 +552,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   // Server-side recovery: re-associate this user to likely matching bands by ownerId/username/email.
   useEffect(() => {
     if (!userId || serverRepairUserId === userId) return;
+    if (hasMigrationMarker(SERVER_REPAIR_MARKER, userId)) {
+      setServerRepairUserId(userId);
+      return;
+    }
 
     setServerRepairUserId(userId);
     void repairBandMembershipOnServer({
@@ -529,6 +564,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       username: userUsername,
       claimOwnership: true,
     }).then((result) => {
+      setMigrationMarker(SERVER_REPAIR_MARKER, userId);
       if (result.repairedCount > 0) {
         console.info(`[Folio] Server repair linked ${result.repairedCount} band(s).`);
       }
@@ -543,6 +579,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   // Repair owned bands if membership linkage was lost (e.g. memberIds missing current user).
   useEffect(() => {
     if (!db || !userId || membershipRepairUserId === userId) return;
+    if (hasMigrationMarker(CLIENT_REPAIR_MARKER, userId)) {
+      setMembershipRepairUserId(userId);
+      return;
+    }
     const firestore = db;
 
     setMembershipRepairUserId(userId);
@@ -623,6 +663,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       if (repairedCount > 0) {
         console.info(`[Folio] Repaired membership for ${repairedCount} owned band(s).`);
       }
+
+      setMigrationMarker(CLIENT_REPAIR_MARKER, userId);
     };
 
     void repairOwnedBandsMembership().catch((error) => {
@@ -675,9 +717,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     const updateMergedBands = () => {
       const mergedBands = mergeBandsById(memberBands, ownerBands);
-      console.info(
-        `[Folio] Band sources: member=${memberBands.length}, owner=${ownerBands.length}, merged=${mergedBands.length}`
-      );
+      if (import.meta.env.DEV) {
+        console.info(
+          `[Folio] Band sources: member=${memberBands.length}, owner=${ownerBands.length}, merged=${mergedBands.length}`
+        );
+      }
       setBands(mergedBands);
       setLoading(false);
     };
