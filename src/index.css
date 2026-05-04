@@ -6326,7 +6326,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-direction: column;
   gap: 1rem;
   min-width: 0;
-  overflow-x: hidden;
+}
+
+.stageplot-stage-wrap {
+  overflow-x: auto;
+  min-width: 0;
 }
 
 .stageplot-toolbar {

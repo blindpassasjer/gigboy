@@ -597,17 +597,18 @@ export default function StageplotEditor({
 
       </div>
 
-      <div
-        ref={stageRef}
-        className={`stageplot-stage song-notes-stage stageplot-stage--shape-${stageShapePreview} stageplot-stage--size-${stageSizePreview}`}
-        onDragOver={(event) => {
-          if (!canEdit) return;
-          if (!event.dataTransfer.types.includes(ITEM_DRAG_MIME)) return;
-          event.preventDefault();
-          event.dataTransfer.dropEffect = 'copy';
-        }}
-        onDrop={handleStageDrop}
-      >
+      <div className="stageplot-stage-wrap">
+        <div
+          ref={stageRef}
+          className={`stageplot-stage song-notes-stage stageplot-stage--shape-${stageShapePreview} stageplot-stage--size-${stageSizePreview}`}
+          onDragOver={(event) => {
+            if (!canEdit) return;
+            if (!event.dataTransfer.types.includes(ITEM_DRAG_MIME)) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+          }}
+          onDrop={handleStageDrop}
+        >
         <div className="stageplot-stage-grid" />
         <div className="stageplot-front-edge" aria-hidden="true" />
         <div className="stageplot-audience-marker" aria-label="Audience-facing side">
@@ -653,6 +654,7 @@ export default function StageplotEditor({
           strokeColor="#fb7185"
           strokeWidth={2.6}
         />
+        </div>
       </div>
     </section>
   );
