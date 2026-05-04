@@ -53,7 +53,8 @@ export default function Layout({ children }: Props) {
     refresh: refreshInviteNotifications,
     markAcceptedAsSeen,
   } = useInviteNotifications();
-  const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
+  const isConcertRoute = pathname.endsWith('/concert')
+    && (pathname.startsWith('/setlists/') || pathname.startsWith('/bands/'));
   const stateBandId = (() => {
     if (!state || typeof state !== 'object') return null;
     const candidate = (state as { bandId?: unknown }).bandId;

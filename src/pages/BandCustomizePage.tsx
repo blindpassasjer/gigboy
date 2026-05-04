@@ -5,6 +5,7 @@ import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { ICON_OPTIONS } from '../lib/iconOptions';
+import BandManagementPanel from '../components/BandManagementPanel';
 
 const BAND_COLOR_OPTIONS = [
   '#c33232',
@@ -31,7 +32,12 @@ export default function BandCustomizePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { bands, loading, renameBand, updateBandLibraryAppearance } = useBands();
+  const {
+    bands,
+    loading,
+    renameBand,
+    updateBandLibraryAppearance,
+  } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
 
@@ -247,6 +253,12 @@ export default function BandCustomizePage() {
             </Link>
           </div>
         </section>
+
+        <BandManagementPanel
+          band={band}
+          canEditBand={canEditBand}
+          isOwner={isOwner}
+        />
       </div>
     </section>
   );
