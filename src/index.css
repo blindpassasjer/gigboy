@@ -678,7 +678,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .color-swatch-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: .3rem;
+  gap: .15rem;
 }
 
 .color-swatch-grid--compact {
@@ -704,7 +704,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .emoji-choice-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: .3rem;
+  gap: .15rem;
 }
 
 .emoji-choice-btn {
@@ -3686,7 +3686,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--sidebar-active-bg);
   color: var(--list-accent);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--list-accent);
 }
 
 .sidebar-list-icon {

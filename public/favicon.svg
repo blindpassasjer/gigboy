@@ -1,16 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <title>Gigboi</title>
-  <!-- Background -->
-  <rect width="64" height="64" rx="14" fill="#0f172a"/>
-  <!-- GB monogram -->
-  <text
-    x="32"
-    y="45"
-    font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
-    font-size="27"
-    font-weight="700"
-    text-anchor="middle"
-    letter-spacing="-1"
-    fill="#a78bfa"
-  >GB</text>
+  <!-- Line 1 — full width, lightest violet -->
+  <rect x="12" y="18" width="40" height="7" rx="3.5" fill="#c4b5fd"/>
+  <!-- Line 2 — medium width -->
+  <rect x="12" y="29" width="28" height="7" rx="3.5" fill="#a78bfa"/>
+  <!-- Line 3 — short, deepest violet -->
+  <rect x="12" y="40" width="18" height="7" rx="3.5" fill="#7c3aed"/>
 </svg>
