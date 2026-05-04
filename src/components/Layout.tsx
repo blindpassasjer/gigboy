@@ -661,6 +661,7 @@ export default function Layout({ children }: Props) {
           className={`main-content${isConcertRoute ? ' main-content--concert' : ''}${isBandRoute || (themedBandId && pathname.startsWith('/profile')) ? ' main-content--band' : ''}`}
         >
           {children}
+          <footer className="footer">From Norway - with chords</footer>
         </main>
         {showAddSongFab && (
           <Link

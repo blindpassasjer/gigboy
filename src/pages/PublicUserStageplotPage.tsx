@@ -176,6 +176,7 @@ export default function PublicUserStageplotPage() {
 
       <footer className="public-setlist-footer">
         <Link to="/" className="public-setlist-footer-link"><BrandMark size={13} /></Link>
+        <p className="public-setlist-signoff">From Norway - with chords</p>
       </footer>
     </div>
   );

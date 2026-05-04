@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, KeyRound, LogOut, Music2, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, Music2, Users } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -17,20 +17,16 @@ function normalizeEmojiIcon(value: string): string | undefined {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user, updateEmailAddress, updatePassword, updateUsername, updateAvatar, updateFullName, logout } = useAuth();
+  const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, logout } = useAuth();
   const { bands, loading: bandsLoading, cloudRequired, createBand, deleteBand } = useBands();
 
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar ?? AVATAR_OPTIONS[0]);
   const [busyEmail, setBusyEmail] = useState(false);
   const [busyUsername, setBusyUsername] = useState(false);
   const [busyFullName, setBusyFullName] = useState(false);
-  const [busyPassword, setBusyPassword] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [busyLogout, setBusyLogout] = useState(false);
   const [bandName, setBandName] = useState('');
@@ -104,32 +100,6 @@ export default function ProfilePage() {
 
     setFullName(candidate);
     toast.success('Full name updated.');
-  };
-
-  const onPasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters.');
-      return;
-    }
-
-    if (newPassword !== confirmNewPassword) {
-      toast.error('New passwords do not match.');
-      return;
-    }
-
-    setBusyPassword(true);
-    const error = await updatePassword(currentPassword, newPassword);
-    setBusyPassword(false);
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmNewPassword('');
-    toast.success('Password updated.');
   };
 
   const onSelectAvatar = async (avatar: string) => {
@@ -222,7 +192,7 @@ export default function ProfilePage() {
         {/* Information */}
         <section className="profile-settings-card profile-settings-card--wide">
           <h2>Information</h2>
-          <form className="profile-settings-form" onSubmit={onFullNameSubmit}>
+          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onFullNameSubmit}>
             <label className="form-field">
               <span>Full name</span>
               <input
@@ -234,11 +204,11 @@ export default function ProfilePage() {
                 maxLength={80}
               />
             </label>
-            <button type="submit" className="setlist-action-btn" disabled={busyFullName}>
+            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyFullName}>
               {busyFullName ? 'Saving…' : 'Save full name'}
             </button>
           </form>
-          <form className="profile-settings-form" onSubmit={onUsernameSubmit}>
+          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onUsernameSubmit}>
             <label className="form-field">
               <span>Username</span>
               <input
@@ -249,11 +219,11 @@ export default function ProfilePage() {
                 required
               />
             </label>
-            <button type="submit" className="setlist-action-btn" disabled={busyUsername}>
+            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyUsername}>
               {busyUsername ? 'Saving…' : 'Save username'}
             </button>
           </form>
-          <form className="profile-settings-form" onSubmit={onEmailSubmit}>
+          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onEmailSubmit}>
             <label className="form-field">
               <span>Email</span>
               <input
@@ -264,52 +234,20 @@ export default function ProfilePage() {
                 required
               />
             </label>
-            <button type="submit" className="setlist-action-btn" disabled={busyEmail}>
+            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyEmail}>
               {busyEmail ? 'Saving…' : 'Save email'}
             </button>
           </form>
-        </section>
-
-        {/* Change password */}
-        <section className="profile-settings-card">
-          <h2><KeyRound size={16} /> Change password</h2>
-          <p className="profile-settings-muted">Leave current password empty if you signed up with Google and are adding password login.</p>
-          <form className="profile-settings-form" onSubmit={onPasswordSubmit}>
-            <label className="form-field">
-              <span>Current password (optional for Google login)</span>
-              <input
-                type="password"
-                value={currentPassword}
-                autoComplete="current-password"
-                onChange={(event) => setCurrentPassword(event.target.value)}
-              />
-            </label>
-            <label className="form-field">
-              <span>New password</span>
-              <input
-                type="password"
-                value={newPassword}
-                autoComplete="new-password"
-                onChange={(event) => setNewPassword(event.target.value)}
-                required
-                minLength={8}
-              />
-            </label>
-            <label className="form-field">
-              <span>Confirm new password</span>
-              <input
-                type="password"
-                value={confirmNewPassword}
-                autoComplete="new-password"
-                onChange={(event) => setConfirmNewPassword(event.target.value)}
-                required
-                minLength={8}
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn" disabled={busyPassword}>
-              {busyPassword ? 'Saving…' : 'Change password'}
+          <div className="profile-settings-logout">
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              disabled={busyLogout}
+              onClick={() => { void onLogout(); }}
+            >
+              {busyLogout ? 'Signing out…' : 'Log out'}
             </button>
-          </form>
+          </div>
         </section>
 
         {/* Bands */}
@@ -417,15 +355,6 @@ export default function ProfilePage() {
               })}
             </ul>
           )}
-        </section>
-
-        {/* Log out */}
-        <section className="profile-settings-card profile-settings-card--wide">
-          <h2><LogOut size={16} /> Log out</h2>
-          <p className="profile-settings-muted">Need to sign out on this device?</p>
-          <button type="button" className="setlist-action-btn setlist-action-btn--secondary" disabled={busyLogout} onClick={() => { void onLogout(); }}>
-            {busyLogout ? 'Signing out…' : 'Log out'}
-          </button>
         </section>
 
       </div>

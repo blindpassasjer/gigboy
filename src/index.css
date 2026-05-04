@@ -6362,6 +6362,30 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .75rem;
 }
 
+.profile-settings-form--inline {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: .6rem;
+}
+
+.profile-settings-form--inline .form-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-settings-save-btn {
+  flex-shrink: 0;
+  align-self: flex-end;
+  padding: .36rem .62rem;
+  font-size: .76rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.profile-settings-logout {
+  margin-top: .2rem;
+}
+
 .profile-settings-link {
   color: var(--muted);
   font-size: .88rem;
@@ -6791,6 +6815,15 @@ input, select, textarea { font: inherit; color: var(--text); }
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .profile-settings-form--inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-settings-save-btn {
+    align-self: flex-end;
+  }
+
   .profile-settings-card--wide {
     grid-column: span 1;
   }
@@ -6988,6 +7021,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .public-setlist-footer-link:hover {
   color: var(--text, #1a1a1a);
+}
+
+.public-setlist-signoff {
+  margin: .5rem 0 0;
+  font-size: .78rem;
+  color: var(--muted, #888);
 }
 
 /* Active state for share button (public link enabled) */
