@@ -230,6 +230,71 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
 }
 
+.topbar-storage {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  min-width: 220px;
+  max-width: 320px;
+  padding: .28rem .6rem;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.topbar-storage-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.12;
+}
+
+.topbar-storage-text strong {
+  font-size: .72rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.topbar-storage-text span {
+  font-size: .78rem;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.topbar-storage-meter {
+  height: .42rem;
+  flex: 1;
+  min-width: 72px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 45%, var(--bg));
+  overflow: hidden;
+}
+
+.topbar-storage-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1f9d55, var(--accent));
+  transition: width .2s ease;
+}
+
+.topbar-storage-meter-fill.is-warning {
+  background: linear-gradient(90deg, #e59f0f, #cf6f1e);
+}
+
+.topbar-storage-meter-fill.is-critical {
+  background: linear-gradient(90deg, #e65858, #b73232);
+}
+
+.topbar-storage-percent {
+  min-width: 2.2rem;
+  text-align: right;
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
 .topbar-nav a,
 .topbar-invites-trigger {
   display: flex;
@@ -1090,6 +1155,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   line-height: 1.55;
   display: -webkit-box;
   -webkit-line-clamp: 4;
+  line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -5547,6 +5613,15 @@ input, select, textarea { font: inherit; color: var(--text); }
     gap: .5rem;
   }
 
+  .topbar-storage {
+    min-width: 170px;
+    max-width: 220px;
+  }
+
+  .topbar-storage-text span {
+    font-size: .72rem;
+  }
+
   .topbar-nav a,
   .topbar-invites-trigger {
     padding: .3rem .55rem;
@@ -5667,6 +5742,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   .topbar-brand span,
   .topbar-nav a span,
   .topbar-invites-trigger span {
+    display: none;
+  }
+
+  .topbar-storage {
     display: none;
   }
 
