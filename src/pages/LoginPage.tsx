@@ -4,6 +4,21 @@ import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 
+const LOGIN_FEATURES = [
+  {
+    title: 'Keep songs performance-ready',
+    description: 'Store chord charts, lyrics, and notes in one place so your set is always ready.',
+  },
+  {
+    title: 'Build setlists fast',
+    description: 'Arrange songs in seconds and switch between rehearsal and concert views without friction.',
+  },
+  {
+    title: 'Share with your band',
+    description: 'Collaborate on updates, stage plots, and technical details from anywhere.',
+  },
+];
+
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="oauth-provider-icon">
@@ -58,8 +73,49 @@ function getPostLoginDestination(): { path: string; state?: { bandId: string } }
   return { path: '/profile' };
 }
 
+function LoginHero() {
+  return (
+    <aside className="login-hero" aria-label="GIGBOi features">
+      <div className="login-brand login-brand--hero">
+        <BrandMark size={30} />
+      </div>
+      <h1 className="login-hero-title">The band room, online.</h1>
+      <p className="login-hero-copy">
+        Plan, perform, and stay in sync with one shared workspace for your music.
+      </p>
+      <ul className="login-feature-list">
+        {LOGIN_FEATURES.map((feature) => (
+          <li key={feature.title} className="login-feature-item">
+            <h2>{feature.title}</h2>
+            <p>{feature.description}</p>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
+function LoginBackdrop() {
+  return (
+    <div className="login-bg" aria-hidden="true">
+      <span className="login-orb login-orb--1" />
+      <span className="login-orb login-orb--2" />
+      <span className="login-orb login-orb--3" />
+      <span className="login-grid" />
+    </div>
+  );
+}
+
 export default function LoginPage() {
-  const { login, register, loginWithGoogle, loginWithGithub, pendingLinkEmail, linkWithPassword, cancelPendingLink } = useAuth();
+  const {
+    login,
+    register,
+    loginWithGoogle,
+    loginWithGithub,
+    pendingLinkEmail,
+    linkWithPassword,
+    cancelPendingLink,
+  } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -133,39 +189,43 @@ export default function LoginPage() {
   if (pendingLinkEmail) {
     return (
       <div className="login-screen">
-        <div className="login-card">
-          <div className="login-brand">
-            <BrandMark size={28} />
-          </div>
-          <h1 className="login-title">Link accounts</h1>
-          <p className="login-description">
-            An account with <strong>{pendingLinkEmail}</strong> already exists. Enter your password to link it with your new sign-in method.
-          </p>
-          <form className="login-form" onSubmit={handleLinkAccounts} noValidate>
-            <div className="form-field">
-              <label htmlFor="link-password">Password</label>
-              <input
-                id="link-password"
-                type="password"
-                autoComplete="current-password"
-                value={linkPassword}
-                onChange={(e) => { setLinkPassword(e.target.value); setError(''); }}
-                required
-              />
+        <LoginBackdrop />
+        <div className="login-shell">
+          <LoginHero />
+          <div className="login-card">
+            <div className="login-brand">
+              <BrandMark size={28} />
             </div>
-            {error && <p className="login-error">{error}</p>}
-            <button type="submit" className="btn-primary login-submit" disabled={busy}>
-              {busy ? 'Linking…' : 'Link accounts'}
-            </button>
-            <button
-              type="button"
-              className="btn-secondary login-submit"
-              onClick={() => { cancelPendingLink(); setError(''); setLinkPassword(''); }}
-              disabled={busy}
-            >
-              Cancel
-            </button>
-          </form>
+            <h1 className="login-title">Link accounts</h1>
+            <p className="login-description">
+              An account with <strong>{pendingLinkEmail}</strong> already exists. Enter your password to link it with your new sign-in method.
+            </p>
+            <form className="login-form" onSubmit={handleLinkAccounts} noValidate>
+              <div className="form-field">
+                <label htmlFor="link-password">Password</label>
+                <input
+                  id="link-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={linkPassword}
+                  onChange={(e) => { setLinkPassword(e.target.value); setError(''); }}
+                  required
+                />
+              </div>
+              {error && <p className="login-error">{error}</p>}
+              <button type="submit" className="btn-primary login-submit" disabled={busy}>
+                {busy ? 'Linking...' : 'Link accounts'}
+              </button>
+              <button
+                type="button"
+                className="btn-secondary login-submit"
+                onClick={() => { cancelPendingLink(); setError(''); setLinkPassword(''); }}
+                disabled={busy}
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     );
@@ -173,112 +233,116 @@ export default function LoginPage() {
 
   return (
     <div className="login-screen">
-      <div className="login-card">
-        <div className="login-brand">
-          <BrandMark size={28} />
-        </div>
-        <h1 className="login-title">{mode === 'register' ? 'Create account' : 'Sign in'}</h1>
+      <LoginBackdrop />
+      <div className="login-shell">
+        <LoginHero />
+        <div className="login-card">
+          <div className="login-brand">
+            <BrandMark size={28} />
+          </div>
+          <h1 className="login-title">{mode === 'register' ? 'Create account' : 'Sign in'}</h1>
 
-        <div className="auth-mode-switch" role="tablist" aria-label="Authentication mode">
-          <button
-            type="button"
-            className={mode === 'login' ? 'auth-mode-btn auth-mode-btn--active' : 'auth-mode-btn'}
-            onClick={() => { setMode('login'); setError(''); }}
-            disabled={busy}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            className={mode === 'register' ? 'auth-mode-btn auth-mode-btn--active' : 'auth-mode-btn'}
-            onClick={() => { setMode('register'); setError(''); }}
-            disabled={busy}
-          >
-            Register
-          </button>
-        </div>
+          <div className="auth-mode-switch" role="tablist" aria-label="Authentication mode">
+            <button
+              type="button"
+              className={mode === 'login' ? 'auth-mode-btn auth-mode-btn--active' : 'auth-mode-btn'}
+              onClick={() => { setMode('login'); setError(''); }}
+              disabled={busy}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              className={mode === 'register' ? 'auth-mode-btn auth-mode-btn--active' : 'auth-mode-btn'}
+              onClick={() => { setMode('register'); setError(''); }}
+              disabled={busy}
+            >
+              Register
+            </button>
+          </div>
 
-        <div className="oauth-buttons">
-          <button
-            type="button"
-            className="btn-secondary oauth-btn"
-            onClick={() => { void handleProviderAuth('google'); }}
-            disabled={busy}
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
-          <button
-            type="button"
-            className="btn-secondary oauth-btn"
-            onClick={() => { void handleProviderAuth('github'); }}
-            disabled={busy}
-          >
-            <GitHubIcon />
-            Continue with GitHub
-          </button>
-        </div>
+          <div className="oauth-buttons">
+            <button
+              type="button"
+              className="btn-secondary oauth-btn"
+              onClick={() => { void handleProviderAuth('google'); }}
+              disabled={busy}
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+            <button
+              type="button"
+              className="btn-secondary oauth-btn"
+              onClick={() => { void handleProviderAuth('github'); }}
+              disabled={busy}
+            >
+              <GitHubIcon />
+              Continue with GitHub
+            </button>
+          </div>
 
-        <p className="login-divider" role="separator" aria-label="or">
-          <span>or with email</span>
-        </p>
+          <p className="login-divider" role="separator" aria-label="or">
+            <span>or with email</span>
+          </p>
 
-        <form className="login-form" onSubmit={handleSubmit} noValidate>
-          {mode === 'register' ? (
+          <form className="login-form" onSubmit={handleSubmit} noValidate>
+            {mode === 'register' ? (
+              <div className="form-field">
+                <label htmlFor="username">Username</label>
+                <input
+                  id="username"
+                  type="text"
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => { setUsername(e.target.value); setError(''); }}
+                  required
+                />
+              </div>
+            ) : null}
             <div className="form-field">
-              <label htmlFor="username">Username</label>
+              <label htmlFor="email">Email</label>
               <input
-                id="username"
-                type="text"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => { setUsername(e.target.value); setError(''); }}
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(''); }}
                 required
               />
             </div>
-          ) : null}
-          <div className="form-field">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setError(''); }}
-              required
-            />
-          </div>
-          <div className="form-field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              required
-            />
-          </div>
-          {mode === 'register' ? (
             <div className="form-field">
-              <label htmlFor="confirm-password">Confirm password</label>
+              <label htmlFor="password">Password</label>
               <input
-                id="confirm-password"
+                id="password"
                 type="password"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
                 required
               />
             </div>
-          ) : null}
-          {error && <p className="login-error">{error}</p>}
-          <button type="submit" className="btn-primary login-submit" disabled={busy}>
-            {busy
-              ? (mode === 'register' ? 'Creating account…' : 'Signing in…')
-              : (mode === 'register' ? 'Create account' : 'Sign in')}
-          </button>
-        </form>
+            {mode === 'register' ? (
+              <div className="form-field">
+                <label htmlFor="confirm-password">Confirm password</label>
+                <input
+                  id="confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+                  required
+                />
+              </div>
+            ) : null}
+            {error && <p className="login-error">{error}</p>}
+            <button type="submit" className="btn-primary login-submit" disabled={busy}>
+              {busy
+                ? (mode === 'register' ? 'Creating account...' : 'Signing in...')
+                : (mode === 'register' ? 'Create account' : 'Sign in')}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

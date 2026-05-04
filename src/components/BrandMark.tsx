@@ -4,16 +4,8 @@ interface BrandMarkProps {
 
 export default function BrandMark({ size }: BrandMarkProps) {
   return (
-    <>
-      <img
-        src="/favicon.svg"
-        alt=""
-        aria-hidden="true"
-        width={size}
-        height={size}
-        className="brand-mark-logo"
-      />
-      <span>Gigboi</span>
-    </>
+    <span className="brand-name" style={{ fontSize: size }}>
+      GIGBO<span className="brand-i">i</span>
+    </span>
   );
 }
