@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
-import { Link2, SlidersHorizontal, UserPlus, Users, X } from 'lucide-react';
+import { Link2, Settings, UserPlus, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import SongList from '../components/SongList';
@@ -12,6 +12,20 @@ import TrashView from '../components/TrashView';
 import UserAvatar from '../components/UserAvatar';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
+import { ICON_OPTIONS } from '../lib/iconOptions';
+import { createBandInviteLinkOnServer } from '../lib/bandsApi';
+
+const BAND_COLOR_OPTIONS = [
+  '#c33232', '#d35400', '#a66e00', '#2e7d32',
+  '#00897b', '#0288d1', '#1565c0', '#5e35b1',
+  '#ad1457', '#6d4c41', '#455a64', '#37474f',
+] as const;
+
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
+}
 
 export default function BandDetailPage() {
   const { id } = useParams();
@@ -67,6 +81,7 @@ export default function BandDetailPage() {
     deleteBandTechnicalRider,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
+    updateBandLibraryAppearance,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
@@ -76,11 +91,19 @@ export default function BandDetailPage() {
   const bandStageplots = id ? (bandStageplotsByBandId[id] ?? []) : [];
   const bandTechnicalRiders = id ? (bandTechnicalRidersByBandId[id] ?? []) : [];
   const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
-  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'appearance' | 'members'>('appearance');
   const [inviteUsername, setInviteUsername] = useState('');
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
   const [busyInvite, setBusyInvite] = useState(false);
+  const [busyInviteLink, setBusyInviteLink] = useState(false);
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
+  const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
+  const [customizeName, setCustomizeName] = useState('');
+  const [customizeIcon, setCustomizeIcon] = useState('🎵');
+  const [customizeColor, setCustomizeColor] = useState('#c33232');
+  const [useAutoColor, setUseAutoColor] = useState(true);
+  const [busyAppearance, setBusyAppearance] = useState(false);
 
   const allBandsSongs = useMemo(() => {
     return Object.entries(bandSongsByBandId)
@@ -151,17 +174,25 @@ export default function BandDetailPage() {
   }, [band, id, refreshBandTrash]);
 
   useEffect(() => {
-    if (!showMembersModal) return;
+    if (!band) return;
+    setCustomizeName(band.name);
+    setCustomizeIcon(band.icon ?? '🎵');
+    setCustomizeColor(band.color ?? '#c33232');
+    setUseAutoColor(!band.color);
+  }, [band]);
+
+  useEffect(() => {
+    if (!showSettingsModal) return;
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setShowMembersModal(false);
+        setShowSettingsModal(false);
       }
     };
 
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [showMembersModal]);
+  }, [showSettingsModal]);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -219,6 +250,76 @@ export default function BandDetailPage() {
 
     toast.success('You left the band.');
     navigate('/profile');
+  };
+
+  const handleCreateInviteLink = async () => {
+    if (!user?.id || !user.email) {
+      toast.error('You need to be signed in to create invite links.');
+      return;
+    }
+
+    setBusyInviteLink(true);
+    try {
+      const result = await createBandInviteLinkOnServer({
+        userId: user.id,
+        userEmail: user.email,
+        bandId: band.id,
+        role: 'editor',
+      });
+
+      setLastInviteLink(result.inviteUrl);
+      try {
+        await navigator.clipboard.writeText(result.inviteUrl);
+        toast.success('Invite link copied to clipboard.');
+      } catch {
+        toast.success('Invite link created. Copy it from the field below.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create invite link.';
+      toast.error(message);
+    } finally {
+      setBusyInviteLink(false);
+    }
+  };
+
+  const handleSaveAppearance = async () => {
+    if (!canEditBand) return;
+
+    const trimmedName = customizeName.trim();
+    if (!trimmedName) {
+      toast.error('Band name is required.');
+      return;
+    }
+
+    const normalizedIcon = normalizeEmojiIcon(customizeIcon);
+    const nextColor = useAutoColor ? undefined : customizeColor;
+
+    setBusyAppearance(true);
+
+    if (trimmedName !== band.name) {
+      const renameError = await renameBand(band.id, trimmedName);
+      if (renameError) {
+        setBusyAppearance(false);
+        toast.error(renameError);
+        return;
+      }
+    }
+
+    const appearanceChanged = band.icon !== normalizedIcon || band.color !== nextColor;
+    if (appearanceChanged) {
+      const appearanceError = await updateBandLibraryAppearance(band.id, {
+        icon: normalizedIcon,
+        color: nextColor,
+      });
+      if (appearanceError) {
+        setBusyAppearance(false);
+        toast.error(appearanceError);
+        return;
+      }
+    }
+
+    setBusyAppearance(false);
+    toast.success('Appearance saved.');
   };
 
   const handleAddSong = async (songId: string) => {
@@ -729,27 +830,17 @@ export default function BandDetailPage() {
         headerVariant="bands"
         onRenameList={canEditBand ? (name) => void handleRenameBand(name) : undefined}
         headerActions={(
-          <>
-            {canEditBand ? (
-              <button
-                type="button"
-                className="setlist-action-btn setlist-action-btn--secondary"
-                onClick={() => navigate(`/bands/${band.id}/customize`)}
-                title="Customize band"
-              >
-                <SlidersHorizontal size={14} />
-                <span>Customize</span>
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => navigate(`/bands/${band.id}/members`)}
-              title="Manage band members"
-            >
-              <Users size={14} />
-            </button>
-          </>
+          <button
+            type="button"
+            className="setlist-action-btn setlist-action-btn--secondary"
+            onClick={() => {
+              setSettingsTab(canEditBand ? 'appearance' : 'members');
+              setShowSettingsModal(true);
+            }}
+            title="Band settings"
+          >
+            <Settings size={14} />
+          </button>
         )}
         allSongs={allBandsSongs}
         pickerSourceNote="Showing songs from all bands' libraries. Selected songs will be copied to this band's library."
@@ -760,101 +851,230 @@ export default function BandDetailPage() {
         bandId={band.id}
       />
 
-      {showMembersModal && (
-        <div className="modal-overlay" onClick={() => setShowMembersModal(false)}>
+      {showSettingsModal && (
+        <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}>
           <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Band Members</h2>
+              <h2>Band Settings</h2>
               <button
                 type="button"
                 className="modal-close"
-                onClick={() => setShowMembersModal(false)}
-                aria-label="Close members panel"
+                onClick={() => setShowSettingsModal(false)}
+                aria-label="Close settings"
               >
                 <X size={20} />
               </button>
             </div>
 
+            <div className="band-settings-tabs">
+              {canEditBand && (
+                <button
+                  type="button"
+                  className={`band-settings-tab${settingsTab === 'appearance' ? ' active' : ''}`}
+                  onClick={() => setSettingsTab('appearance')}
+                >
+                  Appearance
+                </button>
+              )}
+              <button
+                type="button"
+                className={`band-settings-tab${settingsTab === 'members' ? ' active' : ''}`}
+                onClick={() => setSettingsTab('members')}
+              >
+                Members
+              </button>
+            </div>
+
             <div className="modal-content">
-              <section className="bands-panel">
-                <h3>Members</h3>
-                <ul className="bands-members-list">
-                  {band.memberIds.map((memberId) => {
-                    const role = band.ownerId === memberId ? 'owner' : band.memberRoles[memberId] ?? 'viewer';
-                    const username = band.memberUsernames[memberId] ?? null;
-                    const email = band.memberEmails[memberId] ?? 'No email saved';
-                    const avatar = band.memberAvatars[memberId] ?? null;
-                    const canRemove = isOwner && memberId !== band.ownerId;
-                    const isCurrentUser = memberId === user?.id;
+              {settingsTab === 'appearance' && canEditBand && (
+                <>
+                  <section className="bands-panel">
+                    <div className="share-menu-field">
+                      <span>Name</span>
+                      <input
+                        type="text"
+                        value={customizeName}
+                        onChange={(event) => setCustomizeName(event.target.value)}
+                        placeholder="Band name"
+                        maxLength={80}
+                      />
+                    </div>
 
-                    return (
-                      <li key={memberId} className="bands-member-card">
-                        <UserAvatar avatar={avatar} label={username ?? email} size="md" />
-                        <div className="bands-member-copy">
-                          <strong>{username ?? email}</strong>
-                          <span>{username ? email : ''}</span>
-                          <span>{role}</span>
-                        </div>
-                        <div className="bands-member-actions">
-                          {canRemove ? (
+                    <div className="list-appearance-group" style={{ marginTop: '0.75rem' }}>
+                      <span className="list-appearance-label">Icon</span>
+                      <div className="emoji-choice-grid" role="listbox" aria-label="Band icon options">
+                        {ICON_OPTIONS.map((emoji) => {
+                          const selected = customizeIcon === emoji;
+                          return (
                             <button
+                              key={emoji}
                               type="button"
-                              className="setlist-action-btn setlist-action-btn--secondary"
-                              disabled={busyMemberId === memberId}
-                              onClick={() => void handleRemoveMember(memberId)}
+                              className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                              onClick={() => setCustomizeIcon(emoji)}
+                              aria-label={`Choose icon ${emoji}`}
+                              aria-pressed={selected}
                             >
-                              {busyMemberId === memberId ? 'Working…' : 'Remove'}
+                              {emoji}
                             </button>
-                          ) : null}
-                          {!isOwner && isCurrentUser ? (
-                            <button
-                              type="button"
-                              className="setlist-action-btn setlist-action-btn--secondary"
-                              disabled={busyMemberId === memberId}
-                              onClick={() => void handleLeaveBand()}
-                            >
-                              {busyMemberId === memberId ? 'Working…' : 'Leave band'}
-                            </button>
-                          ) : null}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-              {isOwner && (
-                <section className="bands-panel bands-panel--danger">
-                  <h3>Danger zone</h3>
-                  <button
-                    type="button"
-                    className="setlist-action-btn setlist-action-btn--danger"
-                    disabled={busyDeleteBand}
-                    onClick={() => void handleDeleteBand()}
-                  >
-                    {busyDeleteBand ? 'Deleting…' : 'Delete band'}
-                  </button>
-                </section>
+                    <div className="list-appearance-group" style={{ marginTop: '0.75rem' }}>
+                      <span className="list-appearance-label">Color</span>
+                      <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
+                        {BAND_COLOR_OPTIONS.map((colorHex) => {
+                          const selected = !useAutoColor && customizeColor.toLowerCase() === colorHex.toLowerCase();
+                          return (
+                            <button
+                              key={colorHex}
+                              type="button"
+                              className={`color-swatch-btn${selected ? ' active' : ''}`}
+                              style={{ backgroundColor: colorHex }}
+                              onClick={() => {
+                                setCustomizeColor(colorHex);
+                                setUseAutoColor(false);
+                              }}
+                              aria-label={`Choose color ${colorHex}`}
+                              aria-pressed={selected}
+                            />
+                          );
+                        })}
+                      </div>
+                      <div className="share-menu-field" style={{ marginTop: '0.5rem' }}>
+                        <span>Custom color</span>
+                        <input
+                          type="color"
+                          value={customizeColor}
+                          onChange={(event) => {
+                            setCustomizeColor(event.target.value);
+                            setUseAutoColor(false);
+                          }}
+                          aria-label="Custom band color"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
+                        onClick={() => setUseAutoColor(true)}
+                      >
+                        Use auto color
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '.5rem', marginTop: '1rem' }}>
+                      <button
+                        type="button"
+                        className="setlist-action-btn"
+                        onClick={() => void handleSaveAppearance()}
+                        disabled={busyAppearance}
+                      >
+                        {busyAppearance ? 'Saving…' : 'Save'}
+                      </button>
+                    </div>
+                  </section>
+                </>
               )}
 
-              <section className="bands-panel">
-                <h3>Invite member</h3>
-                <form className="bands-invite-form" onSubmit={handleInvite}>
-                  <label className="share-menu-field">
-                    <span>Username</span>
-                    <input
-                      type="text"
-                      value={inviteUsername}
-                      onChange={(event) => setInviteUsername(event.target.value)}
-                      placeholder="bandmate"
-                      disabled={!canEditBand}
-                    />
-                  </label>
-                  <button type="submit" className="setlist-action-btn" disabled={!canEditBand || busyInvite}>
-                    <UserPlus size={15} /> {busyInvite ? 'Sending…' : 'Send invite'}
-                  </button>
-                </form>
-              </section>
+              {settingsTab === 'members' && (
+                <>
+                  <section className="bands-panel">
+                    <h3>Members</h3>
+                    <ul className="bands-members-list">
+                      {band.memberIds.map((memberId) => {
+                        const role = band.ownerId === memberId ? 'owner' : band.memberRoles[memberId] ?? 'viewer';
+                        const username = band.memberUsernames[memberId] ?? null;
+                        const email = band.memberEmails[memberId] ?? 'No email saved';
+                        const avatar = band.memberAvatars[memberId] ?? null;
+                        const canRemove = isOwner && memberId !== band.ownerId;
+                        const isCurrentUser = memberId === user?.id;
+
+                        return (
+                          <li key={memberId} className="bands-member-row">
+                            <UserAvatar avatar={avatar} label={username ?? email} size="sm" />
+                            <div className="bands-member-info">
+                              <span className="bands-member-name">{username ?? email}</span>
+                              {username && <span className="bands-member-email">{email}</span>}
+                            </div>
+                            <span className="bands-role-badge">{role}</span>
+                            <div className="bands-member-actions">
+                              {canRemove && (
+                                <button
+                                  type="button"
+                                  className="setlist-action-btn setlist-action-btn--secondary"
+                                  disabled={busyMemberId === memberId}
+                                  onClick={() => void handleRemoveMember(memberId)}
+                                >
+                                  {busyMemberId === memberId ? 'Working…' : 'Remove'}
+                                </button>
+                              )}
+                              {!isOwner && isCurrentUser && (
+                                <button
+                                  type="button"
+                                  className="setlist-action-btn setlist-action-btn--secondary"
+                                  disabled={busyMemberId === memberId}
+                                  onClick={() => void handleLeaveBand()}
+                                >
+                                  {busyMemberId === memberId ? 'Working…' : 'Leave band'}
+                                </button>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+
+                  {canEditBand && (
+                    <section className="bands-panel">
+                      <h3>Add member</h3>
+                      <form className="bands-invite-form" onSubmit={handleInvite}>
+                        <label className="share-menu-field">
+                          <span>Username</span>
+                          <input
+                            type="text"
+                            value={inviteUsername}
+                            onChange={(event) => setInviteUsername(event.target.value)}
+                            placeholder="bandmate"
+                          />
+                        </label>
+                        <button type="submit" className="setlist-action-btn" disabled={busyInvite}>
+                          <UserPlus size={15} /> {busyInvite ? 'Sending…' : 'Send invite'}
+                        </button>
+                        <button
+                          type="button"
+                          className="setlist-action-btn setlist-action-btn--secondary"
+                          disabled={busyInviteLink}
+                          onClick={() => { void handleCreateInviteLink(); }}
+                        >
+                          {busyInviteLink ? 'Creating link…' : 'Create invite link'}
+                        </button>
+                      </form>
+                      {lastInviteLink && (
+                        <label className="share-menu-field" style={{ marginTop: '0.75rem' }}>
+                          <span>Latest invite link</span>
+                          <input type="text" value={lastInviteLink} readOnly />
+                        </label>
+                      )}
+                    </section>
+                  )}
+
+                  {isOwner && (
+                    <section className="bands-panel bands-panel--danger">
+                      <h3>Danger zone</h3>
+                      <button
+                        type="button"
+                        className="setlist-action-btn setlist-action-btn--danger"
+                        disabled={busyDeleteBand}
+                        onClick={() => void handleDeleteBand()}
+                      >
+                        {busyDeleteBand ? 'Deleting…' : 'Delete band'}
+                      </button>
+                    </section>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

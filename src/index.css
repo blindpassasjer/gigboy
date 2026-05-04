@@ -6062,6 +6062,83 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .75rem;
 }
 
+/* Compact member row (inside settings modal) */
+.bands-member-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .45rem .5rem;
+  border-radius: 8px;
+}
+
+.bands-members-list .bands-member-row + .bands-member-row {
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.bands-members-list {
+  gap: 0;
+}
+
+.bands-member-row:hover {
+  background: var(--bands-soft-bg);
+}
+
+.bands-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.bands-member-name {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bands-member-email {
+  font-size: .75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Settings modal tabs */
+.band-settings-tabs {
+  display: flex;
+  gap: .35rem;
+  padding: 0 1.25rem .75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.band-settings-tab {
+  padding: .35rem .75rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: .85rem;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.band-settings-tab:hover {
+  background: var(--bands-soft-bg);
+  color: var(--bands-hue);
+}
+
+.band-settings-tab.active {
+  background: var(--bands-hue-soft);
+  color: var(--bands-hue);
+  border-color: color-mix(in srgb, var(--bands-hue) 28%, var(--border));
+  font-weight: 600;
+}
+
 .bands-card,
 .bands-member-card,
 .bands-library-card {
