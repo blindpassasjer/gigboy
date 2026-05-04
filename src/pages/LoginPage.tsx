@@ -1,33 +1,40 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Share2, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 
-const LOGIN_FEATURES = [
+const LOGIN_FEATURES: { icon: LucideIcon; title: string; description: string }[] = [
   {
-    title: 'Keep songs performance-ready',
-    description: 'Store chord charts, lyrics, and notes in one place so your set is always ready.',
+    icon: Music2,
+    title: 'Song library',
+    description: 'Chord charts, lyrics, and notes — all in one place.',
   },
   {
-    title: 'Build setlists fast',
-    description: 'Arrange songs in seconds and switch between rehearsal and concert views without friction.',
+    icon: ListMusic,
+    title: 'Setlists',
+    description: 'Arrange sets in seconds. Rehearsal and concert views.',
   },
   {
-    title: 'Share with your band',
-    description: 'Collaborate on updates, stage plots, and technical details from anywhere.',
+    icon: Users,
+    title: 'Band collaboration',
+    description: 'Shared workspace for your whole band.',
   },
   {
-    title: 'Stage plots & tech riders',
-    description: 'Generate professional stage plots and technical riders ready to send straight to the venue.',
+    icon: MonitorSpeaker,
+    title: 'Stage plots & riders',
+    description: 'Send pro-ready documents straight to the venue.',
   },
   {
-    title: 'Record run-throughs',
-    description: 'Capture rehearsal recordings in the app and play them back when you need them.',
+    icon: Mic2,
+    title: 'Rehearsal recordings',
+    description: 'Capture and replay run-throughs in the app.',
   },
   {
+    icon: Share2,
     title: 'Public share links',
-    description: 'Share setlists, stage plots, and riders publicly with sound engineers, promoters, or fans.',
+    description: 'Share setlists and riders with engineers or fans.',
   },
 ];
 
@@ -96,10 +103,11 @@ function LoginHero() {
         Plan, perform, and stay in sync with one shared workspace for your music.
       </p>
       <ul className="login-feature-list">
-        {LOGIN_FEATURES.map((feature) => (
-          <li key={feature.title} className="login-feature-item">
-            <h2>{feature.title}</h2>
-            <p>{feature.description}</p>
+        {LOGIN_FEATURES.map(({ icon: Icon, title, description }) => (
+          <li key={title} className="login-feature-item">
+            <Icon size={16} className="login-feature-icon" aria-hidden="true" />
+            <h2>{title}</h2>
+            <p>{description}</p>
           </li>
         ))}
       </ul>
