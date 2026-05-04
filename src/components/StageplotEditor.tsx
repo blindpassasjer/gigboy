@@ -418,10 +418,10 @@ export default function StageplotEditor({
               />
             ) : (
               <div className="song-list-title-row">
-                <h2 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
+                <h1 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
                   {stageplot.icon ? <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
                   <span>{stageplot.name}</span>
-                </h2>
+                </h1>
                 {canEdit ? (
                   <button
                     type="button"
