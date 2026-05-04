@@ -21,8 +21,9 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   }
 
   const userEmail = ctx.request.headers.get('x-folio-user-email')?.trim().toLowerCase() ?? '';
-  const body = await ctx.request.json<{ username?: string }>().catch(() => ({}));
+  const body = await ctx.request.json<{ username?: string; claimOwnership?: boolean }>().catch(() => ({}));
   const requestedUsername = body.username?.trim().toLowerCase() ?? '';
+  const claimOwnership = body.claimOwnership === true;
 
   const profile = await getFirestoreDocument(ctx.env, ['users', userId]);
   const profileUsername = typeof profile?.username === 'string' ? profile.username.trim().toLowerCase() : '';
@@ -33,6 +34,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const allBands = await listFirestoreDocuments(ctx.env, ['bands']);
   let repairedCount = 0;
   const repairedBandIds: string[] = [];
+  let claimedCount = 0;
+  const claimedBandIds: string[] = [];
 
   await Promise.all(allBands.map(async ({ id: bandId, data: band }) => {
     const ownerId = typeof band.ownerId === 'string' ? band.ownerId : '';
@@ -73,6 +76,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     const nextMemberFullNames = profileFullName ? { ...memberFullNames, [userId]: profileFullName } : memberFullNames;
     const nextMemberAvatars = profileAvatar ? { ...memberAvatars, [userId]: profileAvatar } : memberAvatars;
 
+    const nextOwnerId = claimOwnership ? userId : ownerId;
+
     const changed = (
       nextMemberIds.length !== memberIds.length
       || nextMemberRoles !== memberRoles
@@ -80,11 +85,13 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       || nextMemberUsernames !== memberUsernames
       || nextMemberFullNames !== memberFullNames
       || nextMemberAvatars !== memberAvatars
+      || nextOwnerId !== ownerId
     );
 
     if (!changed) return;
 
     await setFirestoreDocument(ctx.env, ['bands', bandId], {
+      ownerId: nextOwnerId,
       memberIds: nextMemberIds,
       memberRoles: nextMemberRoles,
       memberEmails: nextMemberEmails,
@@ -96,6 +103,10 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
     repairedCount += 1;
     repairedBandIds.push(bandId);
+    if (nextOwnerId !== ownerId) {
+      claimedCount += 1;
+      claimedBandIds.push(bandId);
+    }
   }));
 
   return Response.json({
@@ -103,6 +114,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     scanned: allBands.length,
     repairedCount,
     repairedBandIds,
+    claimedCount,
+    claimedBandIds,
   });
 };
 

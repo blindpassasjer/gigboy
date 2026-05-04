@@ -508,9 +508,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       userId,
       userEmail,
       username: userUsername,
+      claimOwnership: true,
     }).then((result) => {
       if (result.repairedCount > 0) {
         console.info(`[Folio] Server repair linked ${result.repairedCount} band(s).`);
+      }
+      if (result.claimedCount > 0) {
+        console.info(`[Folio] Server repair set owner on ${result.claimedCount} band(s).`);
       }
     }).catch((error) => {
       console.error('[Folio] Server-side band repair failed:', error);

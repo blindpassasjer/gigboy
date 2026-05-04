@@ -129,10 +129,18 @@ export async function repairBandMembershipOnServer(params: {
   userId: string;
   userEmail: string;
   username?: string;
+  claimOwnership?: boolean;
 }) {
-  return postJson<{ ok: true; scanned: number; repairedCount: number; repairedBandIds: string[] }>(
+  return postJson<{
+    ok: true;
+    scanned: number;
+    repairedCount: number;
+    repairedBandIds: string[];
+    claimedCount: number;
+    claimedBandIds: string[];
+  }>(
     '/api/bands/repair-membership',
-    { username: params.username },
+    { username: params.username, claimOwnership: params.claimOwnership === true },
     {
       userId: params.userId,
       userEmail: params.userEmail,
