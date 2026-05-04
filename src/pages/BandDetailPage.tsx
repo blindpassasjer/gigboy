@@ -563,48 +563,50 @@ export default function BandDetailPage() {
     }
 
     return (
-      <StageplotEditor
-        stageplot={activeBandStageplot}
-        canEdit={canEditBand}
-        currentUser={{
-          id: user?.id ?? null,
-          name: user?.fullName?.trim() || user?.username?.trim() || user?.email || 'Unknown user',
-          avatar: user?.avatar,
-        }}
-        onRename={async (name) => {
-          const error = await renameBandStageplot(band.id, activeBandStageplot.id, name);
-          if (error) {
-            toast.error(error);
-          }
-        }}
-        onUpdateIcon={async (icon) => {
-          const error = await updateBandStageplotIcon(band.id, activeBandStageplot.id, icon);
-          if (error) {
-            toast.error(error);
-          }
-        }}
-        onDelete={async () => {
-          const error = await deleteBandStageplot(band.id, activeBandStageplot.id);
-          if (error) {
-            toast.error(error);
-            return;
-          }
-          navigate(`/bands/${band.id}/library`);
-        }}
-        onSaveContent={async (items, drawingLayers) => {
-          const error = await updateBandStageplotContent({
-            bandId: band.id,
-            stageplotId: activeBandStageplot.id,
-            items,
-            drawingLayers,
-          });
-          if (error) {
-            toast.error(error);
-            throw new Error(error);
-          }
-        }}
-        onCopyPublicLink={handleShareStageplot}
-      />
+      <section className="bands-page bands-page--library">
+        <StageplotEditor
+          stageplot={activeBandStageplot}
+          canEdit={canEditBand}
+          currentUser={{
+            id: user?.id ?? null,
+            name: user?.fullName?.trim() || user?.username?.trim() || user?.email || 'Unknown user',
+            avatar: user?.avatar,
+          }}
+          onRename={async (name) => {
+            const error = await renameBandStageplot(band.id, activeBandStageplot.id, name);
+            if (error) {
+              toast.error(error);
+            }
+          }}
+          onUpdateIcon={async (icon) => {
+            const error = await updateBandStageplotIcon(band.id, activeBandStageplot.id, icon);
+            if (error) {
+              toast.error(error);
+            }
+          }}
+          onDelete={async () => {
+            const error = await deleteBandStageplot(band.id, activeBandStageplot.id);
+            if (error) {
+              toast.error(error);
+              return;
+            }
+            navigate(`/bands/${band.id}/library`);
+          }}
+          onSaveContent={async (items, drawingLayers) => {
+            const error = await updateBandStageplotContent({
+              bandId: band.id,
+              stageplotId: activeBandStageplot.id,
+              items,
+              drawingLayers,
+            });
+            if (error) {
+              toast.error(error);
+              throw new Error(error);
+            }
+          }}
+          onCopyPublicLink={handleShareStageplot}
+        />
+      </section>
     );
   }
 
