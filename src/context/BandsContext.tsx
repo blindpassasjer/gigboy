@@ -20,8 +20,8 @@ import type {
   TrashedTechnicalRider,
 } from '../types';
 import { db, firebaseEnabled } from '../lib/firebase';
-import { migrateSoloToSoloBand } from '../lib/soloToSoloBandMigration';
 import {
+  cleanupLegacySoloDataOnServer,
   changeBandMemberRoleOnServer,
   createBandOnServer,
   deleteBandOnServer,
@@ -495,9 +495,28 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandTechnicalRidersByBandId, setBandTechnicalRidersByBandId] = useState<Record<string, TechnicalRider[]>>({});
   const [bandTrashByBandId, setBandTrashByBandId] = useState<Record<string, BandTrashItem[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
-  const [migrationUserId, setMigrationUserId] = useState<string | null>(null);
   const [membershipRepairUserId, setMembershipRepairUserId] = useState<string | null>(null);
   const [serverRepairUserId, setServerRepairUserId] = useState<string | null>(null);
+  const [soloCleanupUserId, setSoloCleanupUserId] = useState<string | null>(null);
+
+  // One-time cleanup for legacy solo data now that the app is bands-only.
+  useEffect(() => {
+    if (!userId || soloCleanupUserId === userId) return;
+
+    setSoloCleanupUserId(userId);
+    void cleanupLegacySoloDataOnServer({
+      userId,
+      userEmail,
+    }).then((result) => {
+      if (result.deletedSoloBands > 0 || result.deletedUserDocs > 0) {
+        console.info(
+          `[Folio] Cleaned legacy solo data: bands=${result.deletedSoloBands}, userDocs=${result.deletedUserDocs}`
+        );
+      }
+    }).catch((error) => {
+      console.error('[Folio] Legacy solo cleanup failed:', error);
+    });
+  }, [soloCleanupUserId, userId, userEmail]);
 
   // Server-side recovery: re-associate this user to likely matching bands by ownerId/username/email.
   useEffect(() => {
@@ -610,22 +629,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       console.error('[Folio] Owned band membership repair failed:', error);
     });
   }, [membershipRepairUserId, userId, userEmail, userUsername, userFullName, userAvatar]);
-
-  // Run solo-to-Solo band migration on first user login
-  useEffect(() => {
-    if (!db || !userId || migrationUserId === userId) return;
-
-    setMigrationUserId(userId);
-    void migrateSoloToSoloBand(db, userId, userEmail, userUsername, userFullName, userAvatar, true, true).then((result) => {
-      if (result.error) {
-        console.error('[Folio] Migration error:', result.error);
-      } else if (result.migrated) {
-        console.info('[Folio] Migration completed successfully');
-      }
-    }).catch((error) => {
-      console.error('[Folio] Migration exception:', error);
-    });
-  }, [userId, userEmail, userUsername, userFullName, userAvatar, migrationUserId]);
 
   const refreshBands = useCallback(async () => {
     if (!db || !userId) {

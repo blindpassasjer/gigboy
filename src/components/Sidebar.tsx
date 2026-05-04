@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Folder, FolderOpen, ListMusic, ListMusicIcon, Map, Plus, Trash2, User, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, Folder, FolderOpen, ListMusic, ListMusicIcon, Map, Plus, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
@@ -34,7 +34,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     const candidate = (state as { bandId?: unknown }).bandId;
     return typeof candidate === 'string' && candidate.trim() ? candidate : null;
   })();
-  const isBandsRoute = pathname === '/bands' || pathname.startsWith('/bands/') || Boolean(stateBandId);
   const { songs, trashedSongs } = useSongs();
   const {
     songLists,
@@ -107,35 +106,26 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [bandLibraryDropTargetId, setBandLibraryDropTargetId] = useState<string | null>(null);
   const [bandSongListDropTargetId, setBandSongListDropTargetId] = useState<string | null>(null);
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
-  const [soloSonglistsExpanded, setSoloSonglistsExpanded] = useState(true);
-  const [soloSetlistsExpanded, setSoloSetlistsExpanded] = useState(true);
-  const [soloStageplotsExpanded, setSoloStageplotsExpanded] = useState(true);
-  const [soloRidersExpanded, setSoloRidersExpanded] = useState(true);
   const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
   const [collapsedBandStageplotIds, setCollapsedBandStageplotIds] = useState<string[]>([]);
   const [collapsedBandTechnicalRiderIds, setCollapsedBandTechnicalRiderIds] = useState<string[]>([]);
-  const [sidebarMode, setSidebarMode] = useState<'solo' | 'bands'>(() => {
-    if (typeof window !== 'undefined') {
-      const storedMode = window.localStorage.getItem('folio-sidebar-mode');
-      if (storedMode === 'solo' || storedMode === 'bands') return storedMode;
-    }
-    return isBandsRoute ? 'bands' : 'solo';
-  });
+  const sidebarMode: 'bands' = 'bands';
   const [activeBandId, setActiveBandId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     try { return window.localStorage.getItem('folio-active-band-id'); } catch { return null; }
   });
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const bandSwitcherRef = useRef<HTMLDivElement>(null);
+  const visibleBands = bands;
   // Auto-select first band if active band is missing
   useEffect(() => {
-    if (bands.length === 0) return;
-    if (activeBandId && bands.some((b) => b.id === activeBandId)) return;
-    const firstId = bands[0].id;
+    if (visibleBands.length === 0 && bands.length === 0) return;
+    if (activeBandId && visibleBands.some((b) => b.id === activeBandId)) return;
+    const firstId = (visibleBands[0] ?? bands[0]).id;
     setActiveBandId(firstId);
     if (typeof window !== 'undefined') window.localStorage.setItem('folio-active-band-id', firstId);
-  }, [bands, activeBandId]);
+  }, [visibleBands, bands, activeBandId]);
 
   // Close band switcher on outside click
   useEffect(() => {
@@ -150,35 +140,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   }, [bandSwitcherOpen]);
 
   useEffect(() => {
-    const nextMode: 'solo' | 'bands' = isBandsRoute ? 'bands' : 'solo';
-    setSidebarMode((current) => (current === nextMode ? current : nextMode));
-  }, [isBandsRoute]);
-
-  useEffect(() => {
     if (!stateBandId) return;
     setActiveBandId((current) => (current === stateBandId ? current : stateBandId));
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('folio-active-band-id', stateBandId);
     }
   }, [stateBandId]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem('folio-sidebar-mode', sidebarMode);
-  }, [sidebarMode]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    document.documentElement.setAttribute('data-library-mode', sidebarMode);
-    return () => {
-      document.documentElement.removeAttribute('data-library-mode');
-    };
-  }, [sidebarMode]);
-
-  useEffect(() => {
-    if (sidebarMode === 'bands') return;
-    setBandSwitcherOpen(false);
-  }, [sidebarMode]);
 
   useEffect(() => {
     const missingBandSongCollections = bands
@@ -274,7 +241,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     onNavigate?.();
   };
 
-  const clearSoloSelection = () => {
+  const clearGlobalSelection = () => {
     clearActiveSelection();
     setActiveSetlistId(null);
     setActiveStageplotId(null);
@@ -301,7 +268,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addStageplot(name);
     if (result.stageplotId) {
-      clearSoloSelection();
+      clearGlobalSelection();
       setActiveStageplotId(result.stageplotId);
       navigate('/');
       onNavigate?.();
@@ -316,7 +283,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addTechnicalRider(name);
     if (result.riderId) {
-      clearSoloSelection();
+      clearGlobalSelection();
       setActiveTechnicalRiderId(result.riderId);
       navigate('/');
       onNavigate?.();
@@ -334,7 +301,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         if (typeof window !== 'undefined') {
           window.localStorage.setItem('folio-active-band-id', result.bandId);
         }
-        clearSoloSelection();
+        clearGlobalSelection();
         navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
         onNavigate?.();
       }
@@ -349,7 +316,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addBandSongList(bandId, name);
     if (result.songListId) {
-      clearSoloSelection();
+      clearGlobalSelection();
       navigate(`/bands/${bandId}/songlists/${result.songListId}`);
       onNavigate?.();
     }
@@ -363,7 +330,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addBandSetlist(bandId, name);
     if (result.setlistId) {
-      clearSoloSelection();
+      clearGlobalSelection();
       navigate(`/bands/${bandId}/setlists/${result.setlistId}`);
       onNavigate?.();
     }
@@ -377,7 +344,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addBandStageplot(bandId, name);
     if (result.stageplotId) {
-      clearSoloSelection();
+      clearGlobalSelection();
       navigate(`/bands/${bandId}/stageplots/${result.stageplotId}`);
       onNavigate?.();
     }
@@ -391,7 +358,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addBandTechnicalRider(bandId, name);
     if (result.riderId) {
-      clearSoloSelection();
+      clearGlobalSelection();
       navigate(`/bands/${bandId}/riders/${result.riderId}`);
       onNavigate?.();
     }
@@ -526,16 +493,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     hasType(types, SONG_DRAG_MIME) || hasType(types, SONG_DRAG_FALLBACK_MIME)
   );
 
-  const soloTrashCount = trashedSongs.length + trashedSongLists.length + trashedSetlists.length;
-  const isMyAllSongsActive = (
-    pathname === '/'
-    && activeSongListId === null
-    && activeSetlistId === null
-    && activeStageplotId === null
-    && activeTechnicalRiderId === null
-  );
-  const isSoloTrashActive = pathname === '/trash';
-  const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
+  const effectiveActiveBand = visibleBands.find((band) => band.id === activeBandId) ?? visibleBands[0] ?? null;
 
   return (
     <div className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}`}>
@@ -557,64 +515,38 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           type="button"
           className="sidebar-band-switcher-btn"
           onClick={() => setBandSwitcherOpen((o) => !o)}
-          title="Switch to Solo or Band"
-          aria-label="Switch to Solo or Band"
+          title="Switch band"
+          aria-label="Switch band"
           aria-haspopup="listbox"
           aria-expanded={bandSwitcherOpen}
         >
-          {sidebarMode === 'solo' ? (
-            <>
-              <User size={13} />
-              <span className="sidebar-band-switcher-name">Solo</span>
-            </>
-          ) : (
-            <>
-              {effectiveActiveBand?.icon
-                ? <span className="sidebar-list-icon" aria-hidden="true">{effectiveActiveBand.icon}</span>
-                : <Users size={13} />}
-              <span className="sidebar-band-switcher-name">
-                {effectiveActiveBand?.name ?? ''}
-              </span>
-            </>
-          )}
+          <>
+            {effectiveActiveBand?.icon
+              ? <span className="sidebar-list-icon" aria-hidden="true">{effectiveActiveBand.icon}</span>
+              : <Users size={13} />}
+            <span className="sidebar-band-switcher-name">
+              {effectiveActiveBand?.name ?? ''}
+            </span>
+          </>
           <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
         </button>
 
         {bandSwitcherOpen && (
           <div className="sidebar-band-switcher-dropdown" role="listbox">
-            {!bands.some((band) => band.name === 'Solo') && (
-              <button
-                type="button"
-                className={`sidebar-band-switcher-option${sidebarMode === 'solo' ? ' active' : ''}`}
-                role="option"
-                aria-selected={sidebarMode === 'solo'}
-                onClick={() => {
-                  setSidebarMode('solo');
-                  setBandSwitcherOpen(false);
-                  clearSoloSelection();
-                  navigate('/');
-                  onNavigate?.();
-                }}
-              >
-                <User size={13} />
-                <span className="sidebar-band-switcher-option-name">Solo</span>
-              </button>
-            )}
-            {bands.length === 0 && (
+            {visibleBands.length === 0 && (
               <div style={{ padding: '8px 12px', fontSize: '12px', color: '#999' }}>
                 {loading ? 'Loading bands...' : 'No bands yet'}
               </div>
             )}
-            {bands.map((band) => (
+            {visibleBands.map((band) => (
               <button
                 type="button"
                 key={band.id}
-                className={`sidebar-band-switcher-option${band.id === activeBandId && sidebarMode === 'bands' ? ' active' : ''}`}
+                className={`sidebar-band-switcher-option${band.id === activeBandId ? ' active' : ''}`}
                 role="option"
-                aria-selected={band.id === activeBandId && sidebarMode === 'bands'}
+                aria-selected={band.id === activeBandId}
                 onClick={() => {
-                  setSidebarMode('bands');
-                  clearSoloSelection();
+                  clearGlobalSelection();
                   setActiveBandId(band.id);
                   if (typeof window !== 'undefined') window.localStorage.setItem('folio-active-band-id', band.id);
                   setBandSwitcherOpen(false);
@@ -632,300 +564,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         )}
         </div>
       </div>
-
-      {sidebarMode === 'solo' && (
-      <div className="sidebar-folders">
-        <div className="sidebar-setlists-header">
-          <h3 className="sidebar-section-title"><User size={14} /> Solo</h3>
-        </div>
-
-        <div className="sidebar-solo-sections">
-          <section className="sidebar-solo-section">
-            <div className={`sidebar-list-item sidebar-list-item--section${isMyAllSongsActive ? ' active' : ''}`}>
-              <button
-                className="sidebar-list-item-btn"
-                onClick={() => { clearActiveSelection(); setActiveSetlistId(null); goToLibraryView(); }}
-              >
-                <ListMusic size={14} />
-                <span className="sidebar-list-name">Library</span>
-                {songs.length > 0 && <span className="sidebar-list-count">{songs.length}</span>}
-              </button>
-            </div>
-
-            <div className={`sidebar-list-item sidebar-list-item--section${isSoloTrashActive ? ' active' : ''}`}>
-              <button
-                className="sidebar-list-item-btn"
-                onClick={() => {
-                  clearActiveSelection();
-                  setActiveSetlistId(null);
-                  setActiveStageplotId(null);
-                  setActiveTechnicalRiderId(null);
-                  navigate('/trash');
-                  onNavigate?.();
-                }}
-              >
-                <Trash2 size={14} />
-                <span className="sidebar-list-name">Trash</span>
-                {soloTrashCount > 0 && <span className="sidebar-list-count">{soloTrashCount}</span>}
-              </button>
-            </div>
-
-            <div className="sidebar-setlists-header">
-              <button
-                type="button"
-                className="sidebar-section-toggle"
-                onClick={() => setSoloSonglistsExpanded((current) => !current)}
-                aria-expanded={soloSonglistsExpanded}
-              >
-                {soloSonglistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <span className="sidebar-section-title">Songlists</span>
-              </button>
-              <button
-                type="button"
-                className="sidebar-icon-btn"
-                title="New songlist"
-                aria-label="Create new songlist"
-                onClick={() => {
-                  setSoloSonglistsExpanded(true);
-                  setAddingSongList(true);
-                  setDraftName('');
-                }}
-              >
-                <Plus size={15} />
-              </button>
-            </div>
-
-            {soloSonglistsExpanded && (
-              <div className="sidebar-solo-list sidebar-nested-group">
-                {songLists.map((list) => (
-                  <FolderItem
-                    key={list.id}
-                    listId={list.id}
-                    name={list.name}
-                    icon={list.icon}
-                    count={list.songIds.length}
-                    active={activeSongListId === list.id}
-                    songDropTarget={songDropTargetId === list.id}
-                    onDragOver={(e) => handleDragOver(e, list.id)}
-                    onDragLeave={() => setSongDropTargetId((c) => (c === list.id ? null : c))}
-                    onDrop={(e) => handleDrop(e, list.id)}
-                    onSelect={() => {
-                      setActiveSongListId(list.id);
-                      setActiveSetlistId(null);
-                      setActiveStageplotId(null);
-                      setActiveTechnicalRiderId(null);
-                      goToLibraryView();
-                    }}
-                  />
-                ))}
-
-                {addingSongList && (
-                  <InlineInput
-                    value={draftName}
-                    onChange={setDraftName}
-                    onCommit={commitSongList}
-                    onCancel={() => setAddingSongList(false)}
-                    placeholder="Songlist name..."
-                  />
-                )}
-              </div>
-            )}
-          </section>
-
-          <section className="sidebar-solo-section">
-            <div className="sidebar-setlists-header">
-              <button
-                type="button"
-                className="sidebar-section-toggle"
-                onClick={() => setSoloSetlistsExpanded((current) => !current)}
-                aria-expanded={soloSetlistsExpanded}
-              >
-                {soloSetlistsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <span className="sidebar-section-title">Setlists</span>
-              </button>
-              <button
-                type="button"
-                className="sidebar-icon-btn"
-                title="New setlist"
-                aria-label="Create new setlist"
-                onClick={() => { setSoloSetlistsExpanded(true); setAddingSetlist(true); setDraftName(''); }}
-              >
-                <Plus size={15} />
-              </button>
-            </div>
-
-            {soloSetlistsExpanded && (
-              <div className="sidebar-solo-list sidebar-setlists sidebar-nested-group">
-                {setlists.map((setlist) => (
-                  <SetlistItem
-                    key={setlist.id}
-                    setlistId={setlist.id}
-                    name={setlist.name}
-                    icon={setlist.icon}
-                    count={setlist.songIds.length}
-                    active={activeSetlistId === setlist.id}
-                    songDropTarget={setlistDropTargetId === setlist.id}
-                    onDragOver={(e) => handleSetlistDragOver(e, setlist.id)}
-                    onDragLeave={() => setSetlistDropTargetId((c) => (c === setlist.id ? null : c))}
-                    onDrop={(e) => handleSetlistDrop(e, setlist.id)}
-                    onSelect={() => {
-                      setActiveSetlistId(setlist.id);
-                      setActiveSongListId(null);
-                      clearActiveSelection();
-                      setActiveStageplotId(null);
-                      setActiveTechnicalRiderId(null);
-                      goToLibraryView();
-                    }}
-                  />
-                ))}
-
-                {addingSetlist && (
-                  <InlineInput
-                    value={draftName}
-                    onChange={setDraftName}
-                    onCommit={commitSetlist}
-                    onCancel={() => setAddingSetlist(false)}
-                    placeholder="Setlist name..."
-                  />
-                )}
-              </div>
-            )}
-          </section>
-
-          <section className="sidebar-solo-section">
-            <div className="sidebar-setlists-header">
-              <button
-                type="button"
-                className="sidebar-section-toggle"
-                onClick={() => setSoloStageplotsExpanded((current) => !current)}
-                aria-expanded={soloStageplotsExpanded}
-              >
-                {soloStageplotsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <span className="sidebar-section-title">Stageplots</span>
-              </button>
-              <button
-                type="button"
-                className="sidebar-icon-btn"
-                title="New stageplot"
-                aria-label="Create new stageplot"
-                onClick={() => {
-                  setSoloStageplotsExpanded(true);
-                  setAddingStageplot(true);
-                  setDraftName('');
-                }}
-              >
-                <Plus size={15} />
-              </button>
-            </div>
-
-            {soloStageplotsExpanded && (
-              <div className="sidebar-solo-list sidebar-nested-group">
-                {stageplots.map((stageplot) => (
-                  <div
-                    key={stageplot.id}
-                    className={`sidebar-list-item${activeStageplotId === stageplot.id ? ' active' : ''}`}
-                  >
-                    <button
-                      type="button"
-                      className="sidebar-list-item-btn"
-                      onClick={() => {
-                        setActiveStageplotId(stageplot.id);
-                        setActiveTechnicalRiderId(null);
-                        setActiveSongListId(null);
-                        setActiveSetlistId(null);
-                        clearActiveSelection();
-                        navigate('/');
-                        onNavigate?.();
-                      }}
-                    >
-                      {stageplot.icon ? <span className="sidebar-list-icon" aria-hidden="true">{stageplot.icon}</span> : <Map size={14} />}
-                      <span className="sidebar-list-name">{stageplot.name}</span>
-                      {stageplot.items.length > 0 ? <span className="sidebar-list-count">{stageplot.items.length}</span> : null}
-                    </button>
-                  </div>
-                ))}
-
-                {addingStageplot && (
-                  <InlineInput
-                    value={draftName}
-                    onChange={setDraftName}
-                    onCommit={() => void commitStageplot()}
-                    onCancel={() => setAddingStageplot(false)}
-                    placeholder="Stageplot name..."
-                  />
-                )}
-              </div>
-            )}
-          </section>
-
-          <section className="sidebar-solo-section">
-            <div className="sidebar-setlists-header">
-              <button
-                type="button"
-                className="sidebar-section-toggle"
-                onClick={() => setSoloRidersExpanded((current) => !current)}
-                aria-expanded={soloRidersExpanded}
-              >
-                {soloRidersExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <span className="sidebar-section-title">Technical Riders</span>
-              </button>
-              <button
-                type="button"
-                className="sidebar-icon-btn"
-                title="New technical rider"
-                aria-label="Create new technical rider"
-                onClick={() => {
-                  setSoloRidersExpanded(true);
-                  setAddingTechnicalRider(true);
-                  setDraftName('');
-                }}
-              >
-                <Plus size={15} />
-              </button>
-            </div>
-
-            {soloRidersExpanded && (
-              <div className="sidebar-solo-list sidebar-nested-group">
-                {technicalRiders.map((rider) => (
-                  <div
-                    key={rider.id}
-                    className={`sidebar-list-item${activeTechnicalRiderId === rider.id ? ' active' : ''}`}
-                  >
-                    <button
-                      type="button"
-                      className="sidebar-list-item-btn"
-                      onClick={() => {
-                        setActiveTechnicalRiderId(rider.id);
-                        setActiveStageplotId(null);
-                        setActiveSongListId(null);
-                        setActiveSetlistId(null);
-                        clearActiveSelection();
-                        navigate('/');
-                        onNavigate?.();
-                      }}
-                    >
-                      <ClipboardList size={14} />
-                      <span className="sidebar-list-name">{rider.name}</span>
-                      {rider.lines.length > 0 ? <span className="sidebar-list-count">{rider.lines.length}</span> : null}
-                    </button>
-                  </div>
-                ))}
-
-                {addingTechnicalRider && (
-                  <InlineInput
-                    value={draftName}
-                    onChange={setDraftName}
-                    onCommit={() => void commitTechnicalRider()}
-                    onCancel={() => setAddingTechnicalRider(false)}
-                    placeholder="Technical rider name..."
-                  />
-                )}
-              </div>
-            )}
-          </section>
-        </div>
-      </div>
-      )}
 
       {sidebarMode === 'bands' && (
       <div className="sidebar-bands-section">
@@ -950,7 +588,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           />
         )}
         <div className="sidebar-bands-list">
-          {bands.filter((band) => band.id === activeBandId).map((band) => (
+          {visibleBands.filter((band) => band.id === activeBandId).map((band) => (
             <div key={band.id} className="sidebar-folder">
               <div className="sidebar-folder-children">
                 <div
@@ -968,7 +606,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 >
                   <button
                     className="sidebar-list-item-btn"
-                    onClick={() => { clearSoloSelection(); navigate(`/bands/${band.id}/library`); onNavigate?.(); }}
+                    onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/library`); onNavigate?.(); }}
                   >
                     <ListMusic size={14} />
                     <span className="sidebar-list-name">Library</span>
@@ -984,7 +622,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     className="sidebar-list-item-btn"
                     onClick={() => {
-                      clearSoloSelection();
+                      clearGlobalSelection();
                       navigate(`/bands/${band.id}/trash`);
                       onNavigate?.();
                     }}
@@ -1039,7 +677,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       >
                         <button
                           className="sidebar-list-item-btn"
-                          onClick={() => { clearSoloSelection(); navigate(`/bands/${band.id}/songlists/${songList.id}`); onNavigate?.(); }}
+                          onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/songlists/${songList.id}`); onNavigate?.(); }}
                         >
                           {songList.icon ? <span className="sidebar-list-icon" aria-hidden="true">{songList.icon}</span> : <Folder size={14} />}
                           <span className="sidebar-list-name">{songList.name}</span>
@@ -1102,7 +740,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       >
                         <button
                           className="sidebar-list-item-btn"
-                          onClick={() => { clearSoloSelection(); navigate(`/bands/${band.id}/setlists/${setlist.id}`); onNavigate?.(); }}
+                          onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/setlists/${setlist.id}`); onNavigate?.(); }}
                         >
                           {setlist.icon ? <span className="sidebar-list-icon" aria-hidden="true">{setlist.icon}</span> : <ListMusic size={14} />}
                           <span className="sidebar-list-name">{setlist.name}</span>
@@ -1157,7 +795,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       >
                         <button
                           className="sidebar-list-item-btn"
-                          onClick={() => { clearSoloSelection(); navigate(`/bands/${band.id}/stageplots/${stageplot.id}`); onNavigate?.(); }}
+                          onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/stageplots/${stageplot.id}`); onNavigate?.(); }}
                         >
                           {stageplot.icon ? <span className="sidebar-list-icon" aria-hidden="true">{stageplot.icon}</span> : <Map size={14} />}
                           <span className="sidebar-list-name">{stageplot.name}</span>
@@ -1212,7 +850,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       >
                         <button
                           className="sidebar-list-item-btn"
-                          onClick={() => { clearSoloSelection(); navigate(`/bands/${band.id}/riders/${rider.id}`); onNavigate?.(); }}
+                          onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/riders/${rider.id}`); onNavigate?.(); }}
                         >
                           <ClipboardList size={14} />
                           <span className="sidebar-list-name">{rider.name}</span>

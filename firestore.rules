@@ -71,70 +71,6 @@ service cloud.firestore {
           || (!('username' in resource.data) || resource.data.username == null)
         );
       allow delete: if isOwner(userId);
-
-      match /songs/{songId} {
-        allow read: if canReadResource(userId);
-        allow create: if isOwner(userId) && request.resource.data.ownerId == request.auth.uid;
-        allow update: if canUpdateResource(userId);
-        allow delete: if isOwner(userId);
-
-        match /recordings/{recordingId} {
-          allow read: if canReadResource(userId);
-          allow create: if isOwner(userId);
-          allow update: if isOwner(userId);
-          allow delete: if isOwner(userId);
-        }
-
-        // Per-user handwritten notes. Each user writes only their own doc (noteId == uid).
-        match /handNotes/{noteId} {
-          allow read: if canReadResource(userId);
-          allow create: if isSignedIn()
-            && canReadResource(userId)
-            && noteId == request.auth.uid
-            && request.resource.data.authorUid == request.auth.uid;
-          allow update: if isSignedIn()
-            && canReadResource(userId)
-            && noteId == request.auth.uid
-            && resource.data.authorUid == request.auth.uid
-            && request.resource.data.authorUid == request.auth.uid;
-          allow delete: if isSignedIn()
-            && noteId == request.auth.uid;
-        }
-      }
-
-      match /songListCategories/{categoryId} {
-        allow read, write: if isOwner(userId);
-      }
-
-      match /songLists/{listId} {
-        allow read: if canReadResource(userId);
-        allow create: if isOwner(userId) && request.resource.data.ownerId == request.auth.uid;
-        allow update: if canUpdateResource(userId);
-        allow delete: if isOwner(userId);
-      }
-
-      match /setlists/{setlistId} {
-        allow read: if canReadResource(userId);
-        allow create: if isOwner(userId) && request.resource.data.ownerId == request.auth.uid;
-        allow update: if canUpdateResource(userId);
-        allow delete: if isOwner(userId);
-      }
-
-      match /stageplots/{stageplotId} {
-        allow read: if isOwner(userId)
-          || resource.data.publicShareEnabled == true;
-        allow create, update, delete: if isOwner(userId);
-      }
-
-      match /technicalRiders/{riderId} {
-        allow read: if isOwner(userId)
-          || resource.data.publicShareEnabled == true;
-        allow create, update, delete: if isOwner(userId);
-      }
-
-      match /trashItems/{trashId} {
-        allow read, write: if isOwner(userId);
-      }
     }
 
     match /usernames/{usernameLower} {
@@ -293,16 +229,6 @@ service cloud.firestore {
         && request.resource.data.respondedAt is string;
 
       allow delete: if isSignedIn() && resource.data.inviterId == request.auth.uid;
-    }
-
-    // Legacy storage path for older Folio versions
-    match /songs/{songId} {
-      allow read: if request.auth != null && (
-        resource.data.userId == request.auth.uid ||
-        resource.data.ownerId == request.auth.uid ||
-        resource.data.uid == request.auth.uid ||
-        resource.data.createdBy == request.auth.uid
-      );
     }
 
   }

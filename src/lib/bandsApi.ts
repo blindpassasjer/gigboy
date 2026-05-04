@@ -147,3 +147,22 @@ export async function repairBandMembershipOnServer(params: {
     }
   );
 }
+
+export async function cleanupLegacySoloDataOnServer(params: {
+  userId: string;
+  userEmail: string;
+}) {
+  return postJson<{
+    ok: true;
+    deletedSoloBands: number;
+    deletedBandDocs: number;
+    deletedUserDocs: number;
+  }>(
+    '/api/bands/cleanup-legacy-solo',
+    {},
+    {
+      userId: params.userId,
+      userEmail: params.userEmail,
+    }
+  );
+}

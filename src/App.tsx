@@ -1,25 +1,16 @@
-import { createBrowserRouter, RouterProvider, Routes, Route } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
-import HomePage from './pages/HomePage';
-import SongPage from './pages/SongPage';
-import AddSongPage from './pages/AddSongPage';
-import EditSongPage from './pages/EditSongPage';
 import LoginPage from './pages/LoginPage';
 import UsernameSetupPage from './pages/UsernameSetupPage';
-import SetlistConcertPage from './pages/SetlistConcertPage';
 import BandSetlistConcertPage from './pages/BandSetlistConcertPage';
 import BandsPage from './pages/BandsPage';
 import BandDetailPage from './pages/BandDetailPage';
 import BandMembersPage from './pages/BandMembersPage';
 import ProfileInvitesPage from './pages/ProfileInvitesPage';
 import ProfilePage from './pages/ProfilePage';
-import TrashPage from './pages/TrashPage';
 import PublicBandSetlistPage from './pages/PublicBandSetlistPage';
 import PublicBandStageplotPage from './pages/PublicBandStageplotPage';
-import PublicUserSetlistPage from './pages/PublicUserSetlistPage';
-import PublicUserStageplotPage from './pages/PublicUserStageplotPage';
-import PublicUserTechnicalRiderPage from './pages/PublicUserTechnicalRiderPage';
 import PublicBandTechnicalRiderPage from './pages/PublicBandTechnicalRiderPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
@@ -48,18 +39,14 @@ function AuthenticatedApp() {
               <BandsProvider>
                 <Layout>
                   <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/songs/:id" element={<SongPage />} />
-                    <Route path="/songs/:id/edit" element={<EditSongPage />} />
-                    <Route path="/add" element={<AddSongPage />} />
+                    <Route path="/" element={<Navigate to="/bands" replace />} />
                     <Route path="/bands" element={<BandsPage />} />
                     <Route path="/bands/:id/members" element={<BandMembersPage />} />
                     <Route path="/bands/:bandId/setlists/:setlistId/concert" element={<BandSetlistConcertPage />} />
                     <Route path="/bands/:id/*" element={<BandDetailPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/profile/invites" element={<ProfileInvitesPage />} />
-                    <Route path="/trash" element={<TrashPage />} />
-                    <Route path="/setlists/:id/concert" element={<SetlistConcertPage />} />
+                    <Route path="*" element={<Navigate to="/bands" replace />} />
                   </Routes>
                 </Layout>
               </BandsProvider>
@@ -75,9 +62,6 @@ const router = createBrowserRouter([
   { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage /> },
   { path: '/public/bands/:bandId/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
   { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
-  { path: '/public/users/:userId/setlists/:setlistId', element: <PublicUserSetlistPage /> },
-  { path: '/public/users/:userId/stageplots/:stageplotId', element: <PublicUserStageplotPage /> },
-  { path: '/public/users/:userId/riders/:riderId', element: <PublicUserTechnicalRiderPage /> },
   { path: '*', element: <AuthenticatedApp /> },
 ]);
 
