@@ -353,7 +353,7 @@ export default function Layout({ children }: Props) {
           id="main-content"
           ref={mainContentRef}
           tabIndex={-1}
-          className={`main-content${isConcertRoute ? ' main-content--concert' : ''}${isBandRoute ? ' main-content--band' : ''}`}
+          className={`main-content${isConcertRoute ? ' main-content--concert' : ''}${isBandRoute || (themedBandId && pathname.startsWith('/profile')) ? ' main-content--band' : ''}`}
         >
           {children}
         </main>

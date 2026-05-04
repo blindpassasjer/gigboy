@@ -3418,6 +3418,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   line-height: 1.45;
 }
 
+.login-hero-pricing {
+  margin: .25rem 0 0;
+  font-size: .82rem;
+  color: var(--muted);
+  opacity: .75;
+}
+
 .login-card {
   background: color-mix(in srgb, var(--surface) 96%, #ffffff);
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);

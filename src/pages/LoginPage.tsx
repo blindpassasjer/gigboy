@@ -17,6 +17,18 @@ const LOGIN_FEATURES = [
     title: 'Share with your band',
     description: 'Collaborate on updates, stage plots, and technical details from anywhere.',
   },
+  {
+    title: 'Stage plots & tech riders',
+    description: 'Generate professional stage plots and technical riders ready to send straight to the venue.',
+  },
+  {
+    title: 'Record run-throughs',
+    description: 'Capture rehearsal recordings in the app and play them back when you need them.',
+  },
+  {
+    title: 'Public share links',
+    description: 'Share setlists, stage plots, and riders publicly with sound engineers, promoters, or fans.',
+  },
 ];
 
 function GoogleIcon() {
@@ -91,6 +103,9 @@ function LoginHero() {
           </li>
         ))}
       </ul>
+      <p className="login-hero-pricing">
+        Free to get started &mdash; paid plans unlock more.
+      </p>
     </aside>
   );
 }
