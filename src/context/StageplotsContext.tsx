@@ -155,7 +155,13 @@ export function StageplotsProvider({ children }: { children: ReactNode }) {
         setStageplots(loaded);
       })
       .catch((error) => {
-        console.error('Failed to load stageplots from Firestore. Falling back to local data.', error);
+        const code = error && typeof error === 'object' && 'code' in error
+          ? String((error as { code?: unknown }).code)
+          : 'unknown';
+        console.error(
+          `Failed to load stageplots from Firestore at users/${userId}/${STAGEPLOTS_COLLECTION}. Falling back to local data. (code: ${code})`,
+          error
+        );
       });
   }, [userId]);
 

@@ -1,14 +1,24 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronUp, KeyRound, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronUp, KeyRound, LogOut, Music2, Users } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
+import { useBands } from '../context/BandsContext';
 import UserAvatar from '../components/UserAvatar';
 import { AVATAR_OPTIONS } from '../lib/avatars';
+import { ICON_OPTIONS } from '../lib/iconOptions';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
+}
+
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const { user, updateEmailAddress, updatePassword, updateUsername, updateAvatar, updateFullName, logout } = useAuth();
+  const { bands, loading: bandsLoading, cloudRequired, createBand, deleteBand } = useBands();
 
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
@@ -25,6 +35,11 @@ export default function ProfilePage() {
   const [busyLogout, setBusyLogout] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [bandName, setBandName] = useState('');
+  const [bandDescription, setBandDescription] = useState('');
+  const [bandIcon, setBandIcon] = useState('🎵');
+  const [creatingBand, setCreatingBand] = useState(false);
+  const [busyBandId, setBusyBandId] = useState<string | null>(null);
 
   const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
 
@@ -138,6 +153,38 @@ export default function ProfilePage() {
     } finally {
       setBusyLogout(false);
     }
+  };
+
+  const handleCreateBand = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreatingBand(true);
+    const result = await createBand(bandName, bandDescription, normalizeEmojiIcon(bandIcon));
+    setCreatingBand(false);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setBandName('');
+    setBandDescription('');
+    setBandIcon('🎵');
+    toast.success('Band created.');
+    if (result.bandId) {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('folio-active-band-id', result.bandId);
+      }
+      navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
+    }
+  };
+
+  const handleDeleteBand = async (bandId: string) => {
+    setBusyBandId(bandId);
+    const error = await deleteBand(bandId);
+    setBusyBandId(null);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    toast.success('Band deleted.');
   };
 
   return (
@@ -286,6 +333,89 @@ export default function ProfilePage() {
                 </button>
               </form>
             </>
+          )}
+        </section>
+
+        {/* Bands */}
+        <section className="profile-settings-card profile-settings-card--wide">
+          <h2>Bands</h2>
+          <p className="profile-settings-muted">Create bands, invite members, and maintain a shared band library.</p>
+          {cloudRequired ? (
+            <p className="bands-status">Bands require Firebase auth and Firestore to be configured.</p>
+          ) : null}
+          <form className="bands-create-card" onSubmit={handleCreateBand}>
+            <div className="bands-create-grid">
+              <label className="share-menu-field">
+                <span>Band name</span>
+                <input
+                  type="text"
+                  value={bandName}
+                  onChange={(event) => setBandName(event.target.value)}
+                  placeholder="Youth Team"
+                />
+              </label>
+              <label className="share-menu-field">
+                <span>Description</span>
+                <input
+                  type="text"
+                  value={bandDescription}
+                  onChange={(event) => setBandDescription(event.target.value)}
+                  placeholder="Optional"
+                />
+              </label>
+              <label className="share-menu-field">
+                <span>Icon</span>
+                <select value={bandIcon} onChange={(event) => setBandIcon(event.target.value)}>
+                  {ICON_OPTIONS.map((emoji) => (
+                    <option key={emoji} value={emoji}>{emoji}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="bands-create-actions">
+              <button type="submit" className="setlist-action-btn" disabled={creatingBand || cloudRequired}>
+                {creatingBand ? 'Creating…' : 'Create band'}
+              </button>
+            </div>
+          </form>
+          {bandsLoading ? (
+            <p className="bands-status">Loading bands…</p>
+          ) : bands.length === 0 ? (
+            <p className="bands-status">No bands yet.</p>
+          ) : (
+            <ul className="bands-list">
+              {bands.map((band) => {
+                const isOwner = band.ownerId === user.id;
+                const role = isOwner ? 'owner' : band.memberRoles[user.id ?? ''] ?? 'viewer';
+                return (
+                  <li key={band.id} className="bands-card">
+                    <Link to={`/bands/${band.id}/library`} className="bands-card-main">
+                      <div className="bands-card-icon" aria-hidden="true">
+                        {band.icon ? <span>{band.icon}</span> : <Music2 size={18} />}
+                      </div>
+                      <div className="bands-card-copy">
+                        <strong>{band.name}</strong>
+                        <span>{band.description || `${band.memberIds.length} members`}</span>
+                      </div>
+                    </Link>
+                    <div className="bands-card-meta">
+                      <span className="bands-role-badge">{role}</span>
+                      <span className="bands-members-pill"><Users size={14} /> {band.memberIds.length}</span>
+                      {isOwner ? (
+                        <button
+                          type="button"
+                          className="setlist-action-btn setlist-action-btn--secondary"
+                          disabled={busyBandId === band.id}
+                          onClick={() => void handleDeleteBand(band.id)}
+                        >
+                          {busyBandId === band.id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </section>
 

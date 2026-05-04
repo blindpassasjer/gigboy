@@ -4,7 +4,6 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import UsernameSetupPage from './pages/UsernameSetupPage';
 import BandSetlistConcertPage from './pages/BandSetlistConcertPage';
-import BandsPage from './pages/BandsPage';
 import BandDetailPage from './pages/BandDetailPage';
 import BandMembersPage from './pages/BandMembersPage';
 import ProfileInvitesPage from './pages/ProfileInvitesPage';
@@ -39,14 +38,14 @@ function AuthenticatedApp() {
               <BandsProvider>
                 <Layout>
                   <Routes>
-                    <Route path="/" element={<Navigate to="/bands" replace />} />
-                    <Route path="/bands" element={<BandsPage />} />
+                    <Route path="/" element={<Navigate to="/profile" replace />} />
+                    <Route path="/bands" element={<Navigate to="/profile" replace />} />
                     <Route path="/bands/:id/members" element={<BandMembersPage />} />
                     <Route path="/bands/:bandId/setlists/:setlistId/concert" element={<BandSetlistConcertPage />} />
                     <Route path="/bands/:id/*" element={<BandDetailPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/profile/invites" element={<ProfileInvitesPage />} />
-                    <Route path="*" element={<Navigate to="/bands" replace />} />
+                    <Route path="*" element={<Navigate to="/profile" replace />} />
                   </Routes>
                 </Layout>
               </BandsProvider>

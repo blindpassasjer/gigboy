@@ -176,7 +176,7 @@ export default function BandDetailPage() {
     return (
       <section className="bands-page">
         <p className="bands-status">Band not found.</p>
-        <Link to="/bands" className="setlist-action-btn setlist-action-btn--secondary">Back to bands</Link>
+        <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary">Back to bands</Link>
       </section>
     );
   }
@@ -236,7 +236,7 @@ export default function BandDetailPage() {
     }
 
     toast.success('You left the band.');
-    navigate('/bands');
+    navigate('/profile');
   };
 
   const handleAddSong = async (songId: string) => {
@@ -310,7 +310,7 @@ export default function BandDetailPage() {
     }
 
     toast.success('Band deleted.');
-    navigate('/bands');
+    navigate('/profile');
   };
 
   const handleRenameBand = async (name: string) => {

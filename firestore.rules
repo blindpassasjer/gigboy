@@ -93,6 +93,14 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      match /setlists/{setlistId} {
+        allow read: if isOwner(userId) || isCollaboratorOnResource();
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId)
+          || (isEditorOnResource() && collaborationMetadataUnchanged());
+        allow delete: if isOwner(userId);
+      }
+
       match /songs/{songId} {
         allow read: if isOwner(userId) || isCollaboratorOnResource();
         allow create: if isOwner(userId);
@@ -110,6 +118,11 @@ service cloud.firestore {
       }
 
       match /trashItems/{trashId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      // Owner fallback for user-scoped nested data that is not explicitly shared.
+      match /{document=**} {
         allow read, create, update, delete: if isOwner(userId);
       }
     }
