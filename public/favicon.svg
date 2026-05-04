@@ -2,19 +2,15 @@
   <title>Gigboi</title>
   <!-- Background -->
   <rect width="64" height="64" rx="14" fill="#0f172a"/>
-  <!-- Sound wave bars (audio visualizer style) -->
-  <!-- Bar 1 -->
-  <rect x="8"  y="28" width="5" height="8"  rx="2.5" fill="#a78bfa"/>
-  <!-- Bar 2 -->
-  <rect x="15" y="22" width="5" height="20" rx="2.5" fill="#c4b5fd"/>
-  <!-- Bar 3 -->
-  <rect x="22" y="14" width="5" height="36" rx="2.5" fill="#a78bfa"/>
-  <!-- Bar 4 (tallest – centre) -->
-  <rect x="29" y="8"  width="6" height="48" rx="3"   fill="#7c3aed"/>
-  <!-- Bar 5 -->
-  <rect x="37" y="14" width="5" height="36" rx="2.5" fill="#a78bfa"/>
-  <!-- Bar 6 -->
-  <rect x="44" y="22" width="5" height="20" rx="2.5" fill="#c4b5fd"/>
-  <!-- Bar 7 -->
-  <rect x="51" y="28" width="5" height="8"  rx="2.5" fill="#a78bfa"/>
+  <!-- GB monogram -->
+  <text
+    x="32"
+    y="45"
+    font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+    font-size="27"
+    font-weight="700"
+    text-anchor="middle"
+    letter-spacing="-1"
+    fill="#a78bfa"
+  >GB</text>
 </svg>
