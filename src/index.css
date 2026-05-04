@@ -3891,6 +3891,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   position: relative;
 }
 
+.sidebar-mode-switcher {
+  position: relative;
+  padding: 0 .75rem;
+  margin-bottom: .5rem;
+  min-width: 0;
+}
+
 .sidebar-band-switcher {
   position: relative;
   flex: 1;

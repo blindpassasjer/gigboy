@@ -552,6 +552,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       </div>
 
       <div className="sidebar-mode-switcher" ref={bandSwitcherRef}>
+        <div className="sidebar-band-switcher">
         <button
           type="button"
           className="sidebar-band-switcher-btn"
@@ -629,6 +630,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {sidebarMode === 'solo' && (

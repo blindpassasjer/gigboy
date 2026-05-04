@@ -668,11 +668,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     const updateMergedBands = () => {
       const mergedBands = mergeBandsById(memberBands, ownerBands);
-      console.info('[Folio] Band sources:', {
-        memberBands: memberBands.length,
-        ownerBands: ownerBands.length,
-        mergedBands: mergedBands.length,
-      });
+      console.info(
+        `[Folio] Band sources: member=${memberBands.length}, owner=${ownerBands.length}, merged=${mergedBands.length}`
+      );
       setBands(mergedBands);
       setLoading(false);
     };
