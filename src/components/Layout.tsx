@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Menu, Sun, Moon, Maximize2, Minimize2, User } from 'lucide-react';
+import { BookOpen, Menu, Sun, Moon, Maximize2, Minimize2, Mail } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
@@ -174,7 +174,7 @@ export default function Layout({ children }: Props) {
             aria-current={pathname === '/profile/invites' ? 'page' : undefined}
             title={hasInviteNotifications ? `Invites (${inviteLabel})` : 'Invites'}
           >
-            <User size={16} />
+            <Mail size={16} />
             <span>Invites</span>
             {hasInviteNotifications ? (
               <span

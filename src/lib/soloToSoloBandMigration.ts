@@ -40,9 +40,32 @@ export async function migrateSoloToSoloBand(
   username: string,
   fullName: string,
   avatar: string,
-  keepOriginalData: boolean = true
+  keepOriginalData: boolean = true,
+  createIfNoBands: boolean = true
 ): Promise<{ migrated: boolean; soloBandId: string | null; error: string | null }> {
   try {
+    const createSoloBand = async () => {
+      const soloBandId = crypto.randomUUID();
+      const now = new Date().toISOString();
+
+      await setDoc(doc(db, BANDS_COLLECTION, soloBandId), {
+        name: 'Solo',
+        ownerId: userId,
+        memberIds: [userId],
+        memberRoles: {
+          [userId]: 'editor',
+        },
+        memberEmails: userEmail ? { [userId]: userEmail } : {},
+        memberUsernames: username ? { [userId]: username } : {},
+        memberFullNames: fullName ? { [userId]: fullName } : {},
+        memberAvatars: avatar ? { [userId]: avatar } : {},
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      return soloBandId;
+    };
+
     // Check if "Solo" band already exists
     const existingSoloBand = await getDocs(
       query(
@@ -56,6 +79,11 @@ export async function migrateSoloToSoloBand(
       console.info('[Folio] Solo band already exists. Migration skipped.');
       return { migrated: false, soloBandId: existingSoloBand.docs[0].id, error: null };
     }
+
+    const existingBands = await getDocs(
+      query(collection(db, BANDS_COLLECTION), where('memberIds', 'array-contains', userId))
+    );
+    const hasAnyBand = existingBands.size > 0;
 
     // Check if user has any solo items
     const [soloSongs, soloSongLists, soloSetlists, soloStageplots, soloRiders] = await Promise.all([
@@ -74,6 +102,12 @@ export async function migrateSoloToSoloBand(
       soloRiders.size > 0;
 
     if (!hasSoloItems) {
+      if (createIfNoBands && !hasAnyBand) {
+        const soloBandId = await createSoloBand();
+        console.info('[Folio] No bands found. Created default Solo band:', soloBandId);
+        return { migrated: true, soloBandId, error: null };
+      }
+
       console.info('[Folio] No solo items found. Migration not needed.');
       return { migrated: false, soloBandId: null, error: null };
     }
@@ -87,23 +121,7 @@ export async function migrateSoloToSoloBand(
     });
 
     // Create "Solo" band
-    const soloBandId = crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    await setDoc(doc(db, BANDS_COLLECTION, soloBandId), {
-      name: 'Solo',
-      ownerId: userId,
-      memberIds: [userId],
-      memberRoles: {
-        [userId]: 'editor',
-      },
-      memberEmails: userEmail ? { [userId]: userEmail } : {},
-      memberUsernames: username ? { [userId]: username } : {},
-      memberFullNames: fullName ? { [userId]: fullName } : {},
-      memberAvatars: avatar ? { [userId]: avatar } : {},
-      createdAt: now,
-      updatedAt: now,
-    });
+    const soloBandId = await createSoloBand();
 
     console.info('[Folio] Solo band created:', soloBandId);
 

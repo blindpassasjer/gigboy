@@ -598,6 +598,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 <span className="sidebar-band-switcher-option-name">Solo</span>
               </button>
             )}
+            {bands.length === 0 && (
+              <div style={{ padding: '8px 12px', fontSize: '12px', color: '#999' }}>
+                {loading ? 'Loading bands...' : 'No bands yet'}
+              </div>
+            )}
             {bands.map((band) => (
               <button
                 type="button"

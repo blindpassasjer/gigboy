@@ -483,14 +483,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandTechnicalRidersByBandId, setBandTechnicalRidersByBandId] = useState<Record<string, TechnicalRider[]>>({});
   const [bandTrashByBandId, setBandTrashByBandId] = useState<Record<string, BandTrashItem[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
-  const [migrationRun, setMigrationRun] = useState(false);
+  const [migrationUserId, setMigrationUserId] = useState<string | null>(null);
 
   // Run solo-to-Solo band migration on first user login
   useEffect(() => {
-    if (!db || !userId || migrationRun) return;
+    if (!db || !userId || migrationUserId === userId) return;
 
-    setMigrationRun(true);
-    void migrateSoloToSoloBand(db, userId, userEmail, userUsername, userFullName, userAvatar, true).then((result) => {
+    setMigrationUserId(userId);
+    void migrateSoloToSoloBand(db, userId, userEmail, userUsername, userFullName, userAvatar, true, true).then((result) => {
       if (result.error) {
         console.error('[Folio] Migration error:', result.error);
       } else if (result.migrated) {
@@ -499,7 +499,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }).catch((error) => {
       console.error('[Folio] Migration exception:', error);
     });
-  }, [userId, userEmail, userUsername, userFullName, userAvatar, migrationRun]);
+  }, [userId, userEmail, userUsername, userFullName, userAvatar, migrationUserId]);
 
   const refreshBands = useCallback(async () => {
     if (!db || !userId) {
