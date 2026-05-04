@@ -6971,6 +6971,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .45rem;
   min-width: 0;
   align-content: flex-start;
+  width: 100%;
 }
 
 .stageplot-palette-category {
@@ -6996,6 +6997,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-wrap: wrap;
   gap: .35rem;
+  width: 100%;
 }
 
 .stageplot-palette-custom-controls {
