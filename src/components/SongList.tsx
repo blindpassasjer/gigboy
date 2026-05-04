@@ -42,7 +42,7 @@ function getInitialSortBy(canUseCustomOrder: boolean): SortBy {
     return fallback;
   }
 
-  const stored = window.localStorage.getItem('folio-sort-by');
+  const stored = window.localStorage.getItem('gigboi-sort-by');
   if (!stored) {
     return fallback;
   }
@@ -51,8 +51,8 @@ function getInitialSortBy(canUseCustomOrder: boolean): SortBy {
   return allowed.includes(stored as SortBy) ? (stored as SortBy) : fallback;
 }
 
-const SONG_DRAG_MIME = 'application/x-folio-song-id';
-const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
+const SONG_DRAG_MIME = 'application/x-gigboi-song-id';
+const SONG_DRAG_FALLBACK_MIME = 'text/x-gigboi-song-id';
 
 function getSongPreview(song: Song): string {
   const lyricLines = parseChordPro(song.chordpro)
@@ -124,17 +124,17 @@ export default function SongList({
   const [query, setQuery] = useState('');
   const [langFilter, setLangFilter] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
-    () => (localStorage.getItem('folio-view-mode') === 'cards' ? 'cards' : 'list')
+    () => (localStorage.getItem('gigboi-view-mode') === 'cards' ? 'cards' : 'list')
   );
   const [sortBy, setSortBy] = useState<SortBy>(() => getInitialSortBy(Boolean(onMoveSong)));
 
   function handleSetViewMode(mode: 'list' | 'cards') {
-    localStorage.setItem('folio-view-mode', mode);
+    localStorage.setItem('gigboi-view-mode', mode);
     setViewMode(mode);
   }
 
   function handleSetSortBy(sort: SortBy) {
-    localStorage.setItem('folio-sort-by', sort);
+    localStorage.setItem('gigboi-sort-by', sort);
     setSortBy(sort);
   }
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);

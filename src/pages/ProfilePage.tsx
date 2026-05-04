@@ -170,7 +170,7 @@ export default function ProfilePage() {
     toast.success('Band created.');
     if (result.bandId) {
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem('folio-active-band-id', result.bandId);
+        window.localStorage.setItem('gigboi-active-band-id', result.bandId);
       }
       navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
     }

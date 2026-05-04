@@ -174,7 +174,7 @@ export default function PublicBandStageplotPage() {
       </div>
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link">Folio</Link>
+        <Link to="/" className="public-setlist-footer-link">Gigboi</Link>
       </footer>
     </div>
   );

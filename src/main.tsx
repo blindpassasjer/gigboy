@@ -2,6 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { migrateLocalStorageKeys } from './lib/migrateLocalStorage.ts'
+
+migrateLocalStorageKeys()
 
 async function setupPwa() {
   if (!import.meta.env.PROD) return
@@ -16,7 +19,7 @@ async function setupPwa() {
       }
     },
     onOfflineReady() {
-      console.info('Folio is ready to work offline.')
+      console.info('Gigboi is ready to work offline.')
     },
   })
 }

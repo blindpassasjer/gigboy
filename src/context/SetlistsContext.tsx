@@ -17,8 +17,8 @@ import { useAuth } from './AuthContext';
 import type { PublicSongEntry } from '../types';
 import { moveIdBefore } from '../utils/arrayUtils';
 
-const KEY_SETLISTS = 'songbook-setlists';
-const KEY_ACTIVE_SETLIST = 'songbook-active-setlist';
+const KEY_SETLISTS = 'gigboi-setlists';
+const KEY_ACTIVE_SETLIST = 'gigboi-active-setlist';
 const SETLISTS_COLLECTION = 'setlists';
 
 function isPermissionDeniedError(error: unknown) {

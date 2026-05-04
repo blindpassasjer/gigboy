@@ -12,7 +12,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userEmail = ctx.request.headers.get('x-folio-user-email')?.trim() ?? '';
+    const userEmail = ctx.request.headers.get('x-gigboi-user-email')?.trim() ?? '';
     const body = await ctx.request.json<{ name?: string; description?: string; icon?: string }>();
     const name = body.name?.trim() ?? '';
     const description = body.description?.trim() || undefined;

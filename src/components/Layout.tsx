@@ -36,7 +36,7 @@ export default function Layout({ children }: Props) {
   const [persistedBandId, setPersistedBandId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
-      return window.localStorage.getItem('folio-active-band-id');
+      return window.localStorage.getItem('gigboi-active-band-id');
     } catch {
       return null;
     }
@@ -178,7 +178,7 @@ export default function Layout({ children }: Props) {
 
     const syncPersistedBandId = () => {
       try {
-        setPersistedBandId(window.localStorage.getItem('folio-active-band-id'));
+        setPersistedBandId(window.localStorage.getItem('gigboi-active-band-id'));
       } catch {
         setPersistedBandId(null);
       }
@@ -194,7 +194,7 @@ export default function Layout({ children }: Props) {
     const nextBandId = routeBandId ?? stateBandId;
     if (!nextBandId) return;
     try {
-      window.localStorage.setItem('folio-active-band-id', nextBandId);
+      window.localStorage.setItem('gigboi-active-band-id', nextBandId);
       setPersistedBandId(nextBandId);
     } catch {
       // Ignore localStorage sync failures.
@@ -261,7 +261,7 @@ export default function Layout({ children }: Props) {
         </button>
         <Link to={themedBandId ? `/bands/${themedBandId}/library` : '/'} className="topbar-brand">
           <BookOpen size={22} />
-          <span>Folio</span>
+          <span>Gigboi</span>
         </Link>
         <nav className="topbar-nav">
           <Link

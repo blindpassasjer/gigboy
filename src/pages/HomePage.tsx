@@ -15,7 +15,7 @@ import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 
-const ALL_SONGS_ICON_KEY = 'folio-all-songs-icon';
+const ALL_SONGS_ICON_KEY = 'gigboi-all-songs-icon';
 
 type CopyMode = 'songlist' | 'setlist';
 type CopyTargetMode = 'new' | 'existing';

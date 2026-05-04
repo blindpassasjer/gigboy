@@ -49,9 +49,10 @@ export default defineConfig(({ command }) => ({
         'pwa-maskable-512.png',
       ],
       manifest: {
-        name: 'Folio',
-        short_name: 'Folio',
-        description: 'Collaborative songbook and setlist web app.',
+        name: 'Gigboi',
+        short_name: 'Gigboi',
+        description: 'Collaborative songbook and setlist app for musicians.',
+
         theme_color: '#0f172a',
         background_color: '#ffffff',
         display: 'standalone',

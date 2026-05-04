@@ -57,7 +57,7 @@ const BAND_SONGLISTS_COLLECTION = 'songLists';
 const BAND_SETLISTS_COLLECTION = 'setlists';
 const BAND_STAGEPLOTS_COLLECTION = 'stageplots';
 const BAND_TECHNICAL_RIDERS_COLLECTION = 'technicalRiders';
-const MIGRATION_MARKER_PREFIX = 'folio-bands-migration';
+const MIGRATION_MARKER_PREFIX = 'gigboi-bands-migration';
 const SOLO_CLEANUP_MARKER = 'solo-cleanup-v1';
 const SERVER_REPAIR_MARKER = 'server-repair-v1';
 const CLIENT_REPAIR_MARKER = 'client-repair-v1';
@@ -543,11 +543,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setMigrationMarker(SOLO_CLEANUP_MARKER, userId);
       if (result.deletedSoloBands > 0 || result.deletedUserDocs > 0) {
         console.info(
-          `[Folio] Cleaned legacy solo data: bands=${result.deletedSoloBands}, userDocs=${result.deletedUserDocs}`
+          `[Gigboi] Cleaned legacy solo data: bands=${result.deletedSoloBands}, userDocs=${result.deletedUserDocs}`
         );
       }
     }).catch((error) => {
-      console.error('[Folio] Legacy solo cleanup failed:', error);
+      console.error('[Gigboi] Legacy solo cleanup failed:', error);
     });
   }, [soloCleanupUserId, userId, userEmail]);
 
@@ -568,13 +568,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }).then((result) => {
       setMigrationMarker(SERVER_REPAIR_MARKER, userId);
       if (result.repairedCount > 0) {
-        console.info(`[Folio] Server repair linked ${result.repairedCount} band(s).`);
+        console.info(`[Gigboi] Server repair linked ${result.repairedCount} band(s).`);
       }
       if (result.claimedCount > 0) {
-        console.info(`[Folio] Server repair set owner on ${result.claimedCount} band(s).`);
+        console.info(`[Gigboi] Server repair set owner on ${result.claimedCount} band(s).`);
       }
     }).catch((error) => {
-      console.error('[Folio] Server-side band repair failed:', error);
+      console.error('[Gigboi] Server-side band repair failed:', error);
     });
   }, [serverRepairUserId, userId, userEmail, userUsername]);
 
@@ -663,14 +663,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       );
 
       if (repairedCount > 0) {
-        console.info(`[Folio] Repaired membership for ${repairedCount} owned band(s).`);
+        console.info(`[Gigboi] Repaired membership for ${repairedCount} owned band(s).`);
       }
 
       setMigrationMarker(CLIENT_REPAIR_MARKER, userId);
     };
 
     void repairOwnedBandsMembership().catch((error) => {
-      console.error('[Folio] Owned band membership repair failed:', error);
+      console.error('[Gigboi] Owned band membership repair failed:', error);
     });
   }, [membershipRepairUserId, userId, userEmail, userUsername, userFullName, userAvatar]);
 
@@ -721,7 +721,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       const mergedBands = mergeBandsById(memberBands, ownerBands);
       if (import.meta.env.DEV) {
         console.info(
-          `[Folio] Band sources: member=${memberBands.length}, owner=${ownerBands.length}, merged=${mergedBands.length}`
+          `[Gigboi] Band sources: member=${memberBands.length}, owner=${ownerBands.length}, merged=${mergedBands.length}`
         );
       }
       setBands(mergedBands);

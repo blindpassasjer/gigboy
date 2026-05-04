@@ -35,7 +35,7 @@ export default function UsernameSetupPage() {
       <div className="login-card">
         <div className="login-brand">
           <BookOpen size={28} />
-          <span>Folio</span>
+          <span>Gigboi</span>
         </div>
         <h1 className="login-title">Choose your username</h1>
         <p className="login-subtitle">

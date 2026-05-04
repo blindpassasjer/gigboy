@@ -34,7 +34,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const ownerEmail = ctx.request.headers.get('x-folio-user-email')?.trim() ?? '';
+  const ownerEmail = ctx.request.headers.get('x-gigboi-user-email')?.trim() ?? '';
   const body = await ctx.request.json<{
     recipientQuery?: string;
     recipientEmail?: string;

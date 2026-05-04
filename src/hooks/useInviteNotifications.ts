@@ -63,12 +63,12 @@ export function useInviteNotifications(): InviteNotificationsState {
 
     window.addEventListener('focus', handleWindowFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('folio-invite-notifications-changed', handleWindowFocus);
+    window.addEventListener('gigboi-invite-notifications-changed', handleWindowFocus);
 
     return () => {
       window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('folio-invite-notifications-changed', handleWindowFocus);
+      window.removeEventListener('gigboi-invite-notifications-changed', handleWindowFocus);
     };
   }, [refresh]);
 

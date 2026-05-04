@@ -109,7 +109,7 @@ export async function loadInviteNotificationsSnapshot(db: Firestore, userId: str
 }
 
 function getSeenAcceptedInviteKey(userId: string) {
-  return `folio-seen-accepted-invites:${userId}`;
+  return `gigboi-seen-accepted-invites:${userId}`;
 }
 
 export function getSeenAcceptedInviteIds(userId: string) {
@@ -152,5 +152,5 @@ export function emitInviteNotificationsChanged() {
     return;
   }
 
-  window.dispatchEvent(new Event('folio-invite-notifications-changed'));
+  window.dispatchEvent(new Event('gigboi-invite-notifications-changed'));
 }

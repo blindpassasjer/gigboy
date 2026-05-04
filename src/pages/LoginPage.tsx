@@ -114,7 +114,7 @@ export default function LoginPage() {
         <div className="login-card">
           <div className="login-brand">
             <BookOpen size={28} />
-            <span>Folio</span>
+            <span>Gigboi</span>
           </div>
           <h1 className="login-title">Link accounts</h1>
           <p className="login-description">
@@ -155,7 +155,7 @@ export default function LoginPage() {
       <div className="login-card">
         <div className="login-brand">
           <BookOpen size={28} />
-          <span>Folio</span>
+          <span>Gigboi</span>
         </div>
         <h1 className="login-title">{mode === 'register' ? 'Create account' : 'Sign in'}</h1>
 
