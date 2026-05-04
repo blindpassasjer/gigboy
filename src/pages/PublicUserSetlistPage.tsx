@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import BrandMark from '../components/BrandMark';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { PublicSetlistSongEntry } from '../types';
@@ -114,6 +115,9 @@ export default function PublicUserSetlistPage() {
 
   return (
     <div className="public-setlist-page">
+      <nav className="public-page-nav">
+        <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
+      </nav>
       <header className="public-setlist-header">
         <h1 className="public-setlist-title">
           {setlist.icon && <span aria-hidden="true">{setlist.icon} </span>}
@@ -146,7 +150,7 @@ export default function PublicUserSetlistPage() {
       )}
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link">Gigboy</Link>
+        <Link to="/" className="public-setlist-footer-link"><BrandMark size={13} /></Link>
       </footer>
     </div>
   );

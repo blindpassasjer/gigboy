@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import BrandMark from '../components/BrandMark';
 import { doc, getDoc } from 'firebase/firestore';
 import type { SongHandNoteDocument, StageplotItem } from '../types';
 import { db } from '../lib/firebase';
@@ -126,6 +127,9 @@ export default function PublicUserStageplotPage() {
 
   return (
     <div className="public-setlist-page">
+      <nav className="public-page-nav">
+        <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
+      </nav>
       <header className="public-setlist-header">
         <h1 className="public-setlist-title">
           {stageplot.icon ? <span aria-hidden="true">{stageplot.icon} </span> : null}
@@ -171,7 +175,7 @@ export default function PublicUserStageplotPage() {
       </div>
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link">Gigboy</Link>
+        <Link to="/" className="public-setlist-footer-link"><BrandMark size={13} /></Link>
       </footer>
     </div>
   );

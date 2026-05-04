@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import BrandMark from '../components/BrandMark';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { normalizeTechnicalRider } from '../lib/technicalRiders';
@@ -69,6 +70,9 @@ export default function PublicBandTechnicalRiderPage() {
 
   return (
     <div className="public-setlist-page technical-rider-public-page">
+      <nav className="public-page-nav">
+        <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
+      </nav>
       <header className="public-setlist-header">
         {rider.bandName ? <p className="public-setlist-band">{rider.bandName}</p> : null}
         <h1 className="public-setlist-title">{rider.name}</h1>
@@ -162,7 +166,7 @@ export default function PublicBandTechnicalRiderPage() {
       </section>
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link">Gigboy</Link>
+        <Link to="/" className="public-setlist-footer-link"><BrandMark size={13} /></Link>
       </footer>
     </div>
   );

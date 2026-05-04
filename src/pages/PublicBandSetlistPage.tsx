@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import BrandMark from '../components/BrandMark';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { PublicSetlistSongEntry } from '../types';
@@ -116,6 +117,9 @@ export default function PublicBandSetlistPage() {
 
   return (
     <div className="public-setlist-page">
+      <nav className="public-page-nav">
+        <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
+      </nav>
       <header className="public-setlist-header">
         {setlist.bandName && (
           <p className="public-setlist-band">{setlist.bandName}</p>
@@ -151,7 +155,7 @@ export default function PublicBandSetlistPage() {
       )}
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link">Gigboy</Link>
+        <Link to="/" className="public-setlist-footer-link"><BrandMark size={13} /></Link>
       </footer>
     </div>
   );
