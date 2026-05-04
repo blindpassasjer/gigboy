@@ -1,5 +1,23 @@
 import { createBrowserRouter, RouterProvider, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { Theme } from '@radix-ui/themes';
+import { useEffect, useState } from 'react';
+
+/** Observes data-theme on <html> so Radix Theme stays in sync with our dark mode toggle. */
+function useHtmlDark() {
+  const [dark, setDark] = useState(
+    () => document.documentElement.getAttribute('data-theme') === 'dark'
+  );
+  useEffect(() => {
+    const el = document.documentElement;
+    const ob = new MutationObserver(() => {
+      setDark(el.getAttribute('data-theme') === 'dark');
+    });
+    ob.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => ob.disconnect();
+  }, []);
+  return dark;
+}
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import UsernameSetupPage from './pages/UsernameSetupPage';
@@ -73,9 +91,17 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
+  const dark = useHtmlDark();
   return (
-    <AuthProvider>
-      <Toaster
+    <Theme
+      appearance={dark ? 'dark' : 'light'}
+      accentColor="blue"
+      grayColor="sand"
+      radius="medium"
+      hasBackground={false}
+    >
+      <AuthProvider>
+        <Toaster
         toastOptions={{
           style: {
             border: '1px solid var(--border)',
@@ -92,5 +118,6 @@ export default function App() {
       />
       <RouterProvider router={router} />
     </AuthProvider>
+    </Theme>
   );
 }

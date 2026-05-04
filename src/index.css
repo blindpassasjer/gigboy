@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 /* ─── Reset & tokens ────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,8 +25,12 @@
   --notes-draw: #27ae60;
   --chord:      #1a6fc4;
   --chord-bg:   #e6f0fb;
-  --radius:     8px;
-  --shadow:     0 1px 4px rgba(0,0,0,.08);
+  --radius:     10px;
+  --radius-sm:  6px;
+  --radius-lg:  14px;
+  --shadow:     0 1px 3px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.06);
+  --shadow-md:  0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.08);
   --font-mono:  'JetBrains Mono', 'Courier New', Courier, monospace;
   font-size: 16px;
 }
@@ -47,13 +51,15 @@
   --notes-draw: #5be39a;
   --chord:      #6aadff;
   --chord-bg:   #1a2e45;
-  --shadow:     0 1px 4px rgba(0,0,0,.3);
+  --shadow:     0 1px 3px rgba(0,0,0,.24), 0 2px 8px rgba(0,0,0,.2);
+  --shadow-md:  0 4px 16px rgba(0,0,0,.32), 0 1px 4px rgba(0,0,0,.24);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   line-height: 1.6;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -183,8 +189,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .topbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   padding: var(--safe-top) calc(1.5rem + var(--safe-right)) 0 calc(1.5rem + var(--safe-left));
   display: flex;
   align-items: center;
@@ -2938,19 +2946,23 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-height: 2.25rem;
   padding: .55rem 1rem;
   border: 1px solid transparent;
-  border-radius: 7px;
-  background: var(--accent);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 80%, #003d99));
   color: var(--accent-contrast);
   font-size: .88rem;
   font-weight: 600;
   line-height: 1;
+  letter-spacing: .01em;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--accent) 40%, transparent);
   transition: background .15s, color .15s, border-color .15s, box-shadow .15s, transform .08s;
 }
 
 .btn-primary:hover,
 .setlist-action-btn:hover,
 .song-picker-add-btn:hover {
-  background: var(--accent-h);
+  background: linear-gradient(135deg, var(--accent-h), color-mix(in srgb, var(--accent-h) 80%, #003d99));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: translateY(-1px);
 }
 
 .btn-primary:focus-visible,
@@ -2981,17 +2993,20 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-height: 2.25rem;
   padding: .55rem 1rem;
   border: 1px solid var(--border);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--surface) 60%, var(--bg));
+  border-radius: 8px;
+  background: var(--surface);
   color: var(--text);
   font-size: .88rem;
   font-weight: 600;
   line-height: 1;
-  transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+  letter-spacing: .01em;
+  transition: background .15s, color .15s, border-color .15s, box-shadow .15s, transform .08s;
 }
 
 .btn-secondary:hover {
   background: color-mix(in srgb, var(--surface) 40%, var(--bg));
+  border-color: color-mix(in srgb, var(--border) 60%, var(--muted));
+  transform: translateY(-1px);
 }
 
 .btn-secondary:focus-visible {
@@ -3037,14 +3052,18 @@ input, select, textarea { font: inherit; color: var(--text); }
 .form-field textarea {
   padding: .5rem .75rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--bg);
   outline: none;
-  transition: border-color .15s;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.04);
+  transition: border-color .15s, box-shadow .15s;
 }
 .form-field input:focus,
 .form-field select:focus,
-.form-field textarea:focus { border-color: var(--accent); }
+.form-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.04), 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
 .form-field textarea {
   resize: vertical;
   font-family: var(--font-mono);
@@ -3239,18 +3258,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in srgb, var(--accent) 8%, var(--bg)), var(--bg));
   padding: 1rem;
 }
 
 .login-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
   padding: 2.5rem 2rem;
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -3285,7 +3304,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .35rem;
   padding: .35rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--bg) 70%, var(--surface));
 }
 
@@ -3307,7 +3326,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .auth-mode-btn--active {
   background: var(--surface);
   color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,.08), inset 0 0 0 1px var(--border);
 }
 
 .oauth-buttons {
@@ -3391,9 +3410,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar {
-  width: var(--sidebar-width);
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 80%, #003d99));
   min-width: var(--sidebar-width);
-  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(0,0,0,.25), 0 2px 6px color-mix(in srgb, var(--accent) 45%, transparent);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -3637,18 +3656,19 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .35rem;
   flex: 1;
   padding: .3rem .4rem;
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 1rem;
   color: var(--muted);
   text-align: left;
   min-width: 0;
-  transition: background .15s, color .15s;
+  transition: background .15s, color .15s, box-shadow .15s;
 }
 .sidebar-list-item-btn:hover { background: var(--bg); color: var(--text); }
 .sidebar-list-item.active .sidebar-list-item-btn {
-  background: color-mix(in srgb, var(--list-accent) 15%, var(--surface));
+  background: color-mix(in srgb, var(--list-accent) 13%, var(--surface));
   color: var(--list-accent);
   font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--list-accent);
 }
 
 .sidebar-list-icon {
