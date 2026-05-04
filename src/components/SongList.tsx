@@ -142,6 +142,12 @@ export default function SongList({
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(listName ?? '');
   const [listIconDraft, setListIconDraft] = useState(listIcon ?? '🎵');
+
+  useEffect(() => {
+    if (!isRenaming) {
+      setRenameValue(listName ?? '');
+    }
+  }, [listName, isRenaming]);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const songNodeRefs = useRef<Map<string, HTMLElement>>(new Map());
   const canDragReorder = Boolean(onMoveSong);
