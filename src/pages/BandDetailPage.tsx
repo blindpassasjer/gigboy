@@ -643,6 +643,9 @@ export default function BandDetailPage() {
         listIcon={band.icon}
         headerMeta={`${band.memberIds.length} member${band.memberIds.length === 1 ? '' : 's'} in this band.`}
         headerVariant="bands"
+        allSongs={allBandsSongs}
+        pickerSourceNote="Showing songs from your other band libraries."
+        onAddSong={canEditBand ? handleAddSong : undefined}
         onRenameList={canEditBand ? (name) => void handleRenameBand(name) : undefined}
         headerActions={(
           <button
