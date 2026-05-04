@@ -110,11 +110,33 @@ service cloud.firestore {
       }
 
       match /stageplots/{stageplotId} {
-        allow read, create, update, delete: if isOwner(userId);
+        allow read: if isOwner(userId)
+          || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+        allow create: if isOwner(userId)
+          || (isSignedIn() && request.resource.data.ownerId == request.auth.uid);
+        allow update: if isOwner(userId)
+          || (
+            isSignedIn()
+            && resource.data.ownerId == request.auth.uid
+            && request.resource.data.ownerId == resource.data.ownerId
+          );
+        allow delete: if isOwner(userId)
+          || (isSignedIn() && resource.data.ownerId == request.auth.uid);
       }
 
       match /technicalRiders/{riderId} {
-        allow read, create, update, delete: if isOwner(userId);
+        allow read: if isOwner(userId)
+          || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+        allow create: if isOwner(userId)
+          || (isSignedIn() && request.resource.data.ownerId == request.auth.uid);
+        allow update: if isOwner(userId)
+          || (
+            isSignedIn()
+            && resource.data.ownerId == request.auth.uid
+            && request.resource.data.ownerId == resource.data.ownerId
+          );
+        allow delete: if isOwner(userId)
+          || (isSignedIn() && resource.data.ownerId == request.auth.uid);
       }
 
       match /trashItems/{trashId} {
