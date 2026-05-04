@@ -5,7 +5,7 @@ interface BrandMarkProps {
 export default function BrandMark({ size }: BrandMarkProps) {
   return (
     <span className="brand-name" style={{ fontSize: size }}>
-      GIGBO<span className="brand-i">i</span>
+      GIGBO<span className="brand-i">Y</span>
     </span>
   );
 }

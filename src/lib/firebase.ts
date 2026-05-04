@@ -31,7 +31,21 @@ const firebaseConfig = hasCompleteFirebaseEnvOverride
     }
   : PUBLIC_FIREBASE_CONFIG;
 
-const missingFirebaseEnv = Object.entries(firebaseConfig)
+const shouldAllowCustomAuthDomain = import.meta.env.VITE_FIREBASE_ALLOW_CUSTOM_AUTH_DOMAIN === 'true';
+const normalizedFirebaseConfig = { ...firebaseConfig };
+const configuredAuthDomain = normalizedFirebaseConfig.authDomain?.trim();
+const configuredProjectId = normalizedFirebaseConfig.projectId?.trim();
+const hasFirebaseHostedAuthDomain = Boolean(
+  configuredAuthDomain
+  && (configuredAuthDomain.endsWith('.firebaseapp.com') || configuredAuthDomain.endsWith('.web.app')),
+);
+
+if (!shouldAllowCustomAuthDomain && configuredAuthDomain && configuredProjectId && !hasFirebaseHostedAuthDomain) {
+  // OAuth popup/redirect handlers are hosted by Firebase Auth on the firebaseapp.com domain.
+  normalizedFirebaseConfig.authDomain = `${configuredProjectId}.firebaseapp.com`;
+}
+
+const missingFirebaseEnv = Object.entries(normalizedFirebaseConfig)
   .filter(([, value]) => !value)
   .map(([key]) => key);
 
@@ -49,7 +63,7 @@ let db: Firestore | null = null;
 let storage: FirebaseStorage | null = null;
 
 if (firebaseEnabled) {
-  const app = initializeApp(firebaseConfig as {
+  const app = initializeApp(normalizedFirebaseConfig as {
     apiKey: string;
     authDomain: string;
     projectId: string;

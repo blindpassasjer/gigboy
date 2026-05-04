@@ -51,6 +51,15 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 ```
 
+Set `VITE_FIREBASE_AUTH_DOMAIN` to your Firebase Auth domain (usually `<project-id>.firebaseapp.com`).
+
+By default, the app will normalize non-Firebase auth domains to `<project-id>.firebaseapp.com` to keep Google/GitHub OAuth popup flows working on non-Firebase hosts.
+If you intentionally use a custom auth domain and have hosted the Firebase auth handlers for it, set:
+
+```
+VITE_FIREBASE_ALLOW_CUSTOM_AUTH_DOMAIN=true
+```
+
 When these are present the app requires login before showing any content.
 
 ## ChordPro format
