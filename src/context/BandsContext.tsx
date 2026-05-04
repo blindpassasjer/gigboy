@@ -583,16 +583,16 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           const nextMemberRoles = memberRoles[userId] === 'editor' || memberRoles[userId] === 'viewer'
             ? memberRoles
             : { ...memberRoles, [userId]: 'editor' };
-          const nextMemberEmails = userEmail
+          const nextMemberEmails = userEmail && memberEmails[userId] !== userEmail
             ? { ...memberEmails, [userId]: userEmail }
             : memberEmails;
-          const nextMemberUsernames = userUsername
+          const nextMemberUsernames = userUsername && memberUsernames[userId] !== userUsername
             ? { ...memberUsernames, [userId]: userUsername }
             : memberUsernames;
-          const nextMemberFullNames = userFullName
+          const nextMemberFullNames = userFullName && memberFullNames[userId] !== userFullName
             ? { ...memberFullNames, [userId]: userFullName }
             : memberFullNames;
-          const nextMemberAvatars = userAvatar
+          const nextMemberAvatars = userAvatar && memberAvatars[userId] !== userAvatar
             ? { ...memberAvatars, [userId]: userAvatar }
             : memberAvatars;
 
