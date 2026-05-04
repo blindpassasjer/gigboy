@@ -26,6 +26,7 @@ import {
   createBandOnServer,
   deleteBandOnServer,
   inviteBandMemberOnServer,
+  repairBandMembershipOnServer,
   removeBandMemberOnServer,
 } from '../lib/bandsApi';
 import {
@@ -485,6 +486,25 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(firebaseEnabled);
   const [migrationUserId, setMigrationUserId] = useState<string | null>(null);
   const [membershipRepairUserId, setMembershipRepairUserId] = useState<string | null>(null);
+  const [serverRepairUserId, setServerRepairUserId] = useState<string | null>(null);
+
+  // Server-side recovery: re-associate this user to likely matching bands by ownerId/username/email.
+  useEffect(() => {
+    if (!userId || serverRepairUserId === userId) return;
+
+    setServerRepairUserId(userId);
+    void repairBandMembershipOnServer({
+      userId,
+      userEmail,
+      username: userUsername,
+    }).then((result) => {
+      if (result.repairedCount > 0) {
+        console.info(`[Folio] Server repair linked ${result.repairedCount} band(s).`);
+      }
+    }).catch((error) => {
+      console.error('[Folio] Server-side band repair failed:', error);
+    });
+  }, [serverRepairUserId, userId, userEmail, userUsername]);
 
   // Repair owned bands if membership linkage was lost (e.g. memberIds missing current user).
   useEffect(() => {

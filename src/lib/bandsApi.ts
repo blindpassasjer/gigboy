@@ -124,3 +124,18 @@ export async function deleteBandOnServer(params: {
     userEmail: params.userEmail,
   });
 }
+
+export async function repairBandMembershipOnServer(params: {
+  userId: string;
+  userEmail: string;
+  username?: string;
+}) {
+  return postJson<{ ok: true; scanned: number; repairedCount: number; repairedBandIds: string[] }>(
+    '/api/bands/repair-membership',
+    { username: params.username },
+    {
+      userId: params.userId,
+      userEmail: params.userEmail,
+    }
+  );
+}
