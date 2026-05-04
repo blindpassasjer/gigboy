@@ -25,6 +25,9 @@
   --notes-draw: #27ae60;
   --chord:      #1a6fc4;
   --chord-bg:   #e6f0fb;
+  --sidebar-accent: var(--accent);
+  --sidebar-hover-bg: var(--chord-bg);
+  --sidebar-active-bg: color-mix(in srgb, var(--sidebar-accent) 13%, var(--surface));
   --radius:     10px;
   --radius-sm:  6px;
   --radius-lg:  14px;
@@ -51,6 +54,9 @@
   --notes-draw: #5be39a;
   --chord:      #6aadff;
   --chord-bg:   #1a2e45;
+  --sidebar-accent: var(--accent);
+  --sidebar-hover-bg: var(--chord-bg);
+  --sidebar-active-bg: color-mix(in srgb, var(--sidebar-accent) 16%, var(--surface));
   --shadow:     0 1px 3px rgba(0,0,0,.24), 0 2px 8px rgba(0,0,0,.2);
   --shadow-md:  0 4px 16px rgba(0,0,0,.32), 0 1px 4px rgba(0,0,0,.24);
   --shadow-lg:  0 8px 32px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3);
@@ -359,20 +365,29 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding-top: 0;
 }
 
-/* Chrome (topbar + sidebar) follows the Solo/Bands toggle */
-[data-library-mode="bands"] .topbar,
-[data-library-mode="bands"] .sidebar-anim {
+/* Topbar follows the Solo/Bands toggle */
+[data-library-mode="bands"] .topbar {
   --accent: var(--bands-hue);
   --accent-h: color-mix(in srgb, var(--bands-hue) 84%, #000);
   --accent-contrast: var(--bands-hue-contrast);
   --chord: var(--bands-hue);
   --chord-bg: var(--bands-hue-soft);
-  --sidebar-active: color-mix(in srgb, var(--bands-hue) 18%, var(--surface));
 }
 
-[data-theme="dark"] :is([data-library-mode="bands"] .topbar, [data-library-mode="bands"] .sidebar-anim) {
+[data-theme="dark"] [data-library-mode="bands"] .topbar {
   --accent-h: color-mix(in srgb, var(--bands-hue) 90%, #fff);
-  --sidebar-active: color-mix(in srgb, var(--bands-hue) 24%, var(--surface));
+}
+
+/* Sidebar uses a lighter bands tint only for interactive highlights, not the whole panel */
+[data-library-mode="bands"] .sidebar-anim {
+  --sidebar-accent: var(--bands-hue);
+  --sidebar-hover-bg: color-mix(in srgb, var(--bands-hue) 10%, var(--surface));
+  --sidebar-active-bg: color-mix(in srgb, var(--bands-hue) 18%, var(--surface));
+}
+
+[data-theme="dark"] [data-library-mode="bands"] .sidebar-anim {
+  --sidebar-hover-bg: color-mix(in srgb, var(--bands-hue) 14%, var(--surface));
+  --sidebar-active-bg: color-mix(in srgb, var(--bands-hue) 24%, var(--surface));
 }
 
 /* Main content follows the actual route context, independently of the toggle */
@@ -3493,7 +3508,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
   transition: background .15s, color .15s;
 }
-.sidebar-icon-btn:hover { background: var(--chord-bg); color: var(--accent); }
+.sidebar-icon-btn:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-accent); }
 
 .sidebar-folders {
   display: flex;
@@ -3571,14 +3586,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
   transition: background .15s, color .15s;
 }
-.sidebar-folder-actions button:hover { background: var(--chord-bg); color: var(--accent); }
+.sidebar-folder-actions button:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-accent); }
 .sidebar-folder-actions button:last-child:hover { background: #fde8e8; color: var(--danger); }
 
 .sidebar-folder-children { display: flex; flex-direction: column; }
 .sidebar-folder-children.drop-active,
 .sidebar-root-lists.drop-active {
-  background: color-mix(in srgb, var(--chord-bg) 55%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--sidebar-hover-bg) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sidebar-accent) 35%, transparent);
   border-radius: 6px;
 }
 
@@ -3591,7 +3606,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 /* List items */
 .sidebar-list-item {
-  --list-accent: var(--accent);
+  --list-accent: var(--sidebar-accent);
   display: flex;
   align-items: center;
   padding: .1rem .5rem .1rem .75rem;
@@ -3665,7 +3680,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 .sidebar-list-item-btn:hover { background: var(--bg); color: var(--text); }
 .sidebar-list-item.active .sidebar-list-item-btn {
-  background: color-mix(in srgb, var(--list-accent) 13%, var(--surface));
+  background: var(--sidebar-active-bg);
   color: var(--list-accent);
   font-weight: 600;
   box-shadow: inset 3px 0 0 var(--list-accent);
