@@ -1,12 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Folder, FolderOpen, ListMusic, ListMusicIcon, Map, Plus, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, ListMusic, Map, Plus, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
-import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
-import { useTechnicalRiders } from '../context/TechnicalRidersContext';
-import { useStageplots } from '../context/StageplotsContext';
 
 const SONG_DRAG_MIME = 'application/x-folio-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-folio-song-id';
@@ -34,37 +31,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     const candidate = (state as { bandId?: unknown }).bandId;
     return typeof candidate === 'string' && candidate.trim() ? candidate : null;
   })();
-  const { songs, trashedSongs } = useSongs();
-  const {
-    songLists,
-    trashedSongLists,
-    activeSongListId,
-    addSongList,
-    addSongToList,
-    clearActiveSelection,
-    setActiveSongListId,
-  } = useSongLists();
-
-  const {
-    setlists,
-    trashedSetlists,
-    activeSetlistId,
-    addSetlist,
-    addSongToSetlist,
-    setActiveSetlistId,
-  } = useSetlists();
-  const {
-    technicalRiders,
-    activeTechnicalRiderId,
-    setActiveTechnicalRiderId,
-    addTechnicalRider,
-  } = useTechnicalRiders();
-  const {
-    stageplots,
-    activeStageplotId,
-    setActiveStageplotId,
-    addStageplot,
-  } = useStageplots();
+  const { songs } = useSongs();
+  const { clearActiveSelection } = useSongLists();
 
   const {
     bands,
@@ -91,18 +59,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addBandTechnicalRider,
   } = useBands();
 
-  const [addingSongList, setAddingSongList] = useState(false);
-  const [addingSetlist, setAddingSetlist] = useState(false);
   const [addingBand, setAddingBand] = useState(false);
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
   const [addingBandStageplotId, setAddingBandStageplotId] = useState<string | null>(null);
-  const [addingStageplot, setAddingStageplot] = useState(false);
-  const [addingTechnicalRider, setAddingTechnicalRider] = useState(false);
   const [addingBandTechnicalRiderId, setAddingBandTechnicalRiderId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
-  const [songDropTargetId, setSongDropTargetId] = useState<string | null>(null);
-  const [setlistDropTargetId, setSetlistDropTargetId] = useState<string | null>(null);
   const [bandLibraryDropTargetId, setBandLibraryDropTargetId] = useState<string | null>(null);
   const [bandSongListDropTargetId, setBandSongListDropTargetId] = useState<string | null>(null);
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
@@ -232,62 +194,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     refreshBandSongs,
   ]);
 
-  const goToLibraryView = () => {
-    setActiveStageplotId(null);
-    setActiveTechnicalRiderId(null);
-    if (pathname !== '/') {
-      navigate('/');
-    }
-    onNavigate?.();
-  };
-
   const clearGlobalSelection = () => {
     clearActiveSelection();
-    setActiveSetlistId(null);
-    setActiveStageplotId(null);
-    setActiveTechnicalRiderId(null);
-  };
-
-  const commitSongList = () => {
-    if (draftName.trim()) addSongList(draftName.trim());
-    setDraftName('');
-    setAddingSongList(false);
-  };
-
-  const commitSetlist = () => {
-    if (draftName.trim()) addSetlist(draftName.trim());
-    setDraftName('');
-    setAddingSetlist(false);
-  };
-
-  const commitStageplot = async () => {
-    const name = draftName.trim();
-    setDraftName('');
-    setAddingStageplot(false);
-    if (!name) return;
-
-    const result = await addStageplot(name);
-    if (result.stageplotId) {
-      clearGlobalSelection();
-      setActiveStageplotId(result.stageplotId);
-      navigate('/');
-      onNavigate?.();
-    }
-  };
-
-  const commitTechnicalRider = async () => {
-    const name = draftName.trim();
-    setDraftName('');
-    setAddingTechnicalRider(false);
-    if (!name) return;
-
-    const result = await addTechnicalRider(name);
-    if (result.riderId) {
-      clearGlobalSelection();
-      setActiveTechnicalRiderId(result.riderId);
-      navigate('/');
-      onNavigate?.();
-    }
   };
 
   const commitBand = async () => {
@@ -364,39 +272,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     }
   };
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>, listId: string) => {
-    const isSongDrop = hasType(event.dataTransfer.types, SONG_DRAG_MIME)
-      || hasType(event.dataTransfer.types, SONG_DRAG_FALLBACK_MIME);
-    if (!isSongDrop) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
-    setSongDropTargetId((c) => (c === listId ? c : listId));
-  };
-
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>, listId: string) => {
-    const songId = readSongIdFromDrag(event);
-    if (!songId) return;
-    event.preventDefault();
-    addSongToList(listId, songId);
-    setSongDropTargetId(null);
-  };
-
-  const handleSetlistDragOver = (event: React.DragEvent<HTMLDivElement>, setlistId: string) => {
-    const isSongDrop = hasType(event.dataTransfer.types, SONG_DRAG_MIME)
-      || hasType(event.dataTransfer.types, SONG_DRAG_FALLBACK_MIME);
-    if (!isSongDrop) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
-    setSetlistDropTargetId((c) => (c === setlistId ? c : setlistId));
-  };
-
-  const handleSetlistDrop = (event: React.DragEvent<HTMLDivElement>, setlistId: string) => {
-    const songId = readSongIdFromDrag(event);
-    if (!songId) return;
-    event.preventDefault();
-    addSongToSetlist(setlistId, songId);
-    setSetlistDropTargetId(null);
-  };
 
   const isBandSonglistsExpanded = (bandId: string) => !collapsedBandSonglistIds.includes(bandId);
 
@@ -877,91 +752,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       </div>
       )}
     </aside>
-    </div>
-  );
-}
-
-interface FolderItemProps {
-  listId: string;
-  name: string;
-  icon?: string;
-  count: number;
-  active: boolean;
-  songDropTarget: boolean;
-  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDragLeave: () => void;
-  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
-  onSelect: () => void;
-}
-
-function FolderItem({
-  name,
-  icon,
-  count,
-  active,
-  songDropTarget,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  onSelect,
-}: FolderItemProps) {
-  return (
-    <div
-      className={`sidebar-list-item${active ? ' active' : ''}${songDropTarget ? ' song-drop-target' : ''}`}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-    >
-      <button type="button" className="sidebar-list-item-btn" onClick={onSelect}>
-        {icon ? (
-          <span className="sidebar-list-icon" aria-hidden="true">{icon}</span>
-        ) : (
-          active ? <FolderOpen size={14} /> : <Folder size={14} />
-        )}
-        <span className="sidebar-list-name">{name}</span>
-        {count > 0 && <span className="sidebar-list-count">{count}</span>}
-      </button>
-    </div>
-  );
-}
-
-interface SetlistItemProps {
-  setlistId: string;
-  name: string;
-  icon?: string;
-  count: number;
-  active: boolean;
-  songDropTarget: boolean;
-  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDragLeave: () => void;
-  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
-  onSelect: () => void;
-}
-
-function SetlistItem({
-  name,
-  icon,
-  count,
-  active,
-  songDropTarget,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  onSelect,
-}: SetlistItemProps) {
-  return (
-    <div
-      className={`sidebar-setlist-item${active ? ' active' : ''}${songDropTarget ? ' song-drop-target' : ''}`}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-    >
-      <button type="button" className="sidebar-setlist-item-btn" onClick={onSelect}>
-        {icon ? <span className="sidebar-list-icon" aria-hidden="true">{icon}</span> : active ? <ListMusicIcon size={14} /> : <ListMusic size={14} />}
-        <span className="sidebar-setlist-name">{name}</span>
-        {songDropTarget && <span className="sidebar-setlist-drop-label">Drop song</span>}
-        {count > 0 && <span className="sidebar-setlist-count">{count}</span>}
-      </button>
     </div>
   );
 }
