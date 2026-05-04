@@ -83,14 +83,22 @@ export interface PublicSongEntry {
   artist?: string;
 }
 
+export interface PublicSetlistSongEntry extends PublicSongEntry {
+  note?: string;
+}
+
 export interface Setlist extends CollaborationMetadata {
   id: string;
   name: string;
   icon?: string;
   songIds: string[];
+  /** Optional note keyed by song ID for setlist-specific performance cues. */
+  songNotes?: Record<string, string>;
   publicShareEnabled?: boolean;
   /** Denormalized song titles/artists for unauthenticated public reads. */
   publicSongs?: PublicSongEntry[];
+  /** Denormalized setlist notes for unauthenticated public reads. */
+  publicSongNotes?: Record<string, string>;
   /** Band name denormalized into the setlist for unauthenticated public reads. */
   bandName?: string;
   createdAt?: string;

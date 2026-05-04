@@ -198,6 +198,14 @@ function normalizeBandSetlist(id: string, data: Record<string, unknown>): Setlis
     songIds: Array.isArray(data.songIds)
       ? data.songIds.filter((entry): entry is string => typeof entry === 'string')
       : [],
+    songNotes:
+      typeof data.songNotes === 'object' && data.songNotes !== null
+        ? Object.fromEntries(
+            Object.entries(data.songNotes as Record<string, unknown>).filter(
+              ([, value]) => typeof value === 'string'
+            )
+          ) as Record<string, string>
+        : undefined,
     publicShareEnabled: data.publicShareEnabled === true ? true : undefined,
     publicSongs: Array.isArray(data.publicSongs)
       ? (data.publicSongs as unknown[]).filter((entry): entry is PublicSongEntry =>
@@ -428,6 +436,7 @@ interface BandsContextValue {
   addSongToBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
   removeSongFromBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
   moveSongInBandSetlist: (bandId: string, setlistId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
+  updateSongNoteInBandSetlist: (bandId: string, setlistId: string, songId: string, note: string) => Promise<string | null>;
   addBandStageplot: (bandId: string, name: string) => Promise<{ stageplotId: string | null; error: string | null }>;
   renameBandStageplot: (bandId: string, stageplotId: string, name: string) => Promise<string | null>;
   updateBandStageplotIcon: (bandId: string, stageplotId: string, icon?: string) => Promise<string | null>;
@@ -1692,7 +1701,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const now = new Date().toISOString();
     const nextSetlists = previousSetlists.map((setlist) => (
       setlist.id === setlistId
-        ? { ...setlist, publicShareEnabled: enabled || undefined, publicSongs, bandName: enabled ? band.name : undefined, updatedAt: now }
+        ? {
+            ...setlist,
+            publicShareEnabled: enabled || undefined,
+            publicSongs,
+            publicSongNotes: enabled ? (targetSetlist.songNotes ?? {}) : undefined,
+            bandName: enabled ? band.name : undefined,
+            updatedAt: now,
+          }
         : setlist
     ));
 
@@ -1705,6 +1721,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       const updateData: Record<string, unknown> = {
         publicShareEnabled: enabled || null,
         publicSongs: publicSongs ?? null,
+        publicSongNotes: enabled ? (targetSetlist.songNotes ?? {}) : null,
         bandName: enabled ? band.name : null,
         updatedAt: now,
       };
@@ -1861,10 +1878,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     const now = new Date().toISOString();
     const nextSongIds = targetSetlist.songIds.filter((entry) => entry !== songId);
+    const nextSongNotes = { ...(targetSetlist.songNotes ?? {}) };
+    delete nextSongNotes[songId];
     const bandSongs = bandSongsByBandId[bandId] ?? [];
     const nextSetlist = {
       ...targetSetlist,
       songIds: nextSongIds,
+      songNotes: Object.keys(nextSongNotes).length > 0 ? nextSongNotes : undefined,
       publicSongs: targetSetlist.publicShareEnabled ? buildPublicSongs(nextSongIds, bandSongs) : targetSetlist.publicSongs,
       updatedAt: now,
     };
@@ -1880,6 +1900,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     try {
       const updatePayload: Record<string, unknown> = {
         songIds: nextSetlist.songIds,
+        songNotes: nextSetlist.songNotes ?? null,
         updatedAt: now,
       };
       if (targetSetlist.publicShareEnabled) {
@@ -1951,6 +1972,74 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return error instanceof Error ? error.message : 'Failed to reorder band setlist.';
     }
   }, [bandSetlistsByBandId, bandSongsByBandId, bands, userId]);
+
+  const updateSongNoteInBandSetlist = useCallback(async (
+    bandId: string,
+    setlistId: string,
+    songId: string,
+    note: string
+  ) => {
+    if (!db || !userId) {
+      return 'Band setlists require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const isMember = band.memberIds.includes(userId);
+    if (!isMember) return 'You do not have permission to edit this band.';
+
+    const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const targetSetlist = previousSetlists.find((setlist) => setlist.id === setlistId);
+    if (!targetSetlist) return null;
+    if (!targetSetlist.songIds.includes(songId)) return null;
+
+    const normalizedNote = note.trim();
+    const previousNote = targetSetlist.songNotes?.[songId] ?? '';
+    if (normalizedNote === previousNote) {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+    const nextSongNotes = { ...(targetSetlist.songNotes ?? {}) };
+    if (normalizedNote) {
+      nextSongNotes[songId] = normalizedNote;
+    } else {
+      delete nextSongNotes[songId];
+    }
+
+    const nextSetlist = {
+      ...targetSetlist,
+      songNotes: Object.keys(nextSongNotes).length > 0 ? nextSongNotes : undefined,
+      updatedAt: now,
+    };
+    const nextSetlists = previousSetlists.map((setlist) => (
+      setlist.id === setlistId ? nextSetlist : setlist
+    ));
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSetlists,
+    }));
+
+    try {
+      const updateData: Record<string, unknown> = {
+        songNotes: nextSetlist.songNotes ?? null,
+        updatedAt: now,
+      };
+      if (targetSetlist.publicShareEnabled) {
+        updateData.publicSongNotes = nextSetlist.songNotes ?? null;
+      }
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), updateData, { merge: true });
+      return null;
+    } catch (error) {
+      setBandSetlistsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSetlists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band setlist song note.';
+    }
+  }, [bandSetlistsByBandId, bands, userId]);
 
   const addBandStageplot = useCallback(async (bandId: string, name: string) => {
     if (!db || !userId) {
@@ -2946,6 +3035,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     addSongToBandSetlist,
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
+    updateSongNoteInBandSetlist,
     addBandStageplot,
     renameBandStageplot,
     updateBandStageplotIcon,
@@ -2990,6 +3080,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     leaveBand,
     loading,
     moveSongInBandSetlist,
+    updateSongNoteInBandSetlist,
     moveSongInBandSongList,
     moveBandSong,
     refreshBandSetlists,

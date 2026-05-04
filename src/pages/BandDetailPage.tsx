@@ -58,6 +58,7 @@ export default function BandDetailPage() {
     addSongToBandSetlist,
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
+    updateSongNoteInBandSetlist,
     renameBandStageplot,
     updateBandStageplotIcon,
     setBandStageplotPublicShare,
@@ -492,6 +493,7 @@ export default function BandDetailPage() {
           setlistId={activeBandSetlist.id}
           setlistName={activeBandSetlist.name}
           songs={setlistSongs}
+          songNotes={activeBandSetlist.songNotes}
           allSongs={bandSongs}
           setlistIconOverride={activeBandSetlist.icon}
           canDeleteOverride={canEditBand}
@@ -517,6 +519,13 @@ export default function BandDetailPage() {
           }}
           onMoveSong={async (songId, beforeSongId) => {
             const error = await moveSongInBandSetlist(band.id, activeBandSetlist.id, songId, beforeSongId);
+            if (error) {
+              toast.error(error);
+            }
+          }}
+          onUpdateSongNote={async (songId, note) => {
+            if (!canEditBand) return;
+            const error = await updateSongNoteInBandSetlist(band.id, activeBandSetlist.id, songId, note);
             if (error) {
               toast.error(error);
             }

@@ -4263,6 +4263,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   text-overflow: ellipsis;
 }
 
+.setlist-song-note-preview {
+  font-size: .78rem;
+  color: color-mix(in srgb, var(--song-item-accent) 58%, var(--song-item-text));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .setlist-song-meta {
   display: flex;
   gap: .5rem;
@@ -4289,13 +4297,72 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   justify-content: center;
 }
+
+.setlist-note-btn {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: .2rem;
+  color: var(--song-item-muted);
+  opacity: 0;
+  transition: opacity .12s, color .12s, background .12s;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.setlist-note-btn:hover,
+.setlist-note-btn.has-note {
+  opacity: 1;
+  color: var(--song-item-accent);
+  background: var(--song-item-chip-bg);
+}
+
 .setlist-remove-btn:hover {
   opacity: 1;
   color: var(--danger);
   background: var(--song-item-chip-bg);
 }
+.setlist-song-item:hover .setlist-note-btn,
 .setlist-song-item:hover .setlist-remove-btn {
   opacity: 1;
+}
+
+.setlist-song-note-editor {
+  margin: .4rem 0 0 5.1rem;
+  padding: .55rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+
+.setlist-song-note-label {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--song-item-muted);
+}
+
+.setlist-song-note-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 3.8rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: .45rem .55rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.setlist-song-note-actions {
+  display: flex;
+  gap: .4rem;
+  justify-content: flex-end;
 }
 
 .song-picker-overlay {

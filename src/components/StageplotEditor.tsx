@@ -569,28 +569,28 @@ export default function StageplotEditor({
                   </button>
                 </div>
               </div>
-            </div>
-            </div>
-            <div className="stageplot-toolbar-panel stageplot-toolbar-panel--actions">
-              <div className="stageplot-toolbar-section-heading">Annotations</div>
-              <div className="stageplot-toolbar-actions">
-                <button
-                  type="button"
-                  className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
-                  onClick={() => setDrawEnabled((prev) => !prev)}
-                >
-                  <PenLine size={12} /> Draw
-                </button>
-                <button type="button" className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0}>
-                  <Undo2 size={12} /> Undo
-                </button>
-                <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
-                  <X size={12} /> Clear
-                </button>
-                <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
-                  <Trash2 size={12} /> Remove
-                </button>
+              <div className="stageplot-palette-category stageplot-palette-category--annotations">
+                <div className="stageplot-toolbar-section-heading">Annotations</div>
+                <div className="stageplot-toolbar-actions">
+                  <button
+                    type="button"
+                    className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
+                    onClick={() => setDrawEnabled((prev) => !prev)}
+                  >
+                    <PenLine size={12} /> Draw
+                  </button>
+                  <button type="button" className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0}>
+                    <Undo2 size={12} /> Undo
+                  </button>
+                  <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
+                    <X size={12} /> Clear
+                  </button>
+                  <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
+                    <Trash2 size={12} /> Remove
+                  </button>
+                </div>
               </div>
+            </div>
             </div>
           </div>
         ) : null}

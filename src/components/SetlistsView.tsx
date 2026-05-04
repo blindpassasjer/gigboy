@@ -13,10 +13,12 @@ interface Props {
   setlistId: string;
   setlistName: string;
   songs: Song[];
+  songNotes?: Record<string, string>;
   allSongs: Song[];
   onMoveSong: (songId: string, beforeSongId: string | null) => void;
   onRemoveSong: (songId: string) => void;
   onAddSong: (songId: string) => void;
+  onUpdateSongNote?: (songId: string, note: string) => void | Promise<void>;
   extraActions?: ReactNode;
   /** Override the concert mode URL (defaults to /setlists/:id/concert) */
   concertRoute?: string;
@@ -44,10 +46,12 @@ export default function SetlistsView({
   setlistId,
   setlistName,
   songs,
+  songNotes,
   allSongs,
   onMoveSong,
   onRemoveSong,
   onAddSong,
+  onUpdateSongNote,
   extraActions,
   concertRoute,
   setlistIconOverride,
@@ -71,6 +75,8 @@ export default function SetlistsView({
   const [pickerQuery, setPickerQuery] = useState('');
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [iconDraft, setIconDraft] = useState(effectiveIcon ?? '🎵');
+  const [editingSongNoteId, setEditingSongNoteId] = useState<string | null>(null);
+  const [songNoteDraft, setSongNoteDraft] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   const startRenaming = () => {
@@ -82,6 +88,11 @@ export default function SetlistsView({
     setIconDraft(effectiveIcon ?? '🎵');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveIcon]);
+
+  useEffect(() => {
+    setEditingSongNoteId(null);
+    setSongNoteDraft('');
+  }, [setlistId]);
 
   const availableSongs = useMemo(() => {
     const songIdsInSetlist = new Set(songs.map((song) => song.id));
@@ -131,6 +142,28 @@ export default function SetlistsView({
   const closeSongPicker = () => {
     setShowSongPicker(false);
     setPickerQuery('');
+  };
+
+  const startEditingSongNote = (songId: string) => {
+    const currentNote = songNotes?.[songId] ?? '';
+    setEditingSongNoteId(songId);
+    setSongNoteDraft(currentNote);
+  };
+
+  const cancelEditingSongNote = () => {
+    setEditingSongNoteId(null);
+    setSongNoteDraft('');
+  };
+
+  const saveSongNote = async (songId: string) => {
+    if (!onUpdateSongNote) return;
+
+    try {
+      await onUpdateSongNote(songId, songNoteDraft);
+      cancelEditingSongNote();
+    } catch {
+      toast.error('Failed to save song note.');
+    }
   };
 
   const handleDeleteSetlist = async () => {
@@ -419,7 +452,11 @@ export default function SetlistsView({
           className={`setlist-songs${draggingSongId ? ' is-dragging' : ''}`}
           onDragLeave={handleListDragLeave}
         >
-          {songs.map((song, index) => (
+          {songs.map((song, index) => {
+            const note = (songNotes?.[song.id] ?? '').trim();
+            const isEditingNote = editingSongNoteId === song.id;
+
+            return (
             <Fragment key={song.id}>
               <li
                 className={`setlist-drop-slot${dropTargetIndex === index ? ' active' : ''}`}
@@ -453,6 +490,7 @@ export default function SetlistsView({
                     <div className="setlist-song-info">
                       <span className="setlist-song-title">{song.title}</span>
                       {song.artist && <span className="setlist-song-artist">{song.artist}</span>}
+                      {note ? <span className="setlist-song-note-preview">Note: {note}</span> : null}
                     </div>
                     <div className="setlist-song-meta">
                       <LanguageBadge code={song.language} size="sm" />
@@ -464,6 +502,24 @@ export default function SetlistsView({
                     </div>
                   </Link>
 
+                  {onUpdateSongNote ? (
+                    <button
+                      type="button"
+                      className={`setlist-note-btn${note ? ' has-note' : ''}`}
+                      onClick={() => {
+                        if (isEditingNote) {
+                          cancelEditingSongNote();
+                        } else {
+                          startEditingSongNote(song.id);
+                        }
+                      }}
+                      title={note ? `Edit note for ${song.title}` : `Add note for ${song.title}`}
+                      aria-label={note ? `Edit note for ${song.title}` : `Add note for ${song.title}`}
+                    >
+                      <PenLine size={14} />
+                    </button>
+                  ) : null}
+
                   <button
                     className="setlist-remove-btn"
                     onClick={() => onRemoveSong(song.id)}
@@ -473,9 +529,39 @@ export default function SetlistsView({
                     <Trash2 size={16} />
                   </button>
                 </div>
+                  {isEditingNote ? (
+                    <div className="setlist-song-note-editor">
+                      <label htmlFor={`song-note-${song.id}`} className="setlist-song-note-label">Song note</label>
+                      <textarea
+                        id={`song-note-${song.id}`}
+                        className="setlist-song-note-input"
+                        value={songNoteDraft}
+                        onChange={(event) => setSongNoteDraft(event.target.value)}
+                        placeholder="Example: Add trumpet in chorus / 2 extra vocal mics"
+                        rows={2}
+                      />
+                      <div className="setlist-song-note-actions">
+                        <button
+                          type="button"
+                          className="setlist-action-btn"
+                          onClick={() => void saveSongNote(song.id)}
+                        >
+                          Save note
+                        </button>
+                        <button
+                          type="button"
+                          className="setlist-action-btn setlist-action-btn--secondary"
+                          onClick={cancelEditingSongNote}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
               </li>
             </Fragment>
-          ))}
+            );
+          })}
           {songs.length > 0 && (
             <li
               className={`setlist-drop-slot setlist-drop-slot-end${dropTargetIndex === songs.length ? ' active' : ''}`}

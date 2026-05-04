@@ -115,6 +115,7 @@ interface SetlistsContextValue {
   addSongToSetlist: (setlistId: string, songId: string) => void;
   removeSongFromSetlist: (setlistId: string, songId: string) => void;
   moveSongInSetlist: (setlistId: string, songId: string, beforeSongId: string | null) => void;
+  updateSongNoteInSetlist: (setlistId: string, songId: string, note: string) => void;
   setActiveSetlistId: (id: string | null) => void;
   clearActiveSelection: () => void;
 }
@@ -412,6 +413,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       ...setlist,
       publicShareEnabled: enabled || undefined,
       publicSongs: enabled ? (publicSongs ?? setlist.publicSongs ?? []) : undefined,
+      publicSongNotes: enabled ? (setlist.songNotes ?? {}) : undefined,
       updatedAt: new Date().toISOString(),
     };
     const previousSetlists = setlists;
@@ -466,9 +468,13 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       if (!setlist) return prev;
       if (!canEditSetlist(setlist, userId)) return prev;
 
+      const nextSongNotes = { ...(setlist.songNotes ?? {}) };
+      delete nextSongNotes[songId];
+
       const nextSetlist = {
         ...setlist,
         songIds: setlist.songIds.filter((id) => id !== songId),
+        songNotes: Object.keys(nextSongNotes).length > 0 ? nextSongNotes : undefined,
         updatedAt: new Date().toISOString(),
       };
       const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
@@ -513,6 +519,49 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
+  const updateSongNoteInSetlist = useCallback((setlistId: string, songId: string, note: string) => {
+    setSetlists((prev) => {
+      const setlist = prev.find((entry) => entry.id === setlistId);
+      if (!setlist) return prev;
+      if (!canEditSetlist(setlist, userId)) return prev;
+      if (!setlist.songIds.includes(songId)) return prev;
+
+      const normalizedNote = note.trim();
+      const previousNote = setlist.songNotes?.[songId] ?? '';
+      if (normalizedNote === previousNote) return prev;
+
+      const nextSongNotes = { ...(setlist.songNotes ?? {}) };
+      if (normalizedNote) {
+        nextSongNotes[songId] = normalizedNote;
+      } else {
+        delete nextSongNotes[songId];
+      }
+
+      const nextSetlist: Setlist = {
+        ...setlist,
+        songNotes: Object.keys(nextSongNotes).length > 0 ? nextSongNotes : undefined,
+        publicSongNotes: setlist.publicShareEnabled
+          ? (Object.keys(nextSongNotes).length > 0 ? nextSongNotes : undefined)
+          : setlist.publicSongNotes,
+        updatedAt: new Date().toISOString(),
+      };
+      const nextSetlists = prev.map((entry) => (entry.id === setlistId ? nextSetlist : entry));
+
+      if (db && userId) {
+        void writeSetlist(nextSetlist, userId).catch((error) => {
+          if (isPermissionDeniedError(error)) {
+            logSetlistsPermissionHelp(error);
+          } else {
+            console.error('Failed to update setlist song note in Firestore.', error);
+          }
+          setSetlists(prev);
+        });
+      }
+
+      return nextSetlists;
+    });
+  }, [userId]);
+
   const clearActiveSelection = useCallback(() => {
     setActiveSetlistId(null);
   }, []);
@@ -533,6 +582,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
         addSongToSetlist,
         removeSongFromSetlist,
         moveSongInSetlist,
+        updateSongNoteInSetlist,
         setActiveSetlistId,
         clearActiveSelection,
       }}

@@ -329,6 +329,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (name) {
       const result = await createBand(name);
       if (result.bandId) {
+        setActiveBandId(result.bandId);
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('folio-active-band-id', result.bandId);
+        }
         clearSoloSelection();
         navigate(`/bands/${result.bandId}/library`);
         onNavigate?.();

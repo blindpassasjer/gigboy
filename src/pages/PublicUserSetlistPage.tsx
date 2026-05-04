@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import type { PublicSongEntry } from '../types';
+import type { PublicSetlistSongEntry } from '../types';
 
 interface PublicSetlist {
   name: string;
   icon?: string;
-  songs: PublicSongEntry[];
+  songs: PublicSetlistSongEntry[];
 }
 
 type Status = 'loading' | 'not-found' | 'private' | 'error' | 'ready';
@@ -44,7 +44,15 @@ export default function PublicUserSetlistPage() {
         }
 
         const rawSongs = Array.isArray(data.publicSongs) ? data.publicSongs as unknown[] : [];
-        const songs: PublicSongEntry[] = rawSongs
+        const rawPublicSongNotes =
+          typeof data.publicSongNotes === 'object' && data.publicSongNotes !== null
+            ? data.publicSongNotes as Record<string, unknown>
+            : {};
+        const publicSongNotes = Object.fromEntries(
+          Object.entries(rawPublicSongNotes).filter(([, value]) => typeof value === 'string')
+        ) as Record<string, string>;
+
+        const songs: PublicSetlistSongEntry[] = rawSongs
           .filter((entry): entry is Record<string, unknown> =>
             typeof entry === 'object' && entry !== null && typeof (entry as Record<string, unknown>).id === 'string'
           )
@@ -52,6 +60,9 @@ export default function PublicUserSetlistPage() {
             id: entry.id as string,
             title: typeof entry.title === 'string' ? entry.title : 'Untitled',
             ...(typeof entry.artist === 'string' ? { artist: entry.artist } : {}),
+            ...(typeof publicSongNotes[entry.id as string] === 'string'
+              ? { note: publicSongNotes[entry.id as string] }
+              : {}),
           }));
 
         setSetlist({
@@ -124,6 +135,9 @@ export default function PublicUserSetlistPage() {
                 <span className="public-setlist-song-title">{song.title}</span>
                 {song.artist && (
                   <span className="public-setlist-song-artist">{song.artist}</span>
+                )}
+                {song.note && (
+                  <span className="public-setlist-song-note">{song.note}</span>
                 )}
               </div>
             </li>

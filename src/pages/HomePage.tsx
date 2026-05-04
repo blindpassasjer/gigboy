@@ -48,6 +48,7 @@ export default function HomePage() {
     addSongToSetlist,
     removeSongFromSetlist,
     moveSongInSetlist,
+    updateSongNoteInSetlist,
   } = useSetlists();
   const {
     stageplots,
@@ -342,10 +343,12 @@ export default function HomePage() {
           setlistId={activeSetlist.id}
           setlistName={activeSetlist.name}
           songs={setlistSongs}
+          songNotes={activeSetlist.songNotes}
           allSongs={songs}
           onAddSong={(songId) => addSongToSetlist(activeSetlist.id, songId)}
           onMoveSong={(songId, beforeSongId) => moveSongInSetlist(activeSetlist.id, songId, beforeSongId)}
           onRemoveSong={(songId) => removeSongFromSetlist(activeSetlist.id, songId)}
+          onUpdateSongNote={(songId, note) => updateSongNoteInSetlist(activeSetlist.id, songId, note)}
           extraActions={(
             <button
               type="button"
