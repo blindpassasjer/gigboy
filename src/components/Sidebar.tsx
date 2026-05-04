@@ -334,7 +334,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           window.localStorage.setItem('folio-active-band-id', result.bandId);
         }
         clearSoloSelection();
-        navigate(`/bands/${result.bandId}/library`);
+        navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
         onNavigate?.();
       }
     }

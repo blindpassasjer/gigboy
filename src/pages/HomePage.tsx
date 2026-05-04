@@ -345,6 +345,7 @@ export default function HomePage() {
           songs={setlistSongs}
           songNotes={activeSetlist.songNotes}
           allSongs={songs}
+          availableSongLists={songLists}
           onAddSong={(songId) => addSongToSetlist(activeSetlist.id, songId)}
           onMoveSong={(songId, beforeSongId) => moveSongInSetlist(activeSetlist.id, songId, beforeSongId)}
           onRemoveSong={(songId) => removeSongFromSetlist(activeSetlist.id, songId)}

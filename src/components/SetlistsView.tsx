@@ -2,7 +2,7 @@ import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, Smile, FileText } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { Song } from '../types';
+import type { Song, SongList } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
 import toast from '../utils/anchoredToast';
@@ -15,6 +15,7 @@ interface Props {
   songs: Song[];
   songNotes?: Record<string, string>;
   allSongs: Song[];
+  availableSongLists?: SongList[];
   onMoveSong: (songId: string, beforeSongId: string | null) => void;
   onRemoveSong: (songId: string) => void;
   onAddSong: (songId: string) => void;
@@ -48,6 +49,7 @@ export default function SetlistsView({
   songs,
   songNotes,
   allSongs,
+  availableSongLists = [],
   onMoveSong,
   onRemoveSong,
   onAddSong,
@@ -113,6 +115,26 @@ export default function SetlistsView({
     });
   }, [availableSongs, pickerQuery]);
 
+  const songListPickerEntries = useMemo(() => {
+    const availableSongIds = new Set(availableSongs.map((song) => song.id));
+    const query = pickerQuery.trim().toLowerCase();
+
+    return availableSongLists
+      .map((songList) => {
+        const addableSongIds = songList.songIds.filter((songId) => availableSongIds.has(songId));
+        return {
+          songList,
+          addableSongIds,
+        };
+      })
+      .filter(({ songList, addableSongIds }) => {
+        if (addableSongIds.length === 0) return false;
+        if (!query) return true;
+        return songList.name.toLowerCase().includes(query);
+      })
+      .sort((a, b) => a.songList.name.localeCompare(b.songList.name));
+  }, [availableSongLists, availableSongs, pickerQuery]);
+
   useEffect(() => {
     if (isRenaming) {
       renameInputRef.current?.focus();
@@ -142,6 +164,10 @@ export default function SetlistsView({
   const closeSongPicker = () => {
     setShowSongPicker(false);
     setPickerQuery('');
+  };
+
+  const handleAddSongList = (songIds: string[]) => {
+    songIds.forEach((songId) => onAddSong(songId));
   };
 
   const startEditingSongNote = (songId: string) => {
@@ -614,6 +640,37 @@ export default function SetlistsView({
             </div>
 
             <div className="song-picker-results" role="list">
+              {songListPickerEntries.length > 0 ? (
+                <>
+                  <p className="song-picker-section-title">Songlists</p>
+                  {songListPickerEntries.map(({ songList, addableSongIds }) => (
+                    <div
+                      key={songList.id}
+                      className="song-picker-item"
+                      role="listitem"
+                    >
+                      <div className="song-picker-item-main">
+                        <span className="song-picker-song-title">{songList.name}</span>
+                        <span className="song-picker-song-artist">
+                          Add {addableSongIds.length} song{addableSongIds.length === 1 ? '' : 's'} from this list
+                        </span>
+                      </div>
+                      <button
+                        className="song-picker-add-btn"
+                        onClick={() => handleAddSongList(addableSongIds)}
+                        title={`Add all available songs from ${songList.name}`}
+                      >
+                        <Plus size={14} /> Add list
+                      </button>
+                    </div>
+                  ))}
+                </>
+              ) : null}
+
+              {songListPickerEntries.length > 0 && filteredAvailableSongs.length > 0 ? (
+                <p className="song-picker-section-title">Songs</p>
+              ) : null}
+
               {filteredAvailableSongs.length === 0 ? (
                 <p className="song-picker-empty">No songs available to add.</p>
               ) : (

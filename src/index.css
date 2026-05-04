@@ -4448,6 +4448,15 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .8rem 1rem;
 }
 
+.song-picker-section-title {
+  margin: .45rem 0 .2rem;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .song-picker-item {
   --song-item-accent: var(--accent);
   --song-item-bg: var(--bg);
