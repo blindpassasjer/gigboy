@@ -414,6 +414,7 @@ export default function BandDetailPage() {
           songNotes={activeBandSetlist.songNotes}
           allSongs={bandSongs}
           availableSongLists={bandSongLists}
+          bandId={band.id}
           setlistIconOverride={activeBandSetlist.icon}
           canDeleteOverride={canEditBand}
           concertRoute={`/bands/${band.id}/setlists/${activeBandSetlist.id}/concert`}

@@ -1,5 +1,5 @@
 import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, Smile, FileText } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Song, SongList } from '../types';
@@ -33,6 +33,8 @@ interface Props {
   onDeleteOverride?: () => void | Promise<void>;
   /** Override the update-icon handler (skips SetlistsContext) */
   onUpdateIconOverride?: (icon: string | undefined) => void;
+  /** Band ID — when set, song links will carry it as navigation state so SongPage can find band songs */
+  bandId?: string;
 }
 
 const SONG_DRAG_MIME = 'application/x-gigboy-song-id';
@@ -61,8 +63,10 @@ export default function SetlistsView({
   onRenameOverride,
   onDeleteOverride,
   onUpdateIconOverride,
+  bandId,
 }: Props) {
   const { renameSetlist, updateSetlistIcon, deleteSetlist, setlists } = useSetlists();
+  const { pathname } = useLocation();
   const currentSetlist = setlists.find((l) => l.id === setlistId);
   const effectiveIcon = setlistIconOverride !== undefined ? setlistIconOverride : currentSetlist?.icon;
   const canDeleteSetlist = canDeleteOverride !== undefined
@@ -523,7 +527,11 @@ export default function SetlistsView({
 
                   <div className="setlist-song-position">{index + 1}</div>
 
-                  <Link to={`/songs/${song.id}`} className="setlist-song-link">
+                  <Link
+                    to={`/songs/${song.id}`}
+                    state={{ backTo: pathname, backLabel: setlistName, ...(bandId ? { bandId } : {}) }}
+                    className="setlist-song-link"
+                  >
                     <div className="setlist-song-info">
                       <span className="setlist-song-title">{song.title}</span>
                       {song.artist && <span className="setlist-song-artist">{song.artist}</span>}
