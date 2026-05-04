@@ -484,6 +484,96 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandTrashByBandId, setBandTrashByBandId] = useState<Record<string, BandTrashItem[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
   const [migrationUserId, setMigrationUserId] = useState<string | null>(null);
+  const [membershipRepairUserId, setMembershipRepairUserId] = useState<string | null>(null);
+
+  // Repair owned bands if membership linkage was lost (e.g. memberIds missing current user).
+  useEffect(() => {
+    if (!db || !userId || membershipRepairUserId === userId) return;
+
+    setMembershipRepairUserId(userId);
+
+    const repairOwnedBandsMembership = async () => {
+      const ownedBandsSnapshot = await getDocs(
+        query(collection(db, BANDS_COLLECTION), where('ownerId', '==', userId))
+      );
+
+      if (ownedBandsSnapshot.size === 0) return;
+
+      let repairedCount = 0;
+
+      await Promise.all(
+        ownedBandsSnapshot.docs.map(async (bandDoc) => {
+          const bandData = bandDoc.data() as Record<string, unknown>;
+          const memberIds = Array.isArray(bandData.memberIds)
+            ? bandData.memberIds.filter((entry): entry is string => typeof entry === 'string')
+            : [];
+
+          const memberRoles = typeof bandData.memberRoles === 'object' && bandData.memberRoles !== null
+            ? { ...(bandData.memberRoles as Record<string, unknown>) }
+            : {};
+          const memberEmails = typeof bandData.memberEmails === 'object' && bandData.memberEmails !== null
+            ? { ...(bandData.memberEmails as Record<string, unknown>) }
+            : {};
+          const memberUsernames = typeof bandData.memberUsernames === 'object' && bandData.memberUsernames !== null
+            ? { ...(bandData.memberUsernames as Record<string, unknown>) }
+            : {};
+          const memberFullNames = typeof bandData.memberFullNames === 'object' && bandData.memberFullNames !== null
+            ? { ...(bandData.memberFullNames as Record<string, unknown>) }
+            : {};
+          const memberAvatars = typeof bandData.memberAvatars === 'object' && bandData.memberAvatars !== null
+            ? { ...(bandData.memberAvatars as Record<string, unknown>) }
+            : {};
+
+          const nextMemberIds = memberIds.includes(userId) ? memberIds : [...memberIds, userId];
+          const nextMemberRoles = memberRoles[userId] === 'editor' || memberRoles[userId] === 'viewer'
+            ? memberRoles
+            : { ...memberRoles, [userId]: 'editor' };
+          const nextMemberEmails = userEmail
+            ? { ...memberEmails, [userId]: userEmail }
+            : memberEmails;
+          const nextMemberUsernames = userUsername
+            ? { ...memberUsernames, [userId]: userUsername }
+            : memberUsernames;
+          const nextMemberFullNames = userFullName
+            ? { ...memberFullNames, [userId]: userFullName }
+            : memberFullNames;
+          const nextMemberAvatars = userAvatar
+            ? { ...memberAvatars, [userId]: userAvatar }
+            : memberAvatars;
+
+          const needsRepair = (
+            nextMemberIds.length !== memberIds.length
+            || nextMemberRoles !== memberRoles
+            || nextMemberEmails !== memberEmails
+            || nextMemberUsernames !== memberUsernames
+            || nextMemberFullNames !== memberFullNames
+            || nextMemberAvatars !== memberAvatars
+          );
+
+          if (!needsRepair) return;
+
+          repairedCount += 1;
+          await setDoc(doc(db, BANDS_COLLECTION, bandDoc.id), {
+            memberIds: nextMemberIds,
+            memberRoles: nextMemberRoles,
+            memberEmails: nextMemberEmails,
+            memberUsernames: nextMemberUsernames,
+            memberFullNames: nextMemberFullNames,
+            memberAvatars: nextMemberAvatars,
+            updatedAt: new Date().toISOString(),
+          }, { merge: true });
+        })
+      );
+
+      if (repairedCount > 0) {
+        console.info(`[Folio] Repaired membership for ${repairedCount} owned band(s).`);
+      }
+    };
+
+    void repairOwnedBandsMembership().catch((error) => {
+      console.error('[Folio] Owned band membership repair failed:', error);
+    });
+  }, [membershipRepairUserId, userId, userEmail, userUsername, userFullName, userAvatar]);
 
   // Run solo-to-Solo band migration on first user login
   useEffect(() => {
