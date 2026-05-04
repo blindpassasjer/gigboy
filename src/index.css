@@ -3415,9 +3415,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar {
-  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 80%, #003d99));
+  width: var(--sidebar-width);
+  background: var(--surface);
   min-width: var(--sidebar-width);
-  box-shadow: 0 4px 14px rgba(0,0,0,.25), 0 2px 6px color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: var(--shadow);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -3470,13 +3471,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .sidebar-mode-toggle-btn:hover {
   color: var(--text);
-  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+  border-color: color-mix(in srgb, var(--muted) 20%, var(--border));
 }
 
 .sidebar-mode-toggle-btn.active {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 35%, var(--bg));
+  border-color: color-mix(in srgb, var(--muted) 28%, var(--border));
 }
 
 .sidebar-title {
@@ -3745,7 +3746,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-top: auto;
   transition: color .15s;
 }
-.sidebar-new-list-btn:hover { color: var(--accent); }
+.sidebar-new-list-btn:hover { color: var(--text); }
 
 /* ─── Setlists section in sidebar ──────────────────────────────────────────── */
 .sidebar-setlists-section {
@@ -3920,9 +3921,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   text-align: left;
   transition: color .15s;
 }
-.sidebar-new-setlist-btn:hover { color: var(--accent); }
+.sidebar-new-setlist-btn:hover { color: var(--text); }
 .sidebar-new-setlist-btn--primary {
-  color: var(--accent);
+  color: var(--text);
   font-weight: 600;
 }
 
