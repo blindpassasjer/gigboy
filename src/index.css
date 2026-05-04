@@ -1150,6 +1150,39 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: #ecf1f5;
 }
 
+.song-list-page .song-action-btn--edit,
+.song-list-page .song-action-btn--remove,
+.song-list-page .song-action-btn--delete {
+  background: transparent;
+}
+
+.song-list-page .song-action-btn--edit {
+  border-color: transparent;
+}
+
+.song-list-page .song-action-btn--edit:hover {
+  border-color: color-mix(in srgb, #1f5ea8 32%, transparent);
+  background: color-mix(in srgb, #1f5ea8 10%, transparent);
+}
+
+.song-list-page .song-action-btn--remove {
+  border-color: transparent;
+}
+
+.song-list-page .song-action-btn--remove:hover {
+  border-color: color-mix(in srgb, #8d4d13 34%, transparent);
+  background: color-mix(in srgb, #8d4d13 10%, transparent);
+}
+
+.song-list-page .song-action-btn--delete {
+  border-color: transparent;
+}
+
+.song-list-page .song-action-btn--delete:hover {
+  border-color: color-mix(in srgb, var(--danger) 36%, transparent);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -4341,6 +4374,16 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .setlist-action-btn--secondary:hover {
   background: var(--bg);
+}
+
+.setlist-action-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.setlist-action-btn--ghost:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .setlist-action-btn--accent {

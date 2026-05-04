@@ -13,8 +13,8 @@ import {
 import type { RiderEquipmentItem, TechnicalRider, TechnicalRiderLine } from '../types';
 import { useAuth } from './AuthContext';
 
-const KEY_TECHNICAL_RIDERS = 'gigboi-technical-riders';
-const KEY_ACTIVE_TECHNICAL_RIDER = 'gigboi-active-technical-rider';
+const KEY_TECHNICAL_RIDERS = 'gigboy-technical-riders';
+const KEY_ACTIVE_TECHNICAL_RIDER = 'gigboy-active-technical-rider';
 const TECHNICAL_RIDERS_COLLECTION = 'technicalRiders';
 
 function readLocal<T>(key: string, fallback: T): T {

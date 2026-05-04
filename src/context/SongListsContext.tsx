@@ -16,8 +16,8 @@ import {
 import { useAuth } from './AuthContext';
 import { moveIdBefore } from '../utils/arrayUtils';
 
-const KEY_FOLDERS = 'gigboi-folders';
-const KEY_LISTS = 'gigboi-song-lists';
+const KEY_FOLDERS = 'gigboy-folders';
+const KEY_LISTS = 'gigboy-song-lists';
 const CATEGORIES_COLLECTION = 'songListCategories';
 const LISTS_COLLECTION = 'songLists';
 

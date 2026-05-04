@@ -49,8 +49,8 @@ export default defineConfig(({ command }) => ({
         'pwa-maskable-512.png',
       ],
       manifest: {
-        name: 'GIGBOi',
-        short_name: 'GIGBOi',
+        name: 'GIGBOY',
+        short_name: 'GIGBOY',
         description: 'Your songs. Your stage.',
 
         theme_color: '#0f172a',

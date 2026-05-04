@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const KEY = 'gigboi-dark-mode';
+const KEY = 'gigboy-dark-mode';
 
 function getInitial(): boolean {
   const stored = localStorage.getItem(KEY);

@@ -1,4 +1,4 @@
-# GIGBOi
+# GIGBOY
 
 A personal web-based songbook that stores songs in **ChordPro** format. Supports multiple languages, setlists, transposing, and in-browser audio recording. Runs as a static SPA with optional Firebase authentication and Cloudflare Workers or Pages hosting.
 

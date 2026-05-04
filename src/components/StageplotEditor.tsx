@@ -22,7 +22,7 @@ interface StageplotEditorProps {
   onCopyPublicLink: () => Promise<void>;
 }
 
-const ITEM_DRAG_MIME = 'application/x-gigboi-stageplot-item-template';
+const ITEM_DRAG_MIME = 'application/x-gigboy-stageplot-item-template';
 const CUSTOM_ITEM_TEMPLATE = { kind: 'custom', label: 'Custom item', color: '#6b7280' } as const;
 
 interface PaletteItem {

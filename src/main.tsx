@@ -20,7 +20,7 @@ async function setupPwa() {
       }
     },
     onOfflineReady() {
-      console.info('GIGBOi is ready to work offline.')
+      console.info('GIGBOY is ready to work offline.')
     },
   })
 }

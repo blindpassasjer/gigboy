@@ -5,8 +5,8 @@ import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 
-const SONG_DRAG_MIME = 'application/x-gigboi-song-id';
-const SONG_DRAG_FALLBACK_MIME = 'text/x-gigboi-song-id';
+const SONG_DRAG_MIME = 'application/x-gigboy-song-id';
+const SONG_DRAG_FALLBACK_MIME = 'text/x-gigboy-song-id';
 
 function hasType(types: readonly string[], mime: string): boolean {
   return Array.from(types).includes(mime);
@@ -75,7 +75,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const sidebarMode: 'bands' = 'bands';
   const [activeBandId, setActiveBandId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
-    try { return window.localStorage.getItem('gigboi-active-band-id'); } catch { return null; }
+    try { return window.localStorage.getItem('gigboy-active-band-id'); } catch { return null; }
   });
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const bandSwitcherRef = useRef<HTMLDivElement>(null);
@@ -86,7 +86,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (activeBandId && visibleBands.some((b) => b.id === activeBandId)) return;
     const firstId = (visibleBands[0] ?? bands[0]).id;
     setActiveBandId(firstId);
-    if (typeof window !== 'undefined') window.localStorage.setItem('gigboi-active-band-id', firstId);
+    if (typeof window !== 'undefined') window.localStorage.setItem('gigboy-active-band-id', firstId);
   }, [visibleBands, bands, activeBandId]);
 
   // Close band switcher on outside click
@@ -105,7 +105,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (!stateBandId) return;
     setActiveBandId((current) => (current === stateBandId ? current : stateBandId));
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem('gigboi-active-band-id', stateBandId);
+      window.localStorage.setItem('gigboy-active-band-id', stateBandId);
     }
   }, [stateBandId]);
 
@@ -207,7 +207,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       if (result.bandId) {
         setActiveBandId(result.bandId);
         if (typeof window !== 'undefined') {
-          window.localStorage.setItem('gigboi-active-band-id', result.bandId);
+          window.localStorage.setItem('gigboy-active-band-id', result.bandId);
         }
         clearGlobalSelection();
         navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
@@ -423,7 +423,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 onClick={() => {
                   clearGlobalSelection();
                   setActiveBandId(band.id);
-                  if (typeof window !== 'undefined') window.localStorage.setItem('gigboi-active-band-id', band.id);
+                  if (typeof window !== 'undefined') window.localStorage.setItem('gigboy-active-band-id', band.id);
                   setBandSwitcherOpen(false);
                   navigate(`/bands/${band.id}/library`);
                   onNavigate?.();

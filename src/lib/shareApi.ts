@@ -11,8 +11,8 @@ async function buildHeaders(_headers: ApiHeaders) {
   const normalizedEmail = _headers.userEmail.trim().toLowerCase();
   return {
     'Content-Type': 'application/json',
-    ...(normalizedEmail ? { 'x-gigboi-user-email': normalizedEmail } : {}),
-    ...(_headers.userId ? { 'x-gigboi-user-id': _headers.userId } : {}),
+    ...(normalizedEmail ? { 'x-gigboy-user-email': normalizedEmail } : {}),
+    ...(_headers.userId ? { 'x-gigboy-user-id': _headers.userId } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }

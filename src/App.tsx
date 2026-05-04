@@ -45,7 +45,7 @@ function AuthenticatedApp() {
   const { user, loading, authEnabled } = useAuth();
 
   if (loading) {
-    return <div className="app-status">Loading Gigboi…</div>;
+    return <div className="app-status">Loading Gigboy…</div>;
   }
 
   if (authEnabled && !user) return <LoginPage />;

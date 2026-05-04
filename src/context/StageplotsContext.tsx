@@ -6,8 +6,8 @@ import { db } from '../lib/firebase';
 import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import { useAuth } from './AuthContext';
 
-const KEY_STAGEPLOTS = 'gigboi-stageplots';
-const KEY_ACTIVE_STAGEPLOT = 'gigboi-active-stageplot';
+const KEY_STAGEPLOTS = 'gigboy-stageplots';
+const KEY_ACTIVE_STAGEPLOT = 'gigboy-active-stageplot';
 const STAGEPLOTS_COLLECTION = 'stageplots';
 
 function readLocal<T>(key: string, fallback: T): T {

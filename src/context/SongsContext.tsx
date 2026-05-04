@@ -21,7 +21,7 @@ import {
 } from '../lib/trash';
 import { useAuth } from './AuthContext';
 
-const LOCAL_STORAGE_KEY = 'gigboi-local-songs';
+const LOCAL_STORAGE_KEY = 'gigboy-local-songs';
 
 function compareSongs(a: Song, b: Song) {
   const aHasSortOrder = typeof a.sortOrder === 'number';

@@ -37,7 +37,7 @@ export default function Layout({ children }: Props) {
   const [persistedBandId, setPersistedBandId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
-      return window.localStorage.getItem('gigboi-active-band-id');
+      return window.localStorage.getItem('gigboy-active-band-id');
     } catch {
       return null;
     }
@@ -179,7 +179,7 @@ export default function Layout({ children }: Props) {
 
     const syncPersistedBandId = () => {
       try {
-        setPersistedBandId(window.localStorage.getItem('gigboi-active-band-id'));
+        setPersistedBandId(window.localStorage.getItem('gigboy-active-band-id'));
       } catch {
         setPersistedBandId(null);
       }
@@ -195,7 +195,7 @@ export default function Layout({ children }: Props) {
     const nextBandId = routeBandId ?? stateBandId;
     if (!nextBandId) return;
     try {
-      window.localStorage.setItem('gigboi-active-band-id', nextBandId);
+      window.localStorage.setItem('gigboy-active-band-id', nextBandId);
       setPersistedBandId(nextBandId);
     } catch {
       // Ignore localStorage sync failures.

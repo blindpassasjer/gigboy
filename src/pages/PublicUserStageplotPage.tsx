@@ -171,7 +171,7 @@ export default function PublicUserStageplotPage() {
       </div>
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link">Gigboi</Link>
+        <Link to="/" className="public-setlist-footer-link">Gigboy</Link>
       </footer>
     </div>
   );

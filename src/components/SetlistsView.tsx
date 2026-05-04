@@ -35,8 +35,8 @@ interface Props {
   onUpdateIconOverride?: (icon: string | undefined) => void;
 }
 
-const SONG_DRAG_MIME = 'application/x-gigboi-song-id';
-const SONG_DRAG_FALLBACK_MIME = 'text/x-gigboi-song-id';
+const SONG_DRAG_MIME = 'application/x-gigboy-song-id';
+const SONG_DRAG_FALLBACK_MIME = 'text/x-gigboy-song-id';
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;

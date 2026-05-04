@@ -20,7 +20,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userEmail = ctx.request.headers.get('x-gigboi-user-email')?.trim().toLowerCase() ?? '';
+  const userEmail = ctx.request.headers.get('x-gigboy-user-email')?.trim().toLowerCase() ?? '';
   const body = await ctx.request.json<{ username?: string; claimOwnership?: boolean }>().catch(() => ({}));
   const requestedUsername = body.username?.trim().toLowerCase() ?? '';
   const claimOwnership = body.claimOwnership === true;

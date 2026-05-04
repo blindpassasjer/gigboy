@@ -59,7 +59,7 @@ function getPostLoginDestination(): { path: string; state?: { bandId: string } }
   }
 
   try {
-    const lastBandId = window.localStorage.getItem('gigboi-active-band-id')?.trim();
+    const lastBandId = window.localStorage.getItem('gigboy-active-band-id')?.trim();
     if (lastBandId) {
       return {
         path: `/bands/${lastBandId}/library`,
@@ -75,7 +75,7 @@ function getPostLoginDestination(): { path: string; state?: { bandId: string } }
 
 function LoginHero() {
   return (
-    <aside className="login-hero" aria-label="GIGBOi features">
+    <aside className="login-hero" aria-label="GIGBOY features">
       <div className="login-brand login-brand--hero">
         <BrandMark size={30} />
       </div>
