@@ -5107,6 +5107,10 @@ input, select, textarea { font: inherit; color: var(--text); }
     transform: translateX(0);
   }
 
+  .sidebar--mobile .sidebar-header {
+    border-bottom: none;
+  }
+
   .sidebar--mobile .sidebar-folders {
     flex: 0 0 auto;
   }
