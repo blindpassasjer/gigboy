@@ -220,7 +220,7 @@ export default function Layout({ children }: Props) {
         >
           <Menu size={20} />
         </button>
-        <Link to="/" className="topbar-brand">
+        <Link to={themedBandId ? `/bands/${themedBandId}/library` : '/'} className="topbar-brand">
           <BookOpen size={22} />
           <span>Folio</span>
         </Link>
