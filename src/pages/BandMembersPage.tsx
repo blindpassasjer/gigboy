@@ -5,7 +5,7 @@ import { UserPlus } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import UserAvatar from '../components/UserAvatar';
-import type { CollaborationPermission } from '../types';
+
 import { showConfirmToast } from '../utils/toastDialogs';
 import { createBandInviteLinkOnServer } from '../lib/bandsApi';
 
@@ -17,7 +17,6 @@ export default function BandMembersPage() {
     bands,
     loading,
     inviteMember,
-    changeMemberRole,
     removeMember,
     leaveBand,
     deleteBand,
@@ -25,9 +24,7 @@ export default function BandMembersPage() {
 
   const band = bands.find((entry) => entry.id === id) ?? null;
   const [inviteUsername, setInviteUsername] = useState('');
-  const [inviteRole, setInviteRole] = useState<CollaborationPermission>('viewer');
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
-  const [busyRoleId, setBusyRoleId] = useState<string | null>(null);
   const [busyInvite, setBusyInvite] = useState(false);
   const [busyInviteLink, setBusyInviteLink] = useState(false);
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
@@ -52,7 +49,7 @@ export default function BandMembersPage() {
   const handleInvite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBusyInvite(true);
-    const error = await inviteMember(band.id, inviteUsername, inviteRole);
+    const error = await inviteMember(band.id, inviteUsername, 'editor');
     setBusyInvite(false);
 
     if (error) {
@@ -89,7 +86,7 @@ export default function BandMembersPage() {
         userId: user.id,
         userEmail: user.email,
         bandId: band.id,
-        role: inviteRole,
+        role: 'editor',
       });
 
       setLastInviteLink(result.inviteUrl);
@@ -105,19 +102,6 @@ export default function BandMembersPage() {
     } finally {
       setBusyInviteLink(false);
     }
-  };
-
-  const handleChangeRole = async (memberId: string, role: CollaborationPermission) => {
-    setBusyRoleId(memberId);
-    const error = await changeMemberRole(band.id, memberId, role);
-    setBusyRoleId(null);
-
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
-    toast.success('Role updated.');
   };
 
   const handleLeaveBand = async () => {
@@ -180,17 +164,6 @@ export default function BandMembersPage() {
                 disabled={!canEditBand}
               />
             </label>
-            <label className="share-menu-field">
-              <span>Role</span>
-              <select
-                value={inviteRole}
-                onChange={(event) => setInviteRole(event.target.value as CollaborationPermission)}
-                disabled={!canEditBand}
-              >
-                <option value="viewer">Viewer</option>
-                <option value="editor">Editor</option>
-              </select>
-            </label>
             <button type="submit" className="setlist-action-btn" disabled={!canEditBand || busyInvite}>
               <UserPlus size={15} /> {busyInvite ? 'Sending…' : 'Send invite'}
             </button>
@@ -228,22 +201,7 @@ export default function BandMembersPage() {
                   <div className="bands-member-copy">
                     <strong>{username ?? email}</strong>
                     <span>{username ? email : ''}</span>
-                    {memberId === band.ownerId ? (
-                      <span>{role}</span>
-                    ) : isOwner ? (
-                      <select
-                        className="bands-member-role-select"
-                        value={role}
-                        disabled={busyRoleId === memberId}
-                        onChange={(event) => void handleChangeRole(memberId, event.target.value as CollaborationPermission)}
-                        aria-label="Member role"
-                      >
-                        <option value="viewer">Viewer</option>
-                        <option value="editor">Editor</option>
-                      </select>
-                    ) : (
-                      <span>{role}</span>
-                    )}
+                    <span>{role}</span>
                   </div>
                   <div className="bands-member-actions">
                     {canRemove ? (

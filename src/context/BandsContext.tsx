@@ -463,6 +463,7 @@ interface BandsContextValue {
   addBandSongList: (bandId: string, name: string) => Promise<{ songListId: string | null; error: string | null }>;
   renameBandSongList: (bandId: string, songListId: string, name: string) => Promise<string | null>;
   updateBandSongListIcon: (bandId: string, songListId: string, icon?: string) => Promise<string | null>;
+  updateBandLibraryAppearance: (bandId: string, appearance: { icon?: string; color?: string }) => Promise<string | null>;
   updateBandLibraryIcon: (bandId: string, icon?: string) => Promise<string | null>;
   deleteBandSongList: (bandId: string, songListId: string) => Promise<string | null>;
   addSongToBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
@@ -1116,7 +1117,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bands, userId]);
 
-  const updateBandLibraryIcon = useCallback(async (bandId: string, icon?: string) => {
+  const updateBandLibraryAppearance = useCallback(async (
+    bandId: string,
+    appearance: { icon?: string; color?: string }
+  ) => {
     if (!db || !userId) {
       return 'Bands require cloud sync.';
     }
@@ -1132,8 +1136,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     const previousBands = bands;
     const now = new Date().toISOString();
+    const { icon, color } = appearance;
     const nextBands = bands
-      .map((entry) => (entry.id === bandId ? { ...entry, icon, updatedAt: now } : entry))
+      .map((entry) => (entry.id === bandId ? { ...entry, icon, color, updatedAt: now } : entry))
       .sort(compareBands);
 
     setBands(nextBands);
@@ -1141,14 +1146,23 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId), {
         icon,
+        color,
         updatedAt: now,
       }, { merge: true });
       return null;
     } catch (error) {
       setBands(previousBands);
-      return error instanceof Error ? error.message : 'Failed to update band library icon.';
+      return error instanceof Error ? error.message : 'Failed to update band appearance.';
     }
   }, [bands, userId]);
+
+  const updateBandLibraryIcon = useCallback(async (bandId: string, icon?: string) => {
+    const band = bands.find((entry) => entry.id === bandId);
+    return updateBandLibraryAppearance(bandId, {
+      icon,
+      color: band?.color,
+    });
+  }, [bands, updateBandLibraryAppearance]);
 
   const inviteMember = useCallback(async (bandId: string, recipientUsername: string, role: CollaborationPermission) => {
     if (!userId) {
@@ -3249,6 +3263,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     addSongToBandLibrary,
     updateBandSong,
     removeSongFromBandLibrary,
+    updateBandLibraryAppearance,
     updateBandLibraryIcon,
     moveBandSong,
     addBandSongList,
@@ -3331,6 +3346,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     removeSongFromBandSongList,
     removeSongFromBandLibrary,
     restoreBandTrashItem,
+    updateBandLibraryAppearance,
     updateBandLibraryIcon,
     updateBandSetlistIcon,
     setBandStageplotPublicShare,

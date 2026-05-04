@@ -118,7 +118,15 @@ textarea {
     .view-toggle-btn,
     .transpose-btn,
     .song-toolbar-tool-btn,
+    .song-notes-draw-toggle,
     .instrument-toggle-btn,
+    .notes-toolbar-btn,
+    .notes-author-chip,
+    .song-media-play-btn,
+    .song-media-external-icon,
+    .rec-btn,
+    .play-btn,
+    .icon-btn,
     .visual-metronome-toggle,
     .visual-metronome-tap,
     .visual-metronome-sound,
@@ -132,6 +140,17 @@ textarea {
     .concert-chip-btn
   ) {
     min-height: 44px;
+  }
+
+  :where(
+    .song-media-play-btn,
+    .song-media-external-icon,
+    .play-btn,
+    .icon-btn
+  ) {
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
   }
 }
 
@@ -1588,9 +1607,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
   border: 1px solid var(--border);
   border-radius: 9px;
-  min-height: 2.35rem;
-  padding: .35rem .75rem;
-  font-size: .76rem;
+  min-height: 2.5rem;
+  padding: .4rem .85rem;
+  font-size: .8rem;
   font-weight: 600;
   color: var(--muted);
   background: var(--surface);
@@ -2494,8 +2513,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: inline-flex;
   align-items: center;
   gap: .3rem;
-  padding: .22rem .65rem;
-  font-size: .78rem;
+  min-height: 2.35rem;
+  padding: .35rem .72rem;
+  font-size: .8rem;
   font-weight: 600;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -2543,8 +2563,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: inline-flex;
   align-items: center;
   gap: .3rem;
-  padding: .18rem .55rem;
-  font-size: .76rem;
+  min-height: 2.2rem;
+  padding: .32rem .65rem;
+  font-size: .8rem;
   font-weight: 600;
   border: 1px solid var(--border);
   border-radius: 100px;
@@ -4081,6 +4102,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .setlist-action-btn--secondary:hover {
   background: var(--bg);
+}
+
+.setlist-action-btn--accent {
+  background: linear-gradient(120deg, #0f766e, #14b8a6);
+  border-color: #0f766e;
+  color: #f4fffd;
+}
+
+.setlist-action-btn--accent:hover {
+  background: linear-gradient(120deg, #0d5f5a, #0d9488);
+  border-color: #0d5f5a;
 }
 
 .setlist-action-btn--concert {
@@ -6170,6 +6202,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .bands-page .setlist-action-btn--secondary:hover {
   background: var(--bands-hue-soft);
+}
+
+.bands-page .setlist-action-btn--accent {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--bands-hue) 86%, #0f766e), color-mix(in srgb, var(--bands-hue) 68%, #14b8a6));
+  border-color: color-mix(in srgb, var(--bands-hue) 84%, #0f766e);
+  color: #f4fffd;
+}
+
+.bands-page .setlist-action-btn--accent:hover {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--bands-hue) 82%, #0d5f5a), color-mix(in srgb, var(--bands-hue) 64%, #0d9488));
+  border-color: color-mix(in srgb, var(--bands-hue) 80%, #0d5f5a);
 }
 
 .bands-page .setlist-action-btn--danger,

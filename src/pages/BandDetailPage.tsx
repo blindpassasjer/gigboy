@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
-import { Link2, UserPlus, Users, X } from 'lucide-react';
+import { Link2, SlidersHorizontal, UserPlus, Users, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import SongList from '../components/SongList';
@@ -10,8 +10,30 @@ import StageplotEditor from '../components/StageplotEditor';
 import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
 import TrashView from '../components/TrashView';
 import UserAvatar from '../components/UserAvatar';
-import type { CollaborationPermission, Song } from '../types';
+import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
+import { ICON_OPTIONS } from '../lib/iconOptions';
+
+const BAND_COLOR_OPTIONS = [
+  '#c33232',
+  '#d35400',
+  '#a66e00',
+  '#2e7d32',
+  '#00897b',
+  '#0288d1',
+  '#1565c0',
+  '#5e35b1',
+  '#ad1457',
+  '#6d4c41',
+  '#455a64',
+  '#37474f',
+] as const;
+
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
+}
 
 export default function BandDetailPage() {
   const { id } = useParams();
@@ -35,7 +57,6 @@ export default function BandDetailPage() {
     refreshBandTechnicalRiders,
     refreshBandTrash,
     inviteMember,
-    changeMemberRole,
     removeMember,
     leaveBand,
     deleteBand,
@@ -44,7 +65,7 @@ export default function BandDetailPage() {
     moveBandSong,
     renameBandSongList,
     updateBandSongListIcon,
-    updateBandLibraryIcon,
+    updateBandLibraryAppearance,
     deleteBandSongList,
     addSongToBandSongList,
     removeSongFromBandSongList,
@@ -79,10 +100,14 @@ export default function BandDetailPage() {
   const bandTechnicalRiders = id ? (bandTechnicalRidersByBandId[id] ?? []) : [];
   const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
   const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [customizeName, setCustomizeName] = useState('');
+  const [customizeIcon, setCustomizeIcon] = useState('🎵');
+  const [customizeColor, setCustomizeColor] = useState('#c33232');
+  const [useAutoColor, setUseAutoColor] = useState(true);
+  const [busyCustomize, setBusyCustomize] = useState(false);
   const [inviteUsername, setInviteUsername] = useState('');
-  const [inviteRole, setInviteRole] = useState<CollaborationPermission>('viewer');
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
-  const [busyRoleId, setBusyRoleId] = useState<string | null>(null);
   const [busyInvite, setBusyInvite] = useState(false);
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
 
@@ -155,6 +180,14 @@ export default function BandDetailPage() {
   }, [band, id, refreshBandTrash]);
 
   useEffect(() => {
+    if (!showCustomizeModal || !band) return;
+    setCustomizeName(band.name);
+    setCustomizeIcon(band.icon ?? '🎵');
+    setCustomizeColor(band.color ?? '#c33232');
+    setUseAutoColor(!band.color);
+  }, [band, showCustomizeModal]);
+
+  useEffect(() => {
     if (!showMembersModal) return;
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -166,6 +199,19 @@ export default function BandDetailPage() {
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [showMembersModal]);
+
+  useEffect(() => {
+    if (!showCustomizeModal) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowCustomizeModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showCustomizeModal]);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -186,7 +232,7 @@ export default function BandDetailPage() {
   const handleInvite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBusyInvite(true);
-    const error = await inviteMember(band.id, inviteUsername, inviteRole);
+    const error = await inviteMember(band.id, inviteUsername, 'editor');
     setBusyInvite(false);
 
     if (error) {
@@ -209,19 +255,6 @@ export default function BandDetailPage() {
     }
 
     toast.success('Member removed.');
-  };
-
-  const handleChangeRole = async (memberId: string, role: CollaborationPermission) => {
-    setBusyRoleId(memberId);
-    const error = await changeMemberRole(band.id, memberId, role);
-    setBusyRoleId(null);
-
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
-    toast.success('Role updated.');
   };
 
   const handleLeaveBand = async () => {
@@ -251,8 +284,6 @@ export default function BandDetailPage() {
       toast.error(error);
       return;
     }
-
-    toast.success('Song copied to band library.');
   };
 
   const handleRemoveSong = async (song: Song) => {
@@ -322,11 +353,60 @@ export default function BandDetailPage() {
     toast.success('Band renamed.');
   };
 
+  const handleSaveCustomize = async () => {
+    if (!canEditBand) {
+      setShowCustomizeModal(false);
+      return;
+    }
+
+    const trimmedName = customizeName.trim();
+    if (!trimmedName) {
+      toast.error('Band name is required.');
+      return;
+    }
+
+    const normalizedIcon = normalizeEmojiIcon(customizeIcon);
+    const nextColor = useAutoColor ? undefined : customizeColor;
+
+    setBusyCustomize(true);
+
+    if (trimmedName !== band.name) {
+      const renameError = await renameBand(band.id, trimmedName);
+      if (renameError) {
+        setBusyCustomize(false);
+        toast.error(renameError);
+        return;
+      }
+    }
+
+    const currentIcon = band.icon;
+    const currentColor = band.color;
+    const appearanceChanged = currentIcon !== normalizedIcon || currentColor !== nextColor;
+
+    if (appearanceChanged) {
+      const appearanceError = await updateBandLibraryAppearance(band.id, {
+        icon: normalizedIcon,
+        color: nextColor,
+      });
+
+      if (appearanceError) {
+        setBusyCustomize(false);
+        toast.error(appearanceError);
+        return;
+      }
+    }
+
+    setBusyCustomize(false);
+    setShowCustomizeModal(false);
+    toast.success('Band customization saved.');
+  };
+
   const handleDeleteBandSongList = async () => {
     if (!activeBandSongList) return;
 
-    const confirmed = window.confirm(
-      `Move songlist "${activeBandSongList.name}" to trash? It will be automatically deleted after 30 days.`
+    const confirmed = await showConfirmToast(
+      `Move songlist "${activeBandSongList.name}" to trash? It will be automatically deleted after 30 days.`,
+      { confirmLabel: 'Move to trash' }
     );
     if (!confirmed) return;
 
@@ -342,8 +422,9 @@ export default function BandDetailPage() {
   const handleDeleteBandSetlist = async () => {
     if (!activeBandSetlist) return;
 
-    const confirmed = window.confirm(
-      `Move setlist "${activeBandSetlist.name}" to trash? It will be automatically deleted after 30 days.`
+    const confirmed = await showConfirmToast(
+      `Move setlist "${activeBandSetlist.name}" to trash? It will be automatically deleted after 30 days.`,
+      { confirmLabel: 'Move to trash' }
     );
     if (!confirmed) return;
 
@@ -746,14 +827,27 @@ export default function BandDetailPage() {
         headerVariant="bands"
         onRenameList={canEditBand ? (name) => void handleRenameBand(name) : undefined}
         headerActions={(
-          <button
-            type="button"
-            className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={() => navigate(`/bands/${band.id}/members`)}
-            title="Manage band members"
-          >
-            <Users size={14} />
-          </button>
+          <>
+            {canEditBand ? (
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => setShowCustomizeModal(true)}
+                title="Customize band"
+              >
+                <SlidersHorizontal size={14} />
+                <span>Customize</span>
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => navigate(`/bands/${band.id}/members`)}
+              title="Manage band members"
+            >
+              <Users size={14} />
+            </button>
+          </>
         )}
         allSongs={allBandsSongs}
         pickerSourceNote="Showing songs from all bands' libraries. Selected songs will be copied to this band's library."
@@ -761,16 +855,123 @@ export default function BandDetailPage() {
         onRemoveSong={handleRemoveSong}
         onAddSong={handleAddSong}
         onMoveSong={handleMoveSong}
-        onUpdateListAppearance={(appearance) => {
-          void (async () => {
-            const error = await updateBandLibraryIcon(band.id, appearance.icon);
-            if (error) {
-              toast.error(error);
-            }
-          })();
-        }}
         bandId={band.id}
       />
+
+      {showCustomizeModal && (
+        <div className="modal-overlay" onClick={() => setShowCustomizeModal(false)}>
+          <div className="modal-panel" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Customize band</h2>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowCustomizeModal(false)}
+                aria-label="Close customize panel"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-content">
+              <section className="bands-panel">
+                <div className="share-menu-field">
+                  <span>Name</span>
+                  <input
+                    type="text"
+                    value={customizeName}
+                    onChange={(event) => setCustomizeName(event.target.value)}
+                    placeholder="Band name"
+                    maxLength={80}
+                  />
+                </div>
+
+                <div className="list-appearance-group" style={{ marginTop: '0.75rem' }}>
+                  <span className="list-appearance-label">Icon</span>
+                  <div className="emoji-choice-grid" role="listbox" aria-label="Band icon options">
+                    {ICON_OPTIONS.map((emoji) => {
+                      const selected = customizeIcon === emoji;
+                      return (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                          onClick={() => setCustomizeIcon(emoji)}
+                          aria-label={`Choose icon ${emoji}`}
+                          aria-pressed={selected}
+                        >
+                          {emoji}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="list-appearance-group" style={{ marginTop: '0.75rem' }}>
+                  <span className="list-appearance-label">Color</span>
+                  <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
+                    {BAND_COLOR_OPTIONS.map((colorHex) => {
+                      const selected = !useAutoColor && customizeColor.toLowerCase() === colorHex.toLowerCase();
+                      return (
+                        <button
+                          key={colorHex}
+                          type="button"
+                          className={`color-swatch-btn${selected ? ' active' : ''}`}
+                          style={{ backgroundColor: colorHex }}
+                          onClick={() => {
+                            setCustomizeColor(colorHex);
+                            setUseAutoColor(false);
+                          }}
+                          aria-label={`Choose color ${colorHex}`}
+                          aria-pressed={selected}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="share-menu-field" style={{ marginTop: '0.5rem' }}>
+                    <span>Custom color</span>
+                    <input
+                      type="color"
+                      value={customizeColor}
+                      onChange={(event) => {
+                        setCustomizeColor(event.target.value);
+                        setUseAutoColor(false);
+                      }}
+                      aria-label="Custom band color"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
+                    onClick={() => setUseAutoColor(true)}
+                  >
+                    Use auto color
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '.5rem', marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    className="setlist-action-btn"
+                    onClick={() => void handleSaveCustomize()}
+                    disabled={busyCustomize}
+                  >
+                    {busyCustomize ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => setShowCustomizeModal(false)}
+                    disabled={busyCustomize}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showMembersModal && (
         <div className="modal-overlay" onClick={() => setShowMembersModal(false)}>
@@ -805,22 +1006,7 @@ export default function BandDetailPage() {
                         <div className="bands-member-copy">
                           <strong>{username ?? email}</strong>
                           <span>{username ? email : ''}</span>
-                          {memberId === band.ownerId ? (
-                            <span>{role}</span>
-                          ) : isOwner ? (
-                            <select
-                              className="bands-member-role-select"
-                              value={role}
-                              disabled={busyRoleId === memberId}
-                              onChange={(event) => void handleChangeRole(memberId, event.target.value as CollaborationPermission)}
-                              aria-label="Member role"
-                            >
-                              <option value="viewer">Viewer</option>
-                              <option value="editor">Editor</option>
-                            </select>
-                          ) : (
-                            <span>{role}</span>
-                          )}
+                          <span>{role}</span>
                         </div>
                         <div className="bands-member-actions">
                           {canRemove ? (
@@ -876,17 +1062,6 @@ export default function BandDetailPage() {
                       placeholder="bandmate"
                       disabled={!canEditBand}
                     />
-                  </label>
-                  <label className="share-menu-field">
-                    <span>Role</span>
-                    <select
-                      value={inviteRole}
-                      onChange={(event) => setInviteRole(event.target.value as CollaborationPermission)}
-                      disabled={!canEditBand}
-                    >
-                      <option value="viewer">Viewer</option>
-                      <option value="editor">Editor</option>
-                    </select>
                   </label>
                   <button type="submit" className="setlist-action-btn" disabled={!canEditBand || busyInvite}>
                     <UserPlus size={15} /> {busyInvite ? 'Sending…' : 'Send invite'}

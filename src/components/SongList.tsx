@@ -536,7 +536,7 @@ export default function SongList({
           {canTriggerAddSongs && (
             <button
               type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
+              className="setlist-action-btn setlist-action-btn--secondary setlist-action-btn--accent"
               onClick={canAddSongsToList ? openSongPicker : onAddSongsClick}
               title="Add songs"
             >
