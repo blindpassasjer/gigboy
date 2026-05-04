@@ -67,6 +67,17 @@ function compareBands(a: Band, b: Band) {
   return a.name.localeCompare(b.name);
 }
 
+function mergeBandsById(primary: Band[], secondary: Band[]) {
+  const merged = new Map<string, Band>();
+  primary.forEach((band) => merged.set(band.id, band));
+  secondary.forEach((band) => {
+    if (!merged.has(band.id)) {
+      merged.set(band.id, band);
+    }
+  });
+  return Array.from(merged.values()).sort(compareBands);
+}
+
 function canEditBandLibrary(band: Band, userId: string | null) {
   if (!userId) return false;
   return band.ownerId === userId || band.memberRoles[userId] === 'editor';
@@ -618,10 +629,19 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const snapshot = await getDocs(query(collection(db, BANDS_COLLECTION), where('memberIds', 'array-contains', userId)));
-    const nextBands = snapshot.docs
+    const [memberSnapshot, ownerSnapshot] = await Promise.all([
+      getDocs(query(collection(db, BANDS_COLLECTION), where('memberIds', 'array-contains', userId))),
+      getDocs(query(collection(db, BANDS_COLLECTION), where('ownerId', '==', userId))),
+    ]);
+
+    const memberBands = memberSnapshot.docs
       .map((entry) => normalizeBand(entry.id, entry.data() as Record<string, unknown>))
       .sort(compareBands);
+    const ownerBands = ownerSnapshot.docs
+      .map((entry) => normalizeBand(entry.id, entry.data() as Record<string, unknown>))
+      .sort(compareBands);
+
+    const nextBands = mergeBandsById(memberBands, ownerBands);
     setBands(nextBands);
   }, [userId]);
 
@@ -641,22 +661,54 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     const bandsQuery = query(collection(db, BANDS_COLLECTION), where('memberIds', 'array-contains', userId));
-    const unsubscribe = onSnapshot(
+    const ownedBandsQuery = query(collection(db, BANDS_COLLECTION), where('ownerId', '==', userId));
+
+    let memberBands: Band[] = [];
+    let ownerBands: Band[] = [];
+
+    const updateMergedBands = () => {
+      const mergedBands = mergeBandsById(memberBands, ownerBands);
+      console.info('[Folio] Band sources:', {
+        memberBands: memberBands.length,
+        ownerBands: ownerBands.length,
+        mergedBands: mergedBands.length,
+      });
+      setBands(mergedBands);
+      setLoading(false);
+    };
+
+    const unsubscribeMember = onSnapshot(
       bandsQuery,
       (snapshot) => {
-        const nextBands = snapshot.docs
+        memberBands = snapshot.docs
           .map((entry) => normalizeBand(entry.id, entry.data() as Record<string, unknown>))
           .sort(compareBands);
-        setBands(nextBands);
-        setLoading(false);
+        updateMergedBands();
       },
       (error) => {
-        console.error('Failed to subscribe to bands from Firestore.', error);
+        console.error('Failed to subscribe to member bands from Firestore.', error);
         setLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    const unsubscribeOwner = onSnapshot(
+      ownedBandsQuery,
+      (snapshot) => {
+        ownerBands = snapshot.docs
+          .map((entry) => normalizeBand(entry.id, entry.data() as Record<string, unknown>))
+          .sort(compareBands);
+        updateMergedBands();
+      },
+      (error) => {
+        console.error('Failed to subscribe to owned bands from Firestore.', error);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribeMember();
+      unsubscribeOwner();
+    };
   }, [refreshBands, userId]);
 
   const refreshBandSongs = useCallback(async (bandId: string) => {
