@@ -3394,28 +3394,29 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: 0;
   list-style: none;
   display: grid;
-  gap: .7rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .6rem;
 }
 
 .login-feature-item {
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   background: color-mix(in srgb, var(--surface) 82%, transparent);
-  border-radius: 14px;
-  padding: .8rem .9rem;
+  border-radius: 12px;
+  padding: .7rem .75rem;
 }
 
 .login-feature-item h2 {
   margin: 0;
-  font-size: .98rem;
+  font-size: .85rem;
   font-weight: 700;
   color: var(--text);
 }
 
 .login-feature-item p {
-  margin: .3rem 0 0;
+  margin: .25rem 0 0;
   color: var(--muted);
-  font-size: .9rem;
-  line-height: 1.45;
+  font-size: .78rem;
+  line-height: 1.4;
 }
 
 .login-hero-pricing {
@@ -3585,8 +3586,12 @@ input, select, textarea { font: inherit; color: var(--text); }
     padding: 1rem;
   }
 
+  .login-feature-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .login-feature-item {
-    padding: .7rem .75rem;
+    padding: .6rem .7rem;
   }
 
 }
