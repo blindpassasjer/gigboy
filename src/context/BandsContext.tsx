@@ -489,12 +489,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   // Repair owned bands if membership linkage was lost (e.g. memberIds missing current user).
   useEffect(() => {
     if (!db || !userId || membershipRepairUserId === userId) return;
+    const firestore = db;
 
     setMembershipRepairUserId(userId);
 
     const repairOwnedBandsMembership = async () => {
       const ownedBandsSnapshot = await getDocs(
-        query(collection(db, BANDS_COLLECTION), where('ownerId', '==', userId))
+        query(collection(firestore, BANDS_COLLECTION), where('ownerId', '==', userId))
       );
 
       if (ownedBandsSnapshot.size === 0) return;
@@ -553,7 +554,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           if (!needsRepair) return;
 
           repairedCount += 1;
-          await setDoc(doc(db, BANDS_COLLECTION, bandDoc.id), {
+          await setDoc(doc(firestore, BANDS_COLLECTION, bandDoc.id), {
             memberIds: nextMemberIds,
             memberRoles: nextMemberRoles,
             memberEmails: nextMemberEmails,

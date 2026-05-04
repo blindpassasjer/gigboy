@@ -69,6 +69,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const {
     bands,
+    loading,
     bandSongsByBandId,
     bandSongListsByBandId,
     bandSetlistsByBandId,

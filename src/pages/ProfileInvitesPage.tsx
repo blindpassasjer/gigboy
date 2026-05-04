@@ -275,47 +275,6 @@ export default function ProfileInvitesPage() {
   const hasAnyInvites = invites.length > 0 || bandInvites.length > 0;
   const hasAnyContent = acceptedConfirmations.length > 0 || hasAnyInvites;
 
-  const sharedPeople = (() => {
-    const people = new Map<string, {
-      userId: string;
-      username: string;
-      fullName?: string;
-      email?: string;
-      bands: string[];
-    }>();
-
-    bands.forEach((band) => {
-      band.memberIds.forEach((memberId) => {
-        if (!user?.id || memberId === user.id) return;
-
-        const existing = people.get(memberId);
-        if (existing) {
-          if (!existing.bands.includes(band.name)) {
-            existing.bands.push(band.name);
-          }
-          return;
-        }
-
-        const username = band.memberUsernames[memberId] ?? '';
-        if (!username) return;
-
-        people.set(memberId, {
-          userId: memberId,
-          username,
-          fullName: profilesByUserId[memberId]?.fullName || band.memberFullNames[memberId] || undefined,
-          email: profilesByUserId[memberId]?.email || band.memberEmails[memberId] || undefined,
-          bands: [band.name],
-        });
-      });
-    });
-
-    return [...people.values()].sort((a, b) => {
-      const aLabel = a.fullName || a.username;
-      const bLabel = b.fullName || b.username;
-      return aLabel.localeCompare(bLabel);
-    });
-  })();
-
   const mutualBandNamesByUserId = bands.reduce<Record<string, string[]>>((acc, band) => {
     band.memberIds.forEach((memberId) => {
       if (!user?.id || memberId === user.id) return;
@@ -335,25 +294,6 @@ export default function ProfileInvitesPage() {
         <h1>Invites</h1>
         <p>Accept access to songs, songlists, setlists, and bands shared with you.</p>
       </header>
-
-      {sharedPeople.length > 0 ? (
-        <section className="profile-invites-section">
-          <h2>Users added</h2>
-          <ul className="profile-invites-list">
-            {sharedPeople.map((person) => (
-              <li key={person.userId} className="profile-invite-card">
-                <div className="profile-invite-main">
-                  <strong>{person.fullName || person.username}</strong>
-                  <span>@{person.username}{person.email ? ` • ${person.email}` : ''}</span>
-                  <span>
-                    Shared bands: {person.bands.join(', ')}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       {acceptedConfirmations.length > 0 ? (
         <section className="profile-invites-section">
