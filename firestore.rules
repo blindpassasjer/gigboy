@@ -80,6 +80,30 @@ service cloud.firestore {
           || (!('username' in resource.data) || resource.data.username == null)
         );
       allow delete: if isOwner(userId);
+
+      match /songListCategories/{categoryId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /songLists/{songListId} {
+        allow read: if isOwner(userId) || isCollaboratorOnResource();
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId)
+          || (isEditorOnResource() && collaborationMetadataUnchanged());
+        allow delete: if isOwner(userId);
+      }
+
+      match /songs/{songId} {
+        allow read: if isOwner(userId) || isCollaboratorOnResource();
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId)
+          || (isEditorOnResource() && collaborationMetadataUnchanged());
+        allow delete: if isOwner(userId);
+      }
+
+      match /trashItems/{trashId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
     }
 
     match /usernames/{usernameLower} {
