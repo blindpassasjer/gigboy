@@ -438,11 +438,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           </div>
         )}
         </div>
-      </div>
-
-      {sidebarMode === 'bands' && (
-      <div className="sidebar-bands-section">
-        <div className="sidebar-bands-header">
+        {sidebarMode === 'bands' && (
           <button
             type="button"
             className="sidebar-icon-btn"
@@ -452,7 +448,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           >
             <Plus size={15} />
           </button>
-        </div>
+        )}
+      </div>
+
+      {sidebarMode === 'bands' && (
+      <div className="sidebar-bands-section">
         {addingBand && (
           <InlineInput
             value={draftName}

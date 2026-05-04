@@ -3893,6 +3893,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .sidebar-mode-switcher {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
   padding: 0 .75rem;
   margin-bottom: .5rem;
   min-width: 0;
@@ -3909,7 +3912,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   gap: .35rem;
   width: 100%;
-  padding: .2rem .25rem .2rem 0;
+  padding: .3rem .4rem;
   border-radius: 5px;
   font-size: 1rem;
   font-weight: 600;
