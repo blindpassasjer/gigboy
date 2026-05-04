@@ -33,10 +33,21 @@ export default function Layout({ children }: Props) {
     const candidate = (state as { bandId?: unknown }).bandId;
     return typeof candidate === 'string' && candidate.trim() ? candidate : null;
   })();
+  const [persistedBandId, setPersistedBandId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return window.localStorage.getItem('folio-active-band-id');
+    } catch {
+      return null;
+    }
+  });
   const isBandRoute = pathname === '/bands' || pathname.startsWith('/bands/') || Boolean(stateBandId);
   const routeSegments = pathname.split('/').filter(Boolean);
   const routeBandId = routeSegments[0] === 'bands' ? routeSegments[1] ?? null : null;
-  const themedBandId = routeBandId ?? stateBandId;
+  const fallbackBandId = persistedBandId && bands.some((entry) => entry.id === persistedBandId)
+    ? persistedBandId
+    : null;
+  const themedBandId = routeBandId ?? stateBandId ?? fallbackBandId;
   const themedBand = themedBandId ? bands.find((entry) => entry.id === themedBandId) ?? null : null;
   const bandSection = routeBandId ? (routeSegments[2] ?? 'library') : null;
   const bandSongListId = routeBandId && bandSection === 'songlists' ? (routeSegments[3] ?? null) : null;
@@ -163,11 +174,39 @@ export default function Layout({ children }: Props) {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const syncPersistedBandId = () => {
+      try {
+        setPersistedBandId(window.localStorage.getItem('folio-active-band-id'));
+      } catch {
+        setPersistedBandId(null);
+      }
+    };
+
+    syncPersistedBandId();
+    window.addEventListener('storage', syncPersistedBandId);
+    return () => window.removeEventListener('storage', syncPersistedBandId);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const nextBandId = routeBandId ?? stateBandId;
+    if (!nextBandId) return;
+    try {
+      window.localStorage.setItem('folio-active-band-id', nextBandId);
+      setPersistedBandId(nextBandId);
+    } catch {
+      // Ignore localStorage sync failures.
+    }
+  }, [routeBandId, stateBandId]);
+
+  useEffect(() => {
     if (typeof document === 'undefined') return;
 
     const rootStyle = document.documentElement.style;
 
-    if (!isBandRoute || !themedBandId) {
+    if (!themedBandId) {
       rootStyle.removeProperty('--bands-hue');
       rootStyle.removeProperty('--bands-hue-soft');
       rootStyle.removeProperty('--bands-hue-contrast');
@@ -193,10 +232,10 @@ export default function Layout({ children }: Props) {
         : softHue
     );
     rootStyle.setProperty('--bands-hue-contrast', contrast);
-  }, [dark, isBandRoute, themedBand?.color, themedBandId]);
+  }, [dark, themedBand?.color, themedBandId]);
 
   return (
-    <div className="app-shell" data-library-mode={isBandRoute ? 'bands' : 'solo'}>
+    <div className="app-shell" data-library-mode={themedBandId ? 'bands' : 'solo'}>
       <a
         href="#main-content"
         className="skip-link"
