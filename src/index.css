@@ -221,6 +221,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   text-decoration: none;
 }
 
+.brand-mark-logo {
+  display: block;
+  flex-shrink: 0;
+}
+
 .topbar-nav {
   display: flex;
   gap: 1rem;

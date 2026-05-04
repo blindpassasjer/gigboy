@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Menu, Sun, Moon, Maximize2, Minimize2, Mail, Plus } from 'lucide-react';
+import { Menu, Sun, Moon, Maximize2, Minimize2, Mail, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import Sidebar from './Sidebar';
+import BrandMark from './BrandMark';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
 import UserAvatar from './UserAvatar';
@@ -260,8 +261,7 @@ export default function Layout({ children }: Props) {
           <Menu size={20} />
         </button>
         <Link to={themedBandId ? `/bands/${themedBandId}/library` : '/'} className="topbar-brand">
-          <BookOpen size={22} />
-          <span>Gigboi</span>
+          <BrandMark size={22} />
         </Link>
         <nav className="topbar-nav">
           <Link

@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import BrandMark from '../components/BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 
@@ -34,8 +34,7 @@ export default function UsernameSetupPage() {
     <div className="login-screen">
       <div className="login-card">
         <div className="login-brand">
-          <BookOpen size={28} />
-          <span>Gigboi</span>
+          <BrandMark size={28} />
         </div>
         <h1 className="login-title">Choose your username</h1>
         <p className="login-subtitle">

@@ -654,11 +654,8 @@ export default function BandDetailPage() {
             <Settings size={14} />
           </button>
         )}
-        allSongs={allBandsSongs}
-        pickerSourceNote="Showing songs from all bands' libraries. Selected songs will be copied to this band's library."
         onDeleteSong={handleDeleteSong}
         onRemoveSong={handleRemoveSong}
-        onAddSong={handleAddSong}
         onMoveSong={handleMoveSong}
         bandId={band.id}
       />

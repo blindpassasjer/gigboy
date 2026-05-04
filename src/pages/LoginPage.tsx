@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import BrandMark from '../components/BrandMark';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 
 function GoogleIcon() {
@@ -113,8 +113,7 @@ export default function LoginPage() {
       <div className="login-screen">
         <div className="login-card">
           <div className="login-brand">
-            <BookOpen size={28} />
-            <span>Gigboi</span>
+            <BrandMark size={28} />
           </div>
           <h1 className="login-title">Link accounts</h1>
           <p className="login-description">
@@ -154,8 +153,7 @@ export default function LoginPage() {
     <div className="login-screen">
       <div className="login-card">
         <div className="login-brand">
-          <BookOpen size={28} />
-          <span>Gigboi</span>
+          <BrandMark size={28} />
         </div>
         <h1 className="login-title">{mode === 'register' ? 'Create account' : 'Sign in'}</h1>
 
