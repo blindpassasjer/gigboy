@@ -522,6 +522,16 @@ export default function SongList({
           {headerMeta ? <p className="song-list-summary setlist-song-count">{headerMeta}</p> : null}
         </div>
         <div className="setlist-header-actions">
+          {canTriggerAddSongs && (
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary setlist-action-btn--accent"
+              onClick={canAddSongsToList ? openSongPicker : onAddSongsClick}
+              title="Add songs"
+            >
+              <Plus size={14} />
+            </button>
+          )}
           {headerActions}
           {onUpdateListAppearance && listName && (
             <button
@@ -533,14 +543,15 @@ export default function SongList({
               <Smile size={14} />
             </button>
           )}
-          {canTriggerAddSongs && (
+          {onDeleteList && (
             <button
               type="button"
-              className="setlist-action-btn setlist-action-btn--secondary setlist-action-btn--accent"
-              onClick={canAddSongsToList ? openSongPicker : onAddSongsClick}
-              title="Add songs"
+              className="setlist-action-btn setlist-action-btn--secondary setlist-action-btn--ghost"
+              onClick={() => void onDeleteList()}
+              title={deleteListLabel ?? `Delete ${listEntityLabel}`}
+              aria-label={deleteListLabel ?? `Delete ${listEntityLabel}`}
             >
-              <Plus size={14} />
+              <Trash2 size={14} />
             </button>
           )}
           <div className="view-toggle" role="tablist" aria-label="Song view mode">
@@ -561,17 +572,6 @@ export default function SongList({
               <LayoutGrid size={15} />
             </button>
           </div>
-          {onDeleteList && (
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary setlist-action-btn--ghost"
-              onClick={() => void onDeleteList()}
-              title={deleteListLabel ?? `Delete ${listEntityLabel}`}
-              aria-label={deleteListLabel ?? `Delete ${listEntityLabel}`}
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
         </div>
       </div>
       {showListAppearanceEditor && onUpdateListAppearance && (

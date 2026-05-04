@@ -6931,8 +6931,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .stageplot-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(260px, 1fr);
+  grid-template-columns: 1fr minmax(260px, auto);
   gap: .8rem;
+  align-items: flex-start;
 }
 
 .stageplot-toolbar-panel {
@@ -6945,6 +6946,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.stageplot-palette-panel {
+  justify-self: end;
 }
 
 .stageplot-toolbar-panel--actions {

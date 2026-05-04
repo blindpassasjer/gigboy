@@ -106,8 +106,11 @@ function AuthenticatedApp() {
 }
 
 const router = createBrowserRouter([
+  { path: '/public/bands/:bandId/:bandName/setlists/:setlistId', element: <PublicBandSetlistPage /> },
   { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage /> },
+  { path: '/public/bands/:bandId/:bandName/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
   { path: '/public/bands/:bandId/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
+  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
   { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
   { path: '*', element: <AuthenticatedApp /> },
 ]);

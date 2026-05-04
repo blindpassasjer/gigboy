@@ -11,6 +11,7 @@ import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
 import TrashView from '../components/TrashView';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
+import { buildBandPublicShareUrl } from '../utils/publicShare';
 
 export default function BandDetailPage() {
   const { id } = useParams();
@@ -257,7 +258,13 @@ export default function BandDetailPage() {
 
   const handleShareSetlist = async () => {
     if (!activeBandSetlist) return;
-    const publicUrl = `${window.location.origin}/public/bands/${band.id}/setlists/${activeBandSetlist.id}`;
+    const publicUrl = buildBandPublicShareUrl(
+      window.location.origin,
+      band.id,
+      band.name,
+      'setlists',
+      activeBandSetlist.id
+    );
     if (!activeBandSetlist.publicShareEnabled) {
       const error = await setBandSetlistPublicShare(band.id, activeBandSetlist.id, true);
       if (error) {
@@ -275,7 +282,13 @@ export default function BandDetailPage() {
 
   const handleShareStageplot = async () => {
     if (!activeBandStageplot) return;
-    const publicUrl = `${window.location.origin}/public/bands/${band.id}/stageplots/${activeBandStageplot.id}`;
+    const publicUrl = buildBandPublicShareUrl(
+      window.location.origin,
+      band.id,
+      band.name,
+      'stageplots',
+      activeBandStageplot.id
+    );
     if (!activeBandStageplot.publicShareEnabled) {
       const error = await setBandStageplotPublicShare(band.id, activeBandStageplot.id, true);
       if (error) {
@@ -293,7 +306,13 @@ export default function BandDetailPage() {
 
   const handleShareTechnicalRider = async () => {
     if (!activeBandTechnicalRider) return;
-    const publicUrl = `${window.location.origin}/public/bands/${band.id}/riders/${activeBandTechnicalRider.id}`;
+    const publicUrl = buildBandPublicShareUrl(
+      window.location.origin,
+      band.id,
+      band.name,
+      'riders',
+      activeBandTechnicalRider.id
+    );
     if (!activeBandTechnicalRider.publicShareEnabled) {
       const error = await setBandTechnicalRiderPublicShare(band.id, activeBandTechnicalRider.id, true);
       if (error) {

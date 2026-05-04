@@ -33,7 +33,6 @@ export default function ProfilePage() {
   const [busyPassword, setBusyPassword] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [busyLogout, setBusyLogout] = useState(false);
-  const [avatarOpen, setAvatarOpen] = useState(false);
   const [bandName, setBandName] = useState('');
   const [bandDescription, setBandDescription] = useState('');
   const [bandIcon, setBandIcon] = useState('🎵');
@@ -200,18 +199,8 @@ export default function ProfilePage() {
               <p className="profile-settings-muted">Choose how your account appears where your profile is shown.</p>
             </div>
           </div>
-          <button
-            type="button"
-            className="profile-settings-collapsible-toggle"
-            onClick={() => setAvatarOpen((o) => !o)}
-            aria-expanded={avatarOpen}
-            aria-controls="avatar-options"
-          >
-            <h2>Avatar icon</h2>
-            {avatarOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-          {avatarOpen && (
-            <div id="avatar-options" className="avatar-grid" role="radiogroup" aria-label="Choose avatar">
+          <h2>Avatar icon</h2>
+          <div id="avatar-options" className="avatar-grid" role="radiogroup" aria-label="Choose avatar">
               {AVATAR_OPTIONS.map((avatar) => {
                 const isSelected = selectedAvatar === avatar;
                 return (
@@ -228,7 +217,6 @@ export default function ProfilePage() {
                 );
               })}
             </div>
-          )}
         </section>
 
         {/* Information */}
