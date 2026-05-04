@@ -9,6 +9,8 @@ import { declineInvite, loadPendingInvites } from '../lib/collaboration';
 import { declineBandInvite, loadPendingBandInvites } from '../lib/bandInvites';
 import { acceptBandInviteOnServer } from '../lib/bandsApi';
 import { acceptInviteOnServer } from '../lib/shareApi';
+import { emitInviteNotificationsChanged } from '../lib/inviteNotifications';
+import { useInviteNotifications } from '../hooks/useInviteNotifications';
 import type { BandInvite, CollaborationInvite } from '../types';
 
 export default function ProfileInvitesPage() {
@@ -25,6 +27,8 @@ export default function ProfileInvitesPage() {
     email?: string;
   }>>({});
   const processedBandInviteIdRef = useRef<string | null>(null);
+  const [acceptedConfirmations, setAcceptedConfirmations] = useState(() => [] as ReturnType<typeof useInviteNotifications>['unseenAcceptedOutgoing']);
+  const { unseenAcceptedOutgoing, markAcceptedAsSeen } = useInviteNotifications();
 
   const refreshInvites = useCallback(async () => {
     if (!db || !user?.id) {
@@ -71,6 +75,22 @@ export default function ProfileInvitesPage() {
   }, [refreshInvites]);
 
   useEffect(() => {
+    if (unseenAcceptedOutgoing.length === 0) {
+      return;
+    }
+
+    setAcceptedConfirmations((current) => {
+      const existingIds = new Set(current.map((notification) => notification.id));
+      const nextNotifications = unseenAcceptedOutgoing.filter((notification) => !existingIds.has(notification.id));
+      if (nextNotifications.length === 0) {
+        return current;
+      }
+      return [...nextNotifications, ...current].sort((a, b) => b.respondedAt.localeCompare(a.respondedAt));
+    });
+    markAcceptedAsSeen(unseenAcceptedOutgoing);
+  }, [markAcceptedAsSeen, unseenAcceptedOutgoing]);
+
+  useEffect(() => {
     const bandInviteId = searchParams.get('bandInvite')?.trim() ?? '';
     if (!bandInviteId || !user?.id || !user.email) {
       return;
@@ -95,6 +115,7 @@ export default function ProfileInvitesPage() {
 
         await refreshBands();
         await refreshInvites();
+        emitInviteNotificationsChanged();
         toast.success('Joined band from invite link.');
       } catch (error) {
         if (!active) return;
@@ -185,6 +206,7 @@ export default function ProfileInvitesPage() {
         inviteId: invite.id,
       });
       setInvites((prev) => prev.filter((entry) => entry.id !== invite.id));
+      emitInviteNotificationsChanged();
       toast.success('Invite accepted.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to accept invite.';
@@ -201,6 +223,7 @@ export default function ProfileInvitesPage() {
     try {
       await declineInvite(db, inviteId, user.id);
       setInvites((prev) => prev.filter((entry) => entry.id !== inviteId));
+      emitInviteNotificationsChanged();
       toast.success('Invite declined.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to decline invite.';
@@ -222,6 +245,7 @@ export default function ProfileInvitesPage() {
       });
       setBandInvites((prev) => prev.filter((entry) => entry.id !== invite.id));
       await refreshBands();
+      emitInviteNotificationsChanged();
       toast.success('Band invite accepted.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to accept band invite.';
@@ -238,6 +262,7 @@ export default function ProfileInvitesPage() {
     try {
       await declineBandInvite(db, inviteId, user.id);
       setBandInvites((prev) => prev.filter((entry) => entry.id !== inviteId));
+      emitInviteNotificationsChanged();
       toast.success('Band invite declined.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to decline band invite.';
@@ -248,6 +273,7 @@ export default function ProfileInvitesPage() {
   };
 
   const hasAnyInvites = invites.length > 0 || bandInvites.length > 0;
+  const hasAnyContent = acceptedConfirmations.length > 0 || hasAnyInvites;
 
   const sharedPeople = (() => {
     const people = new Map<string, {
@@ -329,9 +355,26 @@ export default function ProfileInvitesPage() {
         </section>
       ) : null}
 
+      {acceptedConfirmations.length > 0 ? (
+        <section className="profile-invites-section">
+          <h2>Recent responses</h2>
+          <ul className="profile-invites-list">
+            {acceptedConfirmations.map((notification) => (
+              <li key={notification.id} className="profile-invite-card profile-invite-card--accepted">
+                <div className="profile-invite-main">
+                  <strong>{notification.title}</strong>
+                  <span>{notification.description}</span>
+                </div>
+                <div className="profile-invite-confirmation">Accepted</div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {loading ? (
         <p className="profile-invites-status">Loading invites…</p>
-      ) : !hasAnyInvites ? (
+      ) : !hasAnyContent ? (
         <p className="profile-invites-status">No pending invites.</p>
       ) : (
         <>

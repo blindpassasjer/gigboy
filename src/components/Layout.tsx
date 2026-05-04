@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { useInviteNotifications } from '../hooks/useInviteNotifications';
 import UserAvatar from './UserAvatar';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 export default function Layout({ children }: Props) {
   const { pathname, state } = useLocation();
   const { user } = useAuth();
+  const { pendingIncomingCount, unseenAcceptedOutgoing } = useInviteNotifications();
   const isConcertRoute = pathname.startsWith('/setlists/') && pathname.endsWith('/concert');
   const stateBandId = (() => {
     if (!state || typeof state !== 'object') return null;
@@ -37,6 +39,18 @@ export default function Layout({ children }: Props) {
     if (typeof document === 'undefined') return false;
     return Boolean(document.fullscreenElement);
   });
+  const unseenAcceptedCount = unseenAcceptedOutgoing.length;
+  const inviteNotificationCount = pendingIncomingCount + unseenAcceptedCount;
+  const hasInviteNotifications = inviteNotificationCount > 0;
+  const inviteNoticeVariant = pendingIncomingCount > 0 && unseenAcceptedCount > 0
+    ? 'mixed'
+    : unseenAcceptedCount > 0
+      ? 'accepted'
+      : 'pending';
+  const inviteLabel = [
+    pendingIncomingCount > 0 ? `${pendingIncomingCount} pending` : null,
+    unseenAcceptedCount > 0 ? `${unseenAcceptedCount} accepted` : null,
+  ].filter(Boolean).join(', ');
 
   const toggleFullscreen = async () => {
     if (typeof document === 'undefined') return;
@@ -153,10 +167,23 @@ export default function Layout({ children }: Props) {
         <nav className="topbar-nav">
           <Link
             to="/profile/invites"
-            className={pathname === '/profile/invites' ? 'active' : ''}
+            className={[
+              pathname === '/profile/invites' ? 'active' : '',
+              hasInviteNotifications ? 'topbar-link--has-notification' : '',
+            ].filter(Boolean).join(' ')}
             aria-current={pathname === '/profile/invites' ? 'page' : undefined}
+            title={hasInviteNotifications ? `Invites (${inviteLabel})` : 'Invites'}
           >
-            <User size={16} /> <span>Invites</span>
+            <User size={16} />
+            <span>Invites</span>
+            {hasInviteNotifications ? (
+              <span
+                className={`topbar-link-notice topbar-link-notice--${inviteNoticeVariant}`}
+                aria-label={`Invites: ${inviteLabel}`}
+              >
+                {inviteNotificationCount}
+              </span>
+            ) : null}
           </Link>
           <button
             type="button"

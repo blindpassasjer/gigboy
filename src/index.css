@@ -220,6 +220,36 @@ input, select, textarea { font: inherit; color: var(--text); }
   transition: background .15s, color .15s;
 }
 
+.topbar-link--has-notification {
+  position: relative;
+}
+
+.topbar-link-notice {
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 .28rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .68rem;
+  font-weight: 700;
+  line-height: 1;
+  color: white;
+}
+
+.topbar-link-notice--pending {
+  background: var(--accent);
+}
+
+.topbar-link-notice--accepted {
+  background: #1f9d55;
+}
+
+.topbar-link-notice--mixed {
+  background: linear-gradient(135deg, var(--accent), #1f9d55);
+}
+
 .topbar-nav a:hover,
 .topbar-nav a.active {
   background: var(--chord-bg);
@@ -5887,6 +5917,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .8rem;
 }
 
+.profile-invite-card--accepted {
+  border-color: color-mix(in srgb, #1f9d55 35%, var(--border));
+  background: color-mix(in srgb, #1f9d55 10%, var(--surface));
+}
+
 .profile-invite-main {
   display: flex;
   flex-direction: column;
@@ -5901,6 +5936,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 .profile-invite-actions {
   display: flex;
   gap: .5rem;
+}
+
+.profile-invite-confirmation {
+  flex-shrink: 0;
+  padding: .35rem .65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #1f9d55 16%, var(--surface));
+  border: 1px solid color-mix(in srgb, #1f9d55 30%, var(--border));
+  color: #17693a;
+  font-size: .78rem;
+  font-weight: 700;
 }
 
 /* ─── Bands ────────────────────────────────────────────────────────────────── */
