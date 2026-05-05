@@ -21,7 +21,7 @@ interface Props {
   onAddSong: (songId: string) => void | Promise<void>;
   onUpdateSongNote?: (songId: string, note: string) => void | Promise<void>;
   extraActions?: ReactNode;
-  /** Override the concert mode URL (defaults to /setlists/:id/concert) */
+  /** Override the concert mode URL (defaults to /bands/:bandId/setlists/:id/concert when bandId is present) */
   concertRoute?: string;
   /** Override the icon displayed for this setlist */
   setlistIconOverride?: string;
@@ -72,7 +72,8 @@ export default function SetlistsView({
   const canDeleteSetlist = canDeleteOverride !== undefined
     ? canDeleteOverride
     : (!currentSetlist?.ownerId || currentSetlist.accessRole === 'owner');
-  const effectiveConcertRoute = concertRoute ?? `/setlists/${setlistId}/concert`;
+  const effectiveConcertRoute = concertRoute
+    ?? (bandId ? `/bands/${bandId}/setlists/${setlistId}/concert` : '/bands');
   const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);

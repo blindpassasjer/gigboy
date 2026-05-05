@@ -9,20 +9,24 @@ import {
   ChevronsUpDown,
   List,
   Metronome,
+  PenLine,
   Play,
   RotateCcw,
   SlidersHorizontal,
   X,
 } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
+import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../hooks/usePlan';
-import type { Song } from '../types';
+import type { HandNoteStroke, Song } from '../types';
 import LanguageBadge from '../components/LanguageBadge';
 import ChordDisplay from '../components/ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from '../components/ChordDiagram';
+import SongHandNotesOverlay from '../components/SongHandNotesOverlay';
 import SongMediaPlayer from '../components/SongMediaPlayer';
 import VisualMetronome from '../components/VisualMetronome';
 import VisualTuner from '../components/VisualTuner';
+import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import type { ChordNotation } from '../utils/chordParser';
 import { transposeChord } from '../utils/chordParser';
 import { parseSongMedia } from '../utils/songMedia';
@@ -62,6 +66,7 @@ type BluetoothDeviceLike = {
 export default function BandSetlistConcertPage() {
   const navigate = useNavigate();
   const { bandId, setlistId } = useParams<{ bandId: string; setlistId: string }>();
+  const { user } = useAuth();
   const { canUse } = usePlan();
   const {
     bandSetlistsByBandId,
@@ -106,6 +111,9 @@ export default function BandSetlistConcertPage() {
   const [showSongNavigator, setShowSongNavigator] = useState(false);
   const [showMetronome, setShowMetronome] = useState(false);
   const [showTuner, setShowTuner] = useState(false);
+  const [showNotes, setShowNotes] = useState(true);
+  const [drawEnabled, setDrawEnabled] = useState(false);
+  const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
   const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
   const [isPedalConnected, setIsPedalConnected] = useState(false);
@@ -128,6 +136,14 @@ export default function BandSetlistConcertPage() {
   const mappedNextCodeRef = useRef<number | null>(null);
   const pedalControlModeRef = useRef<PedalControlMode>('song');
 
+  const activeSong = setlistSongs[currentIndex] ?? null;
+  const handNotes = useSongHandNotes({
+    ownerId: activeSong?.ownerId ?? user?.id ?? null,
+    songId: activeSong?.id ?? '',
+    user,
+    enabled: showNotes,
+  });
+
   const backRoute = bandId && setlistId
     ? `/bands/${bandId}/setlists/${setlistId}`
     : `/bands`;
@@ -142,11 +158,52 @@ export default function BandSetlistConcertPage() {
   useEffect(() => {
     setShowMediaPlayer(false);
     setAutoPlayMediaOnOpen(false);
+    setDrawEnabled(false);
+    setUndoStack([]);
     if (songScrollRef.current) {
       songScrollRef.current.scrollTop = 0;
     }
     setActiveChord(null);
   }, [currentIndex]);
+
+  const handleStrokesChange = useCallback((strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
+    setUndoStack((prev) => [...prev, handNotes.myStrokes]);
+    handNotes.saveMyNotes(strokes, viewport);
+  }, [handNotes]);
+
+  const handleUndoStroke = useCallback(() => {
+    setUndoStack((prev) => {
+      if (prev.length === 0) return prev;
+      const before = prev[prev.length - 1];
+      const next = prev.slice(0, prev.length - 1);
+      const canvas = document.querySelector('.song-hand-notes-overlay') as HTMLDivElement | null;
+      const rect = canvas?.getBoundingClientRect();
+      handNotes.saveMyNotes(before ?? [], {
+        width: rect?.width ?? window.innerWidth,
+        height: rect?.height ?? window.innerHeight,
+      });
+      return next;
+    });
+  }, [handNotes]);
+
+  const handleClearNotes = useCallback(async () => {
+    setUndoStack([]);
+    await handNotes.clearMyNotes();
+  }, [handNotes]);
+
+  const handleToggleNotes = useCallback((next: boolean) => {
+    setShowNotes(next);
+    if (!next) {
+      setDrawEnabled(false);
+    }
+  }, []);
+
+  const handleToggleDraw = useCallback((next: boolean) => {
+    setDrawEnabled(next);
+    if (next && !showNotes) {
+      setShowNotes(true);
+    }
+  }, [showNotes]);
 
   useEffect(() => {
     pedalMappingTargetRef.current = pedalMappingTarget;
@@ -684,6 +741,19 @@ export default function BandSetlistConcertPage() {
                 Metronome
               </button>
 
+              {user && (
+                <button
+                  type="button"
+                  className={`song-toolbar-tool-btn${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
+                  onClick={() => handleToggleNotes(!showNotes)}
+                  title={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
+                  aria-label={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
+                >
+                  <PenLine size={14} />
+                  Notes
+                </button>
+              )}
+
               {media && (
                 <button
                   type="button"
@@ -704,7 +774,7 @@ export default function BandSetlistConcertPage() {
               )}
             </div>
 
-            {(showTuner || showMetronome || (media && showMediaPlayer && currentSong.playbackUrl)) && (
+            {(showTuner || showMetronome || (user && showNotes) || (media && showMediaPlayer && currentSong.playbackUrl)) && (
               <div className="song-toolbar-tools-grid concert-toolbar-tools-grid">
                 {showTuner && (
                   <div className="song-toolbar-tool-card">
@@ -727,6 +797,92 @@ export default function BandSetlistConcertPage() {
                       timeSignature={currentSong.timeSignature}
                       className="song-view-metronome"
                     />
+                  </div>
+                )}
+
+                {user && showNotes && (
+                  <div className="song-toolbar-tool-card song-toolbar-tool-card--notes">
+                    <span className="song-toolbar-tool-card-title">Handwritten notes</span>
+                    <div className="song-notes-panel">
+                      <label
+                        className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
+                        title="Enable touch drawing"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={drawEnabled}
+                          onChange={(e) => handleToggleDraw(e.target.checked)}
+                        />
+                        Draw
+                      </label>
+
+                      {drawEnabled && (
+                        <>
+                          <button
+                            className="notes-toolbar-btn"
+                            onClick={handleUndoStroke}
+                            disabled={undoStack.length === 0}
+                            title="Undo last stroke"
+                          >
+                            Undo
+                          </button>
+                          <button
+                            className="notes-toolbar-btn notes-toolbar-btn--danger"
+                            onClick={() => { void handleClearNotes(); }}
+                            disabled={handNotes.myStrokes.length === 0}
+                            title="Clear my notes"
+                          >
+                            Clear
+                          </button>
+                        </>
+                      )}
+
+                      {handNotes.saveState === 'saving' && (
+                        <span className="notes-save-status notes-save-status--saving">Saving...</span>
+                      )}
+                      {handNotes.saveState === 'saved' && (
+                        <span className="notes-save-status notes-save-status--saved">Saved</span>
+                      )}
+                      {handNotes.saveState === 'error' && (
+                        <span className="notes-save-status notes-save-status--error">Failed to save</span>
+                      )}
+
+                      {handNotes.authors.length > 1 && (
+                        <div className="notes-author-filters">
+                          <button
+                            className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
+                            onClick={handNotes.showAll}
+                            title="Show all users' notes"
+                          >
+                            All
+                          </button>
+                          <button
+                            className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
+                            onClick={handNotes.showMineOnly}
+                            title="Show only my notes"
+                          >
+                            Mine
+                          </button>
+                          {handNotes.authors.map((author) => (
+                            <button
+                              key={author.uid}
+                              className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
+                              onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
+                              title={`Toggle notes by ${author.name}`}
+                            >
+                              {author.avatar ? (
+                                <span className="notes-author-chip-avatar">{author.avatar}</span>
+                              ) : (
+                                <span className="notes-author-chip-initials">
+                                  {author.name.slice(0, 1).toUpperCase()}
+                                </span>
+                              )}
+                              {author.uid === user.id ? 'Me' : author.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -767,23 +923,33 @@ export default function BandSetlistConcertPage() {
           </div>
 
           <div className="concert-scroll-region" ref={songScrollRef}>
-            <ChordDisplay
-              chordpro={currentSong.chordpro}
-              transpose={transpose}
-              showChords={showChords}
-              notation={chordNotation}
-              timeSignature={currentSong.timeSignature}
-              instrument={chordInstrument}
-              onChordClick={showChords
-                ? (chord, rect) => {
-                  setActiveChord((previous) =>
-                    previous?.chord === chord && previous.rect.top === rect.top
-                      ? null
-                      : { chord, rect }
-                  );
-                }
-                : undefined}
-            />
+            <div className="song-notes-stage">
+              <ChordDisplay
+                chordpro={currentSong.chordpro}
+                transpose={transpose}
+                showChords={showChords}
+                notation={chordNotation}
+                timeSignature={currentSong.timeSignature}
+                instrument={chordInstrument}
+                onChordClick={showChords && !drawEnabled
+                  ? (chord, rect) => {
+                    setActiveChord((previous) =>
+                      previous?.chord === chord && previous.rect.top === rect.top
+                        ? null
+                        : { chord, rect }
+                    );
+                  }
+                  : undefined}
+              />
+              <SongHandNotesOverlay
+                visible={showNotes}
+                drawEnabled={drawEnabled}
+                notes={handNotes.visibleNotes}
+                myStrokes={handNotes.myStrokes}
+                strokeColor="#22c55e"
+                onMyStrokesChange={handleStrokesChange}
+              />
+            </div>
           </div>
         </article>
 
