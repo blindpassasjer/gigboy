@@ -4,6 +4,8 @@ import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Map, Plus,
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
+import { usePlan } from '../hooks/usePlan';
+import toast from '../utils/anchoredToast';
 
 const SONG_DRAG_MIME = 'application/x-gigboy-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-gigboy-song-id';
@@ -33,6 +35,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   })();
   const { songs } = useSongs();
   const { clearActiveSelection } = useSongLists();
+  const { canUse } = usePlan();
 
   const {
     bands,
@@ -586,9 +589,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title="New band setlist"
+                    title={canUse('setlists') ? 'New band setlist' : 'Upgrade to Pro to create setlists'}
                     aria-label="Create new band setlist"
                     onClick={() => {
+                      if (!canUse('setlists')) {
+                        toast.error('Setlists require a Pro or Band plan.');
+                        return;
+                      }
                       setCollapsedBandSetlistIds((prev) => prev.filter((entry) => entry !== band.id));
                       setAddingBandSetlistId(band.id);
                       setDraftName('');
@@ -649,9 +656,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title="New band stageplot"
+                    title={canUse('stagePlots') ? 'New band stageplot' : 'Upgrade to Pro to create stageplots'}
                     aria-label="Create new band stageplot"
                     onClick={() => {
+                      if (!canUse('stagePlots')) {
+                        toast.error('Stageplots require a Pro or Band plan.');
+                        return;
+                      }
                       setCollapsedBandStageplotIds((prev) => prev.filter((entry) => entry !== band.id));
                       setAddingBandStageplotId(band.id);
                       setDraftName('');
@@ -704,9 +715,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title="New band technical rider"
+                    title={canUse('technicalRiders') ? 'New band technical rider' : 'Upgrade to Pro to create technical riders'}
                     aria-label="Create new band technical rider"
                     onClick={() => {
+                      if (!canUse('technicalRiders')) {
+                        toast.error('Technical riders require a Pro or Band plan.');
+                        return;
+                      }
                       setCollapsedBandTechnicalRiderIds((prev) => prev.filter((entry) => entry !== band.id));
                       setAddingBandTechnicalRiderId(band.id);
                       setDraftName('');

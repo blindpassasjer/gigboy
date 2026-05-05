@@ -30,6 +30,7 @@ import type { ChordNotation } from '../utils/chordParser';
 import { useSongLists } from '../context/SongListsContext';
 import { useSongs } from '../context/SongsContext';
 import { useAuth } from '../context/AuthContext';
+import { usePlan } from '../hooks/usePlan';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
@@ -62,6 +63,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const { updateSong, deleteSong } = useSongs();
   const { songLists, addSongToList, removeSongFromList } = useSongLists();
   const { user } = useAuth();
+  const { canUse } = usePlan();
 
   // Hand notes state
   const [showNotes, setShowNotes] = useState(false);
@@ -336,9 +338,15 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
               <button
                 type="button"
-                className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}`}
-                onClick={() => setShowMetronome((prev) => !prev)}
-                title={showMetronome ? 'Hide metronome' : 'Show metronome'}
+                className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}${!canUse('metronome') ? ' song-toolbar-tool-btn--locked' : ''}`}
+                onClick={() => {
+                  if (!canUse('metronome')) {
+                    toast.error('The metronome requires a Pro or Band plan.');
+                    return;
+                  }
+                  setShowMetronome((prev) => !prev);
+                }}
+                title={!canUse('metronome') ? 'Upgrade to Pro to use the metronome' : (showMetronome ? 'Hide metronome' : 'Show metronome')}
                 aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
               >
                 <Metronome size={14} />

@@ -7861,3 +7861,50 @@ input, select, textarea { font: inherit; color: var(--text); }
     height: 28px;
   }
 }
+
+/* ── PlanGate / UpgradePrompt ─────────────────────────────── */
+.upgrade-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem .75rem;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: var(--radius-md, 8px);
+  font-size: .8rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.upgrade-prompt__icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.upgrade-prompt__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.upgrade-prompt__btn {
+  padding: .25rem .7rem;
+  border-radius: var(--radius-sm, 5px);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity .15s;
+}
+
+.upgrade-prompt__btn:hover {
+  opacity: .88;
+}
+
+/* Locked toolbar button */
+.song-toolbar-tool-btn--locked {
+  opacity: .55;
+  cursor: not-allowed;
+}

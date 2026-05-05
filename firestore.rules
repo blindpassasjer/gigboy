@@ -66,6 +66,20 @@ service cloud.firestore {
         && request.resource.data.memberAvatars == resource.data.memberAvatars;
     }
 
+    // Ensures clients cannot elevate their own plan, override subscription status,
+    // or tamper with Stripe billing fields. These fields are only written by
+    // server-side Cloudflare Functions (webhook, override-plan) via the Admin SDK.
+    function subscriptionFieldsUnchanged() {
+      let incoming = request.resource.data;
+      let existing = resource.data;
+      return (!('plan' in incoming) || incoming.plan == existing.get('plan', 'free'))
+        && (!('planOverride' in incoming) || incoming.planOverride == existing.get('planOverride', false))
+        && (!('subscriptionStatus' in incoming) || incoming.subscriptionStatus == existing.get('subscriptionStatus', null))
+        && (!('currentPeriodEnd' in incoming) || incoming.currentPeriodEnd == existing.get('currentPeriodEnd', null))
+        && (!('stripeCustomerId' in incoming) || incoming.stripeCustomerId == existing.get('stripeCustomerId', null))
+        && (!('storageQuotaBytes' in incoming) || incoming.storageQuotaBytes == existing.get('storageQuotaBytes', null));
+    }
+
     // User-scoped songbook data
     match /users/{userId} {
       allow read: if isSignedIn();
@@ -78,7 +92,9 @@ service cloud.firestore {
               && request.resource.data.usernameLower == resource.data.usernameLower)
           // Allow setting username on first claim (no existing username)
           || (!('username' in resource.data) || resource.data.username == null)
-        );
+        )
+        // Clients must never write plan/billing fields — only server-side Admin SDK may do so
+        && subscriptionFieldsUnchanged();
       allow delete: if isOwner(userId);
 
       match /songListCategories/{categoryId} {

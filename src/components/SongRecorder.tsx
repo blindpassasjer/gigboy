@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mic, MicOff, Play, Pause, Trash2, Save, X, Pencil, Check } from 'lucide-react';
 import { useSongRecordings } from '../hooks/useSongRecordings';
+import { usePlan } from '../hooks/usePlan';
+import { useStorageUsage } from '../hooks/useStorageUsage';
+import UpgradePrompt from './UpgradePrompt';
 import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
 import type { RecordingsScope, SongRecording } from '../lib/songRecordings';
@@ -357,6 +360,8 @@ export default function SongRecorder({ song, user, bandId }: Props) {
     scope,
     songId: song.id,
   });
+  const { canUse, storageQuotaBytes } = usePlan();
+  const { usedBytes } = useStorageUsage(user.id);
 
   const [recState, setRecState] = useState<RecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -500,6 +505,11 @@ export default function SongRecorder({ song, user, bandId }: Props) {
 
   async function saveRecording() {
     if (!previewBlob) return;
+    // Storage quota check
+    if (usedBytes + previewBlob.size > storageQuotaBytes) {
+      setError(`Storage quota exceeded. You've used ${Math.round(usedBytes / (1024 * 1024))} MB of your ${Math.round(storageQuotaBytes / (1024 * 1024))} MB limit.`);
+      return;
+    }
     const displayName = user.fullName?.trim() || user.username?.trim() || user.email;
     setError(null);
     try {
@@ -538,9 +548,13 @@ export default function SongRecorder({ song, user, bandId }: Props) {
       {/* ── Controls ─────────────────────────────────── */}
       <div className="recorder-controls">
         {recState === 'idle' && (
-          <button className="rec-btn rec-btn--start" onClick={startRecording}>
-            <Mic size={14} /> Start recording
-          </button>
+          canUse('recordings') ? (
+            <button className="rec-btn rec-btn--start" onClick={startRecording}>
+              <Mic size={14} /> Start recording
+            </button>
+          ) : (
+            <UpgradePrompt feature="recordings" label="Recording songs" />
+          )
         )}
 
         {recState === 'recording' && (

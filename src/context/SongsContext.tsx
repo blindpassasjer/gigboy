@@ -20,6 +20,8 @@ import {
   TRASH_COLLECTION,
 } from '../lib/trash';
 import { useAuth } from './AuthContext';
+import { usePlan } from '../hooks/usePlan';
+import { PLAN_LIMITS } from '../lib/planLimits';
 
 const LOCAL_STORAGE_KEY = 'gigboy-local-songs';
 
@@ -124,6 +126,7 @@ function songsCollectionPath(userId: string) {
 
 export function SongsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { plan, songLimit } = usePlan();
   const userId = user?.id ?? null;
   const [userSongs, setUserSongs] = useState<Song[]>(() => (firebaseEnabled ? [] : readLocalSongs()));
   const [trashedSongs, setTrashedSongs] = useState<TrashedSong[]>([]);
@@ -224,6 +227,14 @@ export function SongsProvider({ children }: { children: ReactNode }) {
   const songs = [...userSongs];
 
   const addSong = useCallback(async (song: Song): Promise<string | null> => {
+    // Enforce free-tier song limit
+    if (plan === 'free') {
+      const limit = songLimit ?? PLAN_LIMITS.free.songLimit ?? 12;
+      const ownCount = userSongs.filter((s) => (s.ownerId ?? userId) === userId).length;
+      if (ownCount >= limit) {
+        return `You've reached the ${limit}-song limit on the Free plan. Upgrade to Pro to add unlimited songs.`;
+      }
+    }
     let nextSong = song;
 
     setUserSongs((prev) => {
@@ -254,7 +265,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       setUserSongs((prev) => prev.filter((s) => s.id !== song.id));
       return err instanceof Error ? err.message : 'Failed to save song.';
     }
-  }, [userId]);
+  }, [userId, plan, songLimit, userSongs]);
 
   const updateSong = useCallback(async (song: Song): Promise<string | null> => {
     let previousSong: Song | null = null;

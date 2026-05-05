@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
+import { usePlan } from '../hooks/usePlan';
 import type { Song } from '../types';
 import LanguageBadge from '../components/LanguageBadge';
 import ChordDisplay from '../components/ChordDisplay';
@@ -37,6 +38,7 @@ type PedalControlMode = 'song' | 'scroll';
 export default function BandSetlistConcertPage() {
   const navigate = useNavigate();
   const { bandId, setlistId } = useParams<{ bandId: string; setlistId: string }>();
+  const { canUse } = usePlan();
   const {
     bandSetlistsByBandId,
     bandSongsByBandId,
@@ -390,13 +392,17 @@ export default function BandSetlistConcertPage() {
   }, [attachBluetoothPedalListeners]);
 
   const handlePedalButtonClick = useCallback(() => {
+    if (!canUse('bluetoothPedal')) {
+      window.alert('The Bluetooth pedal feature requires a Pro or Band plan. Upgrade at gigboy.app/pricing.');
+      return;
+    }
     if (isPedalConnected) {
       setShowPedalMapper((value) => !value);
       setPedalMappingTarget(null);
       return;
     }
     void handleSelectBluetoothPedal();
-  }, [handleSelectBluetoothPedal, isPedalConnected]);
+  }, [canUse, handleSelectBluetoothPedal, isPedalConnected]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

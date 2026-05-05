@@ -8,6 +8,7 @@ import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useStageplots } from '../context/StageplotsContext';
 import { useTechnicalRiders } from '../context/TechnicalRidersContext';
+import { usePlan } from '../hooks/usePlan';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
@@ -28,6 +29,7 @@ interface CopyDialogState {
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { canUse } = usePlan();
   const { songs, deleteSong, moveSong } = useSongs();
   const {
     activeCategoryId,
@@ -369,6 +371,10 @@ export default function HomePage() {
 
   async function handleShareStageplot() {
     if (!activeStageplot) return;
+    if (!canUse('shareableLinks')) {
+      toast.error('Public shareable links require a Pro or Band plan.');
+      return;
+    }
     const ownerId = activeStageplot.ownerId;
     if (!ownerId) {
       toast.error('This stageplot cannot be publicly shared yet. Please sync your account first.');
@@ -435,6 +441,10 @@ export default function HomePage() {
 
   async function handleShareTechnicalRider() {
     if (!activeTechnicalRider) return;
+    if (!canUse('shareableLinks')) {
+      toast.error('Public shareable links require a Pro or Band plan.');
+      return;
+    }
     const ownerId = activeTechnicalRider.ownerId;
     if (!ownerId) {
       toast.error('This technical rider cannot be publicly shared yet. Please sync your account first.');
@@ -574,6 +584,10 @@ export default function HomePage() {
 
   async function handleShareSetlist() {
     if (!activeSetlist) return;
+    if (!canUse('shareableLinks')) {
+      toast.error('Public shareable links require a Pro or Band plan.');
+      return;
+    }
     const ownerId = activeSetlist.ownerId;
     if (!ownerId) {
       toast.error('This setlist cannot be publicly shared yet. Please sync your account first.');
