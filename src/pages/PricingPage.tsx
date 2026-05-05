@@ -3,7 +3,7 @@ import { Check, Lock, Sparkles, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
-import { useBands } from '../context/BandsContext';
+import { useOptionalBands } from '../context/BandsContext';
 import { createCheckoutSession } from '../lib/billingApi';
 import { usePlan } from '../hooks/usePlan';
 import { PLAN_LABELS } from '../lib/planLimits';
@@ -65,7 +65,8 @@ function resolvePriceId(card: PlanCard, cycle: BillingCycle) {
 
 export default function PricingPage() {
   const { user } = useAuth();
-  const { bands } = useBands();
+  const bandsContext = useOptionalBands();
+  const bands = bandsContext?.bands ?? [];
   const location = useLocation();
   const { plan } = usePlan();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');

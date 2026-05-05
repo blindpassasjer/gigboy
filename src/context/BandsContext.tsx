@@ -464,6 +464,7 @@ interface BandsContextValue {
   createBand: (name: string, description?: string, icon?: string) => Promise<{ bandId: string | null; error: string | null }>;
   deleteBand: (bandId: string) => Promise<string | null>;
   renameBand: (bandId: string, name: string) => Promise<string | null>;
+  updateBandDescription: (bandId: string, description: string) => Promise<string | null>;
   inviteMember: (bandId: string, recipientUsername: string, role: CollaborationPermission) => Promise<string | null>;
   changeMemberRole: (bandId: string, memberId: string, role: CollaborationPermission) => Promise<string | null>;
   removeMember: (bandId: string, memberId: string) => Promise<string | null>;
@@ -1136,6 +1137,47 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   }, [bands, userId]);
 
   const updateBandLibraryAppearance = useCallback(async (
+      const updateBandDescription = useCallback(async (bandId: string, description: string) => {
+        if (!db || !userId) {
+          return 'Bands require cloud sync.';
+        }
+
+        const band = bands.find((entry) => entry.id === bandId);
+        if (!band) {
+          return 'Band not found.';
+        }
+
+        if (!canEditBandLibrary(band, userId)) {
+          return 'You do not have permission to edit this band.';
+        }
+
+        const trimmed = description.trim();
+        if (trimmed.length > 240) {
+          return 'Band description must be 240 characters or fewer.';
+        }
+
+        const previousBands = bands;
+        const now = new Date().toISOString();
+        const nextDescription = trimmed || undefined;
+        const nextBands = bands.map((entry) =>
+          entry.id === bandId ? { ...entry, description: nextDescription, updatedAt: now } : entry
+        );
+
+        setBands(nextBands);
+
+        try {
+          await setDoc(doc(db, BANDS_COLLECTION, bandId), {
+            description: nextDescription ?? null,
+            updatedAt: now,
+          }, { merge: true });
+          return null;
+        } catch (error) {
+          setBands(previousBands);
+          return error instanceof Error ? error.message : 'Failed to update band description.';
+        }
+      }, [bands, userId]);
+
+      const updateBandLibraryAppearance = useCallback(async (
     bandId: string,
     appearance: { icon?: string; color?: string }
   ) => {
@@ -3269,6 +3311,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     deleteBand,
     renameBand,
     inviteMember,
+      updateBandDescription,
     changeMemberRole,
     removeMember,
     leaveBand,
@@ -3302,6 +3345,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateSongNoteInBandSetlist,
     addBandStageplot,
     renameBandStageplot,
+      updateBandDescription,
     updateBandStageplotIcon,
     updateBandStageplotSettings,
     setBandStageplotPublicShare,
@@ -3385,4 +3429,8 @@ export function useBands() {
     throw new Error('useBands must be used inside BandsProvider');
   }
   return context;
+}
+
+export function useOptionalBands() {
+  return useContext(BandsContext);
 }

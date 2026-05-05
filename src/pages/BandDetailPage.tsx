@@ -660,7 +660,7 @@ export default function BandDetailPage() {
           <button
             type="button"
             className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={() => navigate(canEditBand ? `/bands/${band.id}/customize` : `/bands/${band.id}/members`)}
+            onClick={() => navigate(canEditBand ? `/bands/${band.id}/settings` : `/bands/${band.id}/members`)}
             title="Band settings"
           >
             <Settings size={14} />
