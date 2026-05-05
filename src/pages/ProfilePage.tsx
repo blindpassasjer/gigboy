@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BadgeCheck, CreditCard, LogOut, Sparkles, Users } from 'lucide-react';
 import toast from '../utils/anchoredToast';
@@ -53,11 +53,42 @@ export default function ProfilePage() {
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [busyLogout, setBusyLogout] = useState(false);
   const [busyBilling, setBusyBilling] = useState(false);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const avatarPickerRef = useRef<HTMLDivElement | null>(null);
+  const avatarTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
+  const ownedBands = useMemo(() => bands.filter((band) => band.ownerId === user?.id), [bands, user?.id]);
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
   const renewalDate = formatPeriodEnd(user?.currentPeriodEnd ?? null);
   const hasPaidPlan = planState.plan === 'pro' || planState.plan === 'band';
+
+  useEffect(() => {
+    if (!avatarPickerOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (avatarPickerRef.current?.contains(target)) return;
+      if (avatarTriggerRef.current?.contains(target)) return;
+      setAvatarPickerOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setAvatarPickerOpen(false);
+      avatarTriggerRef.current?.focus();
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [avatarPickerOpen]);
 
   if (!user) {
     return <p className="profile-settings-status">You must be signed in to manage your profile.</p>;
@@ -133,6 +164,7 @@ export default function ProfilePage() {
       return;
     }
 
+    setAvatarPickerOpen(false);
     toast.success('Avatar updated.');
   };
 
@@ -171,7 +203,42 @@ export default function ProfilePage() {
     <section className="profile-settings-page profile-settings-page--account">
       <header className="profile-account-hero">
         <div className="profile-account-hero-main">
-          <UserAvatar avatar={user.avatar} label={displayName} size="lg" />
+          <div className="profile-avatar-picker" ref={avatarPickerRef}>
+            <button
+              ref={avatarTriggerRef}
+              type="button"
+              className={`profile-avatar-trigger${avatarPickerOpen ? ' is-open' : ''}`}
+              aria-haspopup="dialog"
+              aria-expanded={avatarPickerOpen}
+              aria-controls="avatar-picker-box"
+              onClick={() => setAvatarPickerOpen((open) => !open)}
+            >
+              <UserAvatar avatar={user.avatar} label={displayName} size="lg" />
+              <span className="profile-avatar-trigger-label">Change avatar</span>
+            </button>
+
+            {avatarPickerOpen ? (
+              <div id="avatar-picker-box" className="profile-avatar-popover" role="dialog" aria-label="Choose avatar">
+                <div className="avatar-grid" role="radiogroup" aria-label="Choose avatar">
+                  {AVATAR_OPTIONS.map((avatar) => {
+                    const isSelected = selectedAvatar === avatar;
+                    return (
+                      <button
+                        key={avatar}
+                        type="button"
+                        className={`avatar-choice${isSelected ? ' avatar-choice--active' : ''}`}
+                        onClick={() => { void onSelectAvatar(avatar); }}
+                        aria-pressed={isSelected}
+                        disabled={busyAvatar}
+                      >
+                        <span>{avatar}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+          </div>
           <div className="profile-account-hero-copy">
             <span className="profile-account-kicker">Account</span>
             <h1>{displayName}</h1>
@@ -222,14 +289,49 @@ export default function ProfilePage() {
               <strong>{planState.songLimit === null ? 'Unlimited' : `${planState.songLimit} songs`}</strong>
             </article>
             <article className="profile-limit-card">
-              <span>Storage included</span>
-              <strong>{formatStorageBytes(planState.storageQuotaBytes)}</strong>
-            </article>
-            <article className="profile-limit-card">
               <span>Member capacity</span>
-              <strong>{planState.memberLimit}</strong>
+              <strong>{planState.memberLimit} member{planState.memberLimit === 1 ? '' : 's'}</strong>
             </article>
           </div>
+          {ownedBands.length > 0 ? (
+            <div className="profile-band-subscriptions">
+              <div className="profile-section-heading profile-section-heading--subtle">
+                <div>
+                  <h3>Band subscriptions</h3>
+                  <p className="profile-settings-muted">One billing account, with each owned band managed as its own line item.</p>
+                </div>
+              </div>
+              <div className="profile-band-subscriptions-list">
+                {ownedBands.map((band) => (
+                  <article key={band.id} className="profile-band-subscription-row">
+                    <div className="profile-band-subscription-copy">
+                      <strong>{band.name}</strong>
+                      <span>
+                        {band.billingPlan === 'band'
+                          ? `${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)} · ${band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0))} members`
+                          : 'No active Band subscription for this band.'}
+                      </span>
+                      {band.billingCurrentPeriodEnd ? (
+                        <span>Renews {formatPeriodEnd(band.billingCurrentPeriodEnd) ?? '—'}</span>
+                      ) : null}
+                    </div>
+                    <Link
+                      to="/pricing"
+                      state={{ bandId: band.id }}
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                    >
+                      Open billing
+                    </Link>
+                  </article>
+                ))}
+              </div>
+              {ownedBands.length > 1 ? (
+                <p className="profile-settings-muted">
+                  You own {ownedBands.length} bands. They can all live on one Stripe bill while still being managed per band.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="profile-feature-chips" aria-label="Included paid features">
             <span className={planState.canUse('setlists') ? 'is-enabled' : ''}>Setlists</span>
             <span className={planState.canUse('stagePlots') ? 'is-enabled' : ''}>Stage plots</span>
@@ -248,7 +350,7 @@ export default function ProfilePage() {
                 disabled={busyBilling}
                 onClick={() => { void handleManageBilling(); }}
               >
-                <CreditCard size={16} /> {busyBilling ? 'Opening…' : 'Manage subscription'}
+                <CreditCard size={16} /> {busyBilling ? 'Opening…' : 'Manage billing account'}
               </button>
             ) : (
               <Link to="/pricing" className="setlist-action-btn">
@@ -312,31 +414,6 @@ export default function ProfilePage() {
               {busyEmail ? 'Saving…' : 'Save'}
             </button>
           </form>
-          <div className="profile-avatar-section">
-            <div className="profile-section-heading">
-              <div>
-                <h3>Avatar</h3>
-                <p className="profile-settings-muted">Choose how your account appears to collaborators and band members.</p>
-              </div>
-            </div>
-            <div id="avatar-options" className="avatar-grid" role="radiogroup" aria-label="Choose avatar">
-              {AVATAR_OPTIONS.map((avatar) => {
-                const isSelected = selectedAvatar === avatar;
-                return (
-                  <button
-                    key={avatar}
-                    type="button"
-                    className={`avatar-choice${isSelected ? ' avatar-choice--active' : ''}`}
-                    onClick={() => { void onSelectAvatar(avatar); }}
-                    aria-pressed={isSelected}
-                    disabled={busyAvatar}
-                  >
-                    <span>{avatar}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </section>
 
         <section className="profile-settings-card profile-settings-card--wide profile-danger-card">

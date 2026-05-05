@@ -49,8 +49,26 @@ function isPlanActive(plan: PlanTier, subscriptionStatus: SubscriptionStatus, pl
 
 export async function resolveOwnerBandMemberLimit(
   env: Record<string, string | undefined>,
-  ownerId: string
+  ownerId: string,
+  bandId: string
 ): Promise<OwnerBandLimit> {
+  const bandDoc = await getFirestoreDocument(env, ['bands', bandId]);
+  const bandStatus = toSubscriptionStatus(bandDoc?.billingSubscriptionStatus);
+  const bandPlan = bandDoc?.billingPlan === 'band' ? 'band' : 'free';
+  const bandActive = isPlanActive(bandPlan, bandStatus, false);
+
+  if (bandPlan === 'band' && bandActive) {
+    const extraMembers = toSafeExtraMembers(bandDoc?.billingExtraMembers);
+    const storedLimit = typeof bandDoc?.billingMemberLimit === 'number'
+      ? Math.max(1, Math.trunc(bandDoc.billingMemberLimit))
+      : 5 + extraMembers;
+    return {
+      memberLimit: Math.max(storedLimit, 5 + extraMembers),
+      isBandEligible: true,
+      extraMembers,
+    };
+  }
+
   const ownerProfile = await getFirestoreDocument(env, ['users', ownerId]);
   const plan = toPlanTier(ownerProfile?.plan);
   const subscriptionStatus = toSubscriptionStatus(ownerProfile?.subscriptionStatus);

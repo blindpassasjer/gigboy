@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import Stripe from 'stripe';
+import { setFirestoreDocument } from '../../_helpers/firebase-admin';
 import {
   getStripeClient,
   updateUserPlan,
@@ -33,6 +34,66 @@ function getUid(
     if (typeof custUid === 'string' && custUid) return custUid;
   }
   return null;
+}
+
+function isBandBasePriceId(priceId: string, env: Env): boolean {
+  return priceId === env.STRIPE_BAND_MONTHLY_PRICE_ID || priceId === env.STRIPE_BAND_ANNUAL_PRICE_ID;
+}
+
+function isBandExtraPriceId(priceId: string, env: Env): boolean {
+  return priceId === env.STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID
+    || priceId === env.STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID;
+}
+
+function extractBandIdsFromSubscription(sub: Stripe.Subscription, env: Env): string[] {
+  const ids = new Set<string>();
+  sub.items.data.forEach((item) => {
+    const priceId = item.price?.id ?? '';
+    const isBandItem = isBandBasePriceId(priceId, env) || isBandExtraPriceId(priceId, env);
+    if (!isBandItem) return;
+    const bandId = item.metadata?.bandId;
+    if (typeof bandId === 'string' && bandId.trim()) {
+      ids.add(bandId.trim());
+    }
+  });
+  return Array.from(ids);
+}
+
+async function writeBandBillingSnapshot(
+  env: Record<string, string | undefined>,
+  bandId: string,
+  sub: Stripe.Subscription,
+  envConfig: Env,
+  overrideStatus?: ReturnType<typeof mapStripeStatus>
+) {
+  const status = overrideStatus ?? mapStripeStatus(sub.status);
+  const baseItem = sub.items.data.find((item) => {
+    const priceId = item.price?.id ?? '';
+    return isBandBasePriceId(priceId, envConfig) && item.metadata?.bandId === bandId;
+  }) ?? null;
+
+  const extraItem = sub.items.data.find((item) => {
+    const priceId = item.price?.id ?? '';
+    return isBandExtraPriceId(priceId, envConfig) && item.metadata?.bandId === bandId;
+  }) ?? null;
+
+  const extraMembers = Math.max(0, Math.min(500, Math.trunc(extraItem?.quantity ?? 0)));
+  const active = status === 'active' || status === 'trialing';
+  const customerId = typeof sub.customer === 'string'
+    ? sub.customer
+    : (sub.customer as Stripe.Customer)?.id ?? null;
+
+  await setFirestoreDocument(env, ['bands', bandId], {
+    billingPlan: active && baseItem ? 'band' : 'free',
+    billingSubscriptionStatus: status,
+    billingCurrentPeriodEnd: baseItem?.current_period_end ?? sub.items.data[0]?.current_period_end ?? null,
+    billingExtraMembers: active && baseItem ? extraMembers : 0,
+    billingMemberLimit: active && baseItem ? 5 + extraMembers : 1,
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: sub.id,
+    stripeBandItemId: baseItem?.id ?? null,
+    stripeExtraMembersItemId: extraItem?.id ?? null,
+  });
 }
 
 export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> = async (ctx) => {
@@ -70,11 +131,53 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           ? session.subscription
           : session.subscription.id;
 
-        const sub = await stripe.subscriptions.retrieve(subId, { expand: ['customer'] });
+        let sub = await stripe.subscriptions.retrieve(subId, { expand: ['customer'] });
         const uid = getUid(sub, sub.customer as Stripe.Customer | Stripe.DeletedCustomer | null);
         if (!uid) {
           console.error('checkout.session.completed: no firebaseUid in metadata', { subId });
           break;
+        }
+
+        const checkoutBandId = typeof session.metadata?.bandId === 'string'
+          ? session.metadata.bandId.trim()
+          : '';
+
+        if (sub.metadata?.gigboyMode === 'band_aggregate' && checkoutBandId) {
+          const baseItemWithoutBand = sub.items.data.find((item) => {
+            const priceId = item.price?.id ?? '';
+            return isBandBasePriceId(priceId, ctx.env) && !item.metadata?.bandId;
+          }) ?? null;
+
+          const extraItemWithoutBand = sub.items.data.find((item) => {
+            const priceId = item.price?.id ?? '';
+            return isBandExtraPriceId(priceId, ctx.env) && !item.metadata?.bandId;
+          }) ?? null;
+
+          if (baseItemWithoutBand || extraItemWithoutBand) {
+            const items: Stripe.SubscriptionUpdateParams.Item[] = [];
+            if (baseItemWithoutBand) {
+              items.push({
+                id: baseItemWithoutBand.id,
+                metadata: {
+                  ...(baseItemWithoutBand.metadata ?? {}),
+                  bandId: checkoutBandId,
+                  itemType: 'band_base',
+                },
+              });
+            }
+            if (extraItemWithoutBand) {
+              items.push({
+                id: extraItemWithoutBand.id,
+                metadata: {
+                  ...(extraItemWithoutBand.metadata ?? {}),
+                  bandId: checkoutBandId,
+                  itemType: 'band_extra_members',
+                },
+              });
+            }
+
+            sub = await stripe.subscriptions.update(sub.id, { items });
+          }
         }
 
         const { plan, bandExtraMembers } = planAndExtraMembersFromSubscription(sub, env);
@@ -89,6 +192,13 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           stripeCustomerId: customerId,
           bandExtraMembers,
         });
+
+        if (sub.metadata?.gigboyMode === 'band_aggregate') {
+          const bandIds = extractBandIdsFromSubscription(sub, ctx.env);
+          await Promise.all(
+            bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, sub, ctx.env))
+          );
+        }
         break;
       }
 
@@ -115,6 +225,13 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           stripeCustomerId: customerId,
           bandExtraMembers,
         });
+
+        if (expandedSub.metadata?.gigboyMode === 'band_aggregate') {
+          const bandIds = extractBandIdsFromSubscription(expandedSub, ctx.env);
+          await Promise.all(
+            bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, expandedSub, ctx.env))
+          );
+        }
         break;
       }
 
@@ -138,6 +255,13 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           stripeCustomerId: customerId,
           bandExtraMembers: 0,
         });
+
+        if (expandedSub.metadata?.gigboyMode === 'band_aggregate') {
+          const bandIds = extractBandIdsFromSubscription(expandedSub, ctx.env);
+          await Promise.all(
+            bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, expandedSub, ctx.env, 'canceled'))
+          );
+        }
         break;
       }
 
@@ -160,6 +284,13 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
             ? sub.customer
             : (sub.customer as Stripe.Customer)?.id ?? null,
         });
+
+        if (sub.metadata?.gigboyMode === 'band_aggregate') {
+          const bandIds = extractBandIdsFromSubscription(sub, ctx.env);
+          await Promise.all(
+            bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, sub, ctx.env, 'past_due'))
+          );
+        }
         break;
       }
 

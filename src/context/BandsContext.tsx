@@ -155,6 +155,24 @@ function normalizeBand(id: string, data: Record<string, unknown>): Band {
           )
         ) as Record<string, string>
       : {},
+    billingPlan: data.billingPlan === 'band' ? 'band' : data.billingPlan === 'free' ? 'free' : undefined,
+    billingSubscriptionStatus:
+      data.billingSubscriptionStatus === 'active'
+      || data.billingSubscriptionStatus === 'trialing'
+      || data.billingSubscriptionStatus === 'past_due'
+      || data.billingSubscriptionStatus === 'canceled'
+      || data.billingSubscriptionStatus === 'unpaid'
+      || data.billingSubscriptionStatus === 'incomplete'
+        ? data.billingSubscriptionStatus
+        : undefined,
+    billingCurrentPeriodEnd:
+      typeof data.billingCurrentPeriodEnd === 'number' ? data.billingCurrentPeriodEnd : undefined,
+    billingExtraMembers: typeof data.billingExtraMembers === 'number' ? data.billingExtraMembers : undefined,
+    billingMemberLimit: typeof data.billingMemberLimit === 'number' ? data.billingMemberLimit : undefined,
+    stripeSubscriptionId: typeof data.stripeSubscriptionId === 'string' ? data.stripeSubscriptionId : undefined,
+    stripeBandItemId: typeof data.stripeBandItemId === 'string' ? data.stripeBandItemId : undefined,
+    stripeExtraMembersItemId:
+      typeof data.stripeExtraMembersItemId === 'string' ? data.stripeExtraMembersItemId : undefined,
     createdAt: typeof data.createdAt === 'string' ? data.createdAt : new Date(0).toISOString(),
     updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,
   };

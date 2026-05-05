@@ -6310,6 +6310,63 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: 1rem;
 }
 
+.profile-avatar-picker {
+  position: relative;
+}
+
+.profile-avatar-trigger {
+  border: none;
+  background: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.profile-avatar-trigger .user-avatar {
+  transition: border-color .15s ease, background .15s ease, transform .08s ease;
+}
+
+.profile-avatar-trigger:hover .user-avatar,
+.profile-avatar-trigger:focus-visible .user-avatar,
+.profile-avatar-trigger.is-open .user-avatar {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.profile-avatar-trigger:active .user-avatar {
+  transform: scale(.97);
+}
+
+.profile-avatar-trigger:focus-visible {
+  outline: none;
+}
+
+.profile-avatar-trigger-label {
+  font-size: .72rem;
+  letter-spacing: .02em;
+}
+
+.profile-avatar-popover {
+  position: absolute;
+  top: calc(100% + .7rem);
+  left: 0;
+  z-index: 15;
+  width: min(22rem, 80vw);
+  padding: .8rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  background: color-mix(in srgb, var(--surface) 94%, #fff);
+  box-shadow: 0 16px 38px color-mix(in srgb, #000 16%, transparent);
+}
+
+.profile-avatar-popover .avatar-grid {
+  margin: 0;
+}
+
 .profile-account-hero-copy {
   display: flex;
   flex-direction: column;
@@ -6477,6 +6534,40 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--text);
   border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.profile-band-subscriptions {
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+}
+
+.profile-band-subscriptions-list {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+}
+
+.profile-band-subscription-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  padding: .75rem .85rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 35%, var(--surface));
+}
+
+.profile-band-subscription-copy {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.profile-band-subscription-copy span {
+  color: var(--muted);
+  font-size: .8rem;
 }
 
 .profile-avatar-section {
@@ -7183,9 +7274,24 @@ input, select, textarea { font: inherit; color: var(--text); }
     align-items: stretch;
   }
 
+  .profile-avatar-picker {
+    align-self: center;
+  }
+
+  .profile-avatar-popover {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(20rem, calc(100vw - 3rem));
+  }
+
   .profile-subscription-overview,
   .profile-limit-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-band-subscription-row {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .profile-settings-form--inline {

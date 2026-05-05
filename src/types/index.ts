@@ -51,6 +51,14 @@ export interface Band {
   memberUsernames: Record<string, string>;
   memberFullNames: Record<string, string>;
   memberAvatars: Record<string, string>;
+  billingPlan?: 'free' | 'band';
+  billingSubscriptionStatus?: SubscriptionStatus;
+  billingCurrentPeriodEnd?: number | null;
+  billingExtraMembers?: number;
+  billingMemberLimit?: number;
+  stripeSubscriptionId?: string;
+  stripeBandItemId?: string;
+  stripeExtraMembersItemId?: string;
   createdAt: string;
   updatedAt?: string;
 }

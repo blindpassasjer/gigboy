@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Check, Lock, Sparkles, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
+import { useBands } from '../context/BandsContext';
 import { createCheckoutSession } from '../lib/billingApi';
 import { usePlan } from '../hooks/usePlan';
 import { PLAN_LABELS } from '../lib/planLimits';
@@ -64,10 +65,22 @@ function resolvePriceId(card: PlanCard, cycle: BillingCycle) {
 
 export default function PricingPage() {
   const { user } = useAuth();
+  const { bands } = useBands();
+  const location = useLocation();
   const { plan } = usePlan();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [busyTier, setBusyTier] = useState<PlanTier | null>(null);
   const [extraMemberCount, setExtraMemberCount] = useState(0);
+
+  const ownedBands = bands.filter((band) => band.ownerId === user?.id);
+  const stateBandId = (() => {
+    const candidate = (location.state as { bandId?: unknown } | null)?.bandId;
+    return typeof candidate === 'string' ? candidate : '';
+  })();
+  const initialBandId = ownedBands.some((band) => band.id === stateBandId)
+    ? stateBandId
+    : (ownedBands[0]?.id ?? '');
+  const [selectedBandId, setSelectedBandId] = useState<string>(initialBandId);
 
   const handleCheckout = async (card: PlanCard) => {
     if (card.tier === 'free') return;
@@ -83,6 +96,10 @@ export default function PricingPage() {
     }
 
     const isBandPlan = card.tier === 'band';
+    if (isBandPlan && !selectedBandId) {
+      toast.error('Select which band you want to manage before continuing.');
+      return;
+    }
     const normalizedExtraMembers = isBandPlan ? Math.max(0, Math.min(500, Math.trunc(extraMemberCount))) : 0;
     const extraMemberPriceId = isBandPlan
       ? (
@@ -105,6 +122,7 @@ export default function PricingPage() {
         priceId,
         successUrl: `${window.location.origin}/checkout-result?status=success`,
         cancelUrl: `${window.location.origin}/checkout-result?status=cancel`,
+        ...(isBandPlan ? { bandId: selectedBandId } : {}),
         ...(normalizedExtraMembers > 0 && extraMemberPriceId
           ? {
             extraMemberPriceId,
@@ -183,17 +201,32 @@ export default function PricingPage() {
                 ))}
               </ul>
               {card.tier === 'band' ? (
-                <label className="share-menu-field" style={{ marginBottom: '0.85rem' }}>
-                  <span>Extra members ({billingCycle === 'annual' ? '200 kr / 20 USD each per year' : '20 kr / 2 USD each per month'})</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={500}
-                    value={extraMemberCount}
-                    onChange={(event) => setExtraMemberCount(Number(event.target.value) || 0)}
-                    disabled={busyTier === card.tier}
-                  />
-                </label>
+                <>
+                  <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
+                    <span>Band workspace</span>
+                    <select
+                      value={selectedBandId}
+                      onChange={(event) => setSelectedBandId(event.target.value)}
+                      disabled={busyTier === card.tier || ownedBands.length === 0}
+                    >
+                      {ownedBands.length === 0 ? <option value="">Create a band first</option> : null}
+                      {ownedBands.map((band) => (
+                        <option key={band.id} value={band.id}>{band.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="share-menu-field" style={{ marginBottom: '0.85rem' }}>
+                    <span>Extra members ({billingCycle === 'annual' ? '200 kr / 20 USD each per year' : '20 kr / 2 USD each per month'})</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={500}
+                      value={extraMemberCount}
+                      onChange={(event) => setExtraMemberCount(Number(event.target.value) || 0)}
+                      disabled={busyTier === card.tier || ownedBands.length === 0}
+                    />
+                  </label>
+                </>
               ) : null}
               {card.tier === 'free' ? (
                 <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-card-btn">
@@ -203,10 +236,16 @@ export default function PricingPage() {
                 <button
                   type="button"
                   className="setlist-action-btn pricing-card-btn"
-                  disabled={busyTier === card.tier || isCurrentPlan}
+                  disabled={busyTier === card.tier || isCurrentPlan || (card.tier === 'band' && ownedBands.length === 0)}
                   onClick={() => void handleCheckout(card)}
                 >
-                  {busyTier === card.tier ? 'Redirecting…' : isCurrentPlan ? `${PLAN_LABELS[card.tier]} active` : card.ctaLabel}
+                  {busyTier === card.tier
+                    ? 'Redirecting…'
+                    : card.tier === 'band' && ownedBands.length === 0
+                      ? 'Create a band first'
+                      : isCurrentPlan
+                        ? `${PLAN_LABELS[card.tier]} active`
+                        : card.ctaLabel}
                 </button>
               )}
             </section>

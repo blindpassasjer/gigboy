@@ -18,7 +18,7 @@ interface Props {
   availableSongLists?: SongList[];
   onMoveSong: (songId: string, beforeSongId: string | null) => void;
   onRemoveSong: (songId: string) => void;
-  onAddSong: (songId: string) => void;
+  onAddSong: (songId: string) => void | Promise<void>;
   onUpdateSongNote?: (songId: string, note: string) => void | Promise<void>;
   extraActions?: ReactNode;
   /** Override the concert mode URL (defaults to /setlists/:id/concert) */
@@ -79,6 +79,7 @@ export default function SetlistsView({
   const [renameValue, setRenameValue] = useState(setlistName);
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const [addingSongListId, setAddingSongListId] = useState<string | null>(null);
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [iconDraft, setIconDraft] = useState(effectiveIcon ?? '🎵');
   const [editingSongNoteId, setEditingSongNoteId] = useState<string | null>(null);
@@ -170,8 +171,17 @@ export default function SetlistsView({
     setPickerQuery('');
   };
 
-  const handleAddSongList = (songIds: string[]) => {
-    songIds.forEach((songId) => onAddSong(songId));
+  const handleAddSongList = async (sourceSongListId: string, songIds: string[]) => {
+    if (songIds.length === 0) return;
+
+    setAddingSongListId(sourceSongListId);
+    try {
+      for (const songId of songIds) {
+        await Promise.resolve(onAddSong(songId));
+      }
+    } finally {
+      setAddingSongListId((current) => (current === sourceSongListId ? null : current));
+    }
   };
 
   const startEditingSongNote = (songId: string) => {
@@ -665,10 +675,11 @@ export default function SetlistsView({
                       </div>
                       <button
                         className="song-picker-add-btn"
-                        onClick={() => handleAddSongList(addableSongIds)}
+                        onClick={() => void handleAddSongList(songList.id, addableSongIds)}
+                        disabled={addingSongListId === songList.id}
                         title={`Add all available songs from ${songList.name}`}
                       >
-                        <Plus size={14} /> Add list
+                        <Plus size={14} /> {addingSongListId === songList.id ? 'Adding...' : 'Add list'}
                       </button>
                     </div>
                   ))}

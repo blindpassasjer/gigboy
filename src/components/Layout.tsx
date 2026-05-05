@@ -8,6 +8,7 @@ import Sidebar from './Sidebar';
 import BrandMark from './BrandMark';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
+import { usePlan } from '../hooks/usePlan';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import { db } from '../lib/firebase';
 import { declineInvite, loadPendingInvites } from '../lib/collaboration';
@@ -46,6 +47,7 @@ export default function Layout({ children }: Props) {
   const { pathname, state } = useLocation();
   const { bands, refreshBands } = useBands();
   const { user } = useAuth();
+  const planState = usePlan();
   const {
     pendingIncomingCount,
     acceptedOutgoing,
@@ -122,7 +124,7 @@ export default function Layout({ children }: Props) {
   const [pendingBandInvites, setPendingBandInvites] = useState<BandInvite[]>([]);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
   const invitesPopoverRef = useRef<HTMLDivElement>(null);
-  const storageUsage = useStorageUsage(user?.id ?? null);
+  const storageUsage = useStorageUsage(user?.id ?? null, planState.storageQuotaBytes);
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
 
   const hasAnyPendingInvites = pendingInvites.length > 0 || pendingBandInvites.length > 0;

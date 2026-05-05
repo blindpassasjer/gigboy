@@ -18,6 +18,7 @@ export function usePlan() {
     const subscriptionStatus = user?.subscriptionStatus ?? null;
     const active = isPlanActive(plan, subscriptionStatus, planOverride);
     const limits = PLAN_LIMITS[plan];
+    const effectiveMemberLimit = Math.max(user?.memberLimit ?? 0, limits.memberLimit);
 
     return {
       plan,
@@ -30,7 +31,7 @@ export function usePlan() {
       subscriptionStatus,
       songLimit: limits.songLimit,
       storageQuotaBytes: Math.max(user?.storageQuotaBytes ?? 0, limits.storageQuotaBytes),
-      memberLimit: user?.memberLimit ?? limits.memberLimit,
+      memberLimit: effectiveMemberLimit,
       canUse(feature: ProFeature) {
         if (planOverride) return true;
         if (!active && plan !== 'free') return false;

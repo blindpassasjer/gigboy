@@ -172,17 +172,6 @@ export default function BandDetailPage() {
     }
   };
 
-  const handleRemoveSong = async (song: Song) => {
-    const error = await removeSongFromBandLibrary(band.id, song.id);
-
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
-    toast.success('Song removed from band library.');
-  };
-
   const handleDeleteSong = async (song: Song) => {
     if (!canEditBand) {
       toast.error('You do not have permission to edit this band library.');
@@ -678,7 +667,6 @@ export default function BandDetailPage() {
           </button>
         )}
         onDeleteSong={handleDeleteSong}
-        onRemoveSong={handleRemoveSong}
         onMoveSong={handleMoveSong}
         bandId={band.id}
       />
