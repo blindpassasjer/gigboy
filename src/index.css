@@ -1449,26 +1449,26 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-view .song-action-btn--edit {
   color: #1f5ea8;
-  border-color: #b7d0ee;
-  background: #f2f8ff;
+  border-color: transparent;
+  background: transparent;
 }
 
 .song-view .song-action-btn--edit:hover {
   color: #134783;
-  border-color: #8eb7e2;
-  background: #e4f1ff;
+  border-color: transparent;
+  background: transparent;
 }
 
 .song-view .song-action-btn--delete {
   color: var(--danger);
-  border-color: #efb5ae;
-  background: #fff0f0;
+  border-color: transparent;
+  background: transparent;
 }
 
 .song-view .song-action-btn--delete:hover {
   color: var(--danger);
-  border-color: #e28c82;
-  background: #fde1de;
+  border-color: transparent;
+  background: transparent;
 }
 
 @media (min-width: 901px) and (max-width: 1200px) {
