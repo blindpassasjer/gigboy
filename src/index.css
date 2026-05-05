@@ -220,6 +220,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   letter-spacing: .01em;
   line-height: 1;
   text-transform: uppercase;
+  transform: scale(1.25);
+  transform-origin: left center;
+  display: inline-block;
 }
 
 .brand-name-gig {

@@ -61,6 +61,16 @@ const MIGRATION_MARKER_PREFIX = 'gigboy-bands-migration';
 const SOLO_CLEANUP_MARKER = 'solo-cleanup-v1';
 const SERVER_REPAIR_MARKER = 'server-repair-v1';
 const CLIENT_REPAIR_MARKER = 'client-repair-v1';
+const LEGACY_NAME_REPAIR_MARKER = 'legacy-name-repair-v1';
+
+function readFirstNonEmptyString(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+  }
+  return null;
+}
 
 function migrationMarkerKey(marker: string, userId: string) {
   return `${MIGRATION_MARKER_PREFIX}:${marker}:${userId}`;
@@ -110,9 +120,11 @@ function canEditBandLibrary(band: Band, userId: string | null) {
 }
 
 function normalizeBand(id: string, data: Record<string, unknown>): Band {
+  const bandName = readFirstNonEmptyString(data.name, data.title) ?? 'Untitled band';
+
   return {
     id,
-    name: typeof data.name === 'string' ? data.name : 'Untitled band',
+    name: bandName,
     description: typeof data.description === 'string' ? data.description : undefined,
     icon: typeof data.icon === 'string' ? data.icon : undefined,
     color: typeof data.color === 'string' ? data.color : undefined,
@@ -179,9 +191,11 @@ function normalizeBand(id: string, data: Record<string, unknown>): Band {
 }
 
 function normalizeBandSong(id: string, data: Record<string, unknown>): Song {
+  const title = readFirstNonEmptyString(data.title, data.name) ?? 'Untitled';
+
   return {
     id,
-    title: typeof data.title === 'string' ? data.title : 'Untitled',
+    title,
     artist: typeof data.artist === 'string' ? data.artist : undefined,
     language: typeof data.language === 'string' ? data.language : 'en',
     secondaryLanguages: Array.isArray(data.secondaryLanguages)
@@ -224,9 +238,11 @@ function sortBandSongs(songs: Song[]) {
 }
 
 function normalizeBandSongList(id: string, data: Record<string, unknown>): SongList {
+  const name = readFirstNonEmptyString(data.name, data.title) ?? 'Untitled songlist';
+
   return {
     id,
-    name: typeof data.name === 'string' ? data.name : 'Untitled songlist',
+    name,
     songIds: Array.isArray(data.songIds)
       ? data.songIds.filter((entry): entry is string => typeof entry === 'string')
       : [],
@@ -249,9 +265,11 @@ function normalizeBandSongList(id: string, data: Record<string, unknown>): SongL
 }
 
 function normalizeBandSetlist(id: string, data: Record<string, unknown>): Setlist {
+  const name = readFirstNonEmptyString(data.name, data.title) ?? 'Untitled setlist';
+
   return {
     id,
-    name: typeof data.name === 'string' ? data.name : 'Untitled setlist',
+    name,
     icon: typeof data.icon === 'string' ? data.icon : undefined,
     songIds: Array.isArray(data.songIds)
       ? data.songIds.filter((entry): entry is string => typeof entry === 'string')
@@ -545,6 +563,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [membershipRepairUserId, setMembershipRepairUserId] = useState<string | null>(null);
   const [serverRepairUserId, setServerRepairUserId] = useState<string | null>(null);
   const [soloCleanupUserId, setSoloCleanupUserId] = useState<string | null>(null);
+  const [legacyNameRepairUserId, setLegacyNameRepairUserId] = useState<string | null>(null);
 
   // One-time cleanup for legacy solo data now that the app is bands-only.
   useEffect(() => {
@@ -692,6 +711,100 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       console.error('[Gigboy] Owned band membership repair failed:', error);
     });
   }, [membershipRepairUserId, userId, userEmail, userUsername, userFullName, userAvatar]);
+
+  // Repair legacy records that used non-canonical name/title fields.
+  useEffect(() => {
+    if (!db || !userId || legacyNameRepairUserId === userId) return;
+    if (hasMigrationMarker(LEGACY_NAME_REPAIR_MARKER, userId)) {
+      setLegacyNameRepairUserId(userId);
+      return;
+    }
+
+    const firestore = db;
+    setLegacyNameRepairUserId(userId);
+
+    const repairLegacyNameFields = async () => {
+      const ownedBandsSnapshot = await getDocs(
+        query(collection(firestore, BANDS_COLLECTION), where('ownerId', '==', userId))
+      );
+
+      let repairedBandCount = 0;
+      let repairedSongCount = 0;
+      let repairedSongListCount = 0;
+      let repairedSetlistCount = 0;
+
+      await Promise.all(ownedBandsSnapshot.docs.map(async (bandDoc) => {
+        const bandData = bandDoc.data() as Record<string, unknown>;
+        const canonicalBandName = readFirstNonEmptyString(bandData.name, bandData.title);
+        const shouldRepairBandName = typeof bandData.name !== 'string' && canonicalBandName !== null;
+
+        if (shouldRepairBandName) {
+          repairedBandCount += 1;
+          await setDoc(doc(firestore, BANDS_COLLECTION, bandDoc.id), {
+            name: canonicalBandName,
+            updatedAt: new Date().toISOString(),
+          }, { merge: true });
+        }
+
+        const [songsSnapshot, songListsSnapshot, setlistsSnapshot] = await Promise.all([
+          getDocs(collection(firestore, BANDS_COLLECTION, bandDoc.id, BAND_SONGS_COLLECTION)),
+          getDocs(collection(firestore, BANDS_COLLECTION, bandDoc.id, BAND_SONGLISTS_COLLECTION)),
+          getDocs(collection(firestore, BANDS_COLLECTION, bandDoc.id, BAND_SETLISTS_COLLECTION)),
+        ]);
+
+        await Promise.all(songsSnapshot.docs.map(async (entry) => {
+          const data = entry.data() as Record<string, unknown>;
+          const canonicalTitle = readFirstNonEmptyString(data.title, data.name);
+          const shouldRepairTitle = typeof data.title !== 'string' && canonicalTitle !== null;
+          if (!shouldRepairTitle) return;
+
+          repairedSongCount += 1;
+          await setDoc(doc(firestore, BANDS_COLLECTION, bandDoc.id, BAND_SONGS_COLLECTION, entry.id), {
+            title: canonicalTitle,
+            updatedAt: new Date().toISOString(),
+          }, { merge: true });
+        }));
+
+        await Promise.all(songListsSnapshot.docs.map(async (entry) => {
+          const data = entry.data() as Record<string, unknown>;
+          const canonicalName = readFirstNonEmptyString(data.name, data.title);
+          const shouldRepairName = typeof data.name !== 'string' && canonicalName !== null;
+          if (!shouldRepairName) return;
+
+          repairedSongListCount += 1;
+          await setDoc(doc(firestore, BANDS_COLLECTION, bandDoc.id, BAND_SONGLISTS_COLLECTION, entry.id), {
+            name: canonicalName,
+            updatedAt: new Date().toISOString(),
+          }, { merge: true });
+        }));
+
+        await Promise.all(setlistsSnapshot.docs.map(async (entry) => {
+          const data = entry.data() as Record<string, unknown>;
+          const canonicalName = readFirstNonEmptyString(data.name, data.title);
+          const shouldRepairName = typeof data.name !== 'string' && canonicalName !== null;
+          if (!shouldRepairName) return;
+
+          repairedSetlistCount += 1;
+          await setDoc(doc(firestore, BANDS_COLLECTION, bandDoc.id, BAND_SETLISTS_COLLECTION, entry.id), {
+            name: canonicalName,
+            updatedAt: new Date().toISOString(),
+          }, { merge: true });
+        }));
+      }));
+
+      setMigrationMarker(LEGACY_NAME_REPAIR_MARKER, userId);
+
+      if (repairedBandCount + repairedSongCount + repairedSongListCount + repairedSetlistCount > 0) {
+        console.info(
+          `[Gigboy] Repaired legacy name fields: bands=${repairedBandCount}, songs=${repairedSongCount}, songlists=${repairedSongListCount}, setlists=${repairedSetlistCount}`
+        );
+      }
+    };
+
+    void repairLegacyNameFields().catch((error) => {
+      console.error('[Gigboy] Legacy name field repair failed:', error);
+    });
+  }, [legacyNameRepairUserId, userId]);
 
   const refreshBands = useCallback(async () => {
     if (!db || !userId) {
