@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronUp,
   ChevronDown,
@@ -28,6 +28,7 @@ import VisualTuner from './VisualTuner';
 import { transposeChord } from '../utils/chordParser';
 import type { ChordNotation } from '../utils/chordParser';
 import { useSongLists } from '../context/SongListsContext';
+import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../hooks/usePlan';
@@ -51,8 +52,16 @@ interface ActiveChord {
   rect: DOMRect;
 }
 
+type SongPageState = {
+  backTo?: string;
+  backLabel?: string;
+  bandId?: string;
+};
+
 export default function SongView({ song, accentColor, bandId }: Props) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pageState = location.state as SongPageState | null;
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
   const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
@@ -62,6 +71,13 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const { updateSong, deleteSong } = useSongs();
   const { songLists, addSongToList, removeSongFromList } = useSongLists();
+  const {
+    bandSongListsByBandId,
+    addSongToBandSongList,
+    removeSongFromBandSongList,
+    removeSongFromBandLibrary,
+  } = useBands();
+  const effectiveSongLists = bandId ? (bandSongListsByBandId[bandId] ?? []) : songLists;
   const { user } = useAuth();
   const { canUse } = usePlan();
 
@@ -76,6 +92,13 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
   const media = song.playbackUrl ? parseSongMedia(song.playbackUrl) : null;
   const canDeleteSong = !song.ownerId || song.accessRole === 'owner';
+  const songPageState = pageState ?? (bandId
+    ? {
+      backTo: `/bands/${bandId}/library`,
+      backLabel: 'Band library',
+      bandId,
+    }
+    : undefined);
 
   const handNotes = useSongHandNotes({
     ownerId: song.ownerId ?? user?.id ?? null,
@@ -180,8 +203,21 @@ export default function SongView({ song, accentColor, bandId }: Props) {
       confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
+
+    if (bandId) {
+      const error = await removeSongFromBandLibrary(bandId, song.id);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      toast.success('Song moved to band trash.');
+      navigate(songPageState?.backTo ?? `/bands/${bandId}/library`, songPageState ? { state: songPageState } : undefined);
+      return;
+    }
+
     await deleteSong(song.id);
-    navigate('/');
+    navigate(songPageState?.backTo ?? '/', songPageState ? { state: songPageState } : undefined);
   }
 
   const headerStyle = accentColor
@@ -546,17 +582,23 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 </button>
                 {listMenuOpen && (
                   <div className="list-dropdown">
-                    {songLists.length === 0 ? (
+                    {effectiveSongLists.length === 0 ? (
                       <p className="list-dropdown-empty">No lists yet — create one in the sidebar</p>
                     ) : (
-                      songLists.map((list) => {
+                      effectiveSongLists.map((list) => {
                         const inList = list.songIds.includes(song.id);
                         return (
                           <button
                             key={list.id}
                             className={`list-dropdown-item${inList ? ' in-list' : ''}`}
                             onClick={() => {
-                              if (inList) {
+                              if (bandId) {
+                                if (inList) {
+                                  void removeSongFromBandSongList(bandId, list.id, song.id);
+                                } else {
+                                  void addSongToBandSongList(bandId, list.id, song.id);
+                                }
+                              } else if (inList) {
                                 removeSongFromList(list.id, song.id);
                               } else {
                                 addSongToList(list.id, song.id);
@@ -575,7 +617,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
               <button
                 className="song-action-btn song-action-btn--edit song-action-btn--labeled"
-                onClick={() => navigate(`/songs/${song.id}/edit`)}
+                onClick={() => navigate(`/songs/${song.id}/edit`, songPageState ? { state: songPageState } : undefined)}
                 title={`Edit ${song.title}`}
                 aria-label={`Edit ${song.title}`}
               >
