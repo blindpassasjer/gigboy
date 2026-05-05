@@ -6283,8 +6283,87 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: 1rem;
 }
 
+.profile-settings-page--account {
+  max-width: 1180px;
+  gap: 1.25rem;
+}
+
 .profile-settings-status {
   color: var(--muted);
+}
+
+.profile-account-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 1.25rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 14%, transparent), transparent 28%),
+    linear-gradient(135deg, color-mix(in srgb, var(--surface) 92%, #fff), var(--surface));
+}
+
+.profile-account-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-account-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.profile-account-kicker {
+  color: var(--muted);
+  font-size: .76rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.profile-account-hero-copy h1 {
+  margin: 0;
+  font-size: 1.9rem;
+}
+
+.profile-account-hero-copy p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.profile-account-badges,
+.profile-account-hero-actions,
+.profile-feature-chips,
+.profile-danger-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+
+.profile-account-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .42rem .72rem;
+  border-radius: 999px;
+  font-size: .82rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 82%, white);
+  color: var(--muted);
+}
+
+.profile-account-badge--plan {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.profile-account-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  gap: 1rem;
 }
 
 .profile-settings-header {
@@ -6319,7 +6398,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .profile-settings-card--wide {
-  grid-column: span 1;
+  grid-column: 1 / -1;
 }
 
 .profile-settings-card h2 {
@@ -6337,6 +6416,279 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .profile-settings-avatar-header h1 {
   font-size: 1.45rem;
+}
+
+.profile-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.profile-section-heading h2,
+.profile-section-heading h3 {
+  margin: 0;
+}
+
+.profile-section-heading--subtle h3 {
+  font-size: 1rem;
+}
+
+.profile-subscription-overview,
+.profile-limit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .8rem;
+}
+
+.profile-stat-card,
+.profile-limit-card {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  padding: .85rem .9rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 35%, var(--surface));
+}
+
+.profile-stat-card strong,
+.profile-limit-card strong {
+  font-size: 1rem;
+}
+
+.profile-stat-card small,
+.profile-limit-card span,
+.profile-stat-label {
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.profile-feature-chips span {
+  padding: .42rem .7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.profile-feature-chips span.is-enabled {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.profile-avatar-section {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.profile-bands-stack,
+.profile-band-shell,
+.profile-band-management-panel {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.profile-danger-card {
+  border-color: color-mix(in srgb, #b91c1c 22%, var(--border));
+}
+
+.pricing-page,
+.checkout-result-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.pricing-hero {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  padding: 1.35rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 16%, transparent), transparent 24%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface) 88%, white), var(--surface));
+}
+
+.pricing-kicker {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .75rem;
+}
+
+.pricing-hero h1,
+.pricing-comparison-header h2,
+.checkout-result-card h1 {
+  margin: 0;
+}
+
+.pricing-hero p,
+.checkout-result-card p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 62ch;
+}
+
+.pricing-cycle-toggle {
+  display: inline-flex;
+  gap: .35rem;
+  padding: .25rem;
+  border-radius: 999px;
+  width: fit-content;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 88%, white);
+}
+
+.pricing-cycle-toggle button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: .45rem .8rem;
+  cursor: pointer;
+}
+
+.pricing-cycle-toggle button.active {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.pricing-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.pricing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.05rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.pricing-card--active {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.pricing-card--band {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, var(--surface)), var(--surface));
+}
+
+.pricing-card-header {
+  display: flex;
+  gap: .75rem;
+}
+
+.pricing-card-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+}
+
+.pricing-card-header h2,
+.pricing-card-header p,
+.pricing-card-price {
+  margin: 0;
+}
+
+.pricing-card-header p {
+  color: var(--muted);
+  font-size: .88rem;
+  margin-top: .2rem;
+}
+
+.pricing-card-price {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+}
+
+.pricing-card-price strong {
+  font-size: 2rem;
+}
+
+.pricing-card-price span {
+  color: var(--muted);
+}
+
+.pricing-feature-list,
+.pricing-feature-list li {
+  display: flex;
+}
+
+.pricing-feature-list {
+  list-style: none;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.pricing-feature-list li {
+  align-items: center;
+  gap: .45rem;
+  color: var(--text);
+}
+
+.pricing-card-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.pricing-comparison,
+.checkout-result-card {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 1.1rem;
+}
+
+.pricing-comparison-header,
+.checkout-result-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.pricing-table-wrap {
+  overflow-x: auto;
+}
+
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pricing-table th,
+.pricing-table td {
+  padding: .8rem .7rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.pricing-table th {
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .profile-settings-collapsible-toggle {
@@ -6811,7 +7163,27 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 @media (max-width: 900px) {
+  .profile-account-hero,
+  .profile-account-grid,
+  .pricing-card-grid,
   .profile-settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-account-hero {
+    padding: 1rem;
+  }
+
+  .profile-account-hero,
+  .profile-account-hero-main,
+  .pricing-comparison-header,
+  .checkout-result-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-subscription-overview,
+  .profile-limit-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 

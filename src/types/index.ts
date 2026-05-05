@@ -4,6 +4,9 @@ export interface SongListCategory {
   sortOrder?: number;
 }
 
+export type PlanTier = 'free' | 'pro' | 'band';
+export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | null;
+
 export type CollaborationPermission = 'viewer' | 'editor';
 export type CollaborationRole = 'owner' | CollaborationPermission;
 

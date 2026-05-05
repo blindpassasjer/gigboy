@@ -1,13 +1,19 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Music2, Users } from 'lucide-react';
+import { BadgeCheck, ChevronDown, ChevronUp, CreditCard, LogOut, Music2, Sparkles, Users } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import UserAvatar from '../components/UserAvatar';
+import BandManagementPanel from '../components/BandManagementPanel';
 import { AVATAR_OPTIONS } from '../lib/avatars';
 import { ICON_OPTIONS } from '../lib/iconOptions';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
+import { useStorageUsage } from '../hooks/useStorageUsage';
+import { usePlan } from '../hooks/usePlan';
+import { createPortalSession } from '../lib/billingApi';
+import { PLAN_LABELS } from '../lib/planLimits';
+import { showConfirmToast } from '../utils/toastDialogs';
 
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
@@ -15,10 +21,37 @@ function normalizeEmojiIcon(value: string): string | undefined {
   return [...trimmed].slice(0, 2).join('');
 }
 
+function formatStorageBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 * 1024 ? 0 : 1)} GB`;
+  if (bytes >= 1024 * 1024) return `${Math.round(bytes / (1024 * 1024))} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+function formatPeriodEnd(value: number | null) {
+  if (!value) return null;
+  const normalized = value > 1_000_000_000_000 ? value : value * 1000;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+}
+
+function formatSubscriptionStatus(status: string | null, complimentary: boolean) {
+  if (complimentary) return 'Complimentary';
+  if (!status) return 'Not subscribed';
+  return status.replace('_', ' ');
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, logout } = useAuth();
   const { bands, loading: bandsLoading, cloudRequired, createBand, deleteBand } = useBands();
+  const planState = usePlan();
+  const storageUsage = useStorageUsage(user?.id);
 
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
@@ -29,14 +62,21 @@ export default function ProfilePage() {
   const [busyFullName, setBusyFullName] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [busyLogout, setBusyLogout] = useState(false);
+  const [busyBilling, setBusyBilling] = useState(false);
   const [bandName, setBandName] = useState('');
   const [bandDescription, setBandDescription] = useState('');
   const [bandIcon, setBandIcon] = useState('🎵');
   const [creatingBand, setCreatingBand] = useState(false);
   const [busyBandId, setBusyBandId] = useState<string | null>(null);
   const [bandIconOpen, setBandIconOpen] = useState(false);
+  const [expandedBandId, setExpandedBandId] = useState<string | null>(null);
 
   const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
+  const ownedBands = useMemo(() => bands.filter((band) => band.ownerId === user?.id), [bands, user?.id]);
+  const memberBands = useMemo(() => bands.filter((band) => band.ownerId !== user?.id), [bands, user?.id]);
+  const storagePercent = Math.round(storageUsage.usageRatio * 100);
+  const renewalDate = formatPeriodEnd(user?.currentPeriodEnd ?? null);
+  const hasPaidPlan = planState.plan === 'pro' || planState.plan === 'band';
 
   if (!user) {
     return <p className="profile-settings-status">You must be signed in to manage your profile.</p>;
@@ -146,6 +186,12 @@ export default function ProfilePage() {
   };
 
   const handleDeleteBand = async (bandId: string) => {
+    const band = bands.find((entry) => entry.id === bandId);
+    const confirmed = await showConfirmToast(`Delete "${band?.name ?? 'this band'}"? This cannot be undone.`, {
+      confirmLabel: 'Delete band',
+    });
+    if (!confirmed) return;
+
     setBusyBandId(bandId);
     const error = await deleteBand(bandId);
     setBusyBandId(null);
@@ -156,21 +202,181 @@ export default function ProfilePage() {
     toast.success('Band deleted.');
   };
 
-  return (
-    <section className="profile-settings-page">
-      <div className="profile-settings-grid">
+  const handleManageBilling = async () => {
+    if (!user.stripeCustomerId) {
+      toast.error('No Stripe billing account is attached to this user yet.');
+      return;
+    }
 
-        {/* Avatar */}
-        <section className="profile-settings-card">
-          <div className="profile-settings-avatar-header">
-            <UserAvatar avatar={user.avatar} label={displayName} size="lg" />
-            <div>
-              <h1>Profile</h1>
-              <p className="profile-settings-muted">Choose how your account appears where your profile is shown.</p>
+    setBusyBilling(true);
+    try {
+      const result = await createPortalSession({
+        userId: user.id,
+        userEmail: user.email,
+        returnUrl: `${window.location.origin}/profile`,
+      });
+      window.location.href = result.url;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to open billing portal.';
+      toast.error(message);
+    } finally {
+      setBusyBilling(false);
+    }
+  };
+
+  return (
+    <section className="profile-settings-page profile-settings-page--account">
+      <header className="profile-account-hero">
+        <div className="profile-account-hero-main">
+          <UserAvatar avatar={user.avatar} label={displayName} size="lg" />
+          <div className="profile-account-hero-copy">
+            <span className="profile-account-kicker">Account</span>
+            <h1>{displayName}</h1>
+            <p>@{user.username ?? 'setup'} · {user.email}</p>
+            <div className="profile-account-badges">
+              <span className="profile-account-badge profile-account-badge--plan">
+                <Sparkles size={14} /> {PLAN_LABELS[user.plan]}
+              </span>
+              <span className="profile-account-badge">
+                <BadgeCheck size={14} /> {formatSubscriptionStatus(user.subscriptionStatus, user.planOverride)}
+              </span>
+              <span className="profile-account-badge">
+                <Users size={14} /> {bands.length} band{bands.length === 1 ? '' : 's'}
+              </span>
             </div>
           </div>
-          <h2>Avatar icon</h2>
-          <div id="avatar-options" className="avatar-grid" role="radiogroup" aria-label="Choose avatar">
+        </div>
+        <div className="profile-account-hero-actions">
+          {hasPaidPlan && user.stripeCustomerId ? (
+            <button
+              type="button"
+              className="setlist-action-btn"
+              disabled={busyBilling}
+              onClick={() => { void handleManageBilling(); }}
+            >
+              <CreditCard size={16} /> {busyBilling ? 'Opening…' : 'Manage subscription'}
+            </button>
+          ) : (
+            <Link to="/pricing" className="setlist-action-btn">
+              <Sparkles size={16} /> Upgrade plan
+            </Link>
+          )}
+          <Link to="/pricing" className="setlist-action-btn setlist-action-btn--secondary">Compare plans</Link>
+        </div>
+      </header>
+
+      <div className="profile-account-grid">
+        <section className="profile-settings-card profile-account-summary-card">
+          <div className="profile-section-heading">
+            <div>
+              <h2>Subscription</h2>
+              <p className="profile-settings-muted">Billing status, limits, and what this account can use right now.</p>
+            </div>
+          </div>
+          <div className="profile-subscription-overview">
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Current plan</span>
+              <strong>{planState.planLabel}</strong>
+              <small>{planState.planOverride ? 'Admin override' : formatSubscriptionStatus(user.subscriptionStatus, false)}</small>
+            </div>
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Renewal</span>
+              <strong>{renewalDate ?? '—'}</strong>
+              <small>{hasPaidPlan ? 'Billing period end' : 'No recurring subscription'}</small>
+            </div>
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Storage</span>
+              <strong>{storageUsage.loading ? 'Loading…' : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)}`}</strong>
+              <small>{storageUsage.loading ? 'Calculating usage' : `${storagePercent}% used`}</small>
+            </div>
+          </div>
+          <div className="profile-limit-grid">
+            <article className="profile-limit-card">
+              <span>Songs</span>
+              <strong>{planState.songLimit === null ? 'Unlimited' : `${planState.songLimit} songs`}</strong>
+            </article>
+            <article className="profile-limit-card">
+              <span>Storage included</span>
+              <strong>{formatStorageBytes(planState.storageQuotaBytes)}</strong>
+            </article>
+            <article className="profile-limit-card">
+              <span>Members included</span>
+              <strong>{planState.memberLimit}</strong>
+            </article>
+          </div>
+          <div className="profile-feature-chips" aria-label="Included paid features">
+            <span className={planState.canUse('setlists') ? 'is-enabled' : ''}>Setlists</span>
+            <span className={planState.canUse('stagePlots') ? 'is-enabled' : ''}>Stage plots</span>
+            <span className={planState.canUse('technicalRiders') ? 'is-enabled' : ''}>Technical rider</span>
+            <span className={planState.canUse('shareableLinks') ? 'is-enabled' : ''}>Sharing</span>
+            <span className={planState.canUse('bluetoothPedal') ? 'is-enabled' : ''}>Bluetooth pedal</span>
+            <span className={planState.canUse('recordings') ? 'is-enabled' : ''}>Recordings</span>
+            <span className={planState.canUse('metronome') ? 'is-enabled' : ''}>Metronome</span>
+            <span className={planState.canUse('multiUserNotes') ? 'is-enabled' : ''}>Multi-user notes</span>
+          </div>
+        </section>
+
+        <section className="profile-settings-card">
+          <div className="profile-section-heading">
+            <div>
+              <h2>Account information</h2>
+              <p className="profile-settings-muted">Keep your public profile and login details current.</p>
+            </div>
+          </div>
+          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onFullNameSubmit}>
+            <label className="form-field">
+              <span>Full name</span>
+              <input
+                type="text"
+                value={fullName}
+                autoComplete="name"
+                onChange={(event) => setFullName(event.target.value)}
+                required
+                maxLength={80}
+              />
+            </label>
+            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyFullName}>
+              {busyFullName ? 'Saving…' : 'Save'}
+            </button>
+          </form>
+          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onUsernameSubmit}>
+            <label className="form-field">
+              <span>Username</span>
+              <input
+                type="text"
+                value={username}
+                autoComplete="username"
+                onChange={(event) => setUsername(event.target.value)}
+                required
+              />
+            </label>
+            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyUsername}>
+              {busyUsername ? 'Saving…' : 'Save'}
+            </button>
+          </form>
+          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onEmailSubmit}>
+            <label className="form-field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={email}
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </label>
+            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyEmail}>
+              {busyEmail ? 'Saving…' : 'Save'}
+            </button>
+          </form>
+          <div className="profile-avatar-section">
+            <div className="profile-section-heading">
+              <div>
+                <h3>Avatar</h3>
+                <p className="profile-settings-muted">Choose how your account appears to collaborators and band members.</p>
+              </div>
+            </div>
+            <div id="avatar-options" className="avatar-grid" role="radiogroup" aria-label="Choose avatar">
               {AVATAR_OPTIONS.map((avatar) => {
                 const isSelected = selectedAvatar === avatar;
                 return (
@@ -187,73 +393,16 @@ export default function ProfilePage() {
                 );
               })}
             </div>
-        </section>
-
-        {/* Information */}
-        <section className="profile-settings-card profile-settings-card--wide">
-          <h2>Information</h2>
-          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onFullNameSubmit}>
-            <label className="form-field">
-              <span>Full name</span>
-              <input
-                type="text"
-                value={fullName}
-                autoComplete="name"
-                onChange={(event) => setFullName(event.target.value)}
-                required
-                maxLength={80}
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyFullName}>
-              {busyFullName ? 'Saving…' : 'Save full name'}
-            </button>
-          </form>
-          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onUsernameSubmit}>
-            <label className="form-field">
-              <span>Username</span>
-              <input
-                type="text"
-                value={username}
-                autoComplete="username"
-                onChange={(event) => setUsername(event.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyUsername}>
-              {busyUsername ? 'Saving…' : 'Save username'}
-            </button>
-          </form>
-          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onEmailSubmit}>
-            <label className="form-field">
-              <span>Email</span>
-              <input
-                type="email"
-                value={email}
-                autoComplete="email"
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyEmail}>
-              {busyEmail ? 'Saving…' : 'Save email'}
-            </button>
-          </form>
-          <div className="profile-settings-logout">
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              disabled={busyLogout}
-              onClick={() => { void onLogout(); }}
-            >
-              {busyLogout ? 'Signing out…' : 'Log out'}
-            </button>
           </div>
         </section>
 
-        {/* Bands */}
         <section className="profile-settings-card profile-settings-card--wide">
-          <h2>Bands</h2>
-          <p className="profile-settings-muted">Create bands, invite members, and maintain a shared band library.</p>
+          <div className="profile-section-heading">
+            <div>
+              <h2>Bands</h2>
+              <p className="profile-settings-muted">Create bands, see where you belong, and open member management for owned bands.</p>
+            </div>
+          </div>
           {cloudRequired ? (
             <p className="bands-status">Bands require Firebase auth and Firestore to be configured.</p>
           ) : null}
@@ -283,15 +432,12 @@ export default function ProfilePage() {
                 onClick={() => setBandIconOpen((o) => !o)}
                 aria-expanded={bandIconOpen}
                 aria-controls="band-icon-options"
-                style={{ marginTop: '0.75rem', width: '100%', textAlign: 'left' }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="list-appearance-label">Icon</span>
-                  {bandIconOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </div>
+                <span className="list-appearance-label">Band icon</span>
+                {bandIconOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
               {bandIconOpen && (
-                <div id="band-icon-options" className="emoji-choice-grid" role="listbox" aria-label="Band icon options" style={{ marginTop: '0.5rem' }}>
+                <div id="band-icon-options" className="emoji-choice-grid" role="listbox" aria-label="Band icon options">
                   {ICON_OPTIONS.map((emoji) => {
                     const selected = bandIcon === emoji;
                     return (
@@ -318,45 +464,124 @@ export default function ProfilePage() {
           </form>
           {bandsLoading ? (
             <p className="bands-status">Loading bands…</p>
-          ) : bands.length === 0 ? (
-            <p className="bands-status">No bands yet.</p>
           ) : (
-            <ul className="bands-list">
-              {bands.map((band) => {
-                const isOwner = band.ownerId === user.id;
-                const role = isOwner ? 'owner' : band.memberRoles[user.id ?? ''] ?? 'viewer';
-                return (
-                  <li key={band.id} className="bands-card">
-                    <Link to={`/bands/${band.id}/library`} className="bands-card-main">
-                      <div className="bands-card-icon" aria-hidden="true">
-                        {band.icon ? <span>{band.icon}</span> : <Music2 size={18} />}
-                      </div>
-                      <div className="bands-card-copy">
-                        <strong>{band.name}</strong>
-                        <span>{band.description || `${band.memberIds.length} members`}</span>
-                      </div>
-                    </Link>
-                    <div className="bands-card-meta">
-                      <span className="bands-role-badge">{role}</span>
-                      <span className="bands-members-pill"><Users size={14} /> {band.memberIds.length}</span>
-                      {isOwner ? (
-                        <button
-                          type="button"
-                          className="setlist-action-btn setlist-action-btn--secondary"
-                          disabled={busyBandId === band.id}
-                          onClick={() => void handleDeleteBand(band.id)}
-                        >
-                          {busyBandId === band.id ? 'Deleting…' : 'Delete'}
-                        </button>
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="profile-bands-stack">
+              <section>
+                <div className="profile-section-heading profile-section-heading--subtle">
+                  <div>
+                    <h3>Owned bands</h3>
+                    <p className="profile-settings-muted">You control billing, members, and band settings for these workspaces.</p>
+                  </div>
+                </div>
+                {ownedBands.length === 0 ? (
+                  <p className="bands-status">You do not own any bands yet.</p>
+                ) : (
+                  <ul className="bands-list">
+                    {ownedBands.map((band) => {
+                      const expanded = expandedBandId === band.id;
+                      return (
+                        <li key={band.id} className="profile-band-shell">
+                          <div className="bands-card">
+                            <Link to={`/bands/${band.id}/library`} className="bands-card-main">
+                              <div className="bands-card-icon" aria-hidden="true">
+                                {band.icon ? <span>{band.icon}</span> : <Music2 size={18} />}
+                              </div>
+                              <div className="bands-card-copy">
+                                <strong>{band.name}</strong>
+                                <span>{band.description || `${band.memberIds.length} members`}</span>
+                              </div>
+                            </Link>
+                            <div className="bands-card-meta">
+                              <span className="bands-role-badge">owner</span>
+                              <span className="bands-members-pill"><Users size={14} /> {band.memberIds.length}</span>
+                              <button
+                                type="button"
+                                className="setlist-action-btn setlist-action-btn--secondary"
+                                onClick={() => setExpandedBandId((current) => current === band.id ? null : band.id)}
+                              >
+                                {expanded ? 'Hide members' : 'Manage members'}
+                              </button>
+                              <button
+                                type="button"
+                                className="setlist-action-btn setlist-action-btn--secondary"
+                                disabled={busyBandId === band.id}
+                                onClick={() => void handleDeleteBand(band.id)}
+                              >
+                                {busyBandId === band.id ? 'Deleting…' : 'Delete'}
+                              </button>
+                            </div>
+                          </div>
+                          {expanded ? (
+                            <div className="profile-band-management-panel">
+                              <BandManagementPanel band={band} canEditBand isOwner />
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              <section>
+                <div className="profile-section-heading profile-section-heading--subtle">
+                  <div>
+                    <h3>Member access</h3>
+                    <p className="profile-settings-muted">Bands you belong to but do not own.</p>
+                  </div>
+                </div>
+                {memberBands.length === 0 ? (
+                  <p className="bands-status">You are not a member of any other bands.</p>
+                ) : (
+                  <ul className="bands-list">
+                    {memberBands.map((band) => {
+                      const role = band.memberRoles[user.id] ?? 'viewer';
+                      return (
+                        <li key={band.id} className="bands-card">
+                          <Link to={`/bands/${band.id}/library`} className="bands-card-main">
+                            <div className="bands-card-icon" aria-hidden="true">
+                              {band.icon ? <span>{band.icon}</span> : <Music2 size={18} />}
+                            </div>
+                            <div className="bands-card-copy">
+                              <strong>{band.name}</strong>
+                              <span>{band.description || `${band.memberIds.length} members`}</span>
+                            </div>
+                          </Link>
+                          <div className="bands-card-meta">
+                            <span className="bands-role-badge">{role}</span>
+                            <span className="bands-members-pill"><Users size={14} /> {band.memberIds.length}</span>
+                            <Link to={`/bands/${band.id}/members`} className="setlist-action-btn setlist-action-btn--secondary">
+                              Open band settings
+                            </Link>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            </div>
           )}
         </section>
 
+        <section className="profile-settings-card profile-settings-card--wide profile-danger-card">
+          <div className="profile-section-heading">
+            <div>
+              <h2>Security and sign out</h2>
+              <p className="profile-settings-muted">Use the current session controls here. Password reset stays in the auth flow.</p>
+            </div>
+          </div>
+          <div className="profile-danger-actions">
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              disabled={busyLogout}
+              onClick={() => { void onLogout(); }}
+            >
+              <LogOut size={16} /> {busyLogout ? 'Signing out…' : 'Log out'}
+            </button>
+          </div>
+        </section>
       </div>
     </section>
   );

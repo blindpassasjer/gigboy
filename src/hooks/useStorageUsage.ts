@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collectionGroup, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { PLAN_LIMITS } from '../lib/planLimits';
 
-const DEFAULT_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024;
+const DEFAULT_STORAGE_QUOTA_BYTES = PLAN_LIMITS.free.storageQuotaBytes;
 
 interface UsageState {
   usedBytes: number;

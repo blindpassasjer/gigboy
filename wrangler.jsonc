@@ -10,14 +10,32 @@
       "vars": {
         "FIREBASE_PROJECT_ID": "songbook-bebd5",
         "FIREBASE_PRIVATE_KEY": "",
-        "FIREBASE_CLIENT_EMAIL": ""
+        "FIREBASE_CLIENT_EMAIL": "",
+        // Stripe — fill in with your test-mode keys for local dev
+        "STRIPE_SECRET_KEY": "",
+        "STRIPE_WEBHOOK_SECRET": "",
+        // Price IDs from your Stripe dashboard (test mode)
+        "STRIPE_PRO_MONTHLY_PRICE_ID": "",
+        "STRIPE_PRO_ANNUAL_PRICE_ID": "",
+        "STRIPE_BAND_MONTHLY_PRICE_ID": "",
+        "STRIPE_BAND_ANNUAL_PRICE_ID": "",
+        // Comma-separated Firebase UIDs allowed to call /api/stripe/override-plan
+        "ADMIN_UIDS": ""
       }
     },
     "production": {
       "vars": {
         "FIREBASE_PROJECT_ID": "songbook-bebd5",
         "FIREBASE_PRIVATE_KEY": "",
-        "FIREBASE_CLIENT_EMAIL": ""
+        "FIREBASE_CLIENT_EMAIL": "",
+        // Stripe — fill in with live-mode keys via Cloudflare dashboard secrets
+        "STRIPE_SECRET_KEY": "",
+        "STRIPE_WEBHOOK_SECRET": "",
+        "STRIPE_PRO_MONTHLY_PRICE_ID": "",
+        "STRIPE_PRO_ANNUAL_PRICE_ID": "",
+        "STRIPE_BAND_MONTHLY_PRICE_ID": "",
+        "STRIPE_BAND_ANNUAL_PRICE_ID": "",
+        "ADMIN_UIDS": ""
       }
     }
   }

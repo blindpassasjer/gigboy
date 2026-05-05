@@ -50,6 +50,7 @@
     "eslint-plugin-react-refresh": "^0.4.26",
     "firebase-admin": "^13.8.0",
     "jsdom": "^25.0.1",
+    "stripe": "^22.1.0",
     "typescript": "^5.0.2",
     "vite": "^4.5.5",
     "vite-plugin-pwa": "^1.2.0",

@@ -11,7 +11,11 @@ interface Data extends Record<string, unknown> {
 
 export const onRequest: PagesFunction<Env, never, Data> = async (ctx) => {
   const path = new URL(ctx.request.url).pathname;
-  if (path.startsWith('/api/auth/') || path.startsWith('/api/health/')) return ctx.next();
+  if (
+    path.startsWith('/api/auth/') ||
+    path.startsWith('/api/health/') ||
+    path === '/api/stripe/webhook'
+  ) return ctx.next();
 
   const authHeader = ctx.request.headers.get('Authorization');
   const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;

@@ -8,6 +8,8 @@ import {
 } from 'firebase/firestore';
 
 import { DEFAULT_AVATAR, isValidAvatar } from './avatars';
+import { PLAN_LIMITS } from './planLimits';
+import type { PlanTier, SubscriptionStatus } from '../types';
 
 export interface UserProfile {
   username: string;
@@ -15,6 +17,12 @@ export interface UserProfile {
   email?: string;
   avatar?: string;
   fullName?: string;
+  plan: PlanTier;
+  planOverride?: boolean;
+  subscriptionStatus?: SubscriptionStatus;
+  currentPeriodEnd?: number | null;
+  storageQuotaBytes?: number;
+  stripeCustomerId?: string;
 }
 
 const USERS_COLLECTION = 'users';
@@ -50,12 +58,37 @@ function profileFromData(data: Record<string, unknown> | undefined | null): User
     return null;
   }
 
+  const rawPlan = data.plan;
+  const plan: PlanTier = rawPlan === 'pro' || rawPlan === 'band' ? rawPlan : 'free';
+  const rawStatus = data.subscriptionStatus;
+  const subscriptionStatus: SubscriptionStatus =
+    rawStatus === 'active'
+    || rawStatus === 'trialing'
+    || rawStatus === 'past_due'
+    || rawStatus === 'canceled'
+    || rawStatus === 'unpaid'
+    || rawStatus === 'incomplete'
+      ? rawStatus
+      : null;
+  const currentPeriodEnd = typeof data.currentPeriodEnd === 'number' && Number.isFinite(data.currentPeriodEnd)
+    ? data.currentPeriodEnd
+    : null;
+  const storageQuotaBytes = typeof data.storageQuotaBytes === 'number' && Number.isFinite(data.storageQuotaBytes)
+    ? data.storageQuotaBytes
+    : undefined;
+
   return {
     username,
     usernameLower,
     email: typeof data.email === 'string' ? data.email : undefined,
     avatar: typeof data.avatar === 'string' ? data.avatar : undefined,
     fullName: typeof data.fullName === 'string' ? data.fullName : undefined,
+    plan,
+    planOverride: data.planOverride === true,
+    subscriptionStatus,
+    currentPeriodEnd,
+    storageQuotaBytes,
+    stripeCustomerId: typeof data.stripeCustomerId === 'string' ? data.stripeCustomerId : undefined,
   };
 }
 
@@ -108,6 +141,10 @@ export async function claimUsername(db: Firestore, params: {
       username: normalized,
       usernameLower: normalized,
       avatar: DEFAULT_AVATAR,
+      plan: 'free',
+      planOverride: false,
+      subscriptionStatus: null,
+      storageQuotaBytes: PLAN_LIMITS.free.storageQuotaBytes,
       updatedAt: serverTimestamp(),
       ...(existingProfile ? {} : { createdAt: serverTimestamp() }),
     }, { merge: true });

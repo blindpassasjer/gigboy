@@ -52,6 +52,8 @@ import SongPage from './pages/SongPage';
 import EditSongPage from './pages/EditSongPage';
 import ProfileInvitesPage from './pages/ProfileInvitesPage';
 import ProfilePage from './pages/ProfilePage';
+import PricingPage from './pages/PricingPage';
+import CheckoutResultPage from './pages/CheckoutResultPage';
 import PublicBandSetlistPage from './pages/PublicBandSetlistPage';
 import PublicBandStageplotPage from './pages/PublicBandStageplotPage';
 import PublicBandTechnicalRiderPage from './pages/PublicBandTechnicalRiderPage';
@@ -91,6 +93,8 @@ function AuthenticatedApp() {
                     <Route path="/bands/:id/customize" element={<BandCustomizePage />} />
                     <Route path="/bands/:id/members" element={<BandMembersPage />} />
                     <Route path="/bands/:id/*" element={<BandDetailPage />} />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/checkout-result" element={<CheckoutResultPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/profile/invites" element={<ProfileInvitesPage />} />
                     <Route path="*" element={<Navigate to="/profile" replace />} />
@@ -112,6 +116,8 @@ const router = createBrowserRouter([
   { path: '/public/bands/:bandId/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
   { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
   { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
+  { path: '/pricing', element: <PricingPage /> },
+  { path: '/checkout-result', element: <CheckoutResultPage /> },
   { path: '*', element: <AuthenticatedApp /> },
 ]);
 

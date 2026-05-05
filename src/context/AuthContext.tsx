@@ -24,6 +24,7 @@ import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { changeUsername, claimUsername, loadUserProfile, updateProfileFields } from '../lib/userProfiles';
 import { isValidAvatar } from '../lib/avatars';
+import type { PlanTier, SubscriptionStatus } from '../types';
 
 export interface User {
   id: string;
@@ -31,6 +32,11 @@ export interface User {
   username: string | null;
   avatar: string | null;
   fullName: string | null;
+  plan: PlanTier;
+  planOverride: boolean;
+  subscriptionStatus: SubscriptionStatus;
+  currentPeriodEnd: number | null;
+  stripeCustomerId: string | null;
 }
 
 interface AuthContextValue {
@@ -105,6 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username: null,
           avatar: null,
           fullName: null,
+          plan: 'free',
+          planOverride: false,
+          subscriptionStatus: null,
+          currentPeriodEnd: null,
+          stripeCustomerId: null,
         });
         setLoading(false);
         return;
@@ -119,6 +130,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: profile?.username ?? null,
             avatar: profile?.avatar ?? null,
             fullName: profile?.fullName ?? null,
+            plan: profile?.plan ?? 'free',
+            planOverride: profile?.planOverride === true,
+            subscriptionStatus: profile?.subscriptionStatus ?? null,
+            currentPeriodEnd: profile?.currentPeriodEnd ?? null,
+            stripeCustomerId: profile?.stripeCustomerId ?? null,
           });
         })
         .catch((error) => {
@@ -129,6 +145,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: null,
             avatar: null,
             fullName: null,
+            plan: 'free',
+            planOverride: false,
+            subscriptionStatus: null,
+            currentPeriodEnd: null,
+            stripeCustomerId: null,
           });
         })
         .finally(() => {
