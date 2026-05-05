@@ -5,7 +5,6 @@ import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import UserAvatar from '../components/UserAvatar';
-import BandManagementPanel from '../components/BandManagementPanel';
 import { AVATAR_OPTIONS } from '../lib/avatars';
 import { ICON_OPTIONS } from '../lib/iconOptions';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
@@ -13,7 +12,6 @@ import { useStorageUsage } from '../hooks/useStorageUsage';
 import { usePlan } from '../hooks/usePlan';
 import { createPortalSession } from '../lib/billingApi';
 import { PLAN_LABELS } from '../lib/planLimits';
-import { showConfirmToast } from '../utils/toastDialogs';
 
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
@@ -49,7 +47,7 @@ function formatSubscriptionStatus(status: string | null, complimentary: boolean)
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, logout } = useAuth();
-  const { bands, loading: bandsLoading, cloudRequired, createBand, deleteBand } = useBands();
+  const { bands, loading: bandsLoading, cloudRequired, createBand } = useBands();
   const planState = usePlan();
   const storageUsage = useStorageUsage(user?.id);
 
@@ -67,9 +65,7 @@ export default function ProfilePage() {
   const [bandDescription, setBandDescription] = useState('');
   const [bandIcon, setBandIcon] = useState('🎵');
   const [creatingBand, setCreatingBand] = useState(false);
-  const [busyBandId, setBusyBandId] = useState<string | null>(null);
   const [bandIconOpen, setBandIconOpen] = useState(false);
-  const [expandedBandId, setExpandedBandId] = useState<string | null>(null);
 
   const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
   const ownedBands = useMemo(() => bands.filter((band) => band.ownerId === user?.id), [bands, user?.id]);
@@ -183,23 +179,6 @@ export default function ProfilePage() {
       }
       navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
     }
-  };
-
-  const handleDeleteBand = async (bandId: string) => {
-    const band = bands.find((entry) => entry.id === bandId);
-    const confirmed = await showConfirmToast(`Delete "${band?.name ?? 'this band'}"? This cannot be undone.`, {
-      confirmLabel: 'Delete band',
-    });
-    if (!confirmed) return;
-
-    setBusyBandId(bandId);
-    const error = await deleteBand(bandId);
-    setBusyBandId(null);
-    if (error) {
-      toast.error(error);
-      return;
-    }
-    toast.success('Band deleted.');
   };
 
   const handleManageBilling = async () => {
@@ -478,44 +457,24 @@ export default function ProfilePage() {
                 ) : (
                   <ul className="bands-list">
                     {ownedBands.map((band) => {
-                      const expanded = expandedBandId === band.id;
                       return (
-                        <li key={band.id} className="profile-band-shell">
-                          <div className="bands-card">
-                            <Link to={`/bands/${band.id}/library`} className="bands-card-main">
-                              <div className="bands-card-icon" aria-hidden="true">
-                                {band.icon ? <span>{band.icon}</span> : <Music2 size={18} />}
-                              </div>
-                              <div className="bands-card-copy">
-                                <strong>{band.name}</strong>
-                                <span>{band.description || `${band.memberIds.length} members`}</span>
-                              </div>
+                        <li key={band.id} className="bands-card">
+                          <Link to={`/bands/${band.id}/library`} className="bands-card-main">
+                            <div className="bands-card-icon" aria-hidden="true">
+                              {band.icon ? <span>{band.icon}</span> : <Music2 size={18} />}
+                            </div>
+                            <div className="bands-card-copy">
+                              <strong>{band.name}</strong>
+                              <span>{band.description || `${band.memberIds.length} members`}</span>
+                            </div>
+                          </Link>
+                          <div className="bands-card-meta">
+                            <span className="bands-role-badge">owner</span>
+                            <span className="bands-members-pill"><Users size={14} /> {band.memberIds.length}</span>
+                            <Link to={`/bands/${band.id}/members`} className="setlist-action-btn setlist-action-btn--secondary">
+                              Open band settings
                             </Link>
-                            <div className="bands-card-meta">
-                              <span className="bands-role-badge">owner</span>
-                              <span className="bands-members-pill"><Users size={14} /> {band.memberIds.length}</span>
-                              <button
-                                type="button"
-                                className="setlist-action-btn setlist-action-btn--secondary"
-                                onClick={() => setExpandedBandId((current) => current === band.id ? null : band.id)}
-                              >
-                                {expanded ? 'Hide members' : 'Manage members'}
-                              </button>
-                              <button
-                                type="button"
-                                className="setlist-action-btn setlist-action-btn--secondary"
-                                disabled={busyBandId === band.id}
-                                onClick={() => void handleDeleteBand(band.id)}
-                              >
-                                {busyBandId === band.id ? 'Deleting…' : 'Delete'}
-                              </button>
-                            </div>
                           </div>
-                          {expanded ? (
-                            <div className="profile-band-management-panel">
-                              <BandManagementPanel band={band} canEditBand isOwner />
-                            </div>
-                          ) : null}
                         </li>
                       );
                     })}

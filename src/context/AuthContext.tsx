@@ -20,6 +20,7 @@ import {
   signOut,
 } from 'firebase/auth';
 import type { FirebaseError } from 'firebase/app';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { changeUsername, claimUsername, loadUserProfile, updateProfileFields } from '../lib/userProfiles';
@@ -99,8 +100,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+    const authInstance = auth;
 
-    return onAuthStateChanged(auth, (firebaseUser) => {
+    let unsubscribeProfile: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(authInstance, (firebaseUser) => {
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+
       if (!firebaseUser) {
         setUser(null);
         setLoading(false);
@@ -126,10 +135,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
+      const firestore = db;
 
-      setLoading(true);
-      void loadUserProfile(db, firebaseUser.uid)
-        .then((profile) => {
+      const syncProfile = async () => {
+        try {
+          const profile = await loadUserProfile(firestore, firebaseUser.uid);
+          if (authInstance.currentUser?.uid !== firebaseUser.uid) return;
+
           setUser({
             id: firebaseUser.uid,
             email: firebaseUser.email ?? '',
@@ -145,8 +157,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             memberLimit: profile?.memberLimit ?? 1,
             stripeCustomerId: profile?.stripeCustomerId ?? null,
           });
-        })
-        .catch((error) => {
+        } catch (error) {
+          if (authInstance.currentUser?.uid !== firebaseUser.uid) return;
+
           console.error('Failed to load user profile.', error);
           setUser({
             id: firebaseUser.uid,
@@ -163,11 +176,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             memberLimit: 1,
             stripeCustomerId: null,
           });
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+        } finally {
+          if (authInstance.currentUser?.uid === firebaseUser.uid) {
+            setLoading(false);
+          }
+        }
+      };
+
+      setLoading(true);
+      unsubscribeProfile = onSnapshot(
+        doc(firestore, 'users', firebaseUser.uid),
+        () => {
+          void syncProfile();
+        },
+        (error) => {
+          console.error('Failed to subscribe to user profile.', error);
+          void syncProfile();
+        }
+      );
     });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+      }
+    };
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<string | null> => {
