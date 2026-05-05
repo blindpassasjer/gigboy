@@ -1136,48 +1136,47 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bands, userId]);
 
+  const updateBandDescription = useCallback(async (bandId: string, description: string) => {
+    if (!db || !userId) {
+      return 'Bands require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return 'Band not found.';
+    }
+
+    if (!canEditBandLibrary(band, userId)) {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const trimmed = description.trim();
+    if (trimmed.length > 240) {
+      return 'Band description must be 240 characters or fewer.';
+    }
+
+    const previousBands = bands;
+    const now = new Date().toISOString();
+    const nextDescription = trimmed || undefined;
+    const nextBands = bands.map((entry) =>
+      entry.id === bandId ? { ...entry, description: nextDescription, updatedAt: now } : entry
+    );
+
+    setBands(nextBands);
+
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId), {
+        description: nextDescription ?? null,
+        updatedAt: now,
+      }, { merge: true });
+      return null;
+    } catch (error) {
+      setBands(previousBands);
+      return error instanceof Error ? error.message : 'Failed to update band description.';
+    }
+  }, [bands, userId]);
+
   const updateBandLibraryAppearance = useCallback(async (
-      const updateBandDescription = useCallback(async (bandId: string, description: string) => {
-        if (!db || !userId) {
-          return 'Bands require cloud sync.';
-        }
-
-        const band = bands.find((entry) => entry.id === bandId);
-        if (!band) {
-          return 'Band not found.';
-        }
-
-        if (!canEditBandLibrary(band, userId)) {
-          return 'You do not have permission to edit this band.';
-        }
-
-        const trimmed = description.trim();
-        if (trimmed.length > 240) {
-          return 'Band description must be 240 characters or fewer.';
-        }
-
-        const previousBands = bands;
-        const now = new Date().toISOString();
-        const nextDescription = trimmed || undefined;
-        const nextBands = bands.map((entry) =>
-          entry.id === bandId ? { ...entry, description: nextDescription, updatedAt: now } : entry
-        );
-
-        setBands(nextBands);
-
-        try {
-          await setDoc(doc(db, BANDS_COLLECTION, bandId), {
-            description: nextDescription ?? null,
-            updatedAt: now,
-          }, { merge: true });
-          return null;
-        } catch (error) {
-          setBands(previousBands);
-          return error instanceof Error ? error.message : 'Failed to update band description.';
-        }
-      }, [bands, userId]);
-
-      const updateBandLibraryAppearance = useCallback(async (
     bandId: string,
     appearance: { icon?: string; color?: string }
   ) => {
@@ -3311,7 +3310,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     deleteBand,
     renameBand,
     inviteMember,
-      updateBandDescription,
+    updateBandDescription,
     changeMemberRole,
     removeMember,
     leaveBand,
@@ -3345,7 +3344,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateSongNoteInBandSetlist,
     addBandStageplot,
     renameBandStageplot,
-      updateBandDescription,
     updateBandStageplotIcon,
     updateBandStageplotSettings,
     setBandStageplotPublicShare,

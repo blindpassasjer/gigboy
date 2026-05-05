@@ -56,8 +56,9 @@ function parseArgs(argv) {
     if (arg === '--bands') { args.bandsCollection = argv[i + 1] ?? 'bands'; i += 1; continue; }
     if (arg === '--execute') { args.execute = true; }
   }
+    if (argv.includes('--debug')) { args.debug = true; }
 
-  return args;
+    return args;
 }
 
 async function createCredential(credentialsPath) {
@@ -92,14 +93,31 @@ function isActive(status) {
 /**
  * Given a Stripe subscription and a bandId, find the base band item and the
  * optional extra-members item for that band, based on item.metadata.bandId.
+ *
+ * Falls back to the first subscription item when no item has bandId metadata
+ * (covers older or manually-created subscriptions not tagged via checkout).
  */
 function extractBandItems(sub, bandId) {
-  const base = sub.items.data.find(
+  // Primary: exact metadata match by itemType + bandId
+  let base = sub.items.data.find(
     (item) => item.metadata?.itemType === 'band_base' && item.metadata?.bandId === bandId
   ) ?? sub.items.data.find(
-    // fallback: any item whose metadata.bandId matches and is not extra
     (item) => item.metadata?.bandId === bandId && item.metadata?.itemType !== 'band_extra_members'
   ) ?? null;
+
+  // Fallback: subscription has no bandId-tagged items at all — treat first item as base.
+  // Only applies when there is exactly one non-extra-members item (unambiguous).
+  if (!base) {
+    const anyBandIdSet = sub.items.data.some((item) => item.metadata?.bandId);
+    if (!anyBandIdSet) {
+      base = sub.items.data[0] ?? null;
+      if (base) {
+        console.warn(
+          `    [WARN] No bandId metadata found on subscription ${sub.id} items — using first item (${base.id}) as base for band ${bandId}.`
+        );
+      }
+    }
+  }
 
   const extra = sub.items.data.find(
     (item) => item.metadata?.itemType === 'band_extra_members' && item.metadata?.bandId === bandId
@@ -135,8 +153,13 @@ function buildSnapshot(sub, bandId, customerId) {
 }
 
 /**
- * Find the band_aggregate subscription for a customer that contains the given bandId.
- * Returns null if not found.
+ * Find the best subscription for a customer/band combination.
+ *
+ * Priority:
+ * 1. band_aggregate sub with an item whose metadata.bandId matches
+ * 2. Any active/trialing sub for the customer (last resort for legacy subs)
+ *
+ * Returns null if nothing found.
  */
 async function findSubscriptionForBand(stripe, customerId, bandId) {
   const list = await stripe.subscriptions.list({
@@ -146,13 +169,35 @@ async function findSubscriptionForBand(stripe, customerId, bandId) {
     expand: ['data.items'],
   });
 
+  // First pass: proper aggregate sub with matching bandId item
+  if (list.data.length === 0) return null;
+
   for (const sub of list.data) {
     if (sub.metadata?.gigboyMode !== 'band_aggregate') continue;
-    // Check whether any item in this sub carries the bandId
-    const hasBand = sub.items.data.some(
-      (item) => item.metadata?.bandId === bandId
-    );
+    const hasBand = sub.items.data.some((item) => item.metadata?.bandId === bandId);
     if (hasBand) return sub;
+  }
+
+  // Second pass: any aggregate sub (items may lack bandId metadata — will use first-item fallback)
+  for (const sub of list.data) {
+    if (sub.metadata?.gigboyMode !== 'band_aggregate') continue;
+    if (sub.status === 'active' || sub.status === 'trialing') {
+      console.warn(
+        `    [WARN] Sub ${sub.id} is aggregate but no item has bandId=${bandId}. Will attempt first-item fallback.`
+      );
+      return sub;
+    }
+  }
+
+  // Third pass: any active/trialing subscription at all (legacy, one-band accounts)
+  const activeSub = list.data.find(
+    (sub) => sub.status === 'active' || sub.status === 'trialing'
+  );
+  if (activeSub) {
+    console.warn(
+      `    [WARN] No band_aggregate sub found for band ${bandId}. Falling back to first active sub ${activeSub.id}.`
+    );
+    return activeSub;
   }
 
   return null;
@@ -227,6 +272,7 @@ async function main() {
     // 1. From the band doc itself (written after checkout)
     // 2. From the user's profile doc
     let customerId = typeof data.stripeCustomerId === 'string' ? data.stripeCustomerId : null;
+    let customerIdSource = 'band doc';
 
     if (!customerId) {
       try {
@@ -234,6 +280,7 @@ async function main() {
         customerId = typeof userDoc.data()?.stripeCustomerId === 'string'
           ? userDoc.data().stripeCustomerId
           : null;
+        if (customerId) customerIdSource = 'user profile';
       } catch {
         // proceed
       }
@@ -243,6 +290,27 @@ async function main() {
       console.warn(`  [SKIP] ${bandId} — no stripeCustomerId on band or owner profile`);
       stats.skippedNoCustomer += 1;
       continue;
+    }
+
+    if (args.debug) {
+      console.log(`\n  [DEBUG] Band: ${bandId} "${data.name ?? ''}"`);
+      console.log(`    ownerId: ${ownerId}`);
+      console.log(`    customerId: ${customerId} (from ${customerIdSource})`);
+      console.log(`    stored stripeSubscriptionId: ${data.stripeSubscriptionId ?? '(none)'}`);
+
+      // Dump raw Stripe subscription list for this customer
+      try {
+        const rawList = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 25, expand: ['data.items'] });
+        console.log(`    Stripe subscriptions found: ${rawList.data.length}`);
+        for (const sub of rawList.data) {
+          console.log(`      sub ${sub.id}  status=${sub.status}  gigboyMode=${sub.metadata?.gigboyMode ?? '(none)'}  firebaseUid=${sub.metadata?.firebaseUid ?? '(none)'}`);
+          for (const item of sub.items.data) {
+            console.log(`        item ${item.id}  price=${item.price?.id}  qty=${item.quantity}  metadata=${JSON.stringify(item.metadata ?? {})}`);
+          }
+        }
+      } catch (debugErr) {
+        console.log(`    [DEBUG] Stripe list failed: ${debugErr.message}`);
+      }
     }
 
     // Look up subscription

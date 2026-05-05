@@ -109,6 +109,14 @@ function AuthenticatedApp() {
   );
 }
 
+function PricingRoute() {
+  return (
+    <BandsProvider>
+      <PricingPage />
+    </BandsProvider>
+  );
+}
+
 const router = createBrowserRouter([
   { path: '/public/bands/:bandId/:bandName/setlists/:setlistId', element: <PublicBandSetlistPage /> },
   { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage /> },
@@ -116,7 +124,7 @@ const router = createBrowserRouter([
   { path: '/public/bands/:bandId/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
   { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
   { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
-  { path: '/pricing', element: <PricingPage /> },
+  { path: '/pricing', element: <PricingRoute /> },
   { path: '/checkout-result', element: <CheckoutResultPage /> },
   { path: '*', element: <AuthenticatedApp /> },
 ]);
