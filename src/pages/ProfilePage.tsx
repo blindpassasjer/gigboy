@@ -414,25 +414,25 @@ export default function ProfilePage() {
               {busyEmail ? 'Saving…' : 'Save'}
             </button>
           </form>
-        </section>
 
-        <section className="profile-settings-card profile-settings-card--wide profile-danger-card">
-          <div className="profile-section-heading">
-            <div>
-              <h2>Security and sign out</h2>
-              <p className="profile-settings-muted">Use the current session controls here. Password reset stays in the auth flow.</p>
+          <section className="profile-settings-card profile-settings-card--wide profile-danger-card">
+            <div className="profile-section-heading">
+              <div>
+                <h2>Security and sign out</h2>
+                <p className="profile-settings-muted">Use the current session controls here. Password reset stays in the auth flow.</p>
+              </div>
             </div>
-          </div>
-          <div className="profile-danger-actions">
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              disabled={busyLogout}
-              onClick={() => { void onLogout(); }}
-            >
-              <LogOut size={16} /> {busyLogout ? 'Signing out…' : 'Log out'}
-            </button>
-          </div>
+            <div className="profile-danger-actions">
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                disabled={busyLogout}
+                onClick={() => { void onLogout(); }}
+              >
+                <LogOut size={16} /> {busyLogout ? 'Signing out…' : 'Log out'}
+              </button>
+            </div>
+          </section>
         </section>
       </div>
     </section>

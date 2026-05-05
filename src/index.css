@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Barlow+Condensed:wght@300;900&display=swap');
 
 /* ─── Reset & tokens ────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -216,9 +216,21 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .brand-name {
-  font-weight: 800;
-  letter-spacing: .04em;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: .01em;
   line-height: 1;
+  text-transform: uppercase;
+}
+
+.brand-name-gig {
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.brand-name-boy {
+  font-weight: 300;
+  color: var(--text);
+  opacity: 0.75;
 }
 
 
@@ -901,6 +913,68 @@ input, select, textarea { font: inherit; color: var(--text); }
 .emoji-choice-btn.active {
   border-color: var(--accent);
   background: var(--chord-bg);
+}
+
+/* ── Icon picker (popover pattern) ── */
+.icon-picker-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.icon-picker-trigger {
+  border: none;
+  background: none;
+  padding: .1rem;
+  cursor: pointer;
+  line-height: 1;
+  border-radius: 8px;
+  transition: background .15s, transform .08s;
+}
+
+.icon-picker-trigger:hover,
+.icon-picker-trigger:focus-visible,
+.icon-picker-trigger.is-open {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.icon-picker-trigger:active {
+  transform: scale(.93);
+}
+
+.icon-picker-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.icon-picker-popover {
+  position: absolute;
+  top: calc(100% + .4rem);
+  left: 0;
+  z-index: 15;
+  width: min(18rem, 90vw);
+  padding: .7rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  background: color-mix(in srgb, var(--surface) 96%, #fff);
+  box-shadow: 0 12px 32px color-mix(in srgb, #000 14%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.icon-picker-reset-btn {
+  font-size: .75rem;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: .2rem 0;
+  text-align: left;
+  transition: color .15s;
+}
+
+.icon-picker-reset-btn:hover {
+  color: var(--text);
 }
 
 .search-box {

@@ -1,6 +1,6 @@
 import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, Smile, FileText } from 'lucide-react';
+import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, FileText } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Song, SongList } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
@@ -85,6 +85,8 @@ export default function SetlistsView({
   const [editingSongNoteId, setEditingSongNoteId] = useState<string | null>(null);
   const [songNoteDraft, setSongNoteDraft] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const iconPickerRef = useRef<HTMLDivElement | null>(null);
+  const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const startRenaming = () => {
     setRenameValue(setlistName);
@@ -160,6 +162,33 @@ export default function SetlistsView({
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [showSongPicker]);
+
+  useEffect(() => {
+    if (!showIconEditor) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (iconPickerRef.current?.contains(target)) return;
+      if (iconTriggerRef.current?.contains(target)) return;
+      setShowIconEditor(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setShowIconEditor(false);
+      iconTriggerRef.current?.focus();
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showIconEditor]);
 
   const openSongPicker = () => {
     setPickerQuery('');
@@ -371,7 +400,65 @@ export default function SetlistsView({
             ) : (
               <div className="song-list-title-row">
                 <h1 className="song-list-heading setlist-title" onDoubleClick={startRenaming}>
-                  {effectiveIcon ? <span className="song-list-heading-icon" aria-hidden="true">{effectiveIcon}</span> : null}
+                  <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                    <button
+                      ref={iconTriggerRef}
+                      type="button"
+                      className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
+                      aria-haspopup="dialog"
+                      aria-expanded={showIconEditor}
+                      onClick={(e) => { e.stopPropagation(); setShowIconEditor((v) => !v); }}
+                      title="Change setlist icon"
+                      aria-label="Change setlist icon"
+                    >
+                      <span className="song-list-heading-icon" aria-hidden="true">{effectiveIcon ?? '🎵'}</span>
+                    </button>
+                    {showIconEditor && (
+                      <div className="icon-picker-popover" role="dialog" aria-label="Choose setlist icon">
+                        <div className="emoji-choice-grid" role="radiogroup" aria-label="Setlist icon options">
+                          {ICON_OPTIONS.map((emoji) => {
+                            const selected = iconDraft === emoji;
+                            return (
+                              <button
+                                key={emoji}
+                                type="button"
+                                className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                                onClick={() => {
+                                  const icon = normalizeEmojiIcon(emoji);
+                                  if (onUpdateIconOverride) {
+                                    onUpdateIconOverride(icon);
+                                  } else {
+                                    updateSetlistIcon(setlistId, icon);
+                                  }
+                                  setIconDraft(emoji);
+                                  setShowIconEditor(false);
+                                }}
+                                aria-label={`Choose icon ${emoji}`}
+                                aria-pressed={selected}
+                              >
+                                {emoji}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          className="icon-picker-reset-btn"
+                          onClick={() => {
+                            if (onUpdateIconOverride) {
+                              onUpdateIconOverride(undefined);
+                            } else {
+                              updateSetlistIcon(setlistId, undefined);
+                            }
+                            setIconDraft('🎵');
+                            setShowIconEditor(false);
+                          }}
+                        >
+                          Reset to default
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {setlistName}
                 </h1>
                 <button
@@ -415,13 +502,6 @@ export default function SetlistsView({
             >
               <Plus size={14} />
             </button>
-            <button
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => setShowIconEditor((value) => !value)}
-              title="Set setlist icon"
-            >
-              <Smile size={14} />
-            </button>
             {extraActions}
             {canDeleteSetlist ? (
               <button
@@ -436,60 +516,6 @@ export default function SetlistsView({
           </div>
         </div>
 
-        {showIconEditor ? (
-          <div className="list-appearance-editor" role="region" aria-label="Setlist icon settings">
-          <div className="list-appearance-group">
-            <span className="list-appearance-label">Icon</span>
-            <div className="emoji-choice-grid" role="listbox" aria-label="Setlist icon options">
-              {ICON_OPTIONS.map((emoji) => {
-                const selected = iconDraft === emoji;
-                return (
-                  <button
-                    key={emoji}
-                    type="button"
-                    className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                    onClick={() => setIconDraft(emoji)}
-                    aria-label={`Choose icon ${emoji}`}
-                    aria-pressed={selected}
-                  >
-                    {emoji}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="setlist-action-btn"
-            onClick={() => {
-              const icon = normalizeEmojiIcon(iconDraft);
-              if (onUpdateIconOverride) {
-                onUpdateIconOverride(icon);
-              } else {
-                updateSetlistIcon(setlistId, icon);
-              }
-              setShowIconEditor(false);
-            }}
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={() => {
-              if (onUpdateIconOverride) {
-                onUpdateIconOverride(undefined);
-              } else {
-                updateSetlistIcon(setlistId, undefined);
-              }
-              setIconDraft('🎵');
-              setShowIconEditor(false);
-            }}
-          >
-            Reset
-          </button>
-        </div>
-      ) : null}
       </div>{/* end song-list-sticky */}
 
       {songs.length === 0 ? (

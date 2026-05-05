@@ -14,7 +14,6 @@ import {
   PenLine,
   Trash2,
   ListMinus,
-  Smile,
 } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
@@ -153,6 +152,8 @@ export default function SongList({
     }
   }, [listName, isRenaming]);
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const iconPickerRef = useRef<HTMLDivElement | null>(null);
+  const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
   const songNodeRefs = useRef<Map<string, HTMLElement>>(new Map());
   const canDragReorder = Boolean(onMoveSong);
   const songPageStateBase = listName
@@ -266,6 +267,33 @@ export default function SongList({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [showSongPicker, showListAppearanceEditor]);
 
+  useEffect(() => {
+    if (!showListAppearanceEditor) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (iconPickerRef.current?.contains(target)) return;
+      if (iconTriggerRef.current?.contains(target)) return;
+      setShowListAppearanceEditor(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setShowListAppearanceEditor(false);
+      iconTriggerRef.current?.focus();
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showListAppearanceEditor]);
+
   const openSongPicker = () => {
     setPickerQuery('');
     setShowSongPicker(true);
@@ -274,22 +302,6 @@ export default function SongList({
   const closeSongPicker = () => {
     setShowSongPicker(false);
     setPickerQuery('');
-  };
-
-  const handleApplyListAppearance = async () => {
-    if (!onUpdateListAppearance) return;
-
-    await onUpdateListAppearance({
-      icon: normalizeEmojiIcon(listIconDraft),
-    });
-    setShowListAppearanceEditor(false);
-  };
-
-  const handleResetListAppearance = async () => {
-    if (!onUpdateListAppearance) return;
-    await onUpdateListAppearance({ icon: undefined });
-    setListIconDraft('🎵');
-    setShowListAppearanceEditor(false);
   };
 
   const commitRename = () => {
@@ -501,7 +513,60 @@ export default function SongList({
             ) : (
               <div className="song-list-title-row">
                 <h2 className="song-list-heading setlist-title">
-                  {listIcon && <span className="song-list-heading-icon" aria-hidden="true">{listIcon}</span>}
+                  {onUpdateListAppearance ? (
+                    <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                      <button
+                        ref={iconTriggerRef}
+                        type="button"
+                        className={`icon-picker-trigger${showListAppearanceEditor ? ' is-open' : ''}`}
+                        aria-haspopup="dialog"
+                        aria-expanded={showListAppearanceEditor}
+                        onClick={(e) => { e.stopPropagation(); setShowListAppearanceEditor((v) => !v); }}
+                        title={`Change ${listEntityLabel} icon`}
+                        aria-label={`Change ${listEntityLabel} icon`}
+                      >
+                        <span className="song-list-heading-icon" aria-hidden="true">{listIcon ?? '🎵'}</span>
+                      </button>
+                      {showListAppearanceEditor && (
+                        <div className="icon-picker-popover" role="dialog" aria-label={`Choose ${listEntityLabel} icon`}>
+                          <div className="emoji-choice-grid" role="radiogroup" aria-label={`${listEntityLabel} icon options`}>
+                            {ICON_OPTIONS.map((emoji) => {
+                              const selected = listIconDraft === emoji;
+                              return (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                                  onClick={() => {
+                                    setListIconDraft(emoji);
+                                    void onUpdateListAppearance({ icon: normalizeEmojiIcon(emoji) });
+                                    setShowListAppearanceEditor(false);
+                                  }}
+                                  aria-label={`Choose icon ${emoji}`}
+                                  aria-pressed={selected}
+                                >
+                                  {emoji}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <button
+                            type="button"
+                            className="icon-picker-reset-btn"
+                            onClick={() => {
+                              void onUpdateListAppearance({ icon: undefined });
+                              setListIconDraft('🎵');
+                              setShowListAppearanceEditor(false);
+                            }}
+                          >
+                            Reset to default
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    listIcon && <span className="song-list-heading-icon" aria-hidden="true">{listIcon}</span>
+                  )}
                   <span>{listName}</span>
                 </h2>
                 {onRenameList && (
@@ -533,16 +598,6 @@ export default function SongList({
             </button>
           )}
           {headerActions}
-          {onUpdateListAppearance && listName && (
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => setShowListAppearanceEditor((value) => !value)}
-              title={`Set ${listEntityLabel} icon`}
-            >
-              <Smile size={14} />
-            </button>
-          )}
           {onDeleteList && (
             <button
               type="button"
@@ -574,32 +629,6 @@ export default function SongList({
           </div>
         </div>
       </div>
-      {showListAppearanceEditor && onUpdateListAppearance && (
-        <div className="list-appearance-editor" role="region" aria-label={`${listEntityLabel} icon settings`}>
-          <div className="list-appearance-group">
-            <span className="list-appearance-label">Icon</span>
-            <div className="emoji-choice-grid" role="listbox" aria-label={`${listEntityLabel} icon options`}>
-              {ICON_OPTIONS.map((emoji) => {
-                const selected = listIconDraft === emoji;
-                return (
-                  <button
-                    key={emoji}
-                    type="button"
-                    className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                    onClick={() => setListIconDraft(emoji)}
-                    aria-label={`Choose icon ${emoji}`}
-                    aria-pressed={selected}
-                  >
-                    {emoji}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <button type="button" className="setlist-action-btn" onClick={() => void handleApplyListAppearance()}>Save</button>
-          <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={() => void handleResetListAppearance()}>Reset</button>
-        </div>
-      )}
       <div className="song-list-controls">
         <div className="search-box">
           <Search size={16} className="search-icon" />
