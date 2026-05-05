@@ -121,6 +121,10 @@ function LoginHero() {
 function LoginBackdrop() {
   return (
     <div className="login-bg" aria-hidden="true">
+      <span className="login-glow login-glow--1" />
+      <span className="login-glow login-glow--2" />
+      <span className="login-ring login-ring--1" />
+      <span className="login-ring login-ring--2" />
       <span className="login-note login-note--1">♩</span>
       <span className="login-note login-note--2">♪</span>
       <span className="login-note login-note--3">♫</span>
@@ -129,6 +133,16 @@ function LoginBackdrop() {
       <span className="login-note login-note--6">♪</span>
       <span className="login-note login-note--7">♫</span>
       <span className="login-note login-note--8">♬</span>
+      <span className="login-note login-note--9">♩</span>
+      <span className="login-note login-note--10">♫</span>
+      <span className="login-note login-note--11">♪</span>
+      <span className="login-note login-note--12">♬</span>
+      <span className="login-spark login-spark--1" />
+      <span className="login-spark login-spark--2" />
+      <span className="login-spark login-spark--3" />
+      <span className="login-spark login-spark--4" />
+      <span className="login-spark login-spark--5" />
+      <span className="login-spark login-spark--6" />
       <span className="login-grid" />
     </div>
   );
