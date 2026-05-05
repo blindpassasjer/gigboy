@@ -42,6 +42,8 @@ export async function createCheckoutSession(params: {
   priceId: string;
   successUrl: string;
   cancelUrl: string;
+  extraMemberPriceId?: string;
+  extraMemberCount?: number;
 }) {
   return postJson<{ url: string }>('/api/stripe/create-checkout', params, {
     userId: params.userId,

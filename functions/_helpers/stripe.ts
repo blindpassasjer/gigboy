@@ -9,6 +9,14 @@ const STORAGE_QUOTA: Record<string, number> = {
   band: 5 * 1024 * 1024 * 1024,     // 5 GB
 };
 
+const BASE_MEMBER_LIMIT: Record<string, number> = {
+  free: 1,
+  pro: 1,
+  band: 5,
+};
+
+const MAX_EXTRA_MEMBERS = 500;
+
 export function getStripeClient(secretKey: string): Stripe {
   return new Stripe(secretKey, {
     // @ts-expect-error — Cloudflare Workers edge runtime
@@ -26,6 +34,7 @@ export interface UpdatePlanPayload {
   subscriptionStatus: SubscriptionStatus;
   currentPeriodEnd: number | null;
   stripeCustomerId: string | null;
+  bandExtraMembers?: number;
   planOverride?: boolean;
 }
 
@@ -39,11 +48,18 @@ export async function updateUserPlan(
   payload: UpdatePlanPayload
 ): Promise<void> {
   const storageQuotaBytes = STORAGE_QUOTA[payload.plan] ?? STORAGE_QUOTA.free;
+  const normalizedExtraMembers = payload.plan === 'band'
+    ? Math.max(0, Math.min(MAX_EXTRA_MEMBERS, Math.trunc(payload.bandExtraMembers ?? 0)))
+    : 0;
+  const memberLimit = (BASE_MEMBER_LIMIT[payload.plan] ?? BASE_MEMBER_LIMIT.free) + normalizedExtraMembers;
+
   await setFirestoreDocument(env, ['users', userId], {
     plan: payload.plan,
     subscriptionStatus: payload.subscriptionStatus,
     currentPeriodEnd: payload.currentPeriodEnd,
     storageQuotaBytes,
+    bandExtraMembers: normalizedExtraMembers,
+    memberLimit,
     ...(payload.stripeCustomerId !== null ? { stripeCustomerId: payload.stripeCustomerId } : {}),
     ...(typeof payload.planOverride === 'boolean' ? { planOverride: payload.planOverride } : {}),
   });
@@ -80,4 +96,56 @@ export function mapStripeStatus(status: string): SubscriptionStatus {
     'active', 'trialing', 'past_due', 'canceled', 'unpaid', 'incomplete',
   ];
   return (allowed as string[]).includes(status) ? (status as SubscriptionStatus) : null;
+}
+
+export function planAndExtraMembersFromSubscription(
+  subscription: Stripe.Subscription,
+  env: Record<string, string | undefined>
+): { plan: PlanTier; bandExtraMembers: number } {
+  const proPrices = new Set([
+    env.STRIPE_PRO_MONTHLY_PRICE_ID,
+    env.STRIPE_PRO_ANNUAL_PRICE_ID,
+  ].filter((entry): entry is string => Boolean(entry)));
+
+  const bandPrices = new Set([
+    env.STRIPE_BAND_MONTHLY_PRICE_ID,
+    env.STRIPE_BAND_ANNUAL_PRICE_ID,
+  ].filter((entry): entry is string => Boolean(entry)));
+
+  const bandExtraMemberPrices = new Set([
+    env.STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID,
+    env.STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID,
+  ].filter((entry): entry is string => Boolean(entry)));
+
+  let plan: PlanTier = 'free';
+  let bandExtraMembers = 0;
+
+  for (const item of subscription.items.data) {
+    const priceId = item.price?.id ?? '';
+    const quantity = Math.max(0, item.quantity ?? 0);
+    if (!priceId) continue;
+
+    if (bandPrices.has(priceId)) {
+      plan = 'band';
+      continue;
+    }
+
+    if (proPrices.has(priceId) && plan !== 'band') {
+      plan = 'pro';
+      continue;
+    }
+
+    if (bandExtraMemberPrices.has(priceId)) {
+      bandExtraMembers += quantity;
+    }
+  }
+
+  if (plan !== 'band') {
+    bandExtraMembers = 0;
+  }
+
+  return {
+    plan,
+    bandExtraMembers: Math.min(MAX_EXTRA_MEMBERS, bandExtraMembers),
+  };
 }

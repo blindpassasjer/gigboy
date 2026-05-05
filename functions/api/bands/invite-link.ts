@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { resolveOwnerBandMemberLimit } from '../../_helpers/band-limits';
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -46,6 +47,25 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     const inviterRole = band.ownerId === userId ? 'editor' : memberRoles[userId];
     if (!memberIds.includes(userId) || inviterRole !== 'editor') {
       return Response.json({ error: 'You do not have permission to create invite links for this band.' }, { status: 403 });
+    }
+
+    const ownerId = typeof band.ownerId === 'string' ? band.ownerId : '';
+    if (!ownerId) {
+      return Response.json({ error: 'Band owner is missing.' }, { status: 400 });
+    }
+
+    const { memberLimit, isBandEligible } = await resolveOwnerBandMemberLimit(ctx.env, ownerId);
+    if (!isBandEligible) {
+      return Response.json({ error: 'Adding members requires an active Band subscription.' }, { status: 403 });
+    }
+
+    if (memberIds.length >= memberLimit) {
+      return Response.json(
+        {
+          error: `This band has reached its member limit (${memberLimit}). Add extra members in billing to invite more people.`,
+        },
+        { status: 409 }
+      );
     }
 
     const bandName = typeof band.name === 'string' && band.name.trim() ? band.name.trim() : 'Untitled band';

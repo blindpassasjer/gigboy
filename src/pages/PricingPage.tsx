@@ -49,7 +49,7 @@ const PLAN_CARDS: PlanCard[] = [
     blurb: 'A shared workspace for a band owner with member access and room to grow.',
     monthlyPrice: '150 kr or 15 USD',
     annualPrice: '1500 kr or 150 USD',
-    featureBullets: ['Unlimited songs', '5 GB storage', 'Up to 5 members included', '20 kr / 2 USD per extra member monthly, 200 kr / 20 USD yearly'],
+    featureBullets: ['Unlimited songs', '5 GB storage', 'Up to 5 members included', 'Extra members are a Band-only add-on'],
     ctaLabel: 'Upgrade to Band',
     envKeyMonthly: 'VITE_STRIPE_BAND_MONTHLY_PRICE_ID',
     envKeyAnnual: 'VITE_STRIPE_BAND_ANNUAL_PRICE_ID',
@@ -67,6 +67,7 @@ export default function PricingPage() {
   const { plan } = usePlan();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [busyTier, setBusyTier] = useState<PlanTier | null>(null);
+  const [extraMemberCount, setExtraMemberCount] = useState(0);
 
   const handleCheckout = async (card: PlanCard) => {
     if (card.tier === 'free') return;
@@ -81,6 +82,21 @@ export default function PricingPage() {
       return;
     }
 
+    const isBandPlan = card.tier === 'band';
+    const normalizedExtraMembers = isBandPlan ? Math.max(0, Math.min(500, Math.trunc(extraMemberCount))) : 0;
+    const extraMemberPriceId = isBandPlan
+      ? (
+        billingCycle === 'annual'
+          ? (import.meta.env.VITE_STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID as string | undefined)
+          : (import.meta.env.VITE_STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID as string | undefined)
+      )?.trim() || null
+      : null;
+
+    if (normalizedExtraMembers > 0 && !extraMemberPriceId) {
+      toast.error('Extra members are not configured yet for this billing cycle.');
+      return;
+    }
+
     setBusyTier(card.tier);
     try {
       const result = await createCheckoutSession({
@@ -89,6 +105,12 @@ export default function PricingPage() {
         priceId,
         successUrl: `${window.location.origin}/checkout-result?status=success`,
         cancelUrl: `${window.location.origin}/checkout-result?status=cancel`,
+        ...(normalizedExtraMembers > 0 && extraMemberPriceId
+          ? {
+            extraMemberPriceId,
+            extraMemberCount: normalizedExtraMembers,
+          }
+          : {}),
       });
       window.location.href = result.url;
     } catch (error) {
@@ -160,6 +182,19 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
+              {card.tier === 'band' ? (
+                <label className="share-menu-field" style={{ marginBottom: '0.85rem' }}>
+                  <span>Extra members ({billingCycle === 'annual' ? '200 kr / 20 USD each per year' : '20 kr / 2 USD each per month'})</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={500}
+                    value={extraMemberCount}
+                    onChange={(event) => setExtraMemberCount(Number(event.target.value) || 0)}
+                    disabled={busyTier === card.tier}
+                  />
+                </label>
+              ) : null}
               {card.tier === 'free' ? (
                 <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-card-btn">
                   {isCurrentPlan ? card.ctaLabel : 'Use Free'}
@@ -207,7 +242,7 @@ export default function PricingPage() {
               <tr><td>Metronome</td><td>No</td><td>Yes</td><td>Yes</td></tr>
               <tr><td>Multi-user notes</td><td>No</td><td>Yes</td><td>Yes</td></tr>
               <tr><td>Members</td><td>1 owner</td><td>1 owner</td><td>Up to 5</td></tr>
-              <tr><td>Extra members</td><td>—</td><td>—</td><td>20 kr / 2 USD monthly, 200 kr / 20 USD yearly</td></tr>
+              <tr><td>Extra members</td><td>—</td><td>—</td><td>Band add-on only: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly</td></tr>
             </tbody>
           </table>
         </div>

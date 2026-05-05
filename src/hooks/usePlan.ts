@@ -29,8 +29,8 @@ export function usePlan() {
       planOverride,
       subscriptionStatus,
       songLimit: limits.songLimit,
-      storageQuotaBytes: limits.storageQuotaBytes,
-      memberLimit: limits.memberLimit,
+      storageQuotaBytes: user?.storageQuotaBytes ?? limits.storageQuotaBytes,
+      memberLimit: user?.memberLimit ?? limits.memberLimit,
       canUse(feature: ProFeature) {
         if (planOverride) return true;
         if (!active && plan !== 'free') return false;

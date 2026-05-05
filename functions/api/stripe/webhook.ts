@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import {
   getStripeClient,
   updateUserPlan,
-  planTierFromPriceId,
+  planAndExtraMembersFromSubscription,
   mapStripeStatus,
 } from '../../_helpers/stripe';
 
@@ -17,6 +17,8 @@ interface Env {
   STRIPE_PRO_ANNUAL_PRICE_ID?: string;
   STRIPE_BAND_MONTHLY_PRICE_ID?: string;
   STRIPE_BAND_ANNUAL_PRICE_ID?: string;
+  STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID?: string;
+  STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID?: string;
 }
 
 /** Extract Firebase UID from subscription or customer metadata. */
@@ -75,8 +77,7 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           break;
         }
 
-        const priceId = sub.items.data[0]?.price.id ?? '';
-        const plan = planTierFromPriceId(priceId, env);
+        const { plan, bandExtraMembers } = planAndExtraMembersFromSubscription(sub, env);
         const status = mapStripeStatus(sub.status);
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? null;
         const currentPeriodEnd = sub.items.data[0]?.current_period_end ?? null;
@@ -86,6 +87,7 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           subscriptionStatus: status,
           currentPeriodEnd: currentPeriodEnd ?? null,
           stripeCustomerId: customerId,
+          bandExtraMembers,
         });
         break;
       }
@@ -99,8 +101,7 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           break;
         }
 
-        const priceId = expandedSub.items.data[0]?.price.id ?? '';
-        const plan = planTierFromPriceId(priceId, env);
+        const { plan, bandExtraMembers } = planAndExtraMembersFromSubscription(expandedSub, env);
         const status = mapStripeStatus(expandedSub.status);
         const customerId = typeof expandedSub.customer === 'string'
           ? expandedSub.customer
@@ -112,6 +113,7 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           subscriptionStatus: status,
           currentPeriodEnd: currentPeriodEnd ?? null,
           stripeCustomerId: customerId,
+          bandExtraMembers,
         });
         break;
       }
@@ -134,6 +136,7 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           subscriptionStatus: 'canceled',
           currentPeriodEnd: null,
           stripeCustomerId: customerId,
+          bandExtraMembers: 0,
         });
         break;
       }
@@ -150,7 +153,7 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
 
         // Mark as past_due without downgrading the plan immediately.
         await updateUserPlan(env, uid, {
-          plan: planTierFromPriceId(sub.items.data[0]?.price.id ?? '', env),
+          ...planAndExtraMembersFromSubscription(sub, env),
           subscriptionStatus: 'past_due',
           currentPeriodEnd: sub.items.data[0]?.current_period_end ?? null,
           stripeCustomerId: typeof sub.customer === 'string'

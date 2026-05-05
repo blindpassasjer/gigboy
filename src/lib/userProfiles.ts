@@ -22,6 +22,8 @@ export interface UserProfile {
   subscriptionStatus?: SubscriptionStatus;
   currentPeriodEnd?: number | null;
   storageQuotaBytes?: number;
+  bandExtraMembers?: number;
+  memberLimit?: number;
   stripeCustomerId?: string;
 }
 
@@ -76,6 +78,12 @@ function profileFromData(data: Record<string, unknown> | undefined | null): User
   const storageQuotaBytes = typeof data.storageQuotaBytes === 'number' && Number.isFinite(data.storageQuotaBytes)
     ? data.storageQuotaBytes
     : undefined;
+  const bandExtraMembers = typeof data.bandExtraMembers === 'number' && Number.isFinite(data.bandExtraMembers)
+    ? Math.max(0, Math.trunc(data.bandExtraMembers))
+    : undefined;
+  const memberLimit = typeof data.memberLimit === 'number' && Number.isFinite(data.memberLimit)
+    ? Math.max(1, Math.trunc(data.memberLimit))
+    : undefined;
 
   return {
     username,
@@ -88,6 +96,8 @@ function profileFromData(data: Record<string, unknown> | undefined | null): User
     subscriptionStatus,
     currentPeriodEnd,
     storageQuotaBytes,
+    bandExtraMembers,
+    memberLimit,
     stripeCustomerId: typeof data.stripeCustomerId === 'string' ? data.stripeCustomerId : undefined,
   };
 }

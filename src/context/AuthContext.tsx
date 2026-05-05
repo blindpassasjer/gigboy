@@ -36,6 +36,9 @@ export interface User {
   planOverride: boolean;
   subscriptionStatus: SubscriptionStatus;
   currentPeriodEnd: number | null;
+  storageQuotaBytes: number;
+  bandExtraMembers: number;
+  memberLimit: number;
   stripeCustomerId: string | null;
 }
 
@@ -115,6 +118,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           planOverride: false,
           subscriptionStatus: null,
           currentPeriodEnd: null,
+          storageQuotaBytes: 100 * 1024 * 1024,
+          bandExtraMembers: 0,
+          memberLimit: 1,
           stripeCustomerId: null,
         });
         setLoading(false);
@@ -134,6 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             planOverride: profile?.planOverride === true,
             subscriptionStatus: profile?.subscriptionStatus ?? null,
             currentPeriodEnd: profile?.currentPeriodEnd ?? null,
+            storageQuotaBytes: profile?.storageQuotaBytes ?? 100 * 1024 * 1024,
+            bandExtraMembers: profile?.bandExtraMembers ?? 0,
+            memberLimit: profile?.memberLimit ?? 1,
             stripeCustomerId: profile?.stripeCustomerId ?? null,
           });
         })
@@ -149,6 +158,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             planOverride: false,
             subscriptionStatus: null,
             currentPeriodEnd: null,
+            storageQuotaBytes: 100 * 1024 * 1024,
+            bandExtraMembers: 0,
+            memberLimit: 1,
             stripeCustomerId: null,
           });
         })

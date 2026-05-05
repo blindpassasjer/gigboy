@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { resolveOwnerBandMemberLimit } from '../../_helpers/band-limits';
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -66,6 +67,27 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const memberIds = Array.isArray(band.memberIds)
     ? band.memberIds.filter((entry): entry is string => typeof entry === 'string')
     : [];
+
+  const ownerId = typeof band.ownerId === 'string' ? band.ownerId : '';
+  if (!ownerId) {
+    return Response.json({ error: 'Band owner is missing.' }, { status: 400 });
+  }
+
+  const alreadyMember = memberIds.includes(userId);
+  const { memberLimit, isBandEligible } = await resolveOwnerBandMemberLimit(ctx.env, ownerId);
+  if (!isBandEligible) {
+    return Response.json({ error: 'Adding members requires an active Band subscription.' }, { status: 403 });
+  }
+
+  if (!alreadyMember && memberIds.length >= memberLimit) {
+    return Response.json(
+      {
+        error: `This band has reached its member limit (${memberLimit}). The owner must add extra members in billing before accepting more members.`,
+      },
+      { status: 409 }
+    );
+  }
+
   const nextMemberIds = memberIds.includes(userId) ? memberIds : [...memberIds, userId];
 
   const memberRoles = typeof band.memberRoles === 'object' && band.memberRoles !== null

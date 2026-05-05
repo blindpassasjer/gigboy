@@ -300,7 +300,7 @@ export default function ProfilePage() {
               <strong>{formatStorageBytes(planState.storageQuotaBytes)}</strong>
             </article>
             <article className="profile-limit-card">
-              <span>Members included</span>
+              <span>Member capacity</span>
               <strong>{planState.memberLimit}</strong>
             </article>
           </div>
