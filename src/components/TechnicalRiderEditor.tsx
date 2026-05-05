@@ -72,7 +72,7 @@ export default function TechnicalRiderEditor({
     setIconDraft(rider.icon ?? '🎤');
     setSaveState('idle');
     setShowIconEditor(false);
-  });
+  }, [rider.id, rider.icon, rider.inventoryEquipment, rider.lines, rider.name, rider.preferredEquipment]);
 
   useEffect(() => {
     return () => {
@@ -85,8 +85,7 @@ export default function TechnicalRiderEditor({
   // Keep the rename input in sync when a rename is committed externally.
   useEffect(() => {
     if (!isRenaming) setRenameValue(rider.name);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rider.name]);
+  }, [isRenaming, rider.name]);
 
   useEffect(() => {
     setIconDraft(rider.icon ?? '🎤');

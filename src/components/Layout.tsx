@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -130,7 +130,7 @@ export default function Layout({ children }: Props) {
   const hasAnyPendingInvites = pendingInvites.length > 0 || pendingBandInvites.length > 0;
   const hasAnyInviteContent = hasAnyPendingInvites || acceptedOutgoing.length > 0;
 
-  const refreshInvitesPopover = async () => {
+  const refreshInvitesPopover = useCallback(async () => {
     if (!db || !user?.id) {
       setPendingInvites([]);
       setPendingBandInvites([]);
@@ -158,7 +158,7 @@ export default function Layout({ children }: Props) {
     } finally {
       setInvitesLoading(false);
     }
-  };
+  }, [user?.email, user?.id]);
 
   const toggleFullscreen = async () => {
     if (typeof document === 'undefined') return;
@@ -311,7 +311,7 @@ export default function Layout({ children }: Props) {
       markAcceptedAsSeen(unseenAcceptedOutgoing);
     }
     void refreshInvitesPopover();
-  }, [invitesOpen, markAcceptedAsSeen, unseenAcceptedOutgoing, user?.email, user?.id]);
+  }, [invitesOpen, markAcceptedAsSeen, refreshInvitesPopover, unseenAcceptedOutgoing, user?.email, user?.id]);
 
   useEffect(() => {
     if (!invitesOpen) return;

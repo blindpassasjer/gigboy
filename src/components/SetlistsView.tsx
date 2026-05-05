@@ -95,7 +95,6 @@ export default function SetlistsView({
 
   useEffect(() => {
     setIconDraft(effectiveIcon ?? '🎵');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveIcon]);
 
   useEffect(() => {

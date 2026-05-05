@@ -1446,10 +1446,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       if (typeof entry.sortOrder !== 'number') return max;
       return Math.max(max, entry.sortOrder);
     }, -1) + 1;
-    const { id, accessRole, ...rest } = song;
     const payload = Object.fromEntries(
       Object.entries({
-        ...rest,
+        ...song,
         sortOrder: nextSortOrder,
         ownerId: band.ownerId,
         collaboratorIds: band.memberIds,
@@ -1457,7 +1456,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           band.memberIds.map((memberId) => [memberId, band.memberRoles[memberId] ?? 'viewer'])
         ),
         updatedAt: new Date().toISOString(),
-      }).filter(([, value]) => value !== undefined)
+      }).filter(([key, value]) => key !== 'id' && key !== 'accessRole' && value !== undefined)
     );
 
     try {
@@ -1510,11 +1509,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }));
 
     try {
-      const { id, accessRole, ...rest } = nextSong;
       const payload = Object.fromEntries(
-        Object.entries(rest).filter(([, value]) => value !== undefined)
+        Object.entries(nextSong).filter(([key, value]) => key !== 'id' && key !== 'accessRole' && value !== undefined)
       );
-      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, id), payload);
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, nextSong.id), payload);
       return null;
     } catch (error) {
       setBandSongsByBandId((prev) => ({
@@ -1625,11 +1623,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     try {
       await Promise.all(
         nextSongs.map((song) => {
-          const { id, accessRole, ...rest } = song;
           const payload = Object.fromEntries(
-            Object.entries(rest).filter(([, value]) => value !== undefined)
+            Object.entries(song).filter(([key, value]) => key !== 'id' && key !== 'accessRole' && value !== undefined)
           );
-          return setDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, id), payload);
+          return setDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_SONGS_COLLECTION, song.id), payload);
         })
       );
       return null;
@@ -1678,7 +1675,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      const { id, accessRole, ...payload } = nextSongList;
+      const payload = Object.fromEntries(
+        Object.entries(nextSongList).filter(([key, value]) => key !== 'id' && key !== 'accessRole' && value !== undefined)
+      );
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), payload);
       await refreshBandSongLists(bandId);
       return { songListId, error: null };
@@ -2008,7 +2007,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      const { id, accessRole, ...payload } = nextSetlist;
+      const payload = Object.fromEntries(
+        Object.entries(nextSetlist).filter(([key, value]) => key !== 'id' && key !== 'accessRole' && value !== undefined)
+      );
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), payload);
       await refreshBandSetlists(bandId);
       return { setlistId, error: null };
@@ -2508,7 +2509,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      const { id, accessRole, ...payload } = nextStageplot;
+      const payload = Object.fromEntries(
+        Object.entries(nextStageplot).filter(([key, value]) => key !== 'id' && key !== 'accessRole' && value !== undefined)
+      );
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId), payload);
       await refreshBandStageplots(bandId);
       return { stageplotId, error: null };
@@ -3522,6 +3525,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     renameBandSetlist,
     renameBandSongList,
     renameBandTechnicalRider,
+    updateBandDescription,
     updateBandSongListIcon,
     refreshBandSongs,
     removeMember,
@@ -3539,6 +3543,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateBandStageplotIcon,
     updateBandStageplotSettings,
     updateBandTechnicalRiderContent,
+    updateBandTechnicalRiderIcon,
   ]);
 
   return <BandsContext.Provider value={value}>{children}</BandsContext.Provider>;

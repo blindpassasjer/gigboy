@@ -122,11 +122,12 @@ export default function ProfileInvitesPage() {
         const message = error instanceof Error ? error.message : 'Failed to accept band invite.';
         toast.error(message);
       } finally {
-        if (!active) return;
-        setBusyInviteId(null);
-        const nextSearchParams = new URLSearchParams(searchParams);
-        nextSearchParams.delete('bandInvite');
-        setSearchParams(nextSearchParams, { replace: true });
+        if (active) {
+          setBusyInviteId(null);
+          const nextSearchParams = new URLSearchParams(searchParams);
+          nextSearchParams.delete('bandInvite');
+          setSearchParams(nextSearchParams, { replace: true });
+        }
       }
     })();
 
@@ -193,7 +194,7 @@ export default function ProfileInvitesPage() {
     return () => {
       active = false;
     };
-  }, [bands, invites, user?.id, db]);
+  }, [bands, invites, user?.id]);
 
   const onAccept = async (invite: CollaborationInvite) => {
     if (!user?.id || !user.email) return;

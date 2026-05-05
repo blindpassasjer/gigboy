@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link2, PenLine, Plus, Smile, Trash2, Undo2, X } from 'lucide-react';
 import type { HandNoteStroke, SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
@@ -127,7 +127,7 @@ export default function StageplotEditor({
   const myLayer = useMemo(() => userLayerFrom(drawingLayers, currentUser.id), [currentUser.id, drawingLayers]);
   const myStrokes = myLayer?.strokes ?? [];
 
-  const persistContent = async (nextItems: StageplotItem[], nextLayers: SongHandNoteDocument[]) => {
+  const persistContent = useCallback(async (nextItems: StageplotItem[], nextLayers: SongHandNoteDocument[]) => {
     setSaveState('saving');
     try {
       await onSaveContent(nextItems, nextLayers);
@@ -141,7 +141,7 @@ export default function StageplotEditor({
     } catch {
       setSaveState('error');
     }
-  };
+  }, [onSaveContent]);
 
   const makeItem = (template: { kind: string; label: string; color: string }, x: number, y: number): StageplotItem => ({
     id: crypto.randomUUID(),
@@ -291,7 +291,7 @@ export default function StageplotEditor({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [canEdit, selectedItemId, items, drawingLayers]);
+  }, [canEdit, selectedItemId, items, drawingLayers, persistContent]);
 
   const handleRenameCommit = () => {
     const trimmed = renameValue.trim();

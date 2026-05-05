@@ -8,7 +8,7 @@ interface Props {
   label?: string;
 }
 
-export default function UpgradePrompt({ feature: _feature, label }: Props) {
+export default function UpgradePrompt({ label }: Props) {
   const navigate = useNavigate();
   return (
     <div className="upgrade-prompt" role="status" aria-label="Feature locked">

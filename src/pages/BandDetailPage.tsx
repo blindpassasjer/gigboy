@@ -66,7 +66,7 @@ export default function BandDetailPage() {
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
-  const bandSongs = id ? (bandSongsByBandId[id] ?? []) : [];
+  const bandSongs = useMemo(() => (id ? (bandSongsByBandId[id] ?? []) : []), [bandSongsByBandId, id]);
   const bandSongLists = id ? (bandSongListsByBandId[id] ?? []) : [];
   const bandSetlists = id ? (bandSetlistsByBandId[id] ?? []) : [];
   const bandStageplots = id ? (bandStageplotsByBandId[id] ?? []) : [];

@@ -75,7 +75,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
   const [collapsedBandStageplotIds, setCollapsedBandStageplotIds] = useState<string[]>([]);
   const [collapsedBandTechnicalRiderIds, setCollapsedBandTechnicalRiderIds] = useState<string[]>([]);
-  const sidebarMode: 'bands' = 'bands';
+  const sidebarMode = 'bands' as const;
   const [activeBandId, setActiveBandId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     try { return window.localStorage.getItem('gigboy-active-band-id'); } catch { return null; }

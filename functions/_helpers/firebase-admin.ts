@@ -142,7 +142,7 @@ function normalizePrivateKey(privateKey: string) {
   }
 
   const base64Body = normalized.replace(/\s+/g, '');
-  const isLikelyBase64Body = /^[A-Za-z0-9+/_=\-]+$/.test(base64Body) && base64Body.length > 0;
+  const isLikelyBase64Body = /^[A-Za-z0-9+/_=-]+$/.test(base64Body) && base64Body.length > 0;
   if (isLikelyBase64Body) {
     const normalizedBase64Body = base64Body.replace(/-/g, '+').replace(/_/g, '/');
     return `-----BEGIN PRIVATE KEY-----\n${normalizedBase64Body}\n-----END PRIVATE KEY-----`;

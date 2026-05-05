@@ -35,6 +35,30 @@ interface ActiveChord {
 type PedalMappingTarget = 'previous' | 'next' | null;
 type PedalControlMode = 'song' | 'scroll';
 
+type BluetoothGattCharacteristicLike = {
+  properties?: { notify?: boolean; indicate?: boolean };
+  startNotifications: () => Promise<unknown>;
+  stopNotifications?: () => Promise<unknown>;
+  addEventListener: (type: 'characteristicvaluechanged', listener: (event: Event) => void) => void;
+  removeEventListener: (type: 'characteristicvaluechanged', listener: (event: Event) => void) => void;
+};
+
+type BluetoothGattServiceLike = {
+  getCharacteristics?: () => Promise<BluetoothGattCharacteristicLike[]>;
+};
+
+type BluetoothGattLike = {
+  connect?: () => Promise<unknown>;
+  getPrimaryServices?: () => Promise<BluetoothGattServiceLike[]>;
+};
+
+type BluetoothDeviceLike = {
+  name?: string;
+  gatt?: BluetoothGattLike;
+  addEventListener?: (type: 'gattserverdisconnected', listener: (event: Event) => void) => void;
+  removeEventListener?: (type: 'gattserverdisconnected', listener: (event: Event) => void) => void;
+};
+
 export default function BandSetlistConcertPage() {
   const navigate = useNavigate();
   const { bandId, setlistId } = useParams<{ bandId: string; setlistId: string }>();
@@ -46,12 +70,11 @@ export default function BandSetlistConcertPage() {
     refreshBandSongs,
   } = useBands();
 
-  const bandSetlists = bandId ? (bandSetlistsByBandId[bandId] ?? []) : [];
-  const bandSongs = bandId ? (bandSongsByBandId[bandId] ?? []) : [];
+  const bandSetlists = useMemo(() => (bandId ? (bandSetlistsByBandId[bandId] ?? []) : []), [bandId, bandSetlistsByBandId]);
+  const bandSongs = useMemo(() => (bandId ? (bandSongsByBandId[bandId] ?? []) : []), [bandId, bandSongsByBandId]);
 
   const setlist = useMemo(
     () => bandSetlists.find((entry) => entry.id === setlistId) ?? null,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [bandSetlists, setlistId],
   );
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
@@ -71,8 +94,7 @@ export default function BandSetlistConcertPage() {
     if (bandSongs.length === 0) {
       void refreshBandSongs(bandId).catch(() => {});
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bandId]);
+  }, [bandId, bandSetlists.length, bandSongs.length, refreshBandSetlists, refreshBandSongs]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [transpose, setTranspose] = useState(0);
@@ -97,7 +119,7 @@ export default function BandSetlistConcertPage() {
   const [pedalControlMode, setPedalControlMode] = useState<PedalControlMode>('song');
   const songScrollRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
-  const pedalDeviceRef = useRef<any>(null);
+  const pedalDeviceRef = useRef<BluetoothDeviceLike | null>(null);
   const pedalDisconnectHandlerRef = useRef<((event: Event) => void) | null>(null);
   const pedalNotificationCleanupRef = useRef<(() => void) | null>(null);
   const lastPedalTriggerAtRef = useRef(0);
@@ -234,7 +256,7 @@ export default function BandSetlistConcertPage() {
     }
   }, []);
 
-  const attachBluetoothPedalListeners = useCallback(async (device: any) => {
+  const attachBluetoothPedalListeners = useCallback(async (device: BluetoothDeviceLike) => {
     if (pedalNotificationCleanupRef.current) {
       pedalNotificationCleanupRef.current();
       pedalNotificationCleanupRef.current = null;
@@ -347,7 +369,7 @@ export default function BandSetlistConcertPage() {
     try {
       const bluetoothNavigator = navigator as Navigator & {
         bluetooth: {
-          requestDevice: (options: unknown) => Promise<any>;
+          requestDevice: (options: unknown) => Promise<BluetoothDeviceLike>;
         };
       };
 
