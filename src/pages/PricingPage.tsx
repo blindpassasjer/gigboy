@@ -27,7 +27,7 @@ const PLAN_CARDS: PlanCard[] = [
     tier: 'free',
     icon: Lock,
     blurb: 'A lightweight solo account for trying Gigboy and keeping a small library.',
-    monthlyPrice: '$0',
+    monthlyPrice: 'Free',
     annualPrice: null,
     featureBullets: ['12 songs', '100 MB recording storage', 'Song lists', 'Single user account'],
     ctaLabel: 'Current free plan',
@@ -36,8 +36,8 @@ const PLAN_CARDS: PlanCard[] = [
     tier: 'pro',
     icon: Sparkles,
     blurb: 'Everything a power user needs for rehearsals, setlists, recordings, and sharing.',
-    monthlyPrice: '$7',
-    annualPrice: '$70',
+    monthlyPrice: '50 kr or 5 USD',
+    annualPrice: '500 kr or 50 USD',
     featureBullets: ['Unlimited songs', '1 GB storage', 'Setlists, stage plots, riders', 'Recordings, metronome, pedal'],
     ctaLabel: 'Upgrade to Pro',
     envKeyMonthly: 'VITE_STRIPE_PRO_MONTHLY_PRICE_ID',
@@ -47,9 +47,9 @@ const PLAN_CARDS: PlanCard[] = [
     tier: 'band',
     icon: Users,
     blurb: 'A shared workspace for a band owner with member access and room to grow.',
-    monthlyPrice: '$19',
-    annualPrice: '$190',
-    featureBullets: ['Unlimited songs', '5 GB storage', 'Up to 5 members included', '$2/member/month after 5'],
+    monthlyPrice: '150 kr or 15 USD',
+    annualPrice: '1500 kr or 150 USD',
+    featureBullets: ['Unlimited songs', '5 GB storage', 'Up to 5 members included', '20 kr / 2 USD per extra member monthly, 200 kr / 20 USD yearly'],
     ctaLabel: 'Upgrade to Band',
     envKeyMonthly: 'VITE_STRIPE_BAND_MONTHLY_PRICE_ID',
     envKeyAnnual: 'VITE_STRIPE_BAND_ANNUAL_PRICE_ID',
@@ -130,7 +130,7 @@ export default function PricingPage() {
           const Icon = card.icon;
           const isCurrentPlan = plan === card.tier;
           const displayPrice = billingCycle === 'annual' && card.annualPrice ? card.annualPrice : card.monthlyPrice;
-          const priceSuffix = card.tier === 'free' ? 'forever' : billingCycle === 'annual' ? '/year' : '/month';
+          const priceSuffix = card.tier === 'free' ? '' : billingCycle === 'annual' ? '/year' : '/month';
 
           return (
             <section
@@ -207,7 +207,7 @@ export default function PricingPage() {
               <tr><td>Metronome</td><td>No</td><td>Yes</td><td>Yes</td></tr>
               <tr><td>Multi-user notes</td><td>No</td><td>Yes</td><td>Yes</td></tr>
               <tr><td>Members</td><td>1 owner</td><td>1 owner</td><td>Up to 5</td></tr>
-              <tr><td>Extra members</td><td>—</td><td>—</td><td>$2/member/month</td></tr>
+              <tr><td>Extra members</td><td>—</td><td>—</td><td>20 kr / 2 USD monthly, 200 kr / 20 USD yearly</td></tr>
             </tbody>
           </table>
         </div>
