@@ -30,40 +30,62 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
     return Response.json({ error: 'Missing required fields.' }, { status: 400 });
   }
 
+  if (!body.priceId.startsWith('price_')) {
+    return Response.json(
+      { error: 'Invalid Stripe price ID. Expected a value starting with "price_".' },
+      { status: 400 }
+    );
+  }
+
   const userEmail = ctx.request.headers.get('x-gigboy-user-email')?.trim() ?? undefined;
 
-  const stripe = getStripeClient(secretKey);
+  try {
+    const stripe = getStripeClient(secretKey);
 
-  // Retrieve or create Stripe Customer, storing the ID in Firestore.
-  const profile = await getFirestoreDocument(ctx.env as Record<string, string | undefined>, ['users', userId]);
-  let customerId = typeof profile?.stripeCustomerId === 'string' ? profile.stripeCustomerId : null;
+    // Retrieve or create Stripe Customer, storing the ID in Firestore.
+    const profile = await getFirestoreDocument(ctx.env as Record<string, string | undefined>, ['users', userId]);
+    let customerId = typeof profile?.stripeCustomerId === 'string' ? profile.stripeCustomerId : null;
 
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      metadata: { firebaseUid: userId },
-      ...(userEmail ? { email: userEmail } : {}),
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        metadata: { firebaseUid: userId },
+        ...(userEmail ? { email: userEmail } : {}),
+      });
+      customerId = customer.id;
+      await setFirestoreDocument(ctx.env as Record<string, string | undefined>, ['users', userId], {
+        stripeCustomerId: customerId,
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId,
+      line_items: [{ price: body.priceId, quantity: 1 }],
+      success_url: body.successUrl,
+      cancel_url: body.cancelUrl,
+      allow_promotion_codes: true,
+      subscription_data: {
+        metadata: { firebaseUid: userId },
+      },
     });
-    customerId = customer.id;
-    await setFirestoreDocument(ctx.env as Record<string, string | undefined>, ['users', userId], {
-      stripeCustomerId: customerId,
-    });
-  }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    customer: customerId,
-    line_items: [{ price: body.priceId, quantity: 1 }],
-    success_url: body.successUrl,
-    cancel_url: body.cancelUrl,
-    allow_promotion_codes: true,
-    subscription_data: {
-      metadata: { firebaseUid: userId },
-    },
-  });
+    if (!session.url) {
+      return Response.json({ error: 'Failed to create checkout session.' }, { status: 500 });
+    }
 
-  if (!session.url) {
+    return Response.json({ url: session.url });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown checkout error';
+    console.error('create-checkout failed:', message);
+
+    if (message.includes('No such price')) {
+      return Response.json({ error: 'Stripe price ID is invalid for this environment.' }, { status: 400 });
+    }
+
+    if (message.includes('Firebase credentials not configured')) {
+      return Response.json({ error: 'Billing backend is missing Firebase credentials.' }, { status: 503 });
+    }
+
     return Response.json({ error: 'Failed to create checkout session.' }, { status: 500 });
   }
-
-  return Response.json({ url: session.url });
 };
