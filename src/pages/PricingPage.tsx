@@ -1,5 +1,19 @@
 import { useState } from 'react';
-import { Check, Lock, Sparkles, Users } from 'lucide-react';
+import {
+  Check,
+  Disc3,
+  Gauge,
+  Headphones,
+  Link2,
+  ListMusic,
+  Lock,
+  Mic2,
+  Music,
+  NotebookPen,
+  Share2,
+  Sparkles,
+  Users,
+} from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +35,14 @@ interface PlanCard {
   ctaLabel: string;
   envKeyMonthly?: string;
   envKeyAnnual?: string;
+}
+
+interface ComparisonFeature {
+  label: string;
+  icon: typeof Music;
+  free: string;
+  pro: string;
+  band: string;
 }
 
 const PLAN_CARDS: PlanCard[] = [
@@ -57,10 +79,52 @@ const PLAN_CARDS: PlanCard[] = [
   },
 ];
 
+const COMPARISON_FEATURES: ComparisonFeature[] = [
+  { label: 'Song library', icon: Music, free: '12 songs', pro: 'Unlimited', band: 'Unlimited' },
+  { label: 'Storage', icon: Disc3, free: '100 MB', pro: '1 GB', band: '5 GB' },
+  { label: 'Song lists', icon: ListMusic, free: 'Yes', pro: 'Yes', band: 'Yes' },
+  { label: 'Setlists', icon: NotebookPen, free: 'No', pro: 'Yes', band: 'Yes' },
+  { label: 'Stage plots', icon: Share2, free: 'No', pro: 'Yes', band: 'Yes' },
+  { label: 'Technical rider', icon: Link2, free: 'No', pro: 'Yes', band: 'Yes' },
+  { label: 'Shareable links', icon: Share2, free: 'No', pro: 'Yes', band: 'Yes' },
+  { label: 'Bluetooth pedal', icon: Gauge, free: 'No', pro: 'Yes', band: 'Yes' },
+  { label: 'Recordings', icon: Headphones, free: 'No', pro: 'Yes', band: 'Yes' },
+  { label: 'Metronome', icon: Mic2, free: 'No', pro: 'Yes', band: 'Yes' },
+  { label: 'Multi-user notes', icon: Sparkles, free: 'No', pro: 'Yes', band: 'Yes' },
+  { label: 'Members', icon: Users, free: '1 owner', pro: '1 owner', band: 'Up to 5' },
+  {
+    label: 'Extra members',
+    icon: Users,
+    free: '—',
+    pro: '—',
+    band: 'Band add-on only: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly',
+  },
+];
+
 function resolvePriceId(card: PlanCard, cycle: BillingCycle) {
   const key = cycle === 'annual' ? card.envKeyAnnual : card.envKeyMonthly;
   if (!key) return null;
   return (import.meta.env[key] as string | undefined)?.trim() || null;
+}
+
+const PLAN_ORDER: Record<PlanTier, number> = {
+  free: 0,
+  pro: 1,
+  band: 2,
+};
+
+function getCtaLabel(card: PlanCard, currentPlan: PlanTier, isCurrentPlan: boolean) {
+  if (card.tier === 'free') {
+    return isCurrentPlan ? card.ctaLabel : 'Use Free';
+  }
+
+  if (isCurrentPlan) {
+    return `${PLAN_LABELS[card.tier]} active`;
+  }
+
+  const isUpgrade = PLAN_ORDER[card.tier] > PLAN_ORDER[currentPlan];
+  const action = isUpgrade ? 'Upgrade' : 'Downgrade';
+  return `${action} to ${PLAN_LABELS[card.tier]}`;
 }
 
 export default function PricingPage() {
@@ -143,11 +207,27 @@ export default function PricingPage() {
   return (
     <section className="pricing-page">
       <header className="pricing-hero">
+        <div className="pricing-hero-bg" aria-hidden="true">
+          <span className="pricing-note pricing-note--1">♩</span>
+          <span className="pricing-note pricing-note--2">♪</span>
+          <span className="pricing-note pricing-note--3">♫</span>
+          <span className="pricing-note pricing-note--4">♬</span>
+          <span className="pricing-note pricing-note--5">♩</span>
+          <span className="pricing-note pricing-note--6">♪</span>
+          <span className="pricing-note pricing-note--7">♫</span>
+          <span className="pricing-note pricing-note--8">♬</span>
+          <span className="pricing-grid" />
+        </div>
         <span className="pricing-kicker">Pricing</span>
         <h1>Simple tiers for solo players and bands</h1>
         <p>
           Start on Free, upgrade when you need collaboration, setlists, recordings, and shared band workflows.
         </p>
+        <div className="pricing-hero-actions">
+          <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-hero-back-link">
+            Back to account
+          </Link>
+        </div>
         <div className="pricing-cycle-toggle" role="tablist" aria-label="Billing cycle">
           <button
             type="button"
@@ -172,6 +252,7 @@ export default function PricingPage() {
           const isCurrentPlan = plan === card.tier;
           const displayPrice = billingCycle === 'annual' && card.annualPrice ? card.annualPrice : card.monthlyPrice;
           const priceSuffix = card.tier === 'free' ? '' : billingCycle === 'annual' ? '/year' : '/month';
+          const ctaLabel = getCtaLabel(card, plan, isCurrentPlan);
 
           return (
             <section
@@ -231,7 +312,7 @@ export default function PricingPage() {
               ) : null}
               {card.tier === 'free' ? (
                 <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-card-btn">
-                  {isCurrentPlan ? card.ctaLabel : 'Use Free'}
+                  {ctaLabel}
                 </Link>
               ) : (
                 <button
@@ -244,9 +325,7 @@ export default function PricingPage() {
                     ? 'Redirecting…'
                     : card.tier === 'band' && ownedBands.length === 0
                       ? 'Create a band first'
-                      : isCurrentPlan
-                        ? `${PLAN_LABELS[card.tier]} active`
-                        : card.ctaLabel}
+                      : ctaLabel}
                 </button>
               )}
             </section>
@@ -257,7 +336,6 @@ export default function PricingPage() {
       <section className="pricing-comparison">
         <div className="pricing-comparison-header">
           <h2>Compare features</h2>
-          <Link to="/profile" className="profile-settings-link">Back to account</Link>
         </div>
         <div className="pricing-table-wrap">
           <table className="pricing-table">
@@ -270,19 +348,22 @@ export default function PricingPage() {
               </tr>
             </thead>
             <tbody>
-              <tr><td>Song library</td><td>12 songs</td><td>Unlimited</td><td>Unlimited</td></tr>
-              <tr><td>Storage</td><td>100 MB</td><td>1 GB</td><td>5 GB</td></tr>
-              <tr><td>Song lists</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Setlists</td><td>No</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Stage plots</td><td>No</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Technical rider</td><td>No</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Shareable links</td><td>No</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Bluetooth pedal</td><td>No</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Recordings</td><td>No</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Metronome</td><td>No</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Multi-user notes</td><td>No</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Members</td><td>1 owner</td><td>1 owner</td><td>Up to 5</td></tr>
-              <tr><td>Extra members</td><td>—</td><td>—</td><td>Band add-on only: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly</td></tr>
+              {COMPARISON_FEATURES.map((feature) => {
+                const Icon = feature.icon;
+                return (
+                  <tr key={feature.label}>
+                    <td>
+                      <span className="pricing-feature-cell-label">
+                        <Icon size={15} />
+                        <span>{feature.label}</span>
+                      </span>
+                    </td>
+                    <td>{feature.free}</td>
+                    <td>{feature.pro}</td>
+                    <td>{feature.band}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

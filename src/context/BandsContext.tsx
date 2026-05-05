@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { collection, deleteDoc, doc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { arrayUnion, collection, deleteDoc, doc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 import type {
   Band,
   CollaborationPermission,
@@ -2124,46 +2124,56 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const isMember = band.memberIds.includes(userId);
     if (!isMember) return 'You do not have permission to edit this band.';
 
+    const now = new Date().toISOString();
+    const bandSongs = bandSongsByBandId[bandId] ?? [];
     const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
     const targetSetlist = previousSetlists.find((setlist) => setlist.id === setlistId);
     if (!targetSetlist || targetSetlist.songIds.includes(songId)) return null;
 
-    const now = new Date().toISOString();
     const nextSongIds = [...targetSetlist.songIds, songId];
-    const bandSongs = bandSongsByBandId[bandId] ?? [];
-    const nextSetlist = {
-      ...targetSetlist,
-      songIds: nextSongIds,
-      publicSongs: targetSetlist.publicShareEnabled ? buildPublicSongs(nextSongIds, bandSongs) : targetSetlist.publicSongs,
-      updatedAt: now,
-    };
-    const nextSetlists = previousSetlists.map((setlist) => (
-      setlist.id === setlistId ? nextSetlist : setlist
-    ));
+    const nextPublicSongs = targetSetlist.publicShareEnabled
+      ? buildPublicSongs(nextSongIds, bandSongs)
+      : targetSetlist.publicSongs;
 
-    setBandSetlistsByBandId((prev) => ({
-      ...prev,
-      [bandId]: nextSetlists,
-    }));
+    setBandSetlistsByBandId((prev) => {
+      const currentSetlists = prev[bandId] ?? [];
+      const currentTargetSetlist = currentSetlists.find((setlist) => setlist.id === setlistId);
+      if (!currentTargetSetlist || currentTargetSetlist.songIds.includes(songId)) return prev;
+
+      const nextCurrentSongIds = [...currentTargetSetlist.songIds, songId];
+      const nextSetlist = {
+        ...currentTargetSetlist,
+        songIds: nextCurrentSongIds,
+        publicSongs: currentTargetSetlist.publicShareEnabled
+          ? buildPublicSongs(nextCurrentSongIds, bandSongs)
+          : currentTargetSetlist.publicSongs,
+        updatedAt: now,
+      };
+      const nextSetlists = currentSetlists.map((setlist) => (
+        setlist.id === setlistId ? nextSetlist : setlist
+      ));
+
+      return {
+        ...prev,
+        [bandId]: nextSetlists,
+      };
+    });
 
     try {
       const updatePayload: Record<string, unknown> = {
-        songIds: nextSetlist.songIds,
+        songIds: arrayUnion(songId),
         updatedAt: now,
       };
       if (targetSetlist.publicShareEnabled) {
-        updatePayload.publicSongs = nextSetlist.publicSongs ?? null;
+        updatePayload.publicSongs = nextPublicSongs ?? null;
       }
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), updatePayload, { merge: true });
       return null;
     } catch (error) {
-      setBandSetlistsByBandId((prev) => ({
-        ...prev,
-        [bandId]: previousSetlists,
-      }));
+      await refreshBandSetlists(bandId);
       return error instanceof Error ? error.message : 'Failed to update band setlist.';
     }
-  }, [bandSetlistsByBandId, bandSongsByBandId, bands, userId]);
+  }, [bandSetlistsByBandId, bandSongsByBandId, bands, refreshBandSetlists, userId]);
 
   const removeSongFromBandSetlist = useCallback(async (bandId: string, setlistId: string, songId: string) => {
     if (!db || !userId) {
