@@ -29,7 +29,7 @@ export function usePlan() {
       planOverride,
       subscriptionStatus,
       songLimit: limits.songLimit,
-      storageQuotaBytes: user?.storageQuotaBytes ?? limits.storageQuotaBytes,
+      storageQuotaBytes: Math.max(user?.storageQuotaBytes ?? 0, limits.storageQuotaBytes),
       memberLimit: user?.memberLimit ?? limits.memberLimit,
       canUse(feature: ProFeature) {
         if (planOverride) return true;

@@ -4,7 +4,6 @@ import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
-import { showConfirmToast } from '../utils/toastDialogs';
 
 export default function BandMembersPage() {
   const { id } = useParams();
@@ -19,6 +18,8 @@ export default function BandMembersPage() {
 
   const band = bands.find((entry) => entry.id === id) ?? null;
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -37,10 +38,7 @@ export default function BandMembersPage() {
   const canEditBand = isOwner || band.memberRoles[user?.id ?? ''] === 'editor';
 
   const handleDeleteBand = async () => {
-    const confirmed = await showConfirmToast(`Delete "${band.name}"? This cannot be undone.`, {
-      confirmLabel: 'Delete',
-    });
-    if (!confirmed) return;
+    if (deleteConfirmName !== band.name) return;
 
     setBusyDeleteBand(true);
     const error = await deleteBand(band.id);
@@ -81,14 +79,46 @@ export default function BandMembersPage() {
         {isOwner && (
           <section className="bands-panel bands-panel--danger">
             <h3>Danger zone</h3>
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--danger"
-              disabled={busyDeleteBand}
-              onClick={() => void handleDeleteBand()}
-            >
-              {busyDeleteBand ? 'Deleting…' : 'Delete band'}
-            </button>
+            {showDeleteConfirm ? (
+              <div className="bands-delete-confirm">
+                <p>Type <strong>{band.name}</strong> to confirm deletion. This cannot be undone.</p>
+                <label className="share-menu-field">
+                  <input
+                    type="text"
+                    value={deleteConfirmName}
+                    onChange={(e) => setDeleteConfirmName(e.target.value)}
+                    placeholder={band.name}
+                    autoFocus
+                  />
+                </label>
+                <div className="bands-delete-confirm-actions">
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--danger"
+                    disabled={busyDeleteBand || deleteConfirmName !== band.name}
+                    onClick={() => void handleDeleteBand()}
+                  >
+                    {busyDeleteBand ? 'Deleting…' : 'Delete band'}
+                  </button>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    disabled={busyDeleteBand}
+                    onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmName(''); }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--danger"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Delete band
+              </button>
+            )}
           </section>
         )}
       </div>

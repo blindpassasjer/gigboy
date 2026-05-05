@@ -16,10 +16,10 @@ function toSafeNumber(value: unknown): number | null {
   return value >= 0 ? value : null;
 }
 
-export function useStorageUsage(userId: string | null | undefined) {
+export function useStorageUsage(userId: string | null | undefined, planQuotaBytes?: number) {
   const [state, setState] = useState<UsageState>({
     usedBytes: 0,
-    quotaBytes: DEFAULT_STORAGE_QUOTA_BYTES,
+    quotaBytes: planQuotaBytes ?? DEFAULT_STORAGE_QUOTA_BYTES,
     loading: false,
   });
 
@@ -27,7 +27,7 @@ export function useStorageUsage(userId: string | null | undefined) {
     if (!db || !userId) {
       setState({
         usedBytes: 0,
-        quotaBytes: DEFAULT_STORAGE_QUOTA_BYTES,
+        quotaBytes: planQuotaBytes ?? DEFAULT_STORAGE_QUOTA_BYTES,
         loading: false,
       });
       return;
@@ -51,7 +51,8 @@ export function useStorageUsage(userId: string | null | undefined) {
 
         const userData = userSnapshot.data() as Record<string, unknown> | undefined;
         const quotaFromProfile = toSafeNumber(userData?.storageQuotaBytes);
-        const quotaBytes = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
+        const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
+        const quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
 
         const usedBytes = recordingsSnapshot.docs.reduce((sum, snap) => {
           const data = snap.data() as Record<string, unknown>;
@@ -78,7 +79,7 @@ export function useStorageUsage(userId: string | null | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, planQuotaBytes]);
 
   return useMemo(() => {
     const usageRatio = state.quotaBytes > 0

@@ -6336,6 +6336,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .profile-account-badges,
 .profile-account-hero-actions,
 .profile-feature-chips,
+.profile-subscription-actions,
 .profile-danger-actions {
   display: flex;
   flex-wrap: wrap;
