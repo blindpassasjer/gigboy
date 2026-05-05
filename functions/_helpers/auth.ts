@@ -72,7 +72,7 @@ function parseJwtParts(token: string): { header: Record<string, unknown>; payloa
 export async function verifyFirebaseIdToken(
   token: string,
   projectId: string,
-): Promise<{ uid: string } | null> {
+): Promise<{ uid: string; email: string | null } | null> {
   const parsed = parseJwtParts(token);
   if (!parsed) return null;
 
@@ -88,6 +88,7 @@ export async function verifyFirebaseIdToken(
   const iss = typeof payload.iss === 'string' ? payload.iss : '';
   const aud = payload.aud;
   const sub = typeof payload.sub === 'string' ? payload.sub : '';
+  const email = typeof payload.email === 'string' ? payload.email.toLowerCase() : null;
 
   if (exp < now) return null;
   if (iat > now + 300) return null;
@@ -118,7 +119,7 @@ export async function verifyFirebaseIdToken(
     const data = new TextEncoder().encode(signingInput);
     const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', cryptoKey, signature, data);
     if (!valid) return null;
-    return { uid: sub };
+    return { uid: sub, email };
   } catch {
     return null;
   }

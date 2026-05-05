@@ -3,6 +3,7 @@ import { getFirestoreDocument, listFirestoreDocuments, setFirestoreDocument } fr
 
 interface Data extends Record<string, unknown> {
   userId?: string;
+  userEmail?: string;
 }
 
 function normalizedStringSetFromRecord(record: unknown): Set<string> {
@@ -20,10 +21,11 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userEmail = ctx.request.headers.get('x-gigboy-user-email')?.trim().toLowerCase() ?? '';
+  const userEmail = typeof ctx.data.userEmail === 'string' ? ctx.data.userEmail : '';
   const body = await ctx.request.json<{ username?: string; claimOwnership?: boolean }>().catch(() => ({}));
   const requestedUsername = body.username?.trim().toLowerCase() ?? '';
-  const claimOwnership = body.claimOwnership === true;
+  const adminUids = (ctx.env.ADMIN_UIDS ?? '').split(',').map((u) => u.trim()).filter(Boolean);
+  const claimOwnership = body.claimOwnership === true && adminUids.includes(userId);
 
   const profile = await getFirestoreDocument(ctx.env, ['users', userId]);
   const profileUsername = typeof profile?.username === 'string' ? profile.username.trim().toLowerCase() : '';
@@ -84,7 +86,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       ? { ...memberAvatars, [userId]: profileAvatar }
       : memberAvatars;
 
-    const nextOwnerId = claimOwnership ? userId : ownerId;
+    const canClaimOwnership = claimOwnership && (ownerId === '' || ownerId === userId);
+    const nextOwnerId = canClaimOwnership ? userId : ownerId;
 
     const changed = (
       nextMemberIds.length !== memberIds.length

@@ -7,6 +7,7 @@ interface Env {
 
 interface Data extends Record<string, unknown> {
   userId?: string;
+  userEmail?: string;
 }
 
 export const onRequest: PagesFunction<Env, never, Data> = async (ctx) => {
@@ -31,5 +32,6 @@ export const onRequest: PagesFunction<Env, never, Data> = async (ctx) => {
   if (!result) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   ctx.data.userId = result.uid;
+  if (result.email) ctx.data.userEmail = result.email;
   return ctx.next();
 };

@@ -13,6 +13,14 @@ interface Data extends Record<string, unknown> {
   userId?: string;
 }
 
+function isAllowedReturnUrl(url: string, requestOrigin: string): boolean {
+  try {
+    return new URL(url).origin === requestOrigin;
+  } catch {
+    return false;
+  }
+}
+
 export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
   const userId = ctx.data.userId;
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,6 +31,11 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
   const body = await ctx.request.json<{ returnUrl?: string }>().catch(() => null);
   if (!body?.returnUrl) {
     return Response.json({ error: 'Missing returnUrl.' }, { status: 400 });
+  }
+
+  const requestOrigin = new URL(ctx.request.url).origin;
+  if (!isAllowedReturnUrl(body.returnUrl, requestOrigin)) {
+    return Response.json({ error: 'Invalid returnUrl.' }, { status: 400 });
   }
 
   const profile = await getFirestoreDocument(ctx.env as Record<string, string | undefined>, ['users', userId]);

@@ -3,6 +3,7 @@ import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/fireb
 
 interface Data extends Record<string, unknown> {
   userId?: string;
+  userEmail?: string;
 }
 
 function resourceCollectionForType(resourceType: unknown) {
@@ -18,7 +19,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userEmail = ctx.request.headers.get('x-gigboy-user-email')?.trim().toLowerCase() ?? '';
+  const userEmail = typeof ctx.data.userEmail === 'string' ? ctx.data.userEmail : '';
   const body = await ctx.request.json<{ inviteId?: string }>().catch((err) => {
     console.error('Failed to parse request body:', err);
     return null;
@@ -44,7 +45,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const inviteRecipientEmail = typeof invite.recipientEmailLower === 'string'
     ? invite.recipientEmailLower
     : null;
-  const canAccept = inviteRecipientUid === userId || (inviteRecipientEmail !== null && inviteRecipientEmail === userEmail);
+  const emailMatch = inviteRecipientEmail !== null && inviteRecipientEmail !== '' && userEmail !== '' && inviteRecipientEmail === userEmail;
+  const canAccept = inviteRecipientUid === userId || emailMatch;
 
   if (!canAccept) {
     return Response.json({ error: 'Invite does not belong to this user.' }, { status: 403 });

@@ -4,6 +4,7 @@ import { resolveOwnerBandMemberLimit } from '../../_helpers/band-limits';
 
 interface Data extends Record<string, unknown> {
   userId?: string;
+  userEmail?: string;
 }
 
 export const onRequestPost: PagesFunction<Record<string, string | undefined>, never, Data> = async (ctx) => {
@@ -12,7 +13,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userEmail = ctx.request.headers.get('x-gigboy-user-email')?.trim().toLowerCase() ?? '';
+  const userEmail = typeof ctx.data.userEmail === 'string' ? ctx.data.userEmail : '';
   const body = await ctx.request.json<{ inviteId?: string }>().catch((err) => {
     console.error('Failed to parse request body:', err);
     return null;
@@ -45,7 +46,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const inviteRecipientUid = typeof invite.recipientUid === 'string' ? invite.recipientUid : null;
   const inviteRecipientEmail = typeof invite.recipientEmailLower === 'string' ? invite.recipientEmailLower : null;
   const linkInvite = invite.linkInvite === true;
-  const canAccept = linkInvite || inviteRecipientUid === userId || inviteRecipientEmail === userEmail;
+  const emailMatch = inviteRecipientEmail !== null && inviteRecipientEmail !== '' && userEmail !== '' && inviteRecipientEmail === userEmail;
+  const canAccept = linkInvite || inviteRecipientUid === userId || emailMatch;
   if (!canAccept) {
     return Response.json({ error: 'Invite does not belong to this user.' }, { status: 403 });
   }

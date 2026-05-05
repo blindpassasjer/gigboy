@@ -26,6 +26,14 @@ interface Data extends Record<string, unknown> {
   userId?: string;
 }
 
+function isAllowedReturnUrl(url: string, requestOrigin: string): boolean {
+  try {
+    return new URL(url).origin === requestOrigin;
+  } catch {
+    return false;
+  }
+}
+
 interface BandBillingSnapshot {
   subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | null;
   currentPeriodEnd: number | null;
@@ -132,6 +140,11 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
 
   if (!body?.priceId || !body?.successUrl || !body?.cancelUrl) {
     return Response.json({ error: 'Missing required fields.' }, { status: 400 });
+  }
+
+  const requestOrigin = new URL(ctx.request.url).origin;
+  if (!isAllowedReturnUrl(body.successUrl, requestOrigin) || !isAllowedReturnUrl(body.cancelUrl, requestOrigin)) {
+    return Response.json({ error: 'Invalid redirect URL.' }, { status: 400 });
   }
 
   if (!body.priceId.startsWith('price_')) {
