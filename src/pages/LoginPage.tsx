@@ -96,7 +96,7 @@ function LoginHero() {
   return (
     <aside className="login-hero" aria-label="GIGBOY features">
       <div className="login-brand login-brand--hero">
-        <BrandMark size={30} />
+        <BrandMark size={90} />
       </div>
       <h1 className="login-hero-title">Your songs, your stage.</h1>
       <p className="login-hero-copy">
@@ -315,9 +315,6 @@ export default function LoginPage() {
         <div className="login-shell">
           <LoginHero />
           <div className="login-card">
-            <div className="login-brand">
-              <BrandMark size={28} />
-            </div>
             <h1 className="login-title">Link accounts</h1>
             <p className="login-description">
               An account with <strong>{pendingLinkEmail}</strong> already exists. Enter your password to link it with your new sign-in method.
@@ -360,9 +357,6 @@ export default function LoginPage() {
       <div className="login-shell">
         <LoginHero />
         <div className="login-card">
-          <div className="login-brand">
-            <BrandMark size={28} />
-          </div>
           <h1 className="login-title">{mode === 'register' ? 'Create account' : 'Sign in'}</h1>
 
           <div className="auth-mode-switch" role="tablist" aria-label="Authentication mode">

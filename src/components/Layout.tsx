@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import Sidebar from './Sidebar';
 import BrandMark from './BrandMark';
-import { useDarkMode } from '../hooks/useDarkMode';
+import { useDarkModeContext } from '../context/DarkModeContext';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
 import { usePlan } from '../hooks/usePlan';
 import { useStorageUsage } from '../hooks/useStorageUsage';
@@ -120,7 +120,7 @@ export default function Layout({ children }: Props) {
     if (typeof window === 'undefined') return true;
     return !window.matchMedia('(max-width: 900px)').matches;
   });
-  const { dark, toggle: toggleDark } = useDarkMode();
+  const { dark, toggle: toggleDark } = useDarkModeContext();
   const mainContentRef = useRef<HTMLElement>(null);
   const swipeRef = useRef<{ x: number; y: number; fromEdge: boolean } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(() => {
@@ -626,7 +626,10 @@ export default function Layout({ children }: Props) {
         </Link>
         {user ? (
           <div
-            className="topbar-storage"
+            className={[
+              'topbar-storage',
+              !isNarrowViewport && sidebarOpen ? 'topbar-storage--sidebar-aligned' : '',
+            ].filter(Boolean).join(' ')}
             title={storageUsage.loading
               ? 'Loading recording storage usage'
               : `${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
@@ -635,7 +638,6 @@ export default function Layout({ children }: Props) {
               : `Storage usage ${storagePercent} percent, ${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
           >
             <div className="topbar-storage-text">
-              <strong>Storage</strong>
               <span>
                 {storageUsage.loading
                   ? 'Loading...'

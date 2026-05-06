@@ -1,24 +1,8 @@
 import { createBrowserRouter, RouterProvider, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Theme } from '@radix-ui/themes';
-import { useEffect, useState } from 'react';
 import { useBands } from './context/BandsContext';
-
-/** Observes data-theme on <html> so Radix Theme stays in sync with our dark mode toggle. */
-function useHtmlDark() {
-  const [dark, setDark] = useState(
-    () => document.documentElement.getAttribute('data-theme') === 'dark'
-  );
-  useEffect(() => {
-    const el = document.documentElement;
-    const ob = new MutationObserver(() => {
-      setDark(el.getAttribute('data-theme') === 'dark');
-    });
-    ob.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => ob.disconnect();
-  }, []);
-  return dark;
-}
+import { DarkModeProvider, useDarkModeContext } from './context/DarkModeContext';
 
 /** Redirects to the last active band's library, or profile if no active band. */
 function RootRedirect() {
@@ -129,8 +113,9 @@ const router = createBrowserRouter([
   { path: '*', element: <AuthenticatedApp /> },
 ]);
 
-export default function App() {
-  const dark = useHtmlDark();
+function AppContent() {
+  const { dark } = useDarkModeContext();
+
   return (
     <Theme
       appearance={dark ? 'dark' : 'light'}
@@ -158,5 +143,13 @@ export default function App() {
       <RouterProvider router={router} />
     </AuthProvider>
     </Theme>
+  );
+}
+
+export default function App() {
+  return (
+    <DarkModeProvider>
+      <AppContent />
+    </DarkModeProvider>
   );
 }
