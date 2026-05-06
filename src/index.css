@@ -173,6 +173,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 .app-body {
   display: flex;
   flex: 1;
+  height: calc(100vh - var(--topbar-height) - var(--safe-top));
+  height: calc(100dvh - var(--topbar-height) - var(--safe-top));
   min-height: 0;
   overflow: hidden;
   position: relative;
@@ -5868,6 +5870,10 @@ input, select, textarea { font: inherit; color: var(--text); }
     min-height: 100svh;
     min-height: 100dvh;
     overflow: visible;
+  }
+
+  .app-body {
+    height: auto;
   }
 
   .topbar {
