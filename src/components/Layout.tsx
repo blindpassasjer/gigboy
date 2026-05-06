@@ -626,10 +626,7 @@ export default function Layout({ children }: Props) {
         </Link>
         {user ? (
           <div
-            className={[
-              'topbar-storage',
-              !isNarrowViewport && sidebarOpen ? 'topbar-storage--sidebar-aligned' : '',
-            ].filter(Boolean).join(' ')}
+            className="topbar-storage"
             title={storageUsage.loading
               ? 'Loading recording storage usage'
               : `${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}

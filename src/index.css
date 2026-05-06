@@ -257,10 +257,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--surface) 82%, transparent);
 }
 
-.topbar-storage--sidebar-aligned {
-  margin-left: var(--sidebar-width);
-}
-
 .topbar-storage-text {
   display: flex;
   flex-direction: column;
@@ -5873,10 +5869,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   .topbar-storage {
     min-width: 170px;
     max-width: 220px;
-  }
-
-  .topbar-storage--sidebar-aligned {
-    margin-left: 0;
   }
 
   .topbar-storage-text span {
