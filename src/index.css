@@ -823,6 +823,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-list-sticky {
+  --song-list-sticky-top-cover: 1.5rem;
   position: sticky;
   top: 0;
   z-index: 80;
@@ -833,6 +834,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-direction: column;
   gap: 1rem;
   order: -1;
+}
+
+.song-list-sticky::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(-1 * var(--song-list-sticky-top-cover));
+  height: var(--song-list-sticky-top-cover);
+  background: var(--bg);
+  pointer-events: none;
 }
 
 .song-list-sticky > .setlist-header {
@@ -1513,6 +1525,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky {
+    --song-list-sticky-top-cover: 1.25rem;
     margin: -1.25rem calc(-1.1rem - var(--safe-right)) .75rem calc(-1.1rem - var(--safe-left));
     top: 0;
   }
@@ -5916,6 +5929,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky {
+    --song-list-sticky-top-cover: 1.25rem;
     margin: -1.25rem calc(-1rem - var(--safe-right)) .75rem calc(-1rem - var(--safe-left));
     padding: 0 0 .85rem;
     top: calc(var(--topbar-height) + var(--safe-top));
