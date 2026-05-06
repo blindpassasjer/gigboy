@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
@@ -46,7 +46,11 @@ export default function BandSettingsPage() {
   const [icon, setIcon] = useState('🎵');
   const [color, setColor] = useState('#c33232');
   const [useAutoColor, setUseAutoColor] = useState(true);
+  const [showIconEditor, setShowIconEditor] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [busyAppearance, setBusyAppearance] = useState(false);
+  const iconPickerRef = useRef<HTMLDivElement | null>(null);
+  const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!band) return;
@@ -56,6 +60,30 @@ export default function BandSettingsPage() {
     setColor(band.color ?? '#c33232');
     setUseAutoColor(!band.color);
   }, [band]);
+
+  useEffect(() => {
+    if (!showIconEditor) return;
+
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target as Node;
+      if (iconPickerRef.current?.contains(target)) return;
+      if (iconTriggerRef.current?.contains(target)) return;
+      setShowIconEditor(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setShowIconEditor(false);
+      iconTriggerRef.current?.focus();
+    }
+
+    document.addEventListener('mousedown', handleDocumentClick);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showIconEditor]);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -73,6 +101,38 @@ export default function BandSettingsPage() {
   const isOwner = band.ownerId === user?.id;
   const canEditBand = isOwner || band.memberRoles[user?.id ?? ''] === 'editor';
 
+  const applyAppearance = async (nextIcon: string, nextColor: string | undefined) => {
+    if (!canEditBand || busyAppearance) return;
+
+    setBusyAppearance(true);
+    const appearanceError = await updateBandLibraryAppearance(band.id, {
+      icon: normalizeEmojiIcon(nextIcon),
+      color: nextColor,
+    });
+    setBusyAppearance(false);
+
+    if (appearanceError) {
+      toast.error(appearanceError);
+    }
+  };
+
+  const handleIconSelect = async (emoji: string) => {
+    setIcon(emoji);
+    await applyAppearance(emoji, useAutoColor ? undefined : color);
+    setShowIconEditor(false);
+  };
+
+  const handleColorSelect = async (nextColor: string) => {
+    setColor(nextColor);
+    setUseAutoColor(false);
+    await applyAppearance(icon, nextColor);
+  };
+
+  const handleAutoColor = async () => {
+    setUseAutoColor(true);
+    await applyAppearance(icon, undefined);
+  };
+
   const handleSave = async () => {
     if (!canEditBand) {
       navigate(`/bands/${band.id}/library`);
@@ -89,9 +149,6 @@ export default function BandSettingsPage() {
       toast.error('Description must be 240 characters or fewer.');
       return;
     }
-
-    const normalizedIcon = normalizeEmojiIcon(icon);
-    const nextColor = useAutoColor ? undefined : color;
 
     setBusy(true);
 
@@ -114,25 +171,8 @@ export default function BandSettingsPage() {
       }
     }
 
-    const currentIcon = band.icon;
-    const currentColor = band.color;
-    const appearanceChanged = currentIcon !== normalizedIcon || currentColor !== nextColor;
-
-    if (appearanceChanged) {
-      const appearanceError = await updateBandLibraryAppearance(band.id, {
-        icon: normalizedIcon,
-        color: nextColor,
-      });
-
-      if (appearanceError) {
-        setBusy(false);
-        toast.error(appearanceError);
-        return;
-      }
-    }
-
     setBusy(false);
-    toast.success('Band settings saved.');
+    toast.success('Band profile saved.');
     navigate(`/bands/${band.id}/library`);
   };
 
@@ -145,74 +185,92 @@ export default function BandSettingsPage() {
         </div>
       </header>
 
-      <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">
-        Back to band library
-      </Link>
+      <div className="bands-page-toolbar">
+        <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">
+          Back to band library
+        </Link>
+      </div>
 
       <div className="modal-content">
         <section className="bands-panel">
 
           {/* ── Profile ── */}
-          <h2 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: 600, borderBottom: '1px solid var(--border-color, #e2e8f0)', paddingBottom: '0.5rem' }}>
+          <h2 className="bands-section-heading">
             Profile
           </h2>
 
           <div className="share-menu-field">
             <span>Band name</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Band name"
-              maxLength={80}
-              disabled={!canEditBand}
-            />
+            <div className="band-settings-name-row">
+              <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                <button
+                  ref={iconTriggerRef}
+                  type="button"
+                  className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
+                  aria-haspopup="dialog"
+                  aria-expanded={showIconEditor}
+                  onClick={() => setShowIconEditor((value) => !value)}
+                  title="Change band icon"
+                  aria-label="Change band icon"
+                  disabled={!canEditBand || busyAppearance}
+                >
+                  <span className="song-list-heading-icon" aria-hidden="true">{icon}</span>
+                </button>
+                {showIconEditor && canEditBand ? (
+                  <div className="icon-picker-popover" role="dialog" aria-label="Choose band icon">
+                    <div className="emoji-choice-grid" role="radiogroup" aria-label="Band icon options">
+                      {ICON_OPTIONS.map((emoji) => {
+                        const selected = icon === emoji;
+                        return (
+                          <button
+                            key={emoji}
+                            type="button"
+                            className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                            onClick={() => { void handleIconSelect(emoji); }}
+                            aria-label={`Choose icon ${emoji}`}
+                            aria-pressed={selected}
+                          >
+                            {emoji}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Band name"
+                maxLength={80}
+                disabled={!canEditBand}
+              />
+            </div>
           </div>
 
-          <div className="share-menu-field" style={{ marginTop: '0.75rem' }}>
-            <span>Bio / description <span style={{ fontWeight: 400, opacity: 0.6 }}>({description.length}/240)</span></span>
+          <div className="share-menu-field">
+            <span>Bio / description <span className="bands-field-counter">({description.length}/240)</span></span>
             <textarea
+              className="bands-description-field"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="A short bio or description for your band"
               maxLength={240}
               rows={3}
               disabled={!canEditBand}
-              style={{ resize: 'vertical', width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
           {/* ── Appearance ── */}
-          <h2 style={{ margin: '1.5rem 0 1rem', fontSize: '1rem', fontWeight: 600, borderBottom: '1px solid var(--border-color, #e2e8f0)', paddingBottom: '0.5rem' }}>
+          <h2 className="bands-section-heading bands-section-heading--spaced">
             Appearance
           </h2>
 
           <div className="share-menu-field">
-            <span>Icon</span>
-          </div>
-          <div className="emoji-choice-grid" role="listbox" aria-label="Band icon options" style={{ marginTop: '0.25rem' }}>
-            {ICON_OPTIONS.map((emoji) => {
-              const selected = icon === emoji;
-              return (
-                <button
-                  key={emoji}
-                  type="button"
-                  className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                  onClick={() => setIcon(emoji)}
-                  aria-label={`Choose icon ${emoji}`}
-                  aria-pressed={selected}
-                  disabled={!canEditBand}
-                >
-                  {emoji}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="share-menu-field" style={{ marginTop: '1rem' }}>
             <span>Theme color</span>
           </div>
-          <div className="color-swatch-grid" role="listbox" aria-label="Band color options" style={{ marginTop: '0.25rem' }}>
+          <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
             {BAND_COLOR_OPTIONS.map((colorHex) => {
               const selected = !useAutoColor && color.toLowerCase() === colorHex.toLowerCase();
               return (
@@ -221,39 +279,34 @@ export default function BandSettingsPage() {
                   type="button"
                   className={`color-swatch-btn${selected ? ' active' : ''}`}
                   style={{ backgroundColor: colorHex }}
-                  onClick={() => {
-                    setColor(colorHex);
-                    setUseAutoColor(false);
-                  }}
+                  onClick={() => { void handleColorSelect(colorHex); }}
                   aria-label={`Choose color ${colorHex}`}
                   aria-pressed={selected}
-                  disabled={!canEditBand}
+                  disabled={!canEditBand || busyAppearance}
                 />
               );
             })}
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-            <div className="share-menu-field" style={{ flex: '0 0 auto', margin: 0 }}>
+          <div className="bands-color-controls">
+            <div className="share-menu-field bands-color-custom-field">
               <span>Custom</span>
               <input
                 type="color"
                 value={color}
-                onChange={(e) => {
-                  setColor(e.target.value);
-                  setUseAutoColor(false);
-                }}
+                onChange={(e) => { void handleColorSelect(e.target.value); }}
                 aria-label="Custom band color"
-                disabled={!canEditBand}
+                disabled={!canEditBand || busyAppearance}
               />
             </div>
             <button
               type="button"
               className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
-              onClick={() => setUseAutoColor(true)}
-              disabled={!canEditBand}
+              onClick={() => { void handleAutoColor(); }}
+              disabled={!canEditBand || busyAppearance}
             >
               Auto color
             </button>
+            <p className="bands-inline-note">Color updates immediately.</p>
           </div>
 
           {/* ── Actions ── */}
