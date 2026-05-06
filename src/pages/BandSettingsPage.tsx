@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
-import { ICON_OPTIONS } from '../lib/iconOptions';
 import BandManagementPanel from '../components/BandManagementPanel';
 
 const BAND_COLOR_OPTIONS = [
@@ -46,11 +45,8 @@ export default function BandSettingsPage() {
   const [icon, setIcon] = useState('🎵');
   const [color, setColor] = useState('#c33232');
   const [useAutoColor, setUseAutoColor] = useState(true);
-  const [showIconEditor, setShowIconEditor] = useState(false);
   const [busy, setBusy] = useState(false);
   const [busyAppearance, setBusyAppearance] = useState(false);
-  const iconPickerRef = useRef<HTMLDivElement | null>(null);
-  const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!band) return;
@@ -60,30 +56,6 @@ export default function BandSettingsPage() {
     setColor(band.color ?? '#c33232');
     setUseAutoColor(!band.color);
   }, [band]);
-
-  useEffect(() => {
-    if (!showIconEditor) return;
-
-    function handleDocumentClick(event: MouseEvent) {
-      const target = event.target as Node;
-      if (iconPickerRef.current?.contains(target)) return;
-      if (iconTriggerRef.current?.contains(target)) return;
-      setShowIconEditor(false);
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return;
-      setShowIconEditor(false);
-      iconTriggerRef.current?.focus();
-    }
-
-    document.addEventListener('mousedown', handleDocumentClick);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleDocumentClick);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [showIconEditor]);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -114,12 +86,6 @@ export default function BandSettingsPage() {
     if (appearanceError) {
       toast.error(appearanceError);
     }
-  };
-
-  const handleIconSelect = async (emoji: string) => {
-    setIcon(emoji);
-    await applyAppearance(emoji, useAutoColor ? undefined : color);
-    setShowIconEditor(false);
   };
 
   const handleColorSelect = async (nextColor: string) => {
@@ -201,52 +167,14 @@ export default function BandSettingsPage() {
 
           <div className="share-menu-field">
             <span>Band name</span>
-            <div className="band-settings-name-row">
-              <div className="icon-picker-wrapper" ref={iconPickerRef}>
-                <button
-                  ref={iconTriggerRef}
-                  type="button"
-                  className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
-                  aria-haspopup="dialog"
-                  aria-expanded={showIconEditor}
-                  onClick={() => setShowIconEditor((value) => !value)}
-                  title="Change band icon"
-                  aria-label="Change band icon"
-                  disabled={!canEditBand || busyAppearance}
-                >
-                  <span className="song-list-heading-icon" aria-hidden="true">{icon}</span>
-                </button>
-                {showIconEditor && canEditBand ? (
-                  <div className="icon-picker-popover" role="dialog" aria-label="Choose band icon">
-                    <div className="emoji-choice-grid" role="radiogroup" aria-label="Band icon options">
-                      {ICON_OPTIONS.map((emoji) => {
-                        const selected = icon === emoji;
-                        return (
-                          <button
-                            key={emoji}
-                            type="button"
-                            className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                            onClick={() => { void handleIconSelect(emoji); }}
-                            aria-label={`Choose icon ${emoji}`}
-                            aria-pressed={selected}
-                          >
-                            {emoji}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Band name"
-                maxLength={80}
-                disabled={!canEditBand}
-              />
-            </div>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Band name"
+              maxLength={80}
+              disabled={!canEditBand}
+            />
           </div>
 
           <div className="share-menu-field">

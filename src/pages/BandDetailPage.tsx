@@ -63,6 +63,7 @@ export default function BandDetailPage() {
     deleteBandTechnicalRider,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
+    updateBandLibraryIcon,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
@@ -656,6 +657,10 @@ export default function BandDetailPage() {
         pickerSourceNote="Showing songs from your other band libraries."
         onAddSong={canEditBand ? handleAddSong : undefined}
         onRenameList={canEditBand ? (name) => void handleRenameBand(name) : undefined}
+        onUpdateListAppearance={canEditBand ? async ({ icon }) => {
+          const error = await updateBandLibraryIcon(band.id, icon);
+          if (error) toast.error(error);
+        } : undefined}
         headerActions={(
           <button
             type="button"
