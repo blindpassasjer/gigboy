@@ -158,38 +158,42 @@ function MusicNotesBg() {
     let raf: number;
     let accentColor = '#1a6fc4';
 
+    // Capture non-null locals so inner closures don't re-check nullable refs
+    const cvs = canvas;
+    const context = ctx;
+
     function syncSize() {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      cvs.width = cvs.parentElement ? cvs.parentElement.offsetWidth : window.innerWidth;
+      cvs.height = cvs.parentElement ? cvs.parentElement.offsetHeight : window.innerHeight;
       accentColor = getComputedStyle(document.documentElement)
         .getPropertyValue('--accent').trim() || '#1a6fc4';
     }
 
     syncSize();
     notes = Array.from({ length: COUNT }, (_, i) =>
-      randomNote(canvas.width, canvas.height, i < COUNT * 0.8)
+      randomNote(cvs.width, cvs.height, i < COUNT * 0.8)
     );
 
     const ro = new ResizeObserver(syncSize);
-    ro.observe(canvas);
+    ro.observe(document.documentElement);
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      context.clearRect(0, 0, cvs.width, cvs.height);
       for (const n of notes) {
         n.x += n.vx;
         n.y += n.vy;
         n.angle += n.va;
         if (n.y < -60) {
-          Object.assign(n, randomNote(canvas.width, canvas.height));
+          Object.assign(n, randomNote(cvs.width, cvs.height));
         }
-        ctx.save();
-        ctx.translate(n.x, n.y);
-        ctx.rotate(n.angle);
-        ctx.globalAlpha = n.opacity;
-        ctx.fillStyle = accentColor;
-        ctx.font = `${n.size}px serif`;
-        ctx.fillText(n.symbol, 0, 0);
-        ctx.restore();
+        context.save();
+        context.translate(n.x, n.y);
+        context.rotate(n.angle);
+        context.globalAlpha = n.opacity;
+        context.fillStyle = accentColor;
+        context.font = `${n.size}px serif`;
+        context.fillText(n.symbol, 0, 0);
+        context.restore();
       }
       raf = requestAnimationFrame(draw);
     }
