@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, Plus } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, Music, Folder, ListMusic, Map, ClipboardList } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -17,6 +17,7 @@ import { acceptBandInviteOnServer } from '../lib/bandsApi';
 import { acceptInviteOnServer } from '../lib/shareApi';
 import { emitInviteNotificationsChanged } from '../lib/inviteNotifications';
 import toast from '../utils/anchoredToast';
+import { showPromptToast } from '../utils/toastDialogs';
 import type { BandInvite, CollaborationInvite } from '../types';
 import UserAvatar from './UserAvatar';
 
@@ -44,8 +45,16 @@ function formatStorageBytes(bytes: number): string {
 }
 
 export default function Layout({ children }: Props) {
+  const navigate = useNavigate();
   const { pathname, state } = useLocation();
-  const { bands, refreshBands } = useBands();
+  const {
+    bands,
+    refreshBands,
+    addBandSongList,
+    addBandSetlist,
+    addBandStageplot,
+    addBandTechnicalRider,
+  } = useBands();
   const { user } = useAuth();
   const planState = usePlan();
   const {
@@ -80,7 +89,12 @@ export default function Layout({ children }: Props) {
   const themedBand = themedBandId ? bands.find((entry) => entry.id === themedBandId) ?? null : null;
   const bandSection = routeBandId ? (routeSegments[2] ?? 'library') : null;
   const bandSongListId = routeBandId && bandSection === 'songlists' ? (routeSegments[3] ?? null) : null;
-  const showAddSongFab = Boolean(routeBandId) && (bandSection === 'library' || bandSection === 'songlists');
+  const activeBand = routeBandId ? bands.find((entry) => entry.id === routeBandId) ?? null : null;
+  const canEditActiveBand = Boolean(
+    activeBand
+      && user
+      && (activeBand.ownerId === user.id || activeBand.memberRoles[user.id] === 'editor')
+  );
   const addSongFabState = routeBandId
     ? {
       addSongScope: {
@@ -90,6 +104,13 @@ export default function Layout({ children }: Props) {
       ...(bandSongListId ? { initialSongListId: bandSongListId } : {}),
     }
     : undefined;
+  const canShowContextFab = Boolean(routeBandId)
+    && canEditActiveBand
+    && (bandSection === 'library'
+      || bandSection === 'songlists'
+      || bandSection === 'setlists'
+      || bandSection === 'stageplots'
+      || bandSection === 'riders');
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -129,6 +150,174 @@ export default function Layout({ children }: Props) {
 
   const hasAnyPendingInvites = pendingInvites.length > 0 || pendingBandInvites.length > 0;
   const hasAnyInviteContent = hasAnyPendingInvites || acceptedOutgoing.length > 0;
+
+  const createBandResource = useCallback(async (kind: 'songlist' | 'setlist' | 'stageplot' | 'rider') => {
+    if (!routeBandId) return;
+
+    if (kind === 'setlist' && !planState.canUse('setlists')) {
+      toast.error('Setlists require a Pro or Band plan.');
+      return;
+    }
+
+    if (kind === 'stageplot' && !planState.canUse('stagePlots')) {
+      toast.error('Stageplots require a Pro or Band plan.');
+      return;
+    }
+
+    if (kind === 'rider' && !planState.canUse('technicalRiders')) {
+      toast.error('Technical riders require a Pro or Band plan.');
+      return;
+    }
+
+    const labels = {
+      songlist: {
+        prompt: 'New songlist name',
+        placeholder: 'Band songlist name...',
+        confirm: 'Create songlist',
+      },
+      setlist: {
+        prompt: 'New setlist name',
+        placeholder: 'Band setlist name...',
+        confirm: 'Create setlist',
+      },
+      stageplot: {
+        prompt: 'New stageplot name',
+        placeholder: 'Band stageplot name...',
+        confirm: 'Create stageplot',
+      },
+      rider: {
+        prompt: 'New technical rider name',
+        placeholder: 'Band technical rider name...',
+        confirm: 'Create rider',
+      },
+    } as const;
+
+    const value = await showPromptToast(labels[kind].prompt, {
+      placeholder: labels[kind].placeholder,
+      confirmLabel: labels[kind].confirm,
+      cancelLabel: 'Cancel',
+    });
+
+    const name = value?.trim() ?? '';
+    if (!name) return;
+
+    if (kind === 'songlist') {
+      const result = await addBandSongList(routeBandId, name);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      if (result.songListId) navigate(`/bands/${routeBandId}/songlists/${result.songListId}`);
+      return;
+    }
+
+    if (kind === 'setlist') {
+      const result = await addBandSetlist(routeBandId, name);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      if (result.setlistId) navigate(`/bands/${routeBandId}/setlists/${result.setlistId}`);
+      return;
+    }
+
+    if (kind === 'stageplot') {
+      const result = await addBandStageplot(routeBandId, name);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      if (result.stageplotId) navigate(`/bands/${routeBandId}/stageplots/${result.stageplotId}`);
+      return;
+    }
+
+    const result = await addBandTechnicalRider(routeBandId, name);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    if (result.riderId) navigate(`/bands/${routeBandId}/riders/${result.riderId}`);
+  }, [
+    addBandSetlist,
+    addBandSongList,
+    addBandStageplot,
+    addBandTechnicalRider,
+    navigate,
+    planState,
+    routeBandId,
+  ]);
+
+  const renderContextFab = () => {
+    if (!canShowContextFab || !bandSection) return null;
+
+    if (bandSection === 'library') {
+      return (
+        <Link
+          to="/songs/new"
+          state={addSongFabState}
+          className="fab-add-song"
+          title="Create song"
+          aria-label="Create song"
+        >
+          <Music size={20} />
+        </Link>
+      );
+    }
+
+    if (bandSection === 'songlists') {
+      return (
+        <button
+          type="button"
+          className="fab-add-song"
+          title="Create songlist"
+          aria-label="Create songlist"
+          onClick={() => void createBandResource('songlist')}
+        >
+          <Folder size={20} />
+        </button>
+      );
+    }
+
+    if (bandSection === 'setlists') {
+      return (
+        <button
+          type="button"
+          className="fab-add-song"
+          title="Create setlist"
+          aria-label="Create setlist"
+          onClick={() => void createBandResource('setlist')}
+        >
+          <ListMusic size={20} />
+        </button>
+      );
+    }
+
+    if (bandSection === 'stageplots') {
+      return (
+        <button
+          type="button"
+          className="fab-add-song"
+          title="Create stageplot"
+          aria-label="Create stageplot"
+          onClick={() => void createBandResource('stageplot')}
+        >
+          <Map size={20} />
+        </button>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        className="fab-add-song"
+        title="Create technical rider"
+        aria-label="Create technical rider"
+        onClick={() => void createBandResource('rider')}
+      >
+        <ClipboardList size={20} />
+      </button>
+    );
+  };
 
   const refreshInvitesPopover = useCallback(async () => {
     if (!db || !user?.id) {
@@ -666,17 +855,7 @@ export default function Layout({ children }: Props) {
           {children}
           <footer className="footer">From Norway - with chords</footer>
         </main>
-        {showAddSongFab && (
-          <Link
-            to="/songs/new"
-            state={addSongFabState}
-            className="fab-add-song"
-            title="Add new song"
-            aria-label="Add new song"
-          >
-            <Plus size={20} />
-          </Link>
-        )}
+        {renderContextFab()}
       </div>
     </div>
   );

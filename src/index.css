@@ -604,6 +604,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
+  border: 0;
+  cursor: pointer;
   box-shadow: 0 4px 14px rgba(0,0,0,.25);
   transition: background .15s, transform .15s, box-shadow .15s;
   text-decoration: none;
