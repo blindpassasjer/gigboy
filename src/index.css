@@ -817,11 +817,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-list-sticky {
   position: sticky;
-  top: 0;
+  top: -1.5rem;
   z-index: 80;
-  background: color-mix(in srgb, var(--surface) 94%, var(--bg));
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  box-shadow: 0 10px 20px color-mix(in srgb, #000 6%, transparent);
+  background: var(--bg);
   margin: -1.5rem -1.5rem .75rem;
   padding: 0 0 .9rem;
   display: flex;
@@ -1509,7 +1507,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .song-list-sticky {
     margin: -1.25rem calc(-1.1rem - var(--safe-right)) .75rem calc(-1.1rem - var(--safe-left));
-    top: 0;
+    top: -1.25rem;
   }
 
   .song-list-sticky > .setlist-header,
@@ -5909,7 +5907,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   .song-list-sticky {
     margin: -1.25rem calc(-1rem - var(--safe-right)) .75rem calc(-1rem - var(--safe-left));
     padding: 0 0 .85rem;
-    top: calc(var(--topbar-height) + var(--safe-top));
+    top: -1.25rem;
   }
 
   .song-list-sticky > .setlist-header {
