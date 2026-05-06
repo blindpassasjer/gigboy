@@ -556,6 +556,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-top: .45rem;
 }
 
+.main-content > :is(.song-list-page, .setlist-view):first-child {
+  margin-top: 0;
+}
+
 .main-content:focus-visible {
   outline: none;
 }
@@ -3731,7 +3735,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: 1rem;
 }
 
-.login-brand--hero {
+.login-brand.login-brand--hero {
   justify-content: flex-start;
   gap: .65rem;
   font-size: 1.1rem;
