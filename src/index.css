@@ -819,7 +819,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   position: sticky;
   top: 0;
   z-index: 80;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--surface) 94%, var(--bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  box-shadow: 0 10px 20px color-mix(in srgb, #000 6%, transparent);
   margin: -1.5rem -1.5rem .75rem;
   padding: 0 0 .9rem;
   display: flex;
