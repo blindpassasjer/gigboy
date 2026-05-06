@@ -98,7 +98,7 @@ function LoginHero() {
       <div className="login-brand login-brand--hero">
         <BrandMark size={30} />
       </div>
-      <h1 className="login-hero-title">The band room, online.</h1>
+      <h1 className="login-hero-title">Your songs, your stage.</h1>
       <p className="login-hero-copy">
         Plan, perform, and stay in sync with one shared workspace for your music.
       </p>
@@ -129,14 +129,14 @@ function LoginBackdrop() {
       <span className="login-note login-note--2">♪</span>
       <span className="login-note login-note--3">♫</span>
       <span className="login-note login-note--4">♬</span>
-      <span className="login-note login-note--5">♩</span>
-      <span className="login-note login-note--6">♪</span>
-      <span className="login-note login-note--7">♫</span>
-      <span className="login-note login-note--8">♬</span>
-      <span className="login-note login-note--9">♩</span>
-      <span className="login-note login-note--10">♫</span>
-      <span className="login-note login-note--11">♪</span>
-      <span className="login-note login-note--12">♬</span>
+      <span className="login-note login-note--5">♭</span>
+      <span className="login-note login-note--6">♯</span>
+      <span className="login-note login-note--7">♮</span>
+      <span className="login-note login-note--8">♪</span>
+      <span className="login-note login-note--9">♫</span>
+      <span className="login-note login-note--10">♬</span>
+      <span className="login-note login-note--11">♩</span>
+      <span className="login-note login-note--12">♫</span>
       <span className="login-spark login-spark--1" />
       <span className="login-spark login-spark--2" />
       <span className="login-spark login-spark--3" />

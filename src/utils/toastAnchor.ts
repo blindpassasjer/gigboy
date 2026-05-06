@@ -7,6 +7,7 @@ export interface ToastAnchor {
 
 const VIEWPORT_MARGIN = 12;
 const DEFAULT_TOAST_WIDTH = 320;
+const DEFAULT_TOAST_HEIGHT = 180;
 const TOAST_GAP = 10;
 let listenersAttached = false;
 let lastAnchor: ToastAnchor | null = null;
@@ -63,8 +64,9 @@ export function getAnchoredToastStyle(anchor: ToastAnchor | null): CSSProperties
   }
 
   const maxLeft = Math.max(VIEWPORT_MARGIN, window.innerWidth - VIEWPORT_MARGIN - DEFAULT_TOAST_WIDTH);
+  const maxTop = Math.max(VIEWPORT_MARGIN, window.innerHeight - VIEWPORT_MARGIN - DEFAULT_TOAST_HEIGHT);
   const left = Math.min(Math.max(anchor.left - DEFAULT_TOAST_WIDTH / 2, VIEWPORT_MARGIN), maxLeft);
-  const top = Math.min(Math.max(anchor.top, VIEWPORT_MARGIN), window.innerHeight - VIEWPORT_MARGIN);
+  const top = Math.min(Math.max(anchor.top, VIEWPORT_MARGIN), maxTop);
 
   return {
     position: 'fixed',

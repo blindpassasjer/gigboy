@@ -3706,6 +3706,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   background-size: 38px 38px;
   opacity: .2;
   transform: perspective(600px) rotateX(44deg) scale(1.35) translateY(16%);
+  animation: login-grid-drift 22s linear infinite;
 }
 
 .login-shell {
@@ -3723,6 +3724,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--surface) 78%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: 24px;
+  box-shadow: var(--shadow-md);
   backdrop-filter: blur(8px);
   padding: clamp(1.4rem, 2.3vw, 2.3rem);
   display: flex;
@@ -3819,11 +3821,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0;
   font-size: 1.4rem;
   font-weight: 700;
-  text-align: center;
+  opacity: 0;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 48%, #ffffff);
   color: var(--text);
 }
 
 .login-description {
+  will-change: transform, opacity;
   margin: 0;
   text-align: center;
   color: var(--muted);
@@ -3922,10 +3926,23 @@ input, select, textarea { font: inherit; color: var(--text); }
 .login-submit { width: 100%; justify-content: center; margin-top: .25rem; }
 
 @keyframes login-note-rise {
-  0%   { opacity: 0;    transform: translateY(0)      rotate(-8deg); }
-  8%   { opacity: .38; }
-  80%  { opacity: .22; }
-  100% { opacity: 0;    transform: translateY(-115vh) rotate(14deg); }
+  0%   { opacity: 0;    transform: translate3d(0, 0, 0) rotate(-10deg) scale(.86); }
+  10%  { opacity: .5; }
+  52%  { transform: translate3d(14px, -58vh, 0) rotate(5deg) scale(1.04); }
+  82%  { opacity: .3; }
+  100% { opacity: 0;    transform: translate3d(-10px, -116vh, 0) rotate(14deg) scale(1.16); }
+}
+
+@keyframes login-grid-drift {
+  0% {
+    transform: perspective(600px) rotateX(44deg) scale(1.35) translateY(16%) translateX(0);
+  }
+  50% {
+    transform: perspective(600px) rotateX(44deg) scale(1.37) translateY(15%) translateX(-14px);
+  }
+  100% {
+    transform: perspective(600px) rotateX(44deg) scale(1.35) translateY(16%) translateX(0);
+  }
 }
 
 @keyframes login-glow-drift {
@@ -4028,7 +4045,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   .login-note,
   .login-glow,
   .login-ring,
-  .login-spark {
+  .login-spark,
+  .login-grid {
     animation: none;
   }
 }
