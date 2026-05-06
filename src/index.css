@@ -719,6 +719,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-list-results {
   flex: initial;
   min-height: 0;
+  padding-top: .2rem;
   overflow: visible;
   touch-action: pan-y;
 }
@@ -4873,7 +4874,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 1;
   overflow-y: auto;
   list-style: none;
-  padding: 0;
+  padding: .25rem 0 0;
   margin: 0;
 }
 
@@ -6033,9 +6034,26 @@ input, select, textarea { font: inherit; color: var(--text); }
     padding: .25rem;
   }
 
+  .topbar-invites-trigger {
+    justify-content: center;
+    gap: 0;
+    position: relative;
+  }
+
+  .topbar-invites-trigger .topbar-link-notice {
+    position: absolute;
+    top: .18rem;
+    right: .18rem;
+  }
+
   .topbar-invites-popover {
-    right: 0;
-    width: min(360px, calc(100vw - 1rem));
+    position: fixed;
+    top: calc(var(--topbar-height) + var(--safe-top) + .35rem);
+    left: calc(.5rem + var(--safe-left));
+    right: calc(.5rem + var(--safe-right));
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - var(--topbar-height) - var(--safe-top) - var(--safe-bottom) - .9rem);
   }
 
   .topbar-invite-actions {
