@@ -552,10 +552,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   touch-action: pan-y;
 }
 
-.main-content:has(> :is(.song-list-page, .setlist-view):first-child) {
-  padding-top: 0;
-}
-
 .main-content > :first-child {
   margin-top: .45rem;
 }
@@ -828,7 +824,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   top: 0;
   z-index: 80;
   background: var(--bg);
-  margin: 0 -1.5rem .75rem;
+  margin: -1.5rem -1.5rem .75rem;
   padding: 0 0 .9rem;
   display: flex;
   flex-direction: column;
@@ -1514,7 +1510,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky {
-    margin: 0 calc(-1.1rem - var(--safe-right)) .75rem calc(-1.1rem - var(--safe-left));
+    margin: -1.25rem calc(-1.1rem - var(--safe-right)) .75rem calc(-1.1rem - var(--safe-left));
     top: 0;
   }
 
@@ -5908,16 +5904,12 @@ input, select, textarea { font: inherit; color: var(--text); }
     overscroll-behavior-y: auto;
   }
 
-  .main-content:has(> :is(.song-list-page, .setlist-view):first-child) {
-    padding-top: 0;
-  }
-
   .main-content--concert {
     padding-top: 0;
   }
 
   .song-list-sticky {
-    margin: 0 calc(-1rem - var(--safe-right)) .75rem calc(-1rem - var(--safe-left));
+    margin: -1.25rem calc(-1rem - var(--safe-right)) .75rem calc(-1rem - var(--safe-left));
     padding: 0 0 .85rem;
     top: 0;
   }
