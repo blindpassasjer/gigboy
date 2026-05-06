@@ -5918,7 +5918,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   .song-list-sticky {
     margin: -1.25rem calc(-1rem - var(--safe-right)) .75rem calc(-1rem - var(--safe-left));
     padding: 0 0 .85rem;
-    top: 0;
+    top: calc(var(--topbar-height) + var(--safe-top));
   }
 
   .song-list-sticky > .setlist-header {
