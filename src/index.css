@@ -1178,6 +1178,16 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--song-item-chip-text);
 }
 
+.song-card .tag,
+.song-preview-card .tag,
+.setlist-song-meta .tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: .72rem;
+  font-weight: 600;
+  padding: .1rem .45rem;
+}
+
 .song-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -1973,7 +1983,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 0 0 auto;
   white-space: nowrap;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 999px;
   min-height: 2.5rem;
   padding: .4rem .85rem;
   font-size: .8rem;
