@@ -73,6 +73,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const { songLists, addSongToList, removeSongFromList } = useSongLists();
   const {
     bandSongListsByBandId,
+    updateBandSong,
     addSongToBandSongList,
     removeSongFromBandSongList,
     removeSongFromBandLibrary,
@@ -183,11 +184,14 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     if (nextTitle === null) return;
     const trimmed = nextTitle.trim();
     if (!trimmed || trimmed === song.title) return;
-    const err = await updateSong({
+    const nextSong = {
       ...song,
       title: trimmed,
       updatedAt: new Date().toISOString(),
-    });
+    };
+    const err = bandId
+      ? await updateBandSong(bandId, nextSong)
+      : await updateSong(nextSong);
     if (err) {
       toast.error(`Could not rename song: ${err}`);
     }

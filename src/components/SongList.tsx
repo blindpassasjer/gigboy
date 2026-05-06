@@ -530,6 +530,19 @@ export default function SongList({
                       {showListAppearanceEditor && (
                         <div className="icon-picker-popover" role="dialog" aria-label={`Choose ${listEntityLabel} icon`}>
                           <div className="emoji-choice-grid" role="radiogroup" aria-label={`${listEntityLabel} icon options`}>
+                            <button
+                              type="button"
+                              className={`emoji-choice-btn${!listIcon ? ' active' : ''}`}
+                              onClick={() => {
+                                setListIconDraft('🎵');
+                                void onUpdateListAppearance({ icon: undefined });
+                                setShowListAppearanceEditor(false);
+                              }}
+                              aria-label="Choose default icon"
+                              aria-pressed={!listIcon}
+                            >
+                              Default
+                            </button>
                             {ICON_OPTIONS.map((emoji) => {
                               const selected = listIconDraft === emoji;
                               return (

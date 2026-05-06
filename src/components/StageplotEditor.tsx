@@ -446,7 +446,7 @@ export default function StageplotEditor({
             {canEdit ? (
               <button
                 type="button"
-                className="setlist-action-btn setlist-action-btn--secondary"
+                className="setlist-action-btn"
                 onClick={() => setShowIconEditor((value) => !value)}
                 title="Set stageplot icon"
                 aria-label="Set stageplot icon"
@@ -482,6 +482,14 @@ export default function StageplotEditor({
             <div className="list-appearance-group">
               <span className="list-appearance-label">Icon</span>
               <div className="emoji-choice-grid" role="listbox" aria-label="Stageplot icon options">
+                <button
+                  type="button"
+                  className={`emoji-choice-btn${!stageplot.icon ? ' active' : ''}`}
+                  onClick={() => setIconDraft('')}
+                  aria-pressed={!stageplot.icon}
+                >
+                  Default
+                </button>
                 {ICON_OPTIONS.map((emoji) => {
                   const selected = iconDraft === emoji;
                   return (
@@ -508,7 +516,7 @@ export default function StageplotEditor({
             >
               Save
             </button>
-            <button type="button" className="setlist-action-btn setlist-action-btn--secondary" onClick={() => setShowIconEditor(false)}>
+            <button type="button" className="setlist-action-btn" onClick={() => setShowIconEditor(false)}>
               Cancel
             </button>
           </div>

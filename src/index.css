@@ -6222,6 +6222,28 @@ input, select, textarea { font: inherit; color: var(--text); }
     height: 2.4rem;
   }
 
+  .song-toolbar-row--actions .song-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .45rem;
+  }
+
+  .song-toolbar-row--actions .add-to-list-wrap,
+  .song-toolbar-row--actions .song-action-btn--labeled {
+    width: 100%;
+  }
+
+  .song-toolbar-row--actions .add-to-list-wrap > .rec-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .song-toolbar-row--actions .list-dropdown {
+    left: 0;
+    right: auto;
+    min-width: 100%;
+  }
+
   .fab-add-song {
     width: 3.5rem;
     height: 3.5rem;
@@ -8276,6 +8298,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 @media (max-width: 600px) {
   .stageplot-stage {
     --stage-max-width: 100%;
+  }
+
+  .stageplot-palette-category {
+    width: 100%;
   }
 
   .stageplot-stage--size-small,

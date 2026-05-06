@@ -416,6 +416,23 @@ export default function SetlistsView({
                     {showIconEditor && (
                       <div className="icon-picker-popover" role="dialog" aria-label="Choose setlist icon">
                         <div className="emoji-choice-grid" role="radiogroup" aria-label="Setlist icon options">
+                          <button
+                            type="button"
+                            className={`emoji-choice-btn${!effectiveIcon ? ' active' : ''}`}
+                            onClick={() => {
+                              if (onUpdateIconOverride) {
+                                onUpdateIconOverride(undefined);
+                              } else {
+                                updateSetlistIcon(setlistId, undefined);
+                              }
+                              setIconDraft('🎵');
+                              setShowIconEditor(false);
+                            }}
+                            aria-label="Choose default icon"
+                            aria-pressed={!effectiveIcon}
+                          >
+                            Default
+                          </button>
                           {ICON_OPTIONS.map((emoji) => {
                             const selected = iconDraft === emoji;
                             return (

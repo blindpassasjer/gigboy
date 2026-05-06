@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   location: { state: null as { backTo?: string; backLabel?: string; bandId?: string } | null },
   deleteSong: vi.fn(),
   updateSong: vi.fn(),
+  updateBandSong: vi.fn(),
   removeSongFromBandLibrary: vi.fn(),
   showConfirmToast: vi.fn(),
   showPromptToast: vi.fn(),
@@ -43,6 +44,7 @@ vi.mock('../context/SongListsContext', () => ({
 vi.mock('../context/BandsContext', () => ({
   useBands: () => ({
     bandSongListsByBandId: {},
+    updateBandSong: mocks.updateBandSong,
     addSongToBandSongList: vi.fn(),
     removeSongFromBandSongList: vi.fn(),
     removeSongFromBandLibrary: mocks.removeSongFromBandLibrary,
@@ -141,6 +143,7 @@ describe('SongView actions', () => {
     mocks.navigate.mockReset();
     mocks.deleteSong.mockReset();
     mocks.updateSong.mockReset();
+    mocks.updateBandSong.mockReset();
     mocks.removeSongFromBandLibrary.mockReset();
     mocks.showConfirmToast.mockReset();
     mocks.showPromptToast.mockReset();
@@ -192,5 +195,22 @@ describe('SongView actions', () => {
     });
     expect(mocks.removeSongFromBandLibrary).not.toHaveBeenCalled();
     expect(mocks.navigate).toHaveBeenCalledWith('/profile', { state });
+  });
+
+  it('renames band song through band updater', async () => {
+    mocks.showPromptToast.mockResolvedValue('Renamed Song');
+    mocks.updateBandSong.mockResolvedValue(null);
+
+    render(<SongView song={{ ...baseSong, ownerId: 'user-1', accessRole: 'owner' }} bandId="band-1" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rename My Song' }));
+
+    await waitFor(() => {
+      expect(mocks.updateBandSong).toHaveBeenCalledWith(
+        'band-1',
+        expect.objectContaining({ id: 'song-1', title: 'Renamed Song' })
+      );
+    });
+    expect(mocks.updateSong).not.toHaveBeenCalled();
   });
 });

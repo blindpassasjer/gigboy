@@ -214,7 +214,7 @@ export default function TechnicalRiderEditor({
             {canEdit ? (
               <button
                 type="button"
-                className="setlist-action-btn setlist-action-btn--secondary"
+                className="setlist-action-btn"
                 onClick={() => setShowIconEditor((value) => !value)}
                 title="Set rider icon"
                 aria-label="Set rider icon"
@@ -252,6 +252,14 @@ export default function TechnicalRiderEditor({
             <div className="list-appearance-group">
               <span className="list-appearance-label">Icon</span>
               <div className="emoji-choice-grid" role="listbox" aria-label="Technical rider emoji options">
+                <button
+                  type="button"
+                  className={`emoji-choice-btn${!rider.icon ? ' active' : ''}`}
+                  onClick={() => setIconDraft('')}
+                  aria-pressed={!rider.icon}
+                >
+                  Default
+                </button>
                 {ICON_OPTIONS.map((emoji) => {
                   const selected = iconDraft === emoji;
                   return (
@@ -280,7 +288,7 @@ export default function TechnicalRiderEditor({
             </button>
             <button
               type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
+              className="setlist-action-btn"
               onClick={() => setShowIconEditor(false)}
             >
               Cancel
