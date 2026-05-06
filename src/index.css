@@ -3984,8 +3984,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .login-shell {
-    grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
-    gap: .55rem;
+    grid-template-columns: 1fr;
+    gap: .75rem;
+    align-items: start;
+  }
+
+  .login-hero,
+  .login-card {
+    width: 100%;
   }
 
   .login-hero {
