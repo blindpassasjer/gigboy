@@ -669,7 +669,7 @@ export default function Layout({ children }: Props) {
               aria-controls="topbar-invites-popover"
             >
               <Mail size={16} />
-              <span>Invites</span>
+              <span className="topbar-link-label">Invites</span>
               {hasInviteNotifications ? (
                 <span
                   className={`topbar-link-notice topbar-link-notice--${inviteNoticeVariant}`}
@@ -808,7 +808,7 @@ export default function Layout({ children }: Props) {
               aria-current={pathname === '/profile' ? 'page' : undefined}
             >
               <UserAvatar avatar={user.avatar} label={user.username ?? user.email} size="sm" />
-              <span>Profile</span>
+              <span className="topbar-link-label">Profile</span>
             </Link>
           )}
         </nav>

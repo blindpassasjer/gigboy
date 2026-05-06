@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Theme } from '@radix-ui/themes';
+import { useMemo } from 'react';
 import { useBands } from './context/BandsContext';
 import { DarkModeProvider, useDarkModeContext } from './context/DarkModeContext';
 
@@ -115,6 +116,26 @@ const router = createBrowserRouter([
 
 function AppContent() {
   const { dark } = useDarkModeContext();
+  const appTree = useMemo(() => (
+    <AuthProvider>
+      <Toaster
+      toastOptions={{
+        style: {
+          border: '1px solid var(--border)',
+          borderRadius: '10px',
+          background: 'var(--surface)',
+          color: 'var(--text)',
+          boxShadow: 'var(--shadow)',
+          padding: '0.7rem 0.8rem',
+          minWidth: '280px',
+          maxWidth: '420px',
+        },
+      }}
+      position="top-center"
+    />
+    <RouterProvider router={router} />
+  </AuthProvider>
+  ), []);
 
   return (
     <Theme
@@ -124,24 +145,7 @@ function AppContent() {
       radius="medium"
       hasBackground={false}
     >
-      <AuthProvider>
-        <Toaster
-        toastOptions={{
-          style: {
-            border: '1px solid var(--border)',
-            borderRadius: '10px',
-            background: 'var(--surface)',
-            color: 'var(--text)',
-            boxShadow: 'var(--shadow)',
-            padding: '0.7rem 0.8rem',
-            minWidth: '280px',
-            maxWidth: '420px',
-          },
-        }}
-        position="top-center"
-      />
-      <RouterProvider router={router} />
-    </AuthProvider>
+      {appTree}
     </Theme>
   );
 }

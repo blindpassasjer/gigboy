@@ -14,10 +14,20 @@ export function useDarkMode() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
+    const root = document.documentElement;
     const nextTheme = dark ? 'dark' : 'light';
-    if (document.documentElement.getAttribute('data-theme') !== nextTheme) {
-      document.documentElement.setAttribute('data-theme', nextTheme);
+    root.classList.add('theme-switching');
+    if (root.getAttribute('data-theme') !== nextTheme) {
+      root.setAttribute('data-theme', nextTheme);
     }
+
+    // Keep transition suppression for two frames so style recalc + paint settle first.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        root.classList.remove('theme-switching');
+      });
+    });
+
     if (typeof window !== 'undefined') {
       localStorage.setItem(KEY, String(dark));
     }

@@ -71,6 +71,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Prevent full-page transition storms while light/dark variables swap. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
 #root { min-height: 100vh; }
 
 :where(
@@ -5993,8 +6002,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .topbar-brand span,
-  .topbar-nav a span,
-  .topbar-invites-trigger span {
+  .topbar-link-label {
     display: none;
   }
 
