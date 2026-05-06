@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Share2, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -118,43 +118,101 @@ function LoginHero() {
   );
 }
 
+const NOTE_SYMBOLS = ['♩', '♪', '♫', '♬', '♭', '♯', '♮'];
+
+interface NoteParticle {
+  x: number; y: number;
+  vx: number; vy: number;
+  symbol: string;
+  size: number;
+  opacity: number;
+  angle: number;
+  va: number;
+}
+
+function randomNote(w: number, h: number, spreadY = false): NoteParticle {
+  return {
+    x: Math.random() * w,
+    y: spreadY ? Math.random() * h : h + 20 + Math.random() * 120,
+    vx: (Math.random() - 0.5) * 0.5,
+    vy: -(0.6 + Math.random() * 1.0),
+    symbol: NOTE_SYMBOLS[Math.floor(Math.random() * NOTE_SYMBOLS.length)],
+    size: 18 + Math.random() * 34,
+    opacity: 0.45 + Math.random() * 0.45,
+    angle: (Math.random() - 0.5) * 0.5,
+    va: (Math.random() - 0.5) * 0.012,
+  };
+}
+
+function MusicNotesBg() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const COUNT = 40;
+    let notes: NoteParticle[] = [];
+    let raf: number;
+    let accentColor = '#1a6fc4';
+
+    function syncSize() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      accentColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--accent').trim() || '#1a6fc4';
+    }
+
+    syncSize();
+    notes = Array.from({ length: COUNT }, (_, i) =>
+      randomNote(canvas.width, canvas.height, i < COUNT * 0.8)
+    );
+
+    const ro = new ResizeObserver(syncSize);
+    ro.observe(canvas);
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const n of notes) {
+        n.x += n.vx;
+        n.y += n.vy;
+        n.angle += n.va;
+        if (n.y < -60) {
+          Object.assign(n, randomNote(canvas.width, canvas.height));
+        }
+        ctx.save();
+        ctx.translate(n.x, n.y);
+        ctx.rotate(n.angle);
+        ctx.globalAlpha = n.opacity;
+        ctx.fillStyle = accentColor;
+        ctx.font = `${n.size}px serif`;
+        ctx.fillText(n.symbol, 0, 0);
+        ctx.restore();
+      }
+      raf = requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="login-notes-canvas" aria-hidden="true" />;
+}
+
 function LoginBackdrop() {
   return (
     <div className="login-bg" aria-hidden="true">
+      <MusicNotesBg />
       <span className="login-glow login-glow--1" />
       <span className="login-glow login-glow--2" />
       <span className="login-ring login-ring--1" />
       <span className="login-ring login-ring--2" />
-      <span className="login-note login-note--1">♩</span>
-      <span className="login-note login-note--2">♪</span>
-      <span className="login-note login-note--3">♫</span>
-      <span className="login-note login-note--4">♬</span>
-      <span className="login-note login-note--5">♭</span>
-      <span className="login-note login-note--6">♯</span>
-      <span className="login-note login-note--7">♮</span>
-      <span className="login-note login-note--8">♪</span>
-      <span className="login-note login-note--9">♫</span>
-      <span className="login-note login-note--10">♬</span>
-      <span className="login-note login-note--11">♩</span>
-      <span className="login-note login-note--12">♫</span>
-      <span className="login-note login-note--13">♩</span>
-      <span className="login-note login-note--14">♪</span>
-      <span className="login-note login-note--15">♬</span>
-      <span className="login-note login-note--16">♭</span>
-      <span className="login-note login-note--17">♯</span>
-      <span className="login-note login-note--18">♫</span>
-      <span className="login-note login-note--19">♮</span>
-      <span className="login-note login-note--20">♩</span>
-      <span className="login-note login-note--21">♪</span>
-      <span className="login-note login-note--22">♬</span>
-      <span className="login-note login-note--23">♫</span>
-      <span className="login-note login-note--24">♭</span>
-      <span className="login-note login-note--25">♩</span>
-      <span className="login-note login-note--26">♪</span>
-      <span className="login-note login-note--27">♬</span>
-      <span className="login-note login-note--28">♯</span>
-      <span className="login-note login-note--29">♫</span>
-      <span className="login-note login-note--30">♮</span>
       <span className="login-spark login-spark--1" />
       <span className="login-spark login-spark--2" />
       <span className="login-spark login-spark--3" />

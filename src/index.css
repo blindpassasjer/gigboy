@@ -3592,7 +3592,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .login-bg {
   position: absolute;
-  inset: -12%;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.login-notes-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 0;
 }
@@ -3655,50 +3665,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   animation-duration: 12s;
   animation-delay: -5s;
 }
-
-.login-note {
-  position: absolute;
-  bottom: -8%;
-  color: var(--accent);
-  opacity: 0;
-  text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, #ffffff);
-  animation: login-note-rise linear infinite;
-  user-select: none;
-  pointer-events: none;
-  line-height: 1;
-  will-change: transform, opacity;
-}
-
-.login-note--1  { left:  3%; font-size: 2.2rem; animation-duration:  7s; animation-delay:   0s; }
-.login-note--2  { left:  9%; font-size: 1.4rem; animation-duration:  5s; animation-delay:  -2s; }
-.login-note--3  { left: 15%; font-size: 3.0rem; animation-duration:  8s; animation-delay:  -4s; }
-.login-note--4  { left: 21%; font-size: 1.8rem; animation-duration:  6s; animation-delay:  -1s; }
-.login-note--5  { left: 27%; font-size: 2.5rem; animation-duration:  9s; animation-delay:  -3s; }
-.login-note--6  { left: 33%; font-size: 1.2rem; animation-duration:  5s; animation-delay:  -5s; }
-.login-note--7  { left: 39%; font-size: 2.8rem; animation-duration:  7s; animation-delay:  -6s; }
-.login-note--8  { left: 45%; font-size: 1.6rem; animation-duration:  6s; animation-delay:  -2s; }
-.login-note--9  { left: 51%; font-size: 2.0rem; animation-duration:  8s; animation-delay:  -4s; }
-.login-note--10 { left: 57%; font-size: 1.3rem; animation-duration:  5s; animation-delay:   0s; }
-.login-note--11 { left: 63%; font-size: 2.6rem; animation-duration:  7s; animation-delay:  -7s; }
-.login-note--12 { left: 69%; font-size: 1.5rem; animation-duration:  6s; animation-delay:  -1s; }
-.login-note--13 { left: 75%; font-size: 2.2rem; animation-duration:  9s; animation-delay:  -3s; }
-.login-note--14 { left: 81%; font-size: 1.9rem; animation-duration:  5s; animation-delay:  -5s; }
-.login-note--15 { left: 87%; font-size: 3.2rem; animation-duration:  8s; animation-delay:  -2s; }
-.login-note--16 { left: 93%; font-size: 1.4rem; animation-duration:  6s; animation-delay:  -6s; }
-.login-note--17 { left:  6%; font-size: 2.8rem; animation-duration:  7s; animation-delay:  -8s; }
-.login-note--18 { left: 12%; font-size: 1.1rem; animation-duration:  5s; animation-delay:  -3s; }
-.login-note--19 { left: 18%; font-size: 2.4rem; animation-duration:  9s; animation-delay:  -9s; }
-.login-note--20 { left: 24%; font-size: 1.7rem; animation-duration:  6s; animation-delay:  -1s; }
-.login-note--21 { left: 36%; font-size: 2.0rem; animation-duration:  7s; animation-delay:  -4s; }
-.login-note--22 { left: 48%; font-size: 3.0rem; animation-duration:  8s; animation-delay:  -7s; }
-.login-note--23 { left: 54%; font-size: 1.3rem; animation-duration:  5s; animation-delay:  -2s; }
-.login-note--24 { left: 60%; font-size: 2.6rem; animation-duration:  6s; animation-delay:  -5s; }
-.login-note--25 { left: 66%; font-size: 1.8rem; animation-duration:  9s; animation-delay:   0s; }
-.login-note--26 { left: 72%; font-size: 2.3rem; animation-duration:  7s; animation-delay:  -3s; }
-.login-note--27 { left: 78%; font-size: 1.5rem; animation-duration:  5s; animation-delay:  -8s; }
-.login-note--28 { left: 84%; font-size: 2.9rem; animation-duration:  8s; animation-delay:  -6s; }
-.login-note--29 { left: 90%; font-size: 1.2rem; animation-duration:  6s; animation-delay:  -1s; }
-.login-note--30 { left: 96%; font-size: 2.1rem; animation-duration:  7s; animation-delay:  -4s; }
 
 .login-spark {
   width: 6px;
@@ -3944,14 +3910,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .login-submit { width: 100%; justify-content: center; margin-top: .25rem; }
-
-@keyframes login-note-rise {
-  0%   { opacity: 0;    transform: translate3d(0, 0, 0)         rotate(-12deg) scale(.8); }
-  12%  { opacity: .78; }
-  50%  { opacity: .65; transform: translate3d(12px, -55vh, 0)  rotate(6deg)   scale(1.05); }
-  85%  { opacity: .5; }
-  100% { opacity: 0;    transform: translate3d(-8px, -115vh, 0) rotate(16deg)  scale(1.2); }
-}
 
 @keyframes login-grid-drift {
   0% {
