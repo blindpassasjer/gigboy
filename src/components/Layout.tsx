@@ -9,7 +9,6 @@ import BrandMark from './BrandMark';
 import { useDarkModeContext } from '../context/DarkModeContext';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
 import { usePlan } from '../hooks/usePlan';
-import { useStorageUsage } from '../hooks/useStorageUsage';
 import { db } from '../lib/firebase';
 import { declineInvite, loadPendingInvites } from '../lib/collaboration';
 import { declineBandInvite, loadPendingBandInvites } from '../lib/bandInvites';
@@ -32,16 +31,6 @@ function hashBandHue(seed: string) {
   }
   const positiveHash = Math.abs(hash);
   return positiveHash % 360;
-}
-
-function formatStorageBytes(bytes: number): string {
-  if (bytes >= 1024 * 1024 * 1024) {
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-  }
-  if (bytes >= 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-  return `${Math.max(0, Math.round(bytes / 1024))} KB`;
 }
 
 export default function Layout({ children }: Props) {
@@ -145,9 +134,6 @@ export default function Layout({ children }: Props) {
   const [pendingBandInvites, setPendingBandInvites] = useState<BandInvite[]>([]);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
   const invitesPopoverRef = useRef<HTMLDivElement>(null);
-  const storageUsage = useStorageUsage(user?.id ?? null, planState.storageQuotaBytes);
-  const storagePercent = Math.round(storageUsage.usageRatio * 100);
-
   const hasAnyPendingInvites = pendingInvites.length > 0 || pendingBandInvites.length > 0;
   const hasAnyInviteContent = hasAnyPendingInvites || acceptedOutgoing.length > 0;
 
@@ -622,43 +608,14 @@ export default function Layout({ children }: Props) {
           <PanelLeft size={20} />
         </button>
         <Link to={themedBandId ? `/bands/${themedBandId}/library` : '/'} className="topbar-brand">
-          <BrandMark size={22} />
+          <BrandMark size={35} scale={1} />
         </Link>
-        {user ? (
-          <div
-            className="topbar-storage"
-            title={storageUsage.loading
-              ? 'Loading recording storage usage'
-              : `${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
-            aria-label={storageUsage.loading
-              ? 'Loading storage usage'
-              : `Storage usage ${storagePercent} percent, ${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
-          >
-            <div className="topbar-storage-text">
-              <span>
-                {storageUsage.loading
-                  ? 'Loading...'
-                  : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)}`}
-              </span>
-            </div>
-            <div className="topbar-storage-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={storagePercent}>
-              <span
-                className={[
-                  'topbar-storage-meter-fill',
-                  storagePercent >= 90 ? 'is-critical' : storagePercent >= 75 ? 'is-warning' : '',
-                ].filter(Boolean).join(' ')}
-                style={{ width: `${storagePercent}%` }}
-              />
-            </div>
-            <span className="topbar-storage-percent">{storagePercent}%</span>
-          </div>
-        ) : null}
         <nav className="topbar-nav">
           <div className="topbar-invites" ref={invitesPopoverRef}>
             <button
               type="button"
               onClick={() => setInvitesOpen((current) => !current)}
-            className={[
+              className={[
                 'topbar-invites-trigger',
                 invitesOpen ? 'active' : '',
                 hasInviteNotifications ? 'topbar-link--has-notification' : '',
@@ -836,7 +793,12 @@ export default function Layout({ children }: Props) {
           else if (sidebarOpen && dx < 0) setSidebarOpen(false);
         }}
       >
-        <Sidebar open={sidebarOpen} mobile={isNarrowViewport} onNavigate={isNarrowViewport ? () => setSidebarOpen(false) : undefined} onClose={() => setSidebarOpen(false)} />
+        <Sidebar
+          open={sidebarOpen}
+          mobile={isNarrowViewport}
+          onNavigate={isNarrowViewport ? () => setSidebarOpen(false) : undefined}
+          onClose={() => setSidebarOpen(false)}
+        />
         {isNarrowViewport && sidebarOpen && (
           <button
             type="button"

@@ -5,7 +5,19 @@ import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { usePlan } from '../hooks/usePlan';
+import { useAuth } from '../context/AuthContext';
+import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
+
+function formatStorageBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  }
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  return `${Math.max(0, Math.round(bytes / 1024))} KB`;
+}
 
 const SONG_DRAG_MIME = 'application/x-gigboy-song-id';
 const SONG_DRAG_FALLBACK_MIME = 'text/x-gigboy-song-id';
@@ -35,7 +47,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   })();
   const { songs } = useSongs();
   const { clearActiveSelection } = useSongLists();
-  const { canUse } = usePlan();
+  const { canUse, storageQuotaBytes } = usePlan();
+  const { user } = useAuth();
+  const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes);
+  const storagePercent = Math.round(storageUsage.usageRatio * 100);
 
   const {
     bands,
@@ -386,6 +401,38 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           )}
         </div>
       </div>
+
+      {user ? (
+        <div className="sidebar-storage">
+          <div
+            className="topbar-storage"
+            title={storageUsage.loading
+              ? 'Loading recording storage usage'
+              : `${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
+            aria-label={storageUsage.loading
+              ? 'Loading storage usage'
+              : `Storage usage ${storagePercent} percent, ${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
+          >
+            <div className="topbar-storage-text">
+              <span>
+                {storageUsage.loading
+                  ? 'Loading...'
+                  : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)}`}
+              </span>
+            </div>
+            <div className="topbar-storage-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={storagePercent}>
+              <span
+                className={[
+                  'topbar-storage-meter-fill',
+                  storagePercent >= 90 ? 'is-critical' : storagePercent >= 75 ? 'is-warning' : '',
+                ].filter(Boolean).join(' ')}
+                style={{ width: `${storagePercent}%` }}
+              />
+            </div>
+            <span className="topbar-storage-percent">{storagePercent}%</span>
+          </div>
+        </div>
+      ) : null}
 
       <div className="sidebar-mode-switcher" ref={bandSwitcherRef}>
         <div className="sidebar-band-switcher">

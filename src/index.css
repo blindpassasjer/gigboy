@@ -4642,6 +4642,16 @@ input, select, textarea { font: inherit; color: var(--text); }
   position: relative;
 }
 
+.sidebar-storage {
+  padding: 0 .75rem .4rem;
+}
+
+.sidebar-storage .topbar-storage {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
 .sidebar-mode-switcher {
   position: relative;
   display: flex;
