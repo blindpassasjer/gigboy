@@ -3957,35 +3957,37 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .login-submit { width: 100%; justify-content: center; margin-top: .25rem; }
 
-/* Demo login separator and button */
-.login-demo-separator {
+/* Demo CTA at top of login card */
+.login-demo-cta {
   display: flex;
-  align-items: center;
-  gap: .5rem;
-  color: var(--muted);
-  font-size: .8rem;
-  margin: .25rem 0 -.25rem;
+  flex-direction: column;
+  gap: .4rem;
+  margin-bottom: .75rem;
+  padding: .75rem;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border: 1px dashed color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: var(--radius);
 }
-.login-demo-separator::before,
-.login-demo-separator::after {
-  content: '';
-  flex: 1;
-  border-top: 1px solid var(--border);
-}
-.login-demo-separator span { padding: 0 .4rem; }
 
-.login-demo-btn {
+.login-demo-btn-primary {
   width: 100%;
   justify-content: center;
   gap: .4rem;
-  margin-top: .25rem;
-  border-style: dashed;
-  color: var(--muted);
-}
-.login-demo-btn:hover:not(:disabled) {
+  border-style: solid;
   color: var(--accent);
+  background: transparent;
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  font-weight: 600;
+}
+.login-demo-btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.login-demo-cta-text {
+  font-size: .75rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 0;
 }
 
 /* ─── Demo Banner ──────────────────────────────────────────────────────────── */

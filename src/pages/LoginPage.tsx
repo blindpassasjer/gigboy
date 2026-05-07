@@ -372,6 +372,23 @@ export default function LoginPage() {
         <div className="login-card">
           <h1 className="login-title">{mode === 'register' ? 'Create account' : 'Sign in'}</h1>
 
+          <div className="login-demo-cta">
+            <button
+              type="button"
+              className="btn-secondary login-demo-btn-primary"
+              onClick={() => { void handleDemoLogin(); }}
+              disabled={busy}
+            >
+              <Sparkles size={16} aria-hidden="true" />
+              Try demo — no account needed
+            </button>
+            <p className="login-demo-cta-text">Test all features risk-free, no signup required</p>
+          </div>
+
+          <div className="login-divider" role="separator" aria-label="or sign in">
+            <span>or sign in</span>
+          </div>
+
           <div className="auth-mode-switch" role="tablist" aria-label="Authentication mode">
             <button
               type="button"
@@ -472,20 +489,6 @@ export default function LoginPage() {
                 : (mode === 'register' ? 'Create account' : 'Sign in')}
             </button>
           </form>
-
-          <div className="login-demo-separator" role="separator" aria-label="or try demo">
-            <span>or</span>
-          </div>
-
-          <button
-            type="button"
-            className="btn-secondary login-demo-btn"
-            onClick={() => { void handleDemoLogin(); }}
-            disabled={busy}
-          >
-            <Sparkles size={15} aria-hidden="true" />
-            Try demo — no account needed
-          </button>
 
           <footer className="footer">From Norway - with chords</footer>
         </div>
