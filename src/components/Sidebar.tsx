@@ -606,6 +606,22 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   </button>
                 </div>
 
+                <div
+                  className={`sidebar-list-item${pathname === `/bands/${band.id}/tech-rider` ? ' active' : ''}`}
+                >
+                  <button
+                    className="sidebar-list-item-btn"
+                    onClick={() => {
+                      clearGlobalSelection();
+                      navigate(`/bands/${band.id}/tech-rider`);
+                      onNavigate?.();
+                    }}
+                  >
+                    <ClipboardList size={14} />
+                    <span className="sidebar-list-name">Technical Rider</span>
+                  </button>
+                </div>
+
                 <div className="sidebar-setlists-header">
                   <button
                     type="button"
