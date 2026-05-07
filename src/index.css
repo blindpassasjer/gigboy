@@ -5318,8 +5318,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   height: 2rem;
   padding: .2rem;
   color: var(--song-item-muted);
-  opacity: 0;
-  transition: opacity .12s;
+  opacity: 1;
+  transition: color .12s, background .12s;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -5351,10 +5351,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   opacity: 1;
   color: var(--danger);
   background: var(--song-item-chip-bg);
-}
-.setlist-song-item:hover .setlist-note-btn,
-.setlist-song-item:hover .setlist-remove-btn {
-  opacity: 1;
 }
 
 .setlist-song-note-editor {
