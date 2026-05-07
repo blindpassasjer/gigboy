@@ -98,7 +98,7 @@ export default function BandTechRiderPanel({
   return (
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
-        <div className="setlist-header songlist-header tech-rider-page-header">
+        <div className="tech-rider-page-header">
           <div className="setlist-title-block">
             <h1 className="song-list-heading setlist-title">Technical Rider</h1>
             <p className="setlist-subtitle">Manage input lists and stageplots for your band.</p>
