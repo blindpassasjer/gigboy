@@ -9,6 +9,7 @@ import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
 import InputListEditor from '../components/InputListEditor';
 import TrashView from '../components/TrashView';
+import PressKitView from '../components/PressKitView';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
@@ -64,6 +65,11 @@ export default function BandDetailPage() {
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
     updateBandLibraryIcon,
+    bandPressKitsByBandId,
+    refreshBandPressKits,
+    renameBandPressKit,
+    deleteBandPressKit,
+    updateBandPressKitIcon,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
@@ -73,6 +79,7 @@ export default function BandDetailPage() {
   const bandStageplots = id ? (bandStageplotsByBandId[id] ?? []) : [];
   const bandInputLists = id ? (bandInputListsByBandId[id] ?? []) : [];
   const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
+  const bandPressKits = id ? (bandPressKitsByBandId[id] ?? []) : [];
 
   const allBandsSongs = useMemo(() => {
     return Object.entries(bandSongsByBandId)
@@ -96,6 +103,9 @@ export default function BandDetailPage() {
     : null;
   const activeBandInputList = bandSection === 'riders'
     ? bandInputLists.find((entry) => entry.id === bandResourceId) ?? null
+    : null;
+  const activeBandPressKit = bandSection === 'press-kit'
+    ? bandPressKits.find((entry) => entry.id === bandResourceId) ?? null
     : null;
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
 
@@ -141,6 +151,13 @@ export default function BandDetailPage() {
       console.error('Failed to load band trash.', error);
     });
   }, [band, id, refreshBandTrash]);
+
+  useEffect(() => {
+    if (!id || !band) return;
+    void refreshBandPressKits(id).catch((error) => {
+      console.error('Failed to load band press kits.', error);
+    });
+  }, [band, id, refreshBandPressKits]);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -564,6 +581,28 @@ export default function BandDetailPage() {
           }
         }}
         onCopyPublicLink={handleShareTechnicalRider}
+      />
+    );
+  }
+
+  if (bandSection === 'press-kit' && activeBandPressKit) {
+    return (
+      <PressKitView
+        bandId={band.id}
+        bandName={band.name}
+        kit={activeBandPressKit}
+        canEdit={canEditBand}
+        userId={user?.id ?? null}
+        userEmail={user?.email ?? null}
+        onDelete={() => { navigate(`/bands/${band.id}/press-kit`); }}
+        onRename={canEditBand ? async (name) => {
+          const error = await renameBandPressKit(band.id, activeBandPressKit.id, name);
+          if (error) toast.error(error);
+        } : undefined}
+        onUpdateIcon={canEditBand ? async (icon) => {
+          const error = await updateBandPressKitIcon(band.id, activeBandPressKit.id, icon);
+          if (error) toast.error(error);
+        } : undefined}
       />
     );
   }
