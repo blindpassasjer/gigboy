@@ -5308,8 +5308,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .setlist-song-meta .lang-badge,
 .setlist-song-meta .tag {
-  background: var(--song-item-chip-bg);
-  color: var(--song-item-chip-text);
+  background: color-mix(in srgb, var(--song-item-accent) 16%, var(--song-item-bg));
+  color: color-mix(in srgb, var(--song-item-accent) 78%, var(--song-item-text));
+  border: 1px solid color-mix(in srgb, var(--song-item-accent) 24%, transparent);
 }
 
 .setlist-remove-btn {
@@ -5317,9 +5318,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 2rem;
   height: 2rem;
   padding: .2rem;
-  color: var(--song-item-muted);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--song-item-bg));
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
   opacity: 1;
-  transition: color .12s, background .12s;
+  transition: color .12s, background .12s, border-color .12s;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -5331,9 +5334,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 2rem;
   height: 2rem;
   padding: .2rem;
-  color: var(--song-item-muted);
+  color: var(--song-item-accent);
+  background: var(--song-item-chip-bg);
+  border: 1px solid color-mix(in srgb, var(--song-item-accent) 24%, transparent);
   opacity: 1;
-  transition: opacity .12s, color .12s, background .12s;
+  transition: color .12s, background .12s, border-color .12s;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -5344,13 +5349,15 @@ input, select, textarea { font: inherit; color: var(--text); }
 .setlist-note-btn.has-note {
   opacity: 1;
   color: var(--song-item-accent);
-  background: var(--song-item-chip-bg);
+  background: color-mix(in srgb, var(--song-item-chip-bg) 72%, var(--song-item-bg));
+  border-color: color-mix(in srgb, var(--song-item-accent) 36%, transparent);
 }
 
 .setlist-remove-btn:hover {
   opacity: 1;
   color: var(--danger);
-  background: var(--song-item-chip-bg);
+  background: color-mix(in srgb, var(--danger) 18%, var(--song-item-bg));
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
 .setlist-song-note-editor {
