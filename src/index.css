@@ -876,6 +876,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: auto;
 }
 
+.song-list-sticky > .press-kit-toolbar {
+  margin: 0 1.5rem;
+}
+
 .song-list-controls {
   display: flex;
   gap: .75rem;
@@ -1565,6 +1569,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky > .setlist-header,
+  .song-list-sticky > .press-kit-toolbar,
   .song-list-controls,
   .list-appearance-editor {
     margin-left: calc(1.1rem + var(--safe-left));
@@ -6160,6 +6165,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-list-sticky > .setlist-header {
+    margin: 0 calc(1rem + var(--safe-right)) 0 calc(1rem + var(--safe-left));
+  }
+
+  .song-list-sticky > .press-kit-toolbar {
     margin: 0 calc(1rem + var(--safe-right)) 0 calc(1rem + var(--safe-left));
   }
 

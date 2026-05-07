@@ -15,12 +15,6 @@ import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 
-type TechRiderTabId = 'stageplots' | 'riders';
-
-function isTechRiderTab(value: string | null): value is TechRiderTabId {
-  return value === 'stageplots' || value === 'riders';
-}
-
 export default function BandDetailPage() {
   const { id } = useParams();
   const { pathname } = useLocation();
@@ -96,9 +90,6 @@ export default function BandDetailPage() {
   const bandSection = routeBandId === id ? (routeSegments[2] ?? 'library') : 'library';
   const bandResourceId = routeBandId === id ? (routeSegments[3] ?? null) : null;
   const activePressKitId = bandSection === 'press-kit' ? bandResourceId : null;
-  const activeTechRiderTab: TechRiderTabId = bandSection === 'tech-rider' && isTechRiderTab(bandResourceId)
-    ? bandResourceId
-    : 'stageplots';
 
   const activeBandSongList = bandSection === 'songlists'
     ? bandSongLists.find((entry) => entry.id === bandResourceId) ?? null
@@ -669,12 +660,6 @@ export default function BandDetailPage() {
         canEdit={canEditBand}
         userId={user?.id ?? null}
         userEmail={user?.email ?? null}
-        initialTab={activeTechRiderTab}
-        onTabChange={(tab) => {
-          const nextPath = `/bands/${band.id}/tech-rider/${tab}`;
-          if (pathname === nextPath) return;
-          navigate(nextPath);
-        }}
       />
     );
   }

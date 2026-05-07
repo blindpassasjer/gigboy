@@ -245,61 +245,62 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   return (
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
-        <header className="setlist-header">
-          <div className="setlist-header-main">
-            <h1 className="setlist-title">{kit.name}</h1>
-            <p className="setlist-subtitle">{busySave ? 'Saving…' : 'Press kit'}</p>
-          </div>
-          <div className="setlist-header-actions">
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => void handleShare()}
-              disabled={busyShare}
-              title="Copy public share link"
-            >
-              <ExternalLink size={14} />
-            </button>
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => void handleDownload()}
-              disabled={busyDownload}
-              title="Download ZIP"
-            >
-              <Download size={14} />
-            </button>
-            {canEdit && (
+        <div className="song-list-sticky">
+          <header className="songlist-header setlist-header">
+            <div className="setlist-title-block">
+              <h1 className="song-list-heading setlist-title">{kit.name}</h1>
+              <p className="setlist-subtitle">{busySave ? 'Saving…' : 'Press kit'}</p>
+            </div>
+            <div className="setlist-header-actions">
               <button
                 type="button"
-                className="setlist-action-btn setlist-action-btn--danger"
-                onClick={() => void handleDelete()}
-                title="Delete press kit"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => void handleShare()}
+                disabled={busyShare}
+                title="Copy public share link"
               >
-                <Trash2 size={14} />
+                <ExternalLink size={14} />
               </button>
-            )}
-          </div>
-        </header>
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => void handleDownload()}
+                disabled={busyDownload}
+                title="Download ZIP"
+              >
+                <Download size={14} />
+              </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  className="setlist-action-btn setlist-action-btn--danger"
+                  onClick={() => void handleDelete()}
+                  title="Delete press kit"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          </header>
 
-        {/* ── Rich text editor ──────────────────────────────────────────── */}
-        {canEdit && editor && (
-          <div className="press-kit-toolbar">
-            <button type="button" title="Bold" className={`press-kit-toolbar-btn${editor.isActive('bold') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={14} /></button>
-            <button type="button" title="Italic" className={`press-kit-toolbar-btn${editor.isActive('italic') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={14} /></button>
-            <span className="press-kit-toolbar-sep" />
-            <button type="button" title="Heading 2" className={`press-kit-toolbar-btn${editor.isActive('heading', { level: 2 }) ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={14} /></button>
-            <button type="button" title="Heading 3" className={`press-kit-toolbar-btn${editor.isActive('heading', { level: 3 }) ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={14} /></button>
-            <span className="press-kit-toolbar-sep" />
-            <button type="button" title="Bullet list" className={`press-kit-toolbar-btn${editor.isActive('bulletList') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={14} /></button>
-            <button type="button" title="Ordered list" className={`press-kit-toolbar-btn${editor.isActive('orderedList') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={14} /></button>
-            <span className="press-kit-toolbar-sep" />
-            <button type="button" title="Horizontal rule" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().setHorizontalRule().run()}><Minus size={14} /></button>
-            <span className="press-kit-toolbar-sep" />
-            <button type="button" title="Undo" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}><Undo size={14} /></button>
-            <button type="button" title="Redo" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}><Redo size={14} /></button>
-          </div>
-        )}
+          {canEdit && editor && (
+            <div className="press-kit-toolbar">
+              <button type="button" title="Bold" className={`press-kit-toolbar-btn${editor.isActive('bold') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={14} /></button>
+              <button type="button" title="Italic" className={`press-kit-toolbar-btn${editor.isActive('italic') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={14} /></button>
+              <span className="press-kit-toolbar-sep" />
+              <button type="button" title="Heading 2" className={`press-kit-toolbar-btn${editor.isActive('heading', { level: 2 }) ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={14} /></button>
+              <button type="button" title="Heading 3" className={`press-kit-toolbar-btn${editor.isActive('heading', { level: 3 }) ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={14} /></button>
+              <span className="press-kit-toolbar-sep" />
+              <button type="button" title="Bullet list" className={`press-kit-toolbar-btn${editor.isActive('bulletList') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={14} /></button>
+              <button type="button" title="Ordered list" className={`press-kit-toolbar-btn${editor.isActive('orderedList') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={14} /></button>
+              <span className="press-kit-toolbar-sep" />
+              <button type="button" title="Horizontal rule" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().setHorizontalRule().run()}><Minus size={14} /></button>
+              <span className="press-kit-toolbar-sep" />
+              <button type="button" title="Undo" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}><Undo size={14} /></button>
+              <button type="button" title="Redo" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}><Redo size={14} /></button>
+            </div>
+          )}
+        </div>
 
         <div className="press-kit-editor-wrap">
           <EditorContent editor={editor} className="press-kit-editor" />
