@@ -9,15 +9,21 @@ import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
 import InputListEditor from '../components/InputListEditor';
 import BandPressKitPanel from '../components/BandPressKitPanel';
+import BandTechRiderPanel from '../components/BandTechRiderPanel';
 import TrashView from '../components/TrashView';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 
-type PressKitTabId = 'stageplots' | 'riders' | 'texts' | 'images';
+type PressKitTabId = 'texts' | 'images';
+type TechRiderTabId = 'stageplots' | 'riders';
 
 function isPressKitTab(value: string | null): value is PressKitTabId {
-  return value === 'stageplots' || value === 'riders' || value === 'texts' || value === 'images';
+  return value === 'texts' || value === 'images';
+}
+
+function isTechRiderTab(value: string | null): value is TechRiderTabId {
+  return value === 'stageplots' || value === 'riders';
 }
 
 export default function BandDetailPage() {
@@ -92,6 +98,9 @@ export default function BandDetailPage() {
   const bandSection = routeBandId === id ? (routeSegments[2] ?? 'library') : 'library';
   const bandResourceId = routeBandId === id ? (routeSegments[3] ?? null) : null;
   const activePressKitTab: PressKitTabId = bandSection === 'press-kit' && isPressKitTab(bandResourceId)
+    ? bandResourceId
+    : 'texts';
+  const activeTechRiderTab: TechRiderTabId = bandSection === 'tech-rider' && isTechRiderTab(bandResourceId)
     ? bandResourceId
     : 'stageplots';
 
@@ -654,13 +663,31 @@ export default function BandDetailPage() {
     );
   }
 
+  if (bandSection === 'tech-rider') {
+    return (
+      <BandTechRiderPanel
+        bandId={band.id}
+        bandName={band.name}
+        stageplots={bandStageplots}
+        riders={bandInputLists}
+        canEdit={canEditBand}
+        userId={user?.id ?? null}
+        userEmail={user?.email ?? null}
+        initialTab={activeTechRiderTab}
+        onTabChange={(tab) => {
+          const nextPath = `/bands/${band.id}/tech-rider/${tab}`;
+          if (pathname === nextPath) return;
+          navigate(nextPath);
+        }}
+      />
+    );
+  }
+
   if (bandSection === 'press-kit') {
     return (
       <BandPressKitPanel
         bandId={band.id}
         bandName={band.name}
-        stageplots={bandStageplots}
-        riders={bandInputLists}
         canEdit={canEditBand}
         userId={user?.id ?? null}
         userEmail={user?.email ?? null}

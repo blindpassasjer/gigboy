@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, FileText, Folder, ListMusic, Plus, Trash2, Users, X, ChevronsUpDown, Images, Map, ClipboardList } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText, Folder, ListMusic, Plus, Trash2, Users, X, ChevronsUpDown, Images, Map, ClipboardList, Wrench } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
@@ -88,6 +88,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
   const [collapsedBandPressKitIds, setCollapsedBandPressKitIds] = useState<string[]>([]);
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
+  const [collapsedBandTechRiderIds, setCollapsedBandTechRiderIds] = useState<string[]>([]);
 
   const sidebarMode = 'bands' as const;
   const [activeBandId, setActiveBandId] = useState<string | null>(() => {
@@ -268,6 +269,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const isBandSetlistsExpanded = (bandId: string) => !collapsedBandSetlistIds.includes(bandId);
 
+  const isBandTechRiderExpanded = (bandId: string) => !collapsedBandTechRiderIds.includes(bandId);
+
   const toggleBandSonglistsExpanded = (bandId: string) => {
     setCollapsedBandSonglistIds((prev) => (
       prev.includes(bandId)
@@ -286,6 +289,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const toggleBandSetlistsExpanded = (bandId: string) => {
     setCollapsedBandSetlistIds((prev) => (
+      prev.includes(bandId)
+        ? prev.filter((entry) => entry !== bandId)
+        : [...prev, bandId]
+    ));
+  };
+
+  const toggleBandTechRiderExpanded = (bandId: string) => {
+    setCollapsedBandTechRiderIds((prev) => (
       prev.includes(bandId)
         ? prev.filter((entry) => entry !== bandId)
         : [...prev, bandId]
@@ -532,38 +543,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 {isBandPressKitExpanded(band.id) && (
                   <div className="sidebar-nested-group">
                     <div
-                      className={`sidebar-list-item${pathname === `/bands/${band.id}/press-kit` || pathname === `/bands/${band.id}/press-kit/stageplots` ? ' active' : ''}`}
-                    >
-                      <button
-                        className="sidebar-list-item-btn"
-                        onClick={() => {
-                          clearGlobalSelection();
-                          navigate(`/bands/${band.id}/press-kit/stageplots`);
-                          onNavigate?.();
-                        }}
-                      >
-                        <Map size={14} />
-                        <span className="sidebar-list-name">Stageplots</span>
-                      </button>
-                    </div>
-
-                    <div
-                      className={`sidebar-list-item${pathname === `/bands/${band.id}/press-kit/riders` ? ' active' : ''}`}
-                    >
-                      <button
-                        className="sidebar-list-item-btn"
-                        onClick={() => {
-                          clearGlobalSelection();
-                          navigate(`/bands/${band.id}/press-kit/riders`);
-                          onNavigate?.();
-                        }}
-                      >
-                        <ClipboardList size={14} />
-                        <span className="sidebar-list-name">Input Lists</span>
-                      </button>
-                    </div>
-
-                    <div
                       className={`sidebar-list-item${pathname === `/bands/${band.id}/press-kit/texts` ? ' active' : ''}`}
                     >
                       <button
@@ -592,6 +571,54 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       >
                         <Images size={14} />
                         <span className="sidebar-list-name">Images</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="sidebar-setlists-header">
+                  <button
+                    type="button"
+                    className="sidebar-section-toggle"
+                    onClick={() => toggleBandTechRiderExpanded(band.id)}
+                    aria-expanded={isBandTechRiderExpanded(band.id)}
+                  >
+                    {isBandTechRiderExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span className="sidebar-section-title">Technical rider</span>
+                  </button>
+                </div>
+
+                {isBandTechRiderExpanded(band.id) && (
+                  <div className="sidebar-nested-group">
+                    <div
+                      className={`sidebar-list-item${pathname === `/bands/${band.id}/tech-rider` || pathname === `/bands/${band.id}/tech-rider/stageplots` ? ' active' : ''}`}
+                    >
+                      <button
+                        className="sidebar-list-item-btn"
+                        onClick={() => {
+                          clearGlobalSelection();
+                          navigate(`/bands/${band.id}/tech-rider/stageplots`);
+                          onNavigate?.();
+                        }}
+                      >
+                        <Map size={14} />
+                        <span className="sidebar-list-name">Stageplots</span>
+                      </button>
+                    </div>
+
+                    <div
+                      className={`sidebar-list-item${pathname === `/bands/${band.id}/tech-rider/riders` ? ' active' : ''}`}
+                    >
+                      <button
+                        className="sidebar-list-item-btn"
+                        onClick={() => {
+                          clearGlobalSelection();
+                          navigate(`/bands/${band.id}/tech-rider/riders`);
+                          onNavigate?.();
+                        }}
+                      >
+                        <ClipboardList size={14} />
+                        <span className="sidebar-list-name">Input Lists</span>
                       </button>
                     </div>
                   </div>
