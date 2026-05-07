@@ -357,7 +357,7 @@ export default function LoginPage() {
                 Cancel
               </button>
             </form>
-            <footer className="footer">From Norway - with chords</footer>
+            <footer className="footer">From Norway ♥ with chords</footer>
           </div>
         </div>
       </div>
@@ -490,7 +490,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <footer className="footer">From Norway - with chords</footer>
+          <footer className="footer">From Norway ♥ with chords</footer>
         </div>
       </div>
     </div>

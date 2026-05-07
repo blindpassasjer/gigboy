@@ -9073,6 +9073,21 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: 0;
 }
 
+.press-kit-section-header {
+  padding-bottom: 0.45rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.press-kit-section-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .press-kit-editor .ProseMirror {
   padding: 12px 14px;
   min-height: 160px;

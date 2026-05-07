@@ -429,6 +429,9 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
         <div className="press-kit-body-columns">
           <section className="press-kit-text-section">
+            <header className="press-kit-section-header">
+              <p className="press-kit-section-title">Text</p>
+            </header>
             <div className="press-kit-editor-wrap">
               <EditorContent editor={editor} className="press-kit-editor" />
             </div>
@@ -436,8 +439,10 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
           {/* ── Images ─────────────────────────────────────────────────── */}
           <section className="press-kit-images-section">
+            <header className="press-kit-section-header">
+              <p className="press-kit-section-title">Images</p>
+            </header>
             <div className="setlist-notes-editor">
-              <p className="songlist-item-meta" style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Images</p>
 
               {canEdit && (
                 <div

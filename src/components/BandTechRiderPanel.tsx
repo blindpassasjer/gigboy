@@ -5,7 +5,6 @@ import type { InputList, Stageplot } from '../types';
 import StageplotEditor from './StageplotEditor';
 import InputListEditor from './InputListEditor';
 import { useBands } from '../context/BandsContext';
-import { showPromptToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 
 interface Props {
@@ -58,7 +57,6 @@ export default function BandTechRiderPanel({
   }, [activeRider]);
 
   const {
-    addBandInputList,
     renameBandInputList,
     updateBandInputListIcon,
     setBandInputListPublicShare,
@@ -74,29 +72,6 @@ export default function BandTechRiderPanel({
       return riders[0]?.id ?? null;
     });
   }, [initialRiderId, riders]);
-
-  const handleCreateRider = async () => {
-    if (!canEdit) {
-      toast.error('Only band editors can create input lists.');
-      return;
-    }
-    const value = await showPromptToast('New input list name', {
-      placeholder: 'Band input list name...',
-      confirmLabel: 'Create rider',
-      cancelLabel: 'Cancel',
-    });
-    const name = value?.trim() ?? '';
-    if (!name) return;
-
-    const result = await addBandInputList(bandId, name);
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
-    if (result.riderId) {
-      setActiveRiderId(result.riderId);
-    }
-  };
 
   const handleCopyRiderPublicLink = async (riderId: string, alreadyEnabled: boolean | undefined) => {
     if (!alreadyEnabled) {
