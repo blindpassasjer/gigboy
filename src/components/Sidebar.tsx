@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, FileText, Folder, ListMusic, Plus, Trash2, Users, X, ChevronsUpDown, ClipboardList } from 'lucide-react';
+import { ChevronDown, ChevronRight, Folder, ListMusic, Newspaper, Plus, SlidersHorizontal, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
@@ -517,7 +517,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       onNavigate?.();
                     }}
                   >
-                    <FileText size={14} />
+                    <Newspaper size={14} />
                     <span className="sidebar-list-name">Press Kit</span>
                   </button>
                 </div>
@@ -533,7 +533,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       onNavigate?.();
                     }}
                   >
-                    <ClipboardList size={14} />
+                    <SlidersHorizontal size={14} />
                     <span className="sidebar-list-name">Technical rider</span>
                   </button>
                 </div>

@@ -3,6 +3,7 @@ import { Download, ExternalLink, FileText, Images } from 'lucide-react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
+import { showPromptToast } from '../utils/toastDialogs';
 import { createPressKitShare } from '../lib/pressKitApi';
 import { db, storage } from '../lib/firebase';
 import { generatePressKitZip, type PressKitImageItem, type PressKitTextItem } from '../lib/pressKitZip';
@@ -58,8 +59,11 @@ export default function BandPressKitPanel({
   const [texts, setTexts] = useState<Array<PressKitTextItem & { id: string }>>([]);
   const [imageAssets, setImageAssets] = useState<PressKitImageAsset[]>([]);
   const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
-  const [textTitleDraft, setTextTitleDraft] = useState('');
-  const [textBodyDraft, setTextBodyDraft] = useState('');
+  const [loadingTexts, setLoadingTexts] = useState(false);
+  const [activeTextId, setActiveTextId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [editingBody, setEditingBody] = useState('');
+  const [busySaveText, setBusySaveText] = useState(false);
   const [busyDownload, setBusyDownload] = useState(false);
   const [busyShare, setBusyShare] = useState(false);
   const [busyImageUpload, setBusyImageUpload] = useState(false);
@@ -73,11 +77,47 @@ export default function BandPressKitPanel({
   const allImageIds = useMemo(() => imageAssets.map((entry) => entry.id), [imageAssets]);
   const allImagesSelected = imageAssets.length > 0 && selectedImageIds.length === imageAssets.length;
 
+  const activeText = useMemo(
+    () => texts.find((t) => t.id === activeTextId) ?? null,
+    [activeTextId, texts],
+  );
+
   useEffect(() => {
     setActiveTab((current) => (current === initialTab ? current : initialTab));
   }, [initialTab]);
 
   // removed: stageplot/rider effects (now handled by BandTechRiderPanel)
+
+  useEffect(() => {
+    if (!db) return;
+    let mounted = true;
+    setLoadingTexts(true);
+    void getDocs(query(collection(db, 'bands', bandId, 'pressKitTexts')))
+      .then((snapshot) => {
+        if (!mounted) return;
+        const loaded = snapshot.docs.map((entry) => {
+          const data = entry.data() as Record<string, unknown>;
+          return {
+            id: entry.id,
+            title: typeof data.title === 'string' ? data.title : 'Untitled',
+            body: typeof data.body === 'string' ? data.body : '',
+          };
+        });
+        setTexts(loaded);
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        const msg = error?.code === 'permission-denied'
+          ? 'You do not have permission to view press kit texts.'
+          : 'Failed to load press kit texts.';
+        toast.error(msg);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingTexts(false);
+      });
+    return () => { mounted = false; };
+  }, [bandId]);
 
   useEffect(() => {
     if (!db) return;
@@ -287,6 +327,54 @@ export default function BandPressKitPanel({
     setSelectedImageIds((current) => current.filter((id) => id !== asset.id));
   };
 
+  const handleCreateText = async () => {
+    if (!canEdit) { toast.error('Only band editors can create text entries.'); return; }
+    const value = await showPromptToast('New text title', {
+      placeholder: 'Short Bio, Press Release...',
+      confirmLabel: 'Create',
+      cancelLabel: 'Cancel',
+    });
+    const title = value?.trim() ?? '';
+    if (!title) return;
+    if (!db) return;
+    const textId = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    await setDoc(doc(db, 'bands', bandId, 'pressKitTexts', textId), {
+      title,
+      body: '',
+      createdAt,
+      createdBy: userId ?? null,
+    });
+    const newText = { id: textId, title, body: '' };
+    setTexts((current) => [...current, newText]);
+    setActiveTextId(textId);
+    setEditingTitle(title);
+    setEditingBody('');
+  };
+
+  const handleSaveText = async () => {
+    if (!activeTextId || !db) return;
+    setBusySaveText(true);
+    try {
+      const title = editingTitle.trim() || 'Untitled';
+      const body = editingBody;
+      await setDoc(doc(db, 'bands', bandId, 'pressKitTexts', activeTextId), { title, body }, { merge: true });
+      setTexts((current) => current.map((t) => t.id === activeTextId ? { ...t, title, body } : t));
+      toast.success('Text saved.');
+    } catch {
+      toast.error('Failed to save text.');
+    } finally {
+      setBusySaveText(false);
+    }
+  };
+
+  const handleDeleteText = async (textId: string) => {
+    if (!canEdit || !db) return;
+    await deleteDoc(doc(db, 'bands', bandId, 'pressKitTexts', textId));
+    setTexts((current) => current.filter((t) => t.id !== textId));
+    if (activeTextId === textId) setActiveTextId(null);
+  };
+
   return (
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
@@ -338,61 +426,89 @@ export default function BandPressKitPanel({
         </div>
 
         {activeTab === 'texts' && (
-          <div className="songlist-body" style={{ gap: '0.75rem', display: 'grid' }}>
-            <div className="setlist-notes-editor">
-              <input
-                type="text"
-                value={textTitleDraft}
-                onChange={(event) => setTextTitleDraft(event.target.value)}
-                placeholder="Text title (for example: Short Bio)"
-                className="songlist-name-input"
-                disabled={!canEdit}
-              />
-              <textarea
-                value={textBodyDraft}
-                onChange={(event) => setTextBodyDraft(event.target.value)}
-                placeholder="Write your text content here"
-                rows={6}
-                className="setlist-song-note-input"
-                disabled={!canEdit}
-              />
+          <div className="songlist-body" style={{ display: 'grid', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <p className="songlist-item-meta" style={{ margin: 0 }}>
+                Add and manage press kit texts for your band.
+              </p>
               <button
                 type="button"
                 className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => void handleCreateText()}
                 disabled={!canEdit}
-                onClick={() => {
-                  const title = textTitleDraft.trim();
-                  const body = textBodyDraft.trim();
-                  if (!title || !body) {
-                    toast.error('Title and text body are required.');
-                    return;
-                  }
-                  setTexts((current) => [...current, { id: crypto.randomUUID(), title, body }]);
-                  setTextTitleDraft('');
-                  setTextBodyDraft('');
-                }}
               >
-                Add Text
+                Create text
               </button>
             </div>
-
-            {texts.length === 0 ? <p className="bands-status">No text entries added.</p> : texts.map((entry) => (
-              <article key={entry.id} className="songlist-item" style={{ display: 'block' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
-                  <strong>{entry.title}</strong>
+            {loadingTexts ? <p className="bands-status">Loading texts…</p> : null}
+            {!loadingTexts && texts.length === 0 ? <p className="bands-status">No text entries yet.</p> : null}
+            {texts.map((entry) => (
+              <div key={entry.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                  {entry.title}
+                </span>
+                <span className="songlist-item-meta">{entry.body ? `${entry.body.length} chars` : 'empty'}</span>
+                <button
+                  type="button"
+                  className={`setlist-action-btn setlist-action-btn--secondary${activeTextId === entry.id ? ' setlist-action-btn--active' : ''}`}
+                  onClick={() => {
+                    setActiveTextId(entry.id);
+                    setEditingTitle(entry.title);
+                    setEditingBody(entry.body);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+            ))}
+            {activeText ? (
+              <div className="setlist-notes-editor">
+                <input
+                  type="text"
+                  value={editingTitle}
+                  onChange={(event) => setEditingTitle(event.target.value)}
+                  placeholder="Text title"
+                  className="songlist-name-input"
+                  disabled={!canEdit}
+                />
+                <textarea
+                  value={editingBody}
+                  onChange={(event) => setEditingBody(event.target.value)}
+                  placeholder="Write your text content here"
+                  rows={6}
+                  className="setlist-song-note-input"
+                  disabled={!canEdit}
+                />
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      onClick={() => void handleSaveText()}
+                      disabled={busySaveText}
+                    >
+                      Save
+                    </button>
+                  )}
                   {canEdit && (
                     <button
                       type="button"
                       className="setlist-action-btn setlist-action-btn--danger"
-                      onClick={() => setTexts((current) => current.filter((item) => item.id !== entry.id))}
+                      onClick={() => void handleDeleteText(activeText.id)}
                     >
-                      Remove
+                      Delete
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => setActiveTextId(null)}
+                  >
+                    Close
+                  </button>
                 </div>
-                <p className="songlist-item-meta" style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem' }}>{entry.body}</p>
-              </article>
-            ))}
+              </div>
+            ) : null}
           </div>
         )}
 
