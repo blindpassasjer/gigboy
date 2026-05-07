@@ -7,6 +7,11 @@ import type { Stageplot, TechnicalRider } from '../types';
 import { createPressKitShare } from '../lib/pressKitApi';
 import { db, storage } from '../lib/firebase';
 import { generatePressKitZip, type PressKitImageItem, type PressKitTextItem } from '../lib/pressKitZip';
+import StageplotEditor from './StageplotEditor';
+import TechnicalRiderEditor from './TechnicalRiderEditor';
+import { useBands } from '../context/BandsContext';
+import { showPromptToast } from '../utils/toastDialogs';
+import { buildBandPublicShareUrl } from '../utils/publicShare';
 
 interface Props {
   bandId: string;
@@ -58,6 +63,8 @@ export default function BandPressKitPanel({
   const [activeTab, setActiveTab] = useState<TabId>('stageplots');
   const [selectedStageplotIds, setSelectedStageplotIds] = useState<string[]>([]);
   const [selectedRiderIds, setSelectedRiderIds] = useState<string[]>([]);
+  const [activeStageplotId, setActiveStageplotId] = useState<string | null>(null);
+  const [activeRiderId, setActiveRiderId] = useState<string | null>(null);
   const [texts, setTexts] = useState<Array<PressKitTextItem & { id: string }>>([]);
   const [imageAssets, setImageAssets] = useState<PressKitImageAsset[]>([]);
   const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
@@ -73,9 +80,17 @@ export default function BandPressKitPanel({
     () => stageplots.filter((entry) => selectedStageplotIds.includes(entry.id)),
     [selectedStageplotIds, stageplots]
   );
+  const activeStageplot = useMemo(
+    () => stageplots.find((entry) => entry.id === activeStageplotId) ?? null,
+    [activeStageplotId, stageplots]
+  );
   const selectedRiders = useMemo(
     () => riders.filter((entry) => selectedRiderIds.includes(entry.id)),
     [selectedRiderIds, riders]
+  );
+  const activeRider = useMemo(
+    () => riders.find((entry) => entry.id === activeRiderId) ?? null,
+    [activeRiderId, riders]
   );
   const selectedImages = useMemo(
     () => imageAssets.filter((entry) => selectedImageIds.includes(entry.id)),
@@ -83,6 +98,136 @@ export default function BandPressKitPanel({
   );
   const allImageIds = useMemo(() => imageAssets.map((entry) => entry.id), [imageAssets]);
   const allImagesSelected = imageAssets.length > 0 && selectedImageIds.length === imageAssets.length;
+  const {
+    addBandStageplot,
+    renameBandStageplot,
+    updateBandStageplotIcon,
+    setBandStageplotPublicShare,
+    updateBandStageplotContent,
+    deleteBandStageplot,
+    addBandTechnicalRider,
+    renameBandTechnicalRider,
+    updateBandTechnicalRiderIcon,
+    setBandTechnicalRiderPublicShare,
+    updateBandTechnicalRiderContent,
+    deleteBandTechnicalRider,
+  } = useBands();
+
+  useEffect(() => {
+    setSelectedStageplotIds((current) => current.filter((id) => stageplots.some((entry) => entry.id === id)));
+    setActiveStageplotId((current) => {
+      if (current && stageplots.some((entry) => entry.id === current)) return current;
+      return stageplots[0]?.id ?? null;
+    });
+  }, [stageplots]);
+
+  useEffect(() => {
+    setSelectedRiderIds((current) => current.filter((id) => riders.some((entry) => entry.id === id)));
+    setActiveRiderId((current) => {
+      if (current && riders.some((entry) => entry.id === current)) return current;
+      return riders[0]?.id ?? null;
+    });
+  }, [riders]);
+
+  const handleCreateStageplot = async () => {
+    if (!canEdit) {
+      toast.error('Only band editors can create stageplots.');
+      return;
+    }
+
+    const value = await showPromptToast('New stageplot name', {
+      placeholder: 'Band stageplot name...',
+      confirmLabel: 'Create stageplot',
+      cancelLabel: 'Cancel',
+    });
+    const name = value?.trim() ?? '';
+    if (!name) return;
+
+    const result = await addBandStageplot(bandId, name);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    if (result.stageplotId) {
+      setActiveStageplotId(result.stageplotId);
+      setSelectedStageplotIds((current) => [...new Set([...current, result.stageplotId as string])]);
+    }
+  };
+
+  const handleCreateRider = async () => {
+    if (!canEdit) {
+      toast.error('Only band editors can create technical riders.');
+      return;
+    }
+
+    const value = await showPromptToast('New technical rider name', {
+      placeholder: 'Band technical rider name...',
+      confirmLabel: 'Create rider',
+      cancelLabel: 'Cancel',
+    });
+    const name = value?.trim() ?? '';
+    if (!name) return;
+
+    const result = await addBandTechnicalRider(bandId, name);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    if (result.riderId) {
+      setActiveRiderId(result.riderId);
+      setSelectedRiderIds((current) => [...new Set([...current, result.riderId as string])]);
+    }
+  };
+
+  const handleCopyStageplotPublicLink = async (stageplotId: string, alreadyEnabled: boolean | undefined) => {
+    if (!alreadyEnabled) {
+      const error = await setBandStageplotPublicShare(bandId, stageplotId, true);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+    }
+
+    const publicUrl = buildBandPublicShareUrl(
+      window.location.origin,
+      bandId,
+      bandName,
+      'stageplots',
+      stageplotId
+    );
+
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success('Public link copied to clipboard!');
+    } catch {
+      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
+    }
+  };
+
+  const handleCopyRiderPublicLink = async (riderId: string, alreadyEnabled: boolean | undefined) => {
+    if (!alreadyEnabled) {
+      const error = await setBandTechnicalRiderPublicShare(bandId, riderId, true);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+    }
+
+    const publicUrl = buildBandPublicShareUrl(
+      window.location.origin,
+      bandId,
+      bandName,
+      'riders',
+      riderId
+    );
+
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success('Public link copied to clipboard!');
+    } catch {
+      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
+    }
+  };
 
   useEffect(() => {
     if (!db) return;
@@ -360,60 +505,186 @@ export default function BandPressKitPanel({
         </div>
 
         {activeTab === 'stageplots' && (
-          <div className="songlist-body">
+          <div className="songlist-body" style={{ display: 'grid', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <p className="songlist-item-meta" style={{ margin: 0 }}>
+                Manage stageplots and select which ones are included in this Press Kit.
+              </p>
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => void handleCreateStageplot()}
+                disabled={!canEdit}
+              >
+                Create stageplot
+              </button>
+            </div>
             {stageplots.length === 0 ? (
               <p className="bands-status">No stageplots available yet.</p>
             ) : (
               stageplots.map((entry) => {
                 const checked = selectedStageplotIds.includes(entry.id);
                 return (
-                  <label key={entry.id} className="songlist-item" style={{ gap: '0.75rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(event) => {
-                        setSelectedStageplotIds((current) => (
-                          event.target.checked
-                            ? [...current, entry.id]
-                            : current.filter((id) => id !== entry.id)
-                        ));
-                      }}
-                    />
-                    <span className="songlist-item-title">{entry.name}</span>
-                    <span className="songlist-item-meta">{entry.items.length} items</span>
-                  </label>
+                  <div key={entry.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: 0, flex: 1, minWidth: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          setSelectedStageplotIds((current) => (
+                            event.target.checked
+                              ? [...current, entry.id]
+                              : current.filter((id) => id !== entry.id)
+                          ));
+                        }}
+                      />
+                      <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                      <span className="songlist-item-meta">{entry.items.length} items</span>
+                    </label>
+                    <button
+                      type="button"
+                      className={`setlist-action-btn setlist-action-btn--secondary${activeStageplotId === entry.id ? ' setlist-action-btn--active' : ''}`}
+                      onClick={() => setActiveStageplotId(entry.id)}
+                    >
+                      Edit
+                    </button>
+                  </div>
                 );
               })
             )}
+
+            {activeStageplot ? (
+              <StageplotEditor
+                stageplot={activeStageplot}
+                canEdit={canEdit}
+                currentUser={{
+                  id: userId,
+                  name: userEmail ?? 'Unknown user',
+                  avatar: null,
+                }}
+                onRename={async (name) => {
+                  const error = await renameBandStageplot(bandId, activeStageplot.id, name);
+                  if (error) toast.error(error);
+                }}
+                onUpdateIcon={async (icon) => {
+                  const error = await updateBandStageplotIcon(bandId, activeStageplot.id, icon);
+                  if (error) toast.error(error);
+                }}
+                onDelete={async () => {
+                  const error = await deleteBandStageplot(bandId, activeStageplot.id);
+                  if (error) {
+                    toast.error(error);
+                    return;
+                  }
+                  setSelectedStageplotIds((current) => current.filter((id) => id !== activeStageplot.id));
+                }}
+                onSaveContent={async (items, drawingLayers) => {
+                  const error = await updateBandStageplotContent({
+                    bandId,
+                    stageplotId: activeStageplot.id,
+                    items,
+                    drawingLayers,
+                  });
+                  if (error) {
+                    toast.error(error);
+                    throw new Error(error);
+                  }
+                }}
+                onCopyPublicLink={async () => {
+                  await handleCopyStageplotPublicLink(activeStageplot.id, activeStageplot.publicShareEnabled);
+                }}
+              />
+            ) : null}
           </div>
         )}
 
         {activeTab === 'riders' && (
-          <div className="songlist-body">
+          <div className="songlist-body" style={{ display: 'grid', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <p className="songlist-item-meta" style={{ margin: 0 }}>
+                Manage technical riders and select which ones are included in this Press Kit.
+              </p>
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => void handleCreateRider()}
+                disabled={!canEdit}
+              >
+                Create rider
+              </button>
+            </div>
             {riders.length === 0 ? (
               <p className="bands-status">No technical riders available yet.</p>
             ) : (
               riders.map((entry) => {
                 const checked = selectedRiderIds.includes(entry.id);
                 return (
-                  <label key={entry.id} className="songlist-item" style={{ gap: '0.75rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(event) => {
-                        setSelectedRiderIds((current) => (
-                          event.target.checked
-                            ? [...current, entry.id]
-                            : current.filter((id) => id !== entry.id)
-                        ));
-                      }}
-                    />
-                    <span className="songlist-item-title">{entry.name}</span>
-                    <span className="songlist-item-meta">{entry.lines.length} lines</span>
-                  </label>
+                  <div key={entry.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: 0, flex: 1, minWidth: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          setSelectedRiderIds((current) => (
+                            event.target.checked
+                              ? [...current, entry.id]
+                              : current.filter((id) => id !== entry.id)
+                          ));
+                        }}
+                      />
+                      <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                      <span className="songlist-item-meta">{entry.lines.length} lines</span>
+                    </label>
+                    <button
+                      type="button"
+                      className={`setlist-action-btn setlist-action-btn--secondary${activeRiderId === entry.id ? ' setlist-action-btn--active' : ''}`}
+                      onClick={() => setActiveRiderId(entry.id)}
+                    >
+                      Edit
+                    </button>
+                  </div>
                 );
               })
             )}
+
+            {activeRider ? (
+              <TechnicalRiderEditor
+                rider={activeRider}
+                canEdit={canEdit}
+                onRename={async (name) => {
+                  const error = await renameBandTechnicalRider(bandId, activeRider.id, name);
+                  if (error) toast.error(error);
+                }}
+                onUpdateIcon={async (icon) => {
+                  const error = await updateBandTechnicalRiderIcon(bandId, activeRider.id, icon);
+                  if (error) toast.error(error);
+                }}
+                onDelete={canEdit ? async () => {
+                  const error = await deleteBandTechnicalRider(bandId, activeRider.id);
+                  if (error) {
+                    toast.error(error);
+                    return;
+                  }
+                  setSelectedRiderIds((current) => current.filter((id) => id !== activeRider.id));
+                } : undefined}
+                onSaveContent={async (content) => {
+                  const error = await updateBandTechnicalRiderContent({
+                    bandId,
+                    riderId: activeRider.id,
+                    lines: content.lines,
+                    preferredEquipment: content.preferredEquipment,
+                    inventoryEquipment: content.inventoryEquipment,
+                  });
+                  if (error) {
+                    toast.error(error);
+                    throw new Error(error);
+                  }
+                }}
+                onCopyPublicLink={async () => {
+                  await handleCopyRiderPublicLink(activeRider.id, activeRider.publicShareEnabled);
+                }}
+              />
+            ) : null}
           </div>
         )}
 
