@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Download, FileText, Images, Map, ClipboardList } from 'lucide-react';
+import { Download, ArrowDownToLine } from 'lucide-react';
 import BrandMark from '../components/BrandMark';
 import { fetchPublicPressKit } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
@@ -37,8 +37,6 @@ function sanitizePressKitHtml(raw: string): string {
       });
       return fragment;
     }
-
-    const clean = doc.createElement(tag);
     if (tag === 'a') {
       const href = source.getAttribute('href') ?? '';
       try {
@@ -81,10 +79,10 @@ function escapeHtml(raw: string): string {
 
 export default function PublicBandPressKitPage() {
   const { token } = useParams();
-  const [activeTab, setActiveTab] = useState<TabId>('stageplots');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyDownload, setBusyDownload] = useState(false);
+  const [downloadingImage, setDownloadingImage] = useState<string | null>(null);
   const [payload, setPayload] = useState<Awaited<ReturnType<typeof fetchPublicPressKit>> | null>(null);
 
   useEffect(() => {
@@ -116,6 +114,23 @@ export default function PublicBandPressKitPage() {
       mounted = false;
     };
   }, [token]);
+
+  const handleImageDownload = async (url: string, title: string) => {
+    setDownloadingImage(url);
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const ext = blob.type.split('/')[1] ?? 'jpg';
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = `${slugifyFileName(title)}.${ext}`;
+      anchor.click();
+      URL.revokeObjectURL(blobUrl);
+    } finally {
+      setDownloadingImage(null);
+    }
+  };
 
   const handleDownload = async () => {
     if (!payload) return;
@@ -172,79 +187,52 @@ export default function PublicBandPressKitPage() {
         </div>
       </header>
 
-      <div className="public-presskit-shell">
-        <div className="setlist-tabs" style={{ marginBottom: '0.8rem' }}>
-          {([
-            { id: 'stageplots', label: `Stageplots (${payload.stageplots.length})`, icon: <Map size={14} /> },
-            { id: 'riders', label: `Input Lists (${payload.riders.length})`, icon: <ClipboardList size={14} /> },
-            { id: 'texts', label: `Texts (${payload.texts.length})`, icon: <FileText size={14} /> },
-            { id: 'images', label: `Images (${payload.images.length})`, icon: <Images size={14} /> },
-          ] as const).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`setlist-tab${activeTab === tab.id ? ' active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {activeTab === 'stageplots' && (
-          <div className="songlist-body">
-            {payload.stageplots.length === 0
-              ? <p className="bands-status">No stageplots included.</p>
-              : payload.stageplots.map((entry) => (
-                <article key={entry.id} className="songlist-item" style={{ display: 'block' }}>
-                  <strong>{entry.name}</strong>
-                  <p className="songlist-item-meta" style={{ marginTop: '0.35rem' }}>{entry.items.length} items</p>
-                </article>
-              ))}
-          </div>
-        )}
-
-        {activeTab === 'riders' && (
-          <div className="songlist-body">
-            {payload.riders.length === 0
-              ? <p className="bands-status">No input lists included.</p>
-              : payload.riders.map((entry) => (
-                <article key={entry.id} className="songlist-item" style={{ display: 'block' }}>
-                  <strong>{entry.name}</strong>
-                  <p className="songlist-item-meta" style={{ marginTop: '0.35rem' }}>{entry.lines.length} lines</p>
-                </article>
-              ))}
-          </div>
-        )}
-
-        {activeTab === 'texts' && (
-          <div className="songlist-body public-presskit-text-grid">
-            {payload.texts.length === 0
-              ? <p className="bands-status">No text entries included.</p>
-              : payload.texts.map((entry) => (
-                <article key={`${entry.title}-${entry.body.slice(0, 16)}`} className="songlist-item public-presskit-text-item" style={{ display: 'block' }}>
-                  <h2 className="public-presskit-text-title">{entry.title}</h2>
+      <div className="public-presskit-body">
+        {payload.texts.length > 0 && (
+          <section className="public-presskit-texts-section">
+            <h2 className="public-presskit-section-heading">About</h2>
+            <div className="public-presskit-text-grid">
+              {payload.texts.map((entry) => (
+                <article key={`${entry.title}-${entry.body.slice(0, 16)}`} className="public-presskit-text-item">
+                  <h3 className="public-presskit-text-title">{entry.title}</h3>
                   <div
                     className="public-presskit-rich-text"
-                      dangerouslySetInnerHTML={{ __html: sanitizePressKitHtml(entry.body) || `<p>${escapeHtml(entry.body)}</p>` }}
+                    dangerouslySetInnerHTML={{ __html: sanitizePressKitHtml(entry.body) || `<p>${escapeHtml(entry.body)}</p>` }}
                   />
                 </article>
               ))}
-          </div>
+            </div>
+          </section>
         )}
 
-        {activeTab === 'images' && (
-          <div className="songlist-body public-presskit-images-grid">
-            {payload.images.length === 0
-              ? <p className="bands-status">No images included.</p>
-              : payload.images.map((entry) => (
-                <article key={`${entry.title}-${entry.url}`} className="songlist-item public-presskit-image-card" style={{ display: 'block' }}>
+        {payload.images.length > 0 && (
+          <section className="public-presskit-images-section">
+            <h2 className="public-presskit-section-heading">Photos</h2>
+            <div className="public-presskit-images-grid">
+              {payload.images.map((entry) => (
+                <article key={`${entry.title}-${entry.url}`} className="public-presskit-image-card">
                   <img src={entry.url} alt={entry.title} className="public-presskit-image" loading="lazy" />
-                  <p className="public-presskit-image-title">{entry.title}</p>
+                  <div className="public-presskit-image-footer">
+                    <p className="public-presskit-image-title">{entry.title}</p>
+                    <button
+                      type="button"
+                      className="public-presskit-dl-btn"
+                      disabled={downloadingImage === entry.url}
+                      onClick={() => void handleImageDownload(entry.url, entry.title)}
+                      title="Download high-res image"
+                    >
+                      <ArrowDownToLine size={13} />
+                      <span>{downloadingImage === entry.url ? 'Downloading…' : 'Download'}</span>
+                    </button>
+                  </div>
                 </article>
               ))}
-          </div>
+            </div>
+          </section>
+        )}
+
+        {payload.texts.length === 0 && payload.images.length === 0 && (
+          <p className="public-setlist-status">This press kit has no content yet.</p>
         )}
       </div>
 

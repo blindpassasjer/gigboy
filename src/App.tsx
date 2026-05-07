@@ -40,8 +40,7 @@ import ProfilePage from './pages/ProfilePage';
 import PricingPage from './pages/PricingPage';
 import CheckoutResultPage from './pages/CheckoutResultPage';
 import PublicBandSetlistPage from './pages/PublicBandSetlistPage';
-import PublicBandStageplotPage from './pages/PublicBandStageplotPage';
-import PublicBandInputListPage from './pages/PublicBandInputListPage';
+import PublicBandRiderPage from './pages/PublicBandRiderPage';
 import PublicBandPressKitPage from './pages/PublicBandPressKitPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
@@ -101,10 +100,8 @@ function PricingRoute() {
 const router = createBrowserRouter([
   { path: '/public/bands/:bandId/:bandName/setlists/:setlistId', element: <PublicBandSetlistPage /> },
   { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage /> },
-  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandStageplotPage /> },
-  { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandStageplotPage /> },
-  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandInputListPage /> },
-  { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandInputListPage /> },
+  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandRiderPage /> },
+  { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandRiderPage /> },
   { path: '/public/press-kit/:token', element: <PublicBandPressKitPage /> },
   { path: '/pricing', element: <PricingRoute /> },
   { path: '/checkout-result', element: <CheckoutResultPage /> },
