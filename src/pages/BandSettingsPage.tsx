@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
@@ -89,9 +90,23 @@ export default function BandSettingsPage() {
 
   const isOwner = band.ownerId === user?.id;
   const canEditBand = isOwner || band.memberRoles[user?.id ?? ''] === 'editor';
-  const bandHasSubscription = band.billingPlan === 'band';
+  const hasBandBillingSnapshot =
+    band.billingPlan !== undefined
+    || band.billingSubscriptionStatus !== undefined
+    || band.billingCurrentPeriodEnd !== undefined;
+  const fallbackToOwnerPlan = isOwner && !hasBandBillingSnapshot;
+  const effectiveBandPlan = hasBandBillingSnapshot
+    ? (band.billingPlan ?? 'free')
+    : (fallbackToOwnerPlan && user?.plan === 'band' ? 'band' : 'free');
+  const bandHasSubscription = effectiveBandPlan === 'band';
+  const effectiveSubscriptionStatus = hasBandBillingSnapshot
+    ? (band.billingSubscriptionStatus ?? null)
+    : (fallbackToOwnerPlan ? user?.subscriptionStatus ?? null : null);
+  const effectiveRenewalPeriodEnd = hasBandBillingSnapshot
+    ? (band.billingCurrentPeriodEnd ?? null)
+    : (fallbackToOwnerPlan ? user?.currentPeriodEnd ?? null : null);
   const bandMemberLimit = band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0));
-  const bandRenewalDate = formatPeriodEnd(band.billingCurrentPeriodEnd ?? null);
+  const bandRenewalDate = formatPeriodEnd(effectiveRenewalPeriodEnd);
 
   const applyAppearance = async (nextIcon: string, nextColor: string | undefined) => {
     if (!canEditBand || busyAppearance) return;
@@ -176,17 +191,39 @@ export default function BandSettingsPage() {
         </div>
       </header>
 
-      <div className="bands-page-toolbar">
-        <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">
-          Back to band library
-        </Link>
-      </div>
+      <Link to={`/bands/${band.id}/library`} className="back-link">
+        <ArrowLeft size={16} /> Back to band library
+      </Link>
 
       <div className="modal-content bands-settings-layout">
         <section className="bands-panel">
+          <h2 className="bands-section-heading">
+            Subscription
+          </h2>
+          <article className="bands-subscription-row">
+            <div className="bands-subscription-copy">
+              <strong>{bandHasSubscription ? 'Band plan active' : 'Free plan'}</strong>
+              <span>
+                {bandHasSubscription
+                  ? `${formatSubscriptionStatus(effectiveSubscriptionStatus)} · ${bandMemberLimit} members`
+                  : 'No active Band subscription for this band.'}
+              </span>
+              {!hasBandBillingSnapshot && fallbackToOwnerPlan ? (
+                <span>Showing owner account subscription until band billing snapshot syncs.</span>
+              ) : null}
+              <span>{bandRenewalDate ? `Renews ${bandRenewalDate}` : 'Renewal date unavailable'}</span>
+            </div>
+            <Link
+              to="/pricing"
+              state={{ bandId: band.id }}
+              className="setlist-action-btn setlist-action-btn--secondary"
+            >
+              Open billing
+            </Link>
+          </article>
 
           {/* ── Profile ── */}
-          <h2 className="bands-section-heading">
+          <h2 className="bands-section-heading bands-section-heading--spaced">
             Profile
           </h2>
 
@@ -269,28 +306,6 @@ export default function BandSettingsPage() {
             </button>
             <p className="bands-inline-note">Color updates immediately.</p>
           </div>
-
-          <h2 className="bands-section-heading bands-section-heading--spaced">
-            Subscription
-          </h2>
-          <article className="bands-subscription-row">
-            <div className="bands-subscription-copy">
-              <strong>{bandHasSubscription ? 'Band plan active' : 'Free plan'}</strong>
-              <span>
-                {bandHasSubscription
-                  ? `${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null)} · ${bandMemberLimit} members`
-                  : 'No active Band subscription for this band.'}
-              </span>
-              <span>{bandRenewalDate ? `Renews ${bandRenewalDate}` : 'Renewal date unavailable'}</span>
-            </div>
-            <Link
-              to="/pricing"
-              state={{ bandId: band.id }}
-              className="setlist-action-btn setlist-action-btn--secondary"
-            >
-              Open billing
-            </Link>
-          </article>
         </section>
 
         {/* ── Members ── */}
