@@ -63,14 +63,17 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     bandSetlistsByBandId,
     bandStageplotsByBandId,
     bandInputListsByBandId,
+    bandPressKitsByBandId,
     bandTrashByBandId,
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
     refreshBandStageplots,
     refreshBandInputLists,
+    refreshBandPressKits,
     refreshBandTrash,
     createBand,
+    addBandPressKit,
     addSongToBandLibrary,
     addBandSongList,
     addSongToBandSongList,
@@ -87,6 +90,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
   const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
+  const [collapsedBandPressKitIds, setCollapsedBandPressKitIds] = useState<string[]>([]);
 
   const sidebarMode = 'bands' as const;
   const [activeBandId, setActiveBandId] = useState<string | null>(() => {
@@ -146,6 +150,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       .map((band) => band.id)
       .filter((bandId) => bandInputListsByBandId[bandId] === undefined);
 
+    const missingBandPressKitCollections = bands
+      .map((band) => band.id)
+      .filter((bandId) => bandPressKitsByBandId[bandId] === undefined);
+
     const missingBandTrashCollections = bands
       .map((band) => band.id)
       .filter((bandId) => bandTrashByBandId[bandId] === undefined);
@@ -156,6 +164,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       && missingBandSetlistCollections.length === 0
       && missingBandStageplotCollections.length === 0
       && missingBandRiderCollections.length === 0
+      && missingBandPressKitCollections.length === 0
       && missingBandTrashCollections.length === 0
     ) return;
 
@@ -189,6 +198,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       });
     });
 
+    missingBandPressKitCollections.forEach((bandId) => {
+      void refreshBandPressKits(bandId).catch(() => {
+        // Sidebar counts are best-effort; detailed errors are handled on band pages.
+      });
+    });
+
     missingBandTrashCollections.forEach((bandId) => {
       void refreshBandTrash(bandId).catch(() => {
         // Sidebar counts are best-effort; detailed errors are handled on band pages.
@@ -198,6 +213,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     bandTrashByBandId,
     bandStageplotsByBandId,
     bandInputListsByBandId,
+    bandPressKitsByBandId,
     bandSetlistsByBandId,
     bandSongListsByBandId,
     bandSongsByBandId,
@@ -206,6 +222,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     refreshBandStageplots,
     refreshBandSetlists,
     refreshBandInputLists,
+    refreshBandPressKits,
     refreshBandSongLists,
     refreshBandSongs,
   ]);
@@ -265,6 +282,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const isBandSetlistsExpanded = (bandId: string) => !collapsedBandSetlistIds.includes(bandId);
 
+  const isBandPressKitsExpanded = (bandId: string) => !collapsedBandPressKitIds.includes(bandId);
+
   const toggleBandSonglistsExpanded = (bandId: string) => {
     setCollapsedBandSonglistIds((prev) => (
       prev.includes(bandId)
@@ -275,6 +294,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const toggleBandSetlistsExpanded = (bandId: string) => {
     setCollapsedBandSetlistIds((prev) => (
+      prev.includes(bandId)
+        ? prev.filter((entry) => entry !== bandId)
+        : [...prev, bandId]
+    ));
+  };
+
+  const toggleBandPressKitsExpanded = (bandId: string) => {
+    setCollapsedBandPressKitIds((prev) => (
       prev.includes(bandId)
         ? prev.filter((entry) => entry !== bandId)
         : [...prev, bandId]
@@ -506,21 +533,63 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   </button>
                 </div>
 
-                <div
-                  className={`sidebar-list-item${pathname.startsWith(`/bands/${band.id}/press-kit`) ? ' active' : ''}`}
-                >
+                <div className="sidebar-setlists-header">
                   <button
-                    className="sidebar-list-item-btn"
-                    onClick={() => {
-                      clearGlobalSelection();
-                      navigate(`/bands/${band.id}/press-kit`);
-                      onNavigate?.();
+                    type="button"
+                    className="sidebar-section-toggle"
+                    onClick={() => toggleBandPressKitsExpanded(band.id)}
+                    aria-expanded={isBandPressKitsExpanded(band.id)}
+                  >
+                    {isBandPressKitsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <Newspaper size={14} />
+                    <span className="sidebar-section-title">Press Kits</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New press kit"
+                    aria-label="Create new press kit"
+                    onClick={async () => {
+                      const name = window.prompt('Press kit name');
+                      if (!name?.trim()) return;
+                      const result = await addBandPressKit(band.id, name.trim());
+                      if (result.error) { toast.error(result.error); return; }
+                      setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));
+                      if (result.kitId) {
+                        navigate(`/bands/${band.id}/press-kit/${result.kitId}`);
+                        onNavigate?.();
+                      }
                     }}
                   >
-                    <Newspaper size={14} />
-                    <span className="sidebar-list-name">Press Kit</span>
+                    <Plus size={14} />
                   </button>
                 </div>
+
+                {isBandPressKitsExpanded(band.id) && (
+                  <div className="sidebar-nested-group">
+                    {(bandPressKitsByBandId[band.id] ?? []).length === 0 && (
+                      <p className="sidebar-empty-hint">No press kits yet.</p>
+                    )}
+                    {(bandPressKitsByBandId[band.id] ?? []).map((kit) => (
+                      <div
+                        key={kit.id}
+                        className={`sidebar-list-item${pathname === `/bands/${band.id}/press-kit/${kit.id}` ? ' active' : ''}`}
+                      >
+                        <button
+                          className="sidebar-list-item-btn"
+                          onClick={() => {
+                            clearGlobalSelection();
+                            navigate(`/bands/${band.id}/press-kit/${kit.id}`);
+                            onNavigate?.();
+                          }}
+                        >
+                          <Newspaper size={14} />
+                          <span className="sidebar-list-name">{kit.name}</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div
                   className={`sidebar-list-item${pathname.startsWith(`/bands/${band.id}/tech-rider`) ? ' active' : ''}`}

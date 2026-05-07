@@ -8867,3 +8867,110 @@ input, select, textarea { font: inherit; color: var(--text); }
   opacity: .55;
   cursor: not-allowed;
 }
+
+/* ── Press Kit ───────────────────────────────────────────────────────────── */
+
+.sidebar-empty-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.25rem 0.75rem;
+  margin: 0;
+}
+
+.press-kit-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--surface-raised, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  border-bottom: none;
+}
+
+.press-kit-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.press-kit-toolbar-btn:hover {
+  background: var(--hover);
+}
+
+.press-kit-toolbar-btn.active {
+  background: var(--bands-hue-soft, #e8f0ff);
+  color: var(--bands-hue, #3b68ff);
+}
+
+.press-kit-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.press-kit-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 4px 2px;
+}
+
+.press-kit-editor-wrap {
+  border: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+  min-height: 200px;
+  background: var(--surface);
+}
+
+.press-kit-editor .ProseMirror {
+  padding: 12px 14px;
+  min-height: 160px;
+  outline: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.press-kit-editor .ProseMirror p {
+  margin: 0 0 0.5em;
+}
+
+.press-kit-editor .ProseMirror h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0.8em 0 0.3em;
+}
+
+.press-kit-editor .ProseMirror h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0.8em 0 0.3em;
+}
+
+.press-kit-editor .ProseMirror ul,
+.press-kit-editor .ProseMirror ol {
+  padding-left: 1.5em;
+  margin: 0.3em 0;
+}
+
+.press-kit-editor .ProseMirror hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.75em 0;
+}
+
+.press-kit-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}

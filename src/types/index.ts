@@ -175,6 +175,14 @@ export interface InputList extends CollaborationMetadata {
 
 export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'stageplot' | 'technicalRider';
 
+export interface PressKit {
+  id: string;
+  name: string;
+  richText: string;
+  imageIds: string[];
+  createdAt?: string;
+}
+
 export interface TrashMetadata {
   trashId: string;
   deletedAt: string;

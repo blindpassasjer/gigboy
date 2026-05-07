@@ -13,6 +13,7 @@ import type {
   Stageplot,
   StageplotItem,
   InputList,
+  PressKit,
   TrashedStageplot,
   TrashedSetlist,
   TrashedSong,
@@ -57,6 +58,7 @@ const BAND_SONGLISTS_COLLECTION = 'songLists';
 const BAND_SETLISTS_COLLECTION = 'setlists';
 const BAND_STAGEPLOTS_COLLECTION = 'stageplots';
 const BAND_INPUT_LISTS_COLLECTION = 'technicalRiders';
+const BAND_PRESS_KITS_COLLECTION = 'pressKits';
 const MIGRATION_MARKER_PREFIX = 'gigboy-bands-migration';
 const SOLO_CLEANUP_MARKER = 'solo-cleanup-v1';
 const SERVER_REPAIR_MARKER = 'server-repair-v1';
@@ -484,6 +486,7 @@ interface BandsContextValue {
   bandSetlistsByBandId: Record<string, Setlist[]>;
   bandStageplotsByBandId: Record<string, Stageplot[]>;
   bandInputListsByBandId: Record<string, InputList[]>;
+  bandPressKitsByBandId: Record<string, PressKit[]>;
   bandTrashByBandId: Record<string, BandTrashItem[]>;
   loading: boolean;
   cloudRequired: boolean;
@@ -501,6 +504,7 @@ interface BandsContextValue {
   refreshBandSetlists: (bandId: string) => Promise<void>;
   refreshBandStageplots: (bandId: string) => Promise<void>;
   refreshBandInputLists: (bandId: string) => Promise<void>;
+  refreshBandPressKits: (bandId: string) => Promise<void>;
   refreshBandTrash: (bandId: string) => Promise<void>;
   addSongToBandLibrary: (bandId: string, song: Song) => Promise<string | null>;
   updateBandSong: (bandId: string, song: Song) => Promise<string | null>;
@@ -524,6 +528,8 @@ interface BandsContextValue {
   removeSongFromBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
   moveSongInBandSetlist: (bandId: string, setlistId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
   updateSongNoteInBandSetlist: (bandId: string, setlistId: string, songId: string, note: string) => Promise<string | null>;
+  addBandPressKit: (bandId: string, name: string) => Promise<{ kitId: string | null; error: string | null }>;
+  deleteBandPressKit: (bandId: string, kitId: string) => Promise<string | null>;
   addBandStageplot: (bandId: string, name: string) => Promise<{ stageplotId: string | null; error: string | null }>;
   renameBandStageplot: (bandId: string, stageplotId: string, name: string) => Promise<string | null>;
   updateBandStageplotIcon: (bandId: string, stageplotId: string, icon?: string) => Promise<string | null>;
@@ -567,6 +573,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandSetlistsByBandId, setBandSetlistsByBandId] = useState<Record<string, Setlist[]>>({});
   const [bandStageplotsByBandId, setBandStageplotsByBandId] = useState<Record<string, Stageplot[]>>({});
   const [bandInputListsByBandId, setBandInputListsByBandId] = useState<Record<string, InputList[]>>({});
+  const [bandPressKitsByBandId, setBandPressKitsByBandId] = useState<Record<string, PressKit[]>>({});
   const [bandTrashByBandId, setBandTrashByBandId] = useState<Record<string, BandTrashItem[]>>({});
   const [loading, setLoading] = useState(firebaseEnabled);
   const [membershipRepairUserId, setMembershipRepairUserId] = useState<string | null>(null);
@@ -845,6 +852,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBandSetlistsByBandId({});
       setBandStageplotsByBandId({});
       setBandInputListsByBandId({});
+      setBandPressKitsByBandId({});
       setBandTrashByBandId({});
       setLoading(false);
       return;
@@ -971,6 +979,58 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       ...prev,
       [bandId]: riders,
     }));
+  }, [userId]);
+
+  const refreshBandPressKits = useCallback(async (bandId: string) => {
+    if (!db || !userId) return;
+    const snapshot = await getDocs(collection(db, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION));
+    const kits: PressKit[] = snapshot.docs.map((entry) => {
+      const data = entry.data() as Record<string, unknown>;
+      return {
+        id: entry.id,
+        name: typeof data.name === 'string' ? data.name : 'Unnamed Kit',
+        richText: typeof data.richText === 'string' ? data.richText : '',
+        imageIds: Array.isArray(data.imageIds) ? (data.imageIds as string[]) : [],
+        createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
+      };
+    });
+    setBandPressKitsByBandId((prev) => ({ ...prev, [bandId]: kits }));
+  }, [userId]);
+
+  const addBandPressKit = useCallback(async (bandId: string, name: string): Promise<{ kitId: string | null; error: string | null }> => {
+    if (!db || !userId) return { kitId: null, error: 'Not signed in.' };
+    const kitId = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kitId), {
+        name: name.trim(),
+        richText: '',
+        imageIds: [],
+        createdAt,
+        createdBy: userId,
+      });
+      setBandPressKitsByBandId((prev) => ({
+        ...prev,
+        [bandId]: [...(prev[bandId] ?? []), { id: kitId, name: name.trim(), richText: '', imageIds: [], createdAt }],
+      }));
+      return { kitId, error: null };
+    } catch {
+      return { kitId: null, error: 'Failed to create press kit.' };
+    }
+  }, [userId]);
+
+  const deleteBandPressKit = useCallback(async (bandId: string, kitId: string): Promise<string | null> => {
+    if (!db || !userId) return 'Not signed in.';
+    try {
+      await deleteDoc(doc(db, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kitId));
+      setBandPressKitsByBandId((prev) => ({
+        ...prev,
+        [bandId]: (prev[bandId] ?? []).filter((k) => k.id !== kitId),
+      }));
+      return null;
+    } catch {
+      return 'Failed to delete press kit.';
+    }
   }, [userId]);
 
   const refreshBandTrash = useCallback(async (bandId: string) => {
@@ -3437,6 +3497,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     bandSetlistsByBandId,
     bandStageplotsByBandId,
     bandInputListsByBandId,
+    bandPressKitsByBandId,
     bandTrashByBandId,
     loading,
     cloudRequired: !firebaseEnabled,
@@ -3454,6 +3515,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBandSetlists,
     refreshBandStageplots,
     refreshBandInputLists,
+    refreshBandPressKits,
     refreshBandTrash,
     addSongToBandLibrary,
     updateBandSong,
@@ -3477,6 +3539,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
     updateSongNoteInBandSetlist,
+    addBandPressKit,
+    deleteBandPressKit,
     addBandStageplot,
     renameBandStageplot,
     updateBandStageplotIcon,
@@ -3553,6 +3617,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateBandStageplotSettings,
     updateBandInputListContent,
     updateBandInputListIcon,
+    addBandPressKit,
+    deleteBandPressKit,
+    refreshBandPressKits,
+    bandPressKitsByBandId,
   ]);
 
   return <BandsContext.Provider value={value}>{children}</BandsContext.Provider>;

@@ -8,19 +8,14 @@ import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
 import InputListEditor from '../components/InputListEditor';
-import BandPressKitPanel from '../components/BandPressKitPanel';
+import PressKitView from '../components/PressKitView';
 import BandTechRiderPanel from '../components/BandTechRiderPanel';
 import TrashView from '../components/TrashView';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 
-type PressKitTabId = 'texts' | 'images';
 type TechRiderTabId = 'stageplots' | 'riders';
-
-function isPressKitTab(value: string | null): value is PressKitTabId {
-  return value === 'texts' || value === 'images';
-}
 
 function isTechRiderTab(value: string | null): value is TechRiderTabId {
   return value === 'stageplots' || value === 'riders';
@@ -77,6 +72,8 @@ export default function BandDetailPage() {
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
     updateBandLibraryIcon,
+    bandPressKitsByBandId,
+    refreshBandPressKits,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
@@ -86,6 +83,7 @@ export default function BandDetailPage() {
   const bandStageplots = id ? (bandStageplotsByBandId[id] ?? []) : [];
   const bandInputLists = id ? (bandInputListsByBandId[id] ?? []) : [];
   const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
+  const bandPressKits = id ? (bandPressKitsByBandId[id] ?? []) : [];
 
   const allBandsSongs = useMemo(() => {
     return Object.entries(bandSongsByBandId)
@@ -97,9 +95,7 @@ export default function BandDetailPage() {
   const routeBandId = routeSegments[0] === 'bands' ? routeSegments[1] : null;
   const bandSection = routeBandId === id ? (routeSegments[2] ?? 'library') : 'library';
   const bandResourceId = routeBandId === id ? (routeSegments[3] ?? null) : null;
-  const activePressKitTab: PressKitTabId = bandSection === 'press-kit' && isPressKitTab(bandResourceId)
-    ? bandResourceId
-    : 'texts';
+  const activePressKitId = bandSection === 'press-kit' ? bandResourceId : null;
   const activeTechRiderTab: TechRiderTabId = bandSection === 'tech-rider' && isTechRiderTab(bandResourceId)
     ? bandResourceId
     : 'stageplots';
@@ -684,18 +680,25 @@ export default function BandDetailPage() {
   }
 
   if (bandSection === 'press-kit') {
+    const activeKit = activePressKitId ? bandPressKits.find((k) => k.id === activePressKitId) ?? null : null;
+    if (!activeKit) {
+      return (
+        <section className="bands-page">
+          <p className="bands-status">Select a press kit from the sidebar, or create one with +.</p>
+        </section>
+      );
+    }
     return (
-      <BandPressKitPanel
+      <PressKitView
         bandId={band.id}
         bandName={band.name}
+        kit={activeKit}
         canEdit={canEditBand}
         userId={user?.id ?? null}
         userEmail={user?.email ?? null}
-        initialTab={activePressKitTab}
-        onTabChange={(tab) => {
-          const nextPath = `/bands/${band.id}/press-kit/${tab}`;
-          if (pathname === nextPath) return;
-          navigate(nextPath);
+        onDelete={() => {
+          void refreshBandPressKits(band.id);
+          navigate(`/bands/${band.id}/library`);
         }}
       />
     );

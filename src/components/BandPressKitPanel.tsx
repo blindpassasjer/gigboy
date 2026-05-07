@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Download, ExternalLink, FileText, Images } from 'lucide-react';
+import { Download, ExternalLink, FileText, Images, Package } from 'lucide-react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
@@ -7,10 +7,13 @@ import { showPromptToast } from '../utils/toastDialogs';
 import { createPressKitShare } from '../lib/pressKitApi';
 import { db, storage } from '../lib/firebase';
 import { generatePressKitZip, type PressKitImageItem, type PressKitTextItem } from '../lib/pressKitZip';
+import type { Stageplot, InputList } from '../types';
 
 interface Props {
   bandId: string;
   bandName: string;
+  stageplots: Stageplot[];
+  riders: InputList[];
   canEdit: boolean;
   userId: string | null;
   userEmail: string | null;
@@ -18,7 +21,17 @@ interface Props {
   onTabChange?: (tab: TabId) => void;
 }
 
-type TabId = 'texts' | 'images';
+type TabId = 'texts' | 'images' | 'kits';
+
+interface PressKit {
+  id: string;
+  name: string;
+  textIds: string[];
+  imageIds: string[];
+  stageplotIds: string[];
+  riderIds: string[];
+  createdAt?: string;
+}
 
 interface PressKitImageAsset extends PressKitImageItem {
   id: string;
@@ -49,6 +62,8 @@ function sanitizePathSegment(value: string): string {
 export default function BandPressKitPanel({
   bandId,
   bandName,
+  stageplots,
+  riders,
   canEdit,
   userId,
   userEmail,
@@ -64,6 +79,10 @@ export default function BandPressKitPanel({
   const [editingTitle, setEditingTitle] = useState('');
   const [editingBody, setEditingBody] = useState('');
   const [busySaveText, setBusySaveText] = useState(false);
+  const [kits, setKits] = useState<PressKit[]>([]);
+  const [loadingKits, setLoadingKits] = useState(false);
+  const [activeKitId, setActiveKitId] = useState<string | null>(null);
+  const [busyShareKit, setBusyShareKit] = useState(false);
   const [busyDownload, setBusyDownload] = useState(false);
   const [busyShare, setBusyShare] = useState(false);
   const [busyImageUpload, setBusyImageUpload] = useState(false);
@@ -80,6 +99,11 @@ export default function BandPressKitPanel({
   const activeText = useMemo(
     () => texts.find((t) => t.id === activeTextId) ?? null,
     [activeTextId, texts],
+  );
+
+  const activeKit = useMemo(
+    () => kits.find((k) => k.id === activeKitId) ?? null,
+    [activeKitId, kits],
   );
 
   useEffect(() => {
@@ -375,6 +399,148 @@ export default function BandPressKitPanel({
     if (activeTextId === textId) setActiveTextId(null);
   };
 
+  // ── Kits ──────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!db) return;
+    let mounted = true;
+    setLoadingKits(true);
+    void getDocs(query(collection(db, 'bands', bandId, 'pressKits')))
+      .then((snapshot) => {
+        if (!mounted) return;
+        const loaded = snapshot.docs.map((entry) => {
+          const data = entry.data() as Record<string, unknown>;
+          const arr = (key: string) => Array.isArray(data[key]) ? (data[key] as string[]) : [];
+          return {
+            id: entry.id,
+            name: typeof data.name === 'string' ? data.name : 'Unnamed Kit',
+            textIds: arr('textIds'),
+            imageIds: arr('imageIds'),
+            stageplotIds: arr('stageplotIds'),
+            riderIds: arr('riderIds'),
+            createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
+          } as PressKit;
+        });
+        setKits(loaded);
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        const msg = error?.code === 'permission-denied'
+          ? 'You do not have permission to view kits.'
+          : 'Failed to load press kits.';
+        toast.error(msg);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingKits(false);
+      });
+    return () => { mounted = false; };
+  }, [bandId]);
+
+  const handleCreateKit = async () => {
+    if (!canEdit) { toast.error('Only band editors can create kits.'); return; }
+    const value = await showPromptToast('New kit name', {
+      placeholder: 'Festival 2026, Radio Interview...',
+      confirmLabel: 'Create',
+      cancelLabel: 'Cancel',
+    });
+    const name = value?.trim() ?? '';
+    if (!name || !db) return;
+    const kitId = crypto.randomUUID();
+    const newKit: PressKit = { id: kitId, name, textIds: [], imageIds: [], stageplotIds: [], riderIds: [], createdAt: new Date().toISOString() };
+    await setDoc(doc(db, 'bands', bandId, 'pressKits', kitId), {
+      name,
+      textIds: [],
+      imageIds: [],
+      stageplotIds: [],
+      riderIds: [],
+      createdAt: newKit.createdAt,
+      createdBy: userId ?? null,
+    });
+    setKits((current) => [...current, newKit]);
+    setActiveKitId(kitId);
+  };
+
+  const handleToggleKitItem = async (
+    kitId: string,
+    field: 'textIds' | 'imageIds' | 'stageplotIds' | 'riderIds',
+    itemId: string,
+    checked: boolean,
+  ) => {
+    if (!db) return;
+    setKits((current) => current.map((k) => {
+      if (k.id !== kitId) return k;
+      const next = checked ? [...k[field], itemId] : k[field].filter((id) => id !== itemId);
+      return { ...k, [field]: next };
+    }));
+    const kit = kits.find((k) => k.id === kitId);
+    if (!kit) return;
+    const updatedField = checked
+      ? [...kit[field], itemId]
+      : kit[field].filter((id) => id !== itemId);
+    await setDoc(doc(db, 'bands', bandId, 'pressKits', kitId), { [field]: updatedField }, { merge: true });
+  };
+
+  const handleShareKit = async (kit: PressKit) => {
+    if (!userId || !userEmail) { toast.error('You must be signed in to share.'); return; }
+    setBusyShareKit(true);
+    try {
+      const kitTexts = texts.filter((t) => kit.textIds.includes(t.id)).map(({ title, body }) => ({ title, body }));
+      const kitImages = imageAssets.filter((img) => kit.imageIds.includes(img.id)).map(({ title, url }) => ({ title, url }));
+      const result = await createPressKitShare({
+        userId,
+        userEmail,
+        bandId,
+        selectedStageplotIds: kit.stageplotIds,
+        selectedRiderIds: kit.riderIds,
+        texts: kitTexts,
+        images: kitImages,
+      });
+      await navigator.clipboard.writeText(result.publicUrl);
+      toast.success('Public kit link copied to clipboard.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create share link.';
+      toast.error(message);
+    } finally {
+      setBusyShareKit(false);
+    }
+  };
+
+  const handleDownloadKit = async (kit: PressKit) => {
+    setBusyDownload(true);
+    try {
+      const kitTexts = texts.filter((t) => kit.textIds.includes(t.id)).map(({ title, body }) => ({ title, body }));
+      const kitImages = imageAssets.filter((img) => kit.imageIds.includes(img.id));
+      const blob = await generatePressKitZip({
+        bandName,
+        stageplots: [],
+        riders: [],
+        texts: kitTexts,
+        images: kitImages,
+        generatedAt: new Date().toISOString(),
+      });
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = `${slugifyFileName(kit.name)}-press-kit.zip`;
+      anchor.click();
+      URL.revokeObjectURL(blobUrl);
+      toast.success('Press kit ZIP generated.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate ZIP.';
+      toast.error(message);
+    } finally {
+      setBusyDownload(false);
+    }
+  };
+
+  const handleDeleteKit = async (kitId: string) => {
+    if (!canEdit || !db) return;
+    await deleteDoc(doc(db, 'bands', bandId, 'pressKits', kitId));
+    setKits((current) => current.filter((k) => k.id !== kitId));
+    if (activeKitId === kitId) setActiveKitId(null);
+  };
+
   return (
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
@@ -409,6 +575,7 @@ export default function BandPressKitPanel({
           {([
             { id: 'texts', label: 'Texts', icon: <FileText size={14} /> },
             { id: 'images', label: 'Images', icon: <Images size={14} /> },
+            { id: 'kits', label: 'Kits', icon: <Package size={14} /> },
           ] as const).map((tab) => (
             <button
               key={tab.id}
@@ -623,6 +790,155 @@ export default function BandPressKitPanel({
                 <p className="songlist-item-meta" style={{ marginTop: '0.4rem', wordBreak: 'break-word' }}>{entry.url}</p>
               </article>
             ))}
+          </div>
+        )}
+
+        {activeTab === 'kits' && (
+          <div className="songlist-body" style={{ display: 'grid', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <p className="songlist-item-meta" style={{ margin: 0 }}>
+                Assemble named kits to share with venues and promoters.
+              </p>
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => void handleCreateKit()}
+                disabled={!canEdit}
+              >
+                Create kit
+              </button>
+            </div>
+
+            {loadingKits ? <p className="bands-status">Loading kits…</p> : null}
+            {!loadingKits && kits.length === 0 ? <p className="bands-status">No kits yet. Create one to start assembling a shareable package.</p> : null}
+
+            {kits.map((kit) => (
+              <div key={kit.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                  {kit.name}
+                </span>
+                <span className="songlist-item-meta">
+                  {[
+                    kit.textIds.length ? `${kit.textIds.length} text${kit.textIds.length === 1 ? '' : 's'}` : null,
+                    kit.imageIds.length ? `${kit.imageIds.length} img${kit.imageIds.length === 1 ? '' : 's'}` : null,
+                    kit.stageplotIds.length ? `${kit.stageplotIds.length} plot${kit.stageplotIds.length === 1 ? '' : 's'}` : null,
+                    kit.riderIds.length ? `${kit.riderIds.length} rider${kit.riderIds.length === 1 ? '' : 's'}` : null,
+                  ].filter(Boolean).join(' · ') || 'empty'}
+                </span>
+                <button
+                  type="button"
+                  className={`setlist-action-btn setlist-action-btn--secondary${activeKitId === kit.id ? ' setlist-action-btn--active' : ''}`}
+                  onClick={() => setActiveKitId(activeKitId === kit.id ? null : kit.id)}
+                >
+                  {activeKitId === kit.id ? 'Close' : 'Edit'}
+                </button>
+              </div>
+            ))}
+
+            {activeKit ? (
+              <div className="setlist-notes-editor" style={{ display: 'grid', gap: '0.75rem' }}>
+                <p className="songlist-item-meta" style={{ margin: 0, fontWeight: 600 }}>{activeKit.name}</p>
+
+                {texts.length > 0 && (
+                  <div>
+                    <p className="songlist-item-meta" style={{ marginBottom: '0.4rem' }}>Texts</p>
+                    {texts.map((t) => (
+                      <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0' }}>
+                        <input
+                          type="checkbox"
+                          checked={activeKit.textIds.includes(t.id)}
+                          disabled={!canEdit}
+                          onChange={(e) => void handleToggleKitItem(activeKit.id, 'textIds', t.id, e.target.checked)}
+                        />
+                        <span>{t.title}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {imageAssets.length > 0 && (
+                  <div>
+                    <p className="songlist-item-meta" style={{ marginBottom: '0.4rem' }}>Images</p>
+                    {imageAssets.map((img) => (
+                      <label key={img.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0' }}>
+                        <input
+                          type="checkbox"
+                          checked={activeKit.imageIds.includes(img.id)}
+                          disabled={!canEdit}
+                          onChange={(e) => void handleToggleKitItem(activeKit.id, 'imageIds', img.id, e.target.checked)}
+                        />
+                        <img src={img.url} alt={img.title} style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '4px' }} />
+                        <span>{img.title}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {stageplots.length > 0 && (
+                  <div>
+                    <p className="songlist-item-meta" style={{ marginBottom: '0.4rem' }}>Stageplots</p>
+                    {stageplots.map((sp) => (
+                      <label key={sp.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0' }}>
+                        <input
+                          type="checkbox"
+                          checked={activeKit.stageplotIds.includes(sp.id)}
+                          disabled={!canEdit}
+                          onChange={(e) => void handleToggleKitItem(activeKit.id, 'stageplotIds', sp.id, e.target.checked)}
+                        />
+                        <span>{sp.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {riders.length > 0 && (
+                  <div>
+                    <p className="songlist-item-meta" style={{ marginBottom: '0.4rem' }}>Input Lists</p>
+                    {riders.map((rider) => (
+                      <label key={rider.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0' }}>
+                        <input
+                          type="checkbox"
+                          checked={activeKit.riderIds.includes(rider.id)}
+                          disabled={!canEdit}
+                          onChange={(e) => void handleToggleKitItem(activeKit.id, 'riderIds', rider.id, e.target.checked)}
+                        />
+                        <span>{rider.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '0.25rem' }}>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => void handleShareKit(activeKit)}
+                    disabled={busyShareKit}
+                  >
+                    <ExternalLink size={13} />
+                    Copy share link
+                  </button>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => void handleDownloadKit(activeKit)}
+                    disabled={busyDownload}
+                  >
+                    <Download size={13} />
+                    Download ZIP
+                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--danger"
+                      onClick={() => void handleDeleteKit(activeKit.id)}
+                    >
+                      Delete kit
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </div>

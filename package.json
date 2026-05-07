@@ -25,6 +25,9 @@
   },
   "dependencies": {
     "@radix-ui/themes": "^3.3.0",
+    "@tiptap/pm": "^3.22.5",
+    "@tiptap/react": "^3.22.5",
+    "@tiptap/starter-kit": "^3.22.5",
     "firebase": "^11.0.0",
     "jszip": "^3.10.1",
     "lucide-react": "^1.11.0",

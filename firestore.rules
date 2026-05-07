@@ -293,6 +293,11 @@ service cloud.firestore {
       }
 
       match /pressKitTexts/{textId} {
+        allow read: if isBandEditor(bandId);
+        allow create, update, delete: if isBandEditor(bandId);
+      }
+
+      match /pressKits/{kitId} {
         allow read: if isBandMember(bandId);
         allow create, update, delete: if isBandEditor(bandId);
       }
