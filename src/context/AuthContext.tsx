@@ -589,15 +589,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginAsDemo = useCallback(async (): Promise<string | null> => {
-    if (!auth) {
+    if (!auth || !db) {
       return firebaseConfigError ?? 'Firebase authentication is not configured.';
     }
     try {
       const result = await signInAnonymously(auth);
-      // Seed demo songs in the background; SongsContext will pick them up on load.
-      if (db) {
-        void seedDemoData(db, result.user.uid);
-      }
+      // Seed demo songs before returning so they're present when the UI loads.
+      await seedDemoData(db, result.user.uid);
       return null;
     } catch (err: unknown) {
       return err instanceof Error ? err.message : 'Failed to start demo.';

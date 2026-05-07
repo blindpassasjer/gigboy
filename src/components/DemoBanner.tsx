@@ -65,68 +65,83 @@ export default function DemoBanner() {
   }
 
   return (
-    <div className="demo-banner" role="status" aria-live="polite">
-      <div className="demo-banner-bar">
-        <span className="demo-banner-label">
-          <Sparkles size={14} aria-hidden="true" />
-          Demo mode — data resets when you leave
-        </span>
-        <div className="demo-banner-actions">
-          <button
-            type="button"
-            className="demo-banner-signup-btn"
-            onClick={() => setExpanded((v) => !v)}
-            aria-expanded={expanded}
-          >
-            <LogIn size={13} aria-hidden="true" />
-            Save my data
-          </button>
-          <button
-            type="button"
-            className="demo-banner-exit-btn"
-            onClick={() => void handleExit()}
-            title="Exit demo"
-            aria-label="Exit demo"
-          >
-            <X size={14} />
-          </button>
+    <>
+      <div className="demo-banner" role="status" aria-live="polite">
+        <div className="demo-banner-bar">
+          <span className="demo-banner-label">
+            <Sparkles size={14} aria-hidden="true" />
+            Demo mode — data resets when you leave
+          </span>
+          <div className="demo-banner-actions">
+            <button
+              type="button"
+              className="demo-banner-signup-btn"
+              onClick={() => setExpanded(true)}
+              aria-expanded={expanded}
+            >
+              <LogIn size={13} aria-hidden="true" />
+              Save my data
+            </button>
+            <button
+              type="button"
+              className="demo-banner-exit-btn"
+              onClick={() => void handleExit()}
+              title="Exit demo"
+              aria-label="Exit demo"
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
       </div>
 
       {expanded && (
-        <div className="demo-banner-form-wrap">
-          <p className="demo-banner-form-intro">
-            Create a free account to keep your songs and switch to a paid plan later.
-            Your demo songs will carry over.
-          </p>
+        <div className="demo-modal-overlay" onClick={() => setExpanded(false)}>
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="demo-modal-header">
+              <h2 className="demo-modal-title">Save your demo progress</h2>
+              <button
+                type="button"
+                className="demo-modal-close"
+                onClick={() => setExpanded(false)}
+                title="Close"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-          <div className="demo-banner-oauth">
-            <button
-              type="button"
-              className="btn-secondary oauth-btn demo-banner-oauth-btn"
-              onClick={() => void handleOAuth('google')}
-              disabled={busy}
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-            <button
-              type="button"
-              className="btn-secondary oauth-btn demo-banner-oauth-btn"
-              onClick={() => void handleOAuth('github')}
-              disabled={busy}
-            >
-              <GitHubIcon />
-              Continue with GitHub
-            </button>
-          </div>
+            <p className="demo-modal-intro">
+              Create a free account to keep your songs and switch to a paid plan later.
+              Your demo songs will carry over.
+            </p>
 
-          <p className="login-divider" role="separator" aria-label="or">
-            <span>or with email</span>
-          </p>
+            <div className="demo-modal-oauth">
+              <button
+                type="button"
+                className="btn-secondary oauth-btn demo-modal-oauth-btn"
+                onClick={() => void handleOAuth('google')}
+                disabled={busy}
+              >
+                <GoogleIcon />
+                Continue with Google
+              </button>
+              <button
+                type="button"
+                className="btn-secondary oauth-btn demo-modal-oauth-btn"
+                onClick={() => void handleOAuth('github')}
+                disabled={busy}
+              >
+                <GitHubIcon />
+                Continue with GitHub
+              </button>
+            </div>
 
-          <form className="demo-banner-form" onSubmit={(e) => void handleSignUp(e)} noValidate>
-            <div className="demo-banner-form-row">
+            <p className="login-divider" role="separator" aria-label="or">
+              <span>or with email</span>
+            </p>
+
+            <form className="demo-modal-form" onSubmit={(e) => void handleSignUp(e)} noValidate>
               <div className="form-field">
                 <label htmlFor="demo-username">Username</label>
                 <input
@@ -160,14 +175,14 @@ export default function DemoBanner() {
                   required
                 />
               </div>
-            </div>
-            {error && <p className="login-error">{error}</p>}
-            <button type="submit" className="btn-primary" disabled={busy}>
-              {busy ? 'Creating account…' : 'Create account & save data'}
-            </button>
-          </form>
+              {error && <p className="login-error">{error}</p>}
+              <button type="submit" className="btn-primary" disabled={busy}>
+                {busy ? 'Creating account…' : 'Create account & save data'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

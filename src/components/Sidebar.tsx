@@ -51,6 +51,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const { user } = useAuth();
   const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes);
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
+  const storageLabel = storageUsage.loading
+    ? 'Loading...'
+    : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)} (${storagePercent}%)`;
 
   const {
     bands,
@@ -413,13 +416,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               ? 'Loading storage usage'
               : `Storage usage ${storagePercent} percent, ${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
           >
-            <div className="topbar-storage-text">
-              <span>
-                {storageUsage.loading
-                  ? 'Loading...'
-                  : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)}`}
-              </span>
-            </div>
             <div className="topbar-storage-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={storagePercent}>
               <span
                 className={[
@@ -428,8 +424,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 ].filter(Boolean).join(' ')}
                 style={{ width: `${storagePercent}%` }}
               />
+              <span className="topbar-storage-meter-label">{storageLabel}</span>
+              <span className="topbar-storage-meter-label topbar-storage-meter-label-fill" style={{ width: `${storagePercent}%` }}>
+                {storageLabel}
+              </span>
             </div>
-            <span className="topbar-storage-percent">{storagePercent}%</span>
           </div>
         </div>
       ) : null}
