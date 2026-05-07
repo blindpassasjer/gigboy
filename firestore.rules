@@ -9,6 +9,20 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    // Anonymous (demo) users have a real uid but no email or persistent profile.
+    function isAnonymousUser() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    // Prevent clients from writing elevated plan/billing fields on create.
+    function subscriptionFieldsNotElevated() {
+      let incoming = request.resource.data;
+      return incoming.get('planOverride', false) == false
+        && incoming.get('plan', 'free') == 'free'
+        && incoming.get('subscriptionStatus', null) == null;
+    }
+
     function isOwnerForResource(ownerId) {
       return isSignedIn() && ownerId == request.auth.uid;
     }
@@ -83,7 +97,9 @@ service cloud.firestore {
     // User-scoped songbook data
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && !isAnonymousUser()
+        && subscriptionFieldsNotElevated();
       allow update: if isOwner(userId)
         && (
           // Username fields must not change here — they're managed via the usernames collection transaction
@@ -168,6 +184,7 @@ service cloud.firestore {
     match /usernames/{usernameLower} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
+        && !isAnonymousUser()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.usernameLower == usernameLower
         && !exists(/databases/$(database)/documents/usernames/$(usernameLower));

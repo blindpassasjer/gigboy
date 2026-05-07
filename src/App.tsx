@@ -58,7 +58,7 @@ function AuthenticatedApp() {
   }
 
   if (authEnabled && !user) return <LoginPage />;
-  if (authEnabled && user && !user.username) return <UsernameSetupPage />;
+  if (authEnabled && user && !user.username && !user.isAnonymous) return <UsernameSetupPage />;
 
   return (
     <SongsProvider>

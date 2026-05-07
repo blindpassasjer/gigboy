@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Share2, type LucideIcon } from 'lucide-react';
+import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Share2, Sparkles, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
@@ -234,6 +234,7 @@ export default function LoginPage() {
     register,
     loginWithGoogle,
     loginWithGithub,
+    loginAsDemo,
     pendingLinkEmail,
     linkWithPassword,
     cancelPendingLink,
@@ -306,6 +307,18 @@ export default function LoginPage() {
       setLinkPassword('');
     }
     setBusy(false);
+  }
+
+  async function handleDemoLogin() {
+    setBusy(true);
+    setError('');
+    const err = await loginAsDemo();
+    if (err) {
+      setError(err);
+      setBusy(false);
+    } else {
+      navigate('/profile');
+    }
   }
 
   if (pendingLinkEmail) {
@@ -459,6 +472,21 @@ export default function LoginPage() {
                 : (mode === 'register' ? 'Create account' : 'Sign in')}
             </button>
           </form>
+
+          <div className="login-demo-separator" role="separator" aria-label="or try demo">
+            <span>or</span>
+          </div>
+
+          <button
+            type="button"
+            className="btn-secondary login-demo-btn"
+            onClick={() => { void handleDemoLogin(); }}
+            disabled={busy}
+          >
+            <Sparkles size={15} aria-hidden="true" />
+            Try demo — no account needed
+          </button>
+
           <footer className="footer">From Norway - with chords</footer>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import Sidebar from './Sidebar';
 import BrandMark from './BrandMark';
+import DemoBanner from './DemoBanner';
 import { useDarkModeContext } from '../context/DarkModeContext';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
 import { usePlan } from '../hooks/usePlan';
@@ -596,6 +597,7 @@ export default function Layout({ children }: Props) {
 
   return (
     <div className="app-shell" data-library-mode={themedBandId ? 'bands' : 'solo'}>
+      {user?.isAnonymous && <DemoBanner />}
       <header className="topbar">
         <button
           type="button"

@@ -3957,6 +3957,142 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .login-submit { width: 100%; justify-content: center; margin-top: .25rem; }
 
+/* Demo login separator and button */
+.login-demo-separator {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  color: var(--muted);
+  font-size: .8rem;
+  margin: .25rem 0 -.25rem;
+}
+.login-demo-separator::before,
+.login-demo-separator::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+.login-demo-separator span { padding: 0 .4rem; }
+
+.login-demo-btn {
+  width: 100%;
+  justify-content: center;
+  gap: .4rem;
+  margin-top: .25rem;
+  border-style: dashed;
+  color: var(--muted);
+}
+.login-demo-btn:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+
+/* ─── Demo Banner ──────────────────────────────────────────────────────────── */
+.demo-banner {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.demo-banner-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .45rem 1rem;
+  flex-wrap: wrap;
+}
+
+.demo-banner-label {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .82rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.demo-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.demo-banner-signup-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .8rem;
+  font-weight: 600;
+  padding: .3rem .7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.demo-banner-signup-btn:hover {
+  background: var(--accent-h);
+  border-color: var(--accent-h);
+}
+
+.demo-banner-exit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.demo-banner-exit-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+.demo-banner-form-wrap {
+  padding: .75rem 1rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+
+.demo-banner-form-intro {
+  font-size: .82rem;
+  color: var(--muted);
+  margin-bottom: .75rem;
+}
+
+.demo-banner-oauth {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin-bottom: .5rem;
+}
+
+.demo-banner-oauth-btn {
+  flex: 1;
+  min-width: 140px;
+  justify-content: center;
+  font-size: .82rem;
+  padding: .45rem .75rem;
+}
+
+.demo-banner-form { display: flex; flex-direction: column; gap: .6rem; }
+
+.demo-banner-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: .6rem;
+}
+
+@media (max-width: 700px) {
+  .demo-banner-form-row { grid-template-columns: 1fr; }
+  .demo-banner-oauth { flex-direction: column; }
+}
+
 @keyframes login-grid-drift {
   0% {
     transform: perspective(600px) rotateX(44deg) scale(1.35) translateY(16%) translateX(0);

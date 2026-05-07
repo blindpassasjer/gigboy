@@ -10,8 +10,11 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   linkWithCredential,
+  linkWithPopup,
+  linkWithRedirect,
   onAuthStateChanged,
   reauthenticateWithCredential,
+  signInAnonymously,
   updateEmail,
   updatePassword,
   signInWithPopup,
@@ -23,8 +26,9 @@ import type { FirebaseError } from 'firebase/app';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { changeUsername, claimUsername, loadUserProfile, updateProfileFields } from '../lib/userProfiles';
+import { changeUsername, claimUsername, loadUserProfile, normalizeUsername, updateProfileFields } from '../lib/userProfiles';
 import { isValidAvatar } from '../lib/avatars';
+import { seedDemoData } from '../lib/demoSeed';
 import type { PlanTier, SubscriptionStatus } from '../types';
 
 export interface User {
@@ -41,6 +45,8 @@ export interface User {
   bandExtraMembers: number;
   memberLimit: number;
   stripeCustomerId: string | null;
+  /** True when the user is signed in anonymously (demo mode). */
+  isAnonymous: boolean;
 }
 
 interface AuthContextValue {
@@ -62,6 +68,14 @@ interface AuthContextValue {
   updateFullName: (fullName: string) => Promise<string | null>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
   logout: () => Promise<void>;
+  /** Start an anonymous demo session with pre-seeded songs and Band plan. */
+  loginAsDemo: () => Promise<string | null>;
+  /** Upgrade the current anonymous demo session to a real email/password account. */
+  upgradeDemo: (email: string, password: string, username: string) => Promise<string | null>;
+  /** Upgrade the current anonymous demo session by linking a Google account. */
+  upgradeDemoWithGoogle: () => Promise<string | null>;
+  /** Upgrade the current anonymous demo session by linking a GitHub account. */
+  upgradeDemoWithGithub: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -116,6 +130,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Anonymous demo user — assign Band plan client-side; no Firestore profile needed.
+      if (firebaseUser.isAnonymous) {
+        const demoUsername = `demo_${firebaseUser.uid.slice(-6)}`;
+        setUser({
+          id: firebaseUser.uid,
+          email: '',
+          username: demoUsername,
+          avatar: null,
+          fullName: null,
+          plan: 'band',
+          planOverride: true,
+          subscriptionStatus: null,
+          currentPeriodEnd: null,
+          storageQuotaBytes: 5 * 1024 * 1024 * 1024,
+          bandExtraMembers: 0,
+          memberLimit: 5,
+          stripeCustomerId: null,
+          isAnonymous: true,
+        });
+        setLoading(false);
+        return;
+      }
+
       if (!db) {
         setUser({
           id: firebaseUser.uid,
@@ -131,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           bandExtraMembers: 0,
           memberLimit: 1,
           stripeCustomerId: null,
+          isAnonymous: false,
         });
         setLoading(false);
         return;
@@ -156,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             bandExtraMembers: profile?.bandExtraMembers ?? 0,
             memberLimit: profile?.memberLimit ?? 1,
             stripeCustomerId: profile?.stripeCustomerId ?? null,
+            isAnonymous: false,
           });
         } catch (error) {
           if (authInstance.currentUser?.uid !== firebaseUser.uid) return;
@@ -175,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             bandExtraMembers: 0,
             memberLimit: 1,
             stripeCustomerId: null,
+            isAnonymous: false,
           });
         } finally {
           if (authInstance.currentUser?.uid === firebaseUser.uid) {
@@ -548,6 +588,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
   }, []);
 
+  const loginAsDemo = useCallback(async (): Promise<string | null> => {
+    if (!auth) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+    try {
+      const result = await signInAnonymously(auth);
+      // Seed demo songs in the background; SongsContext will pick them up on load.
+      if (db) {
+        void seedDemoData(db, result.user.uid);
+      }
+      return null;
+    } catch (err: unknown) {
+      return err instanceof Error ? err.message : 'Failed to start demo.';
+    }
+  }, []);
+
+  const upgradeDemo = useCallback(async (email: string, password: string, username: string): Promise<string | null> => {
+    if (!auth?.currentUser || !db) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+    if (!auth.currentUser.isAnonymous) {
+      return 'Not currently in demo mode.';
+    }
+    try {
+      const credential = EmailAuthProvider.credential(email, password);
+      await linkWithCredential(auth.currentUser, credential);
+      await claimUsername(db, {
+        userId: auth.currentUser.uid,
+        email,
+        username: normalizeUsername(username),
+      });
+      return null;
+    } catch (err: unknown) {
+      const code = getAuthErrorCode(err);
+      if (code === 'auth/email-already-in-use') {
+        return 'An account with this email already exists. Please sign in instead.';
+      }
+      if (code === 'auth/weak-password') {
+        return 'Password must be at least 6 characters.';
+      }
+      return err instanceof Error ? err.message : 'Failed to create account.';
+    }
+  }, [getAuthErrorCode]);
+
+  const upgradeDemoWithProvider = useCallback(async (provider: AuthProvider, providerLabel: string): Promise<string | null> => {
+    if (!auth?.currentUser) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+    if (!auth.currentUser.isAnonymous) {
+      return 'Not currently in demo mode.';
+    }
+    try {
+      await linkWithPopup(auth.currentUser, provider);
+      return null;
+    } catch (err: unknown) {
+      const code = getAuthErrorCode(err);
+      const shouldFallbackToRedirect = code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request';
+      if (shouldFallbackToRedirect) {
+        try {
+          await linkWithRedirect(auth.currentUser, provider);
+          return null;
+        } catch (redirectError: unknown) {
+          return formatAuthError(redirectError, providerLabel);
+        }
+      }
+      return formatAuthError(err, providerLabel);
+    }
+  }, [formatAuthError, getAuthErrorCode]);
+
+  const upgradeDemoWithGoogle = useCallback(async (): Promise<string | null> => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    return upgradeDemoWithProvider(provider, 'Google');
+  }, [upgradeDemoWithProvider]);
+
+  const upgradeDemoWithGithub = useCallback(async (): Promise<string | null> => {
+    return upgradeDemoWithProvider(new GithubAuthProvider(), 'GitHub');
+  }, [upgradeDemoWithProvider]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -569,6 +688,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateFullName: updateFullNameValue,
         updatePassword: updatePasswordValue,
         logout,
+        loginAsDemo,
+        upgradeDemo,
+        upgradeDemoWithGoogle,
+        upgradeDemoWithGithub,
       }}
     >
       {children}
