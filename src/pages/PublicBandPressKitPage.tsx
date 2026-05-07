@@ -14,8 +14,6 @@ function slugifyFileName(value: string): string {
     .replace(/^-|-$/g, '') || 'press-kit';
 }
 
-type TabId = 'stageplots' | 'riders' | 'texts' | 'images';
-
 const ALLOWED_RICH_TEXT_TAGS = new Set(['p', 'h2', 'h3', 'ul', 'ol', 'li', 'strong', 'em', 'br', 'hr', 'a']);
 
 function sanitizePressKitHtml(raw: string): string {
@@ -37,6 +35,9 @@ function sanitizePressKitHtml(raw: string): string {
       });
       return fragment;
     }
+
+    const clean = doc.createElement(tag);
+
     if (tag === 'a') {
       const href = source.getAttribute('href') ?? '';
       try {
