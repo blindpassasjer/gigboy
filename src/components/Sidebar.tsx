@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, FileText, Folder, ListMusic, Plus, Trash2, Users, X, ChevronsUpDown, Images, Map, ClipboardList, Wrench } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText, Folder, ListMusic, Plus, Trash2, Users, X, ChevronsUpDown, Images, Map, ClipboardList } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
