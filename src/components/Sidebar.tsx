@@ -61,11 +61,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     bandSongsByBandId,
     bandSongListsByBandId,
     bandSetlistsByBandId,
+    bandInputListsByBandId,
     bandPressKitsByBandId,
     bandTrashByBandId,
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
+    refreshBandInputLists,
     refreshBandPressKits,
     refreshBandTrash,
     createBand,
@@ -75,11 +77,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addSongToBandSongList,
     addBandSetlist,
     addSongToBandSetlist,
+    addBandInputList,
   } = useBands();
 
   const [addingBand, setAddingBand] = useState(false);
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
+  const [addingBandInputListId, setAddingBandInputListId] = useState<string | null>(null);
   const [addingBandPressKitId, setAddingBandPressKitId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
   const [bandLibraryDropTargetId, setBandLibraryDropTargetId] = useState<string | null>(null);
@@ -87,6 +91,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
   const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
+  const [collapsedBandInputListIds, setCollapsedBandInputListIds] = useState<string[]>([]);
   const [collapsedBandPressKitIds, setCollapsedBandPressKitIds] = useState<string[]>([]);
   const sidebarMode = 'bands' as const;
   const [activeBandId, setActiveBandId] = useState<string | null>(() => {
@@ -138,6 +143,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       .map((band) => band.id)
       .filter((bandId) => bandSetlistsByBandId[bandId] === undefined);
 
+    const missingBandInputListCollections = bands
+      .map((band) => band.id)
+      .filter((bandId) => bandInputListsByBandId[bandId] === undefined);
+
     const missingBandPressKitCollections = bands
       .map((band) => band.id)
       .filter((bandId) => bandPressKitsByBandId[bandId] === undefined);
@@ -150,6 +159,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       missingBandSongCollections.length === 0
       && missingBandSongListCollections.length === 0
       && missingBandSetlistCollections.length === 0
+      && missingBandInputListCollections.length === 0
       && missingBandPressKitCollections.length === 0
       && missingBandTrashCollections.length === 0
     ) return;
@@ -172,6 +182,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       });
     });
 
+    missingBandInputListCollections.forEach((bandId) => {
+      void refreshBandInputLists(bandId).catch(() => {
+        // Sidebar counts are best-effort; detailed errors are handled on band pages.
+      });
+    });
+
     missingBandPressKitCollections.forEach((bandId) => {
       void refreshBandPressKits(bandId).catch(() => {
         // Sidebar counts are best-effort; detailed errors are handled on band pages.
@@ -185,12 +201,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     });
   }, [
     bandTrashByBandId,
+    bandInputListsByBandId,
     bandPressKitsByBandId,
     bandSetlistsByBandId,
     bandSongListsByBandId,
     bandSongsByBandId,
     bands,
     refreshBandTrash,
+    refreshBandInputLists,
     refreshBandSetlists,
     refreshBandPressKits,
     refreshBandSongLists,
@@ -263,10 +281,30 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     }
   };
 
+  const commitBandInputList = async (bandId: string) => {
+    const name = draftName.trim();
+    setDraftName('');
+    setAddingBandInputListId(null);
+    if (!name) return;
+
+    const result = await addBandInputList(bandId, name);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    if (result.riderId) {
+      clearGlobalSelection();
+      navigate(`/bands/${bandId}/riders/${result.riderId}`);
+      onNavigate?.();
+    }
+  };
+
 
   const isBandSonglistsExpanded = (bandId: string) => !collapsedBandSonglistIds.includes(bandId);
 
   const isBandSetlistsExpanded = (bandId: string) => !collapsedBandSetlistIds.includes(bandId);
+
+  const isBandInputListsExpanded = (bandId: string) => !collapsedBandInputListIds.includes(bandId);
 
   const isBandPressKitsExpanded = (bandId: string) => !collapsedBandPressKitIds.includes(bandId);
 
@@ -280,6 +318,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const toggleBandSetlistsExpanded = (bandId: string) => {
     setCollapsedBandSetlistIds((prev) => (
+      prev.includes(bandId)
+        ? prev.filter((entry) => entry !== bandId)
+        : [...prev, bandId]
+    ));
+  };
+
+  const toggleBandInputListsExpanded = (bandId: string) => {
+    setCollapsedBandInputListIds((prev) => (
       prev.includes(bandId)
         ? prev.filter((entry) => entry !== bandId)
         : [...prev, bandId]
@@ -519,21 +565,67 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   </button>
                 </div>
 
-                <div
-                  className={`sidebar-list-item${pathname === `/bands/${band.id}/tech-rider` ? ' active' : ''}`}
-                >
+                <div className="sidebar-setlists-header">
                   <button
-                    className="sidebar-list-item-btn"
+                    type="button"
+                    className="sidebar-section-toggle"
+                    onClick={() => toggleBandInputListsExpanded(band.id)}
+                    aria-expanded={isBandInputListsExpanded(band.id)}
+                  >
+                    {isBandInputListsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span className="sidebar-section-title">Technical Riders</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New technical rider"
+                    aria-label="Create new technical rider"
                     onClick={() => {
-                      clearGlobalSelection();
-                      navigate(`/bands/${band.id}/tech-rider`);
-                      onNavigate?.();
+                      setCollapsedBandInputListIds((prev) => prev.filter((id) => id !== band.id));
+                      setAddingBandInputListId(band.id);
+                      setDraftName('');
                     }}
                   >
-                    <ClipboardList size={14} />
-                    <span className="sidebar-list-name">Technical Rider</span>
+                    <Plus size={14} />
                   </button>
                 </div>
+
+                {isBandInputListsExpanded(band.id) && (
+                  <div className="sidebar-nested-group">
+                    {(bandInputListsByBandId[band.id] ?? []).length === 0 && addingBandInputListId !== band.id && (
+                      <p className="sidebar-empty-hint">No technical riders yet.</p>
+                    )}
+
+                    {(bandInputListsByBandId[band.id] ?? []).map((rider) => (
+                      <div
+                        key={rider.id}
+                        className={`sidebar-list-item${pathname === `/bands/${band.id}/riders/${rider.id}` ? ' active' : ''}`}
+                      >
+                        <button
+                          className="sidebar-list-item-btn"
+                          onClick={() => {
+                            clearGlobalSelection();
+                            navigate(`/bands/${band.id}/riders/${rider.id}`);
+                            onNavigate?.();
+                          }}
+                        >
+                          {rider.icon ? <span className="sidebar-list-icon" aria-hidden="true">{rider.icon}</span> : <ClipboardList size={14} />}
+                          <span className="sidebar-list-name">{rider.name}</span>
+                        </button>
+                      </div>
+                    ))}
+
+                    {addingBandInputListId === band.id && (
+                      <InlineInput
+                        value={draftName}
+                        onChange={setDraftName}
+                        onCommit={() => void commitBandInputList(band.id)}
+                        onCancel={() => setAddingBandInputListId(null)}
+                        placeholder="Technical rider name..."
+                      />
+                    )}
+                  </div>
+                )}
 
                 <div className="sidebar-setlists-header">
                   <button
