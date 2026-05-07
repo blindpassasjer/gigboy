@@ -196,34 +196,11 @@ export default function BandSettingsPage() {
       </Link>
 
       <div className="modal-content bands-settings-layout">
+        <div className="bands-settings-left">
         <section className="bands-panel">
-          <h2 className="bands-section-heading">
-            Subscription
-          </h2>
-          <article className="bands-subscription-row">
-            <div className="bands-subscription-copy">
-              <strong>{bandHasSubscription ? 'Band plan active' : 'Free plan'}</strong>
-              <span>
-                {bandHasSubscription
-                  ? `${formatSubscriptionStatus(effectiveSubscriptionStatus)} · ${bandMemberLimit} members`
-                  : 'No active Band subscription for this band.'}
-              </span>
-              {!hasBandBillingSnapshot && fallbackToOwnerPlan ? (
-                <span>Showing owner account subscription until band billing snapshot syncs.</span>
-              ) : null}
-              <span>{bandRenewalDate ? `Renews ${bandRenewalDate}` : 'Renewal date unavailable'}</span>
-            </div>
-            <Link
-              to="/pricing"
-              state={{ bandId: band.id }}
-              className="setlist-action-btn setlist-action-btn--secondary"
-            >
-              Open billing
-            </Link>
-          </article>
 
           {/* ── Profile ── */}
-          <h2 className="bands-section-heading bands-section-heading--spaced">
+          <h2 className="bands-section-heading">
             Profile
           </h2>
 
@@ -314,6 +291,35 @@ export default function BandSettingsPage() {
           canEditBand={canEditBand}
           isOwner={isOwner}
         />
+        </div>
+
+        {/* ── Subscription (right column) ── */}
+        <section className="bands-panel">
+          <h2 className="bands-section-heading">
+            Subscription
+          </h2>
+          <article className="bands-subscription-row">
+            <div className="bands-subscription-copy">
+              <strong>{bandHasSubscription ? 'Band plan active' : 'Free plan'}</strong>
+              <span>
+                {bandHasSubscription
+                  ? `${formatSubscriptionStatus(effectiveSubscriptionStatus)} · ${bandMemberLimit} members`
+                  : 'No active Band subscription for this band.'}
+              </span>
+              {!hasBandBillingSnapshot && fallbackToOwnerPlan ? (
+                <span>Showing owner account subscription until band billing snapshot syncs.</span>
+              ) : null}
+              <span>{bandRenewalDate ? `Renews ${bandRenewalDate}` : 'Renewal date unavailable'}</span>
+            </div>
+            <Link
+              to="/pricing"
+              state={{ bandId: band.id }}
+              className="setlist-action-btn setlist-action-btn--secondary"
+            >
+              Open billing
+            </Link>
+          </article>
+        </section>
       </div>
     </section>
   );
