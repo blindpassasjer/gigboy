@@ -68,7 +68,6 @@ export default function BandDetailPage() {
     bandPressKitsByBandId,
     refreshBandPressKits,
     renameBandPressKit,
-    deleteBandPressKit,
     updateBandPressKitIcon,
   } = useBands();
 
