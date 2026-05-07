@@ -115,18 +115,19 @@ function roundedRectContains(x, y, size, inset, radius) {
 function iconPixelFactory(size, paddingRatio) {
   const blueTop = [30, 64, 175]
   const blueBottom = [15, 23, 42]
-  const white = [246, 248, 255]
   const inset = Math.round(size * paddingRatio)
   const radius = Math.round((size - inset * 2) * 0.22)
 
-  const noteStemW = Math.max(4, Math.round(size * 0.08))
-  const noteStemH = Math.round(size * 0.34)
-  const noteStemX = Math.round(size * 0.57)
-  const noteStemY = Math.round(size * 0.26)
-  const noteHeadR = Math.max(7, Math.round(size * 0.105))
-  const noteHead1X = Math.round(size * 0.45)
-  const noteHead2X = Math.round(size * 0.64)
-  const noteHeadY = Math.round(size * 0.66)
+  const drawSize = size - 2 * inset
+  const svgToPx = (v) => inset + (v / 64) * drawSize
+  const svgToLen = (v) => (v / 64) * drawSize
+
+  // Three stacked bars matching favicon.svg (64x64 viewBox)
+  const bars = [
+    { x: svgToPx(12), y: svgToPx(18), w: svgToLen(40), h: svgToLen(7), color: [196, 181, 253] },
+    { x: svgToPx(12), y: svgToPx(29), w: svgToLen(28), h: svgToLen(7), color: [167, 139, 250] },
+    { x: svgToPx(12), y: svgToPx(40), w: svgToLen(18), h: svgToLen(7), color: [124, 58, 237] },
+  ]
 
   return (x, y) => {
     const t = y / Math.max(1, size - 1)
@@ -141,19 +142,23 @@ function iconPixelFactory(size, paddingRatio) {
       return [0, 0, 0, 0]
     }
 
-    const inStem = x >= noteStemX && x < noteStemX + noteStemW && y >= noteStemY && y < noteStemY + noteStemH
-    const inBeam = y >= noteStemY && y < noteStemY + noteStemW && x >= noteStemX - Math.round(size * 0.12) && x <= noteStemX + noteStemW
+    for (const bar of bars) {
+      const r = bar.h / 2
+      const innerLeft = bar.x + r
+      const innerRight = bar.x + bar.w - r
+      const centerY = bar.y + r
 
-    const dx1 = x - noteHead1X
-    const dy1 = y - noteHeadY
-    const inHead1 = dx1 * dx1 + dy1 * dy1 <= noteHeadR * noteHeadR
+      const inRect = x >= innerLeft && x <= innerRight && y >= bar.y && y < bar.y + bar.h
+      const dxL = x - innerLeft
+      const dyL = y - centerY
+      const inLeftCap = dxL * dxL + dyL * dyL <= r * r
+      const dxR = x - innerRight
+      const dyR = y - centerY
+      const inRightCap = dxR * dxR + dyR * dyR <= r * r
 
-    const dx2 = x - noteHead2X
-    const dy2 = y - (noteHeadY - Math.round(size * 0.03))
-    const inHead2 = dx2 * dx2 + dy2 * dy2 <= noteHeadR * noteHeadR
-
-    if (inStem || inBeam || inHead1 || inHead2) {
-      return [white[0], white[1], white[2], 255]
+      if (inRect || inLeftCap || inRightCap) {
+        return [bar.color[0], bar.color[1], bar.color[2], 255]
+      }
     }
 
     return bg
