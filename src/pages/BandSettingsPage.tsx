@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { ArrowLeft, CreditCard } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
+import { PLAN_LABELS } from '../lib/planLimits';
 
 const BAND_COLOR_OPTIONS = [
   '#c33232',
@@ -24,6 +26,23 @@ function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   return [...trimmed].slice(0, 2).join('');
+}
+
+function formatPeriodEnd(value: number | null | undefined) {
+  if (!value) return null;
+  const normalized = value > 1_000_000_000_000 ? value : value * 1000;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+}
+
+function formatSubscriptionStatus(status: string | null | undefined) {
+  if (!status) return 'Not subscribed';
+  return status.replace('_', ' ');
 }
 
 export default function BandSettingsPage() {
@@ -72,6 +91,10 @@ export default function BandSettingsPage() {
 
   const isOwner = band.ownerId === user?.id;
   const canEditBand = isOwner || band.memberRoles[user?.id ?? ''] === 'editor';
+  const bandPlan = band.billingPlan ?? 'free';
+  const memberLimit = band.billingMemberLimit
+    ?? (bandPlan === 'band' ? 5 + (band.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
+  const renewalDate = formatPeriodEnd(band.billingCurrentPeriodEnd ?? null);
 
   const applyAppearance = async (nextIcon: string, nextColor: string | undefined) => {
     if (!canEditBand || busyAppearance) return;
@@ -151,14 +174,12 @@ export default function BandSettingsPage() {
         </div>
       </header>
 
-      <div className="bands-page-toolbar">
-        <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">
-          Back to band library
-        </Link>
-      </div>
+      <Link to={`/bands/${band.id}/library`} className="back-link">
+        <ArrowLeft size={16} /> Back to band library
+      </Link>
 
-      <div className="modal-content">
-        <section className="bands-panel">
+      <div className="bands-settings-layout">
+        <section className="bands-panel bands-settings-left">
 
           {/* ── Profile ── */}
           <h2 className="bands-section-heading">
@@ -258,12 +279,44 @@ export default function BandSettingsPage() {
           )}
         </section>
 
-        {/* ── Members ── */}
-        <BandManagementPanel
-          band={band}
-          canEditBand={canEditBand}
-          isOwner={isOwner}
-        />
+        <div className="bands-settings-left">
+          <section className="bands-panel">
+            <h2 className="bands-section-heading">Subscription</h2>
+            <div className="bands-subscription-row">
+              <div className="bands-subscription-copy">
+                <strong>{PLAN_LABELS[bandPlan]}</strong>
+                <span>{formatSubscriptionStatus(band.billingSubscriptionStatus ?? null)}</span>
+                <span>{renewalDate ? `Renews ${renewalDate}` : 'No recurring band subscription'}</span>
+              </div>
+              {isOwner ? (
+                <Link
+                  to="/pricing"
+                  state={{ bandId: band.id }}
+                  className="setlist-action-btn setlist-action-btn--secondary"
+                >
+                  <CreditCard size={15} /> Open billing
+                </Link>
+              ) : null}
+            </div>
+            <div className="bands-subscription-row">
+              <div className="bands-subscription-copy">
+                <strong>Member capacity</strong>
+                <span>
+                  {memberLimit
+                    ? `${memberLimit} member${memberLimit === 1 ? '' : 's'} included for this band`
+                    : 'Capacity is managed through the band owner account'}
+                </span>
+                <span>{band.memberIds.length} currently in the band</span>
+              </div>
+            </div>
+          </section>
+
+          <BandManagementPanel
+            band={band}
+            canEditBand={canEditBand}
+            isOwner={isOwner}
+          />
+        </div>
       </div>
     </section>
   );

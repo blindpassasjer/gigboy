@@ -124,7 +124,7 @@ export default function BandTechRiderPanel({
   return (
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
-        <div className="bands-header setlist-header">
+        <div className="bands-header">
           <div className="setlist-title-block">
             <h1 className="song-list-heading setlist-title">Technical Rider</h1>
             <p className="setlist-subtitle">Manage input lists and stageplots for your band.</p>
@@ -137,19 +137,9 @@ export default function BandTechRiderPanel({
               <ClipboardList size={16} />
               <h2 className="song-list-heading" style={{ margin: 0, fontSize: '1rem' }}>Input Lists</h2>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <p className="songlist-item-meta" style={{ margin: 0 }}>
-                Create and manage input lists for your band.
-              </p>
-              <button
-                type="button"
-                className="setlist-action-btn setlist-action-btn--secondary"
-                onClick={() => void handleCreateRider()}
-                disabled={!canEdit}
-              >
-                Create rider
-              </button>
-            </div>
+            <p className="songlist-item-meta" style={{ margin: 0 }}>
+              Create and manage input lists for your band.
+            </p>
             {riders.length === 0 ? (
               <p className="bands-status">No input lists available yet.</p>
             ) : (
