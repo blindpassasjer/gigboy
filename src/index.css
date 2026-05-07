@@ -7667,6 +7667,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .bands-header p,
 .bands-status,
 .setlist-subtitle {
+  font-size: .88rem;
   color: var(--muted);
 }
 
