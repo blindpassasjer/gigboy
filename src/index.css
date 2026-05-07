@@ -770,6 +770,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: 0;
 }
 
+.song-list-heading.setlist-title {
+  font-size: 1.45rem;
+}
+
 .song-list-heading:hover {
   background: transparent;
 }
@@ -8521,6 +8525,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-width: 0;
 }
 
+.technical-rider-view .song-list-sticky {
+  --song-list-sticky-top-cover: 1rem;
+  margin: -1rem -1rem .75rem;
+}
+
 @media (min-width: 1100px) {
   .tech-rider-sections {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -8530,6 +8539,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .stageplot-stage-wrap {
   overflow-x: auto;
   min-width: 0;
+  padding: 0 1.5rem;
 }
 
 .stageplot-toolbar {
