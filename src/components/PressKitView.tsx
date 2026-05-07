@@ -250,7 +250,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
             <h1 className="setlist-title">{kit.name}</h1>
             <p className="setlist-subtitle">{busySave ? 'Saving…' : 'Press kit'}</p>
           </div>
-          <div className="setlist-actions" style={{ gap: '0.5rem' }}>
+          <div className="setlist-header-actions">
             <button
               type="button"
               className="setlist-action-btn setlist-action-btn--secondary"

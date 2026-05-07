@@ -84,6 +84,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [addingBand, setAddingBand] = useState(false);
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
+  const [addingBandPressKitId, setAddingBandPressKitId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
   const [bandLibraryDropTargetId, setBandLibraryDropTargetId] = useState<string | null>(null);
   const [bandSongListDropTargetId, setBandSongListDropTargetId] = useState<string | null>(null);
@@ -273,6 +274,22 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (result.setlistId) {
       clearGlobalSelection();
       navigate(`/bands/${bandId}/setlists/${result.setlistId}`);
+      onNavigate?.();
+    }
+  };
+
+  const commitBandPressKit = async (bandId: string) => {
+    const name = draftName.trim();
+    setDraftName('');
+    setAddingBandPressKitId(null);
+    if (!name) return;
+
+    const result = await addBandPressKit(bandId, name);
+    if (result.error) { toast.error(result.error); return; }
+    setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== bandId));
+    if (result.kitId) {
+      clearGlobalSelection();
+      navigate(`/bands/${bandId}/press-kit/${result.kitId}`);
       onNavigate?.();
     }
   };
@@ -541,7 +558,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     aria-expanded={isBandPressKitsExpanded(band.id)}
                   >
                     {isBandPressKitsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    <Newspaper size={14} />
                     <span className="sidebar-section-title">Press Kits</span>
                   </button>
                   <button
@@ -549,16 +565,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     className="sidebar-icon-btn"
                     title="New press kit"
                     aria-label="Create new press kit"
-                    onClick={async () => {
-                      const name = window.prompt('Press kit name');
-                      if (!name?.trim()) return;
-                      const result = await addBandPressKit(band.id, name.trim());
-                      if (result.error) { toast.error(result.error); return; }
+                    onClick={() => {
                       setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));
-                      if (result.kitId) {
-                        navigate(`/bands/${band.id}/press-kit/${result.kitId}`);
-                        onNavigate?.();
-                      }
+                      setAddingBandPressKitId(band.id);
+                      setDraftName('');
                     }}
                   >
                     <Plus size={14} />
@@ -567,7 +577,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
                 {isBandPressKitsExpanded(band.id) && (
                   <div className="sidebar-nested-group">
-                    {(bandPressKitsByBandId[band.id] ?? []).length === 0 && (
+                    {(bandPressKitsByBandId[band.id] ?? []).length === 0 && addingBandPressKitId !== band.id && (
                       <p className="sidebar-empty-hint">No press kits yet.</p>
                     )}
                     {(bandPressKitsByBandId[band.id] ?? []).map((kit) => (
@@ -588,6 +598,16 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                         </button>
                       </div>
                     ))}
+
+                    {addingBandPressKitId === band.id && (
+                      <InlineInput
+                        value={draftName}
+                        onChange={setDraftName}
+                        onCommit={() => void commitBandPressKit(band.id)}
+                        onCancel={() => setAddingBandPressKitId(null)}
+                        placeholder="Press kit name..."
+                      />
+                    )}
                   </div>
                 )}
 

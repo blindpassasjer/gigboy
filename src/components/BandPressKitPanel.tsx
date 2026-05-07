@@ -544,12 +544,12 @@ export default function BandPressKitPanel({
   return (
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
-        <header className="setlist-header">
-          <div className="setlist-header-main">
-            <h1 className="setlist-title">Press Kit</h1>
+        <div className="bands-header setlist-header">
+          <div className="setlist-title-block">
+            <h1 className="song-list-heading setlist-title">Press Kit</h1>
             <p className="setlist-subtitle">Select assets and generate a downloadable promo package.</p>
           </div>
-          <div className="setlist-actions" style={{ gap: '0.5rem' }}>
+          <div className="setlist-header-actions">
             <button
               type="button"
               className="setlist-action-btn setlist-action-btn--secondary"
@@ -569,7 +569,7 @@ export default function BandPressKitPanel({
               <ExternalLink size={14} />
             </button>
           </div>
-        </header>
+        </div>
 
         <div className="setlist-tabs" style={{ marginBottom: '0.8rem' }}>
           {([
