@@ -1,7 +1,8 @@
-import { collection, doc, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 
 const DEMO_SEED_SESSION_KEY = 'gigboy-demo-seeded';
+const ACTIVE_BAND_STORAGE_KEY = 'gigboy-active-band-id';
 
 // Stable IDs so song lists can reference them deterministically
 const DEMO_SONG_IDS = [
@@ -174,8 +175,9 @@ Everything you touch surely [Bm]dies`,
 
 /**
  * Seeds demo songs into Firestore for a new anonymous user.
+ * Creates a demo band and populates its library so the user lands on
+ * a fully populated band library page.
  * Uses sessionStorage to avoid re-seeding on page refresh.
- * Skips if the user already has songs (e.g. returning demo session).
  */
 export async function seedDemoData(firestore: Firestore, userId: string): Promise<void> {
   // Skip if already seeded in this browser session
@@ -186,21 +188,72 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
   }
 
   try {
-    const snap = await getDocs(collection(firestore, 'users', userId, 'songs'));
-    if (snap.size > 0) {
+    const demoBandId = `demo-band-${userId}`;
+    const now = new Date().toISOString();
+
+    // Skip if the demo band already exists (returning demo user)
+    const bandSnap = await getDoc(doc(firestore, 'bands', demoBandId));
+    if (bandSnap.exists()) {
       try { sessionStorage.setItem(DEMO_SEED_SESSION_KEY, userId); } catch { /* ignore */ }
+      try { localStorage.setItem(ACTIVE_BAND_STORAGE_KEY, demoBandId); } catch { /* ignore */ }
       return;
     }
 
+    // Step 1: Create the band document first.
+    // Band sub-collection rules call get(bands/{bandId}), so the band must
+    // exist before we can write songs/setlists into it.
+    await setDoc(doc(firestore, 'bands', demoBandId), {
+      name: 'Demo Band',
+      ownerId: userId,
+      memberIds: [userId],
+      memberRoles: { [userId]: 'editor' },
+      memberEmails: {},
+      memberUsernames: {},
+      memberFullNames: {},
+      memberAvatars: {},
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Step 2: Populate band library and personal songs in one batch.
     const batch = writeBatch(firestore);
+
     for (let i = 0; i < DEMO_SONGS.length; i++) {
-      const songRef = doc(firestore, 'users', userId, 'songs', DEMO_SONG_IDS[i]);
-      batch.set(songRef, { ...DEMO_SONGS[i], ownerId: userId });
+      // Band-scoped songs (shown in the band library)
+      const bandSongRef = doc(firestore, 'bands', demoBandId, 'songs', DEMO_SONG_IDS[i]);
+      batch.set(bandSongRef, {
+        ...DEMO_SONGS[i],
+        ownerId: userId,
+        collaboratorIds: [userId],
+        collaborationPermissions: { [userId]: 'editor' },
+      });
+
+      // Personal songs (shown in personal songbook)
+      const userSongRef = doc(firestore, 'users', userId, 'songs', DEMO_SONG_IDS[i]);
+      batch.set(userSongRef, { ...DEMO_SONGS[i], ownerId: userId });
     }
 
-    // Seed a demo song list containing all demo songs
-    const songListRef = doc(firestore, 'users', userId, 'songLists', 'demo-list-repertoire');
-    batch.set(songListRef, {
+    // Band song list
+    batch.set(doc(firestore, 'bands', demoBandId, 'songLists', 'demo-list-repertoire'), {
+      name: 'Demo Repertoire',
+      songIds: [...DEMO_SONG_IDS],
+      ownerId: userId,
+      sortOrder: 0,
+      createdAt: now,
+    });
+
+    // Band setlist
+    batch.set(doc(firestore, 'bands', demoBandId, 'setlists', 'demo-setlist-gig'), {
+      name: 'Demo Gig',
+      songIds: [DEMO_SONG_IDS[0], DEMO_SONG_IDS[1], DEMO_SONG_IDS[4]],
+      ownerId: userId,
+      sortOrder: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Personal song list
+    batch.set(doc(firestore, 'users', userId, 'songLists', 'demo-list-repertoire'), {
       name: 'Demo Repertoire',
       songIds: [...DEMO_SONG_IDS],
       ownerId: userId,
@@ -209,21 +262,22 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
       sortOrder: 0,
     });
 
-    // Seed a demo setlist with a subset of songs
-    const setlistRef = doc(firestore, 'users', userId, 'setlists', 'demo-setlist-gig');
-    batch.set(setlistRef, {
+    // Personal setlist
+    batch.set(doc(firestore, 'users', userId, 'setlists', 'demo-setlist-gig'), {
       name: 'Demo Gig',
       songIds: [DEMO_SONG_IDS[0], DEMO_SONG_IDS[1], DEMO_SONG_IDS[4]],
       ownerId: userId,
       collaboratorIds: [],
       collaborationPermissions: {},
       sortOrder: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     });
 
     await batch.commit();
 
+    // Point the app at the demo band so RootRedirect lands on the library.
+    try { localStorage.setItem(ACTIVE_BAND_STORAGE_KEY, demoBandId); } catch { /* ignore */ }
     try { sessionStorage.setItem(DEMO_SEED_SESSION_KEY, userId); } catch { /* ignore */ }
   } catch (error) {
     console.warn('Failed to seed demo data.', error);
