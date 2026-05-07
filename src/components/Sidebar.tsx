@@ -8,7 +8,6 @@ import { usePlan } from '../hooks/usePlan';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
-import { showPromptToast } from '../utils/toastDialogs';
 
 function formatStorageBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) {
@@ -77,8 +76,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addSongToBandSongList,
     addBandSetlist,
     addSongToBandSetlist,
-    addBandStageplot,
-    addBandInputList,
   } = useBands();
 
   const [addingBand, setAddingBand] = useState(false);
@@ -91,8 +88,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [collapsedBandSonglistIds, setCollapsedBandSonglistIds] = useState<string[]>([]);
   const [collapsedBandPressKitIds, setCollapsedBandPressKitIds] = useState<string[]>([]);
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
-  const [collapsedBandStageplotIds, setCollapsedBandStageplotIds] = useState<string[]>([]);
-  const [collapsedBandRiderIds, setCollapsedBandRiderIds] = useState<string[]>([]);
 
   const sidebarMode = 'bands' as const;
   const [activeBandId, setActiveBandId] = useState<string | null>(() => {
@@ -295,80 +290,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         ? prev.filter((entry) => entry !== bandId)
         : [...prev, bandId]
     ));
-  };
-
-  const isBandStageplotsExpanded = (bandId: string) => !collapsedBandStageplotIds.includes(bandId);
-
-  const isBandRidersExpanded = (bandId: string) => !collapsedBandRiderIds.includes(bandId);
-
-  const toggleBandStageplotsExpanded = (bandId: string) => {
-    setCollapsedBandStageplotIds((prev) => (
-      prev.includes(bandId)
-        ? prev.filter((entry) => entry !== bandId)
-        : [...prev, bandId]
-    ));
-  };
-
-  const toggleBandRidersExpanded = (bandId: string) => {
-    setCollapsedBandRiderIds((prev) => (
-      prev.includes(bandId)
-        ? prev.filter((entry) => entry !== bandId)
-        : [...prev, bandId]
-    ));
-  };
-
-  const createBandStageplot = async (bandId: string) => {
-    if (!canUse('stagePlots')) {
-      toast.error('Stageplots require a Pro or Band plan.');
-      return;
-    }
-
-    const value = await showPromptToast('New stageplot name', {
-      placeholder: 'Band stageplot name...',
-      confirmLabel: 'Create stageplot',
-      cancelLabel: 'Cancel',
-    });
-
-    const name = value?.trim() ?? '';
-    if (!name) return;
-
-    const result = await addBandStageplot(bandId, name);
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
-    if (result.stageplotId) {
-      clearGlobalSelection();
-      navigate(`/bands/${bandId}/stageplots/${result.stageplotId}`);
-      onNavigate?.();
-    }
-  };
-
-  const createBandRider = async (bandId: string) => {
-    if (!canUse('inputLists')) {
-      toast.error('Input lists require a Pro or Band plan.');
-      return;
-    }
-
-    const value = await showPromptToast('New input list name', {
-      placeholder: 'Band input list name...',
-      confirmLabel: 'Create rider',
-      cancelLabel: 'Cancel',
-    });
-
-    const name = value?.trim() ?? '';
-    if (!name) return;
-
-    const result = await addBandInputList(bandId, name);
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
-    if (result.riderId) {
-      clearGlobalSelection();
-      navigate(`/bands/${bandId}/riders/${result.riderId}`);
-      onNavigate?.();
-    }
   };
 
   const findSongById = (songId: string) => songs.find((entry) => entry.id === songId);
