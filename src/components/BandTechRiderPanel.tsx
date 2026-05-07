@@ -16,6 +16,7 @@ interface Props {
   canEdit: boolean;
   userId: string | null;
   userEmail: string | null;
+  initialRiderId?: string | null;
 }
 
 export default function BandTechRiderPanel({
@@ -26,6 +27,7 @@ export default function BandTechRiderPanel({
   canEdit,
   userId,
   userEmail,
+  initialRiderId = null,
 }: Props) {
   const [activeStageplotId, setActiveStageplotId] = useState<string | null>(null);
   const [activeRiderId, setActiveRiderId] = useState<string | null>(null);
@@ -64,9 +66,10 @@ export default function BandTechRiderPanel({
   useEffect(() => {
     setActiveRiderId((current) => {
       if (current && riders.some((entry) => entry.id === current)) return current;
+      if (initialRiderId && riders.some((entry) => entry.id === initialRiderId)) return initialRiderId;
       return riders[0]?.id ?? null;
     });
-  }, [riders]);
+  }, [initialRiderId, riders]);
 
   const handleCreateStageplot = async () => {
     if (!canEdit) {

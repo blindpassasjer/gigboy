@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
-import InputListEditor from '../components/InputListEditor';
+import BandTechRiderPanel from '../components/BandTechRiderPanel';
 import TrashView from '../components/TrashView';
 import PressKitView from '../components/PressKitView';
 import type { Song } from '../types';
@@ -57,11 +57,6 @@ export default function BandDetailPage() {
     setBandStageplotPublicShare,
     updateBandStageplotContent,
     deleteBandStageplot,
-    renameBandInputList,
-    updateBandInputListIcon,
-    setBandInputListPublicShare,
-    updateBandInputListContent,
-    deleteBandInputList,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
     updateBandLibraryIcon,
@@ -99,9 +94,6 @@ export default function BandDetailPage() {
     : null;
   const activeBandStageplot = bandSection === 'stageplots'
     ? bandStageplots.find((entry) => entry.id === bandResourceId) ?? null
-    : null;
-  const activeBandInputList = bandSection === 'riders'
-    ? bandInputLists.find((entry) => entry.id === bandResourceId) ?? null
     : null;
   const activeBandPressKit = bandSection === 'press-kit'
     ? bandPressKits.find((entry) => entry.id === bandResourceId) ?? null
@@ -297,30 +289,6 @@ export default function BandDetailPage() {
     );
     if (!activeBandStageplot.publicShareEnabled) {
       const error = await setBandStageplotPublicShare(band.id, activeBandStageplot.id, true);
-      if (error) {
-        toast.error(error);
-        return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      toast.success('Public link copied to clipboard!');
-    } catch {
-      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
-    }
-  };
-
-  const handleShareTechnicalRider = async () => {
-    if (!activeBandInputList) return;
-    const publicUrl = buildBandPublicShareUrl(
-      window.location.origin,
-      band.id,
-      band.name,
-      'riders',
-      activeBandInputList.id
-    );
-    if (!activeBandInputList.publicShareEnabled) {
-      const error = await setBandInputListPublicShare(band.id, activeBandInputList.id, true);
       if (error) {
         toast.error(error);
         return;
@@ -537,49 +505,16 @@ export default function BandDetailPage() {
   }
 
   if (bandSection === 'riders') {
-    if (!activeBandInputList) {
-      return (
-        <section className="bands-page">
-          <p className="bands-status">Band technical rider not found.</p>
-          <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">Back to band library</Link>
-        </section>
-      );
-    }
-
     return (
-      <InputListEditor
-        rider={activeBandInputList}
+      <BandTechRiderPanel
+        bandId={band.id}
+        bandName={band.name}
+        stageplots={bandStageplots}
+        riders={bandInputLists}
         canEdit={canEditBand}
-        onRename={async (name) => {
-          const error = await renameBandInputList(band.id, activeBandInputList.id, name);
-          if (error) toast.error(error);
-        }}
-        onUpdateIcon={async (icon) => {
-          const error = await updateBandInputListIcon(band.id, activeBandInputList.id, icon);
-          if (error) toast.error(error);
-        }}
-        onDelete={canEditBand ? async () => {
-          const error = await deleteBandInputList(band.id, activeBandInputList.id);
-          if (error) {
-            toast.error(error);
-            return;
-          }
-          navigate(`/bands/${band.id}/library`);
-        } : undefined}
-        onSaveContent={async (content) => {
-          const error = await updateBandInputListContent({
-            bandId: band.id,
-            riderId: activeBandInputList.id,
-            lines: content.lines,
-            preferredEquipment: content.preferredEquipment,
-            inventoryEquipment: content.inventoryEquipment,
-          });
-          if (error) {
-            toast.error(error);
-            throw new Error(error);
-          }
-        }}
-        onCopyPublicLink={handleShareTechnicalRider}
+        userId={user?.id ?? null}
+        userEmail={user?.email ?? null}
+        initialRiderId={bandResourceId}
       />
     );
   }
