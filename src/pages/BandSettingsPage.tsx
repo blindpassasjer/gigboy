@@ -285,17 +285,18 @@ export default function BandSettingsPage() {
           </div>
         </section>
 
-        {/* ── Members ── */}
-        <BandManagementPanel
-          band={band}
-          canEditBand={canEditBand}
-          isOwner={isOwner}
-        />
         </div>
 
-        {/* ── Subscription (right column) ── */}
+        {/* ── Members + Subscription (right column) ── */}
         <section className="bands-panel">
-          <h2 className="bands-section-heading">
+          {/* ── Members ── */}
+          <BandManagementPanel
+            band={band}
+            canEditBand={canEditBand}
+            isOwner={isOwner}
+          />
+
+          <h2 className="bands-section-heading bands-section-heading--spaced">
             Subscription
           </h2>
           <article className="bands-subscription-row">
