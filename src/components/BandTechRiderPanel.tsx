@@ -255,7 +255,7 @@ export default function BandTechRiderPanel({
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <p className="songlist-item-meta" style={{ margin: 0 }}>
-              Create and manage stageplots for your band.
+              Edit the stageplot directly from the canvas in this view.
             </p>
             <button
               type="button"
@@ -269,65 +269,67 @@ export default function BandTechRiderPanel({
           {stageplots.length === 0 ? (
             <p className="bands-status">No stageplots available yet.</p>
           ) : (
-            stageplots.map((entry) => (
-              <div key={entry.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                  {entry.name}
-                </span>
-                <span className="songlist-item-meta">{entry.items.length} items</span>
-                <button
-                  type="button"
-                  className={`setlist-action-btn setlist-action-btn--secondary${activeStageplotId === entry.id ? ' setlist-action-btn--active' : ''}`}
-                  onClick={() => setActiveStageplotId(entry.id)}
-                >
-                  Edit
-                </button>
-              </div>
-            ))
-          )}
+            <>
+              {stageplots.length > 1 ? (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {stageplots.map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      className={`setlist-action-btn setlist-action-btn--secondary${activeStageplotId === entry.id ? ' setlist-action-btn--active' : ''}`}
+                      onClick={() => setActiveStageplotId(entry.id)}
+                    >
+                      {entry.icon ? `${entry.icon} ` : ''}
+                      {entry.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
-          {activeStageplot ? (
-            <StageplotEditor
-              stageplot={activeStageplot}
-              canEdit={canEdit}
-              currentUser={{
-                id: userId,
-                name: userEmail ?? 'Unknown user',
-                avatar: null,
-              }}
-              onRename={async (name) => {
-                const error = await renameBandStageplot(bandId, activeStageplot.id, name);
-                if (error) toast.error(error);
-              }}
-              onUpdateIcon={async (icon) => {
-                const error = await updateBandStageplotIcon(bandId, activeStageplot.id, icon);
-                if (error) toast.error(error);
-              }}
-              onDelete={async () => {
-                const error = await deleteBandStageplot(bandId, activeStageplot.id);
-                if (error) {
-                  toast.error(error);
-                  return;
-                }
-                setActiveStageplotId(null);
-              }}
-              onSaveContent={async (items, drawingLayers) => {
-                const error = await updateBandStageplotContent({
-                  bandId,
-                  stageplotId: activeStageplot.id,
-                  items,
-                  drawingLayers,
-                });
-                if (error) {
-                  toast.error(error);
-                  throw new Error(error);
-                }
-              }}
-              onCopyPublicLink={async () => {
-                await handleCopyStageplotPublicLink(activeStageplot.id, activeStageplot.publicShareEnabled);
-              }}
-            />
-          ) : null}
+              {activeStageplot ? (
+                <StageplotEditor
+                  stageplot={activeStageplot}
+                  canEdit={canEdit}
+                  currentUser={{
+                    id: userId,
+                    name: userEmail ?? 'Unknown user',
+                    avatar: null,
+                  }}
+                  onRename={async (name) => {
+                    const error = await renameBandStageplot(bandId, activeStageplot.id, name);
+                    if (error) toast.error(error);
+                  }}
+                  onUpdateIcon={async (icon) => {
+                    const error = await updateBandStageplotIcon(bandId, activeStageplot.id, icon);
+                    if (error) toast.error(error);
+                  }}
+                  onDelete={async () => {
+                    const error = await deleteBandStageplot(bandId, activeStageplot.id);
+                    if (error) {
+                      toast.error(error);
+                      return;
+                    }
+                    setActiveStageplotId(null);
+                  }}
+                  onSaveContent={async (items, drawingLayers) => {
+                    const error = await updateBandStageplotContent({
+                      bandId,
+                      stageplotId: activeStageplot.id,
+                      items,
+                      drawingLayers,
+                    });
+                    if (error) {
+                      toast.error(error);
+                      throw new Error(error);
+                    }
+                  }}
+                  onCopyPublicLink={async () => {
+                    await handleCopyStageplotPublicLink(activeStageplot.id, activeStageplot.publicShareEnabled);
+                  }}
+                />
+              ) : null}
+            </>
+          )}
         </div>
       </div>
     </section>

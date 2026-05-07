@@ -592,6 +592,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
                 {isBandSonglistsExpanded(band.id) && (
                   <div className="sidebar-nested-group">
+                    {(bandSongListsByBandId[band.id] ?? []).length === 0 && addingBandSongListId !== band.id && (
+                      <p className="sidebar-empty-hint">No songlists yet.</p>
+                    )}
+
                     {(bandSongListsByBandId[band.id] ?? []).map((songList) => (
                       <div
                         key={songList.id}
@@ -659,6 +663,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
                 {isBandSetlistsExpanded(band.id) && (
                   <div className="sidebar-nested-group">
+                    {(bandSetlistsByBandId[band.id] ?? []).length === 0 && addingBandSetlistId !== band.id && (
+                      <p className="sidebar-empty-hint">No setlists yet.</p>
+                    )}
+
                     {(bandSetlistsByBandId[band.id] ?? []).map((setlist) => (
                       <div
                         key={setlist.id}
@@ -693,7 +701,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       />
                     )}
                   </div>
-                )}                <div className="sidebar-setlists-header">
+                )}
+
+                <div className="sidebar-setlists-header">
                   <button
                     type="button"
                     className="sidebar-section-toggle"

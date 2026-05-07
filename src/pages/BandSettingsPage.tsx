@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
@@ -27,25 +26,9 @@ function normalizeEmojiIcon(value: string): string | undefined {
   return [...trimmed].slice(0, 2).join('');
 }
 
-function formatPeriodEnd(value: number | null | undefined) {
-  if (!value) return null;
-  const normalized = value > 1_000_000_000_000 ? value : value * 1000;
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(date);
-}
-
-function formatSubscriptionStatus(status: string | null) {
-  if (!status) return 'Not subscribed';
-  return status.replace('_', ' ');
-}
-
 export default function BandSettingsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const {
     bands,
@@ -62,8 +45,7 @@ export default function BandSettingsPage() {
   const [icon, setIcon] = useState('🎵');
   const [color, setColor] = useState('#c33232');
   const [useAutoColor, setUseAutoColor] = useState(true);
-  const [busyRename, setBusyRename] = useState(false);
-  const [busyDescription, setBusyDescription] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [busyAppearance, setBusyAppearance] = useState(false);
 
   useEffect(() => {
@@ -90,23 +72,6 @@ export default function BandSettingsPage() {
 
   const isOwner = band.ownerId === user?.id;
   const canEditBand = isOwner || band.memberRoles[user?.id ?? ''] === 'editor';
-  const hasBandBillingSnapshot =
-    band.billingPlan !== undefined
-    || band.billingSubscriptionStatus !== undefined
-    || band.billingCurrentPeriodEnd !== undefined;
-  const fallbackToOwnerPlan = isOwner && !hasBandBillingSnapshot;
-  const effectiveBandPlan = hasBandBillingSnapshot
-    ? (band.billingPlan ?? 'free')
-    : (fallbackToOwnerPlan && user?.plan === 'band' ? 'band' : 'free');
-  const bandHasSubscription = effectiveBandPlan === 'band';
-  const effectiveSubscriptionStatus = hasBandBillingSnapshot
-    ? (band.billingSubscriptionStatus ?? null)
-    : (fallbackToOwnerPlan ? user?.subscriptionStatus ?? null : null);
-  const effectiveRenewalPeriodEnd = hasBandBillingSnapshot
-    ? (band.billingCurrentPeriodEnd ?? null)
-    : (fallbackToOwnerPlan ? user?.currentPeriodEnd ?? null : null);
-  const bandMemberLimit = band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0));
-  const bandRenewalDate = formatPeriodEnd(effectiveRenewalPeriodEnd);
 
   const applyAppearance = async (nextIcon: string, nextColor: string | undefined) => {
     if (!canEditBand || busyAppearance) return;
@@ -134,52 +99,47 @@ export default function BandSettingsPage() {
     await applyAppearance(icon, undefined);
   };
 
-  const handleNameCommit = async () => {
-    if (!canEditBand || busyRename) return;
+  const handleSave = async () => {
+    if (!canEditBand) {
+      navigate(`/bands/${band.id}/library`);
+      return;
+    }
+
     const trimmedName = name.trim();
     if (!trimmedName) {
       toast.error('Band name is required.');
-      setName(band.name);
       return;
     }
 
-    if (trimmedName === band.name) {
-      return;
-    }
-
-    setBusyRename(true);
-    const renameError = await renameBand(band.id, trimmedName);
-    setBusyRename(false);
-
-    if (renameError) {
-      toast.error(renameError);
-      setName(band.name);
-      return;
-    }
-    toast.success('Band name updated.');
-  };
-
-  const handleDescriptionCommit = async () => {
-    if (!canEditBand || busyDescription) return;
-    const trimmedDescription = description.trim();
     if (description.length > 240) {
       toast.error('Description must be 240 characters or fewer.');
       return;
     }
 
-    if (trimmedDescription === (band.description ?? '')) {
-      return;
+    setBusy(true);
+
+    if (trimmedName !== band.name) {
+      const renameError = await renameBand(band.id, trimmedName);
+      if (renameError) {
+        setBusy(false);
+        toast.error(renameError);
+        return;
+      }
     }
 
-    setBusyDescription(true);
-    const descError = await updateBandDescription(band.id, trimmedDescription);
-    setBusyDescription(false);
-
-    if (descError) {
-      toast.error(descError);
-      return;
+    const trimmedDescription = description.trim();
+    if (trimmedDescription !== (band.description ?? '')) {
+      const descError = await updateBandDescription(band.id, trimmedDescription);
+      if (descError) {
+        setBusy(false);
+        toast.error(descError);
+        return;
+      }
     }
-    toast.success('Band description updated.');
+
+    setBusy(false);
+    toast.success('Band profile saved.');
+    navigate(`/bands/${band.id}/library`);
   };
 
   return (
@@ -191,12 +151,13 @@ export default function BandSettingsPage() {
         </div>
       </header>
 
-      <Link to={`/bands/${band.id}/library`} className="back-link">
-        <ArrowLeft size={16} /> Back to band library
-      </Link>
+      <div className="bands-page-toolbar">
+        <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">
+          Back to band library
+        </Link>
+      </div>
 
-      <div className="modal-content bands-settings-layout">
-        <div className="bands-settings-left">
+      <div className="modal-content">
         <section className="bands-panel">
 
           {/* ── Profile ── */}
@@ -210,16 +171,9 @@ export default function BandSettingsPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onBlur={() => { void handleNameCommit(); }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  (event.currentTarget as HTMLInputElement).blur();
-                }
-              }}
               placeholder="Band name"
               maxLength={80}
-              disabled={!canEditBand || busyRename}
+              disabled={!canEditBand}
             />
           </div>
 
@@ -229,11 +183,10 @@ export default function BandSettingsPage() {
               className="bands-description-field"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              onBlur={() => { void handleDescriptionCommit(); }}
               placeholder="A short bio or description for your band"
               maxLength={240}
               rows={3}
-              disabled={!canEditBand || busyDescription}
+              disabled={!canEditBand}
             />
           </div>
 
@@ -283,44 +236,34 @@ export default function BandSettingsPage() {
             </button>
             <p className="bands-inline-note">Color updates immediately.</p>
           </div>
-        </section>
 
-        </div>
-
-        {/* ── Members + Subscription (right column) ── */}
-        <section className="bands-panel">
-          {/* ── Members ── */}
-          <BandManagementPanel
-            band={band}
-            canEditBand={canEditBand}
-            isOwner={isOwner}
-          />
-
-          <h2 className="bands-section-heading bands-section-heading--spaced">
-            Subscription
-          </h2>
-          <article className="bands-subscription-row">
-            <div className="bands-subscription-copy">
-              <strong>{bandHasSubscription ? 'Band plan active' : 'Free plan'}</strong>
-              <span>
-                {bandHasSubscription
-                  ? `${formatSubscriptionStatus(effectiveSubscriptionStatus)} · ${bandMemberLimit} members`
-                  : 'No active Band subscription for this band.'}
-              </span>
-              {!hasBandBillingSnapshot && fallbackToOwnerPlan ? (
-                <span>Showing owner account subscription until band billing snapshot syncs.</span>
-              ) : null}
-              <span>{bandRenewalDate ? `Renews ${bandRenewalDate}` : 'Renewal date unavailable'}</span>
+          {/* ── Actions ── */}
+          {canEditBand && (
+            <div style={{ display: 'flex', gap: '.5rem', marginTop: '1.5rem' }}>
+              <button
+                type="button"
+                className="setlist-action-btn"
+                onClick={() => void handleSave()}
+                disabled={busy}
+              >
+                {busy ? 'Saving…' : 'Save changes'}
+              </button>
+              <Link
+                to={`/bands/${band.id}/library`}
+                className="setlist-action-btn setlist-action-btn--secondary"
+              >
+                Cancel
+              </Link>
             </div>
-            <Link
-              to="/pricing"
-              state={{ bandId: band.id }}
-              className="setlist-action-btn setlist-action-btn--secondary"
-            >
-              Open billing
-            </Link>
-          </article>
+          )}
         </section>
+
+        {/* ── Members ── */}
+        <BandManagementPanel
+          band={band}
+          canEditBand={canEditBand}
+          isOwner={isOwner}
+        />
       </div>
     </section>
   );
