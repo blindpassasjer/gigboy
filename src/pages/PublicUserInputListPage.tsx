@@ -3,15 +3,15 @@ import { Link, useParams } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { normalizeTechnicalRider } from '../lib/technicalRiders';
-import type { TechnicalRider } from '../types';
+import { normalizeInputList } from '../lib/inputLists';
+import type { InputList } from '../types';
 
 type Status = 'loading' | 'not-found' | 'private' | 'error' | 'ready';
 
-export default function PublicUserTechnicalRiderPage() {
+export default function PublicUserInputListPage() {
   const { userId, riderId } = useParams<{ userId: string; riderId: string }>();
   const [status, setStatus] = useState<Status>('loading');
-  const [rider, setRider] = useState<TechnicalRider | null>(null);
+  const [rider, setRider] = useState<InputList | null>(null);
 
   useEffect(() => {
     if (!userId || !riderId || !db) {
@@ -39,7 +39,7 @@ export default function PublicUserTechnicalRiderPage() {
           return;
         }
 
-        setRider(normalizeTechnicalRider(snapshot.id, data));
+        setRider(normalizeInputList(snapshot.id, data));
         setStatus('ready');
       } catch {
         if (!cancelled) setStatus('error');
@@ -53,19 +53,19 @@ export default function PublicUserTechnicalRiderPage() {
   }, [riderId, userId]);
 
   if (status === 'loading') {
-    return <div className="public-setlist-page"><p className="public-setlist-status">Loading technical rider...</p></div>;
+    return <div className="public-setlist-page"><p className="public-setlist-status">Loading input list...</p></div>;
   }
 
   if (status === 'not-found') {
-    return <div className="public-setlist-page"><p className="public-setlist-status">Technical rider not found.</p></div>;
+    return <div className="public-setlist-page"><p className="public-setlist-status">Input list not found.</p></div>;
   }
 
   if (status === 'private') {
-    return <div className="public-setlist-page"><p className="public-setlist-status">This technical rider is not publicly shared.</p></div>;
+    return <div className="public-setlist-page"><p className="public-setlist-status">This input list is not publicly shared.</p></div>;
   }
 
   if (status === 'error' || !rider) {
-    return <div className="public-setlist-page"><p className="public-setlist-status">Failed to load technical rider.</p></div>;
+    return <div className="public-setlist-page"><p className="public-setlist-status">Failed to load input list.</p></div>;
   }
 
   return (

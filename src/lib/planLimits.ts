@@ -3,7 +3,7 @@ import type { PlanTier } from '../types';
 export type ProFeature =
   | 'setlists'
   | 'stagePlots'
-  | 'technicalRiders'
+  | 'inputLists'
   | 'shareableLinks'
   | 'bluetoothPedal'
   | 'recordings'
@@ -44,7 +44,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
   free: {
     setlists: false,
     stagePlots: false,
-    technicalRiders: false,
+    inputLists: false,
     shareableLinks: false,
     bluetoothPedal: false,
     recordings: false,
@@ -54,7 +54,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
   pro: {
     setlists: true,
     stagePlots: true,
-    technicalRiders: true,
+    inputLists: true,
     shareableLinks: true,
     bluetoothPedal: true,
     recordings: true,
@@ -64,7 +64,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
   band: {
     setlists: true,
     stagePlots: true,
-    technicalRiders: true,
+    inputLists: true,
     shareableLinks: true,
     bluetoothPedal: true,
     recordings: true,

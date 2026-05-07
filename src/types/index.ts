@@ -144,7 +144,7 @@ export interface Stageplot extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export interface TechnicalRiderLine {
+export interface InputListLine {
   id: string;
   name: string;
   description: string;
@@ -158,11 +158,11 @@ export interface RiderEquipmentItem {
   sortOrder?: number;
 }
 
-export interface TechnicalRider extends CollaborationMetadata {
+export interface InputList extends CollaborationMetadata {
   id: string;
   name: string;
   icon?: string;
-  lines: TechnicalRiderLine[];
+  lines: InputListLine[];
   preferredEquipment: RiderEquipmentItem[];
   inventoryEquipment: RiderEquipmentItem[];
   publicShareEnabled?: boolean;
@@ -201,9 +201,9 @@ export interface TrashedStageplot extends TrashMetadata {
   stageplot: Stageplot;
 }
 
-export interface TrashedTechnicalRider extends TrashMetadata {
+export interface TrashedInputList extends TrashMetadata {
   itemType: 'technicalRider';
-  technicalRider: TechnicalRider;
+  inputList: InputList;
 }
 
 export type Language =

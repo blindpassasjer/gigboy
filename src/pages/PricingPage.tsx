@@ -85,7 +85,7 @@ const COMPARISON_FEATURES: ComparisonFeature[] = [
   { label: 'Song lists', icon: ListMusic, free: 'Yes', pro: 'Yes', band: 'Yes' },
   { label: 'Setlists', icon: NotebookPen, free: 'No', pro: 'Yes', band: 'Yes' },
   { label: 'Stage plots', icon: Share2, free: 'No', pro: 'Yes', band: 'Yes' },
-  { label: 'Technical rider', icon: Link2, free: 'No', pro: 'Yes', band: 'Yes' },
+  { label: 'Input list', icon: Link2, free: 'No', pro: 'Yes', band: 'Yes' },
   { label: 'Shareable links', icon: Share2, free: 'No', pro: 'Yes', band: 'Yes' },
   { label: 'Bluetooth pedal', icon: Gauge, free: 'No', pro: 'Yes', band: 'Yes' },
   { label: 'Recordings', icon: Headphones, free: 'No', pro: 'Yes', band: 'Yes' },

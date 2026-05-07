@@ -1,6 +1,6 @@
-import type { RiderEquipmentItem, TechnicalRider, TechnicalRiderLine } from '../types';
+import type { RiderEquipmentItem, InputList, InputListLine } from '../types';
 
-function normalizeLine(raw: unknown): TechnicalRiderLine | null {
+function normalizeLine(raw: unknown): InputListLine | null {
   if (!raw || typeof raw !== 'object') return null;
   const data = raw as Record<string, unknown>;
   if (typeof data.id !== 'string') return null;
@@ -41,7 +41,7 @@ function withSequentialSortOrder<T extends { sortOrder?: number }>(entries: T[])
   return entries.map((entry, index) => ({ ...entry, sortOrder: index }));
 }
 
-export function normalizeTechnicalRider(id: string, raw: Record<string, unknown>): TechnicalRider {
+export function normalizeInputList(id: string, raw: Record<string, unknown>): InputList {
   const linesRaw = Array.isArray(raw.lines) ? raw.lines : [];
   const preferredRaw = Array.isArray(raw.preferredEquipment) ? raw.preferredEquipment : [];
   const inventoryRaw = Array.isArray(raw.inventoryEquipment) ? raw.inventoryEquipment : [];
@@ -49,7 +49,7 @@ export function normalizeTechnicalRider(id: string, raw: Record<string, unknown>
   const lines = withSequentialSortOrder(
     linesRaw
       .map(normalizeLine)
-      .filter((entry): entry is TechnicalRiderLine => Boolean(entry))
+      .filter((entry): entry is InputListLine => Boolean(entry))
       .sort(compareBySortOrderThenName)
   );
 
@@ -89,21 +89,21 @@ export function normalizeTechnicalRider(id: string, raw: Record<string, unknown>
             Object.entries(raw.collaborationPermissions as Record<string, unknown>).filter(
               ([, permission]) => permission === 'viewer' || permission === 'editor'
             )
-          ) as TechnicalRider['collaborationPermissions']
+          ) as InputList['collaborationPermissions']
         : undefined,
     accessRole: 'owner',
   };
 }
 
-export function sortTechnicalRiders(riders: TechnicalRider[]) {
+export function sortInputLists(riders: InputList[]) {
   return [...riders].sort(compareBySortOrderThenName);
 }
 
-export function withSequentialTechnicalRiderSortOrder(riders: TechnicalRider[]) {
+export function withSequentialInputListSortOrder(riders: InputList[]) {
   return riders.map((rider, index) => ({ ...rider, sortOrder: index }));
 }
 
-export function withSequentialRiderLineSortOrder(lines: TechnicalRiderLine[]) {
+export function withSequentialRiderLineSortOrder(lines: InputListLine[]) {
   return withSequentialSortOrder(lines);
 }
 

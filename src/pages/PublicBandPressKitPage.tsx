@@ -107,7 +107,7 @@ export default function PublicBandPressKitPage() {
         <div className="setlist-tabs" style={{ marginBottom: '0.8rem' }}>
           {([
             { id: 'stageplots', label: `Stageplots (${payload.stageplots.length})`, icon: <Map size={14} /> },
-            { id: 'riders', label: `Technical Riders (${payload.riders.length})`, icon: <ClipboardList size={14} /> },
+            { id: 'riders', label: `Input Lists (${payload.riders.length})`, icon: <ClipboardList size={14} /> },
             { id: 'texts', label: `Texts (${payload.texts.length})`, icon: <FileText size={14} /> },
             { id: 'images', label: `Images (${payload.images.length})`, icon: <Images size={14} /> },
           ] as const).map((tab) => (
@@ -139,7 +139,7 @@ export default function PublicBandPressKitPage() {
         {activeTab === 'riders' && (
           <div className="songlist-body">
             {payload.riders.length === 0
-              ? <p className="bands-status">No technical riders included.</p>
+              ? <p className="bands-status">No input lists included.</p>
               : payload.riders.map((entry) => (
                 <article key={entry.id} className="songlist-item" style={{ display: 'block' }}>
                   <strong>{entry.name}</strong>

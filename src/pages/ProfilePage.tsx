@@ -369,7 +369,7 @@ export default function ProfilePage() {
           <div className="profile-feature-chips" aria-label="Included paid features">
             <span className={planState.canUse('setlists') ? 'is-enabled' : ''}>Setlists</span>
             <span className={planState.canUse('stagePlots') ? 'is-enabled' : ''}>Stage plots</span>
-            <span className={planState.canUse('technicalRiders') ? 'is-enabled' : ''}>Technical rider</span>
+            <span className={planState.canUse('inputLists') ? 'is-enabled' : ''}>Input list</span>
             <span className={planState.canUse('shareableLinks') ? 'is-enabled' : ''}>Sharing</span>
             <span className={planState.canUse('bluetoothPedal') ? 'is-enabled' : ''}>Bluetooth pedal</span>
             <span className={planState.canUse('recordings') ? 'is-enabled' : ''}>Recordings</span>

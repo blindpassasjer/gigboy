@@ -3,12 +3,12 @@ import { Download, ExternalLink, FileText, Images, Map, ClipboardList } from 'lu
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
-import type { Stageplot, TechnicalRider } from '../types';
+import type { Stageplot, InputList } from '../types';
 import { createPressKitShare } from '../lib/pressKitApi';
 import { db, storage } from '../lib/firebase';
 import { generatePressKitZip, type PressKitImageItem, type PressKitTextItem } from '../lib/pressKitZip';
 import StageplotEditor from './StageplotEditor';
-import TechnicalRiderEditor from './TechnicalRiderEditor';
+import InputListEditor from './InputListEditor';
 import { useBands } from '../context/BandsContext';
 import { showPromptToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
@@ -17,7 +17,7 @@ interface Props {
   bandId: string;
   bandName: string;
   stageplots: Stageplot[];
-  riders: TechnicalRider[];
+  riders: InputList[];
   canEdit: boolean;
   userId: string | null;
   userEmail: string | null;
@@ -109,12 +109,12 @@ export default function BandPressKitPanel({
     setBandStageplotPublicShare,
     updateBandStageplotContent,
     deleteBandStageplot,
-    addBandTechnicalRider,
-    renameBandTechnicalRider,
-    updateBandTechnicalRiderIcon,
-    setBandTechnicalRiderPublicShare,
-    updateBandTechnicalRiderContent,
-    deleteBandTechnicalRider,
+    addBandInputList,
+    renameBandInputList,
+    updateBandInputListIcon,
+    setBandInputListPublicShare,
+    updateBandInputListContent,
+    deleteBandInputList,
   } = useBands();
 
   useEffect(() => {
@@ -164,19 +164,19 @@ export default function BandPressKitPanel({
 
   const handleCreateRider = async () => {
     if (!canEdit) {
-      toast.error('Only band editors can create technical riders.');
+      toast.error('Only band editors can create input lists.');
       return;
     }
 
-    const value = await showPromptToast('New technical rider name', {
-      placeholder: 'Band technical rider name...',
+    const value = await showPromptToast('New input list name', {
+      placeholder: 'Band input list name...',
       confirmLabel: 'Create rider',
       cancelLabel: 'Cancel',
     });
     const name = value?.trim() ?? '';
     if (!name) return;
 
-    const result = await addBandTechnicalRider(bandId, name);
+    const result = await addBandInputList(bandId, name);
     if (result.error) {
       toast.error(result.error);
       return;
@@ -214,7 +214,7 @@ export default function BandPressKitPanel({
 
   const handleCopyRiderPublicLink = async (riderId: string, alreadyEnabled: boolean | undefined) => {
     if (!alreadyEnabled) {
-      const error = await setBandTechnicalRiderPublicShare(bandId, riderId, true);
+      const error = await setBandInputListPublicShare(bandId, riderId, true);
       if (error) {
         toast.error(error);
         return;
@@ -496,7 +496,7 @@ export default function BandPressKitPanel({
         <div className="setlist-tabs" style={{ marginBottom: '0.8rem' }}>
           {([
             { id: 'stageplots', label: 'Stageplots', icon: <Map size={14} /> },
-            { id: 'riders', label: 'Technical Riders', icon: <ClipboardList size={14} /> },
+            { id: 'riders', label: 'Input Lists', icon: <ClipboardList size={14} /> },
             { id: 'texts', label: 'Texts', icon: <FileText size={14} /> },
             { id: 'images', label: 'Images', icon: <Images size={14} /> },
           ] as const).map((tab) => (
@@ -613,7 +613,7 @@ export default function BandPressKitPanel({
           <div className="songlist-body" style={{ display: 'grid', gap: '0.8rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <p className="songlist-item-meta" style={{ margin: 0 }}>
-                Manage technical riders and select which ones are included in this Press Kit.
+                Manage input lists and select which ones are included in this Press Kit.
               </p>
               <button
                 type="button"
@@ -625,7 +625,7 @@ export default function BandPressKitPanel({
               </button>
             </div>
             {riders.length === 0 ? (
-              <p className="bands-status">No technical riders available yet.</p>
+              <p className="bands-status">No input lists available yet.</p>
             ) : (
               riders.map((entry) => {
                 const checked = selectedRiderIds.includes(entry.id);
@@ -659,19 +659,19 @@ export default function BandPressKitPanel({
             )}
 
             {activeRider ? (
-              <TechnicalRiderEditor
+              <InputListEditor
                 rider={activeRider}
                 canEdit={canEdit}
                 onRename={async (name) => {
-                  const error = await renameBandTechnicalRider(bandId, activeRider.id, name);
+                  const error = await renameBandInputList(bandId, activeRider.id, name);
                   if (error) toast.error(error);
                 }}
                 onUpdateIcon={async (icon) => {
-                  const error = await updateBandTechnicalRiderIcon(bandId, activeRider.id, icon);
+                  const error = await updateBandInputListIcon(bandId, activeRider.id, icon);
                   if (error) toast.error(error);
                 }}
                 onDelete={canEdit ? async () => {
-                  const error = await deleteBandTechnicalRider(bandId, activeRider.id);
+                  const error = await deleteBandInputList(bandId, activeRider.id);
                   if (error) {
                     toast.error(error);
                     return;
@@ -679,7 +679,7 @@ export default function BandPressKitPanel({
                   setSelectedRiderIds((current) => current.filter((id) => id !== activeRider.id));
                 } : undefined}
                 onSaveContent={async (content) => {
-                  const error = await updateBandTechnicalRiderContent({
+                  const error = await updateBandInputListContent({
                     bandId,
                     riderId: activeRider.id,
                     lines: content.lines,

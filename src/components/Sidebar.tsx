@@ -63,13 +63,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     bandSongListsByBandId,
     bandSetlistsByBandId,
     bandStageplotsByBandId,
-    bandTechnicalRidersByBandId,
+    bandInputListsByBandId,
     bandTrashByBandId,
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
     refreshBandStageplots,
-    refreshBandTechnicalRiders,
+    refreshBandInputLists,
     refreshBandTrash,
     createBand,
     addSongToBandLibrary,
@@ -78,7 +78,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addBandSetlist,
     addSongToBandSetlist,
     addBandStageplot,
-    addBandTechnicalRider,
+    addBandInputList,
   } = useBands();
 
   const [addingBand, setAddingBand] = useState(false);
@@ -150,7 +150,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const missingBandRiderCollections = bands
       .map((band) => band.id)
-      .filter((bandId) => bandTechnicalRidersByBandId[bandId] === undefined);
+      .filter((bandId) => bandInputListsByBandId[bandId] === undefined);
 
     const missingBandTrashCollections = bands
       .map((band) => band.id)
@@ -190,7 +190,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     });
 
     missingBandRiderCollections.forEach((bandId) => {
-      void refreshBandTechnicalRiders(bandId).catch(() => {
+      void refreshBandInputLists(bandId).catch(() => {
         // Sidebar counts are best-effort; detailed errors are handled on band pages.
       });
     });
@@ -203,7 +203,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   }, [
     bandTrashByBandId,
     bandStageplotsByBandId,
-    bandTechnicalRidersByBandId,
+    bandInputListsByBandId,
     bandSetlistsByBandId,
     bandSongListsByBandId,
     bandSongsByBandId,
@@ -211,7 +211,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     refreshBandTrash,
     refreshBandStageplots,
     refreshBandSetlists,
-    refreshBandTechnicalRiders,
+    refreshBandInputLists,
     refreshBandSongLists,
     refreshBandSongs,
   ]);
@@ -345,13 +345,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   };
 
   const createBandRider = async (bandId: string) => {
-    if (!canUse('technicalRiders')) {
-      toast.error('Technical riders require a Pro or Band plan.');
+    if (!canUse('inputLists')) {
+      toast.error('Input lists require a Pro or Band plan.');
       return;
     }
 
-    const value = await showPromptToast('New technical rider name', {
-      placeholder: 'Band technical rider name...',
+    const value = await showPromptToast('New input list name', {
+      placeholder: 'Band input list name...',
       confirmLabel: 'Create rider',
       cancelLabel: 'Cancel',
     });
@@ -359,7 +359,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     const name = value?.trim() ?? '';
     if (!name) return;
 
-    const result = await addBandTechnicalRider(bandId, name);
+    const result = await addBandInputList(bandId, name);
     if (result.error) {
       toast.error(result.error);
       return;
@@ -638,7 +638,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                         }}
                       >
                         <ClipboardList size={14} />
-                        <span className="sidebar-list-name">Technical Riders</span>
+                        <span className="sidebar-list-name">Input Lists</span>
                       </button>
                     </div>
 
@@ -806,91 +806,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   </div>
                 )}
 
-                <div className="sidebar-setlists-header">
-                  <button
-                    type="button"
-                    className="sidebar-section-toggle"
-                    onClick={() => toggleBandStageplotsExpanded(band.id)}
-                    aria-expanded={isBandStageplotsExpanded(band.id)}
-                  >
-                    {isBandStageplotsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    <span className="sidebar-section-title">Stageplots</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="sidebar-icon-btn"
-                    title={canUse('stagePlots') ? 'New band stageplot' : 'Upgrade to Pro to create stageplots'}
-                    aria-label="Create new band stageplot"
-                    onClick={() => {
-                      void createBandStageplot(band.id);
-                    }}
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
 
-                {isBandStageplotsExpanded(band.id) && (
-                  <div className="sidebar-nested-group">
-                    {(bandStageplotsByBandId[band.id] ?? []).map((stageplot) => (
-                      <div
-                        key={stageplot.id}
-                        className={`sidebar-list-item${pathname === `/bands/${band.id}/stageplots/${stageplot.id}` ? ' active' : ''}`}
-                      >
-                        <button
-                          className="sidebar-list-item-btn"
-                          onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/stageplots/${stageplot.id}`); onNavigate?.(); }}
-                        >
-                          {stageplot.icon ? <span className="sidebar-list-icon" aria-hidden="true">{stageplot.icon}</span> : <Map size={14} />}
-                          <span className="sidebar-list-name">{stageplot.name}</span>
-                          {stageplot.items.length > 0 && <span className="sidebar-list-count">{stageplot.items.length}</span>}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="sidebar-setlists-header">
-                  <button
-                    type="button"
-                    className="sidebar-section-toggle"
-                    onClick={() => toggleBandRidersExpanded(band.id)}
-                    aria-expanded={isBandRidersExpanded(band.id)}
-                  >
-                    {isBandRidersExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    <span className="sidebar-section-title">Technical Riders</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="sidebar-icon-btn"
-                    title={canUse('technicalRiders') ? 'New band technical rider' : 'Upgrade to Pro to create technical riders'}
-                    aria-label="Create new band technical rider"
-                    onClick={() => {
-                      void createBandRider(band.id);
-                    }}
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-
-                {isBandRidersExpanded(band.id) && (
-                  <div className="sidebar-nested-group">
-                    {(bandTechnicalRidersByBandId[band.id] ?? []).map((rider) => (
-                      <div
-                        key={rider.id}
-                        className={`sidebar-list-item${pathname === `/bands/${band.id}/riders/${rider.id}` ? ' active' : ''}`}
-                      >
-                        <button
-                          className="sidebar-list-item-btn"
-                          onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/riders/${rider.id}`); onNavigate?.(); }}
-                        >
-                          {rider.icon ? <span className="sidebar-list-icon" aria-hidden="true">{rider.icon}</span> : <ClipboardList size={14} />}
-                          <span className="sidebar-list-name">{rider.name}</span>
-                          {rider.lines.length > 0 && <span className="sidebar-list-count">{rider.lines.length}</span>}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
 
               </div>
             </div>

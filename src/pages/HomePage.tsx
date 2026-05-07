@@ -7,12 +7,12 @@ import { useSetlists } from '../context/SetlistsContext';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useStageplots } from '../context/StageplotsContext';
-import { useTechnicalRiders } from '../context/TechnicalRidersContext';
+import { useInputLists } from '../context/InputListsContext';
 import { usePlan } from '../hooks/usePlan';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
-import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
+import InputListEditor from '../components/InputListEditor';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 
@@ -62,14 +62,14 @@ export default function HomePage() {
     setStageplotPublicShare,
   } = useStageplots();
   const {
-    technicalRiders,
-    activeTechnicalRiderId,
-    renameTechnicalRider,
-    updateTechnicalRiderIcon,
-    deleteTechnicalRider,
-    updateTechnicalRiderContent,
-    setTechnicalRiderPublicShare,
-  } = useTechnicalRiders();
+    inputLists,
+    activeInputListId,
+    renameInputList,
+    updateInputListIcon,
+    deleteInputList,
+    updateInputListContent,
+    setInputListPublicShare,
+  } = useInputLists();
   const {
     bands,
     bandSongsByBandId,
@@ -87,7 +87,7 @@ export default function HomePage() {
   const activeList = songLists.find((l) => l.id === activeSongListId) ?? null;
   const activeSetlist = setlists.find((s) => s.id === activeSetlistId) ?? null;
   const activeStageplot = stageplots.find((entry) => entry.id === activeStageplotId) ?? null;
-  const activeTechnicalRider = technicalRiders.find((entry) => entry.id === activeTechnicalRiderId) ?? null;
+  const activeInputList = inputLists.find((entry) => entry.id === activeInputListId) ?? null;
   const activeCategory = categories.find((category) => category.id === activeCategoryId) ?? null;
   const songsById = new Map(songs.map((song) => [song.id, song]));
   const [allSongsIcon, setAllSongsIcon] = useState<string | undefined>(() => {
@@ -439,22 +439,22 @@ export default function HomePage() {
     );
   }
 
-  async function handleShareTechnicalRider() {
-    if (!activeTechnicalRider) return;
+  async function handleShareInputList() {
+    if (!activeInputList) return;
     if (!canUse('shareableLinks')) {
       toast.error('Public shareable links require a Pro or Band plan.');
       return;
     }
-    const ownerId = activeTechnicalRider.ownerId;
+    const ownerId = activeInputList.ownerId;
     if (!ownerId) {
-      toast.error('This technical rider cannot be publicly shared yet. Please sync your account first.');
+      toast.error('This input list cannot be publicly shared yet. Please sync your account first.');
       return;
     }
 
-    const publicUrl = `${window.location.origin}/public/users/${ownerId}/riders/${activeTechnicalRider.id}`;
+    const publicUrl = `${window.location.origin}/public/users/${ownerId}/riders/${activeInputList.id}`;
 
-    if (!activeTechnicalRider.publicShareEnabled) {
-      const error = await setTechnicalRiderPublicShare(activeTechnicalRider.id, true);
+    if (!activeInputList.publicShareEnabled) {
+      const error = await setInputListPublicShare(activeInputList.id, true);
       if (error) {
         toast.error(error);
         return;
@@ -469,26 +469,26 @@ export default function HomePage() {
     }
   }
 
-  if (activeTechnicalRider) {
+  if (activeInputList) {
     return (
-      <TechnicalRiderEditor
-        rider={activeTechnicalRider}
+      <InputListEditor
+        rider={activeInputList}
         canEdit
         onRename={async (name) => {
-          const error = await renameTechnicalRider(activeTechnicalRider.id, name);
+          const error = await renameInputList(activeInputList.id, name);
           if (error) toast.error(error);
         }}
         onUpdateIcon={async (icon) => {
-          const error = await updateTechnicalRiderIcon(activeTechnicalRider.id, icon);
+          const error = await updateInputListIcon(activeInputList.id, icon);
           if (error) toast.error(error);
         }}
         onDelete={async () => {
-          const error = await deleteTechnicalRider(activeTechnicalRider.id);
+          const error = await deleteInputList(activeInputList.id);
           if (error) toast.error(error);
         }}
         onSaveContent={async (content) => {
-          const error = await updateTechnicalRiderContent({
-            riderId: activeTechnicalRider.id,
+          const error = await updateInputListContent({
+            riderId: activeInputList.id,
             lines: content.lines,
             preferredEquipment: content.preferredEquipment,
             inventoryEquipment: content.inventoryEquipment,
@@ -498,7 +498,7 @@ export default function HomePage() {
             throw new Error(error);
           }
         }}
-        onCopyPublicLink={handleShareTechnicalRider}
+        onCopyPublicLink={handleShareInputList}
       />
     );
   }

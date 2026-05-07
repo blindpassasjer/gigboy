@@ -41,14 +41,14 @@ import PricingPage from './pages/PricingPage';
 import CheckoutResultPage from './pages/CheckoutResultPage';
 import PublicBandSetlistPage from './pages/PublicBandSetlistPage';
 import PublicBandStageplotPage from './pages/PublicBandStageplotPage';
-import PublicBandTechnicalRiderPage from './pages/PublicBandTechnicalRiderPage';
+import PublicBandInputListPage from './pages/PublicBandInputListPage';
 import PublicBandPressKitPage from './pages/PublicBandPressKitPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { BandsProvider } from './context/BandsContext';
-import { TechnicalRidersProvider } from './context/TechnicalRidersContext';
+import { InputListsProvider } from './context/InputListsContext';
 import { StageplotsProvider } from './context/StageplotsContext';
 
 function AuthenticatedApp() {
@@ -66,7 +66,7 @@ function AuthenticatedApp() {
       <SongListsProvider>
         <SetlistsProvider>
           <StageplotsProvider>
-            <TechnicalRidersProvider>
+            <InputListsProvider>
               <BandsProvider>
                 <Layout>
                   <Routes>
@@ -87,7 +87,7 @@ function AuthenticatedApp() {
                   </Routes>
                 </Layout>
               </BandsProvider>
-            </TechnicalRidersProvider>
+            </InputListsProvider>
           </StageplotsProvider>
         </SetlistsProvider>
       </SongListsProvider>
@@ -108,8 +108,8 @@ const router = createBrowserRouter([
   { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage /> },
   { path: '/public/bands/:bandId/:bandName/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
   { path: '/public/bands/:bandId/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
-  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
-  { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
+  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandInputListPage /> },
+  { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandInputListPage /> },
   { path: '/public/press-kit/:token', element: <PublicBandPressKitPage /> },
   { path: '/pricing', element: <PricingRoute /> },
   { path: '/checkout-result', element: <CheckoutResultPage /> },

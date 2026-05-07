@@ -276,7 +276,7 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
       updatedAt: now,
     });
 
-    // Band technical rider example
+    // Band input list example
     batch.set(doc(firestore, 'bands', demoBandId, 'technicalRiders', DEMO_TECH_RIDER_ID), {
       name: 'Demo Club Rider',
       icon: '📋',

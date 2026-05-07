@@ -83,7 +83,7 @@ function riderAsText(rider: PressKitRiderItem): string {
   }).filter((entry): entry is string => Boolean(entry));
 
   return [
-    `Technical Rider: ${rider.name}`,
+    `Input List: ${rider.name}`,
     '',
     'Lines',
     lines.length > 0 ? lines.join('\n') : '- None',
@@ -109,7 +109,7 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
       `Generated: ${generatedAt}`,
       '',
       `Stageplots: ${payload.stageplots.length}`,
-      `Technical Riders: ${payload.riders.length}`,
+      `Input Lists: ${payload.riders.length}`,
       `Texts: ${payload.texts.length}`,
       `Images: ${payload.images.length}`,
     ].join('\n')

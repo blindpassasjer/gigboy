@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link2, Plus, Trash2, PenLine, ClipboardList } from 'lucide-react';
-import type { RiderEquipmentItem, TechnicalRider, TechnicalRiderLine } from '../types';
+import type { RiderEquipmentItem, InputList, InputListLine } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { ICON_OPTIONS } from '../lib/iconOptions';
 
 interface Props {
-  rider: TechnicalRider;
+  rider: InputList;
   canEdit: boolean;
   onRename: (name: string) => Promise<void> | void;
   onDelete?: () => Promise<void> | void;
   onUpdateIcon: (icon?: string) => Promise<void> | void;
   onSaveContent: (params: {
-    lines: TechnicalRiderLine[];
+    lines: InputListLine[];
     preferredEquipment: RiderEquipmentItem[];
     inventoryEquipment: RiderEquipmentItem[];
   }) => Promise<void> | void;
@@ -24,7 +24,7 @@ function normalizeEmojiIcon(value: string): string | undefined {
   return [...trimmed].slice(0, 2).join('');
 }
 
-function createLine(): TechnicalRiderLine {
+function createLine(): InputListLine {
   return {
     id: crypto.randomUUID(),
     name: '',
@@ -40,7 +40,7 @@ function createEquipmentItem(): RiderEquipmentItem {
   };
 }
 
-export default function TechnicalRiderEditor({
+export default function InputListEditor({
   rider,
   canEdit,
   onRename,
@@ -51,7 +51,7 @@ export default function TechnicalRiderEditor({
 }: Props) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(rider.name);
-  const [lines, setLines] = useState<TechnicalRiderLine[]>(rider.lines);
+  const [lines, setLines] = useState<InputListLine[]>(rider.lines);
   const [preferredEquipment, setPreferredEquipment] = useState<RiderEquipmentItem[]>(rider.preferredEquipment);
   const [inventoryEquipment, setInventoryEquipment] = useState<RiderEquipmentItem[]>(rider.inventoryEquipment);
   const [showIconEditor, setShowIconEditor] = useState(false);

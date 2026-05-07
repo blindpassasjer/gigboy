@@ -43,7 +43,7 @@ export default function Layout({ children }: Props) {
     addBandSongList,
     addBandSetlist,
     addBandStageplot,
-    addBandTechnicalRider,
+    addBandInputList,
   } = useBands();
   const { user } = useAuth();
   const planState = usePlan();
@@ -152,8 +152,8 @@ export default function Layout({ children }: Props) {
       return;
     }
 
-    if (kind === 'rider' && !planState.canUse('technicalRiders')) {
-      toast.error('Technical riders require a Pro or Band plan.');
+    if (kind === 'rider' && !planState.canUse('inputLists')) {
+      toast.error('Input lists require a Pro or Band plan.');
       return;
     }
 
@@ -174,8 +174,8 @@ export default function Layout({ children }: Props) {
         confirm: 'Create stageplot',
       },
       rider: {
-        prompt: 'New technical rider name',
-        placeholder: 'Band technical rider name...',
+        prompt: 'New input list name',
+        placeholder: 'Band input list name...',
         confirm: 'Create rider',
       },
     } as const;
@@ -219,7 +219,7 @@ export default function Layout({ children }: Props) {
       return;
     }
 
-    const result = await addBandTechnicalRider(routeBandId, name);
+    const result = await addBandInputList(routeBandId, name);
     if (result.error) {
       toast.error(result.error);
       return;
@@ -229,7 +229,7 @@ export default function Layout({ children }: Props) {
     addBandSetlist,
     addBandSongList,
     addBandStageplot,
-    addBandTechnicalRider,
+    addBandInputList,
     navigate,
     planState,
     routeBandId,
@@ -298,8 +298,8 @@ export default function Layout({ children }: Props) {
       <button
         type="button"
         className="fab-add-song"
-        title="Create technical rider"
-        aria-label="Create technical rider"
+        title="Create input list"
+        aria-label="Create input list"
         onClick={() => void createBandResource('rider')}
       >
         <ClipboardList size={20} />

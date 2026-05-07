@@ -30,7 +30,7 @@ function labelForType(itemType: TrashListItem['itemType']) {
   if (itemType === 'song') return 'Song';
   if (itemType === 'songlist') return 'Songlist';
   if (itemType === 'stageplot') return 'Stageplot';
-  if (itemType === 'technicalRider') return 'Technical rider';
+  if (itemType === 'technicalRider') return 'Input list';
   return 'Setlist';
 }
 
