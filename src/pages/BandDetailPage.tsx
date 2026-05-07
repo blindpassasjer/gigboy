@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
-import { Link2, Settings } from 'lucide-react';
+import { Link2, Map as MapIcon, Settings } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import SongList from '../components/SongList';
@@ -11,8 +11,8 @@ import InputListEditor from '../components/InputListEditor';
 import PressKitView from '../components/PressKitView';
 import BandTechRiderPanel from '../components/BandTechRiderPanel';
 import TrashView from '../components/TrashView';
-import type { Song } from '../types';
-import { showConfirmToast } from '../utils/toastDialogs';
+import type { Song, Stageplot } from '../types';
+import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 
 export default function BandDetailPage() {
@@ -53,6 +53,7 @@ export default function BandDetailPage() {
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
     updateSongNoteInBandSetlist,
+    addBandStageplot,
     renameBandStageplot,
     updateBandStageplotIcon,
     setBandStageplotPublicShare,
@@ -103,6 +104,11 @@ export default function BandDetailPage() {
   const activeBandInputList = bandSection === 'riders'
     ? bandInputLists.find((entry) => entry.id === bandResourceId) ?? null
     : null;
+  const [activeRiderPageStageplotId, setActiveRiderPageStageplotId] = useState<string | null>(null);
+  const activeRiderPageStageplot = useMemo(
+    () => bandStageplots.find((entry) => entry.id === activeRiderPageStageplotId) ?? null,
+    [activeRiderPageStageplotId, bandStageplots]
+  );
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
 
   useEffect(() => {
@@ -147,6 +153,13 @@ export default function BandDetailPage() {
       console.error('Failed to load band trash.', error);
     });
   }, [band, id, refreshBandTrash]);
+
+  useEffect(() => {
+    setActiveRiderPageStageplotId((current) => {
+      if (current && bandStageplots.some((entry) => entry.id === current)) return current;
+      return bandStageplots[0]?.id ?? null;
+    });
+  }, [bandStageplots]);
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -276,17 +289,16 @@ export default function BandDetailPage() {
     }
   };
 
-  const handleShareStageplot = async () => {
-    if (!activeBandStageplot) return;
+  const copyStageplotPublicLink = async (stageplot: Stageplot) => {
     const publicUrl = buildBandPublicShareUrl(
       window.location.origin,
       band.id,
       band.name,
       'stageplots',
-      activeBandStageplot.id
+      stageplot.id
     );
-    if (!activeBandStageplot.publicShareEnabled) {
-      const error = await setBandStageplotPublicShare(band.id, activeBandStageplot.id, true);
+    if (!stageplot.publicShareEnabled) {
+      const error = await setBandStageplotPublicShare(band.id, stageplot.id, true);
       if (error) {
         toast.error(error);
         return;
@@ -298,6 +310,11 @@ export default function BandDetailPage() {
     } catch {
       toast.error(`Failed to copy. Share this link: ${publicUrl}`);
     }
+  };
+
+  const handleShareStageplot = async () => {
+    if (!activeBandStageplot) return;
+    await copyStageplotPublicLink(activeBandStageplot);
   };
 
   const handleShareInputList = async () => {
@@ -321,6 +338,29 @@ export default function BandDetailPage() {
       toast.success('Public link copied to clipboard!');
     } catch {
       toast.error(`Failed to copy. Share this link: ${publicUrl}`);
+    }
+  };
+
+  const handleCreateStageplotFromRiderPage = async () => {
+    if (!canEditBand) {
+      toast.error('Only band editors can create stageplots.');
+      return;
+    }
+    const value = await showPromptToast('New stageplot name', {
+      placeholder: 'Band stageplot name...',
+      confirmLabel: 'Create stageplot',
+      cancelLabel: 'Cancel',
+    });
+    const name = value?.trim() ?? '';
+    if (!name) return;
+
+    const result = await addBandStageplot(band.id, name);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    if (result.stageplotId) {
+      setActiveRiderPageStageplotId(result.stageplotId);
     }
   };
 
@@ -537,40 +577,129 @@ export default function BandDetailPage() {
     }
 
     return (
-      <InputListEditor
-        rider={activeBandInputList}
-        canEdit={canEditBand}
-        onRename={async (name) => {
-          const error = await renameBandInputList(band.id, activeBandInputList.id, name);
-          if (error) toast.error(error);
-        }}
-        onUpdateIcon={async (icon) => {
-          const error = await updateBandInputListIcon(band.id, activeBandInputList.id, icon);
-          if (error) toast.error(error);
-        }}
-        onDelete={canEditBand ? async () => {
-          const error = await deleteBandInputList(band.id, activeBandInputList.id);
-          if (error) {
-            toast.error(error);
-            return;
-          }
-          navigate(`/bands/${band.id}/library`);
-        } : undefined}
-        onSaveContent={async (content) => {
-          const error = await updateBandInputListContent({
-            bandId: band.id,
-            riderId: activeBandInputList.id,
-            lines: content.lines,
-            preferredEquipment: content.preferredEquipment,
-            inventoryEquipment: content.inventoryEquipment,
-          });
-          if (error) {
-            toast.error(error);
-            throw new Error(error);
-          }
-        }}
-        onCopyPublicLink={handleShareInputList}
-      />
+      <section className="bands-page bands-page--library" style={{ display: 'grid', gap: '1rem' }}>
+        <InputListEditor
+          rider={activeBandInputList}
+          canEdit={canEditBand}
+          onRename={async (name) => {
+            const error = await renameBandInputList(band.id, activeBandInputList.id, name);
+            if (error) toast.error(error);
+          }}
+          onUpdateIcon={async (icon) => {
+            const error = await updateBandInputListIcon(band.id, activeBandInputList.id, icon);
+            if (error) toast.error(error);
+          }}
+          onDelete={canEditBand ? async () => {
+            const error = await deleteBandInputList(band.id, activeBandInputList.id);
+            if (error) {
+              toast.error(error);
+              return;
+            }
+            navigate(`/bands/${band.id}/library`);
+          } : undefined}
+          onSaveContent={async (content) => {
+            const error = await updateBandInputListContent({
+              bandId: band.id,
+              riderId: activeBandInputList.id,
+              lines: content.lines,
+              preferredEquipment: content.preferredEquipment,
+              inventoryEquipment: content.inventoryEquipment,
+            });
+            if (error) {
+              toast.error(error);
+              throw new Error(error);
+            }
+          }}
+          onCopyPublicLink={handleShareInputList}
+        />
+
+        <div className="songlist-body" style={{ display: 'grid', gap: '0.8rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+            <MapIcon size={16} />
+            <h2 className="song-list-heading" style={{ margin: 0, fontSize: '1rem' }}>Stageplots</h2>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <p className="songlist-item-meta" style={{ margin: 0 }}>
+              Create and manage stageplots for your band.
+            </p>
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => void handleCreateStageplotFromRiderPage()}
+              disabled={!canEditBand}
+            >
+              Create stageplot
+            </button>
+          </div>
+
+          {bandStageplots.length === 0 ? (
+            <p className="bands-status">No stageplots available yet.</p>
+          ) : (
+            bandStageplots.map((entry) => (
+              <div key={entry.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                  {entry.name}
+                </span>
+                <span className="songlist-item-meta">{entry.items.length} items</span>
+                <button
+                  type="button"
+                  className={`setlist-action-btn setlist-action-btn--secondary${activeRiderPageStageplotId === entry.id ? ' setlist-action-btn--active' : ''}`}
+                  onClick={() => setActiveRiderPageStageplotId(entry.id)}
+                >
+                  Edit
+                </button>
+              </div>
+            ))
+          )}
+
+          {activeRiderPageStageplot ? (
+            <StageplotEditor
+              stageplot={activeRiderPageStageplot}
+              canEdit={canEditBand}
+              currentUser={{
+                id: user?.id ?? null,
+                name: user?.fullName?.trim() || user?.username?.trim() || user?.email || 'Unknown user',
+                avatar: user?.avatar,
+              }}
+              onRename={async (name) => {
+                const error = await renameBandStageplot(band.id, activeRiderPageStageplot.id, name);
+                if (error) {
+                  toast.error(error);
+                }
+              }}
+              onUpdateIcon={async (icon) => {
+                const error = await updateBandStageplotIcon(band.id, activeRiderPageStageplot.id, icon);
+                if (error) {
+                  toast.error(error);
+                }
+              }}
+              onDelete={async () => {
+                const error = await deleteBandStageplot(band.id, activeRiderPageStageplot.id);
+                if (error) {
+                  toast.error(error);
+                  return;
+                }
+                setActiveRiderPageStageplotId(null);
+              }}
+              onSaveContent={async (items, drawingLayers) => {
+                const error = await updateBandStageplotContent({
+                  bandId: band.id,
+                  stageplotId: activeRiderPageStageplot.id,
+                  items,
+                  drawingLayers,
+                });
+                if (error) {
+                  toast.error(error);
+                  throw new Error(error);
+                }
+              }}
+              onCopyPublicLink={async () => {
+                await copyStageplotPublicLink(activeRiderPageStageplot);
+              }}
+            />
+          ) : null}
+        </div>
+      </section>
     );
   }
 
