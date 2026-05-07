@@ -4653,11 +4653,23 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
   min-width: 0;
   max-width: none;
+  flex-wrap: wrap;
+  gap: .2rem .55rem;
 }
 
 .sidebar-storage .topbar-storage-text {
-  flex-shrink: 1;
+  width: 100%;
   min-width: 0;
+  flex-shrink: 0;
+}
+
+.sidebar-storage .topbar-storage-meter {
+  flex: 1;
+  min-width: 56px;
+}
+
+.sidebar-storage .topbar-storage-percent {
+  flex-shrink: 0;
 }
 
 .sidebar-mode-switcher {
