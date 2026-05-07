@@ -5319,10 +5319,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   height: 2rem;
   padding: .2rem;
   color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 12%, var(--song-item-bg));
-  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
   opacity: 1;
-  transition: color .12s, background .12s, border-color .12s;
+  transition: color .12s, background .12s;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -5335,10 +5333,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   height: 2rem;
   padding: .2rem;
   color: var(--song-item-accent);
-  background: var(--song-item-chip-bg);
-  border: 1px solid color-mix(in srgb, var(--song-item-accent) 24%, transparent);
   opacity: 1;
-  transition: color .12s, background .12s, border-color .12s;
+  transition: color .12s, background .12s;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -5349,15 +5345,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 .setlist-note-btn.has-note {
   opacity: 1;
   color: var(--song-item-accent);
-  background: color-mix(in srgb, var(--song-item-chip-bg) 72%, var(--song-item-bg));
-  border-color: color-mix(in srgb, var(--song-item-accent) 36%, transparent);
+  background: var(--song-item-chip-bg);
 }
 
 .setlist-remove-btn:hover {
   opacity: 1;
   color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 18%, var(--song-item-bg));
-  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, var(--song-item-bg));
 }
 
 .setlist-song-note-editor {
