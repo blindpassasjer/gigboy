@@ -7655,12 +7655,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: 1rem;
 }
 
-.bands-header:not(.bands-header--detail) h1 {
+.bands-header:not(.bands-header--detail) h1,
+.bands-header:not(.bands-header--detail) .song-list-heading {
   font-size: 1.45rem;
 }
 
 .bands-header p,
-.bands-status {
+.bands-status,
+.setlist-subtitle {
   color: var(--muted);
 }
 

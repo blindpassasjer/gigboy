@@ -96,6 +96,7 @@ interface Props {
   pickerSourceNote?: string;
   /** When songs belong to a band, pass the bandId so SongView can use band recordings */
   bandId?: string;
+  autoStartRenameToken?: string | number | null;
 }
 
 export default function SongList({
@@ -119,6 +120,7 @@ export default function SongList({
   onAddSongsClick,
   pickerSourceNote,
   bandId,
+  autoStartRenameToken = null,
 }: Props) {
   const { pathname } = useLocation();
   const [query, setQuery] = useState('');
@@ -249,6 +251,12 @@ export default function SongList({
     renameInputRef.current?.focus();
     renameInputRef.current?.select();
   }, [isRenaming]);
+
+  useEffect(() => {
+    if (!onRenameList || !listName || autoStartRenameToken == null) return;
+    setRenameValue(listName);
+    setIsRenaming(true);
+  }, [autoStartRenameToken, listName, onRenameList]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {

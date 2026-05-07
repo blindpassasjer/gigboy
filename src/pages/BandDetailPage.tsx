@@ -15,7 +15,7 @@ import { buildBandPublicShareUrl } from '../utils/publicShare';
 
 export default function BandDetailPage() {
   const { id } = useParams();
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const {
@@ -76,6 +76,24 @@ export default function BandDetailPage() {
   const routeBandId = routeSegments[0] === 'bands' ? routeSegments[1] : null;
   const bandSection = routeBandId === id ? (routeSegments[2] ?? 'library') : 'library';
   const bandResourceId = routeBandId === id ? (routeSegments[3] ?? null) : null;
+  const autoRenameState = (() => {
+    if (!state || typeof state !== 'object') return null;
+    const autoRename = (state as {
+      autoRename?: {
+        kind?: unknown;
+        resourceId?: unknown;
+        token?: unknown;
+      };
+    }).autoRename;
+    if (!autoRename || typeof autoRename !== 'object') return null;
+    const kind = autoRename.kind;
+    const resourceId = autoRename.resourceId;
+    const token = autoRename.token;
+    if (kind !== 'songlist' && kind !== 'setlist' && kind !== 'rider') return null;
+    if (typeof resourceId !== 'string' || !resourceId.trim()) return null;
+    if (typeof token !== 'number' && typeof token !== 'string') return null;
+    return { kind, resourceId, token };
+  })();
 
   const activeBandSongList = bandSection === 'songlists'
     ? bandSongLists.find((entry) => entry.id === bandResourceId) ?? null
@@ -317,6 +335,11 @@ export default function BandDetailPage() {
             }
           } : undefined}
           bandId={band.id}
+          autoStartRenameToken={
+            autoRenameState?.kind === 'songlist' && autoRenameState.resourceId === activeBandSongList.id
+              ? autoRenameState.token
+              : null
+          }
         />
       </section>
     );
@@ -398,6 +421,11 @@ export default function BandDetailPage() {
               <Link2 size={14} />
             </button>
           )}
+          autoStartRenameToken={
+            autoRenameState?.kind === 'setlist' && autoRenameState.resourceId === activeBandSetlist.id
+              ? autoRenameState.token
+              : null
+          }
         />
       </section>
     );
@@ -413,6 +441,11 @@ export default function BandDetailPage() {
         userId={user?.id ?? null}
         userEmail={user?.email ?? null}
         initialRiderId={bandResourceId}
+        autoStartRenameToken={
+          autoRenameState?.kind === 'rider' && autoRenameState.resourceId === bandResourceId
+            ? autoRenameState.token
+            : null
+        }
       />
     );
   }

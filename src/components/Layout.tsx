@@ -17,7 +17,6 @@ import { acceptBandInviteOnServer } from '../lib/bandsApi';
 import { acceptInviteOnServer } from '../lib/shareApi';
 import { emitInviteNotificationsChanged } from '../lib/inviteNotifications';
 import toast from '../utils/anchoredToast';
-import { showPromptToast } from '../utils/toastDialogs';
 import type { BandInvite, CollaborationInvite } from '../types';
 import UserAvatar from './UserAvatar';
 
@@ -150,59 +149,68 @@ export default function Layout({ children }: Props) {
       return;
     }
 
-    const labels = {
-      songlist: {
-        prompt: 'New songlist name',
-        placeholder: 'Band songlist name...',
-        confirm: 'Create songlist',
-      },
-      setlist: {
-        prompt: 'New setlist name',
-        placeholder: 'Band setlist name...',
-        confirm: 'Create setlist',
-      },
-      rider: {
-        prompt: 'New input list name',
-        placeholder: 'Band input list name...',
-        confirm: 'Create rider',
-      },
+    const defaults = {
+      songlist: 'New songlist',
+      setlist: 'New setlist',
+      rider: 'New rider',
     } as const;
 
-    const value = await showPromptToast(labels[kind].prompt, {
-      placeholder: labels[kind].placeholder,
-      confirmLabel: labels[kind].confirm,
-      cancelLabel: 'Cancel',
-    });
-
-    const name = value?.trim() ?? '';
-    if (!name) return;
-
     if (kind === 'songlist') {
-      const result = await addBandSongList(routeBandId, name);
+      const result = await addBandSongList(routeBandId, defaults.songlist);
       if (result.error) {
         toast.error(result.error);
         return;
       }
-      if (result.songListId) navigate(`/bands/${routeBandId}/songlists/${result.songListId}`);
+      if (result.songListId) {
+        navigate(`/bands/${routeBandId}/songlists/${result.songListId}`, {
+          state: {
+            autoRename: {
+              kind: 'songlist',
+              resourceId: result.songListId,
+              token: Date.now(),
+            },
+          },
+        });
+      }
       return;
     }
 
     if (kind === 'setlist') {
-      const result = await addBandSetlist(routeBandId, name);
+      const result = await addBandSetlist(routeBandId, defaults.setlist);
       if (result.error) {
         toast.error(result.error);
         return;
       }
-      if (result.setlistId) navigate(`/bands/${routeBandId}/setlists/${result.setlistId}`);
+      if (result.setlistId) {
+        navigate(`/bands/${routeBandId}/setlists/${result.setlistId}`, {
+          state: {
+            autoRename: {
+              kind: 'setlist',
+              resourceId: result.setlistId,
+              token: Date.now(),
+            },
+          },
+        });
+      }
       return;
     }
 
-    const result = await addBandInputList(routeBandId, name);
+    const result = await addBandInputList(routeBandId, defaults.rider);
     if (result.error) {
       toast.error(result.error);
       return;
     }
-    if (result.riderId) navigate(`/bands/${routeBandId}/riders/${result.riderId}`);
+    if (result.riderId) {
+      navigate(`/bands/${routeBandId}/riders/${result.riderId}`, {
+        state: {
+          autoRename: {
+            kind: 'rider',
+            resourceId: result.riderId,
+            token: Date.now(),
+          },
+        },
+      });
+    }
   }, [
     addBandSetlist,
     addBandSongList,

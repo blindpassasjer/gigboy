@@ -35,6 +35,7 @@ interface Props {
   onUpdateIconOverride?: (icon: string | undefined) => void;
   /** Band ID — when set, song links will carry it as navigation state so SongPage can find band songs */
   bandId?: string;
+  autoStartRenameToken?: string | number | null;
 }
 
 const SONG_DRAG_MIME = 'application/x-gigboy-song-id';
@@ -64,6 +65,7 @@ export default function SetlistsView({
   onDeleteOverride,
   onUpdateIconOverride,
   bandId,
+  autoStartRenameToken = null,
 }: Props) {
   const { renameSetlist, updateSetlistIcon, deleteSetlist, setlists } = useSetlists();
   const { pathname } = useLocation();
@@ -148,6 +150,11 @@ export default function SetlistsView({
       renameInputRef.current?.select();
     }
   }, [isRenaming]);
+
+  useEffect(() => {
+    if (autoStartRenameToken == null) return;
+    startRenaming();
+  }, [autoStartRenameToken]);
 
   useEffect(() => {
     if (!showSongPicker) return;
