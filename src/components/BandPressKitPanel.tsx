@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Download, ExternalLink, FileText, Images, Map, ClipboardList } from 'lucide-react';
-import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
 import type { Stageplot, TechnicalRider } from '../types';
@@ -90,7 +90,7 @@ export default function BandPressKitPanel({
     let mounted = true;
     setLoadingImageAssets(true);
 
-    void getDocs(query(collection(db, 'bands', bandId, 'pressKitImages'), orderBy('createdAt', 'desc')))
+    void getDocs(query(collection(db, 'bands', bandId, 'pressKitImages')))
       .then((snapshot) => {
         if (!mounted) return;
         const assets = snapshot.docs.map((entry) => {
@@ -104,13 +104,18 @@ export default function BandPressKitPanel({
             sizeBytes: typeof data.sizeBytes === 'number' ? data.sizeBytes : undefined,
             createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
           } as PressKitImageAsset;
-        }).filter((asset) => asset.url.length > 0);
+        })
+          .filter((asset) => asset.url.length > 0)
+          .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
         setImageAssets(assets);
       })
       .catch((error) => {
-        console.error('Failed to load press kit image assets.', error);
+        console.error('Failed to load press kit image assets from bands/' + bandId + '/pressKitImages:', error);
         if (!mounted) return;
-        toast.error('Failed to load press kit image assets.');
+        const errorMsg = error?.code === 'permission-denied'
+          ? 'You do not have permission to view press kit images.'
+          : 'Failed to load press kit image assets.';
+        toast.error(errorMsg);
       })
       .finally(() => {
         if (!mounted) return;
