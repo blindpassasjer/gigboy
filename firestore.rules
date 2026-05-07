@@ -292,6 +292,11 @@ service cloud.firestore {
         allow create, update, delete: if isBandEditor(bandId);
       }
 
+      match /pressKitImages/{imageId} {
+        allow read: if isBandMember(bandId);
+        allow create, update, delete: if isBandEditor(bandId);
+      }
+
       match /trashItems/{trashId} {
         allow read: if isBandMember(bandId);
         allow create, update, delete: if isBandEditor(bandId);

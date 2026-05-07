@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Map, Plus, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, FileText, Folder, ListMusic, Map, Plus, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
@@ -556,6 +556,22 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     {(bandTrashByBandId[band.id]?.length ?? 0) > 0 && (
                       <span className="sidebar-list-count">{bandTrashByBandId[band.id]?.length ?? 0}</span>
                     )}
+                  </button>
+                </div>
+
+                <div
+                  className={`sidebar-list-item${pathname === `/bands/${band.id}/press-kit` ? ' active' : ''}`}
+                >
+                  <button
+                    className="sidebar-list-item-btn"
+                    onClick={() => {
+                      clearGlobalSelection();
+                      navigate(`/bands/${band.id}/press-kit`);
+                      onNavigate?.();
+                    }}
+                  >
+                    <FileText size={14} />
+                    <span className="sidebar-list-name">Press Kit</span>
                   </button>
                 </div>
 

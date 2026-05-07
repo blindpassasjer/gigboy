@@ -26,6 +26,7 @@
   "dependencies": {
     "@radix-ui/themes": "^3.3.0",
     "firebase": "^11.0.0",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.11.0",
     "midi-writer-js": "^3.2.1",
     "pdf-lib": "^1.17.1",

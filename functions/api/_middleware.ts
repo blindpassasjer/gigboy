@@ -15,6 +15,7 @@ export const onRequest: PagesFunction<Env, never, Data> = async (ctx) => {
   if (
     path.startsWith('/api/auth/') ||
     path.startsWith('/api/health/') ||
+    path.startsWith('/api/public/') ||
     path === '/api/stripe/webhook'
   ) return ctx.next();
 

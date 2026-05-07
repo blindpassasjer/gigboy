@@ -42,6 +42,7 @@ import CheckoutResultPage from './pages/CheckoutResultPage';
 import PublicBandSetlistPage from './pages/PublicBandSetlistPage';
 import PublicBandStageplotPage from './pages/PublicBandStageplotPage';
 import PublicBandTechnicalRiderPage from './pages/PublicBandTechnicalRiderPage';
+import PublicBandPressKitPage from './pages/PublicBandPressKitPage';
 import { SongsProvider } from './context/SongsContext';
 import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
@@ -109,6 +110,7 @@ const router = createBrowserRouter([
   { path: '/public/bands/:bandId/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
   { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
   { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandTechnicalRiderPage /> },
+  { path: '/public/press-kit/:token', element: <PublicBandPressKitPage /> },
   { path: '/pricing', element: <PricingRoute /> },
   { path: '/checkout-result', element: <CheckoutResultPage /> },
   { path: '*', element: <AuthenticatedApp /> },

@@ -8,6 +8,7 @@ import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
 import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
+import BandPressKitPanel from '../components/BandPressKitPanel';
 import TrashView from '../components/TrashView';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
@@ -640,6 +641,20 @@ export default function BandDetailPage() {
           if (failedCount === trashItems.length) return 'Failed to empty trash.';
           return `Deleted ${trashItems.length - failedCount} item${trashItems.length - failedCount === 1 ? '' : 's'}, but ${failedCount} item${failedCount === 1 ? '' : 's'} could not be deleted.`;
         } : undefined}
+      />
+    );
+  }
+
+  if (bandSection === 'press-kit') {
+    return (
+      <BandPressKitPanel
+        bandId={band.id}
+        bandName={band.name}
+        stageplots={bandStageplots}
+        riders={bandTechnicalRiders}
+        canEdit={canEditBand}
+        userId={user?.id ?? null}
+        userEmail={user?.email ?? null}
       />
     );
   }

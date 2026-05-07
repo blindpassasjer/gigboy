@@ -23,6 +23,15 @@ service firebase.storage {
         );
     }
 
+    function isBandEditor(bandId) {
+      let band = bandDocument(bandId).data;
+      return isSignedIn()
+        && (
+          (band.ownerId is string && band.ownerId == request.auth.uid)
+          || (band.memberRoles is map && band.memberRoles[request.auth.uid] == 'editor')
+        );
+    }
+
     // User-scoped song recordings
     match /users/{userId}/songs/{songId}/recordings/{fileName} {
       allow read, write: if isOwner(userId);
@@ -31,6 +40,12 @@ service firebase.storage {
     // Band-scoped song recordings
     match /bands/{bandId}/songs/{songId}/recordings/{fileName} {
       allow read, write: if isBandMember(bandId);
+    }
+
+    // Band-scoped press kit image assets
+    match /bands/{bandId}/presskit/images/{fileName} {
+      allow read: if isBandMember(bandId);
+      allow write: if isBandEditor(bandId);
     }
 
     // Deny all other storage access by default.
