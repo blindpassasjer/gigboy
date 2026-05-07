@@ -42,7 +42,6 @@ export default function BandTechRiderPanel({
   );
 
   const {
-    addBandStageplot,
     renameBandStageplot,
     updateBandStageplotIcon,
     setBandStageplotPublicShare,
@@ -70,29 +69,6 @@ export default function BandTechRiderPanel({
       return riders[0]?.id ?? null;
     });
   }, [initialRiderId, riders]);
-
-  const handleCreateStageplot = async () => {
-    if (!canEdit) {
-      toast.error('Only band editors can create stageplots.');
-      return;
-    }
-    const value = await showPromptToast('New stageplot name', {
-      placeholder: 'Band stageplot name...',
-      confirmLabel: 'Create stageplot',
-      cancelLabel: 'Cancel',
-    });
-    const name = value?.trim() ?? '';
-    if (!name) return;
-
-    const result = await addBandStageplot(bandId, name);
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
-    if (result.stageplotId) {
-      setActiveStageplotId(result.stageplotId);
-    }
-  };
 
   const handleCreateRider = async () => {
     if (!canEdit) {
@@ -173,166 +149,158 @@ export default function BandTechRiderPanel({
           </div>
         </div>
 
-        <div className="songlist-body" style={{ display: 'grid', gap: '0.8rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-            <ClipboardList size={16} />
-            <h2 className="song-list-heading" style={{ margin: 0, fontSize: '1rem' }}>Input Lists</h2>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <p className="songlist-item-meta" style={{ margin: 0 }}>
-              Create and manage input lists for your band.
-            </p>
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => void handleCreateRider()}
-              disabled={!canEdit}
-            >
-              Create rider
-            </button>
-          </div>
-          {riders.length === 0 ? (
-            <p className="bands-status">No input lists available yet.</p>
-          ) : (
-            riders.map((entry) => (
-              <div key={entry.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                  {entry.name}
-                </span>
-                <span className="songlist-item-meta">{entry.lines.length} lines</span>
-                <button
-                  type="button"
-                  className={`setlist-action-btn setlist-action-btn--secondary${activeRiderId === entry.id ? ' setlist-action-btn--active' : ''}`}
-                  onClick={() => setActiveRiderId(entry.id)}
-                >
-                  Edit
-                </button>
-              </div>
-            ))
-          )}
-
-          {activeRider ? (
-            <InputListEditor
-              rider={activeRider}
-              canEdit={canEdit}
-              onRename={async (name) => {
-                const error = await renameBandInputList(bandId, activeRider.id, name);
-                if (error) toast.error(error);
-              }}
-              onUpdateIcon={async (icon) => {
-                const error = await updateBandInputListIcon(bandId, activeRider.id, icon);
-                if (error) toast.error(error);
-              }}
-              onDelete={canEdit ? async () => {
-                const error = await deleteBandInputList(bandId, activeRider.id);
-                if (error) {
-                  toast.error(error);
-                  return;
-                }
-                setActiveRiderId(null);
-              } : undefined}
-              onSaveContent={async (content) => {
-                const error = await updateBandInputListContent({
-                  bandId,
-                  riderId: activeRider.id,
-                  lines: content.lines,
-                  preferredEquipment: content.preferredEquipment,
-                  inventoryEquipment: content.inventoryEquipment,
-                });
-                if (error) {
-                  toast.error(error);
-                  throw new Error(error);
-                }
-              }}
-              onCopyPublicLink={async () => {
-                await handleCopyRiderPublicLink(activeRider.id, activeRider.publicShareEnabled);
-              }}
-            />
-          ) : null}
-        </div>
-
-        <div className="songlist-body" style={{ display: 'grid', gap: '0.8rem', marginTop: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-            <Map size={16} />
-            <h2 className="song-list-heading" style={{ margin: 0, fontSize: '1rem' }}>Stageplots</h2>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <p className="songlist-item-meta" style={{ margin: 0 }}>
-              Edit the stageplot directly from the canvas in this view.
-            </p>
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
-              onClick={() => void handleCreateStageplot()}
-              disabled={!canEdit}
-            >
-              Create stageplot
-            </button>
-          </div>
-          {stageplots.length === 0 ? (
-            <p className="bands-status">No stageplots available yet.</p>
-          ) : (
-            <>
-              {stageplots.length > 1 ? (
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  {stageplots.map((entry) => (
-                    <button
-                      key={entry.id}
-                      type="button"
-                      className={`setlist-action-btn setlist-action-btn--secondary${activeStageplotId === entry.id ? ' setlist-action-btn--active' : ''}`}
-                      onClick={() => setActiveStageplotId(entry.id)}
-                    >
-                      {entry.icon ? `${entry.icon} ` : ''}
-                      {entry.name}
-                    </button>
-                  ))}
+        <div className="tech-rider-sections">
+          <div className="songlist-body tech-rider-section" role="region" aria-label="Input list section">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+              <ClipboardList size={16} />
+              <h2 className="song-list-heading" style={{ margin: 0, fontSize: '1rem' }}>Input Lists</h2>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <p className="songlist-item-meta" style={{ margin: 0 }}>
+                Create and manage input lists for your band.
+              </p>
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => void handleCreateRider()}
+                disabled={!canEdit}
+              >
+                Create rider
+              </button>
+            </div>
+            {riders.length === 0 ? (
+              <p className="bands-status">No input lists available yet.</p>
+            ) : (
+              riders.map((entry) => (
+                <div key={entry.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                    {entry.name}
+                  </span>
+                  <span className="songlist-item-meta">{entry.lines.length} lines</span>
+                  <button
+                    type="button"
+                    className={`setlist-action-btn setlist-action-btn--secondary${activeRiderId === entry.id ? ' setlist-action-btn--active' : ''}`}
+                    onClick={() => setActiveRiderId(entry.id)}
+                  >
+                    Edit
+                  </button>
                 </div>
-              ) : null}
+              ))
+            )}
 
-              {activeStageplot ? (
-                <StageplotEditor
-                  stageplot={activeStageplot}
-                  canEdit={canEdit}
-                  currentUser={{
-                    id: userId,
-                    name: userEmail ?? 'Unknown user',
-                    avatar: null,
-                  }}
-                  onRename={async (name) => {
-                    const error = await renameBandStageplot(bandId, activeStageplot.id, name);
-                    if (error) toast.error(error);
-                  }}
-                  onUpdateIcon={async (icon) => {
-                    const error = await updateBandStageplotIcon(bandId, activeStageplot.id, icon);
-                    if (error) toast.error(error);
-                  }}
-                  onDelete={async () => {
-                    const error = await deleteBandStageplot(bandId, activeStageplot.id);
-                    if (error) {
-                      toast.error(error);
-                      return;
-                    }
-                    setActiveStageplotId(null);
-                  }}
-                  onSaveContent={async (items, drawingLayers) => {
-                    const error = await updateBandStageplotContent({
-                      bandId,
-                      stageplotId: activeStageplot.id,
-                      items,
-                      drawingLayers,
-                    });
-                    if (error) {
-                      toast.error(error);
-                      throw new Error(error);
-                    }
-                  }}
-                  onCopyPublicLink={async () => {
-                    await handleCopyStageplotPublicLink(activeStageplot.id, activeStageplot.publicShareEnabled);
-                  }}
-                />
-              ) : null}
-            </>
-          )}
+            {activeRider ? (
+              <InputListEditor
+                rider={activeRider}
+                canEdit={canEdit}
+                onRename={async (name) => {
+                  const error = await renameBandInputList(bandId, activeRider.id, name);
+                  if (error) toast.error(error);
+                }}
+                onUpdateIcon={async (icon) => {
+                  const error = await updateBandInputListIcon(bandId, activeRider.id, icon);
+                  if (error) toast.error(error);
+                }}
+                onDelete={canEdit ? async () => {
+                  const error = await deleteBandInputList(bandId, activeRider.id);
+                  if (error) {
+                    toast.error(error);
+                    return;
+                  }
+                  setActiveRiderId(null);
+                } : undefined}
+                onSaveContent={async (content) => {
+                  const error = await updateBandInputListContent({
+                    bandId,
+                    riderId: activeRider.id,
+                    lines: content.lines,
+                    preferredEquipment: content.preferredEquipment,
+                    inventoryEquipment: content.inventoryEquipment,
+                  });
+                  if (error) {
+                    toast.error(error);
+                    throw new Error(error);
+                  }
+                }}
+                onCopyPublicLink={async () => {
+                  await handleCopyRiderPublicLink(activeRider.id, activeRider.publicShareEnabled);
+                }}
+              />
+            ) : null}
+          </div>
+
+          <div className="songlist-body tech-rider-section" role="region" aria-label="Stageplot section">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+              <Map size={16} />
+              <h2 className="song-list-heading" style={{ margin: 0, fontSize: '1rem' }}>Stageplots</h2>
+            </div>
+            <p className="songlist-item-meta" style={{ margin: 0 }}>
+              The stageplot editor is always available in the technical rider.
+            </p>
+            {stageplots.length === 0 ? (
+              <p className="bands-status">No stageplots available yet.</p>
+            ) : (
+              <>
+                {stageplots.length > 1 ? (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {stageplots.map((entry) => (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        className={`setlist-action-btn setlist-action-btn--secondary${activeStageplotId === entry.id ? ' setlist-action-btn--active' : ''}`}
+                        onClick={() => setActiveStageplotId(entry.id)}
+                      >
+                        {entry.icon ? `${entry.icon} ` : ''}
+                        {entry.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                {activeStageplot ? (
+                  <StageplotEditor
+                    stageplot={activeStageplot}
+                    canEdit={canEdit}
+                    currentUser={{
+                      id: userId,
+                      name: userEmail ?? 'Unknown user',
+                      avatar: null,
+                    }}
+                    onRename={async (name) => {
+                      const error = await renameBandStageplot(bandId, activeStageplot.id, name);
+                      if (error) toast.error(error);
+                    }}
+                    onUpdateIcon={async (icon) => {
+                      const error = await updateBandStageplotIcon(bandId, activeStageplot.id, icon);
+                      if (error) toast.error(error);
+                    }}
+                    onDelete={async () => {
+                      const error = await deleteBandStageplot(bandId, activeStageplot.id);
+                      if (error) {
+                        toast.error(error);
+                        return;
+                      }
+                      setActiveStageplotId(null);
+                    }}
+                    onSaveContent={async (items, drawingLayers) => {
+                      const error = await updateBandStageplotContent({
+                        bandId,
+                        stageplotId: activeStageplot.id,
+                        items,
+                        drawingLayers,
+                      });
+                      if (error) {
+                        toast.error(error);
+                        throw new Error(error);
+                      }
+                    }}
+                    onCopyPublicLink={async () => {
+                      await handleCopyStageplotPublicLink(activeStageplot.id, activeStageplot.publicShareEnabled);
+                    }}
+                  />
+                ) : null}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </section>

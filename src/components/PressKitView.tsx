@@ -94,7 +94,6 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   // ── Rich text ────────────────────────────────────────────────────────────
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [busySave, setBusySave] = useState(false);
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -132,13 +131,10 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   const saveRichText = async (html: string) => {
     if (!db) return;
-    setBusySave(true);
     try {
       await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { richText: html }, { merge: true });
     } catch {
       toast.error('Failed to save text.');
-    } finally {
-      setBusySave(false);
     }
   };
 
@@ -296,7 +292,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
         <div className="song-list-sticky">
-          <header className="songlist-header setlist-header">
+          <header className="songlist-header bands-header setlist-header">
             <div className="setlist-title-block">
               {isRenaming ? (
                 <input
@@ -378,7 +374,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                   ) : null}
                 </div>
               )}
-              <p className="setlist-subtitle">{busySave ? 'Saving…' : 'Press kit'}</p>
+              <p className="setlist-subtitle">Write copy, attach images, and share your public press kit.</p>
             </div>
             <div className="setlist-header-actions">
               <button
@@ -431,67 +427,73 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
           )}
         </div>
 
-        <div className="press-kit-editor-wrap">
-          <EditorContent editor={editor} className="press-kit-editor" />
-        </div>
-
-        {/* ── Images ───────────────────────────────────────────────────── */}
-        <div className="setlist-notes-editor" style={{ marginTop: '1.5rem' }}>
-          <p className="songlist-item-meta" style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Images</p>
-
-          {canEdit && (
-            <div
-              role="button"
-              tabIndex={0}
-              onDragOver={(e) => { e.preventDefault(); if (!busyUpload) setDropActive(true); }}
-              onDragLeave={() => setDropActive(false)}
-              onDrop={(e) => { e.preventDefault(); setDropActive(false); void uploadImages(e.dataTransfer.files); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') document.getElementById('pk-img-input')?.click(); }}
-              onClick={() => document.getElementById('pk-img-input')?.click()}
-              style={{
-                border: dropActive ? '2px solid var(--bands-hue)' : '1px dashed var(--border)',
-                borderRadius: '10px',
-                padding: '0.75rem',
-                background: dropActive ? 'var(--bands-hue-soft)' : 'var(--surface)',
-                cursor: 'pointer',
-                marginBottom: '0.75rem',
-              }}
-            >
-              <p className="songlist-item-meta" style={{ margin: 0 }}>
-                {busyUpload ? 'Uploading…' : 'Drag & drop or click to upload images'}
-              </p>
+        <div className="press-kit-body-columns">
+          <section className="press-kit-text-section">
+            <div className="press-kit-editor-wrap">
+              <EditorContent editor={editor} className="press-kit-editor" />
             </div>
-          )}
-          <input id="pk-img-input" type="file" accept="image/*" multiple style={{ display: 'none' }} disabled={!canEdit || busyUpload}
-            onChange={(e) => { void uploadImages(e.target.files); e.currentTarget.value = ''; }}
-          />
+          </section>
 
-          {loadingImages && <p className="bands-status">Loading images…</p>}
+          {/* ── Images ─────────────────────────────────────────────────── */}
+          <section className="press-kit-images-section">
+            <div className="setlist-notes-editor">
+              <p className="songlist-item-meta" style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Images</p>
 
-          {!loadingImages && imageAssets.length === 0 && (
-            <p className="bands-status">No images uploaded yet.</p>
-          )}
+              {canEdit && (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onDragOver={(e) => { e.preventDefault(); if (!busyUpload) setDropActive(true); }}
+                  onDragLeave={() => setDropActive(false)}
+                  onDrop={(e) => { e.preventDefault(); setDropActive(false); void uploadImages(e.dataTransfer.files); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') document.getElementById('pk-img-input')?.click(); }}
+                  onClick={() => document.getElementById('pk-img-input')?.click()}
+                  style={{
+                    border: dropActive ? '2px solid var(--bands-hue)' : '1px dashed var(--border)',
+                    borderRadius: '10px',
+                    padding: '0.75rem',
+                    background: dropActive ? 'var(--bands-hue-soft)' : 'var(--surface)',
+                    cursor: 'pointer',
+                    marginBottom: '0.75rem',
+                  }}
+                >
+                  <p className="songlist-item-meta" style={{ margin: 0 }}>
+                    {busyUpload ? 'Uploading…' : 'Drag & drop or click to upload images'}
+                  </p>
+                </div>
+              )}
+              <input id="pk-img-input" type="file" accept="image/*" multiple style={{ display: 'none' }} disabled={!canEdit || busyUpload}
+                onChange={(e) => { void uploadImages(e.target.files); e.currentTarget.value = ''; }}
+              />
 
-          {imageAssets.map((img) => {
-            const attached = kitImageIds.includes(img.id);
-            return (
-              <div key={img.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flex: 1, minWidth: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={attached}
-                    disabled={!canEdit}
-                    onChange={(e) => void toggleKitImage(img.id, e.target.checked)}
-                  />
-                  <img src={img.url} alt={img.title} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
-                  <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{img.title}</span>
-                </label>
-                {canEdit && (
-                  <button type="button" className="setlist-action-btn setlist-action-btn--danger" onClick={() => void removeImageAsset(img)}>Delete</button>
-                )}
-              </div>
-            );
-          })}
+              {loadingImages && <p className="bands-status">Loading images…</p>}
+
+              {!loadingImages && imageAssets.length === 0 && (
+                <p className="bands-status">No images uploaded yet.</p>
+              )}
+
+              {imageAssets.map((img) => {
+                const attached = kitImageIds.includes(img.id);
+                return (
+                  <div key={img.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flex: 1, minWidth: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={attached}
+                        disabled={!canEdit}
+                        onChange={(e) => void toggleKitImage(img.id, e.target.checked)}
+                      />
+                      <img src={img.url} alt={img.title} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
+                      <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{img.title}</span>
+                    </label>
+                    {canEdit && (
+                      <button type="button" className="setlist-action-btn setlist-action-btn--danger" onClick={() => void removeImageAsset(img)}>Delete</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </div>
       </div>
     </section>
