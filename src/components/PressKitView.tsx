@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, ExternalLink, Download, Trash2 } from 'lucide-react';
@@ -64,7 +64,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     if (!editor) return;
     const current = editor.getHTML();
     if (current !== kit.richText) {
-      editor.commands.setContent(kit.richText || '', false);
+      editor.commands.setContent(kit.richText || '', { emitUpdate: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kit.id]);
@@ -138,7 +138,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() ?? 'bin' : 'bin';
         const imageId = crypto.randomUUID();
         const storagePath = `bands/${bandId}/presskit/images/${imageId}-${sanitizePathSegment(file.name)}.${ext}`;
-        const storageRef = ref(storage, storagePath);
+        const storageRef = ref(storage!, storagePath);
         await uploadBytes(storageRef, file, { contentType: file.type || undefined });
         const url = await getDownloadURL(storageRef);
         const title = file.name.replace(/\.[^.]+$/, '').trim() || 'Image';
@@ -172,7 +172,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   const removeImageAsset = async (asset: PressKitImageAsset) => {
     if (!canEdit) return;
-    if (storage && asset.storagePath) await deleteObject(ref(storage, asset.storagePath)).catch(() => { /* best-effort */ });
+    if (storage && asset.storagePath) await deleteObject(ref(storage!, asset.storagePath)).catch(() => { /* best-effort */ });
     if (db) await deleteDoc(doc(db, 'bands', bandId, 'pressKitImages', asset.id)).catch(() => { /* best-effort */ });
     setImageAssets((current) => current.filter((a) => a.id !== asset.id));
     const next = kitImageIds.filter((id) => id !== asset.id);
