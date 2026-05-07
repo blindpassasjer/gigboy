@@ -3,6 +3,15 @@ import type { Firestore } from 'firebase/firestore';
 
 const DEMO_SEED_SESSION_KEY = 'gigboy-demo-seeded';
 
+// Stable IDs so song lists can reference them deterministically
+const DEMO_SONG_IDS = [
+  'demo-song-wonderwall',
+  'demo-song-heavens-door',
+  'demo-song-rising-sun',
+  'demo-song-horse-no-name',
+  'demo-song-let-her-go',
+];
+
 interface DemoSong {
   title: string;
   artist: string;
@@ -184,10 +193,35 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
     }
 
     const batch = writeBatch(firestore);
-    for (const song of DEMO_SONGS) {
-      const songRef = doc(collection(firestore, 'users', userId, 'songs'));
-      batch.set(songRef, { ...song, ownerId: userId });
+    for (let i = 0; i < DEMO_SONGS.length; i++) {
+      const songRef = doc(firestore, 'users', userId, 'songs', DEMO_SONG_IDS[i]);
+      batch.set(songRef, { ...DEMO_SONGS[i], ownerId: userId });
     }
+
+    // Seed a demo song list containing all demo songs
+    const songListRef = doc(firestore, 'users', userId, 'songLists', 'demo-list-repertoire');
+    batch.set(songListRef, {
+      name: 'Demo Repertoire',
+      songIds: [...DEMO_SONG_IDS],
+      ownerId: userId,
+      collaboratorIds: [],
+      collaborationPermissions: {},
+      sortOrder: 0,
+    });
+
+    // Seed a demo setlist with a subset of songs
+    const setlistRef = doc(firestore, 'users', userId, 'setlists', 'demo-setlist-gig');
+    batch.set(setlistRef, {
+      name: 'Demo Gig',
+      songIds: [DEMO_SONG_IDS[0], DEMO_SONG_IDS[1], DEMO_SONG_IDS[4]],
+      ownerId: userId,
+      collaboratorIds: [],
+      collaborationPermissions: {},
+      sortOrder: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
     await batch.commit();
 
     try { sessionStorage.setItem(DEMO_SEED_SESSION_KEY, userId); } catch { /* ignore */ }
