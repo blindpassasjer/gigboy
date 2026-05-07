@@ -8481,6 +8481,31 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .8rem;
 }
 
+.tech-rider-page-header {
+  margin-bottom: .1rem;
+}
+
+.tech-rider-list-card {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.tech-rider-list-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  justify-content: space-between;
+}
+
+.tech-rider-list-item .songlist-item-title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tech-rider-section .setlist-view,
 .tech-rider-section .stageplot-view {
   min-width: 0;
