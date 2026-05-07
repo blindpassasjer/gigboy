@@ -4863,14 +4863,14 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .setlist-action-btn--accent {
-  background: linear-gradient(120deg, #0f766e, #14b8a6);
-  border-color: #0f766e;
-  color: #f4fffd;
+  background: linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #fff));
+  border-color: var(--accent);
+  color: var(--accent-contrast, #f4fffd);
 }
 
 .setlist-action-btn--accent:hover {
-  background: linear-gradient(120deg, #0d5f5a, #0d9488);
-  border-color: #0d5f5a;
+  background: linear-gradient(120deg, var(--accent-h, var(--accent)), color-mix(in srgb, var(--accent-h, var(--accent)) 70%, #fff));
+  border-color: var(--accent-h, var(--accent));
 }
 
 .setlist-action-btn--concert {
@@ -5133,7 +5133,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   height: 2rem;
   padding: .2rem;
   color: var(--song-item-muted);
-  opacity: 0;
+  opacity: 1;
   transition: opacity .12s, color .12s, background .12s;
   border-radius: 4px;
   display: flex;
