@@ -530,6 +530,8 @@ interface BandsContextValue {
   updateSongNoteInBandSetlist: (bandId: string, setlistId: string, songId: string, note: string) => Promise<string | null>;
   addBandPressKit: (bandId: string, name: string) => Promise<{ kitId: string | null; error: string | null }>;
   deleteBandPressKit: (bandId: string, kitId: string) => Promise<string | null>;
+  renameBandPressKit: (bandId: string, kitId: string, name: string) => Promise<string | null>;
+  updateBandPressKitIcon: (bandId: string, kitId: string, icon?: string) => Promise<string | null>;
   addBandStageplot: (bandId: string, name: string) => Promise<{ stageplotId: string | null; error: string | null }>;
   renameBandStageplot: (bandId: string, stageplotId: string, name: string) => Promise<string | null>;
   updateBandStageplotIcon: (bandId: string, stageplotId: string, icon?: string) => Promise<string | null>;
@@ -989,6 +991,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return {
         id: entry.id,
         name: typeof data.name === 'string' ? data.name : 'Unnamed Kit',
+        icon: typeof data.icon === 'string' ? data.icon : undefined,
         richText: typeof data.richText === 'string' ? data.richText : '',
         imageIds: Array.isArray(data.imageIds) ? (data.imageIds as string[]) : [],
         createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
@@ -1032,6 +1035,48 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return 'Failed to delete press kit.';
     }
   }, [userId]);
+
+  const renameBandPressKit = useCallback(async (bandId: string, kitId: string, name: string): Promise<string | null> => {
+    if (!db || !userId) return 'Band press kits require cloud sync.';
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+    if (!band.memberIds.includes(userId)) return 'You do not have permission to edit this band.';
+    const trimmed = name.trim();
+    if (!trimmed) return 'Press kit name is required.';
+    const previousKits = bandPressKitsByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    setBandPressKitsByBandId((prev) => ({
+      ...prev,
+      [bandId]: (prev[bandId] ?? []).map((k) => k.id === kitId ? { ...k, name: trimmed, updatedAt: now } : k),
+    }));
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kitId), { name: trimmed, updatedAt: now }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandPressKitsByBandId((prev) => ({ ...prev, [bandId]: previousKits }));
+      return error instanceof Error ? error.message : 'Failed to rename press kit.';
+    }
+  }, [bandPressKitsByBandId, bands, userId]);
+
+  const updateBandPressKitIcon = useCallback(async (bandId: string, kitId: string, icon?: string): Promise<string | null> => {
+    if (!db || !userId) return 'Band press kits require cloud sync.';
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+    if (!band.memberIds.includes(userId)) return 'You do not have permission to edit this band.';
+    const previousKits = bandPressKitsByBandId[bandId] ?? [];
+    const now = new Date().toISOString();
+    setBandPressKitsByBandId((prev) => ({
+      ...prev,
+      [bandId]: (prev[bandId] ?? []).map((k) => k.id === kitId ? { ...k, icon, updatedAt: now } : k),
+    }));
+    try {
+      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kitId), { icon: icon ?? deleteField(), updatedAt: now }, { merge: true });
+      return null;
+    } catch (error) {
+      setBandPressKitsByBandId((prev) => ({ ...prev, [bandId]: previousKits }));
+      return error instanceof Error ? error.message : 'Failed to update press kit icon.';
+    }
+  }, [bandPressKitsByBandId, bands, userId]);
 
   const refreshBandTrash = useCallback(async (bandId: string) => {
     if (!db || !userId) return;
@@ -3541,6 +3586,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateSongNoteInBandSetlist,
     addBandPressKit,
     deleteBandPressKit,
+    renameBandPressKit,
+    updateBandPressKitIcon,
     addBandStageplot,
     renameBandStageplot,
     updateBandStageplotIcon,
@@ -3619,6 +3666,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateBandInputListIcon,
     addBandPressKit,
     deleteBandPressKit,
+    renameBandPressKit,
+    updateBandPressKitIcon,
     refreshBandPressKits,
     bandPressKitsByBandId,
   ]);

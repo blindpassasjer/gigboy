@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, ExternalLink, Download, Trash2 } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, ExternalLink, Download, Trash2, PenLine, Newspaper } from 'lucide-react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
 import { db, storage } from '../lib/firebase';
 import { createPressKitShare } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
+import { ICON_OPTIONS } from '../lib/iconOptions';
 import type { PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
 
@@ -37,10 +38,59 @@ interface Props {
   userId: string | null;
   userEmail: string | null;
   onDelete: () => void;
+  onRename?: (name: string) => Promise<void> | void;
+  onUpdateIcon?: (icon?: string) => Promise<void> | void;
 }
 
-export default function PressKitView({ bandId, bandName, kit, canEdit, userId, userEmail, onDelete }: Props) {
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
+}
+
+export default function PressKitView({ bandId, bandName, kit, canEdit, userId, userEmail, onDelete, onRename, onUpdateIcon }: Props) {
   const { deleteBandPressKit } = useBands();
+
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(kit.name);
+  const [showIconEditor, setShowIconEditor] = useState(false);
+  const [iconDraft, setIconDraft] = useState(kit.icon ?? '');
+  const iconPickerRef = useRef<HTMLDivElement | null>(null);
+  const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => { if (!isRenaming) setRenameValue(kit.name); }, [isRenaming, kit.name]);
+  useEffect(() => { setIconDraft(kit.icon ?? ''); }, [kit.icon]);
+
+  useEffect(() => {
+    if (!showIconEditor) return;
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (iconPickerRef.current?.contains(target)) return;
+      if (iconTriggerRef.current?.contains(target)) return;
+      setShowIconEditor(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setShowIconEditor(false);
+      iconTriggerRef.current?.focus();
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showIconEditor]);
+
+  const handleRenameCommit = async () => {
+    const trimmed = renameValue.trim();
+    if (!trimmed) { setRenameValue(kit.name); setIsRenaming(false); return; }
+    if (trimmed !== kit.name && onRename) await onRename(trimmed);
+    setIsRenaming(false);
+  };
 
   // ── Rich text ────────────────────────────────────────────────────────────
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -248,7 +298,86 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         <div className="song-list-sticky">
           <header className="songlist-header setlist-header">
             <div className="setlist-title-block">
-              <h1 className="song-list-heading setlist-title">{kit.name}</h1>
+              {isRenaming ? (
+                <input
+                  type="text"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void handleRenameCommit();
+                    if (e.key === 'Escape') { setRenameValue(kit.name); setIsRenaming(false); }
+                  }}
+                  onBlur={() => void handleRenameCommit()}
+                  className="setlist-name-input"
+                  autoFocus
+                />
+              ) : (
+                <div className="song-list-title-row">
+                  <h1 className="song-list-heading setlist-title">
+                    {canEdit && onUpdateIcon ? (
+                      <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                        <button
+                          ref={iconTriggerRef}
+                          type="button"
+                          className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
+                          aria-haspopup="dialog"
+                          aria-expanded={showIconEditor}
+                          onClick={(e) => { e.stopPropagation(); setShowIconEditor((v) => !v); }}
+                          title="Change press kit icon"
+                          aria-label="Change press kit icon"
+                        >
+                          <span className="song-list-heading-icon" aria-hidden="true">
+                            {kit.icon ? kit.icon : <Newspaper size={20} />}
+                          </span>
+                        </button>
+                        {showIconEditor && (
+                          <div className="icon-picker-popover" role="dialog" aria-label="Choose press kit icon">
+                            <div className="emoji-choice-grid" role="radiogroup" aria-label="Press kit icon options">
+                              <button
+                                type="button"
+                                className={`emoji-choice-btn${!kit.icon ? ' active' : ''}`}
+                                onClick={() => { void onUpdateIcon(undefined); setIconDraft(''); setShowIconEditor(false); }}
+                                aria-pressed={!kit.icon}
+                              >
+                                <Newspaper size={16} />
+                              </button>
+                              {ICON_OPTIONS.map((emoji) => {
+                                const selected = iconDraft === emoji;
+                                return (
+                                  <button
+                                    key={emoji}
+                                    type="button"
+                                    className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                                    onClick={() => { void onUpdateIcon(normalizeEmojiIcon(emoji)); setIconDraft(emoji); setShowIconEditor(false); }}
+                                    aria-pressed={selected}
+                                  >
+                                    {emoji}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <button
+                              type="button"
+                              className="icon-picker-reset-btn"
+                              onClick={() => { void onUpdateIcon(undefined); setIconDraft(''); setShowIconEditor(false); }}
+                            >
+                              Reset to default
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : kit.icon ? (
+                      <span className="song-list-heading-icon" aria-hidden="true">{kit.icon}</span>
+                    ) : null}
+                    {kit.name}
+                  </h1>
+                  {canEdit && onRename ? (
+                    <button type="button" className="title-rename-btn" onClick={() => setIsRenaming(true)} title="Rename press kit">
+                      <PenLine size={14} />
+                    </button>
+                  ) : null}
+                </div>
+              )}
               <p className="setlist-subtitle">{busySave ? 'Saving…' : 'Press kit'}</p>
             </div>
             <div className="setlist-header-actions">

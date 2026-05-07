@@ -569,129 +569,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-section-toggle"
-                    onClick={() => toggleBandInputListsExpanded(band.id)}
-                    aria-expanded={isBandInputListsExpanded(band.id)}
-                  >
-                    {isBandInputListsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    <span className="sidebar-section-title">Technical Riders</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="sidebar-icon-btn"
-                    title="New technical rider"
-                    aria-label="Create new technical rider"
-                    onClick={() => {
-                      setCollapsedBandInputListIds((prev) => prev.filter((id) => id !== band.id));
-                      setAddingBandInputListId(band.id);
-                      setDraftName('');
-                    }}
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-
-                {isBandInputListsExpanded(band.id) && (
-                  <div className="sidebar-nested-group">
-                    {(bandInputListsByBandId[band.id] ?? []).length === 0 && addingBandInputListId !== band.id && (
-                      <p className="sidebar-empty-hint">No technical riders yet.</p>
-                    )}
-
-                    {(bandInputListsByBandId[band.id] ?? []).map((rider) => (
-                      <div
-                        key={rider.id}
-                        className={`sidebar-list-item${pathname === `/bands/${band.id}/riders/${rider.id}` ? ' active' : ''}`}
-                      >
-                        <button
-                          className="sidebar-list-item-btn"
-                          onClick={() => {
-                            clearGlobalSelection();
-                            navigate(`/bands/${band.id}/riders/${rider.id}`);
-                            onNavigate?.();
-                          }}
-                        >
-                          {rider.icon ? <span className="sidebar-list-icon" aria-hidden="true">{rider.icon}</span> : <ClipboardList size={14} />}
-                          <span className="sidebar-list-name">{rider.name}</span>
-                        </button>
-                      </div>
-                    ))}
-
-                    {addingBandInputListId === band.id && (
-                      <InlineInput
-                        value={draftName}
-                        onChange={setDraftName}
-                        onCommit={() => void commitBandInputList(band.id)}
-                        onCancel={() => setAddingBandInputListId(null)}
-                        placeholder="Technical rider name..."
-                      />
-                    )}
-                  </div>
-                )}
-
-                <div className="sidebar-setlists-header">
-                  <button
-                    type="button"
-                    className="sidebar-section-toggle"
-                    onClick={() => toggleBandPressKitsExpanded(band.id)}
-                    aria-expanded={isBandPressKitsExpanded(band.id)}
-                  >
-                    {isBandPressKitsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    <span className="sidebar-section-title">Press Kits</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="sidebar-icon-btn"
-                    title="New press kit"
-                    aria-label="Create new press kit"
-                    onClick={() => {
-                      setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));
-                      setAddingBandPressKitId(band.id);
-                      setDraftName('');
-                    }}
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-
-                {isBandPressKitsExpanded(band.id) && (
-                  <div className="sidebar-nested-group">
-                    {(bandPressKitsByBandId[band.id] ?? []).length === 0 && addingBandPressKitId !== band.id && (
-                      <p className="sidebar-empty-hint">No press kits yet.</p>
-                    )}
-                    {(bandPressKitsByBandId[band.id] ?? []).map((kit) => (
-                      <div
-                        key={kit.id}
-                        className={`sidebar-list-item${pathname === `/bands/${band.id}/press-kit/${kit.id}` ? ' active' : ''}`}
-                      >
-                        <button
-                          className="sidebar-list-item-btn"
-                          onClick={() => {
-                            clearGlobalSelection();
-                            navigate(`/bands/${band.id}/press-kit/${kit.id}`);
-                            onNavigate?.();
-                          }}
-                        >
-                          <Newspaper size={14} />
-                          <span className="sidebar-list-name">{kit.name}</span>
-                        </button>
-                      </div>
-                    ))}
-
-                    {addingBandPressKitId === band.id && (
-                      <InlineInput
-                        value={draftName}
-                        onChange={setDraftName}
-                        onCommit={() => void commitBandPressKit(band.id)}
-                        onCancel={() => setAddingBandPressKitId(null)}
-                        placeholder="Press kit name..."
-                      />
-                    )}
-                  </div>
-                )}
-
-                <div className="sidebar-setlists-header">
-                  <button
-                    type="button"
-                    className="sidebar-section-toggle"
                     onClick={() => toggleBandSonglistsExpanded(band.id)}
                     aria-expanded={isBandSonglistsExpanded(band.id)}
                   >
@@ -816,7 +693,130 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                       />
                     )}
                   </div>
+                )}                <div className="sidebar-setlists-header">
+                  <button
+                    type="button"
+                    className="sidebar-section-toggle"
+                    onClick={() => toggleBandInputListsExpanded(band.id)}
+                    aria-expanded={isBandInputListsExpanded(band.id)}
+                  >
+                    {isBandInputListsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span className="sidebar-section-title">Technical Riders</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New technical rider"
+                    aria-label="Create new technical rider"
+                    onClick={() => {
+                      setCollapsedBandInputListIds((prev) => prev.filter((id) => id !== band.id));
+                      setAddingBandInputListId(band.id);
+                      setDraftName('');
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                {isBandInputListsExpanded(band.id) && (
+                  <div className="sidebar-nested-group">
+                    {(bandInputListsByBandId[band.id] ?? []).length === 0 && addingBandInputListId !== band.id && (
+                      <p className="sidebar-empty-hint">No technical riders yet.</p>
+                    )}
+
+                    {(bandInputListsByBandId[band.id] ?? []).map((rider) => (
+                      <div
+                        key={rider.id}
+                        className={`sidebar-list-item${pathname === `/bands/${band.id}/riders/${rider.id}` ? ' active' : ''}`}
+                      >
+                        <button
+                          className="sidebar-list-item-btn"
+                          onClick={() => {
+                            clearGlobalSelection();
+                            navigate(`/bands/${band.id}/riders/${rider.id}`);
+                            onNavigate?.();
+                          }}
+                        >
+                          {rider.icon ? <span className="sidebar-list-icon" aria-hidden="true">{rider.icon}</span> : <ClipboardList size={14} />}
+                          <span className="sidebar-list-name">{rider.name}</span>
+                        </button>
+                      </div>
+                    ))}
+
+                    {addingBandInputListId === band.id && (
+                      <InlineInput
+                        value={draftName}
+                        onChange={setDraftName}
+                        onCommit={() => void commitBandInputList(band.id)}
+                        onCancel={() => setAddingBandInputListId(null)}
+                        placeholder="Technical rider name..."
+                      />
+                    )}
+                  </div>
                 )}
+
+                <div className="sidebar-setlists-header">
+                  <button
+                    type="button"
+                    className="sidebar-section-toggle"
+                    onClick={() => toggleBandPressKitsExpanded(band.id)}
+                    aria-expanded={isBandPressKitsExpanded(band.id)}
+                  >
+                    {isBandPressKitsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span className="sidebar-section-title">Press Kits</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New press kit"
+                    aria-label="Create new press kit"
+                    onClick={() => {
+                      setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));
+                      setAddingBandPressKitId(band.id);
+                      setDraftName('');
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                {isBandPressKitsExpanded(band.id) && (
+                  <div className="sidebar-nested-group">
+                    {(bandPressKitsByBandId[band.id] ?? []).length === 0 && addingBandPressKitId !== band.id && (
+                      <p className="sidebar-empty-hint">No press kits yet.</p>
+                    )}
+                    {(bandPressKitsByBandId[band.id] ?? []).map((kit) => (
+                      <div
+                        key={kit.id}
+                        className={`sidebar-list-item${pathname === `/bands/${band.id}/press-kit/${kit.id}` ? ' active' : ''}`}
+                      >
+                        <button
+                          className="sidebar-list-item-btn"
+                          onClick={() => {
+                            clearGlobalSelection();
+                            navigate(`/bands/${band.id}/press-kit/${kit.id}`);
+                            onNavigate?.();
+                          }}
+                        >
+                          {kit.icon ? <span className="sidebar-list-icon" aria-hidden="true">{kit.icon}</span> : <Newspaper size={14} />}
+                          <span className="sidebar-list-name">{kit.name}</span>
+                        </button>
+                      </div>
+                    ))}
+
+                    {addingBandPressKitId === band.id && (
+                      <InlineInput
+                        value={draftName}
+                        onChange={setDraftName}
+                        onCommit={() => void commitBandPressKit(band.id)}
+                        onCancel={() => setAddingBandPressKitId(null)}
+                        placeholder="Press kit name..."
+                      />
+                    )}
+                  </div>
+                )}
+
+
 
 
 

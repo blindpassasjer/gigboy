@@ -178,6 +178,7 @@ export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'stageplot' | 'tec
 export interface PressKit {
   id: string;
   name: string;
+  icon?: string;
   richText: string;
   imageIds: string[];
   createdAt?: string;

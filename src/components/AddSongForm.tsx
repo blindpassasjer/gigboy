@@ -40,6 +40,22 @@ Was [Em]blind but [D]now I [G]see
 {end_of_chorus}`;
 
 const UNSAVED_CHANGES_WARNING = 'You have unsaved changes.';
+const AUTOSAVE_DELAY_MS = 900;
+
+type SongFormValues = {
+  title: string;
+  artist: string;
+  author: string;
+  playbackUrl: string;
+  language: string;
+  tags: string;
+  key: string;
+  capo: string;
+  tempo: string;
+  timeSignature: string;
+  chordpro: string;
+  songListId: string;
+};
 
 export default function AddSongForm({
   onSave,
@@ -66,11 +82,14 @@ export default function AddSongForm({
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [songListId, setSongListId] = useState(initialSongListId ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const autosaveTimerRef = useRef<number | null>(null);
+  const saveGenerationRef = useRef(0);
   const tabBlocks = useMemo(() => extractTabBlocks(chordpro), [chordpro]);
 
-  const initialValues = useMemo(() => ({
+  const initialValues = useMemo<SongFormValues>(() => ({
     title: initialSong?.title ?? '',
     artist: initialSong?.artist ?? '',
     author: initialSong?.author ?? '',
@@ -85,20 +104,9 @@ export default function AddSongForm({
     songListId: initialSongListId ?? '',
   }), [initialSong, initialSongListId]);
 
-  const isDirty = useMemo(() => {
-    return title !== initialValues.title
-      || artist !== initialValues.artist
-      || author !== initialValues.author
-      || playbackUrl !== initialValues.playbackUrl
-      || language !== initialValues.language
-      || tags !== initialValues.tags
-      || key !== initialValues.key
-      || capo !== initialValues.capo
-      || tempo !== initialValues.tempo
-      || timeSignature !== initialValues.timeSignature
-      || chordpro !== initialValues.chordpro
-      || songListId !== initialValues.songListId;
-  }, [
+  const [lastSavedValues, setLastSavedValues] = useState<SongFormValues>(initialValues);
+
+  const formValues = useMemo<SongFormValues>(() => ({
     title,
     artist,
     author,
@@ -111,8 +119,40 @@ export default function AddSongForm({
     timeSignature,
     chordpro,
     songListId,
-    initialValues,
+  }), [
+    title,
+    artist,
+    author,
+    playbackUrl,
+    language,
+    tags,
+    key,
+    capo,
+    tempo,
+    timeSignature,
+    chordpro,
+    songListId,
   ]);
+
+  useEffect(() => {
+    setLastSavedValues(initialValues);
+    setSaveState('idle');
+  }, [initialValues]);
+
+  const isDirty = useMemo(() => {
+    return formValues.title !== lastSavedValues.title
+      || formValues.artist !== lastSavedValues.artist
+      || formValues.author !== lastSavedValues.author
+      || formValues.playbackUrl !== lastSavedValues.playbackUrl
+      || formValues.language !== lastSavedValues.language
+      || formValues.tags !== lastSavedValues.tags
+      || formValues.key !== lastSavedValues.key
+      || formValues.capo !== lastSavedValues.capo
+      || formValues.tempo !== lastSavedValues.tempo
+      || formValues.timeSignature !== lastSavedValues.timeSignature
+      || formValues.chordpro !== lastSavedValues.chordpro
+      || formValues.songListId !== lastSavedValues.songListId;
+  }, [formValues, lastSavedValues]);
 
   const shouldBlockNavigation = isDirty && !allowNavigation;
   const blocker = useBlocker(shouldBlockNavigation);
@@ -152,14 +192,33 @@ export default function AddSongForm({
     };
   }, [mode, isDirty, navigate, initialSong?.id, songPageState]);
 
-  function validate() {
+  function validate(values: SongFormValues) {
     const errs: string[] = [];
-    if (!title.trim()) errs.push('Title is required.');
-    if (!chordpro.trim()) errs.push('Song content (ChordPro) is required.');
-    if (playbackUrl.trim() && !parseSongMedia(playbackUrl)) {
+    if (!values.title.trim()) errs.push('Title is required.');
+    if (!values.chordpro.trim()) errs.push('Song content (ChordPro) is required.');
+    if (values.playbackUrl.trim() && !parseSongMedia(values.playbackUrl)) {
       errs.push('Playback link must be a valid YouTube or Spotify URL.');
     }
     return errs;
+  }
+
+  function buildSong(values: SongFormValues): Song {
+    return {
+      id: initialSong?.id ?? crypto.randomUUID(),
+      title: values.title.trim(),
+      artist: values.artist.trim() || undefined,
+      author: values.author.trim() || undefined,
+      playbackUrl: values.playbackUrl.trim() || undefined,
+      language: values.language,
+      tags: values.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      key: values.key.trim() || undefined,
+      capo: values.capo ? parseInt(values.capo, 10) : undefined,
+      tempo: values.tempo ? parseInt(values.tempo, 10) : undefined,
+      timeSignature: values.timeSignature.trim() || undefined,
+      chordpro: values.chordpro.trim(),
+      createdAt: initialSong?.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   function handleParsePasted() {
@@ -183,25 +242,10 @@ export default function AddSongForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const errs = validate();
+    const errs = validate(formValues);
     if (errs.length) { setErrors(errs); return; }
 
-    const song: Song = {
-      id: initialSong?.id ?? crypto.randomUUID(),
-      title: title.trim(),
-      artist: artist.trim() || undefined,
-      author: author.trim() || undefined,
-      playbackUrl: playbackUrl.trim() || undefined,
-      language,
-      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-      key: key.trim() || undefined,
-      capo: capo ? parseInt(capo, 10) : undefined,
-      tempo: tempo ? parseInt(tempo, 10) : undefined,
-      timeSignature: timeSignature.trim() || undefined,
-      chordpro: chordpro.trim(),
-      createdAt: initialSong?.createdAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const song = buildSong(formValues);
 
     const saveError = await onSave(song);
     if (saveError) {
@@ -219,10 +263,72 @@ export default function AddSongForm({
     navigate(`/songs/${song.id}`, { state: songPageState });
   }
 
+  useEffect(() => {
+    if (mode !== 'edit') return;
+
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+
+    if (!isDirty) {
+      return;
+    }
+
+    const errs = validate(formValues);
+    if (errs.length > 0) {
+      setErrors(errs);
+      setSaveState('error');
+      return;
+    }
+
+    setErrors([]);
+    autosaveTimerRef.current = window.setTimeout(() => {
+      const generation = ++saveGenerationRef.current;
+      const valuesToSave = { ...formValues };
+      const previousSongListId = lastSavedValues.songListId;
+      const song = buildSong(valuesToSave);
+      setSaveState('saving');
+
+      void onSave(song)
+        .then((saveError) => {
+          if (generation !== saveGenerationRef.current) return;
+          if (saveError) {
+            setErrors([`Could not save song: ${saveError}`]);
+            setSaveState('error');
+            return;
+          }
+
+          if (valuesToSave.songListId && valuesToSave.songListId !== previousSongListId) {
+            onSongListChange?.(valuesToSave.songListId, song.id);
+          }
+
+          setLastSavedValues(valuesToSave);
+          setSaveState('saved');
+          window.setTimeout(() => {
+            setSaveState((current) => (current === 'saved' ? 'idle' : current));
+          }, 1200);
+        })
+        .catch((error: unknown) => {
+          if (generation !== saveGenerationRef.current) return;
+          const message = error instanceof Error ? error.message : String(error);
+          setErrors([`Could not save song: ${message}`]);
+          setSaveState('error');
+        });
+    }, AUTOSAVE_DELAY_MS);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [mode, isDirty, formValues, lastSavedValues, onSave, onSongListChange]);
+
   return (
     <div className="add-song-page">
       <h1>{mode === 'edit' ? 'Edit Song' : 'Add Song'}</h1>
-      <form onSubmit={handleSubmit} className="add-song-form">
+      <form onSubmit={mode === 'edit' ? (e) => e.preventDefault() : handleSubmit} className="add-song-form">
         {errors.length > 0 && (
           <ul className="form-errors">
             {errors.map((e) => <li key={e}>{e}</li>)}
@@ -307,9 +413,32 @@ export default function AddSongForm({
               <button type="button" className="preview-toggle" onClick={() => setPreview((v) => !v)}>
                 {preview ? 'Edit' : 'Preview'}
               </button>
-              <button type="submit" className="btn-primary form-submit-inline">
-                <Save size={14} /> {mode === 'edit' ? 'Update Song' : 'Save Song'}
-              </button>
+              {mode === 'add' && (
+                <button type="submit" className="btn-primary form-submit-inline">
+                  <Save size={14} /> Save Song
+                </button>
+              )}
+              {mode === 'edit' && (
+                <span
+                  className={`notes-save-status ${
+                    saveState === 'saving'
+                      ? 'notes-save-status--saving'
+                      : saveState === 'saved'
+                        ? 'notes-save-status--saved'
+                        : saveState === 'error'
+                          ? 'notes-save-status--error'
+                          : ''
+                  }`}
+                >
+                  {saveState === 'saving'
+                    ? 'Saving…'
+                    : saveState === 'saved'
+                      ? 'Saved'
+                      : saveState === 'error'
+                        ? 'Could not autosave'
+                        : 'Autosave on'}
+                </span>
+              )}
             </div>
           </div>
           {!preview && (
@@ -367,11 +496,13 @@ export default function AddSongForm({
           </p>
         </div>
 
-        <div className="form-actions">
-          <button type="submit" className="btn-primary">
-            <Save size={16} /> {mode === 'edit' ? 'Update Song' : 'Save Song'}
-          </button>
-        </div>
+        {mode === 'add' && (
+          <div className="form-actions">
+            <button type="submit" className="btn-primary">
+              <Save size={16} /> Save Song
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

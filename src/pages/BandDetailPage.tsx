@@ -69,6 +69,8 @@ export default function BandDetailPage() {
     updateBandLibraryIcon,
     bandPressKitsByBandId,
     refreshBandPressKits,
+    renameBandPressKit,
+    updateBandPressKitIcon,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
@@ -814,6 +816,14 @@ export default function BandDetailPage() {
           void refreshBandPressKits(band.id);
           navigate(`/bands/${band.id}/library`);
         }}
+        onRename={canEditBand ? async (name) => {
+          const error = await renameBandPressKit(band.id, activeKit.id, name);
+          if (error) toast.error(error);
+        } : undefined}
+        onUpdateIcon={canEditBand ? async (icon) => {
+          const error = await updateBandPressKitIcon(band.id, activeKit.id, icon);
+          if (error) toast.error(error);
+        } : undefined}
       />
     );
   }
