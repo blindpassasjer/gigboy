@@ -21,6 +21,8 @@ interface Props {
   canEdit: boolean;
   userId: string | null;
   userEmail: string | null;
+  initialTab?: TabId;
+  onTabChange?: (tab: TabId) => void;
 }
 
 type TabId = 'stageplots' | 'riders' | 'texts' | 'images';
@@ -59,8 +61,10 @@ export default function BandPressKitPanel({
   canEdit,
   userId,
   userEmail,
+  initialTab = 'stageplots',
+  onTabChange,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<TabId>('stageplots');
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [selectedStageplotIds, setSelectedStageplotIds] = useState<string[]>([]);
   const [selectedRiderIds, setSelectedRiderIds] = useState<string[]>([]);
   const [activeStageplotId, setActiveStageplotId] = useState<string | null>(null);
@@ -128,6 +132,10 @@ export default function BandPressKitPanel({
       return riders[0]?.id ?? null;
     });
   }, [riders]);
+
+  useEffect(() => {
+    setActiveTab((current) => (current === initialTab ? current : initialTab));
+  }, [initialTab]);
 
   const handleCreateStageplot = async () => {
     if (!canEdit) {
@@ -496,7 +504,10 @@ export default function BandPressKitPanel({
               key={tab.id}
               type="button"
               className={`setlist-tab${activeTab === tab.id ? ' active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                onTabChange?.(tab.id);
+              }}
             >
               {tab.icon}
               <span>{tab.label}</span>

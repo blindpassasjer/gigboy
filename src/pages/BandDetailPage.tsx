@@ -14,6 +14,12 @@ import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 
+type PressKitTabId = 'stageplots' | 'riders' | 'texts' | 'images';
+
+function isPressKitTab(value: string | null): value is PressKitTabId {
+  return value === 'stageplots' || value === 'riders' || value === 'texts' || value === 'images';
+}
+
 export default function BandDetailPage() {
   const { id } = useParams();
   const { pathname } = useLocation();
@@ -85,6 +91,9 @@ export default function BandDetailPage() {
   const routeBandId = routeSegments[0] === 'bands' ? routeSegments[1] : null;
   const bandSection = routeBandId === id ? (routeSegments[2] ?? 'library') : 'library';
   const bandResourceId = routeBandId === id ? (routeSegments[3] ?? null) : null;
+  const activePressKitTab: PressKitTabId = bandSection === 'press-kit' && isPressKitTab(bandResourceId)
+    ? bandResourceId
+    : 'stageplots';
 
   const activeBandSongList = bandSection === 'songlists'
     ? bandSongLists.find((entry) => entry.id === bandResourceId) ?? null
@@ -655,6 +664,12 @@ export default function BandDetailPage() {
         canEdit={canEditBand}
         userId={user?.id ?? null}
         userEmail={user?.email ?? null}
+        initialTab={activePressKitTab}
+        onTabChange={(tab) => {
+          const nextPath = `/bands/${band.id}/press-kit/${tab}`;
+          if (pathname === nextPath) return;
+          navigate(nextPath);
+        }}
       />
     );
   }

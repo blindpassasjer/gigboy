@@ -7996,6 +7996,68 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-color: color-mix(in srgb, var(--bands-hue) 34%, var(--border));
 }
 
+.setlist-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .55rem;
+  width: 100%;
+}
+
+.setlist-tab {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--bands-hue) 30%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--bands-hue-soft));
+  color: var(--bands-hue);
+  min-height: 42px;
+  width: 100%;
+  padding: .6rem .75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  font-weight: 700;
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .12s ease;
+}
+
+.setlist-tab:hover {
+  background: color-mix(in srgb, var(--bands-hue-soft) 70%, var(--surface));
+  border-color: color-mix(in srgb, var(--bands-hue) 46%, var(--border));
+}
+
+.setlist-tab:active {
+  transform: translateY(1px);
+}
+
+.setlist-tab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--bands-hue) 60%, #fff);
+  outline-offset: 2px;
+}
+
+.setlist-tab.active {
+  background: linear-gradient(
+    130deg,
+    color-mix(in srgb, var(--bands-hue) 24%, #ffffff),
+    color-mix(in srgb, var(--bands-hue-soft) 72%, var(--surface))
+  );
+  border-color: color-mix(in srgb, var(--bands-hue) 55%, var(--border));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bands-hue) 24%, transparent);
+}
+
+@media (max-width: 900px) {
+  .setlist-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .setlist-tab {
+    min-height: 40px;
+    padding: .55rem .65rem;
+    font-size: .92rem;
+  }
+}
+
 .bands-page .setlist-action-btn {
   background: var(--bands-hue);
   border-color: var(--bands-hue);
