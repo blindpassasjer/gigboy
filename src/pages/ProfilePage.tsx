@@ -455,8 +455,6 @@ export default function ProfilePage() {
                 <h2>Security and sign out</h2>
                 <p className="profile-settings-muted">Use the current session controls here. Password reset stays in the auth flow.</p>
               </div>
-            </div>
-            <div className="profile-danger-actions">
               <button
                 type="button"
                 className="setlist-action-btn setlist-action-btn--secondary"
