@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import StageplotEditor from '../components/StageplotEditor';
-import TechnicalRiderEditor from '../components/TechnicalRiderEditor';
+import InputListEditor from '../components/InputListEditor';
 import TrashView from '../components/TrashView';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
@@ -24,7 +24,7 @@ export default function BandDetailPage() {
     bandSongListsByBandId,
     bandSetlistsByBandId,
     bandStageplotsByBandId,
-    bandTechnicalRidersByBandId,
+    bandInputListsByBandId,
     bandTrashByBandId,
     loading,
     renameBand,
@@ -32,7 +32,7 @@ export default function BandDetailPage() {
     refreshBandSongLists,
     refreshBandSetlists,
     refreshBandStageplots,
-    refreshBandTechnicalRiders,
+    refreshBandInputLists,
     refreshBandTrash,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
@@ -56,11 +56,11 @@ export default function BandDetailPage() {
     setBandStageplotPublicShare,
     updateBandStageplotContent,
     deleteBandStageplot,
-    renameBandTechnicalRider,
-    updateBandTechnicalRiderIcon,
-    setBandTechnicalRiderPublicShare,
-    updateBandTechnicalRiderContent,
-    deleteBandTechnicalRider,
+    renameBandInputList,
+    updateBandInputListIcon,
+    setBandInputListPublicShare,
+    updateBandInputListContent,
+    deleteBandInputList,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
     updateBandLibraryIcon,
@@ -71,7 +71,7 @@ export default function BandDetailPage() {
   const bandSongLists = id ? (bandSongListsByBandId[id] ?? []) : [];
   const bandSetlists = id ? (bandSetlistsByBandId[id] ?? []) : [];
   const bandStageplots = id ? (bandStageplotsByBandId[id] ?? []) : [];
-  const bandTechnicalRiders = id ? (bandTechnicalRidersByBandId[id] ?? []) : [];
+  const bandInputLists = id ? (bandInputListsByBandId[id] ?? []) : [];
   const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
 
   const allBandsSongs = useMemo(() => {
@@ -94,8 +94,8 @@ export default function BandDetailPage() {
   const activeBandStageplot = bandSection === 'stageplots'
     ? bandStageplots.find((entry) => entry.id === bandResourceId) ?? null
     : null;
-  const activeBandTechnicalRider = bandSection === 'riders'
-    ? bandTechnicalRiders.find((entry) => entry.id === bandResourceId) ?? null
+  const activeBandInputList = bandSection === 'riders'
+    ? bandInputLists.find((entry) => entry.id === bandResourceId) ?? null
     : null;
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
 
@@ -130,10 +130,10 @@ export default function BandDetailPage() {
 
   useEffect(() => {
     if (!id || !band) return;
-    void refreshBandTechnicalRiders(id).catch((error) => {
+    void refreshBandInputLists(id).catch((error: unknown) => {
       console.error('Failed to load band technical riders.', error);
     });
-  }, [band, id, refreshBandTechnicalRiders]);
+  }, [band, id, refreshBandInputLists]);
 
   useEffect(() => {
     if (!id || !band) return;
@@ -295,16 +295,16 @@ export default function BandDetailPage() {
   };
 
   const handleShareTechnicalRider = async () => {
-    if (!activeBandTechnicalRider) return;
+    if (!activeBandInputList) return;
     const publicUrl = buildBandPublicShareUrl(
       window.location.origin,
       band.id,
       band.name,
       'riders',
-      activeBandTechnicalRider.id
+      activeBandInputList.id
     );
-    if (!activeBandTechnicalRider.publicShareEnabled) {
-      const error = await setBandTechnicalRiderPublicShare(band.id, activeBandTechnicalRider.id, true);
+    if (!activeBandInputList.publicShareEnabled) {
+      const error = await setBandInputListPublicShare(band.id, activeBandInputList.id, true);
       if (error) {
         toast.error(error);
         return;
@@ -521,7 +521,7 @@ export default function BandDetailPage() {
   }
 
   if (bandSection === 'riders') {
-    if (!activeBandTechnicalRider) {
+    if (!activeBandInputList) {
       return (
         <section className="bands-page">
           <p className="bands-status">Band technical rider not found.</p>
@@ -531,19 +531,19 @@ export default function BandDetailPage() {
     }
 
     return (
-      <TechnicalRiderEditor
-        rider={activeBandTechnicalRider}
+      <InputListEditor
+        rider={activeBandInputList}
         canEdit={canEditBand}
         onRename={async (name) => {
-          const error = await renameBandTechnicalRider(band.id, activeBandTechnicalRider.id, name);
+          const error = await renameBandInputList(band.id, activeBandInputList.id, name);
           if (error) toast.error(error);
         }}
         onUpdateIcon={async (icon) => {
-          const error = await updateBandTechnicalRiderIcon(band.id, activeBandTechnicalRider.id, icon);
+          const error = await updateBandInputListIcon(band.id, activeBandInputList.id, icon);
           if (error) toast.error(error);
         }}
         onDelete={canEditBand ? async () => {
-          const error = await deleteBandTechnicalRider(band.id, activeBandTechnicalRider.id);
+          const error = await deleteBandInputList(band.id, activeBandInputList.id);
           if (error) {
             toast.error(error);
             return;
@@ -551,9 +551,9 @@ export default function BandDetailPage() {
           navigate(`/bands/${band.id}/library`);
         } : undefined}
         onSaveContent={async (content) => {
-          const error = await updateBandTechnicalRiderContent({
+          const error = await updateBandInputListContent({
             bandId: band.id,
-            riderId: activeBandTechnicalRider.id,
+            riderId: activeBandInputList.id,
             lines: content.lines,
             preferredEquipment: content.preferredEquipment,
             inventoryEquipment: content.inventoryEquipment,
@@ -604,7 +604,7 @@ export default function BandDetailPage() {
         return {
           trashId: entry.trashId,
           itemType: 'technicalRider' as const,
-          name: entry.technicalRider.name,
+          name: entry.inputList.name,
           deletedAt: entry.deletedAt,
           purgeAt: entry.purgeAt,
         };
