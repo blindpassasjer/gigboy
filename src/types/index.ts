@@ -165,6 +165,12 @@ export interface InputList extends CollaborationMetadata {
   lines: InputListLine[];
   preferredEquipment: RiderEquipmentItem[];
   inventoryEquipment: RiderEquipmentItem[];
+  /** Stageplot canvas items embedded in this technical rider. */
+  items?: StageplotItem[];
+  /** Stageplot freehand drawing layers embedded in this technical rider. */
+  drawingLayers?: SongHandNoteDocument[];
+  stageShape?: 'rectangle' | 'oval' | 'circle';
+  stageSize?: 'small' | 'medium' | 'large';
   publicShareEnabled?: boolean;
   /** Band name denormalized for unauthenticated public reads. */
   bandName?: string;
@@ -173,7 +179,7 @@ export interface InputList extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'stageplot' | 'technicalRider';
+export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'technicalRider';
 
 export interface PressKit {
   id: string;
@@ -203,11 +209,6 @@ export interface TrashedSongList extends TrashMetadata {
 export interface TrashedSetlist extends TrashMetadata {
   itemType: 'setlist';
   setlist: Setlist;
-}
-
-export interface TrashedStageplot extends TrashMetadata {
-  itemType: 'stageplot';
-  stageplot: Stageplot;
 }
 
 export interface TrashedInputList extends TrashMetadata {

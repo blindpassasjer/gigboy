@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, Music, Folder, ListMusic, Map, ClipboardList } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, Music, Folder, ListMusic, ClipboardList } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -42,7 +42,6 @@ export default function Layout({ children }: Props) {
     refreshBands,
     addBandSongList,
     addBandSetlist,
-    addBandStageplot,
     addBandInputList,
   } = useBands();
   const { user } = useAuth();
@@ -100,7 +99,6 @@ export default function Layout({ children }: Props) {
     && (bandSection === 'library'
       || bandSection === 'songlists'
       || bandSection === 'setlists'
-      || bandSection === 'stageplots'
       || bandSection === 'riders');
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
@@ -139,7 +137,7 @@ export default function Layout({ children }: Props) {
   const hasAnyPendingInvites = pendingInvites.length > 0 || pendingBandInvites.length > 0;
   const hasAnyInviteContent = hasAnyPendingInvites || acceptedOutgoing.length > 0;
 
-  const createBandResource = useCallback(async (kind: 'songlist' | 'setlist' | 'stageplot' | 'rider') => {
+  const createBandResource = useCallback(async (kind: 'songlist' | 'setlist' | 'rider') => {
     if (!routeBandId) return;
 
     if (kind === 'setlist' && !planState.canUse('setlists')) {
@@ -147,13 +145,8 @@ export default function Layout({ children }: Props) {
       return;
     }
 
-    if (kind === 'stageplot' && !planState.canUse('stagePlots')) {
-      toast.error('Stageplots require a Pro or Band plan.');
-      return;
-    }
-
-    if (kind === 'rider' && !planState.canUse('inputLists')) {
-      toast.error('Input lists require a Pro or Band plan.');
+    if (kind === 'rider' && !planState.canUse('technicalRiders')) {
+      toast.error('Technical riders require a Pro or Band plan.');
       return;
     }
 
@@ -167,11 +160,6 @@ export default function Layout({ children }: Props) {
         prompt: 'New setlist name',
         placeholder: 'Band setlist name...',
         confirm: 'Create setlist',
-      },
-      stageplot: {
-        prompt: 'New stageplot name',
-        placeholder: 'Band stageplot name...',
-        confirm: 'Create stageplot',
       },
       rider: {
         prompt: 'New input list name',
@@ -209,16 +197,6 @@ export default function Layout({ children }: Props) {
       return;
     }
 
-    if (kind === 'stageplot') {
-      const result = await addBandStageplot(routeBandId, name);
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-      if (result.stageplotId) navigate(`/bands/${routeBandId}/stageplots/${result.stageplotId}`);
-      return;
-    }
-
     const result = await addBandInputList(routeBandId, name);
     if (result.error) {
       toast.error(result.error);
@@ -228,7 +206,6 @@ export default function Layout({ children }: Props) {
   }, [
     addBandSetlist,
     addBandSongList,
-    addBandStageplot,
     addBandInputList,
     navigate,
     planState,
@@ -276,20 +253,6 @@ export default function Layout({ children }: Props) {
           onClick={() => void createBandResource('setlist')}
         >
           <ListMusic size={20} />
-        </button>
-      );
-    }
-
-    if (bandSection === 'stageplots') {
-      return (
-        <button
-          type="button"
-          className="fab-add-song"
-          title="Create stageplot"
-          aria-label="Create stageplot"
-          onClick={() => void createBandResource('stageplot')}
-        >
-          <Map size={20} />
         </button>
       );
     }

@@ -48,8 +48,7 @@ import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { BandsProvider } from './context/BandsContext';
-import { InputListsProvider } from './context/InputListsContext';
-import { StageplotsProvider } from './context/StageplotsContext';
+
 
 function AuthenticatedApp() {
   const { user, loading, authEnabled } = useAuth();
@@ -65,9 +64,7 @@ function AuthenticatedApp() {
     <SongsProvider>
       <SongListsProvider>
         <SetlistsProvider>
-          <StageplotsProvider>
-            <InputListsProvider>
-              <BandsProvider>
+            <BandsProvider>
                 <Layout>
                   <Routes>
                     <Route path="/" element={<RootRedirect />} />
@@ -87,9 +84,7 @@ function AuthenticatedApp() {
                   </Routes>
                 </Layout>
               </BandsProvider>
-            </InputListsProvider>
-          </StageplotsProvider>
-        </SetlistsProvider>
+          </SetlistsProvider>
       </SongListsProvider>
     </SongsProvider>
   );
@@ -106,8 +101,8 @@ function PricingRoute() {
 const router = createBrowserRouter([
   { path: '/public/bands/:bandId/:bandName/setlists/:setlistId', element: <PublicBandSetlistPage /> },
   { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage /> },
-  { path: '/public/bands/:bandId/:bandName/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
-  { path: '/public/bands/:bandId/stageplots/:stageplotId', element: <PublicBandStageplotPage /> },
+  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandStageplotPage /> },
+  { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandStageplotPage /> },
   { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandInputListPage /> },
   { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandInputListPage /> },
   { path: '/public/press-kit/:token', element: <PublicBandPressKitPage /> },

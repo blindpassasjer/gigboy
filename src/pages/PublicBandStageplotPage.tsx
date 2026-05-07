@@ -56,12 +56,12 @@ function normalizeLayer(raw: unknown): SongHandNoteDocument | null {
 }
 
 export default function PublicBandStageplotPage() {
-  const { bandId, stageplotId } = useParams<{ bandId: string; stageplotId: string }>();
+  const { bandId, riderId } = useParams<{ bandId: string; riderId: string }>();
   const [status, setStatus] = useState<Status>('loading');
   const [stageplot, setStageplot] = useState<PublicStageplot | null>(null);
 
   useEffect(() => {
-    if (!bandId || !stageplotId || !db) {
+    if (!bandId || !riderId || !db) {
       setStatus('error');
       return;
     }
@@ -71,7 +71,7 @@ export default function PublicBandStageplotPage() {
 
     const load = async () => {
       try {
-        const snap = await getDoc(doc(firestore, 'bands', bandId, 'stageplots', stageplotId));
+        const snap = await getDoc(doc(firestore, 'bands', bandId, 'technicalRiders', riderId));
         if (cancelled) return;
 
         if (!snap.exists()) {
@@ -109,7 +109,7 @@ export default function PublicBandStageplotPage() {
     return () => {
       cancelled = true;
     };
-  }, [bandId, stageplotId]);
+  }, [bandId, riderId]);
 
   if (status === 'loading') {
     return <div className="public-setlist-page"><p className="public-setlist-status">Loading stageplot…</p></div>;

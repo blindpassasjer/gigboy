@@ -6,7 +6,6 @@ import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
-import StageplotEditor from '../components/StageplotEditor';
 import BandTechRiderPanel from '../components/BandTechRiderPanel';
 import TrashView from '../components/TrashView';
 import PressKitView from '../components/PressKitView';
@@ -24,7 +23,6 @@ export default function BandDetailPage() {
     bandSongsByBandId,
     bandSongListsByBandId,
     bandSetlistsByBandId,
-    bandStageplotsByBandId,
     bandInputListsByBandId,
     bandTrashByBandId,
     loading,
@@ -32,7 +30,6 @@ export default function BandDetailPage() {
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
-    refreshBandStageplots,
     refreshBandInputLists,
     refreshBandTrash,
     addSongToBandLibrary,
@@ -52,11 +49,6 @@ export default function BandDetailPage() {
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
     updateSongNoteInBandSetlist,
-    renameBandStageplot,
-    updateBandStageplotIcon,
-    setBandStageplotPublicShare,
-    updateBandStageplotContent,
-    deleteBandStageplot,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
     updateBandLibraryIcon,
@@ -70,7 +62,6 @@ export default function BandDetailPage() {
   const bandSongs = useMemo(() => (id ? (bandSongsByBandId[id] ?? []) : []), [bandSongsByBandId, id]);
   const bandSongLists = id ? (bandSongListsByBandId[id] ?? []) : [];
   const bandSetlists = id ? (bandSetlistsByBandId[id] ?? []) : [];
-  const bandStageplots = id ? (bandStageplotsByBandId[id] ?? []) : [];
   const bandInputLists = id ? (bandInputListsByBandId[id] ?? []) : [];
   const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
   const bandPressKits = id ? (bandPressKitsByBandId[id] ?? []) : [];
@@ -91,9 +82,6 @@ export default function BandDetailPage() {
     : null;
   const activeBandSetlist = bandSection === 'setlists'
     ? bandSetlists.find((entry) => entry.id === bandResourceId) ?? null
-    : null;
-  const activeBandStageplot = bandSection === 'stageplots'
-    ? bandStageplots.find((entry) => entry.id === bandResourceId) ?? null
     : null;
   const activeBandPressKit = bandSection === 'press-kit'
     ? bandPressKits.find((entry) => entry.id === bandResourceId) ?? null
@@ -121,13 +109,6 @@ export default function BandDetailPage() {
       console.error('Failed to load band setlists.', error);
     });
   }, [band, id, refreshBandSetlists]);
-
-  useEffect(() => {
-    if (!id || !band) return;
-    void refreshBandStageplots(id).catch((error) => {
-      console.error('Failed to load band stageplots.', error);
-    });
-  }, [band, id, refreshBandStageplots]);
 
   useEffect(() => {
     if (!id || !band) return;
@@ -265,30 +246,6 @@ export default function BandDetailPage() {
     );
     if (!activeBandSetlist.publicShareEnabled) {
       const error = await setBandSetlistPublicShare(band.id, activeBandSetlist.id, true);
-      if (error) {
-        toast.error(error);
-        return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      toast.success('Public link copied to clipboard!');
-    } catch {
-      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
-    }
-  };
-
-  const handleShareStageplot = async () => {
-    if (!activeBandStageplot) return;
-    const publicUrl = buildBandPublicShareUrl(
-      window.location.origin,
-      band.id,
-      band.name,
-      'stageplots',
-      activeBandStageplot.id
-    );
-    if (!activeBandStageplot.publicShareEnabled) {
-      const error = await setBandStageplotPublicShare(band.id, activeBandStageplot.id, true);
       if (error) {
         toast.error(error);
         return;
@@ -446,70 +403,11 @@ export default function BandDetailPage() {
     );
   }
 
-  if (bandSection === 'stageplots') {
-    if (!activeBandStageplot) {
-      return (
-        <section className="bands-page">
-          <p className="bands-status">Band stageplot not found.</p>
-          <Link to={`/bands/${band.id}/library`} className="setlist-action-btn setlist-action-btn--secondary">Back to band library</Link>
-        </section>
-      );
-    }
-
-    return (
-      <section className="bands-page bands-page--library">
-        <StageplotEditor
-          stageplot={activeBandStageplot}
-          canEdit={canEditBand}
-          currentUser={{
-            id: user?.id ?? null,
-            name: user?.fullName?.trim() || user?.username?.trim() || user?.email || 'Unknown user',
-            avatar: user?.avatar,
-          }}
-          onRename={async (name) => {
-            const error = await renameBandStageplot(band.id, activeBandStageplot.id, name);
-            if (error) {
-              toast.error(error);
-            }
-          }}
-          onUpdateIcon={async (icon) => {
-            const error = await updateBandStageplotIcon(band.id, activeBandStageplot.id, icon);
-            if (error) {
-              toast.error(error);
-            }
-          }}
-          onDelete={async () => {
-            const error = await deleteBandStageplot(band.id, activeBandStageplot.id);
-            if (error) {
-              toast.error(error);
-              return;
-            }
-            navigate(`/bands/${band.id}/library`);
-          }}
-          onSaveContent={async (items, drawingLayers) => {
-            const error = await updateBandStageplotContent({
-              bandId: band.id,
-              stageplotId: activeBandStageplot.id,
-              items,
-              drawingLayers,
-            });
-            if (error) {
-              toast.error(error);
-              throw new Error(error);
-            }
-          }}
-          onCopyPublicLink={handleShareStageplot}
-        />
-      </section>
-    );
-  }
-
   if (bandSection === 'riders') {
     return (
       <BandTechRiderPanel
         bandId={band.id}
         bandName={band.name}
-        stageplots={bandStageplots}
         riders={bandInputLists}
         canEdit={canEditBand}
         userId={user?.id ?? null}
@@ -558,16 +456,6 @@ export default function BandDetailPage() {
           trashId: entry.trashId,
           itemType: 'songlist' as const,
           name: entry.songList.name,
-          deletedAt: entry.deletedAt,
-          purgeAt: entry.purgeAt,
-        };
-      }
-
-      if (entry.itemType === 'stageplot') {
-        return {
-          trashId: entry.trashId,
-          itemType: 'stageplot' as const,
-          name: entry.stageplot.name,
           deletedAt: entry.deletedAt,
           purgeAt: entry.purgeAt,
         };

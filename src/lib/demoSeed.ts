@@ -12,7 +12,6 @@ const DEMO_SONG_IDS = [
   'demo-song-horse-no-name',
   'demo-song-let-her-go',
 ];
-const DEMO_STAGEPLOT_ID = 'demo-stageplot-club';
 const DEMO_TECH_RIDER_ID = 'demo-technical-rider-club';
 
 interface DemoSong {
@@ -250,28 +249,6 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
       songIds: [DEMO_SONG_IDS[0], DEMO_SONG_IDS[1], DEMO_SONG_IDS[4]],
       ownerId: userId,
       sortOrder: 0,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    // Band stageplot example
-    batch.set(doc(firestore, 'bands', demoBandId, 'stageplots', DEMO_STAGEPLOT_ID), {
-      name: 'Demo Club Stage',
-      icon: '🎛️',
-      ownerId: userId,
-      collaboratorIds: [userId],
-      collaborationPermissions: { [userId]: 'editor' },
-      sortOrder: 0,
-      stageShape: 'rectangle',
-      stageSize: 'medium',
-      items: [
-        { id: 'vox-center', kind: 'mic', label: 'Lead Vox', x: 0.5, y: 0.2, color: '#f97316' },
-        { id: 'gtr-left', kind: 'guitar', label: 'Guitar', x: 0.25, y: 0.35, color: '#3b82f6' },
-        { id: 'bass-right', kind: 'bass', label: 'Bass', x: 0.75, y: 0.35, color: '#22c55e' },
-        { id: 'drums-back', kind: 'drums', label: 'Drums', x: 0.5, y: 0.68, color: '#a855f7' },
-        { id: 'keys-right', kind: 'keys', label: 'Keys', x: 0.84, y: 0.58, color: '#eab308' },
-      ],
-      drawingLayers: [],
       createdAt: now,
       updatedAt: now,
     });

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Map, ClipboardList } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import toast from '../utils/anchoredToast';
-import type { Stageplot, InputList } from '../types';
+import type { InputList, Stageplot } from '../types';
 import StageplotEditor from './StageplotEditor';
 import InputListEditor from './InputListEditor';
 import { useBands } from '../context/BandsContext';
@@ -11,7 +11,6 @@ import { buildBandPublicShareUrl } from '../utils/publicShare';
 interface Props {
   bandId: string;
   bandName: string;
-  stageplots: Stageplot[];
   riders: InputList[];
   canEdit: boolean;
   userId: string | null;
@@ -22,45 +21,51 @@ interface Props {
 export default function BandTechRiderPanel({
   bandId,
   bandName,
-  stageplots,
   riders,
   canEdit,
   userId,
   userEmail,
   initialRiderId = null,
 }: Props) {
-  const [activeStageplotId, setActiveStageplotId] = useState<string | null>(null);
   const [activeRiderId, setActiveRiderId] = useState<string | null>(null);
 
-  const activeStageplot = useMemo(
-    () => stageplots.find((entry) => entry.id === activeStageplotId) ?? null,
-    [activeStageplotId, stageplots],
-  );
   const activeRider = useMemo(
     () => riders.find((entry) => entry.id === activeRiderId) ?? null,
     [activeRiderId, riders],
   );
 
+  // Build a Stageplot-compatible object from the active rider for StageplotEditor
+  const activeRiderAsStageplot = useMemo<Stageplot | null>(() => {
+    if (!activeRider) return null;
+    return {
+      id: activeRider.id,
+      name: activeRider.name,
+      icon: activeRider.icon,
+      items: activeRider.items ?? [],
+      drawingLayers: activeRider.drawingLayers ?? [],
+      stageShape: activeRider.stageShape,
+      stageSize: activeRider.stageSize,
+      publicShareEnabled: activeRider.publicShareEnabled,
+      bandName: activeRider.bandName,
+      sortOrder: activeRider.sortOrder,
+      createdAt: activeRider.createdAt,
+      updatedAt: activeRider.updatedAt,
+      ownerId: activeRider.ownerId,
+      collaboratorIds: activeRider.collaboratorIds,
+      collaborationPermissions: activeRider.collaborationPermissions,
+      accessRole: activeRider.accessRole,
+    };
+  }, [activeRider]);
+
   const {
-    renameBandStageplot,
-    updateBandStageplotIcon,
-    setBandStageplotPublicShare,
-    updateBandStageplotContent,
-    deleteBandStageplot,
     addBandInputList,
     renameBandInputList,
     updateBandInputListIcon,
     setBandInputListPublicShare,
     updateBandInputListContent,
+    updateBandInputListStageplotContent,
     deleteBandInputList,
   } = useBands();
-
-  useEffect(() => {
-    setActiveStageplotId((current) => {
-      if (current && stageplots.some((entry) => entry.id === current)) return current;
-      return stageplots[0]?.id ?? null;
-    });
-  }, [stageplots]);
 
   useEffect(() => {
     setActiveRiderId((current) => {
@@ -90,29 +95,6 @@ export default function BandTechRiderPanel({
     }
     if (result.riderId) {
       setActiveRiderId(result.riderId);
-    }
-  };
-
-  const handleCopyStageplotPublicLink = async (stageplotId: string, alreadyEnabled: boolean | undefined) => {
-    if (!alreadyEnabled) {
-      const error = await setBandStageplotPublicShare(bandId, stageplotId, true);
-      if (error) {
-        toast.error(error);
-        return;
-      }
-    }
-    const publicUrl = buildBandPublicShareUrl(
-      window.location.origin,
-      bandId,
-      bandName,
-      'stageplots',
-      stageplotId,
-    );
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      toast.success('Public link copied to clipboard!');
-    } catch {
-      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
     }
   };
 
@@ -228,79 +210,48 @@ export default function BandTechRiderPanel({
             ) : null}
           </div>
 
-          <div className="songlist-body tech-rider-section" role="region" aria-label="Stageplot section">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-              <Map size={16} />
-              <h2 className="song-list-heading" style={{ margin: 0, fontSize: '1rem' }}>Stageplots</h2>
-            </div>
-            <p className="songlist-item-meta" style={{ margin: 0 }}>
-              The stageplot editor is always available in the technical rider.
-            </p>
-            {stageplots.length === 0 ? (
-              <p className="bands-status">No stageplots available yet.</p>
-            ) : (
-              <>
-                {stageplots.length > 1 ? (
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {stageplots.map((entry) => (
-                      <button
-                        key={entry.id}
-                        type="button"
-                        className={`setlist-action-btn setlist-action-btn--secondary${activeStageplotId === entry.id ? ' setlist-action-btn--active' : ''}`}
-                        onClick={() => setActiveStageplotId(entry.id)}
-                      >
-                        {entry.icon ? `${entry.icon} ` : ''}
-                        {entry.name}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-
-                {activeStageplot ? (
-                  <StageplotEditor
-                    stageplot={activeStageplot}
-                    canEdit={canEdit}
-                    currentUser={{
-                      id: userId,
-                      name: userEmail ?? 'Unknown user',
-                      avatar: null,
-                    }}
-                    onRename={async (name) => {
-                      const error = await renameBandStageplot(bandId, activeStageplot.id, name);
-                      if (error) toast.error(error);
-                    }}
-                    onUpdateIcon={async (icon) => {
-                      const error = await updateBandStageplotIcon(bandId, activeStageplot.id, icon);
-                      if (error) toast.error(error);
-                    }}
-                    onDelete={async () => {
-                      const error = await deleteBandStageplot(bandId, activeStageplot.id);
-                      if (error) {
-                        toast.error(error);
-                        return;
-                      }
-                      setActiveStageplotId(null);
-                    }}
-                    onSaveContent={async (items, drawingLayers) => {
-                      const error = await updateBandStageplotContent({
-                        bandId,
-                        stageplotId: activeStageplot.id,
-                        items,
-                        drawingLayers,
-                      });
-                      if (error) {
-                        toast.error(error);
-                        throw new Error(error);
-                      }
-                    }}
-                    onCopyPublicLink={async () => {
-                      await handleCopyStageplotPublicLink(activeStageplot.id, activeStageplot.publicShareEnabled);
-                    }}
-                  />
-                ) : null}
-              </>
-            )}
-          </div>
+          {activeRiderAsStageplot ? (
+            <StageplotEditor
+              stageplot={activeRiderAsStageplot}
+              canEdit={canEdit}
+              currentUser={{
+                id: userId,
+                name: userEmail ?? 'Unknown user',
+                avatar: null,
+              }}
+              onRename={async (name) => {
+                const error = await renameBandInputList(bandId, activeRiderAsStageplot.id, name);
+                if (error) toast.error(error);
+              }}
+              onUpdateIcon={async (icon) => {
+                const error = await updateBandInputListIcon(bandId, activeRiderAsStageplot.id, icon);
+                if (error) toast.error(error);
+              }}
+              onDelete={async () => {
+                const error = await deleteBandInputList(bandId, activeRiderAsStageplot.id);
+                if (error) {
+                  toast.error(error);
+                  return;
+                }
+                setActiveRiderId(null);
+              }}
+              onSaveContent={async (items, drawingLayers) => {
+                const error = await updateBandInputListStageplotContent({
+                  bandId,
+                  riderId: activeRiderAsStageplot.id,
+                  items,
+                  drawingLayers,
+                });
+                if (error) {
+                  toast.error(error);
+                  throw new Error(error);
+                }
+              }}
+              onCopyPublicLink={async () => {
+                await handleCopyRiderPublicLink(activeRiderAsStageplot.id, activeRiderAsStageplot.publicShareEnabled);
+              }}
+            />
+          ) : null}
         </div>
       </div>
     </section>
