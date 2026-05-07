@@ -1,6 +1,6 @@
 import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, FileText } from 'lucide-react';
+import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, FileText, ListMusic } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Song, SongList } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
@@ -431,7 +431,7 @@ export default function SetlistsView({
                             aria-label="Choose default icon"
                             aria-pressed={!effectiveIcon}
                           >
-                            Default
+                            <ListMusic size={16} />
                           </button>
                           {ICON_OPTIONS.map((emoji) => {
                             const selected = iconDraft === emoji;

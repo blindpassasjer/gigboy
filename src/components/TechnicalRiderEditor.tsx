@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link2, Plus, Trash2, PenLine, Smile } from 'lucide-react';
+import { Link2, Plus, Trash2, PenLine, ClipboardList } from 'lucide-react';
 import type { RiderEquipmentItem, TechnicalRider, TechnicalRiderLine } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { ICON_OPTIONS } from '../lib/iconOptions';
@@ -59,6 +59,8 @@ export default function TechnicalRiderEditor({
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const saveStateResetTimerRef = useRef<number | null>(null);
   const saveRequestIdRef = useRef(0);
+  const iconPickerRef = useRef<HTMLDivElement | null>(null);
+  const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // Reset ALL local state when the active rider changes (different id).
   const prevRiderIdRef = useRef(rider.id);
@@ -86,6 +88,30 @@ export default function TechnicalRiderEditor({
   useEffect(() => {
     if (!isRenaming) setRenameValue(rider.name);
   }, [isRenaming, rider.name]);
+
+  useEffect(() => {
+    if (!showIconEditor) return;
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (iconPickerRef.current?.contains(target)) return;
+      if (iconTriggerRef.current?.contains(target)) return;
+      setShowIconEditor(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setShowIconEditor(false);
+      iconTriggerRef.current?.focus();
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showIconEditor]);
 
   useEffect(() => {
     setIconDraft(rider.icon ?? '🎤');
@@ -191,7 +217,59 @@ export default function TechnicalRiderEditor({
             ) : (
               <div className="song-list-title-row">
                 <h1 className="song-list-heading setlist-title">
-                  {rider.icon ? <span className="song-list-heading-icon" aria-hidden="true">{rider.icon}</span> : null}
+                  {canEdit ? (
+                    <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                      <button
+                        ref={iconTriggerRef}
+                        type="button"
+                        className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
+                        aria-haspopup="dialog"
+                        aria-expanded={showIconEditor}
+                        onClick={(e) => { e.stopPropagation(); setShowIconEditor((v) => !v); }}
+                        title="Change rider icon"
+                        aria-label="Change rider icon"
+                      >
+                        <span className="song-list-heading-icon" aria-hidden="true">{rider.icon ?? '🎤'}</span>
+                      </button>
+                      {showIconEditor && (
+                        <div className="icon-picker-popover" role="dialog" aria-label="Choose rider icon">
+                          <div className="emoji-choice-grid" role="radiogroup" aria-label="Rider icon options">
+                            <button
+                              type="button"
+                              className={`emoji-choice-btn${!rider.icon ? ' active' : ''}`}
+                              onClick={() => { void onUpdateIcon(undefined); setIconDraft('🎤'); setShowIconEditor(false); }}
+                              aria-pressed={!rider.icon}
+                            >
+                              <ClipboardList size={16} />
+                            </button>
+                            {ICON_OPTIONS.map((emoji) => {
+                              const selected = iconDraft === emoji;
+                              return (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                                  onClick={() => { void onUpdateIcon(normalizeEmojiIcon(emoji)); setIconDraft(emoji); setShowIconEditor(false); }}
+                                  aria-pressed={selected}
+                                >
+                                  {emoji}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <button
+                            type="button"
+                            className="icon-picker-reset-btn"
+                            onClick={() => { void onUpdateIcon(undefined); setIconDraft('🎤'); setShowIconEditor(false); }}
+                          >
+                            Reset to default
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : rider.icon ? (
+                    <span className="song-list-heading-icon" aria-hidden="true">{rider.icon}</span>
+                  ) : null}
                   {rider.name}
                 </h1>
                 {canEdit ? (
@@ -211,17 +289,6 @@ export default function TechnicalRiderEditor({
             </div>
           </div>
           <div className="setlist-header-actions">
-            {canEdit ? (
-              <button
-                type="button"
-                className="setlist-action-btn"
-                onClick={() => setShowIconEditor((value) => !value)}
-                title="Set rider icon"
-                aria-label="Set rider icon"
-              >
-                <Smile size={14} />
-              </button>
-            ) : null}
             <button
               type="button"
               className={`setlist-action-btn setlist-action-btn--secondary${rider.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
@@ -247,54 +314,7 @@ export default function TechnicalRiderEditor({
           </div>
         </div>
 
-        {showIconEditor && canEdit ? (
-          <div className="list-appearance-editor" role="region" aria-label="Technical rider icon settings">
-            <div className="list-appearance-group">
-              <span className="list-appearance-label">Icon</span>
-              <div className="emoji-choice-grid" role="listbox" aria-label="Technical rider emoji options">
-                <button
-                  type="button"
-                  className={`emoji-choice-btn${!rider.icon ? ' active' : ''}`}
-                  onClick={() => setIconDraft('')}
-                  aria-pressed={!rider.icon}
-                >
-                  Default
-                </button>
-                {ICON_OPTIONS.map((emoji) => {
-                  const selected = iconDraft === emoji;
-                  return (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                      onClick={() => setIconDraft(emoji)}
-                      aria-pressed={selected}
-                    >
-                      {emoji}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="setlist-action-btn"
-              onClick={() => {
-                void onUpdateIcon(normalizeEmojiIcon(iconDraft));
-                setShowIconEditor(false);
-              }}
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              className="setlist-action-btn"
-              onClick={() => setShowIconEditor(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        ) : null}
+
       </div>
 
       <section className="technical-rider-section">

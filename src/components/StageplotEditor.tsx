@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link2, PenLine, Plus, Smile, Trash2, Undo2, X } from 'lucide-react';
+import { Link2, PenLine, Plus, Trash2, Undo2, X, Map } from 'lucide-react';
 import type { HandNoteStroke, SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import { showConfirmToast } from '../utils/toastDialogs';
@@ -105,6 +105,8 @@ export default function StageplotEditor({
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
   const saveStateResetTimerRef = useRef<number | null>(null);
+  const iconPickerRef = useRef<HTMLDivElement | null>(null);
+  const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const stageShapePreview = stageplot.stageShape ?? 'rectangle';
   const stageSizePreview = stageplot.stageSize ?? 'medium';
@@ -123,6 +125,30 @@ export default function StageplotEditor({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!showIconEditor) return;
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (iconPickerRef.current?.contains(target)) return;
+      if (iconTriggerRef.current?.contains(target)) return;
+      setShowIconEditor(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setShowIconEditor(false);
+      iconTriggerRef.current?.focus();
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showIconEditor]);
 
   const myLayer = useMemo(() => userLayerFrom(drawingLayers, currentUser.id), [currentUser.id, drawingLayers]);
   const myStrokes = myLayer?.strokes ?? [];
@@ -419,7 +445,59 @@ export default function StageplotEditor({
             ) : (
               <div className="song-list-title-row">
                 <h1 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
-                  {stageplot.icon ? <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span> : null}
+                  {canEdit ? (
+                    <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                      <button
+                        ref={iconTriggerRef}
+                        type="button"
+                        className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
+                        aria-haspopup="dialog"
+                        aria-expanded={showIconEditor}
+                        onClick={(e) => { e.stopPropagation(); setShowIconEditor((v) => !v); }}
+                        title="Change stageplot icon"
+                        aria-label="Change stageplot icon"
+                      >
+                        <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon ?? '🗺️'}</span>
+                      </button>
+                      {showIconEditor && (
+                        <div className="icon-picker-popover" role="dialog" aria-label="Choose stageplot icon">
+                          <div className="emoji-choice-grid" role="radiogroup" aria-label="Stageplot icon options">
+                            <button
+                              type="button"
+                              className={`emoji-choice-btn${!stageplot.icon ? ' active' : ''}`}
+                              onClick={() => { onUpdateIcon(undefined); setIconDraft('🗺️'); setShowIconEditor(false); }}
+                              aria-pressed={!stageplot.icon}
+                            >
+                              <Map size={16} />
+                            </button>
+                            {ICON_OPTIONS.map((emoji) => {
+                              const selected = iconDraft === emoji;
+                              return (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                                  onClick={() => { onUpdateIcon(normalizeEmojiIcon(emoji)); setIconDraft(emoji); setShowIconEditor(false); }}
+                                  aria-pressed={selected}
+                                >
+                                  {emoji}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <button
+                            type="button"
+                            className="icon-picker-reset-btn"
+                            onClick={() => { onUpdateIcon(undefined); setIconDraft('🗺️'); setShowIconEditor(false); }}
+                          >
+                            Reset to default
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : stageplot.icon ? (
+                    <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span>
+                  ) : null}
                   <span>{stageplot.name}</span>
                 </h1>
                 {canEdit ? (
@@ -443,17 +521,6 @@ export default function StageplotEditor({
             </div>
           </div>
           <div className="setlist-header-actions">
-            {canEdit ? (
-              <button
-                type="button"
-                className="setlist-action-btn"
-                onClick={() => setShowIconEditor((value) => !value)}
-                title="Set stageplot icon"
-                aria-label="Set stageplot icon"
-              >
-                <Smile size={14} />
-              </button>
-            ) : null}
             <button
               type="button"
               className={`setlist-action-btn setlist-action-btn--secondary${stageplot.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
@@ -477,50 +544,7 @@ export default function StageplotEditor({
           </div>
         </div>
 
-        {showIconEditor && canEdit ? (
-          <div className="list-appearance-editor" role="region" aria-label="Stageplot appearance settings">
-            <div className="list-appearance-group">
-              <span className="list-appearance-label">Icon</span>
-              <div className="emoji-choice-grid" role="listbox" aria-label="Stageplot icon options">
-                <button
-                  type="button"
-                  className={`emoji-choice-btn${!stageplot.icon ? ' active' : ''}`}
-                  onClick={() => setIconDraft('')}
-                  aria-pressed={!stageplot.icon}
-                >
-                  Default
-                </button>
-                {ICON_OPTIONS.map((emoji) => {
-                  const selected = iconDraft === emoji;
-                  return (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                      onClick={() => setIconDraft(emoji)}
-                      aria-pressed={selected}
-                    >
-                      {emoji}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="setlist-action-btn"
-              onClick={() => {
-                onUpdateIcon(normalizeEmojiIcon(iconDraft));
-                setShowIconEditor(false);
-              }}
-            >
-              Save
-            </button>
-            <button type="button" className="setlist-action-btn" onClick={() => setShowIconEditor(false)}>
-              Cancel
-            </button>
-          </div>
-        ) : null}
+
 
       </div>
 

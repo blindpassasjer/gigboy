@@ -94,6 +94,7 @@ export default function Layout({ children }: Props) {
     }
     : undefined;
   const canShowContextFab = Boolean(routeBandId)
+    && !isConcertRoute
     && canEditActiveBand
     && (bandSection === 'library'
       || bandSection === 'songlists'

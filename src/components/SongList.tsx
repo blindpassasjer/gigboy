@@ -14,6 +14,7 @@ import {
   PenLine,
   Trash2,
   ListMinus,
+  Folder,
 } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
@@ -541,7 +542,7 @@ export default function SongList({
                               aria-label="Choose default icon"
                               aria-pressed={!listIcon}
                             >
-                              Default
+                              <Folder size={16} />
                             </button>
                             {ICON_OPTIONS.map((emoji) => {
                               const selected = listIconDraft === emoji;
