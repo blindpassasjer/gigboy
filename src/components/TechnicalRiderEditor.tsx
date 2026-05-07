@@ -291,7 +291,7 @@ export default function TechnicalRiderEditor({
           <div className="setlist-header-actions">
             <button
               type="button"
-              className={`setlist-action-btn setlist-action-btn--secondary${rider.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
+              className="setlist-action-btn setlist-action-btn--accent"
               onClick={() => void onCopyPublicLink()}
               title={rider.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
             >

@@ -283,9 +283,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .topbar-storage-text span {
+  display: block;
   font-size: .78rem;
   color: var(--text);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-storage-meter {

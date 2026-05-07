@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { arrayUnion, collection, deleteDoc, doc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { arrayUnion, collection, deleteDoc, deleteField, doc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 import type {
   Band,
   CollaborationPermission,
@@ -1317,8 +1317,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId), {
-        icon,
-        color,
+        icon: icon ?? deleteField(),
+        color: color ?? deleteField(),
         updatedAt: now,
       }, { merge: true });
       return null;
@@ -1756,7 +1756,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), {
-        icon,
+        icon: icon ?? deleteField(),
       }, { merge: true });
       return null;
     } catch (error) {
@@ -2085,7 +2085,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), {
-        icon,
+        icon: icon ?? deleteField(),
         updatedAt: now,
       }, { merge: true });
       return null;
@@ -2587,7 +2587,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_STAGEPLOTS_COLLECTION, stageplotId), {
-        icon,
+        icon: icon ?? deleteField(),
         updatedAt: now,
       }, { merge: true });
       return null;
@@ -2946,7 +2946,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_TECHNICAL_RIDERS_COLLECTION, riderId), {
-        icon: icon ?? null,
+        icon: icon ?? deleteField(),
         updatedAt: now,
       }, { merge: true });
       return null;

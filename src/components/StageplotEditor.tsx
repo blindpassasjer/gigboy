@@ -523,7 +523,7 @@ export default function StageplotEditor({
           <div className="setlist-header-actions">
             <button
               type="button"
-              className={`setlist-action-btn setlist-action-btn--secondary${stageplot.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
+              className="setlist-action-btn setlist-action-btn--accent"
               onClick={() => void onCopyPublicLink()}
               title={stageplot.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
               aria-label={stageplot.publicShareEnabled ? 'Copy public link' : 'Create and copy public link'}
