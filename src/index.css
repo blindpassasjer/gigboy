@@ -2221,6 +2221,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 1rem;
 }
 .technical-rider-section {
   border: 1px solid var(--border);
@@ -8467,6 +8471,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-direction: column;
   gap: 1rem;
   min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 1rem;
 }
 
 .tech-rider-sections {
