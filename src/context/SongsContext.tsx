@@ -101,7 +101,22 @@ const SongsContext = createContext<SongsContextValue | null>(null);
 const SONGS_COLLECTION = 'songs';
 
 function songFromOwnedDoc(id: string, data: Record<string, unknown>, ownerId: string, currentUserId: string): Song {
-  const song = { id, ownerId, ...(data as Omit<Song, 'id'>) } as Song;
+  const playbackUrl =
+    typeof data.playbackUrl === 'string' && data.playbackUrl.trim().length > 0
+      ? data.playbackUrl
+      : typeof data.playbackURL === 'string' && data.playbackURL.trim().length > 0
+        ? data.playbackURL
+        : typeof data.playback_url === 'string' && data.playback_url.trim().length > 0
+          ? data.playback_url
+          : typeof data.mediaUrl === 'string' && data.mediaUrl.trim().length > 0
+            ? data.mediaUrl
+            : typeof data.mediaURL === 'string' && data.mediaURL.trim().length > 0
+              ? data.mediaURL
+              : typeof data.media_url === 'string' && data.media_url.trim().length > 0
+                ? data.media_url
+                : undefined;
+
+  const song = { id, ownerId, ...(data as Omit<Song, 'id'>), playbackUrl } as Song;
   const role = ownerId === currentUserId
     ? 'owner'
     : song.collaborationPermissions?.[currentUserId];

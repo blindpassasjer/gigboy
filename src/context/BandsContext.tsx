@@ -192,11 +192,20 @@ function normalizeBand(id: string, data: Record<string, unknown>): Band {
 
 function normalizeBandSong(id: string, data: Record<string, unknown>): Song {
   const title = readFirstNonEmptyString(data.title, data.name) ?? 'Untitled';
+  const playbackUrl = readFirstNonEmptyString(
+    data.playbackUrl,
+    data.playbackURL,
+    data.playback_url,
+    data.mediaUrl,
+    data.mediaURL,
+    data.media_url
+  ) ?? undefined;
 
   return {
     id,
     title,
     artist: typeof data.artist === 'string' ? data.artist : undefined,
+    playbackUrl,
     language: typeof data.language === 'string' ? data.language : 'en',
     secondaryLanguages: Array.isArray(data.secondaryLanguages)
       ? data.secondaryLanguages.filter((entry): entry is string => typeof entry === 'string')

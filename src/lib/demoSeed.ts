@@ -12,6 +12,8 @@ const DEMO_SONG_IDS = [
   'demo-song-horse-no-name',
   'demo-song-let-her-go',
 ];
+const DEMO_STAGEPLOT_ID = 'demo-stageplot-club';
+const DEMO_TECH_RIDER_ID = 'demo-technical-rider-club';
 
 interface DemoSong {
   title: string;
@@ -248,6 +250,54 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
       songIds: [DEMO_SONG_IDS[0], DEMO_SONG_IDS[1], DEMO_SONG_IDS[4]],
       ownerId: userId,
       sortOrder: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Band stageplot example
+    batch.set(doc(firestore, 'bands', demoBandId, 'stageplots', DEMO_STAGEPLOT_ID), {
+      name: 'Demo Club Stage',
+      icon: '🎛️',
+      ownerId: userId,
+      collaboratorIds: [userId],
+      collaborationPermissions: { [userId]: 'editor' },
+      sortOrder: 0,
+      stageShape: 'rectangle',
+      stageSize: 'medium',
+      items: [
+        { id: 'vox-center', kind: 'mic', label: 'Lead Vox', x: 0.5, y: 0.2, color: '#f97316' },
+        { id: 'gtr-left', kind: 'guitar', label: 'Guitar', x: 0.25, y: 0.35, color: '#3b82f6' },
+        { id: 'bass-right', kind: 'bass', label: 'Bass', x: 0.75, y: 0.35, color: '#22c55e' },
+        { id: 'drums-back', kind: 'drums', label: 'Drums', x: 0.5, y: 0.68, color: '#a855f7' },
+        { id: 'keys-right', kind: 'keys', label: 'Keys', x: 0.84, y: 0.58, color: '#eab308' },
+      ],
+      drawingLayers: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Band technical rider example
+    batch.set(doc(firestore, 'bands', demoBandId, 'technicalRiders', DEMO_TECH_RIDER_ID), {
+      name: 'Demo Club Rider',
+      icon: '📋',
+      ownerId: userId,
+      collaboratorIds: [userId],
+      collaborationPermissions: { [userId]: 'editor' },
+      sortOrder: 0,
+      lines: [
+        { id: 'line-vox', name: 'Lead vocal', description: '1x XLR for lead vocal mic (center stage).', sortOrder: 0 },
+        { id: 'line-gtr', name: 'Guitar amp', description: '1x SM57 on guitar cab.', sortOrder: 1 },
+        { id: 'line-bass', name: 'Bass DI', description: '1x active DI from bass pedalboard.', sortOrder: 2 },
+        { id: 'line-keys', name: 'Keys stereo', description: '2x DI (L/R) from keyboard rig.', sortOrder: 3 },
+      ],
+      preferredEquipment: [
+        { id: 'pref-wedge', name: '4x floor wedges', description: 'Independent sends preferred.', sortOrder: 0 },
+        { id: 'pref-mics', name: 'Vocal mics', description: 'SM58 or equivalent dynamic vocal microphones.', sortOrder: 1 },
+      ],
+      inventoryEquipment: [
+        { id: 'inv-inears', name: 'In-ear rack', description: 'Band brings own in-ear monitor rack.', sortOrder: 0 },
+        { id: 'inv-drum-mics', name: 'Kick + OH mics', description: 'Basic drum mics carried by band.', sortOrder: 1 },
+      ],
       createdAt: now,
       updatedAt: now,
     });
