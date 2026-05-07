@@ -10,6 +10,7 @@ import { clamp01 } from '../lib/songHandNotes';
 interface StageplotEditorProps {
   stageplot: Stageplot;
   canEdit: boolean;
+  showHeader?: boolean;
   currentUser: {
     id: string | null;
     name: string;
@@ -85,6 +86,7 @@ function upsertLayer(layers: SongHandNoteDocument[], nextLayer: SongHandNoteDocu
 export default function StageplotEditor({
   stageplot,
   canEdit,
+  showHeader = true,
   currentUser,
   onRename,
   onUpdateIcon,
@@ -424,129 +426,131 @@ export default function StageplotEditor({
 
   return (
     <section className="setlist-view stageplot-view">
-      <div className="song-list-sticky">
-        <div className="setlist-header songlist-header">
-          <div className="setlist-title-block">
-            {renaming ? (
-              <input
-                type="text"
-                value={renameValue}
-                onChange={(event) => setRenameValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') handleRenameCommit();
-                  if (event.key === 'Escape') {
-                    setRenameValue(stageplot.name);
-                    setRenaming(false);
-                  }
-                }}
-                onBlur={handleRenameCommit}
-                className="setlist-name-input"
-              />
-            ) : (
-              <div className="song-list-title-row">
-                <h1 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
-                  {canEdit ? (
-                    <div className="icon-picker-wrapper" ref={iconPickerRef}>
-                      <button
-                        ref={iconTriggerRef}
-                        type="button"
-                        className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
-                        aria-haspopup="dialog"
-                        aria-expanded={showIconEditor}
-                        onClick={(e) => { e.stopPropagation(); setShowIconEditor((v) => !v); }}
-                        title="Change stageplot icon"
-                        aria-label="Change stageplot icon"
-                      >
-                        <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon ?? '🗺️'}</span>
-                      </button>
-                      {showIconEditor && (
-                        <div className="icon-picker-popover" role="dialog" aria-label="Choose stageplot icon">
-                          <div className="emoji-choice-grid" role="radiogroup" aria-label="Stageplot icon options">
+      {showHeader ? (
+        <div className="song-list-sticky">
+          <div className="setlist-header songlist-header">
+            <div className="setlist-title-block">
+              {renaming ? (
+                <input
+                  type="text"
+                  value={renameValue}
+                  onChange={(event) => setRenameValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') handleRenameCommit();
+                    if (event.key === 'Escape') {
+                      setRenameValue(stageplot.name);
+                      setRenaming(false);
+                    }
+                  }}
+                  onBlur={handleRenameCommit}
+                  className="setlist-name-input"
+                />
+              ) : (
+                <div className="song-list-title-row">
+                  <h1 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
+                    {canEdit ? (
+                      <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                        <button
+                          ref={iconTriggerRef}
+                          type="button"
+                          className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
+                          aria-haspopup="dialog"
+                          aria-expanded={showIconEditor}
+                          onClick={(e) => { e.stopPropagation(); setShowIconEditor((v) => !v); }}
+                          title="Change stageplot icon"
+                          aria-label="Change stageplot icon"
+                        >
+                          <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon ?? '🗺️'}</span>
+                        </button>
+                        {showIconEditor && (
+                          <div className="icon-picker-popover" role="dialog" aria-label="Choose stageplot icon">
+                            <div className="emoji-choice-grid" role="radiogroup" aria-label="Stageplot icon options">
+                              <button
+                                type="button"
+                                className={`emoji-choice-btn${!stageplot.icon ? ' active' : ''}`}
+                                onClick={() => { onUpdateIcon(undefined); setIconDraft('🗺️'); setShowIconEditor(false); }}
+                                aria-pressed={!stageplot.icon}
+                              >
+                                <Map size={16} />
+                              </button>
+                              {ICON_OPTIONS.map((emoji) => {
+                                const selected = iconDraft === emoji;
+                                return (
+                                  <button
+                                    key={emoji}
+                                    type="button"
+                                    className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                                    onClick={() => { onUpdateIcon(normalizeEmojiIcon(emoji)); setIconDraft(emoji); setShowIconEditor(false); }}
+                                    aria-pressed={selected}
+                                  >
+                                    {emoji}
+                                  </button>
+                                );
+                              })}
+                            </div>
                             <button
                               type="button"
-                              className={`emoji-choice-btn${!stageplot.icon ? ' active' : ''}`}
+                              className="icon-picker-reset-btn"
                               onClick={() => { onUpdateIcon(undefined); setIconDraft('🗺️'); setShowIconEditor(false); }}
-                              aria-pressed={!stageplot.icon}
                             >
-                              <Map size={16} />
+                              Reset to default
                             </button>
-                            {ICON_OPTIONS.map((emoji) => {
-                              const selected = iconDraft === emoji;
-                              return (
-                                <button
-                                  key={emoji}
-                                  type="button"
-                                  className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                                  onClick={() => { onUpdateIcon(normalizeEmojiIcon(emoji)); setIconDraft(emoji); setShowIconEditor(false); }}
-                                  aria-pressed={selected}
-                                >
-                                  {emoji}
-                                </button>
-                              );
-                            })}
                           </div>
-                          <button
-                            type="button"
-                            className="icon-picker-reset-btn"
-                            onClick={() => { onUpdateIcon(undefined); setIconDraft('🗺️'); setShowIconEditor(false); }}
-                          >
-                            Reset to default
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : stageplot.icon ? (
-                    <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span>
+                        )}
+                      </div>
+                    ) : stageplot.icon ? (
+                      <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span>
+                    ) : null}
+                    <span>{stageplot.name}</span>
+                  </h1>
+                  {canEdit ? (
+                    <button
+                      type="button"
+                      className="title-rename-btn"
+                      onClick={() => setRenaming(true)}
+                      title="Rename stageplot"
+                      aria-label="Rename stageplot"
+                    >
+                      <PenLine size={14} />
+                    </button>
                   ) : null}
-                  <span>{stageplot.name}</span>
-                </h1>
+                </div>
+              )}
+              <div className="autosave-status-row">
+                <p className="song-list-summary setlist-song-count">{summaryLabel}</p>
                 {canEdit ? (
-                  <button
-                    type="button"
-                    className="title-rename-btn"
-                    onClick={() => setRenaming(true)}
-                    title="Rename stageplot"
-                    aria-label="Rename stageplot"
-                  >
-                    <PenLine size={14} />
-                  </button>
+                  <span className={saveStatusClassName} aria-live="polite">{saveStatusLabel}</span>
                 ) : null}
               </div>
-            )}
-            <div className="autosave-status-row">
-              <p className="song-list-summary setlist-song-count">{summaryLabel}</p>
+            </div>
+            <div className="setlist-header-actions">
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--accent"
+                onClick={() => void onCopyPublicLink()}
+                title={stageplot.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
+                aria-label={stageplot.publicShareEnabled ? 'Copy public link' : 'Create and copy public link'}
+              >
+                <Link2 size={14} />
+              </button>
               {canEdit ? (
-                <span className={saveStatusClassName} aria-live="polite">{saveStatusLabel}</span>
+                <button
+                  type="button"
+                  className="setlist-action-btn setlist-action-btn--secondary"
+                  onClick={() => void handleDeleteStageplot()}
+                  title={`Delete stageplot ${stageplot.name}`}
+                  aria-label={`Delete stageplot ${stageplot.name}`}
+                >
+                  <Trash2 size={14} />
+                </button>
               ) : null}
             </div>
           </div>
-          <div className="setlist-header-actions">
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--accent"
-              onClick={() => void onCopyPublicLink()}
-              title={stageplot.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
-              aria-label={stageplot.publicShareEnabled ? 'Copy public link' : 'Create and copy public link'}
-            >
-              <Link2 size={14} />
-            </button>
-            {canEdit ? (
-              <button
-                type="button"
-                className="setlist-action-btn setlist-action-btn--secondary"
-                onClick={() => void handleDeleteStageplot()}
-                title={`Delete stageplot ${stageplot.name}`}
-                aria-label={`Delete stageplot ${stageplot.name}`}
-              >
-                <Trash2 size={14} />
-              </button>
-            ) : null}
-          </div>
+
+
+
         </div>
-
-
-
-      </div>
+      ) : null}
 
       {canEdit ? (
         <div className="stageplot-toolbar" role="region" aria-label="Stageplot tools">

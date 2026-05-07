@@ -7,6 +7,7 @@ import { ICON_OPTIONS } from '../lib/iconOptions';
 interface Props {
   rider: InputList;
   canEdit: boolean;
+  showHeader?: boolean;
   onRename: (name: string) => Promise<void> | void;
   onDelete?: () => Promise<void> | void;
   onUpdateIcon: (icon?: string) => Promise<void> | void;
@@ -43,6 +44,7 @@ function createEquipmentItem(): RiderEquipmentItem {
 export default function InputListEditor({
   rider,
   canEdit,
+  showHeader = true,
   onRename,
   onDelete,
   onUpdateIcon,
@@ -196,126 +198,128 @@ export default function InputListEditor({
 
   return (
     <section className="setlist-view technical-rider-view">
-      <div className="song-list-sticky">
-        <div className="setlist-header songlist-header">
-          <div className="setlist-title-block">
-            {isRenaming ? (
-              <input
-                type="text"
-                value={renameValue}
-                onChange={(event) => setRenameValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') void handleRenameCommit();
-                  if (event.key === 'Escape') {
-                    setRenameValue(rider.name);
-                    setIsRenaming(false);
-                  }
-                }}
-                onBlur={() => void handleRenameCommit()}
-                className="setlist-name-input"
-              />
-            ) : (
-              <div className="song-list-title-row">
-                <h1 className="song-list-heading setlist-title">
-                  {canEdit ? (
-                    <div className="icon-picker-wrapper" ref={iconPickerRef}>
-                      <button
-                        ref={iconTriggerRef}
-                        type="button"
-                        className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
-                        aria-haspopup="dialog"
-                        aria-expanded={showIconEditor}
-                        onClick={(e) => { e.stopPropagation(); setShowIconEditor((v) => !v); }}
-                        title="Change rider icon"
-                        aria-label="Change rider icon"
-                      >
-                        <span className="song-list-heading-icon" aria-hidden="true">{rider.icon ?? '🎤'}</span>
-                      </button>
-                      {showIconEditor && (
-                        <div className="icon-picker-popover" role="dialog" aria-label="Choose rider icon">
-                          <div className="emoji-choice-grid" role="radiogroup" aria-label="Rider icon options">
+      {showHeader ? (
+        <div className="song-list-sticky">
+          <div className="setlist-header songlist-header">
+            <div className="setlist-title-block">
+              {isRenaming ? (
+                <input
+                  type="text"
+                  value={renameValue}
+                  onChange={(event) => setRenameValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') void handleRenameCommit();
+                    if (event.key === 'Escape') {
+                      setRenameValue(rider.name);
+                      setIsRenaming(false);
+                    }
+                  }}
+                  onBlur={() => void handleRenameCommit()}
+                  className="setlist-name-input"
+                />
+              ) : (
+                <div className="song-list-title-row">
+                  <h1 className="song-list-heading setlist-title">
+                    {canEdit ? (
+                      <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                        <button
+                          ref={iconTriggerRef}
+                          type="button"
+                          className={`icon-picker-trigger${showIconEditor ? ' is-open' : ''}`}
+                          aria-haspopup="dialog"
+                          aria-expanded={showIconEditor}
+                          onClick={(e) => { e.stopPropagation(); setShowIconEditor((v) => !v); }}
+                          title="Change rider icon"
+                          aria-label="Change rider icon"
+                        >
+                          <span className="song-list-heading-icon" aria-hidden="true">{rider.icon ?? '🎤'}</span>
+                        </button>
+                        {showIconEditor && (
+                          <div className="icon-picker-popover" role="dialog" aria-label="Choose rider icon">
+                            <div className="emoji-choice-grid" role="radiogroup" aria-label="Rider icon options">
+                              <button
+                                type="button"
+                                className={`emoji-choice-btn${!rider.icon ? ' active' : ''}`}
+                                onClick={() => { void onUpdateIcon(undefined); setIconDraft('🎤'); setShowIconEditor(false); }}
+                                aria-pressed={!rider.icon}
+                              >
+                                <ClipboardList size={16} />
+                              </button>
+                              {ICON_OPTIONS.map((emoji) => {
+                                const selected = iconDraft === emoji;
+                                return (
+                                  <button
+                                    key={emoji}
+                                    type="button"
+                                    className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                                    onClick={() => { void onUpdateIcon(normalizeEmojiIcon(emoji)); setIconDraft(emoji); setShowIconEditor(false); }}
+                                    aria-pressed={selected}
+                                  >
+                                    {emoji}
+                                  </button>
+                                );
+                              })}
+                            </div>
                             <button
                               type="button"
-                              className={`emoji-choice-btn${!rider.icon ? ' active' : ''}`}
+                              className="icon-picker-reset-btn"
                               onClick={() => { void onUpdateIcon(undefined); setIconDraft('🎤'); setShowIconEditor(false); }}
-                              aria-pressed={!rider.icon}
                             >
-                              <ClipboardList size={16} />
+                              Reset to default
                             </button>
-                            {ICON_OPTIONS.map((emoji) => {
-                              const selected = iconDraft === emoji;
-                              return (
-                                <button
-                                  key={emoji}
-                                  type="button"
-                                  className={`emoji-choice-btn${selected ? ' active' : ''}`}
-                                  onClick={() => { void onUpdateIcon(normalizeEmojiIcon(emoji)); setIconDraft(emoji); setShowIconEditor(false); }}
-                                  aria-pressed={selected}
-                                >
-                                  {emoji}
-                                </button>
-                              );
-                            })}
                           </div>
-                          <button
-                            type="button"
-                            className="icon-picker-reset-btn"
-                            onClick={() => { void onUpdateIcon(undefined); setIconDraft('🎤'); setShowIconEditor(false); }}
-                          >
-                            Reset to default
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : rider.icon ? (
-                    <span className="song-list-heading-icon" aria-hidden="true">{rider.icon}</span>
+                        )}
+                      </div>
+                    ) : rider.icon ? (
+                      <span className="song-list-heading-icon" aria-hidden="true">{rider.icon}</span>
+                    ) : null}
+                    {rider.name}
+                  </h1>
+                  {canEdit ? (
+                    <button type="button" className="title-rename-btn" onClick={() => setIsRenaming(true)} title="Rename rider">
+                      <PenLine size={14} />
+                    </button>
                   ) : null}
-                  {rider.name}
-                </h1>
+                </div>
+              )}
+              <div className="autosave-status-row">
+                <p className="song-list-summary setlist-song-count">
+                  {lines.length} line{lines.length === 1 ? '' : 's'}
+                </p>
                 {canEdit ? (
-                  <button type="button" className="title-rename-btn" onClick={() => setIsRenaming(true)} title="Rename rider">
-                    <PenLine size={14} />
-                  </button>
+                  <span className={saveStatusClassName} aria-live="polite">{saveStatusLabel}</span>
                 ) : null}
               </div>
-            )}
-            <div className="autosave-status-row">
-              <p className="song-list-summary setlist-song-count">
-                {lines.length} line{lines.length === 1 ? '' : 's'}
-              </p>
+            </div>
+            <div className="setlist-header-actions">
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--accent"
+                onClick={() => void onCopyPublicLink()}
+                title={rider.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
+              >
+                <Link2 size={14} />
+              </button>
               {canEdit ? (
-                <span className={saveStatusClassName} aria-live="polite">{saveStatusLabel}</span>
+                <>
+                  {onDelete ? (
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      onClick={() => void handleDeleteRider()}
+                      title={`Delete rider ${rider.name}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  ) : null}
+                </>
               ) : null}
             </div>
           </div>
-          <div className="setlist-header-actions">
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--accent"
-              onClick={() => void onCopyPublicLink()}
-              title={rider.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
-            >
-              <Link2 size={14} />
-            </button>
-            {canEdit ? (
-              <>
-                {onDelete ? (
-                  <button
-                    type="button"
-                    className="setlist-action-btn setlist-action-btn--secondary"
-                    onClick={() => void handleDeleteRider()}
-                    title={`Delete rider ${rider.name}`}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                ) : null}
-              </>
-            ) : null}
-          </div>
+
+
         </div>
-
-
-      </div>
+      ) : null}
 
       <section className="technical-rider-section">
         <div className="technical-rider-section-header">
