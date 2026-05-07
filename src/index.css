@@ -7692,11 +7692,27 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .bands-member-name {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .bands-page-toolbar {
   display: flex;
   align-items: center;
   margin-bottom: .6rem;
 }
+
+.bands-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  gap: 1rem;
+  align-items: start;
+}
+
 .bands-section-heading {
   margin: 0 0 .95rem;
   font-size: 1rem;
@@ -7704,22 +7720,27 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-bottom: 1px solid var(--bands-border);
   padding-bottom: .5rem;
 }
+
 .bands-section-heading--spaced {
   margin-top: .45rem;
 }
+
 .band-settings-name-row {
   display: flex;
   align-items: center;
   gap: .55rem;
 }
+
 .band-settings-name-row input {
   flex: 1;
   min-width: 0;
 }
+
 .bands-field-counter {
   font-weight: 400;
   opacity: .7;
 }
+
 .bands-description-field {
   resize: vertical;
   min-height: 5rem;
@@ -7732,6 +7753,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   font: inherit;
   line-height: 1.45;
 }
+
 .bands-color-controls {
   display: flex;
   align-items: center;
@@ -7739,25 +7761,44 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-wrap: wrap;
   margin-top: .55rem;
 }
+
 .bands-color-custom-field {
   flex: 0 0 auto;
 }
+
 .bands-color-custom-field input[type="color"] {
   width: 2.2rem;
   height: 2rem;
   padding: 0;
 }
+
 .bands-inline-note {
   margin: 0;
   font-size: .78rem;
   color: var(--muted);
 }
-  font-size: .9rem;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+
+.bands-subscription-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  flex-wrap: wrap;
+  padding: .75rem .85rem;
+  border: 1px solid var(--bands-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bands-soft-bg) 72%, var(--surface));
+}
+
+.bands-subscription-copy {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.bands-subscription-copy span {
+  font-size: .84rem;
+  color: var(--muted);
 }
 
 .bands-member-email {
@@ -8023,6 +8064,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   .bands-header,
   .bands-create-grid,
   .bands-detail-grid,
+  .bands-settings-layout,
   .profile-invite-card,
   .bands-card,
   .bands-member-card,
