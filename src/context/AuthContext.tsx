@@ -29,6 +29,7 @@ import { db } from '../lib/firebase';
 import { changeUsername, claimUsername, loadUserProfile, normalizeUsername, updateProfileFields } from '../lib/userProfiles';
 import { isValidAvatar } from '../lib/avatars';
 import { seedDemoData } from '../lib/demoSeed';
+import { deleteAccountOnServer } from '../lib/bandsApi';
 import type { PlanTier, SubscriptionStatus } from '../types';
 
 export interface User {
@@ -67,6 +68,7 @@ interface AuthContextValue {
   updateAvatar: (avatar: string) => Promise<string | null>;
   updateFullName: (fullName: string) => Promise<string | null>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
+  deleteAccount: () => Promise<string | null>;
   logout: () => Promise<void>;
   /** Start an anonymous demo session with pre-seeded songs and Band plan. */
   loginAsDemo: () => Promise<string | null>;
@@ -583,6 +585,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [getAuthErrorCode]);
 
+  const deleteAccountValue = useCallback(async (): Promise<string | null> => {
+    if (!auth?.currentUser) {
+      return firebaseConfigError ?? 'Firebase authentication is not configured.';
+    }
+
+    const currentUser = auth.currentUser;
+
+    try {
+      await deleteAccountOnServer({
+        userId: currentUser.uid,
+        userEmail: currentUser.email ?? '',
+      });
+      await deleteUser(currentUser);
+      return null;
+    } catch (err: unknown) {
+      const code = getAuthErrorCode(err);
+      if (code === 'auth/requires-recent-login') {
+        return 'Please sign in again, then retry deleting your account.';
+      }
+      return err instanceof Error ? err.message : 'Failed to delete account.';
+    }
+  }, [getAuthErrorCode]);
+
   const logout = useCallback(async () => {
     if (!auth) return;
     await signOut(auth);
@@ -685,6 +710,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateAvatar: updateAvatarValue,
         updateFullName: updateFullNameValue,
         updatePassword: updatePasswordValue,
+        deleteAccount: deleteAccountValue,
         logout,
         loginAsDemo,
         upgradeDemo,

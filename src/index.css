@@ -7134,6 +7134,47 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-color: color-mix(in srgb, #b91c1c 22%, var(--border));
 }
 
+.profile-account-danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  padding: .85rem;
+  border: 1px solid color-mix(in srgb, #b91c1c 26%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, #b91c1c 7%, var(--surface));
+}
+
+.profile-account-danger-zone-header {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+
+.profile-account-danger-zone-header h3 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  color: color-mix(in srgb, #b91c1c 74%, var(--text));
+}
+
+.profile-account-delete-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+}
+
+.profile-account-delete-check {
+  display: flex;
+  align-items: flex-start;
+  gap: .55rem;
+  font-size: .9rem;
+}
+
+.profile-account-delete-check input {
+  margin-top: .15rem;
+}
+
 .pricing-page,
 .checkout-result-page {
   max-width: 1180px;

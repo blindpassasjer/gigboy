@@ -166,3 +166,25 @@ export async function cleanupLegacySoloDataOnServer(params: {
     }
   );
 }
+
+export async function deleteAccountOnServer(params: {
+  userId: string;
+  userEmail: string;
+}) {
+  return postJson<{
+    ok: true;
+    deletedBands: number;
+    deletedBandDocs: number;
+    deletedUserDocs: number;
+    updatedMemberships: number;
+    deletedBandInvites: number;
+    deletedCollaborationInvites: number;
+  }>(
+    '/api/users/delete-account',
+    {},
+    {
+      userId: params.userId,
+      userEmail: params.userEmail,
+    }
+  );
+}
