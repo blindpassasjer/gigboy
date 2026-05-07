@@ -539,7 +539,6 @@ export default function SetlistsView({
         <div className="empty-state">
           <Music size={48} />
           <p>No songs in this setlist yet.</p>
-          <p className="empty-state-hint">Drag songs from the library to add them.</p>
         </div>
       ) : (
         <ul
