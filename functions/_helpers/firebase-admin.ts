@@ -23,6 +23,10 @@ interface FirebaseTokenCache {
 }
 
 let tokenCache: FirebaseTokenCache | null = null;
+const FIREBASE_ACCESS_SCOPES = [
+  'https://www.googleapis.com/auth/datastore',
+  'https://www.googleapis.com/auth/devstorage.full_control',
+].join(' ');
 
 function stripWrappingQuotes(value: string) {
   const trimmed = value.trim();
@@ -242,7 +246,7 @@ async function fetchAccessToken(config: FirebaseConfig) {
   const assertion = await signJwt(
     {
       iss: config.clientEmail,
-      scope: 'https://www.googleapis.com/auth/datastore',
+      scope: FIREBASE_ACCESS_SCOPES,
       aud: 'https://oauth2.googleapis.com/token',
       exp: nowSeconds + 3600,
       iat: nowSeconds,
@@ -292,6 +296,99 @@ async function getAccessToken(env: Record<string, string | undefined>) {
 
 function documentPath(segments: string[]) {
   return segments.map((segment) => encodeURIComponent(segment)).join('/');
+}
+
+function resolveStorageBucketCandidates(
+  env: Record<string, string | undefined>,
+  projectId: string,
+  preferredBucket?: string,
+): string[] {
+  const candidates = [
+    preferredBucket,
+    env.FIREBASE_STORAGE_BUCKET,
+    env.VITE_FIREBASE_STORAGE_BUCKET,
+    `${projectId}.firebasestorage.app`,
+    `${projectId}.appspot.com`,
+  ]
+    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+    .filter((entry) => entry.length > 0);
+
+  return Array.from(new Set(candidates));
+}
+
+async function listStorageObjectsPage(
+  env: Record<string, string | undefined>,
+  bucketName: string,
+  prefix: string,
+  pageToken?: string,
+): Promise<{ objectNames: string[]; nextPageToken: string | null } | null> {
+  const config = getFirebaseConfig(env);
+  if (!config) {
+    throw new Error('Firebase credentials not configured');
+  }
+
+  const accessToken = await getAccessToken(env);
+  const endpoint = new URL(`https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(bucketName)}/o`);
+  if (prefix) endpoint.searchParams.set('prefix', prefix);
+  if (pageToken) endpoint.searchParams.set('pageToken', pageToken);
+
+  const response = await fetch(endpoint.toString(), {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Storage list failed (${bucketName}/${prefix}): ${details}`);
+  }
+
+  const payload = await response.json() as {
+    items?: Array<{ name?: unknown }>;
+    nextPageToken?: unknown;
+  };
+
+  const objectNames = Array.isArray(payload.items)
+    ? payload.items
+      .map((entry) => (typeof entry.name === 'string' ? entry.name : ''))
+      .filter((entry) => entry.length > 0)
+    : [];
+
+  const nextPageToken = typeof payload.nextPageToken === 'string' && payload.nextPageToken.length > 0
+    ? payload.nextPageToken
+    : null;
+
+  return { objectNames, nextPageToken };
+}
+
+async function deleteStorageObjectByName(
+  env: Record<string, string | undefined>,
+  bucketName: string,
+  objectName: string,
+) {
+  const accessToken = await getAccessToken(env);
+  const endpoint = `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(bucketName)}/o/${encodeURIComponent(objectName)}`;
+
+  const response = await fetch(endpoint, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (response.status === 404) {
+    return;
+  }
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Storage delete failed (${bucketName}/${objectName}): ${details}`);
+  }
 }
 
 function toFirestoreValue(value: unknown): Record<string, unknown> {
@@ -546,4 +643,79 @@ export async function countFirestoreDocumentsByField(
   const results = await response.json() as Array<Record<string, unknown>>;
   // Each element either has a `document` (a match) or just `readTime` (end-of-results marker).
   return results.filter((entry) => Boolean(entry.document)).length;
+}
+
+export async function deleteFirebaseStorageObject(
+  env: Record<string, string | undefined>,
+  objectPath: string,
+  preferredBucket?: string,
+): Promise<{ deleted: boolean; bucketName: string }> {
+  const config = getFirebaseConfig(env);
+  if (!config) throw new Error('Firebase credentials not configured');
+
+  const normalizedPath = objectPath.trim().replace(/^\/+/, '');
+  if (!normalizedPath) {
+    throw new Error('Storage object path is required');
+  }
+
+  const buckets = resolveStorageBucketCandidates(env, config.projectId, preferredBucket);
+  let lastError: Error | null = null;
+
+  for (const bucketName of buckets) {
+    try {
+      await deleteStorageObjectByName(env, bucketName, normalizedPath);
+      return { deleted: true, bucketName };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  throw lastError ?? new Error('No valid Firebase Storage bucket found for object deletion.');
+}
+
+export async function deleteFirebaseStoragePrefix(
+  env: Record<string, string | undefined>,
+  prefix: string,
+  preferredBucket?: string,
+): Promise<{ deletedCount: number; bucketName: string }> {
+  const config = getFirebaseConfig(env);
+  if (!config) throw new Error('Firebase credentials not configured');
+
+  const normalizedPrefix = prefix.trim().replace(/^\/+/, '');
+  if (!normalizedPrefix) {
+    throw new Error('Storage prefix is required');
+  }
+
+  const buckets = resolveStorageBucketCandidates(env, config.projectId, preferredBucket);
+  let lastError: Error | null = null;
+
+  for (const bucketName of buckets) {
+    try {
+      const toDelete: string[] = [];
+      let pageToken: string | null = null;
+      let sawValidBucket = false;
+
+      do {
+        const page = await listStorageObjectsPage(env, bucketName, normalizedPrefix, pageToken ?? undefined);
+        if (!page) {
+          sawValidBucket = false;
+          break;
+        }
+        sawValidBucket = true;
+        toDelete.push(...page.objectNames);
+        pageToken = page.nextPageToken;
+      } while (pageToken);
+
+      if (!sawValidBucket) {
+        continue;
+      }
+
+      await Promise.all(toDelete.map((objectName) => deleteStorageObjectByName(env, bucketName, objectName)));
+      return { deletedCount: toDelete.length, bucketName };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  throw lastError ?? new Error('No valid Firebase Storage bucket found for prefix deletion.');
 }

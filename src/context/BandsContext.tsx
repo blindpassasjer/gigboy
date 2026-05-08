@@ -49,6 +49,7 @@ import {
 } from '../lib/inputLists';
 import { useAuth } from './AuthContext';
 import { moveIdBefore } from '../utils/arrayUtils';
+import { createWebpThumbnail } from '../utils/imageThumbnail';
 
 const BANDS_COLLECTION = 'bands';
 const BAND_SONGS_COLLECTION = 'songs';
@@ -1330,6 +1331,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const previousBands = bands;
     const now = new Date().toISOString();
     const logoImageId = 'band-logo';
+    const logoThumbStoragePath = `bands/${bandId}/logo-thumb.webp`;
 
     if (!file) {
       // Remove logo
@@ -1355,6 +1357,12 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           }
         }
 
+        try {
+          await deleteObject(ref(storage, logoThumbStoragePath));
+        } catch {
+          // Ignore deletion errors
+        }
+
         // Remove from press kit images
         try {
           await deleteDoc(doc(db, 'bands', bandId, 'pressKitImages', logoImageId));
@@ -1375,8 +1383,25 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       const logoStoragePath = `bands/${bandId}/logo.${ext}`;
       const storageRef = ref(storage, logoStoragePath);
 
-      await uploadBytes(storageRef, file, { contentType: file.type || undefined });
+      await uploadBytes(storageRef, file, {
+        contentType: file.type || undefined,
+        cacheControl: 'public,max-age=300',
+      });
       const logoUrl = await getDownloadURL(storageRef);
+
+      const thumbBlob = await createWebpThumbnail(file);
+      let logoThumbUrl: string | undefined;
+      let logoThumbSizeBytes: number | undefined;
+
+      if (thumbBlob) {
+        const thumbRef = ref(storage, logoThumbStoragePath);
+        await uploadBytes(thumbRef, thumbBlob, {
+          contentType: 'image/webp',
+          cacheControl: 'public,max-age=86400',
+        });
+        logoThumbUrl = await getDownloadURL(thumbRef);
+        logoThumbSizeBytes = thumbBlob.size;
+      }
 
       const nextBands = bands
         .map((entry) => (entry.id === bandId ? { ...entry, logo: logoUrl, logoStoragePath, updatedAt: now } : entry))
@@ -1394,9 +1419,12 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       await setDoc(doc(db, 'bands', bandId, 'pressKitImages', logoImageId), {
         title: 'Band Logo',
         url: logoUrl,
+        thumbUrl: logoThumbUrl ?? null,
         storagePath: logoStoragePath,
+        thumbStoragePath: logoThumbUrl ? logoThumbStoragePath : null,
         mimeType: file.type || 'image/jpeg',
         sizeBytes: file.size,
+        thumbSizeBytes: logoThumbSizeBytes ?? null,
         createdAt: now,
         createdBy: userId,
       });
@@ -3243,6 +3271,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     renameBand,
     renameBandSetlist,
     renameBandSongList,
+    updateBandLogo,
     renameBandInputList,
     updateBandDescription,
     updateBandSongListIcon,

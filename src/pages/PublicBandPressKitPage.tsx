@@ -5,6 +5,8 @@ import BrandMark from '../components/BrandMark';
 import { fetchPublicPressKit } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
 
+type PublicPressKitPayload = Awaited<ReturnType<typeof fetchPublicPressKit>>;
+
 function slugifyFileName(value: string): string {
   return value
     .trim()
@@ -78,13 +80,33 @@ function escapeHtml(raw: string): string {
     .replace(/'/g, '&#39;');
 }
 
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const blobUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = blobUrl;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(blobUrl);
+}
+
+function inferImageExtension(url: string, mimeType: string): string {
+  const normalizedMime = mimeType.split(';')[0].trim().toLowerCase();
+  const fromMime = normalizedMime.startsWith('image/') ? normalizedMime.slice(6) : '';
+  if (fromMime) return fromMime;
+
+  const pathname = new URL(url, window.location.origin).pathname;
+  const fileName = pathname.split('/').pop() ?? '';
+  const ext = fileName.includes('.') ? fileName.split('.').pop() ?? '' : '';
+  return ext.toLowerCase() || 'jpg';
+}
+
 export default function PublicBandPressKitPage() {
   const { token } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyDownload, setBusyDownload] = useState(false);
   const [downloadingImage, setDownloadingImage] = useState<string | null>(null);
-  const [payload, setPayload] = useState<Awaited<ReturnType<typeof fetchPublicPressKit>> | null>(null);
+  const [payload, setPayload] = useState<PublicPressKitPayload | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -93,26 +115,26 @@ export default function PublicBandPressKitPage() {
       return;
     }
 
-    let mounted = true;
+    let isMounted = true;
     setLoading(true);
     setError(null);
 
     void fetchPublicPressKit(token)
       .then((result) => {
-        if (!mounted) return;
+        if (!isMounted) return;
         setPayload(result);
       })
       .catch((err) => {
-        if (!mounted) return;
+        if (!isMounted) return;
         setError(err instanceof Error ? err.message : 'Failed to load press kit.');
       })
       .finally(() => {
-        if (!mounted) return;
+        if (!isMounted) return;
         setLoading(false);
       });
 
     return () => {
-      mounted = false;
+      isMounted = false;
     };
   }, [token]);
 
@@ -120,14 +142,10 @@ export default function PublicBandPressKitPage() {
     setDownloadingImage(url);
     try {
       const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to download image.');
       const blob = await response.blob();
-      const ext = blob.type.split('/')[1] ?? 'jpg';
-      const blobUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = blobUrl;
-      anchor.download = `${slugifyFileName(title)}.${ext}`;
-      anchor.click();
-      URL.revokeObjectURL(blobUrl);
+      const ext = inferImageExtension(url, blob.type);
+      triggerBlobDownload(blob, `${slugifyFileName(title)}.${ext}`);
     } finally {
       setDownloadingImage(null);
     }
@@ -145,12 +163,7 @@ export default function PublicBandPressKitPage() {
         images: payload.images,
         generatedAt: payload.generatedAt,
       });
-      const blobUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = blobUrl;
-      anchor.download = `${slugifyFileName(payload.bandName)}-press-kit.zip`;
-      anchor.click();
-      URL.revokeObjectURL(blobUrl);
+      triggerBlobDownload(blob, `${slugifyFileName(payload.bandName)}-press-kit.zip`);
     } finally {
       setBusyDownload(false);
     }
@@ -163,6 +176,9 @@ export default function PublicBandPressKitPage() {
   if (error || !payload) {
     return <main className="public-setlist-page"><p className="public-setlist-status">{error ?? 'Press kit not found.'}</p></main>;
   }
+
+  const hasTexts = payload.texts.length > 0;
+  const hasImages = payload.images.length > 0;
 
   return (
     <main className="public-setlist-page public-presskit-page">
@@ -193,7 +209,7 @@ export default function PublicBandPressKitPage() {
       </header>
 
       <div className="public-presskit-body">
-        {payload.texts.length > 0 && (
+        {hasTexts && (
           <section className="public-presskit-texts-section">
             <div className="public-presskit-text-grid">
               {payload.texts.map((entry) => (
@@ -211,7 +227,7 @@ export default function PublicBandPressKitPage() {
           </section>
         )}
 
-        {payload.images.length > 0 && (
+        {hasImages && (
           <section className="public-presskit-images-section">
             <h2 className="public-presskit-section-heading">Photos</h2>
             <div className="public-presskit-images-grid">
@@ -237,7 +253,7 @@ export default function PublicBandPressKitPage() {
           </section>
         )}
 
-        {payload.texts.length === 0 && payload.images.length === 0 && (
+        {!hasTexts && !hasImages && (
           <p className="public-setlist-status">This press kit has no content yet.</p>
         )}
       </div>

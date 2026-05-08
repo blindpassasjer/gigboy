@@ -30,7 +30,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       return Response.json({ error: 'Band description must be 240 characters or fewer.' }, { status: 400 });
     }
 
-    const userProfile = await getFirestoreDocument(ctx.env, ['users', userId]);
     const bandId = crypto.randomUUID();
     const now = new Date().toISOString();
     const profile = await getFirestoreDocument(ctx.env, ['users', userId]);

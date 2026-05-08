@@ -1,9 +1,32 @@
+import { Suspense, lazy } from 'react';
 import { createBrowserRouter, RouterProvider, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Theme } from '@radix-ui/themes';
-import { useMemo } from 'react';
 import { useBands } from './context/BandsContext';
 import { DarkModeProvider, useDarkModeContext } from './context/DarkModeContext';
+import { SongsProvider } from './context/SongsContext';
+import { SongListsProvider } from './context/SongListsContext';
+import { SetlistsProvider } from './context/SetlistsContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { BandsProvider } from './context/BandsContext';
+
+const Layout = lazy(() => import('./components/Layout'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const UsernameSetupPage = lazy(() => import('./pages/UsernameSetupPage'));
+const AddSongPage = lazy(() => import('./pages/AddSongPage'));
+const BandSetlistConcertPage = lazy(() => import('./pages/BandSetlistConcertPage'));
+const BandDetailPage = lazy(() => import('./pages/BandDetailPage'));
+const BandSettingsPage = lazy(() => import('./pages/BandSettingsPage'));
+const BandMembersPage = lazy(() => import('./pages/BandMembersPage'));
+const SongPage = lazy(() => import('./pages/SongPage'));
+const EditSongPage = lazy(() => import('./pages/EditSongPage'));
+const ProfileInvitesPage = lazy(() => import('./pages/ProfileInvitesPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+const CheckoutResultPage = lazy(() => import('./pages/CheckoutResultPage'));
+const PublicBandSetlistPage = lazy(() => import('./pages/PublicBandSetlistPage'));
+const PublicBandRiderPage = lazy(() => import('./pages/PublicBandRiderPage'));
+const PublicBandPressKitPage = lazy(() => import('./pages/PublicBandPressKitPage'));
 
 /** Redirects to the last active band's library, or profile if no active band. */
 function RootRedirect() {
@@ -24,30 +47,6 @@ function RootRedirect() {
 
   return <Navigate to="/profile" replace />;
 }
-
-import Layout from './components/Layout';
-import LoginPage from './pages/LoginPage';
-import UsernameSetupPage from './pages/UsernameSetupPage';
-import AddSongPage from './pages/AddSongPage';
-import BandSetlistConcertPage from './pages/BandSetlistConcertPage';
-import BandDetailPage from './pages/BandDetailPage';
-import BandSettingsPage from './pages/BandSettingsPage';
-import BandMembersPage from './pages/BandMembersPage';
-import SongPage from './pages/SongPage';
-import EditSongPage from './pages/EditSongPage';
-import ProfileInvitesPage from './pages/ProfileInvitesPage';
-import ProfilePage from './pages/ProfilePage';
-import PricingPage from './pages/PricingPage';
-import CheckoutResultPage from './pages/CheckoutResultPage';
-import PublicBandSetlistPage from './pages/PublicBandSetlistPage';
-import PublicBandRiderPage from './pages/PublicBandRiderPage';
-import PublicBandPressKitPage from './pages/PublicBandPressKitPage';
-import { SongsProvider } from './context/SongsContext';
-import { SongListsProvider } from './context/SongListsContext';
-import { SetlistsProvider } from './context/SetlistsContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { BandsProvider } from './context/BandsContext';
-
 
 function AuthenticatedApp() {
   const { user, loading, authEnabled } = useAuth();
@@ -110,26 +109,6 @@ const router = createBrowserRouter([
 
 function AppContent() {
   const { dark } = useDarkModeContext();
-  const appTree = useMemo(() => (
-    <AuthProvider>
-      <Toaster
-      toastOptions={{
-        style: {
-          border: '1px solid var(--border)',
-          borderRadius: '10px',
-          background: 'var(--surface)',
-          color: 'var(--text)',
-          boxShadow: 'var(--shadow)',
-          padding: '0.7rem 0.8rem',
-          minWidth: '280px',
-          maxWidth: '420px',
-        },
-      }}
-      position="top-center"
-    />
-    <RouterProvider router={router} />
-  </AuthProvider>
-  ), []);
 
   return (
     <Theme
@@ -139,7 +118,26 @@ function AppContent() {
       radius="medium"
       hasBackground={false}
     >
-      {appTree}
+      <AuthProvider>
+        <Toaster
+          toastOptions={{
+            style: {
+              border: '1px solid var(--border)',
+              borderRadius: '10px',
+              background: 'var(--surface)',
+              color: 'var(--text)',
+              boxShadow: 'var(--shadow)',
+              padding: '0.7rem 0.8rem',
+              minWidth: '280px',
+              maxWidth: '420px',
+            },
+          }}
+          position="top-center"
+        />
+        <Suspense fallback={<div className="app-status">Loading Gigboy…</div>}>
+          <RouterProvider router={router} />
+        </Suspense>
+      </AuthProvider>
     </Theme>
   );
 }

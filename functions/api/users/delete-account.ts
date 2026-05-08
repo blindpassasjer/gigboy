@@ -1,5 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import {
+  deleteFirebaseStorageObject,
+  deleteFirebaseStoragePrefix,
   deleteFirestoreDocument,
   getFirestoreDocument,
   listFirestoreDocuments,
@@ -10,8 +12,45 @@ interface Data extends Record<string, unknown> {
   userId?: string;
 }
 
-const BAND_SUBCOLLECTIONS = ['songs', 'songLists', 'setlists', 'stageplots', 'technicalRiders', 'trashItems'] as const;
+const BAND_SUBCOLLECTIONS = ['songs', 'songLists', 'setlists', 'stageplots', 'technicalRiders', 'trashItems', 'pressKits', 'pressKitImages'] as const;
 const USER_SUBCOLLECTIONS = ['songs', 'songLists', 'setlists', 'stageplots', 'technicalRiders', 'trashItems', 'songListCategories'] as const;
+
+function asNonEmptyString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function readRecorderUserId(recording: Record<string, unknown>): string | null {
+  const recorder = recording.recorder;
+  if (!recorder || typeof recorder !== 'object') return null;
+  const recorderData = recorder as Record<string, unknown>;
+  return asNonEmptyString(recorderData.userId);
+}
+
+async function deleteStoragePathsFromData(
+  env: Record<string, string | undefined>,
+  data: Record<string, unknown>,
+  preferredBucket?: string,
+) {
+  let deletedStorageObjects = 0;
+  let bucketName = preferredBucket ?? '';
+
+  const candidates = [
+    asNonEmptyString(data.storagePath),
+    asNonEmptyString(data.thumbStoragePath),
+    asNonEmptyString(data.logoStoragePath),
+  ].filter((value): value is string => Boolean(value));
+
+  for (const objectPath of candidates) {
+    const result = await deleteFirebaseStorageObject(env, objectPath, bucketName || undefined);
+    bucketName = result.bucketName;
+    if (result.deleted) deletedStorageObjects += 1;
+  }
+
+  return {
+    deletedStorageObjects,
+    bucketName,
+  };
+}
 
 async function deleteCollectionDocs(env: Record<string, string | undefined>, segments: string[]) {
   const docs = await listFirestoreDocuments(env, segments);
@@ -21,8 +60,15 @@ async function deleteCollectionDocs(env: Record<string, string | undefined>, seg
   return docs.length;
 }
 
-async function deleteBandWithSubcollections(env: Record<string, string | undefined>, bandId: string) {
+async function deleteBandWithSubcollections(
+  env: Record<string, string | undefined>,
+  bandId: string,
+  preferredBucket?: string,
+) {
   let deletedDocs = 0;
+  const prefixResult = await deleteFirebaseStoragePrefix(env, `bands/${bandId}/`, preferredBucket);
+  const deletedStorageObjects = prefixResult.deletedCount;
+  const bucketName = prefixResult.bucketName;
 
   for (const collectionName of BAND_SUBCOLLECTIONS) {
     const docs = await listFirestoreDocuments(env, ['bands', bandId, collectionName]);
@@ -38,11 +84,22 @@ async function deleteBandWithSubcollections(env: Record<string, string | undefin
 
   await deleteFirestoreDocument(env, ['bands', bandId]);
   deletedDocs += 1;
-  return deletedDocs;
+  return {
+    deletedDocs,
+    deletedStorageObjects,
+    bucketName,
+  };
 }
 
-async function deleteUserSubcollections(env: Record<string, string | undefined>, userId: string) {
+async function deleteUserSubcollections(
+  env: Record<string, string | undefined>,
+  userId: string,
+  preferredBucket?: string,
+) {
   let deletedDocs = 0;
+  const prefixResult = await deleteFirebaseStoragePrefix(env, `users/${userId}/`, preferredBucket);
+  const deletedStorageObjects = prefixResult.deletedCount;
+  const bucketName = prefixResult.bucketName;
 
   for (const collectionName of USER_SUBCOLLECTIONS) {
     const docs = await listFirestoreDocuments(env, ['users', userId, collectionName]);
@@ -56,7 +113,74 @@ async function deleteUserSubcollections(env: Record<string, string | undefined>,
     }
   }
 
-  return deletedDocs;
+  return {
+    deletedDocs,
+    deletedStorageObjects,
+    bucketName,
+  };
+}
+
+async function deleteUserArtifactsFromSurvivingBand(
+  env: Record<string, string | undefined>,
+  bandId: string,
+  userId: string,
+  preferredBucket?: string,
+) {
+  let deletedDocs = 0;
+  let deletedStorageObjects = 0;
+  let bucketName = preferredBucket ?? '';
+
+  const removedImageIds = new Set<string>();
+  const pressKitImages = await listFirestoreDocuments(env, ['bands', bandId, 'pressKitImages']);
+  for (const image of pressKitImages) {
+    const createdBy = asNonEmptyString(image.data.createdBy);
+    if (createdBy !== userId) continue;
+
+    const storageResult = await deleteStoragePathsFromData(env, image.data, bucketName || undefined);
+    deletedStorageObjects += storageResult.deletedStorageObjects;
+    bucketName = storageResult.bucketName || bucketName;
+
+    await deleteFirestoreDocument(env, ['bands', bandId, 'pressKitImages', image.id]);
+    removedImageIds.add(image.id);
+    deletedDocs += 1;
+  }
+
+  if (removedImageIds.size > 0) {
+    const pressKits = await listFirestoreDocuments(env, ['bands', bandId, 'pressKits']);
+    for (const pressKit of pressKits) {
+      const imageIds = Array.isArray(pressKit.data.imageIds)
+        ? pressKit.data.imageIds.filter((entry): entry is string => typeof entry === 'string')
+        : [];
+      const nextImageIds = imageIds.filter((id) => !removedImageIds.has(id));
+      if (nextImageIds.length === imageIds.length) continue;
+
+      await setFirestoreDocument(env, ['bands', bandId, 'pressKits', pressKit.id], {
+        imageIds: nextImageIds,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  const songs = await listFirestoreDocuments(env, ['bands', bandId, 'songs']);
+  for (const song of songs) {
+    const recordings = await listFirestoreDocuments(env, ['bands', bandId, 'songs', song.id, 'recordings']);
+    for (const recording of recordings) {
+      if (readRecorderUserId(recording.data) !== userId) continue;
+
+      const storageResult = await deleteStoragePathsFromData(env, recording.data, bucketName || undefined);
+      deletedStorageObjects += storageResult.deletedStorageObjects;
+      bucketName = storageResult.bucketName || bucketName;
+
+      await deleteFirestoreDocument(env, ['bands', bandId, 'songs', song.id, 'recordings', recording.id]);
+      deletedDocs += 1;
+    }
+  }
+
+  return {
+    deletedDocs,
+    deletedStorageObjects,
+    bucketName,
+  };
 }
 
 function stripUserFromBandMaps(record: Record<string, unknown>, userId: string) {
@@ -85,11 +209,32 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     });
 
     let deletedBandDocs = 0;
+    let deletedStorageObjects = 0;
+    let deletedUserBandArtifacts = 0;
+    let storageBucketName = '';
+
     for (const band of ownedBands) {
-      deletedBandDocs += await deleteBandWithSubcollections(ctx.env, band.id);
+      const result = await deleteBandWithSubcollections(ctx.env, band.id, storageBucketName || undefined);
+      deletedBandDocs += result.deletedDocs;
+      deletedStorageObjects += result.deletedStorageObjects;
+      storageBucketName = result.bucketName;
     }
 
     const survivingMemberBands = memberBands.filter((entry) => !ownedBands.some((owned) => owned.id === entry.id));
+    for (const band of survivingMemberBands) {
+      const cleanupResult = await deleteUserArtifactsFromSurvivingBand(
+        ctx.env,
+        band.id,
+        userId,
+        storageBucketName || undefined,
+      );
+      deletedUserBandArtifacts += cleanupResult.deletedDocs;
+      deletedStorageObjects += cleanupResult.deletedStorageObjects;
+      if (cleanupResult.bucketName) {
+        storageBucketName = cleanupResult.bucketName;
+      }
+    }
+
     await Promise.all(survivingMemberBands.map(async (band) => {
       const memberIds = Array.isArray(band.data.memberIds)
         ? band.data.memberIds.filter((value): value is string => typeof value === 'string' && value !== userId)
@@ -122,10 +267,13 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       });
     }));
 
-    const [bandInvites, collaborationInvites] = await Promise.all([
+    const [bandInvites, collaborationInvites, pressKitShares] = await Promise.all([
       listFirestoreDocuments(ctx.env, ['bandInvites']),
       listFirestoreDocuments(ctx.env, ['collaborationInvites']),
+      listFirestoreDocuments(ctx.env, ['pressKitShares']),
     ]);
+
+    const ownedBandIds = new Set(ownedBands.map((band) => band.id));
 
     const bandInvitesToDelete = bandInvites.filter((entry) => {
       const inviteBandId = typeof entry.data.bandId === 'string' ? entry.data.bandId : '';
@@ -139,12 +287,26 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       return ownerId === userId || recipientUid === userId;
     });
 
+    const pressKitSharesToDelete = pressKitShares.filter((entry) => {
+      const createdBy = asNonEmptyString(entry.data.createdBy);
+      if (createdBy === userId) return true;
+
+      const bandId = asNonEmptyString(entry.data.bandId);
+      return Boolean(bandId && ownedBandIds.has(bandId));
+    });
+
     await Promise.all([
       ...bandInvitesToDelete.map((entry) => deleteFirestoreDocument(ctx.env, ['bandInvites', entry.id])),
       ...collaborationInvitesToDelete.map((entry) => deleteFirestoreDocument(ctx.env, ['collaborationInvites', entry.id])),
+      ...pressKitSharesToDelete.map((entry) => deleteFirestoreDocument(ctx.env, ['pressKitShares', entry.id])),
     ]);
 
-    const deletedUserDocs = await deleteUserSubcollections(ctx.env, userId);
+    const userCleanup = await deleteUserSubcollections(ctx.env, userId, storageBucketName || undefined);
+    deletedStorageObjects += userCleanup.deletedStorageObjects;
+    if (userCleanup.bucketName) {
+      storageBucketName = userCleanup.bucketName;
+    }
+    const deletedUserDocs = userCleanup.deletedDocs;
 
     await deleteFirestoreDocument(ctx.env, ['users', userId]);
     if (usernameLower) {
@@ -156,9 +318,13 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       deletedBands: ownedBands.length,
       deletedBandDocs,
       deletedUserDocs,
+      deletedUserBandArtifacts,
+      deletedStorageObjects,
+      storageBucketName,
       updatedMemberships: survivingMemberBands.length,
       deletedBandInvites: bandInvitesToDelete.length,
       deletedCollaborationInvites: collaborationInvitesToDelete.length,
+      deletedPressKitShares: pressKitSharesToDelete.length,
     });
   } catch (error) {
     console.error('Failed to delete account data.', error);

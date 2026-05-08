@@ -30,7 +30,9 @@ interface LogoAsset {
   id: string;
   title: string;
   url: string;
+  thumbUrl?: string;
   storagePath?: string;
+  thumbStoragePath?: string;
   createdAt?: string;
 }
 
@@ -100,6 +102,118 @@ export default function BandSettingsPage() {
     setLogo(band.logo);
   }, [band]);
 
+  const bandId = band?.id ?? null;
+  const isOwner = band?.ownerId === user?.id;
+  const canEditBand = band ? (isOwner || band.memberRoles[user?.id ?? ''] === 'editor') : false;
+  const bandPlan = band?.billingPlan ?? 'free';
+  const memberLimit = band?.billingMemberLimit
+    ?? (bandPlan === 'crew' ? 5 + (band?.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
+  const renewalDate = formatPeriodEnd(band?.billingCurrentPeriodEnd ?? null);
+
+  useEffect(() => {
+    if (!band || !canEditBand) return;
+
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+    const currentDescription = band.description ?? '';
+    const nameChanged = trimmedName !== band.name;
+    const descriptionChanged = trimmedDescription !== currentDescription;
+
+    if (!nameChanged && !descriptionChanged) return;
+    if (!trimmedName) return;
+
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        if (trimmedName !== band.name) {
+          const renameError = await renameBand(band.id, trimmedName);
+          if (renameError) {
+            toast.error(renameError);
+            return;
+          }
+        }
+
+        if (trimmedDescription !== currentDescription) {
+          const descError = await updateBandDescription(band.id, trimmedDescription);
+          if (descError) {
+            toast.error(descError);
+          }
+        }
+      })();
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [band, canEditBand, name, description, renameBand, updateBandDescription]);
+
+  useEffect(() => {
+    if (!bandId || !db) return;
+    let mounted = true;
+    setLoadingLogoAssets(true);
+
+    void getDocs(query(collection(db, 'bands', bandId, 'pressKitImages')))
+      .then((snapshot) => {
+        if (!mounted) return;
+        const assets = snapshot.docs
+          .map((entry) => {
+            const data = entry.data() as Record<string, unknown>;
+            return {
+              id: entry.id,
+              title: typeof data.title === 'string' ? data.title : 'Image',
+              url: typeof data.url === 'string' ? data.url : '',
+              thumbUrl: typeof data.thumbUrl === 'string' ? data.thumbUrl : undefined,
+              storagePath: typeof data.storagePath === 'string' ? data.storagePath : undefined,
+              thumbStoragePath: typeof data.thumbStoragePath === 'string' ? data.thumbStoragePath : undefined,
+              createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
+            } as LogoAsset;
+          })
+          .filter((asset) => asset.url.length > 0)
+          .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+
+        setLogoAssets(assets);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        toast.error('Failed to load logo assets.');
+      })
+      .finally(() => {
+        if (mounted) setLoadingLogoAssets(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [bandId]);
+
+  const currentLogoAsset = logo
+    ? { id: 'current-band-logo', title: 'Current logo', url: logo, thumbUrl: logo }
+    : null;
+  const combinedLogoAssets = currentLogoAsset && !logoAssets.some((asset) => asset.url === currentLogoAsset.url)
+    ? [currentLogoAsset, ...logoAssets]
+    : logoAssets;
+  const logoTotalPages = Math.max(1, Math.ceil(combinedLogoAssets.length / LOGO_ITEMS_PER_PAGE));
+  const logoPageStart = (logoPage - 1) * LOGO_ITEMS_PER_PAGE;
+  const pagedLogoAssets = combinedLogoAssets.slice(logoPageStart, logoPageStart + LOGO_ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    if (logoPage > logoTotalPages) {
+      setLogoPage(logoTotalPages);
+    }
+  }, [logoPage, logoTotalPages]);
+
+  useEffect(() => {
+    if (!logoPreview) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setLogoPreview(null);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [logoPreview]);
+
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
   }
@@ -112,13 +226,6 @@ export default function BandSettingsPage() {
       </section>
     );
   }
-
-  const isOwner = band.ownerId === user?.id;
-  const canEditBand = isOwner || band.memberRoles[user?.id ?? ''] === 'editor';
-  const bandPlan = band.billingPlan ?? 'free';
-  const memberLimit = band.billingMemberLimit
-    ?? (bandPlan === 'crew' ? 5 + (band.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
-  const renewalDate = formatPeriodEnd(band.billingCurrentPeriodEnd ?? null);
 
   const applyAppearance = async (nextIcon: string, nextColor: string | undefined) => {
     if (!canEditBand || busyAppearance) return;
@@ -234,108 +341,6 @@ export default function BandSettingsPage() {
     }
   };
 
-  useEffect(() => {
-    if (!band || !canEditBand) return;
-
-    const trimmedName = name.trim();
-    const trimmedDescription = description.trim();
-    const currentDescription = band.description ?? '';
-    const nameChanged = trimmedName !== band.name;
-    const descriptionChanged = trimmedDescription !== currentDescription;
-
-    if (!nameChanged && !descriptionChanged) return;
-    if (!trimmedName) return;
-
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        if (trimmedName !== band.name) {
-          const renameError = await renameBand(band.id, trimmedName);
-          if (renameError) {
-            toast.error(renameError);
-            return;
-          }
-        }
-
-        if (trimmedDescription !== currentDescription) {
-          const descError = await updateBandDescription(band.id, trimmedDescription);
-          if (descError) {
-            toast.error(descError);
-          }
-        }
-      })();
-    }, 500);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [band, canEditBand, name, description, renameBand, updateBandDescription]);
-
-  useEffect(() => {
-    if (!band || !db) return;
-    let mounted = true;
-    setLoadingLogoAssets(true);
-
-    void getDocs(query(collection(db, 'bands', band.id, 'pressKitImages')))
-      .then((snapshot) => {
-        if (!mounted) return;
-        const assets = snapshot.docs
-          .map((entry) => {
-            const data = entry.data() as Record<string, unknown>;
-            return {
-              id: entry.id,
-              title: typeof data.title === 'string' ? data.title : 'Image',
-              url: typeof data.url === 'string' ? data.url : '',
-              storagePath: typeof data.storagePath === 'string' ? data.storagePath : undefined,
-              createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
-            } as LogoAsset;
-          })
-          .filter((asset) => asset.url.length > 0)
-          .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
-
-        setLogoAssets(assets);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        toast.error('Failed to load logo assets.');
-      })
-      .finally(() => {
-        if (mounted) setLoadingLogoAssets(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [band, logo]);
-
-  const currentLogoAsset = logo
-    ? { id: 'current-band-logo', title: 'Current logo', url: logo }
-    : null;
-  const combinedLogoAssets = currentLogoAsset && !logoAssets.some((asset) => asset.url === currentLogoAsset.url)
-    ? [currentLogoAsset, ...logoAssets]
-    : logoAssets;
-  const logoTotalPages = Math.max(1, Math.ceil(combinedLogoAssets.length / LOGO_ITEMS_PER_PAGE));
-  const logoPageStart = (logoPage - 1) * LOGO_ITEMS_PER_PAGE;
-  const pagedLogoAssets = combinedLogoAssets.slice(logoPageStart, logoPageStart + LOGO_ITEMS_PER_PAGE);
-
-  useEffect(() => {
-    if (logoPage > logoTotalPages) {
-      setLogoPage(logoTotalPages);
-    }
-  }, [logoPage, logoTotalPages]);
-
-  useEffect(() => {
-    if (!logoPreview) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setLogoPreview(null);
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [logoPreview]);
-
   return (
     <section className="bands-page">
       <header className="bands-header">
@@ -351,7 +356,7 @@ export default function BandSettingsPage() {
 
       <div className="bands-settings-layout">
         <div className="bands-settings-left">
-        <section className="bands-panel">
+          <section className="bands-panel">
 
           {/* ── Profile ── */}
           <h2 className="bands-section-heading">
@@ -383,64 +388,64 @@ export default function BandSettingsPage() {
             />
           </div>
 
-        </section>
+          </section>
 
-        {/* ── Appearance ── */}
-        <section className="bands-panel">
-          <h2 className="bands-section-heading">
-            Appearance
-          </h2>
+          {/* ── Appearance ── */}
+          <section className="bands-panel">
+            <h2 className="bands-section-heading">
+              Appearance
+            </h2>
 
-          <div className="bands-appearance-grid">
-            <section className="bands-logo-color-group">
-              <p className="bands-logo-section-title">Theme color</p>
-              <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
-                {BAND_COLOR_OPTIONS.map((colorHex) => {
-                  const selected = !useAutoColor && color.toLowerCase() === colorHex.toLowerCase();
-                  return (
-                    <button
-                      key={colorHex}
-                      type="button"
-                      className={`color-swatch-btn${selected ? ' active' : ''}`}
-                      style={{ backgroundColor: colorHex }}
-                      onClick={() => { void handleColorSelect(colorHex); }}
-                      aria-label={`Choose color ${colorHex}`}
-                      aria-pressed={selected}
+            <div className="bands-appearance-grid">
+              <section className="bands-logo-color-group">
+                <p className="bands-logo-section-title">Theme color</p>
+                <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
+                  {BAND_COLOR_OPTIONS.map((colorHex) => {
+                    const selected = !useAutoColor && color.toLowerCase() === colorHex.toLowerCase();
+                    return (
+                      <button
+                        key={colorHex}
+                        type="button"
+                        className={`color-swatch-btn${selected ? ' active' : ''}`}
+                        style={{ backgroundColor: colorHex }}
+                        onClick={() => { void handleColorSelect(colorHex); }}
+                        aria-label={`Choose color ${colorHex}`}
+                        aria-pressed={selected}
+                        disabled={!canEditBand || busyAppearance}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="bands-color-controls">
+                  <div className="share-menu-field bands-color-custom-field">
+                    <span>Custom</span>
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => { void handleColorSelect(e.target.value); }}
+                      aria-label="Custom band color"
                       disabled={!canEditBand || busyAppearance}
                     />
-                  );
-                })}
-              </div>
-              <div className="bands-color-controls">
-                <div className="share-menu-field bands-color-custom-field">
-                  <span>Custom</span>
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => { void handleColorSelect(e.target.value); }}
-                    aria-label="Custom band color"
+                  </div>
+                  <button
+                    type="button"
+                    className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
+                    onClick={() => { void handleAutoColor(); }}
                     disabled={!canEditBand || busyAppearance}
-                  />
+                  >
+                    Auto color
+                  </button>
+                  <p className="bands-inline-note">Color updates immediately.</p>
                 </div>
-                <button
-                  type="button"
-                  className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
-                  onClick={() => { void handleAutoColor(); }}
-                  disabled={!canEditBand || busyAppearance}
-                >
-                  Auto color
-                </button>
-                <p className="bands-inline-note">Color updates immediately.</p>
-              </div>
-            </section>
+              </section>
 
-            {/* ── Band Logo ── */}
-            <div className="bands-logo-section">
-            <section className="bands-logo-upload-area">
-              <header className="press-kit-section-header">
-                <p className="press-kit-section-title">Band Logo</p>
-                <p className="press-kit-section-hint">Upload and manage your logo like Press Kit images.</p>
-              </header>
+              {/* ── Band Logo ── */}
+              <div className="bands-logo-section">
+                <section className="bands-logo-upload-area">
+                  <header className="press-kit-section-header">
+                    <p className="press-kit-section-title">Band Logo</p>
+                    <p className="press-kit-section-hint">Upload and manage your logo like Press Kit images.</p>
+                  </header>
 
               {canEditBand && (
                 <div
@@ -487,7 +492,13 @@ export default function BandSettingsPage() {
                             onClick={() => setLogoPreview({ url: asset.url, title: isCurrent ? 'Current logo' : asset.title })}
                             aria-label={`Preview ${isCurrent ? 'current logo' : asset.title}`}
                           >
-                            <img src={asset.url} alt={asset.title} className="bands-logo-card-image" />
+                            <img
+                              src={asset.thumbUrl ?? asset.url}
+                              alt={asset.title}
+                              loading="lazy"
+                              decoding="async"
+                              className="bands-logo-card-image"
+                            />
                           </button>
                         </div>
                         <div className="bands-logo-card-footer">

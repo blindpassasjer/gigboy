@@ -9,6 +9,7 @@ import { db, storage } from '../lib/firebase';
 import { createPressKitShare } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
 import { ICON_OPTIONS } from '../lib/iconOptions';
+import { createWebpThumbnail } from '../utils/imageThumbnail';
 import type { PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
 
@@ -16,9 +17,12 @@ interface PressKitImageAsset {
   id: string;
   title: string;
   url: string;
+  thumbUrl?: string;
   storagePath?: string;
+  thumbStoragePath?: string;
   mimeType?: string;
   sizeBytes?: number;
+  thumbSizeBytes?: number;
   createdAt?: string;
 }
 
@@ -190,8 +194,11 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
             title: typeof data.title === 'string' ? data.title : 'Image',
             url: typeof data.url === 'string' ? data.url : '',
             storagePath: typeof data.storagePath === 'string' ? data.storagePath : undefined,
+            thumbUrl: typeof data.thumbUrl === 'string' ? data.thumbUrl : undefined,
+            thumbStoragePath: typeof data.thumbStoragePath === 'string' ? data.thumbStoragePath : undefined,
             mimeType: typeof data.mimeType === 'string' ? data.mimeType : undefined,
             sizeBytes: typeof data.sizeBytes === 'number' ? data.sizeBytes : undefined,
+            thumbSizeBytes: typeof data.thumbSizeBytes === 'number' ? data.thumbSizeBytes : undefined,
             createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
           } as PressKitImageAsset;
         }).filter((a) => a.url.length > 0).sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
@@ -232,17 +239,55 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() ?? 'bin' : 'bin';
         const imageId = crypto.randomUUID();
         const storagePath = `bands/${bandId}/presskit/images/${imageId}-${sanitizePathSegment(file.name)}.${ext}`;
+        const thumbStoragePath = `bands/${bandId}/presskit/images/${imageId}-thumb.webp`;
         const storageRef = ref(storage!, storagePath);
-        await uploadBytes(storageRef, file, { contentType: file.type || undefined });
+        await uploadBytes(storageRef, file, {
+          contentType: file.type || undefined,
+          cacheControl: 'public,max-age=31536000,immutable',
+        });
         const url = await getDownloadURL(storageRef);
+        const thumbBlob = await createWebpThumbnail(file);
+        let thumbUrl: string | undefined;
+        let thumbSizeBytes: number | undefined;
+
+        if (thumbBlob) {
+          const thumbRef = ref(storage!, thumbStoragePath);
+          await uploadBytes(thumbRef, thumbBlob, {
+            contentType: 'image/webp',
+            cacheControl: 'public,max-age=31536000,immutable',
+          });
+          thumbUrl = await getDownloadURL(thumbRef);
+          thumbSizeBytes = thumbBlob.size;
+        }
+
         const title = file.name.replace(/\.[^.]+$/, '').trim() || 'Image';
         const createdAt = new Date().toISOString();
         if (db) {
           await setDoc(doc(db, 'bands', bandId, 'pressKitImages', imageId), {
-            title, url, storagePath, mimeType: file.type || null, sizeBytes: file.size, createdAt, createdBy: userId ?? null,
+            title,
+            url,
+            thumbUrl: thumbUrl ?? null,
+            storagePath,
+            thumbStoragePath: thumbUrl ? thumbStoragePath : null,
+            mimeType: file.type || null,
+            sizeBytes: file.size,
+            thumbSizeBytes: thumbSizeBytes ?? null,
+            createdAt,
+            createdBy: userId ?? null,
           });
         }
-        return { id: imageId, title, url, storagePath, mimeType: file.type || undefined, sizeBytes: file.size, createdAt } as PressKitImageAsset;
+        return {
+          id: imageId,
+          title,
+          url,
+          thumbUrl,
+          storagePath,
+          thumbStoragePath: thumbUrl ? thumbStoragePath : undefined,
+          mimeType: file.type || undefined,
+          sizeBytes: file.size,
+          thumbSizeBytes,
+          createdAt,
+        } as PressKitImageAsset;
       }));
       setImageAssets((current) => [...uploaded, ...current.filter((a) => !uploaded.some((u) => u.id === a.id))]);
       // Auto-attach uploaded images to this kit
@@ -281,6 +326,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const removeImageAsset = async (asset: PressKitImageAsset) => {
     if (!canEdit) return;
     if (storage && asset.storagePath) await deleteObject(ref(storage!, asset.storagePath)).catch(() => { /* best-effort */ });
+    if (storage && asset.thumbStoragePath) await deleteObject(ref(storage!, asset.thumbStoragePath)).catch(() => { /* best-effort */ });
     if (db) await deleteDoc(doc(db, 'bands', bandId, 'pressKitImages', asset.id)).catch(() => { /* best-effort */ });
     setImageAssets((current) => current.filter((a) => a.id !== asset.id));
     const next = kitImageIds.filter((id) => id !== asset.id);
@@ -572,7 +618,13 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                         onClick={() => setImagePreview({ url: img.url, title: img.title })}
                         aria-label={`Preview ${img.title}`}
                       >
-                        <img src={img.url} alt={img.title} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                        <img
+                          src={img.thumbUrl ?? img.url}
+                          alt={img.title}
+                          loading="lazy"
+                          decoding="async"
+                          style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
+                        />
                       </button>
                       {canEdit && (
                         <label style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '1.4rem', height: '1.4rem', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', cursor: 'pointer', zIndex: 1 }}>

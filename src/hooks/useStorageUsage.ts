@@ -293,7 +293,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
       let memberBandIds = new Set<string>();
       const pressKitUnsubByBandId = new Map<string, () => void>();
 
-      function reconcilePressKitListeners() {
+      const reconcilePressKitListeners = () => {
         const nextBandIds = new Set<string>([...ownedBandIds, ...memberBandIds]);
         for (const [bid, unsubscribe] of pressKitUnsubByBandId.entries()) {
           if (!nextBandIds.has(bid)) {
@@ -308,7 +308,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
             onSnapshot(collection(firestore, 'bands', bid, 'pressKitImages'), () => requestReload(), () => {}),
           );
         });
-      }
+      };
 
       cleanups.push(
         onSnapshot(recordingsQuery, () => requestReload(), () => {}),

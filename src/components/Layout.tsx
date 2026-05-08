@@ -9,7 +9,7 @@ import BrandMark from './BrandMark';
 import DemoBanner from './DemoBanner';
 import { useDarkModeContext } from '../context/DarkModeContext';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
-import { usePlan, useBandPlan } from '../hooks/usePlan';
+import { useBandPlan } from '../hooks/usePlan';
 import { db } from '../lib/firebase';
 import { declineInvite, loadPendingInvites } from '../lib/collaboration';
 import { declineBandInvite, loadPendingBandInvites } from '../lib/bandInvites';
@@ -44,7 +44,6 @@ export default function Layout({ children }: Props) {
     addBandInputList,
   } = useBands();
   const { user } = useAuth();
-  const planState = usePlan();
   const {
     pendingIncomingCount,
     acceptedOutgoing,
@@ -216,8 +215,8 @@ export default function Layout({ children }: Props) {
     addBandSetlist,
     addBandSongList,
     addBandInputList,
+    activeBandPlanState,
     navigate,
-    planState,
     routeBandId,
   ]);
 

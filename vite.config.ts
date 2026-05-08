@@ -2,6 +2,55 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const VENDOR_CHUNK_RULES: Array<{ chunk: string; packages: string[] }> = [
+  {
+    chunk: 'vendor-react',
+    packages: ['react', 'react-dom', 'react-router-dom'],
+  },
+  {
+    chunk: 'vendor-firebase',
+    packages: ['firebase'],
+  },
+  {
+    chunk: 'vendor-editor',
+    packages: ['@tiptap'],
+  },
+  {
+    chunk: 'vendor-ui',
+    packages: ['lucide-react', '@radix-ui'],
+  },
+  {
+    chunk: 'vendor-audio',
+    packages: ['tone', 'midi-writer-js'],
+  },
+  {
+    chunk: 'vendor-utils',
+    packages: ['jszip', 'pdf-lib'],
+  },
+]
+
+function resolveManualChunk(id: string): string | undefined {
+  if (!id.includes('/node_modules/')) return undefined
+
+  const modulePath = id.split('/node_modules/')[1]
+  if (!modulePath) return undefined
+
+  for (const rule of VENDOR_CHUNK_RULES) {
+    if (rule.packages.some((pkg) => id.includes(`/node_modules/${pkg}/`) || id.includes(`/node_modules/${pkg}`))) {
+      return rule.chunk
+    }
+  }
+
+  const pathSegments = modulePath.split('/')
+  const packageName = pathSegments[0]?.startsWith('@')
+    ? `${pathSegments[0]}/${pathSegments[1] ?? ''}`
+    : pathSegments[0]
+
+  if (!packageName) return undefined
+
+  return `vendor-${packageName.replace('@', '').replace('/', '-')}`
+}
+
 function resolveProxyUri() {
   const proxyUriTemplate = process.env.VSCODE_PROXY_URI
   if (!proxyUriTemplate) return null
@@ -148,5 +197,12 @@ export default defineConfig(({ command }) => ({
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: resolveManualChunk,
+      },
+    },
   },
 }))

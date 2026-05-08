@@ -1,4 +1,4 @@
-import { Fragment, useState, useRef, useEffect, useMemo } from 'react';
+import { Fragment, useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, FileText, ListMusic } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -91,10 +91,10 @@ export default function SetlistsView({
   const iconPickerRef = useRef<HTMLDivElement | null>(null);
   const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  const startRenaming = () => {
+  const startRenaming = useCallback(() => {
     setRenameValue(setlistName);
     setIsRenaming(true);
-  };
+  }, [setlistName]);
 
   useEffect(() => {
     setIconDraft(effectiveIcon ?? '🎵');
@@ -154,7 +154,7 @@ export default function SetlistsView({
   useEffect(() => {
     if (autoStartRenameToken == null) return;
     startRenaming();
-  }, [autoStartRenameToken]);
+  }, [autoStartRenameToken, startRenaming]);
 
   useEffect(() => {
     if (!showSongPicker) return;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBeforeUnload, useNavigate, useBlocker } from 'react-router-dom';
 import { flushSync } from 'react-dom';
 import { Save, Wand2 } from 'lucide-react';
@@ -202,7 +202,7 @@ export default function AddSongForm({
     return errs;
   }
 
-  function buildSong(values: SongFormValues): Song {
+  const buildSong = useCallback((values: SongFormValues): Song => {
     return {
       id: initialSong?.id ?? crypto.randomUUID(),
       title: values.title.trim(),
@@ -219,7 +219,7 @@ export default function AddSongForm({
       createdAt: initialSong?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-  }
+  }, [initialSong?.id, initialSong?.createdAt]);
 
   function handleParsePasted() {
     if (!chordpro.trim()) {
@@ -323,7 +323,7 @@ export default function AddSongForm({
         autosaveTimerRef.current = null;
       }
     };
-  }, [mode, isDirty, formValues, lastSavedValues, onSave, onSongListChange]);
+  }, [mode, isDirty, formValues, lastSavedValues, onSave, onSongListChange, buildSong]);
 
   return (
     <div className="add-song-page">
