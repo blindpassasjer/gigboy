@@ -508,18 +508,26 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                 </label>
               )}
 
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.6rem' }}>
               {imageAssets.map((img) => {
                 const attached = kitImageIds.includes(img.id);
                 return (
-                  <div key={img.id} className="songlist-item" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flex: 1, minWidth: 0 }}>
-                      <input
-                        type="checkbox"
-                        checked={attached}
-                        disabled={!canEdit}
-                        onChange={(e) => void toggleKitImage(img.id, e.target.checked)}
-                      />
-                      <img src={img.url} alt={img.title} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
+                  <div key={img.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                    <div style={{ position: 'relative' }}>
+                      <img src={img.url} alt={img.title} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                      {canEdit && (
+                        <label style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '1.4rem', height: '1.4rem', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={attached}
+                            disabled={!canEdit}
+                            onChange={(e) => void toggleKitImage(img.id, e.target.checked)}
+                            style={{ accentColor: 'var(--bands-hue)' }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0 0.4rem 0.4rem' }}>
                       {renamingId === img.id ? (
                         <input
                           autoFocus
@@ -531,22 +539,22 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                             if (e.key === 'Enter') void renameImageAsset(img.id, imageRenameValue || img.title);
                             if (e.key === 'Escape') setRenamingId(null);
                           }}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{ flex: 1, minWidth: 0, fontSize: '0.9rem', padding: '2px 6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+                          style={{ flex: 1, minWidth: 0, fontSize: '0.8rem', padding: '2px 6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
                         />
                       ) : (
-                        <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{img.title}</span>
+                        <span style={{ flex: 1, minWidth: 0, fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{img.title}</span>
                       )}
-                    </label>
-                    {canEdit && (
-                      <>
-                        <button type="button" className="setlist-action-btn setlist-action-btn--ghost" style={{ color: 'var(--muted)' }} title="Rename image" onClick={() => { setRenamingId(img.id); setImageRenameValue(img.title); }}><PenLine size={15} /></button>
-                        <button type="button" className="setlist-action-btn setlist-action-btn--ghost" style={{ color: 'var(--muted)' }} title="Delete image" onClick={() => void removeImageAsset(img)}><Trash2 size={15} /></button>
-                      </>
-                    )}
+                      {canEdit && (
+                        <>
+                          <button type="button" className="title-rename-btn" title="Rename image" onClick={() => { setRenamingId(img.id); setImageRenameValue(img.title); }}><PenLine size={13} /></button>
+                          <button type="button" className="title-rename-btn" title="Delete image" onClick={() => void removeImageAsset(img)}><Trash2 size={13} /></button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 );
               })}
+              </div>
             </div>
           </section>
           </div>
