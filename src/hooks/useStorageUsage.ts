@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, collectionGroup, doc, getDoc, getDocs, onSnapshot, query, where } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { getMetadata, ref } from 'firebase/storage';
+import { db, storage } from '../lib/firebase';
 import { PLAN_LIMITS } from '../lib/planLimits';
 
 const DEFAULT_STORAGE_QUOTA_BYTES = PLAN_LIMITS.free.storageQuotaBytes;
@@ -14,6 +15,12 @@ interface UsageState {
 function toSafeNumber(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null;
   return value >= 0 ? value : null;
+}
+
+function toSafeNonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 export function useStorageUsage(userId: string | null | undefined, planQuotaBytes?: number) {
@@ -35,10 +42,41 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
     const firestore = db;
     const currentUserId = userId;
+    const storageApi = storage;
+    const storageSizeCache = new Map<string, number>();
 
     let cancelled = false;
     let loadingInFlight = false;
     let reloadQueued = false;
+
+    async function getStorageObjectSize(storagePath: string): Promise<number> {
+      const cached = storageSizeCache.get(storagePath);
+      if (cached !== undefined) return cached;
+      if (!storageApi) return 0;
+
+      try {
+        const metadata = await getMetadata(ref(storageApi, storagePath));
+        const size = toSafeNumber(metadata.size) ?? 0;
+        storageSizeCache.set(storagePath, size);
+        return size;
+      } catch {
+        storageSizeCache.set(storagePath, 0);
+        return 0;
+      }
+    }
+
+    async function readDocSizeWithStorageFallback(data: Record<string, unknown>): Promise<number> {
+      const sizeBytes = toSafeNumber(data.sizeBytes);
+      if (sizeBytes !== null) return sizeBytes;
+
+      const legacySize = toSafeNumber(data.size);
+      if (legacySize !== null) return legacySize;
+
+      const storagePath = toSafeNonEmptyString(data.storagePath);
+      if (!storagePath) return 0;
+
+      return getStorageObjectSize(storagePath);
+    }
 
     async function load() {
       if (loadingInFlight) {
@@ -71,14 +109,10 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
         const quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
 
-        const recordingBytes = recordingsSnapshot.docs.reduce((sum, snap) => {
-          const data = snap.data() as Record<string, unknown>;
-          const sizeBytes = toSafeNumber(data.sizeBytes);
-          if (sizeBytes !== null) return sum + sizeBytes;
-
-          const legacySize = toSafeNumber(data.size);
-          return legacySize !== null ? sum + legacySize : sum;
-        }, 0);
+        const recordingSizes = await Promise.all(
+          recordingsSnapshot.docs.map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
+        );
+        const recordingBytes = recordingSizes.reduce((sum, value) => sum + value, 0);
 
         const bandIds = new Set<string>();
         memberBandsSnapshot.docs.forEach((snap) => {
@@ -95,27 +129,54 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         if (cancelled) return;
 
         const seenPressKitDocPaths = new Set<string>();
-        const sumPressKitDocs = (docs: Array<{ ref: { path: string }; data: () => Record<string, unknown> }>) => docs.reduce((sum, snap) => {
-          if (seenPressKitDocPaths.has(snap.ref.path)) {
-            return sum;
-          }
-
+        const pressKitDocData: Array<Record<string, unknown>> = [];
+        ownPressKitImagesSnapshot.docs.forEach((snap) => {
+          if (seenPressKitDocPaths.has(snap.ref.path)) return;
           seenPressKitDocPaths.add(snap.ref.path);
+          pressKitDocData.push(snap.data() as Record<string, unknown>);
+        });
 
+        pressKitImageSnapshots.forEach((snapshot) => {
+          if (snapshot.status !== 'fulfilled') return;
+          snapshot.value.docs.forEach((snap) => {
+            if (seenPressKitDocPaths.has(snap.ref.path)) return;
+            seenPressKitDocPaths.add(snap.ref.path);
+            pressKitDocData.push(snap.data() as Record<string, unknown>);
+          });
+        });
+
+        const pressKitSizes = await Promise.all(
+          pressKitDocData.map((data) => readDocSizeWithStorageFallback(data)),
+        );
+        let pressKitBytes = pressKitSizes.reduce((sum, value) => sum + value, 0);
+
+        // Legacy logos may exist only as bands/{bandId}/logo.* without a pressKitImages doc.
+        const seenStoragePaths = new Set<string>();
+        pressKitDocData.forEach((data) => {
+          const storagePath = toSafeNonEmptyString(data.storagePath);
+          if (storagePath) seenStoragePaths.add(storagePath);
+        });
+
+        const legacyLogoPaths = new Set<string>();
+        memberBandsSnapshot.docs.forEach((snap) => {
           const data = snap.data() as Record<string, unknown>;
-          const sizeBytes = toSafeNumber(data.sizeBytes);
-          if (sizeBytes !== null) return sum + sizeBytes;
+          const logoStoragePath = toSafeNonEmptyString(data.logoStoragePath);
+          if (!logoStoragePath || seenStoragePaths.has(logoStoragePath)) return;
+          legacyLogoPaths.add(logoStoragePath);
+        });
+        ownerBandsSnapshot.docs.forEach((snap) => {
+          const data = snap.data() as Record<string, unknown>;
+          const logoStoragePath = toSafeNonEmptyString(data.logoStoragePath);
+          if (!logoStoragePath || seenStoragePaths.has(logoStoragePath)) return;
+          legacyLogoPaths.add(logoStoragePath);
+        });
 
-          const legacySize = toSafeNumber(data.size);
-          return legacySize !== null ? sum + legacySize : sum;
-        }, 0);
-
-        let pressKitBytes = sumPressKitDocs(ownPressKitImagesSnapshot.docs as Array<{ ref: { path: string }; data: () => Record<string, unknown> }>);
-
-        pressKitBytes += pressKitImageSnapshots.reduce((total, snapshot) => {
-          if (snapshot.status !== 'fulfilled') return total;
-          return total + sumPressKitDocs(snapshot.value.docs as Array<{ ref: { path: string }; data: () => Record<string, unknown> }>);
-        }, 0);
+        if (legacyLogoPaths.size > 0) {
+          const legacyLogoSizes = await Promise.all(
+            Array.from(legacyLogoPaths).map((storagePath) => getStorageObjectSize(storagePath)),
+          );
+          pressKitBytes += legacyLogoSizes.reduce((sum, value) => sum + value, 0);
+        }
 
         const usedBytes = recordingBytes + pressKitBytes;
 
