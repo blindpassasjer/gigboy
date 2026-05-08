@@ -62,6 +62,13 @@ const SERVER_REPAIR_MARKER = 'server-repair-v1';
 const CLIENT_REPAIR_MARKER = 'client-repair-v1';
 const LEGACY_NAME_REPAIR_MARKER = 'legacy-name-repair-v1';
 
+/** Strip keys with undefined values so Firestore doesn't reject the document. */
+function stripUndefinedFields<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as T;
+}
+
 function readFirstNonEmptyString(...values: unknown[]) {
   for (const value of values) {
     if (typeof value === 'string' && value.trim().length > 0) {
@@ -2764,9 +2771,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_INPUT_LISTS_COLLECTION, riderId), {
-        lines: next?.lines ?? [],
-        preferredEquipment: next?.preferredEquipment ?? [],
-        inventoryEquipment: next?.inventoryEquipment ?? [],
+        lines: (next?.lines ?? []).map(stripUndefinedFields),
+        preferredEquipment: (next?.preferredEquipment ?? []).map(stripUndefinedFields),
+        inventoryEquipment: (next?.inventoryEquipment ?? []).map(stripUndefinedFields),
         updatedAt: now,
       }, { merge: true });
       return null;
