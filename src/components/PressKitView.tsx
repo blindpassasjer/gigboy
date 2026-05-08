@@ -481,6 +481,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
             <section className="press-kit-text-section">
               <header className="press-kit-section-header">
                 <p className="press-kit-section-title">Text</p>
+                {canEdit && <p className="press-kit-section-hint">Write and format the copy to include in this press kit.</p>}
               </header>
               {canEdit && editor && (
                 <div className="press-kit-toolbar" aria-label="Text formatting toolbar">
