@@ -144,6 +144,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const [busyUpload, setBusyUpload] = useState(false);
   const [dropActive, setDropActive] = useState(false);
   const [kitImageIds, setKitImageIds] = useState<string[]>(kit.imageIds ?? []);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [imageRenameValue, setImageRenameValue] = useState('');
 
   // Sync kitImageIds when kit prop changes
   useEffect(() => { setKitImageIds(kit.imageIds ?? []); }, [kit.id, kit.imageIds]);
@@ -212,6 +214,20 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   const toggleKitImage = async (imageId: string, attached: boolean) => {
     const next = attached ? [...kitImageIds, imageId] : kitImageIds.filter((id) => id !== imageId);
+    setKitImageIds(next);
+    if (db) await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { imageIds: next }, { merge: true });
+  };
+
+  const renameImageAsset = async (id: string, newTitle: string) => {
+    const trimmed = newTitle.trim();
+    if (!trimmed) return;
+    setImageAssets((current) => current.map((a) => a.id === id ? { ...a, title: trimmed } : a));
+    if (db) await setDoc(doc(db, 'bands', bandId, 'pressKitImages', id), { title: trimmed }, { merge: true });
+    setRenamingId(null);
+  };
+
+  const toggleAllImages = async (attachAll: boolean) => {
+    const next = attachAll ? imageAssets.map((a) => a.id) : [];
     setKitImageIds(next);
     if (db) await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { imageIds: next }, { merge: true });
   };
@@ -398,7 +414,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
               {canEdit && (
                 <button
                   type="button"
-                  className="setlist-action-btn setlist-action-btn--danger"
+                  className="setlist-action-btn setlist-action-btn--secondary"
                   onClick={() => void handleDelete()}
                   title="Delete press kit"
                 >
@@ -457,10 +473,10 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') document.getElementById('pk-img-input')?.click(); }}
                   onClick={() => document.getElementById('pk-img-input')?.click()}
                   style={{
-                    border: dropActive ? '2px solid var(--bands-hue)' : '1px dashed var(--border)',
+                    border: dropActive ? '2px solid var(--bands-hue)' : '2px dashed var(--bands-hue)',
                     borderRadius: '10px',
                     padding: '0.75rem',
-                    background: dropActive ? 'var(--bands-hue-soft)' : 'var(--surface)',
+                    background: dropActive ? 'var(--bands-hue-soft)' : 'color-mix(in srgb, var(--bands-hue) 8%, var(--surface))',
                     cursor: 'pointer',
                     marginBottom: '0.75rem',
                   }}
@@ -480,6 +496,18 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                 <p className="bands-status">No images uploaded yet.</p>
               )}
 
+              {canEdit && imageAssets.length > 0 && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.8rem', color: 'var(--muted)', cursor: 'pointer', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={imageAssets.length > 0 && imageAssets.every((a) => kitImageIds.includes(a.id))}
+                    ref={(el) => { if (el) el.indeterminate = imageAssets.some((a) => kitImageIds.includes(a.id)) && !imageAssets.every((a) => kitImageIds.includes(a.id)); }}
+                    onChange={(e) => void toggleAllImages(e.target.checked)}
+                  />
+                  Select all
+                </label>
+              )}
+
               {imageAssets.map((img) => {
                 const attached = kitImageIds.includes(img.id);
                 return (
@@ -492,10 +520,29 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                         onChange={(e) => void toggleKitImage(img.id, e.target.checked)}
                       />
                       <img src={img.url} alt={img.title} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
-                      <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{img.title}</span>
+                      {renamingId === img.id ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={imageRenameValue}
+                          onChange={(e) => setImageRenameValue(e.target.value)}
+                          onBlur={() => void renameImageAsset(img.id, imageRenameValue || img.title)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') void renameImageAsset(img.id, imageRenameValue || img.title);
+                            if (e.key === 'Escape') setRenamingId(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ flex: 1, minWidth: 0, fontSize: '0.9rem', padding: '2px 6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+                        />
+                      ) : (
+                        <span className="songlist-item-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{img.title}</span>
+                      )}
                     </label>
                     {canEdit && (
-                      <button type="button" className="setlist-action-btn setlist-action-btn--danger" onClick={() => void removeImageAsset(img)}>Delete</button>
+                      <>
+                        <button type="button" className="setlist-action-btn setlist-action-btn--ghost" style={{ color: 'var(--muted)' }} title="Rename image" onClick={() => { setRenamingId(img.id); setImageRenameValue(img.title); }}><PenLine size={15} /></button>
+                        <button type="button" className="setlist-action-btn setlist-action-btn--ghost" style={{ color: 'var(--muted)' }} title="Delete image" onClick={() => void removeImageAsset(img)}><Trash2 size={15} /></button>
+                      </>
                     )}
                   </div>
                 );
