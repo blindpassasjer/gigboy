@@ -45,7 +45,6 @@ export default function Layout({ children }: Props) {
   } = useBands();
   const { user } = useAuth();
   const planState = usePlan();
-  const activeBandPlanState = useBandPlan(activeBand ?? null);
   const {
     pendingIncomingCount,
     acceptedOutgoing,
@@ -79,6 +78,7 @@ export default function Layout({ children }: Props) {
   const bandSection = routeBandId ? (routeSegments[2] ?? 'library') : null;
   const bandSongListId = routeBandId && bandSection === 'songlists' ? (routeSegments[3] ?? null) : null;
   const activeBand = routeBandId ? bands.find((entry) => entry.id === routeBandId) ?? null : null;
+  const activeBandPlanState = useBandPlan(activeBand);
   const canEditActiveBand = Boolean(
     activeBand
       && user

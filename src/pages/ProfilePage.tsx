@@ -65,7 +65,7 @@ export default function ProfilePage() {
   const ownedBands = useMemo(() => bands.filter((band) => band.ownerId === user?.id), [bands, user?.id]);
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
   const renewalDate = formatPeriodEnd(user?.currentPeriodEnd ?? null);
-  const hasPaidPlan = planState.plan === 'pro' || planState.plan === 'band';
+  const hasPaidPlan = planState.plan === 'pro' || planState.plan === 'crew';
   const deletePhraseMatches = deleteStepTwoPhrase.trim().toUpperCase() === 'DELETE MY ACCOUNT';
 
   useEffect(() => {

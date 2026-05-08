@@ -71,7 +71,7 @@ export function useBandPlan(band: Band | null) {
       isCrew: effectivePlan === 'crew' && effectiveActive,
       canUse(feature: ProFeature): boolean {
         if (planOverride) return true;
-        if (!effectiveActive && effectivePlan !== 'free') return false;
+        if (!effectiveActive) return false;
         return PLAN_FEATURE_ACCESS[effectivePlan][feature];
       },
     };
