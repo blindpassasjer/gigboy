@@ -81,6 +81,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   } = useBands();
 
   const [addingBand, setAddingBand] = useState(false);
+  const atBandLimit = bands.filter((b) => b.ownerId === user?.id).length >= 1;
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
   const [addingBandInputListId, setAddingBandInputListId] = useState<string | null>(null);
@@ -493,9 +494,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           <button
             type="button"
             className="sidebar-icon-btn"
-            title="New band"
-            aria-label="Create new band"
-            onClick={() => { setAddingBand(true); setDraftName(''); }}
+            title={atBandLimit ? 'Band limit reached' : 'New band'}
+            aria-label={atBandLimit ? 'Band limit reached' : 'Create new band'}
+            disabled={atBandLimit}
+            onClick={() => { if (!atBandLimit) { setAddingBand(true); setDraftName(''); } }}
           >
             <Plus size={15} />
           </button>

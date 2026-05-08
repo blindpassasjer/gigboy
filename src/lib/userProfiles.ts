@@ -61,7 +61,7 @@ function profileFromData(data: Record<string, unknown> | undefined | null): User
   }
 
   const rawPlan = data.plan;
-  const plan: PlanTier = rawPlan === 'pro' || rawPlan === 'band' ? rawPlan : 'free';
+  const plan: PlanTier = rawPlan === 'pro' || rawPlan === 'crew' ? rawPlan : 'free';
   const rawStatus = data.subscriptionStatus;
   const subscriptionStatus: SubscriptionStatus =
     rawStatus === 'active'

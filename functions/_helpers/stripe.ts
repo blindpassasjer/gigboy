@@ -6,13 +6,13 @@ import { setFirestoreDocument } from './firebase-admin';
 const STORAGE_QUOTA: Record<string, number> = {
   free: 100 * 1024 * 1024,          // 100 MB
   pro: 1024 * 1024 * 1024,          // 1 GB
-  band: 5 * 1024 * 1024 * 1024,     // 5 GB
+  crew: 5 * 1024 * 1024 * 1024,     // 5 GB
 };
 
 const BASE_MEMBER_LIMIT: Record<string, number> = {
   free: 1,
   pro: 1,
-  band: 5,
+  crew: 5,
 };
 
 const MAX_EXTRA_MEMBERS = 500;
@@ -25,7 +25,7 @@ export function getStripeClient(secretKey: string): Stripe {
   });
 }
 
-export type PlanTier = 'free' | 'pro' | 'band';
+export type PlanTier = 'free' | 'pro' | 'crew';
 export type SubscriptionStatus =
   | 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | null;
 
@@ -48,7 +48,7 @@ export async function updateUserPlan(
   payload: UpdatePlanPayload
 ): Promise<void> {
   const storageQuotaBytes = STORAGE_QUOTA[payload.plan] ?? STORAGE_QUOTA.free;
-  const normalizedExtraMembers = payload.plan === 'band'
+  const normalizedExtraMembers = payload.plan === 'crew'
     ? Math.max(0, Math.min(MAX_EXTRA_MEMBERS, Math.trunc(payload.bandExtraMembers ?? 0)))
     : 0;
   const memberLimit = (BASE_MEMBER_LIMIT[payload.plan] ?? BASE_MEMBER_LIMIT.free) + normalizedExtraMembers;
@@ -84,7 +84,7 @@ export function planTierFromPriceId(
   ].filter(Boolean);
 
   if (proPrices.includes(priceId)) return 'pro';
-  if (bandPrices.includes(priceId)) return 'band';
+  if (bandPrices.includes(priceId)) return 'crew';
   return 'free';
 }
 
@@ -126,11 +126,11 @@ export function planAndExtraMembersFromSubscription(
     if (!priceId) continue;
 
     if (bandPrices.has(priceId)) {
-      plan = 'band';
+      plan = 'crew';
       continue;
     }
 
-    if (proPrices.has(priceId) && plan !== 'band') {
+    if (proPrices.has(priceId) && plan !== 'crew') {
       plan = 'pro';
       continue;
     }
@@ -140,7 +140,7 @@ export function planAndExtraMembersFromSubscription(
     }
   }
 
-  if (plan !== 'band') {
+  if (plan !== 'crew') {
     bandExtraMembers = 0;
   }
 

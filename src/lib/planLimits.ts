@@ -18,7 +18,7 @@ interface PlanLimits {
 export const PLAN_LABELS: Record<PlanTier, string> = {
   free: 'Free',
   pro: 'Pro',
-  band: 'Band',
+  crew: 'Crew',
 };
 
 export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
@@ -32,7 +32,7 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     storageQuotaBytes: 1024 * 1024 * 1024,
     memberLimit: 1,
   },
-  band: {
+  crew: {
     songLimit: null,
     storageQuotaBytes: 5 * 1024 * 1024 * 1024,
     memberLimit: 5,
@@ -58,7 +58,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
     metronome: true,
     multiUserNotes: true,
   },
-  band: {
+  crew: {
     setlists: true,
     technicalRiders: true,
     shareableLinks: true,

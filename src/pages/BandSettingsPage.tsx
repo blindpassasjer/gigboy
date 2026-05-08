@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, CreditCard, Trash2, X } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { collection, deleteField, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
@@ -59,6 +59,7 @@ function formatSubscriptionStatus(status: string | null | undefined) {
 
 export default function BandSettingsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const {
     bands,
@@ -67,6 +68,7 @@ export default function BandSettingsPage() {
     updateBandDescription,
     updateBandLibraryAppearance,
     updateBandLogo,
+    deleteBand,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
@@ -84,6 +86,9 @@ export default function BandSettingsPage() {
   const [dragActive, setDragActive] = useState(false);
   const [logoPage, setLogoPage] = useState(1);
   const [logoPreview, setLogoPreview] = useState<{ url: string; title: string } | null>(null);
+  const [busyDeleteBand, setBusyDeleteBand] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
   useEffect(() => {
     if (!band) return;
@@ -112,7 +117,7 @@ export default function BandSettingsPage() {
   const canEditBand = isOwner || band.memberRoles[user?.id ?? ''] === 'editor';
   const bandPlan = band.billingPlan ?? 'free';
   const memberLimit = band.billingMemberLimit
-    ?? (bandPlan === 'band' ? 5 + (band.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
+    ?? (bandPlan === 'crew' ? 5 + (band.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
   const renewalDate = formatPeriodEnd(band.billingCurrentPeriodEnd ?? null);
 
   const applyAppearance = async (nextIcon: string, nextColor: string | undefined) => {
@@ -174,6 +179,22 @@ export default function BandSettingsPage() {
       setLogo(undefined);
       toast.success('Logo removed.');
     }
+  };
+
+  const handleDeleteBand = async () => {
+    if (deleteConfirmName !== band.name) return;
+
+    setBusyDeleteBand(true);
+    const error = await deleteBand(band.id);
+    setBusyDeleteBand(false);
+
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    toast.success('Band deleted.');
+    navigate('/bands');
   };
 
   const handleUseLogoAsset = async (asset: LogoAsset) => {
@@ -329,7 +350,8 @@ export default function BandSettingsPage() {
       </Link>
 
       <div className="bands-settings-layout">
-        <section className="bands-panel bands-settings-left">
+        <div className="bands-settings-left">
+        <section className="bands-panel">
 
           {/* ── Profile ── */}
           <h2 className="bands-section-heading">
@@ -361,8 +383,11 @@ export default function BandSettingsPage() {
             />
           </div>
 
-          {/* ── Appearance ── */}
-          <h2 className="bands-section-heading bands-section-heading--spaced">
+        </section>
+
+        {/* ── Appearance ── */}
+        <section className="bands-panel">
+          <h2 className="bands-section-heading">
             Appearance
           </h2>
 
@@ -521,6 +546,7 @@ export default function BandSettingsPage() {
           </div>
 
         </section>
+        </div>
 
         <div className="bands-settings-left">
           <section className="bands-panel">
@@ -559,6 +585,52 @@ export default function BandSettingsPage() {
             canEditBand={canEditBand}
             isOwner={isOwner}
           />
+
+          {isOwner && (
+            <section className="bands-panel bands-panel--danger">
+              <h3>Danger zone</h3>
+              {showDeleteConfirm ? (
+                <div className="bands-delete-confirm">
+                  <p>Type <strong>{band.name}</strong> to confirm deletion. This cannot be undone.</p>
+                  <label className="share-menu-field">
+                    <input
+                      type="text"
+                      value={deleteConfirmName}
+                      onChange={(e) => setDeleteConfirmName(e.target.value)}
+                      placeholder={band.name}
+                      autoFocus
+                    />
+                  </label>
+                  <div className="bands-delete-confirm-actions">
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--danger"
+                      disabled={busyDeleteBand || deleteConfirmName !== band.name}
+                      onClick={() => void handleDeleteBand()}
+                    >
+                      {busyDeleteBand ? 'Deleting…' : 'Delete band'}
+                    </button>
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      disabled={busyDeleteBand}
+                      onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmName(''); }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="setlist-action-btn setlist-action-btn--danger"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  Delete band
+                </button>
+              )}
+            </section>
+          )}
         </div>
       </div>
 

@@ -175,7 +175,7 @@ function normalizeBand(id: string, data: Record<string, unknown>): Band {
           )
         ) as Record<string, string>
       : {},
-    billingPlan: data.billingPlan === 'band' ? 'band' : data.billingPlan === 'free' ? 'free' : undefined,
+    billingPlan: data.billingPlan === 'crew' ? 'crew' : data.billingPlan === 'free' ? 'free' : undefined,
     billingSubscriptionStatus:
       data.billingSubscriptionStatus === 'active'
       || data.billingSubscriptionStatus === 'trialing'
@@ -1066,6 +1066,15 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        // Enforce the same 1-band-per-user limit as the server does.
+        const ownedCount = bands.filter((b) => b.ownerId === userId).length;
+        if (ownedCount >= 1) {
+          return {
+            bandId: null,
+            error: 'You have reached the maximum number of bands for your plan.',
+          };
+        }
+
         const bandId = crypto.randomUUID();
         const now = new Date().toISOString();
         const trimmedDescription = description?.trim();

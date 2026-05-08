@@ -1,5 +1,11 @@
 /// <reference types="@cloudflare/workers-types" />
-import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { countFirestoreDocumentsByField, getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
+
+const OWNED_BAND_LIMIT: Record<string, number> = {
+  free: 1,
+  pro: 1,
+  crew: 1,
+};
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -28,6 +34,19 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
     if (description && description.length > 240) {
       return Response.json({ error: 'Band description must be 240 characters or fewer.' }, { status: 400 });
+    }
+
+    // Enforce per-plan owned-band limit
+    const userProfile = await getFirestoreDocument(ctx.env, ['users', userId]);
+    const plan = userProfile?.plan === 'pro' || userProfile?.plan === 'crew' ? userProfile.plan as string : 'free';
+    const planOverride = userProfile?.planOverride === true;
+    const limit = planOverride ? Infinity : (OWNED_BAND_LIMIT[plan] ?? 1);
+    const ownedCount = await countFirestoreDocumentsByField(ctx.env, 'bands', 'ownerId', userId);
+    if (ownedCount >= limit) {
+      return Response.json(
+        { error: 'You have reached the maximum number of bands for your plan.' },
+        { status: 403 }
+      );
     }
 
     const bandId = crypto.randomUUID();

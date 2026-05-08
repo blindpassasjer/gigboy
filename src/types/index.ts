@@ -4,7 +4,7 @@ export interface SongListCategory {
   sortOrder?: number;
 }
 
-export type PlanTier = 'free' | 'pro' | 'band';
+export type PlanTier = 'free' | 'pro' | 'crew';
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | null;
 
 export type CollaborationPermission = 'viewer' | 'editor';
@@ -53,7 +53,7 @@ export interface Band {
   memberUsernames: Record<string, string>;
   memberFullNames: Record<string, string>;
   memberAvatars: Record<string, string>;
-  billingPlan?: 'free' | 'band';
+  billingPlan?: 'free' | 'crew';
   billingSubscriptionStatus?: SubscriptionStatus;
   billingCurrentPeriodEnd?: number | null;
   billingExtraMembers?: number;

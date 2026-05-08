@@ -37,7 +37,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
     return Response.json({ error: 'Missing targetUserId or plan.' }, { status: 400 });
   }
 
-  const validPlans: PlanTier[] = ['free', 'pro', 'band'];
+  const validPlans: PlanTier[] = ['free', 'pro', 'crew'];
   if (!validPlans.includes(body.plan as PlanTier)) {
     return Response.json({ error: 'Invalid plan value.' }, { status: 400 });
   }

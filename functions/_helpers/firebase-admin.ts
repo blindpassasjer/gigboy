@@ -504,3 +504,46 @@ export async function listFirestoreDocuments(
     })
     .filter((entry): entry is { id: string; data: Record<string, unknown> } => Boolean(entry));
 }
+
+export async function countFirestoreDocumentsByField(
+  env: Record<string, string | undefined>,
+  collectionId: string,
+  fieldPath: string,
+  fieldValue: string
+): Promise<number> {
+  const config = getFirebaseConfig(env);
+  if (!config) throw new Error('Firebase credentials not configured');
+
+  const accessToken = await getAccessToken(env);
+  const endpoint = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents:runQuery`;
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath },
+            op: 'EQUAL',
+            value: { stringValue: fieldValue },
+          },
+        },
+        select: { fields: [{ fieldPath: '__name__' }] },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Firestore runQuery failed: ${details}`);
+  }
+
+  const results = await response.json() as Array<Record<string, unknown>>;
+  // Each element either has a `document` (a match) or just `readTime` (end-of-results marker).
+  return results.filter((entry) => Boolean(entry.document)).length;
+}

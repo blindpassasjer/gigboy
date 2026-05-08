@@ -3,7 +3,7 @@ import { getFirestoreDocument } from './firebase-admin';
 
 const MAX_EXTRA_MEMBERS = 500;
 
-type PlanTier = 'free' | 'pro' | 'band';
+type PlanTier = 'free' | 'pro' | 'crew';
 type SubscriptionStatus =
   | 'active'
   | 'trialing'
@@ -20,7 +20,7 @@ interface OwnerBandLimit {
 }
 
 function toPlanTier(value: unknown): PlanTier {
-  return value === 'pro' || value === 'band' ? value : 'free';
+  return value === 'pro' || value === 'crew' ? value : 'free';
 }
 
 function toSubscriptionStatus(value: unknown): SubscriptionStatus {
@@ -54,10 +54,10 @@ export async function resolveOwnerBandMemberLimit(
 ): Promise<OwnerBandLimit> {
   const bandDoc = await getFirestoreDocument(env, ['bands', bandId]);
   const bandStatus = toSubscriptionStatus(bandDoc?.billingSubscriptionStatus);
-  const bandPlan = bandDoc?.billingPlan === 'band' ? 'band' : 'free';
+  const bandPlan = bandDoc?.billingPlan === 'crew' ? 'crew' : 'free';
   const bandActive = isPlanActive(bandPlan, bandStatus, false);
 
-  if (bandPlan === 'band' && bandActive) {
+  if (bandPlan === 'crew' && bandActive) {
     const extraMembers = toSafeExtraMembers(bandDoc?.billingExtraMembers);
     const storedLimit = typeof bandDoc?.billingMemberLimit === 'number'
       ? Math.max(1, Math.trunc(bandDoc.billingMemberLimit))
@@ -75,7 +75,7 @@ export async function resolveOwnerBandMemberLimit(
   const planOverride = ownerProfile?.planOverride === true;
   const active = isPlanActive(plan, subscriptionStatus, planOverride);
 
-  if (plan !== 'band' || !active) {
+  if (plan !== 'crew' || !active) {
     return {
       memberLimit: 1,
       isBandEligible: false,

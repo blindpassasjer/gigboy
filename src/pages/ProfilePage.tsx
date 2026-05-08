@@ -341,9 +341,9 @@ export default function ProfilePage() {
                     <div className="profile-band-subscription-copy">
                       <strong>{band.name}</strong>
                       <span>
-                        {band.billingPlan === 'band'
+                        {band.billingPlan === 'crew'
                           ? `${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)} · ${band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0))} members`
-                          : 'No active Band subscription for this band.'}
+                          : 'No active Crew subscription for this band.'}
                       </span>
                       {band.billingCurrentPeriodEnd ? (
                         <span>Renews {formatPeriodEnd(band.billingCurrentPeriodEnd) ?? '—'}</span>

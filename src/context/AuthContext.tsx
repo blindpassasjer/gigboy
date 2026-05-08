@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username: demoUsername,
           avatar: null,
           fullName: null,
-          plan: 'band',
+          plan: 'crew',
           planOverride: true,
           subscriptionStatus: null,
           currentPeriodEnd: null,

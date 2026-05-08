@@ -136,7 +136,7 @@ function buildSnapshot(sub, bandId, customerId) {
   const extraQty = Math.max(0, Math.min(500, Math.trunc(extra?.quantity ?? 0)));
 
   return {
-    billingPlan: active && base ? 'band' : 'free',
+    billingPlan: active && base ? 'crew' : 'free',
     billingSubscriptionStatus: status,
     billingCurrentPeriodEnd:
       base?.current_period_end

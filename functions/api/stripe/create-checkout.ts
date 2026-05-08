@@ -183,7 +183,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
 
     // Retrieve or create Stripe Customer, storing the ID in Firestore.
     const profile = await getFirestoreDocument(ctx.env as Record<string, string | undefined>, ['users', userId]);
-    const profilePlan = profile?.plan === 'band' || profile?.plan === 'pro' ? profile.plan : 'free';
+    const profilePlan = profile?.plan === 'crew' || profile?.plan === 'pro' ? profile.plan : 'free';
 
     const allowedExtraMemberPrices = new Set([
       ctx.env.STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID,
@@ -191,19 +191,19 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
     ].filter((entry): entry is string => Boolean(entry)));
 
     const hasExtraMemberItem = requestedExtraMemberCount > 0;
-    if (hasExtraMemberItem && requestedPlan !== 'band' && profilePlan !== 'band') {
-      return Response.json({ error: 'Extra members are only available with the Band plan.' }, { status: 400 });
+    if (hasExtraMemberItem && requestedPlan !== 'crew' && profilePlan !== 'crew') {
+      return Response.json({ error: 'Extra members are only available with the Crew plan.' }, { status: 400 });
     }
 
     if (body.extraMemberPriceId && !allowedExtraMemberPrices.has(body.extraMemberPriceId)) {
       return Response.json({ error: 'Extra member add-on is not configured for this environment.' }, { status: 400 });
     }
 
-    if (requestedPlan === 'band' && !requestedBandId) {
-      return Response.json({ error: 'bandId is required for Band subscriptions.' }, { status: 400 });
+    if (requestedPlan === 'crew' && !requestedBandId) {
+      return Response.json({ error: 'bandId is required for Crew subscriptions.' }, { status: 400 });
     }
 
-    if (requestedPlan === 'band') {
+    if (requestedPlan === 'crew') {
       const band = await getFirestoreDocument(ctx.env, ['bands', requestedBandId]);
       if (!band) {
         return Response.json({ error: 'Band not found.' }, { status: 404 });
@@ -226,7 +226,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       });
     }
 
-    if (requestedPlan === 'band') {
+    if (requestedPlan === 'crew') {
       const aggregateSubscription = await findAggregateBandSubscription(stripe, customerId, userId);
 
       if (aggregateSubscription) {
@@ -346,12 +346,12 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       allow_promotion_codes: true,
       metadata: {
         firebaseUid: userId,
-        ...(requestedPlan === 'band' ? { bandId: requestedBandId } : {}),
+        ...(requestedPlan === 'crew' ? { bandId: requestedBandId } : {}),
       },
       subscription_data: {
         metadata: {
           firebaseUid: userId,
-          ...(requestedPlan === 'band' ? { gigboyMode: 'band_aggregate' } : {}),
+          ...(requestedPlan === 'crew' ? { gigboyMode: 'band_aggregate' } : {}),
         },
       },
     });

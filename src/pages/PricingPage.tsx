@@ -42,7 +42,7 @@ interface ComparisonFeature {
   icon: typeof Music;
   free: string;
   pro: string;
-  band: string;
+  crew: string;
 }
 
 const PLAN_CARDS: PlanCard[] = [
@@ -52,7 +52,7 @@ const PLAN_CARDS: PlanCard[] = [
     blurb: 'A lightweight solo account for trying Gigboy and keeping a small library.',
     monthlyPrice: 'Free',
     annualPrice: null,
-    featureBullets: ['12 songs', '100 MB recording storage', 'Song lists', 'Single user account'],
+    featureBullets: ['12 songs', '100 MB recording storage', 'Song lists', 'One band workspace (solo)'],
     ctaLabel: 'Current free plan',
   },
   {
@@ -61,43 +61,43 @@ const PLAN_CARDS: PlanCard[] = [
     blurb: 'Everything a power user needs for rehearsals, setlists, recordings, and sharing.',
     monthlyPrice: '50 kr or 5 USD',
     annualPrice: '500 kr or 50 USD',
-    featureBullets: ['Unlimited songs', '1 GB storage', 'Setlists, stage plots, riders', 'Recordings, metronome, pedal'],
+    featureBullets: ['Unlimited songs', '1 GB storage', 'Setlists, stage plots, riders', 'Recordings, metronome, pedal', 'One band workspace (solo)'],
     ctaLabel: 'Upgrade to Pro',
     envKeyMonthly: 'VITE_STRIPE_PRO_MONTHLY_PRICE_ID',
     envKeyAnnual: 'VITE_STRIPE_PRO_ANNUAL_PRICE_ID',
   },
   {
-    tier: 'band',
+    tier: 'crew',
     icon: Users,
     blurb: 'A shared workspace for a band owner with member access and room to grow.',
     monthlyPrice: '150 kr or 15 USD',
     annualPrice: '1500 kr or 150 USD',
-    featureBullets: ['Unlimited songs', '5 GB storage', 'Up to 5 members included', 'Extra members are a Band-only add-on'],
-    ctaLabel: 'Upgrade to Band',
+    featureBullets: ['Unlimited songs', '5 GB storage', 'Up to 5 members included', 'Extra members are a Crew-only add-on'],
+    ctaLabel: 'Upgrade to Crew',
     envKeyMonthly: 'VITE_STRIPE_BAND_MONTHLY_PRICE_ID',
     envKeyAnnual: 'VITE_STRIPE_BAND_ANNUAL_PRICE_ID',
   },
 ];
 
 const COMPARISON_FEATURES: ComparisonFeature[] = [
-  { label: 'Song library', icon: Music, free: '12 songs', pro: 'Unlimited', band: 'Unlimited' },
-  { label: 'Storage', icon: Disc3, free: '100 MB', pro: '1 GB', band: '5 GB' },
-  { label: 'Song lists', icon: ListMusic, free: 'Yes', pro: 'Yes', band: 'Yes' },
-  { label: 'Setlists', icon: NotebookPen, free: 'No', pro: 'Yes', band: 'Yes' },
-  { label: 'Stage plots', icon: Share2, free: 'No', pro: 'Yes', band: 'Yes' },
-  { label: 'Input list', icon: Link2, free: 'No', pro: 'Yes', band: 'Yes' },
-  { label: 'Shareable links', icon: Share2, free: 'No', pro: 'Yes', band: 'Yes' },
-  { label: 'Bluetooth pedal', icon: Gauge, free: 'No', pro: 'Yes', band: 'Yes' },
-  { label: 'Recordings', icon: Headphones, free: 'No', pro: 'Yes', band: 'Yes' },
-  { label: 'Metronome', icon: Mic2, free: 'No', pro: 'Yes', band: 'Yes' },
-  { label: 'Multi-user notes', icon: Sparkles, free: 'No', pro: 'Yes', band: 'Yes' },
-  { label: 'Members', icon: Users, free: '1 owner', pro: '1 owner', band: 'Up to 5' },
+  { label: 'Song library', icon: Music, free: '12 songs', pro: 'Unlimited', crew: 'Unlimited' },
+  { label: 'Storage', icon: Disc3, free: '100 MB', pro: '1 GB', crew: '5 GB' },
+  { label: 'Song lists', icon: ListMusic, free: 'Yes', pro: 'Yes', crew: 'Yes' },
+  { label: 'Setlists', icon: NotebookPen, free: 'No', pro: 'Yes', crew: 'Yes' },
+  { label: 'Stage plots', icon: Share2, free: 'No', pro: 'Yes', crew: 'Yes' },
+  { label: 'Input list', icon: Link2, free: 'No', pro: 'Yes', crew: 'Yes' },
+  { label: 'Shareable links', icon: Share2, free: 'No', pro: 'Yes', crew: 'Yes' },
+  { label: 'Bluetooth pedal', icon: Gauge, free: 'No', pro: 'Yes', crew: 'Yes' },
+  { label: 'Recordings', icon: Headphones, free: 'No', pro: 'Yes', crew: 'Yes' },
+  { label: 'Metronome', icon: Mic2, free: 'No', pro: 'Yes', crew: 'Yes' },
+  { label: 'Multi-user notes', icon: Sparkles, free: 'No', pro: 'Yes', crew: 'Yes' },
+  { label: 'Members', icon: Users, free: '1 owner', pro: '1 owner', crew: 'Up to 5' },
   {
     label: 'Extra members',
     icon: Users,
     free: '—',
     pro: '—',
-    band: 'Band add-on only: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly',
+    crew: 'Crew add-on only: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly',
   },
 ];
 
@@ -110,7 +110,7 @@ function resolvePriceId(card: PlanCard, cycle: BillingCycle) {
 const PLAN_ORDER: Record<PlanTier, number> = {
   free: 0,
   pro: 1,
-  band: 2,
+  crew: 2,
 };
 
 function getCtaLabel(card: PlanCard, currentPlan: PlanTier, isCurrentPlan: boolean) {
@@ -160,7 +160,7 @@ export default function PricingPage() {
       return;
     }
 
-    const isBandPlan = card.tier === 'band';
+    const isBandPlan = card.tier === 'crew';
     if (isBandPlan && !selectedBandId) {
       toast.error('Select which band you want to manage before continuing.');
       return;
@@ -219,9 +219,9 @@ export default function PricingPage() {
           <span className="pricing-grid" />
         </div>
         <span className="pricing-kicker">Pricing</span>
-        <h1>Simple tiers for solo players and bands</h1>
+        <h1>Simple tiers for solo players and crews</h1>
         <p>
-          Start on Free, upgrade when you need collaboration, setlists, recordings, and shared band workflows.
+          Every account gets one band workspace. Upgrade to Pro for all solo features, or Crew to invite up to 5 members.
         </p>
         <div className="pricing-hero-actions">
           <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-hero-back-link">
@@ -259,7 +259,7 @@ export default function PricingPage() {
               key={card.tier}
               className={[
                 'pricing-card',
-                card.tier === 'band' ? 'pricing-card--band' : '',
+                card.tier === 'crew' ? 'pricing-card--band' : '',
                 isCurrentPlan ? 'pricing-card--active' : '',
               ].filter(Boolean).join(' ')}
             >
@@ -282,7 +282,7 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              {card.tier === 'band' ? (
+              {card.tier === 'crew' ? (
                 <>
                   <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
                     <span>Band workspace</span>
@@ -318,12 +318,12 @@ export default function PricingPage() {
                 <button
                   type="button"
                   className="setlist-action-btn pricing-card-btn"
-                  disabled={busyTier === card.tier || isCurrentPlan || (card.tier === 'band' && ownedBands.length === 0)}
+                  disabled={busyTier === card.tier || isCurrentPlan || (card.tier === 'crew' && ownedBands.length === 0)}
                   onClick={() => void handleCheckout(card)}
                 >
                   {busyTier === card.tier
                     ? 'Redirecting…'
-                    : card.tier === 'band' && ownedBands.length === 0
+                    : card.tier === 'crew' && ownedBands.length === 0
                       ? 'Create a band first'
                       : ctaLabel}
                 </button>
@@ -344,7 +344,7 @@ export default function PricingPage() {
                 <th>Feature</th>
                 <th>Free</th>
                 <th>Pro</th>
-                <th>Band</th>
+                <th>Crew</th>
               </tr>
             </thead>
             <tbody>
@@ -360,7 +360,7 @@ export default function PricingPage() {
                     </td>
                     <td>{feature.free}</td>
                     <td>{feature.pro}</td>
-                    <td>{feature.band}</td>
+                    <td>{feature.crew}</td>
                   </tr>
                 );
               })}

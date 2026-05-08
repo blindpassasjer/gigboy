@@ -472,7 +472,7 @@ export default function BandSetlistConcertPage() {
 
   const handlePedalButtonClick = useCallback(() => {
     if (!canUse('bluetoothPedal')) {
-      window.alert('The Bluetooth pedal feature requires a Pro or Band plan. Upgrade at gigboy.app/pricing.');
+      window.alert('The Bluetooth pedal feature requires a Pro or Crew plan. Upgrade at gigboy.app/pricing.');
       return;
     }
     if (isPedalConnected) {

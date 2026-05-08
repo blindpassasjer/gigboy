@@ -22,6 +22,9 @@ export default function BandsPage() {
   const [creating, setCreating] = useState(false);
   const [busyBandId, setBusyBandId] = useState<string | null>(null);
 
+  const ownedBandCount = bands.filter((b) => b.ownerId === user?.id).length;
+  const atBandLimit = ownedBandCount >= 1;
+
   const handleCreateBand = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setCreating(true);
@@ -103,9 +106,14 @@ export default function BandsPage() {
           </label>
         </div>
         <div className="bands-create-actions">
-          <button type="submit" className="setlist-action-btn" disabled={creating || cloudRequired}>
-            {creating ? 'Creating…' : 'Create band'}
+          <button type="submit" className="setlist-action-btn" disabled={creating || cloudRequired || atBandLimit}>
+            {creating ? 'Creating…' : atBandLimit ? 'Band limit reached' : 'Create band'}
           </button>
+          {atBandLimit ? (
+            <p className="bands-status" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+              Each account can own one band. Delete your existing band to create a new one.
+            </p>
+          ) : null}
         </div>
       </form>
 

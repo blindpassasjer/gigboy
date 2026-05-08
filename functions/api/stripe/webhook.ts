@@ -84,7 +84,7 @@ async function writeBandBillingSnapshot(
     : (sub.customer as Stripe.Customer)?.id ?? null;
 
   await setFirestoreDocument(env, ['bands', bandId], {
-    billingPlan: active && baseItem ? 'band' : 'free',
+    billingPlan: active && baseItem ? 'crew' : 'free',
     billingSubscriptionStatus: status,
     billingCurrentPeriodEnd: baseItem?.current_period_end ?? sub.items.data[0]?.current_period_end ?? null,
     billingExtraMembers: active && baseItem ? extraMembers : 0,
