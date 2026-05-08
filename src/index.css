@@ -2298,12 +2298,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-media-player--spotify {
   display: flex;
   flex-direction: column;
-  gap: .35rem;
-}
-
-.song-media-player--spotify iframe {
-  border: 0;
-  border-radius: 8px;
+  gap: .45rem;
 }
 
 .song-media-external-link {
@@ -2321,83 +2316,35 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-media-player--youtube {
   display: flex;
-  align-items: center;
-  gap: .5rem;
-  position: relative;
-}
-
-.song-media-hidden-host {
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  position: absolute;
-  pointer-events: none;
-  opacity: 0;
-}
-
-.song-media-play-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  background: var(--surface);
-  flex-shrink: 0;
-}
-
-.song-media-play-btn:hover:not(:disabled) {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  background: var(--chord-bg);
-}
-
-.song-media-play-btn:disabled {
-  opacity: .55;
-  cursor: wait;
-}
-
-.song-media-progress-wrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
   flex-direction: column;
-  gap: .2rem;
+  align-items: stretch;
+  gap: .45rem;
 }
 
-.song-media-progress {
+.song-media-embed-shell {
   width: 100%;
-}
-
-.song-media-time {
-  font-size: .68rem;
-  color: var(--muted);
-}
-
-.song-media-external-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.9rem;
-  height: 1.9rem;
+  overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--muted);
-  text-decoration: none;
-  flex-shrink: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 70%, var(--bg));
 }
 
-.song-media-external-icon:hover {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  background: var(--chord-bg);
+.song-media-embed-shell iframe {
+  display: block;
+  width: 100%;
+  border: 0;
 }
 
-.song-media-error {
-  color: var(--danger);
-  font-size: .7rem;
+.song-media-embed-shell--youtube {
+  aspect-ratio: 16 / 9;
+}
+
+.song-media-embed-shell--youtube iframe {
+  height: 100%;
+}
+
+.song-media-embed-shell--spotify iframe {
+  border-radius: 0;
 }
 
 .song-view-header .song-media-player {
@@ -2405,23 +2352,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--song-item-chip-bg);
 }
 
-.song-view-header .song-media-play-btn,
-.song-view-header .song-media-external-icon {
-  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
-  color: var(--song-item-chip-text);
-  background: var(--song-toolbar-elevated-bg);
-}
-
-.song-view-header .song-media-play-btn:hover:not(:disabled),
-.song-view-header .song-media-external-icon:hover {
-  color: var(--song-item-chip-text);
-  background: color-mix(in srgb, var(--song-header-accent) 18%, var(--song-item-bg));
-}
-
-.song-view-header .song-media-time,
 .song-view-header .song-media-external-link,
 .song-view-header .song-media-external-link:hover {
   color: var(--song-item-chip-text);
+}
+
+.song-view-header .song-media-embed-shell {
+  border-color: color-mix(in srgb, var(--song-header-accent) 30%, var(--song-item-border));
 }
 
 .concert-metronome {
