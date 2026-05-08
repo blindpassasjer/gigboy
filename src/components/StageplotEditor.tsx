@@ -428,7 +428,7 @@ export default function StageplotEditor({
         : 'notes-save-status notes-save-status--idle';
 
   const toolbarPanel = canEdit ? (
-    <div className="stageplot-toolbar-panel stageplot-palette-panel">
+    <>
       <div className="stageplot-toolbar-section-heading">Items</div>
       <div className="stageplot-palette">
         {PALETTE_CATEGORIES.map((category) => (
@@ -503,7 +503,7 @@ export default function StageplotEditor({
           </div>
         </div>
       </div>
-    </div>
+    </>
   ) : null;
 
   return (

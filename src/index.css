@@ -8736,26 +8736,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: 0 1.5rem;
 }
 
-.stageplot-toolbar-panel {
-  display: flex;
-  flex-direction: column;
-  gap: .6rem;
-  min-width: 0;
-  padding: .8rem .9rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.stageplot-palette-panel {
-  width: 100%;
-}
-
-.stageplot-toolbar-panel--actions {
-  justify-content: space-between;
-}
-
 .stageplot-toolbar-section-heading {
   font-size: .72rem;
   font-weight: 800;
