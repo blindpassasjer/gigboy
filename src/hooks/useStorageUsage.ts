@@ -89,12 +89,12 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
       try {
         const [
-          userSnapshot,
-          recordingsSnapshot,
-          ownPressKitImagesSnapshot,
-          memberBandsSnapshot,
-          ownerBandsSnapshot,
-        ] = await Promise.all([
+          userSnapshotResult,
+          recordingsSnapshotResult,
+          ownPressKitImagesSnapshotResult,
+          memberBandsSnapshotResult,
+          ownerBandsSnapshotResult,
+        ] = await Promise.allSettled([
           getDoc(doc(firestore, 'users', currentUserId)),
           getDocs(query(collectionGroup(firestore, 'recordings'), where('recorder.userId', '==', currentUserId))),
           getDocs(query(collectionGroup(firestore, 'pressKitImages'), where('createdBy', '==', currentUserId))),
@@ -104,21 +104,27 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
         if (cancelled) return;
 
-        const userData = userSnapshot.data() as Record<string, unknown> | undefined;
+        const userSnapshot = userSnapshotResult.status === 'fulfilled' ? userSnapshotResult.value : null;
+        const recordingsSnapshot = recordingsSnapshotResult.status === 'fulfilled' ? recordingsSnapshotResult.value : null;
+        const ownPressKitImagesSnapshot = ownPressKitImagesSnapshotResult.status === 'fulfilled' ? ownPressKitImagesSnapshotResult.value : null;
+        const memberBandsSnapshot = memberBandsSnapshotResult.status === 'fulfilled' ? memberBandsSnapshotResult.value : null;
+        const ownerBandsSnapshot = ownerBandsSnapshotResult.status === 'fulfilled' ? ownerBandsSnapshotResult.value : null;
+
+        const userData = userSnapshot?.data() as Record<string, unknown> | undefined;
         const quotaFromProfile = toSafeNumber(userData?.storageQuotaBytes);
         const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
         const quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
 
         const recordingSizes = await Promise.all(
-          recordingsSnapshot.docs.map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
+          (recordingsSnapshot?.docs ?? []).map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
         );
         const recordingBytes = recordingSizes.reduce((sum, value) => sum + value, 0);
 
         const bandIds = new Set<string>();
-        memberBandsSnapshot.docs.forEach((snap) => {
+        (memberBandsSnapshot?.docs ?? []).forEach((snap) => {
           bandIds.add(snap.id);
         });
-        ownerBandsSnapshot.docs.forEach((snap) => {
+        (ownerBandsSnapshot?.docs ?? []).forEach((snap) => {
           bandIds.add(snap.id);
         });
 
@@ -130,11 +136,13 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
         const seenPressKitDocPaths = new Set<string>();
         const pressKitDocData: Array<Record<string, unknown>> = [];
-        ownPressKitImagesSnapshot.docs.forEach((snap) => {
-          if (seenPressKitDocPaths.has(snap.ref.path)) return;
-          seenPressKitDocPaths.add(snap.ref.path);
-          pressKitDocData.push(snap.data() as Record<string, unknown>);
-        });
+        if (ownPressKitImagesSnapshot) {
+          ownPressKitImagesSnapshot.docs.forEach((snap) => {
+            if (seenPressKitDocPaths.has(snap.ref.path)) return;
+            seenPressKitDocPaths.add(snap.ref.path);
+            pressKitDocData.push(snap.data() as Record<string, unknown>);
+          });
+        }
 
         pressKitImageSnapshots.forEach((snapshot) => {
           if (snapshot.status !== 'fulfilled') return;
@@ -158,13 +166,13 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         });
 
         const legacyLogoPaths = new Set<string>();
-        memberBandsSnapshot.docs.forEach((snap) => {
+        (memberBandsSnapshot?.docs ?? []).forEach((snap) => {
           const data = snap.data() as Record<string, unknown>;
           const logoStoragePath = toSafeNonEmptyString(data.logoStoragePath);
           if (!logoStoragePath || seenStoragePaths.has(logoStoragePath)) return;
           legacyLogoPaths.add(logoStoragePath);
         });
-        ownerBandsSnapshot.docs.forEach((snap) => {
+        (ownerBandsSnapshot?.docs ?? []).forEach((snap) => {
           const data = snap.data() as Record<string, unknown>;
           const logoStoragePath = toSafeNonEmptyString(data.logoStoragePath);
           if (!logoStoragePath || seenStoragePaths.has(logoStoragePath)) return;
@@ -244,15 +252,15 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         const unsubscribe = onSnapshot(
           collection(firestore, 'bands', bandId, 'pressKitImages'),
           () => requestReload(),
-          () => requestReload(),
+          () => {},
         );
         pressKitUnsubByBandId.set(bandId, unsubscribe);
       });
     }
 
-    const unsubscribeUser = onSnapshot(userDocRef, () => requestReload(), () => requestReload());
-    const unsubscribeRecordings = onSnapshot(recordingsQuery, () => requestReload(), () => requestReload());
-    const unsubscribeOwnPressKitImages = onSnapshot(ownPressKitImagesQuery, () => requestReload(), () => requestReload());
+    const unsubscribeUser = onSnapshot(userDocRef, () => requestReload(), () => {});
+    const unsubscribeRecordings = onSnapshot(recordingsQuery, () => requestReload(), () => {});
+    const unsubscribeOwnPressKitImages = onSnapshot(ownPressKitImagesQuery, () => requestReload(), () => {});
 
     const unsubscribeMemberBands = onSnapshot(
       memberBandsQuery,
@@ -261,7 +269,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         reconcilePressKitListeners();
         requestReload();
       },
-      () => requestReload(),
+      () => {},
     );
 
     const unsubscribeOwnerBands = onSnapshot(
@@ -271,7 +279,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         reconcilePressKitListeners();
         requestReload();
       },
-      () => requestReload(),
+      () => {},
     );
 
     return () => {
