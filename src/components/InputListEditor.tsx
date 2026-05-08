@@ -197,7 +197,7 @@ export default function InputListEditor({
   };
 
   return (
-    <section className="setlist-view technical-rider-view">
+    <>
       {showHeader ? (
         <div className="song-list-sticky">
           <div className="setlist-header songlist-header">
@@ -422,7 +422,7 @@ export default function InputListEditor({
         canEdit={canEdit}
         onChange={setInventoryEquipment}
       />
-    </section>
+    </>
   );
 }
 

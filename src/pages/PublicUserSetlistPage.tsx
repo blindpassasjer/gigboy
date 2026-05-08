@@ -116,7 +116,7 @@ export default function PublicUserSetlistPage() {
   return (
     <div className="public-setlist-page">
       <nav className="public-page-nav">
-        <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
+        <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
       </nav>
       <header className="public-setlist-header">
         <h1 className="public-setlist-title">
@@ -150,7 +150,7 @@ export default function PublicUserSetlistPage() {
       )}
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link"><BrandMark size={13} /></Link>
+        <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
         <p className="public-setlist-signoff">From Norway - with chords</p>
       </footer>
     </div>

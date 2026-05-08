@@ -24,7 +24,7 @@ const BAND_COLOR_OPTIONS = [
   '#37474f',
 ] as const;
 
-const MEDIA_ITEMS_PER_PAGE = 16;
+const LOGO_ITEMS_PER_PAGE = 3;
 
 interface LogoAsset {
   id: string;
@@ -291,9 +291,9 @@ export default function BandSettingsPage() {
   const combinedLogoAssets = currentLogoAsset && !logoAssets.some((asset) => asset.url === currentLogoAsset.url)
     ? [currentLogoAsset, ...logoAssets]
     : logoAssets;
-  const logoTotalPages = Math.max(1, Math.ceil(combinedLogoAssets.length / MEDIA_ITEMS_PER_PAGE));
-  const logoPageStart = (logoPage - 1) * MEDIA_ITEMS_PER_PAGE;
-  const pagedLogoAssets = combinedLogoAssets.slice(logoPageStart, logoPageStart + MEDIA_ITEMS_PER_PAGE);
+  const logoTotalPages = Math.max(1, Math.ceil(combinedLogoAssets.length / LOGO_ITEMS_PER_PAGE));
+  const logoPageStart = (logoPage - 1) * LOGO_ITEMS_PER_PAGE;
+  const pagedLogoAssets = combinedLogoAssets.slice(logoPageStart, logoPageStart + LOGO_ITEMS_PER_PAGE);
 
   useEffect(() => {
     if (logoPage > logoTotalPages) {
@@ -352,50 +352,51 @@ export default function BandSettingsPage() {
             Appearance
           </h2>
 
-          <div className="share-menu-field">
-            <span>Theme color</span>
-          </div>
-          <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
-            {BAND_COLOR_OPTIONS.map((colorHex) => {
-              const selected = !useAutoColor && color.toLowerCase() === colorHex.toLowerCase();
-              return (
+          <div className="bands-appearance-grid">
+            <section className="bands-logo-color-group">
+              <p className="bands-logo-section-title">Theme color</p>
+              <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
+                {BAND_COLOR_OPTIONS.map((colorHex) => {
+                  const selected = !useAutoColor && color.toLowerCase() === colorHex.toLowerCase();
+                  return (
+                    <button
+                      key={colorHex}
+                      type="button"
+                      className={`color-swatch-btn${selected ? ' active' : ''}`}
+                      style={{ backgroundColor: colorHex }}
+                      onClick={() => { void handleColorSelect(colorHex); }}
+                      aria-label={`Choose color ${colorHex}`}
+                      aria-pressed={selected}
+                      disabled={!canEditBand || busyAppearance}
+                    />
+                  );
+                })}
+              </div>
+              <div className="bands-color-controls">
+                <div className="share-menu-field bands-color-custom-field">
+                  <span>Custom</span>
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => { void handleColorSelect(e.target.value); }}
+                    aria-label="Custom band color"
+                    disabled={!canEditBand || busyAppearance}
+                  />
+                </div>
                 <button
-                  key={colorHex}
                   type="button"
-                  className={`color-swatch-btn${selected ? ' active' : ''}`}
-                  style={{ backgroundColor: colorHex }}
-                  onClick={() => { void handleColorSelect(colorHex); }}
-                  aria-label={`Choose color ${colorHex}`}
-                  aria-pressed={selected}
+                  className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
+                  onClick={() => { void handleAutoColor(); }}
                   disabled={!canEditBand || busyAppearance}
-                />
-              );
-            })}
-          </div>
-          <div className="bands-color-controls">
-            <div className="share-menu-field bands-color-custom-field">
-              <span>Custom</span>
-              <input
-                type="color"
-                value={color}
-                onChange={(e) => { void handleColorSelect(e.target.value); }}
-                aria-label="Custom band color"
-                disabled={!canEditBand || busyAppearance}
-              />
-            </div>
-            <button
-              type="button"
-              className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
-              onClick={() => { void handleAutoColor(); }}
-              disabled={!canEditBand || busyAppearance}
-            >
-              Auto color
-            </button>
-            <p className="bands-inline-note">Color updates immediately.</p>
-          </div>
+                >
+                  Auto color
+                </button>
+                <p className="bands-inline-note">Color updates immediately.</p>
+              </div>
+            </section>
 
-          {/* ── Band Logo ── */}
-          <div className="bands-logo-section">
+            {/* ── Band Logo ── */}
+            <div className="bands-logo-section">
             <section className="bands-logo-upload-area">
               <header className="press-kit-section-header">
                 <p className="press-kit-section-title">Band Logo</p>
@@ -473,7 +474,7 @@ export default function BandSettingsPage() {
                 </div>
               )}
 
-              {combinedLogoAssets.length > MEDIA_ITEMS_PER_PAGE && (
+              {combinedLogoAssets.length > LOGO_ITEMS_PER_PAGE && (
                 <div className="media-pagination">
                   <button
                     type="button"
@@ -494,27 +495,7 @@ export default function BandSettingsPage() {
                   </button>
                 </div>
               )}
-            </section>
-
-            {/* Logo Info & Color */}
-            <div className="bands-logo-color-group">
-              <div>
-                <p className="bands-logo-section-title">Logo Guidelines</p>
-                <div className="bands-logo-info">
-                  <p className="bands-logo-info-item">
-                    <strong>Transparency:</strong> PNG files with transparent backgrounds work best and look professional on any theme.
-                  </p>
-                  <p className="bands-logo-info-item">
-                    <strong>Size:</strong> Use square or wide logos (at least 400×400px). Keep file size under 5 MB.
-                  </p>
-                  <p className="bands-logo-info-item">
-                    <strong>Format:</strong> PNG, JPG, WebP, or GIF formats are supported.
-                  </p>
-                  <p className="bands-logo-info-item">
-                    <strong>Design:</strong> Solid colors or subtle gradients work well. Avoid intricate details that may not scale.
-                  </p>
-                </div>
-              </div>
+            </div>
             </div>
           </div>
 

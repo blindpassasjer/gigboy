@@ -59,6 +59,7 @@ export default function PublicBandStageplotPage() {
   const { bandId, riderId } = useParams<{ bandId: string; riderId: string }>();
   const [status, setStatus] = useState<Status>('loading');
   const [stageplot, setStageplot] = useState<PublicStageplot | null>(null);
+  const [bandLogo, setBandLogo] = useState<string | undefined>();
 
   useEffect(() => {
     if (!bandId || !riderId || !db) {
@@ -83,6 +84,18 @@ export default function PublicBandStageplotPage() {
         if (data.publicShareEnabled !== true) {
           setStatus('private');
           return;
+        }
+
+        try {
+          const bandSnap = await getDoc(doc(firestore, 'bands', bandId));
+          if (bandSnap.exists()) {
+            const bandData = bandSnap.data() as Record<string, unknown>;
+            setBandLogo(typeof bandData.logo === 'string' ? bandData.logo : undefined);
+          } else {
+            setBandLogo(undefined);
+          }
+        } catch {
+          setBandLogo(undefined);
         }
 
         const items = Array.isArray(data.items)
@@ -129,11 +142,16 @@ export default function PublicBandStageplotPage() {
 
   return (
     <div className="public-setlist-page">
-      <nav className="public-page-nav">
-        <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
-      </nav>
       <header className="public-setlist-header">
-        {stageplot.bandName ? <p className="public-setlist-band">{stageplot.bandName}</p> : null}
+        <div className="public-share-branding-row">
+          <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
+          {(stageplot.bandName || bandLogo) ? (
+            <div className="public-share-band-stack">
+              {bandLogo ? <img src={bandLogo} alt={`${stageplot.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
+              {stageplot.bandName ? <p className="public-setlist-band public-setlist-band--stack">{stageplot.bandName}</p> : null}
+            </div>
+          ) : null}
+        </div>
         <h1 className="public-setlist-title">
           {stageplot.icon ? <span aria-hidden="true">{stageplot.icon} </span> : null}
           {stageplot.name}
@@ -178,7 +196,15 @@ export default function PublicBandStageplotPage() {
       </div>
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link"><BrandMark size={13} /></Link>
+        <div className="public-share-branding-row public-share-branding-row--footer">
+          <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
+          {(stageplot.bandName || bandLogo) ? (
+            <div className="public-share-band-stack">
+              {bandLogo ? <img src={bandLogo} alt={`${stageplot.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
+              {stageplot.bandName ? <p className="public-setlist-band public-setlist-band--stack">{stageplot.bandName}</p> : null}
+            </div>
+          ) : null}
+        </div>
         <p className="public-setlist-signoff">From Norway - with chords</p>
       </footer>
     </div>

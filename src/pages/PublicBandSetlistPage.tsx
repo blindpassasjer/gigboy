@@ -130,16 +130,16 @@ export default function PublicBandSetlistPage() {
 
   return (
     <div className="public-setlist-page">
-      <nav className="public-page-nav">
-        <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
-      </nav>
       <header className="public-setlist-header">
-        {(setlist.bandName || setlist.bandLogo) && (
-          <div className="public-setlist-band-row">
-            {setlist.bandLogo ? <img src={setlist.bandLogo} alt={`${setlist.bandName ?? 'Band'} logo`} className="public-setlist-band-logo" loading="lazy" /> : null}
-            {setlist.bandName ? <p className="public-setlist-band">{setlist.bandName}</p> : null}
-          </div>
-        )}
+        <div className="public-share-branding-row">
+          <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
+          {(setlist.bandName || setlist.bandLogo) ? (
+            <div className="public-share-band-stack">
+              {setlist.bandLogo ? <img src={setlist.bandLogo} alt={`${setlist.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
+              {setlist.bandName ? <p className="public-setlist-band public-setlist-band--stack">{setlist.bandName}</p> : null}
+            </div>
+          ) : null}
+        </div>
         <h1 className="public-setlist-title">
           {setlist.icon && <span aria-hidden="true">{setlist.icon} </span>}
           {setlist.name}
@@ -171,7 +171,15 @@ export default function PublicBandSetlistPage() {
       )}
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link"><BrandMark size={13} /></Link>
+        <div className="public-share-branding-row public-share-branding-row--footer">
+          <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
+          {(setlist.bandName || setlist.bandLogo) ? (
+            <div className="public-share-band-stack">
+              {setlist.bandLogo ? <img src={setlist.bandLogo} alt={`${setlist.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
+              {setlist.bandName ? <p className="public-setlist-band public-setlist-band--stack">{setlist.bandName}</p> : null}
+            </div>
+          ) : null}
+        </div>
         <p className="public-setlist-signoff">From Norway - with chords</p>
       </footer>
     </div>

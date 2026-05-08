@@ -84,16 +84,16 @@ export default function PublicBandInputListPage() {
 
   return (
     <div className="public-setlist-page technical-rider-public-page">
-      <nav className="public-page-nav">
-        <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
-      </nav>
       <header className="public-setlist-header">
-        {(rider.bandName || bandLogo) ? (
-          <div className="public-setlist-band-row">
-            {bandLogo ? <img src={bandLogo} alt={`${rider.bandName ?? 'Band'} logo`} className="public-setlist-band-logo" loading="lazy" /> : null}
-            {rider.bandName ? <p className="public-setlist-band">{rider.bandName}</p> : null}
-          </div>
-        ) : null}
+        <div className="public-share-branding-row">
+          <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
+          {(rider.bandName || bandLogo) ? (
+            <div className="public-share-band-stack">
+              {bandLogo ? <img src={bandLogo} alt={`${rider.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
+              {rider.bandName ? <p className="public-setlist-band public-setlist-band--stack">{rider.bandName}</p> : null}
+            </div>
+          ) : null}
+        </div>
         <h1 className="public-setlist-title">{rider.name}</h1>
       </header>
 
@@ -185,7 +185,15 @@ export default function PublicBandInputListPage() {
       </section>
 
       <footer className="public-setlist-footer">
-        <Link to="/" className="public-setlist-footer-link"><BrandMark size={13} /></Link>
+        <div className="public-share-branding-row public-share-branding-row--footer">
+          <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
+          {(rider.bandName || bandLogo) ? (
+            <div className="public-share-band-stack">
+              {bandLogo ? <img src={bandLogo} alt={`${rider.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
+              {rider.bandName ? <p className="public-setlist-band public-setlist-band--stack">{rider.bandName}</p> : null}
+            </div>
+          ) : null}
+        </div>
         <p className="public-setlist-signoff">From Norway - with chords</p>
       </footer>
     </div>

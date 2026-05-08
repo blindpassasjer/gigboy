@@ -7779,11 +7779,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
 }
 
-.bands-logo-section {
+.bands-appearance-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
   gap: 1rem;
   margin-top: .95rem;
+}
+
+.bands-logo-section {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
   padding: .85rem;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -8303,8 +8309,12 @@ input, select, textarea { font: inherit; color: var(--text); }
     justify-content: flex-start;
   }
 
-  .bands-logo-section {
+  .bands-appearance-grid {
     grid-template-columns: 1fr;
+  }
+
+  .bands-logo-section {
+    flex-direction: column;
   }
 }
 
@@ -8373,6 +8383,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   text-decoration: none;
 }
 
+.public-page-nav-brand--large {
+  display: inline-flex;
+  align-items: center;
+}
+
 .public-setlist-page {
   min-height: 100dvh;
   max-width: 640px;
@@ -8384,6 +8399,33 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .public-setlist-header {
   margin-bottom: 2rem;
+}
+
+.public-share-branding-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .95rem;
+  flex-wrap: wrap;
+  margin-bottom: .8rem;
+}
+
+.public-share-branding-row--footer {
+  justify-content: center;
+  margin-bottom: .45rem;
+}
+
+.public-share-branding-row--footer .public-setlist-band-logo--large {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
+.public-share-band-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: .35rem;
+  min-width: 3.4rem;
 }
 
 .public-setlist-band {
@@ -8413,6 +8455,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--border, #e5e5e5);
   background: var(--surface, #fff);
   flex-shrink: 0;
+}
+
+.public-setlist-band-logo--large {
+  width: 3.3rem;
+  height: 3.3rem;
+}
+
+.public-setlist-band--stack {
+  margin: 0;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .public-setlist-title {
@@ -8513,6 +8566,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 .public-presskit-header {
   display: grid;
   gap: .4rem;
+}
+
+@media (max-width: 640px) {
+  .public-share-branding-row {
+    gap: .75rem;
+  }
+
+  .public-setlist-band-logo--large {
+    width: 2.9rem;
+    height: 2.9rem;
+  }
 }
 
 .public-presskit-download-wrap {
