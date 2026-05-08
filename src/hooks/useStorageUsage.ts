@@ -53,11 +53,13 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         const [
           userSnapshot,
           recordingsSnapshot,
+          ownPressKitImagesSnapshot,
           memberBandsSnapshot,
           ownerBandsSnapshot,
         ] = await Promise.all([
           getDoc(doc(firestore, 'users', currentUserId)),
           getDocs(query(collectionGroup(firestore, 'recordings'), where('recorder.userId', '==', currentUserId))),
+          getDocs(query(collectionGroup(firestore, 'pressKitImages'), where('createdBy', '==', currentUserId))),
           getDocs(query(collection(firestore, 'bands'), where('memberIds', 'array-contains', currentUserId))),
           getDocs(query(collection(firestore, 'bands'), where('ownerId', '==', currentUserId))),
         ]);
@@ -92,23 +94,27 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
         if (cancelled) return;
 
-        const pressKitBytes = pressKitImageSnapshots.reduce((total, snapshot) => {
-          if (snapshot.status !== 'fulfilled') {
-            return total;
+        const seenPressKitDocPaths = new Set<string>();
+        const sumPressKitDocs = (docs: Array<{ ref: { path: string }; data: () => Record<string, unknown> }>) => docs.reduce((sum, snap) => {
+          if (seenPressKitDocPaths.has(snap.ref.path)) {
+            return sum;
           }
 
-          const value = snapshot.value;
+          seenPressKitDocPaths.add(snap.ref.path);
 
-          const bandTotal = value.docs.reduce((sum, snap) => {
-            const data = snap.data() as Record<string, unknown>;
-            const sizeBytes = toSafeNumber(data.sizeBytes);
-            if (sizeBytes !== null) return sum + sizeBytes;
+          const data = snap.data() as Record<string, unknown>;
+          const sizeBytes = toSafeNumber(data.sizeBytes);
+          if (sizeBytes !== null) return sum + sizeBytes;
 
-            const legacySize = toSafeNumber(data.size);
-            return legacySize !== null ? sum + legacySize : sum;
-          }, 0);
+          const legacySize = toSafeNumber(data.size);
+          return legacySize !== null ? sum + legacySize : sum;
+        }, 0);
 
-          return total + bandTotal;
+        let pressKitBytes = sumPressKitDocs(ownPressKitImagesSnapshot.docs as Array<{ ref: { path: string }; data: () => Record<string, unknown> }>);
+
+        pressKitBytes += pressKitImageSnapshots.reduce((total, snapshot) => {
+          if (snapshot.status !== 'fulfilled') return total;
+          return total + sumPressKitDocs(snapshot.value.docs as Array<{ ref: { path: string }; data: () => Record<string, unknown> }>);
         }, 0);
 
         const usedBytes = recordingBytes + pressKitBytes;
@@ -136,6 +142,11 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
     const recordingsQuery = query(
       collectionGroup(firestore, 'recordings'),
       where('recorder.userId', '==', currentUserId),
+    );
+
+    const ownPressKitImagesQuery = query(
+      collectionGroup(firestore, 'pressKitImages'),
+      where('createdBy', '==', currentUserId),
     );
 
     const memberBandsQuery = query(
@@ -180,6 +191,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
     const unsubscribeUser = onSnapshot(userDocRef, () => requestReload(), () => requestReload());
     const unsubscribeRecordings = onSnapshot(recordingsQuery, () => requestReload(), () => requestReload());
+    const unsubscribeOwnPressKitImages = onSnapshot(ownPressKitImagesQuery, () => requestReload(), () => requestReload());
 
     const unsubscribeMemberBands = onSnapshot(
       memberBandsQuery,
@@ -205,6 +217,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
       cancelled = true;
       unsubscribeUser();
       unsubscribeRecordings();
+      unsubscribeOwnPressKitImages();
       unsubscribeMemberBands();
       unsubscribeOwnerBands();
       pressKitUnsubByBandId.forEach((unsubscribe) => unsubscribe());

@@ -48,6 +48,14 @@ service firebase.storage {
       allow write: if isBandEditor(bandId);
     }
 
+    // Band logo asset at the band root (bands/{bandId}/logo.ext)
+    match /bands/{bandId}/{fileName} {
+      allow read: if isBandMember(bandId)
+        && fileName.matches('^logo\\.[^/]+$');
+      allow write: if isBandEditor(bandId)
+        && fileName.matches('^logo\\.[^/]+$');
+    }
+
     // Deny all other storage access by default.
     match /{allPaths=**} {
       allow read, write: if false;
