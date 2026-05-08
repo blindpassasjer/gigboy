@@ -226,6 +226,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   text-decoration: none;
 }
 
+.topbar-brand:hover,
+.topbar-brand:focus-visible {
+  text-decoration: none;
+}
+
 .brand-name {
   font-family: 'Barlow Condensed', sans-serif;
   letter-spacing: .01em;
@@ -8465,6 +8470,11 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .public-page-nav-brand {
+  text-decoration: none;
+}
+
+.public-page-nav-brand:hover,
+.public-page-nav-brand:focus-visible {
   text-decoration: none;
 }
 
