@@ -323,6 +323,8 @@ export default function InputListEditor({
 
       <div className="technical-rider-sections-card">
       <section className="technical-rider-section">
+        <div className="technical-rider-section-header">
+          <h2>Technical Lines</h2>
         </div>
 
         <div className="technical-rider-table-wrap">
