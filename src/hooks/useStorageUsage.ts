@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, collectionGroup, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, collectionGroup, doc, getDoc, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { PLAN_LIMITS } from '../lib/planLimits';
 
@@ -37,8 +37,16 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
     const currentUserId = userId;
 
     let cancelled = false;
+    let loadingInFlight = false;
+    let reloadQueued = false;
 
     async function load() {
+      if (loadingInFlight) {
+        reloadQueued = true;
+        return;
+      }
+
+      loadingInFlight = true;
       setState((current) => ({ ...current, loading: true }));
 
       try {
@@ -78,14 +86,20 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           bandIds.add(snap.id);
         });
 
-        const pressKitImageSnapshots = await Promise.all(
+        const pressKitImageSnapshots = await Promise.allSettled(
           Array.from(bandIds).map((bandId) => getDocs(collection(firestore, 'bands', bandId, 'pressKitImages'))),
         );
 
         if (cancelled) return;
 
         const pressKitBytes = pressKitImageSnapshots.reduce((total, snapshot) => {
-          const bandTotal = snapshot.docs.reduce((sum, snap) => {
+          if (snapshot.status !== 'fulfilled') {
+            return total;
+          }
+
+          const value = snapshot.value;
+
+          const bandTotal = value.docs.reduce((sum, snap) => {
             const data = snap.data() as Record<string, unknown>;
             const sizeBytes = toSafeNumber(data.sizeBytes);
             if (sizeBytes !== null) return sum + sizeBytes;
@@ -108,13 +122,93 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         if (cancelled) return;
         console.error('[useStorageUsage] Failed to load storage usage:', err);
         setState((current) => ({ ...current, loading: false }));
+      } finally {
+        loadingInFlight = false;
+        if (!cancelled && reloadQueued) {
+          reloadQueued = false;
+          void load();
+        }
       }
     }
 
     void load();
 
+    const recordingsQuery = query(
+      collectionGroup(firestore, 'recordings'),
+      where('recorder.userId', '==', currentUserId),
+    );
+
+    const memberBandsQuery = query(
+      collection(firestore, 'bands'),
+      where('memberIds', 'array-contains', currentUserId),
+    );
+
+    const ownerBandsQuery = query(
+      collection(firestore, 'bands'),
+      where('ownerId', '==', currentUserId),
+    );
+
+    const userDocRef = doc(firestore, 'users', currentUserId);
+    let ownedBandIds = new Set<string>();
+    let memberBandIds = new Set<string>();
+    const pressKitUnsubByBandId = new Map<string, () => void>();
+
+    function requestReload() {
+      void load();
+    }
+
+    function reconcilePressKitListeners() {
+      const nextBandIds = new Set<string>([...ownedBandIds, ...memberBandIds]);
+
+      for (const [bandId, unsubscribe] of pressKitUnsubByBandId.entries()) {
+        if (!nextBandIds.has(bandId)) {
+          unsubscribe();
+          pressKitUnsubByBandId.delete(bandId);
+        }
+      }
+
+      nextBandIds.forEach((bandId) => {
+        if (pressKitUnsubByBandId.has(bandId)) return;
+        const unsubscribe = onSnapshot(
+          collection(firestore, 'bands', bandId, 'pressKitImages'),
+          () => requestReload(),
+          () => requestReload(),
+        );
+        pressKitUnsubByBandId.set(bandId, unsubscribe);
+      });
+    }
+
+    const unsubscribeUser = onSnapshot(userDocRef, () => requestReload(), () => requestReload());
+    const unsubscribeRecordings = onSnapshot(recordingsQuery, () => requestReload(), () => requestReload());
+
+    const unsubscribeMemberBands = onSnapshot(
+      memberBandsQuery,
+      (snapshot) => {
+        memberBandIds = new Set(snapshot.docs.map((snap) => snap.id));
+        reconcilePressKitListeners();
+        requestReload();
+      },
+      () => requestReload(),
+    );
+
+    const unsubscribeOwnerBands = onSnapshot(
+      ownerBandsQuery,
+      (snapshot) => {
+        ownedBandIds = new Set(snapshot.docs.map((snap) => snap.id));
+        reconcilePressKitListeners();
+        requestReload();
+      },
+      () => requestReload(),
+    );
+
     return () => {
       cancelled = true;
+      unsubscribeUser();
+      unsubscribeRecordings();
+      unsubscribeMemberBands();
+      unsubscribeOwnerBands();
+      pressKitUnsubByBandId.forEach((unsubscribe) => unsubscribe());
+      pressKitUnsubByBandId.clear();
     };
   }, [userId, planQuotaBytes]);
 
