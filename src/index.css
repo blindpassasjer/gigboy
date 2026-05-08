@@ -7868,6 +7868,21 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
 }
 
+.bands-logo-use-btn {
+  padding: .2rem .45rem;
+  min-height: unset;
+  font-size: .72rem;
+}
+
+.media-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  margin-top: .65rem;
+  flex-wrap: wrap;
+}
+
 .bands-logo-color-group {
   display: flex;
   flex-direction: column;
@@ -8375,6 +8390,27 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0 0 .35rem;
   text-transform: uppercase;
   letter-spacing: .04em;
+}
+
+.public-setlist-band-row {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin-bottom: .35rem;
+}
+
+.public-setlist-band-row .public-setlist-band {
+  margin: 0;
+}
+
+.public-setlist-band-logo {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--border, #e5e5e5);
+  background: var(--surface, #fff);
+  flex-shrink: 0;
 }
 
 .public-setlist-title {

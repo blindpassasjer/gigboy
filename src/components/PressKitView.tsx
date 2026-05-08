@@ -22,6 +22,8 @@ interface PressKitImageAsset {
   createdAt?: string;
 }
 
+const MEDIA_ITEMS_PER_PAGE = 16;
+
 function slugifyFileName(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'press-kit';
 }
@@ -165,9 +167,13 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const [kitImageIds, setKitImageIds] = useState<string[]>(kit.imageIds ?? []);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [imageRenameValue, setImageRenameValue] = useState('');
+  const [imagePage, setImagePage] = useState(1);
 
   // Sync kitImageIds when kit prop changes
-  useEffect(() => { setKitImageIds(kit.imageIds ?? []); }, [kit.id, kit.imageIds]);
+  useEffect(() => {
+    setKitImageIds(kit.imageIds ?? []);
+    setImagePage(1);
+  }, [kit.id, kit.imageIds]);
 
   useEffect(() => {
     if (!db) return;
@@ -194,6 +200,13 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
       .finally(() => { if (mounted) setLoadingImages(false); });
     return () => { mounted = false; };
   }, [bandId]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(imageAssets.length / MEDIA_ITEMS_PER_PAGE));
+    if (imagePage > totalPages) {
+      setImagePage(totalPages);
+    }
+  }, [imageAssets.length, imagePage]);
 
   const uploadImages = async (files: FileList | null) => {
     if (!files || files.length === 0 || !canEdit || !storage) return;
@@ -266,6 +279,9 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const [busyDownload, setBusyDownload] = useState(false);
 
   const attachedImages = imageAssets.filter((img) => kitImageIds.includes(img.id));
+  const imageTotalPages = Math.max(1, Math.ceil(imageAssets.length / MEDIA_ITEMS_PER_PAGE));
+  const imagePageStart = (imagePage - 1) * MEDIA_ITEMS_PER_PAGE;
+  const pagedImageAssets = imageAssets.slice(imagePageStart, imagePageStart + MEDIA_ITEMS_PER_PAGE);
 
   const handleShare = async () => {
     if (!userId || !userEmail) { toast.error('You must be signed in to share.'); return; }
@@ -530,7 +546,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
               )}
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.6rem' }}>
-              {imageAssets.map((img) => {
+              {pagedImageAssets.map((img) => {
                 const attached = kitImageIds.includes(img.id);
                 return (
                   <div key={img.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
@@ -576,6 +592,28 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                 );
               })}
               </div>
+
+              {imageAssets.length > MEDIA_ITEMS_PER_PAGE && (
+                <div className="media-pagination">
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => setImagePage((current) => Math.max(1, current - 1))}
+                    disabled={imagePage <= 1}
+                  >
+                    Previous
+                  </button>
+                  <p className="bands-inline-note">Page {imagePage} of {imageTotalPages}</p>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => setImagePage((current) => Math.min(imageTotalPages, current + 1))}
+                    disabled={imagePage >= imageTotalPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           </section>
           </div>

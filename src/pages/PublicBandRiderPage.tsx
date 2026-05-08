@@ -55,6 +55,7 @@ export default function PublicBandRiderPage() {
   const [status, setStatus] = useState<Status>('loading');
   const [rider, setRider] = useState<InputList | null>(null);
   const [stageplot, setStageplot] = useState<StageplotData | null>(null);
+  const [bandLogo, setBandLogo] = useState<string | undefined>();
 
   useEffect(() => {
     if (!bandId || !riderId || !db) {
@@ -82,6 +83,18 @@ export default function PublicBandRiderPage() {
         }
 
         setRider(normalizeInputList(snapshot.id, data));
+
+        try {
+          const bandSnap = await getDoc(doc(firestore, 'bands', bandId));
+          if (bandSnap.exists()) {
+            const bandData = bandSnap.data() as Record<string, unknown>;
+            setBandLogo(typeof bandData.logo === 'string' ? bandData.logo : undefined);
+          } else {
+            setBandLogo(undefined);
+          }
+        } catch {
+          setBandLogo(undefined);
+        }
 
         const items = Array.isArray(data.items)
           ? data.items.map(normalizeItem).filter((entry): entry is StageplotItem => Boolean(entry))
@@ -128,7 +141,12 @@ export default function PublicBandRiderPage() {
         <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
       </nav>
       <header className="public-setlist-header">
-        {rider.bandName ? <p className="public-setlist-band">{rider.bandName}</p> : null}
+        {(rider.bandName || bandLogo) ? (
+          <div className="public-setlist-band-row">
+            {bandLogo ? <img src={bandLogo} alt={`${rider.bandName ?? 'Band'} logo`} className="public-setlist-band-logo" loading="lazy" /> : null}
+            {rider.bandName ? <p className="public-setlist-band">{rider.bandName}</p> : null}
+          </div>
+        ) : null}
         <h1 className="public-setlist-title">
           {rider.icon ? <span aria-hidden="true">{rider.icon} </span> : null}
           {rider.name}

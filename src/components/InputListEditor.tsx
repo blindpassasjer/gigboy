@@ -321,7 +321,6 @@ export default function InputListEditor({
         </div>
       ) : null}
 
-      <div className="technical-rider-sections-card">
       <section className="technical-rider-section">
         <div className="technical-rider-section-header">
           <h2>Technical Lines</h2>
@@ -423,7 +422,6 @@ export default function InputListEditor({
         canEdit={canEdit}
         onChange={setInventoryEquipment}
       />
-      </div>
     </section>
   );
 }

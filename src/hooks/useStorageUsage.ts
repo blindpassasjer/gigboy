@@ -77,8 +77,9 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           quotaBytes,
           loading: false,
         });
-      } catch {
+      } catch (err) {
         if (cancelled) return;
+        console.error('[useStorageUsage] Failed to load storage usage:', err);
         setState((current) => ({ ...current, loading: false }));
       }
     }

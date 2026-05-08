@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, CreditCard, Trash2 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
+import { collection, deleteField, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
 import { PLAN_LABELS } from '../lib/planLimits';
+import { db } from '../lib/firebase';
 
 const BAND_COLOR_OPTIONS = [
   '#c33232',
@@ -21,6 +23,16 @@ const BAND_COLOR_OPTIONS = [
   '#455a64',
   '#37474f',
 ] as const;
+
+const MEDIA_ITEMS_PER_PAGE = 16;
+
+interface LogoAsset {
+  id: string;
+  title: string;
+  url: string;
+  storagePath?: string;
+  createdAt?: string;
+}
 
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
@@ -66,8 +78,11 @@ export default function BandSettingsPage() {
   const [useAutoColor, setUseAutoColor] = useState(true);
   const [busyAppearance, setBusyAppearance] = useState(false);
   const [logo, setLogo] = useState<string | undefined>();
+  const [logoAssets, setLogoAssets] = useState<LogoAsset[]>([]);
+  const [loadingLogoAssets, setLoadingLogoAssets] = useState(false);
   const [busyLogo, setBusyLogo] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [logoPage, setLogoPage] = useState(1);
 
   useEffect(() => {
     if (!band) return;
@@ -160,6 +175,26 @@ export default function BandSettingsPage() {
     }
   };
 
+  const handleUseLogoAsset = async (asset: LogoAsset) => {
+    if (!canEditBand || !db || busyLogo) return;
+    if (asset.url === logo) return;
+
+    setBusyLogo(true);
+    try {
+      await setDoc(doc(db, 'bands', band.id), {
+        logo: asset.url,
+        logoStoragePath: deleteField(),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      setLogo(asset.url);
+      toast.success('Band logo updated.');
+    } catch {
+      toast.error('Failed to update band logo.');
+    } finally {
+      setBusyLogo(false);
+    }
+  };
+
   const handleLogoDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -212,6 +247,59 @@ export default function BandSettingsPage() {
       window.clearTimeout(timer);
     };
   }, [band, canEditBand, name, description, renameBand, updateBandDescription]);
+
+  useEffect(() => {
+    if (!band || !db) return;
+    let mounted = true;
+    setLoadingLogoAssets(true);
+
+    void getDocs(query(collection(db, 'bands', band.id, 'pressKitImages')))
+      .then((snapshot) => {
+        if (!mounted) return;
+        const assets = snapshot.docs
+          .map((entry) => {
+            const data = entry.data() as Record<string, unknown>;
+            return {
+              id: entry.id,
+              title: typeof data.title === 'string' ? data.title : 'Image',
+              url: typeof data.url === 'string' ? data.url : '',
+              storagePath: typeof data.storagePath === 'string' ? data.storagePath : undefined,
+              createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
+            } as LogoAsset;
+          })
+          .filter((asset) => asset.url.length > 0)
+          .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+
+        setLogoAssets(assets);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        toast.error('Failed to load logo assets.');
+      })
+      .finally(() => {
+        if (mounted) setLoadingLogoAssets(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [band, logo]);
+
+  const currentLogoAsset = logo
+    ? { id: 'current-band-logo', title: 'Current logo', url: logo }
+    : null;
+  const combinedLogoAssets = currentLogoAsset && !logoAssets.some((asset) => asset.url === currentLogoAsset.url)
+    ? [currentLogoAsset, ...logoAssets]
+    : logoAssets;
+  const logoTotalPages = Math.max(1, Math.ceil(combinedLogoAssets.length / MEDIA_ITEMS_PER_PAGE));
+  const logoPageStart = (logoPage - 1) * MEDIA_ITEMS_PER_PAGE;
+  const pagedLogoAssets = combinedLogoAssets.slice(logoPageStart, logoPageStart + MEDIA_ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    if (logoPage > logoTotalPages) {
+      setLogoPage(logoTotalPages);
+    }
+  }, [logoPage, logoTotalPages]);
 
   return (
     <section className="bands-page">
@@ -340,31 +428,70 @@ export default function BandSettingsPage() {
                 disabled={!canEditBand || busyLogo}
               />
 
-              {!logo && (
+              {!loadingLogoAssets && combinedLogoAssets.length === 0 && (
                 <p className="bands-status">No logo uploaded yet.</p>
               )}
 
-              {logo && (
+              {loadingLogoAssets && <p className="bands-status">Loading logo assets…</p>}
+
+              {combinedLogoAssets.length > 0 && (
                 <div className="bands-logo-grid" role="list" aria-label="Band logo assets">
-                  <article className="bands-logo-card" role="listitem">
-                    <div className="bands-logo-card-image-wrap">
-                      <img src={logo} alt="Band logo" className="bands-logo-card-image" />
-                    </div>
-                    <div className="bands-logo-card-footer">
-                      <span className="bands-logo-card-title">Current logo</span>
-                      {canEditBand && (
-                        <button
-                          type="button"
-                          className="title-rename-btn"
-                          title="Remove logo"
-                          onClick={() => { void handleRemoveLogo(); }}
-                          disabled={busyLogo}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
-                    </div>
-                  </article>
+                  {pagedLogoAssets.map((asset) => {
+                    const isCurrent = asset.url === logo;
+                    return (
+                      <article key={asset.id} className="bands-logo-card" role="listitem">
+                        <div className="bands-logo-card-image-wrap">
+                          <img src={asset.url} alt={asset.title} className="bands-logo-card-image" />
+                        </div>
+                        <div className="bands-logo-card-footer">
+                          <span className="bands-logo-card-title">{isCurrent ? 'Current logo' : asset.title}</span>
+                          {canEditBand && !isCurrent && (
+                            <button
+                              type="button"
+                              className="setlist-action-btn setlist-action-btn--secondary bands-logo-use-btn"
+                              onClick={() => { void handleUseLogoAsset(asset); }}
+                              disabled={busyLogo}
+                            >
+                              Use
+                            </button>
+                          )}
+                          {canEditBand && isCurrent && (
+                            <button
+                              type="button"
+                              className="title-rename-btn"
+                              title="Remove logo"
+                              onClick={() => { void handleRemoveLogo(); }}
+                              disabled={busyLogo}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+
+              {combinedLogoAssets.length > MEDIA_ITEMS_PER_PAGE && (
+                <div className="media-pagination">
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => setLogoPage((current) => Math.max(1, current - 1))}
+                    disabled={logoPage <= 1}
+                  >
+                    Previous
+                  </button>
+                  <p className="bands-inline-note">Page {logoPage} of {logoTotalPages}</p>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => setLogoPage((current) => Math.min(logoTotalPages, current + 1))}
+                    disabled={logoPage >= logoTotalPages}
+                  >
+                    Next
+                  </button>
                 </div>
               )}
             </section>

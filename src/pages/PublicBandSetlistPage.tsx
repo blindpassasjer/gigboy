@@ -9,6 +9,7 @@ interface PublicSetlist {
   name: string;
   icon?: string;
   bandName?: string;
+  bandLogo?: string;
   songs: PublicSetlistSongEntry[];
 }
 
@@ -67,10 +68,22 @@ export default function PublicBandSetlistPage() {
               : {}),
           }));
 
+        let bandLogo: string | undefined;
+        try {
+          const bandSnap = await getDoc(doc(firestore, 'bands', bandId));
+          if (bandSnap.exists()) {
+            const bandData = bandSnap.data() as Record<string, unknown>;
+            bandLogo = typeof bandData.logo === 'string' ? bandData.logo : undefined;
+          }
+        } catch {
+          bandLogo = undefined;
+        }
+
         setSetlist({
           name: typeof data.name === 'string' ? data.name : 'Setlist',
           icon: typeof data.icon === 'string' ? data.icon : undefined,
           bandName: typeof data.bandName === 'string' ? data.bandName : undefined,
+          bandLogo,
           songs,
         });
         setStatus('ready');
@@ -121,8 +134,11 @@ export default function PublicBandSetlistPage() {
         <Link to="/" className="public-page-nav-brand"><BrandMark size={16} /></Link>
       </nav>
       <header className="public-setlist-header">
-        {setlist.bandName && (
-          <p className="public-setlist-band">{setlist.bandName}</p>
+        {(setlist.bandName || setlist.bandLogo) && (
+          <div className="public-setlist-band-row">
+            {setlist.bandLogo ? <img src={setlist.bandLogo} alt={`${setlist.bandName ?? 'Band'} logo`} className="public-setlist-band-logo" loading="lazy" /> : null}
+            {setlist.bandName ? <p className="public-setlist-band">{setlist.bandName}</p> : null}
+          </div>
         )}
         <h1 className="public-setlist-title">
           {setlist.icon && <span aria-hidden="true">{setlist.icon} </span>}

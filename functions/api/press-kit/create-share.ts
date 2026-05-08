@@ -140,12 +140,25 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const token = generateToken();
   const now = new Date().toISOString();
   const bandName = typeof bandDoc.name === 'string' ? bandDoc.name : 'Band';
+  const rawBandLogo = typeof bandDoc.logo === 'string' ? cleanString(bandDoc.logo, 2000) : '';
+  let bandLogo = '';
+  if (rawBandLogo) {
+    try {
+      const parsed = new URL(rawBandLogo);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        bandLogo = rawBandLogo;
+      }
+    } catch {
+      bandLogo = '';
+    }
+  }
 
   await setFirestoreDocument(ctx.env, ['pressKitShares', token], {
     token,
     status: 'active',
     bandId,
     bandName,
+    ...(bandLogo ? { bandLogo } : {}),
     createdBy: userId,
     createdAt: now,
     snapshot: {

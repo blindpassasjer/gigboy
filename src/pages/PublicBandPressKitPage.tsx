@@ -171,7 +171,10 @@ export default function PublicBandPressKitPage() {
       </nav>
 
       <header className="public-setlist-header public-presskit-header">
-        <p className="public-setlist-band">{payload.bandName}</p>
+        <div className="public-setlist-band-row">
+          {payload.bandLogo ? <img src={payload.bandLogo} alt={`${payload.bandName} logo`} className="public-setlist-band-logo" loading="lazy" /> : null}
+          <p className="public-setlist-band">{payload.bandName}</p>
+        </div>
         <h1 className="public-setlist-title">Press Kit</h1>
         <p className="public-setlist-count">Public promo package</p>
         <div className="public-presskit-download-wrap">

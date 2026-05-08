@@ -55,6 +55,7 @@ export async function createPressKitShare(input: CreateShareInput): Promise<{ to
 export interface PublicPressKitPayload {
   bandId: string;
   bandName: string;
+  bandLogo?: string;
   createdAt?: string;
   generatedAt?: string;
   stageplots: Array<{
@@ -91,6 +92,7 @@ export async function fetchPublicPressKit(token: string): Promise<PublicPressKit
   return {
     bandId: typeof payload.bandId === 'string' ? payload.bandId : '',
     bandName: typeof payload.bandName === 'string' ? payload.bandName : 'Band',
+    bandLogo: typeof payload.bandLogo === 'string' ? payload.bandLogo : undefined,
     createdAt: typeof payload.createdAt === 'string' ? payload.createdAt : undefined,
     generatedAt: typeof payload.generatedAt === 'string' ? payload.generatedAt : undefined,
     stageplots: Array.isArray(payload.stageplots) ? payload.stageplots as PublicPressKitPayload['stageplots'] : [],
