@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, useEditorState, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Download, Trash2, PenLine, Newspaper } from 'lucide-react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
@@ -105,6 +105,35 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
       saveTimer.current = setTimeout(() => {
         void saveRichText(ed.getHTML());
       }, 1200);
+    },
+  });
+
+  const toolbarState = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor) {
+        return {
+          isBold: false,
+          isItalic: false,
+          isHeading2: false,
+          isHeading3: false,
+          isBulletList: false,
+          isOrderedList: false,
+          canUndo: false,
+          canRedo: false,
+        };
+      }
+
+      return {
+        isBold: currentEditor.isActive('bold'),
+        isItalic: currentEditor.isActive('italic'),
+        isHeading2: currentEditor.isActive('heading', { level: 2 }),
+        isHeading3: currentEditor.isActive('heading', { level: 3 }),
+        isBulletList: currentEditor.isActive('bulletList'),
+        isOrderedList: currentEditor.isActive('orderedList'),
+        canUndo: currentEditor.can().undo(),
+        canRedo: currentEditor.can().redo(),
+      };
     },
   });
 
@@ -424,27 +453,28 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
             </div>
           </header>
 
+          {canEdit && editor && (
+            <div className="press-kit-toolbar" aria-label="Text formatting toolbar">
+              <button type="button" title="Bold" className={`press-kit-toolbar-btn${toolbarState.isBold ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={14} /></button>
+              <button type="button" title="Italic" className={`press-kit-toolbar-btn${toolbarState.isItalic ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={14} /></button>
+              <span className="press-kit-toolbar-sep" />
+              <button type="button" title="Heading 2" className={`press-kit-toolbar-btn${toolbarState.isHeading2 ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={14} /></button>
+              <button type="button" title="Heading 3" className={`press-kit-toolbar-btn${toolbarState.isHeading3 ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={14} /></button>
+              <span className="press-kit-toolbar-sep" />
+              <button type="button" title="Bullet list" className={`press-kit-toolbar-btn${toolbarState.isBulletList ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={14} /></button>
+              <button type="button" title="Ordered list" className={`press-kit-toolbar-btn${toolbarState.isOrderedList ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={14} /></button>
+              <span className="press-kit-toolbar-sep" />
+              <button type="button" title="Horizontal rule" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().setHorizontalRule().run()}><Minus size={14} /></button>
+              <span className="press-kit-toolbar-sep" />
+              <button type="button" title="Undo" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().undo().run()} disabled={!toolbarState.canUndo}><Undo size={14} /></button>
+              <button type="button" title="Redo" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().redo().run()} disabled={!toolbarState.canRedo}><Redo size={14} /></button>
+            </div>
+          )}
+
         </div>
 
         <div className="press-kit-body-columns">
           <div className="press-kit-section-card">
-            {canEdit && editor && (
-              <div className="press-kit-toolbar">
-                <button type="button" title="Bold" className={`press-kit-toolbar-btn${editor.isActive('bold') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={14} /></button>
-                <button type="button" title="Italic" className={`press-kit-toolbar-btn${editor.isActive('italic') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={14} /></button>
-                <span className="press-kit-toolbar-sep" />
-                <button type="button" title="Heading 2" className={`press-kit-toolbar-btn${editor.isActive('heading', { level: 2 }) ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={14} /></button>
-                <button type="button" title="Heading 3" className={`press-kit-toolbar-btn${editor.isActive('heading', { level: 3 }) ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={14} /></button>
-                <span className="press-kit-toolbar-sep" />
-                <button type="button" title="Bullet list" className={`press-kit-toolbar-btn${editor.isActive('bulletList') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={14} /></button>
-                <button type="button" title="Ordered list" className={`press-kit-toolbar-btn${editor.isActive('orderedList') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={14} /></button>
-                <span className="press-kit-toolbar-sep" />
-                <button type="button" title="Horizontal rule" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().setHorizontalRule().run()}><Minus size={14} /></button>
-                <span className="press-kit-toolbar-sep" />
-                <button type="button" title="Undo" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}><Undo size={14} /></button>
-                <button type="button" title="Redo" className="press-kit-toolbar-btn" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}><Redo size={14} /></button>
-              </div>
-            )}
             <section className="press-kit-text-section">
               <header className="press-kit-section-header">
                 <p className="press-kit-section-title">Text</p>

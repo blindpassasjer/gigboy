@@ -63,9 +63,9 @@ const CLIENT_REPAIR_MARKER = 'client-repair-v1';
 const LEGACY_NAME_REPAIR_MARKER = 'legacy-name-repair-v1';
 
 /** Strip keys with undefined values so Firestore doesn't reject the document. */
-function stripUndefinedFields<T extends Record<string, unknown>>(obj: T): T {
+function stripUndefinedFields<T extends object>(obj: T): T {
   return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== undefined),
+    Object.entries(obj as Record<string, unknown>).filter(([, v]) => v !== undefined),
   ) as T;
 }
 

@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardList, Piano, Activity, type LucideIcon } from 'lucide-react';
+import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardList, Piano, Activity, Sparkles, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';

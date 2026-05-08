@@ -9176,6 +9176,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .press-kit-toolbar-btn {
@@ -9207,10 +9211,22 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .press-kit-toolbar-sep {
+  flex: 0 0 1px;
   width: 1px;
   height: 20px;
   background: var(--border);
   margin: 4px 2px;
+}
+
+@media (max-width: 767px) {
+  .press-kit-toolbar {
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
+  .press-kit-toolbar-btn {
+    flex: 0 0 auto;
+  }
 }
 
 .press-kit-editor-wrap {
