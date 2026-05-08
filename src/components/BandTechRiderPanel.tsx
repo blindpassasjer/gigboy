@@ -41,6 +41,7 @@ export default function BandTechRiderPanel({
   const [renameValue, setRenameValue] = useState('');
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [iconDraft, setIconDraft] = useState('🎤');
+  const [toolbarPortalTarget, setToolbarPortalTarget] = useState<HTMLElement | null>(null);
   const iconPickerRef = useRef<HTMLDivElement | null>(null);
   const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
@@ -347,10 +348,12 @@ export default function BandTechRiderPanel({
           </div>
 
           <div className="tech-rider-section" role="region" aria-label="Stageplot view">
+            <div ref={(el) => setToolbarPortalTarget(el)} />
             {activeRiderAsStageplot ? (
               <StageplotEditor
                 stageplot={activeRiderAsStageplot}
                 canEdit={canEdit}
+                toolbarPortalTarget={toolbarPortalTarget}
                 currentUser={{
                   id: userId,
                   name: userEmail ?? 'Unknown user',

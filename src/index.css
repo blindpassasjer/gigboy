@@ -2231,10 +2231,21 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: 1rem;
 }
 .technical-rider-section {
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  padding: .9rem;
+}
+
+.technical-rider-section:first-child {
+  border-top: none;
+}
+
+.technical-rider-sections-card {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  padding: .9rem;
+  overflow: hidden;
 }
 .technical-rider-section-header {
   display: flex;
