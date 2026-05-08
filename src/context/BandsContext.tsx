@@ -1322,6 +1322,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     const previousBands = bands;
     const now = new Date().toISOString();
+    const logoImageId = 'band-logo';
 
     if (!file) {
       // Remove logo
@@ -1345,6 +1346,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           } catch {
             // Ignore deletion errors
           }
+        }
+
+        // Remove from press kit images
+        try {
+          await deleteDoc(doc(db, 'bands', bandId, 'pressKitImages', logoImageId));
+        } catch {
+          // Ignore deletion errors
         }
 
         return null;
@@ -1374,6 +1382,17 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         logoStoragePath,
         updatedAt: now,
       }, { merge: true });
+
+      // Also add to press kit images so it's available there
+      await setDoc(doc(db, 'bands', bandId, 'pressKitImages', logoImageId), {
+        title: 'Band Logo',
+        url: logoUrl,
+        storagePath: logoStoragePath,
+        mimeType: file.type || 'image/jpeg',
+        sizeBytes: file.size,
+        createdAt: now,
+        createdBy: userId,
+      });
 
       return null;
     } catch (error) {

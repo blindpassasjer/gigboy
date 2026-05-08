@@ -42,9 +42,10 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
       setState((current) => ({ ...current, loading: true }));
 
       try {
-        const [userSnapshot, recordingsSnapshot] = await Promise.all([
+        const [userSnapshot, recordingsSnapshot, pressKitImagesSnapshot] = await Promise.all([
           getDoc(doc(firestore, 'users', currentUserId)),
           getDocs(query(collectionGroup(firestore, 'recordings'), where('recorder.userId', '==', currentUserId))),
+          getDocs(query(collectionGroup(firestore, 'pressKitImages'), where('createdBy', '==', currentUserId))),
         ]);
 
         if (cancelled) return;
@@ -54,7 +55,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
         const quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
 
-        const usedBytes = recordingsSnapshot.docs.reduce((sum, snap) => {
+        const recordingBytes = recordingsSnapshot.docs.reduce((sum, snap) => {
           const data = snap.data() as Record<string, unknown>;
           const sizeBytes = toSafeNumber(data.sizeBytes);
           if (sizeBytes !== null) return sum + sizeBytes;
@@ -62,6 +63,14 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           const legacySize = toSafeNumber(data.size);
           return legacySize !== null ? sum + legacySize : sum;
         }, 0);
+
+        const pressKitBytes = pressKitImagesSnapshot.docs.reduce((sum, snap) => {
+          const data = snap.data() as Record<string, unknown>;
+          const sizeBytes = toSafeNumber(data.sizeBytes);
+          return sizeBytes !== null ? sum + sizeBytes : sum;
+        }, 0);
+
+        const usedBytes = recordingBytes + pressKitBytes;
 
         setState({
           usedBytes,

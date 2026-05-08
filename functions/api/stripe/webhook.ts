@@ -142,7 +142,8 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           ? session.metadata.bandId.trim()
           : '';
 
-        if (sub.metadata?.gigboyMode === 'band_aggregate' && checkoutBandId) {
+        // For band subscriptions, ensure items have bandId metadata
+        if (checkoutBandId) {
           const baseItemWithoutBand = sub.items.data.find((item) => {
             const priceId = item.price?.id ?? '';
             return isBandBasePriceId(priceId, ctx.env) && !item.metadata?.bandId;
@@ -193,11 +194,19 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           bandExtraMembers,
         });
 
-        if (sub.metadata?.gigboyMode === 'band_aggregate') {
+        // Write band billing snapshot for band subscriptions
+        // This handles both band_aggregate metadata mode and band item detection by checkoutBandId
+        if (sub.metadata?.gigboyMode === 'band_aggregate' || checkoutBandId) {
           const bandIds = extractBandIdsFromSubscription(sub, ctx.env);
-          await Promise.all(
-            bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, sub, ctx.env))
-          );
+          if (bandIds.length > 0) {
+            await Promise.all(
+              bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, sub, ctx.env))
+            );
+          } else if (checkoutBandId) {
+            // Fallback: if checkoutBandId exists but no bandIds were extracted, 
+            // write the band subscription directly using checkoutBandId
+            await writeBandBillingSnapshot(env, checkoutBandId, sub, ctx.env);
+          }
         }
         break;
       }
@@ -226,11 +235,14 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           bandExtraMembers,
         });
 
+        // Always sync band billing data if subscription contains band items
         if (expandedSub.metadata?.gigboyMode === 'band_aggregate') {
           const bandIds = extractBandIdsFromSubscription(expandedSub, ctx.env);
-          await Promise.all(
-            bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, expandedSub, ctx.env))
-          );
+          if (bandIds.length > 0) {
+            await Promise.all(
+              bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, expandedSub, ctx.env))
+            );
+          }
         }
         break;
       }
@@ -256,11 +268,16 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           bandExtraMembers: 0,
         });
 
+        // Clear band subscription data when subscription is canceled/deleted
         if (expandedSub.metadata?.gigboyMode === 'band_aggregate') {
           const bandIds = extractBandIdsFromSubscription(expandedSub, ctx.env);
-          await Promise.all(
-            bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, expandedSub, ctx.env, 'canceled'))
-          );
+          if (bandIds.length > 0) {
+            await Promise.all(
+              bandIds.map((bandId) => writeBandBillingSnapshot(env, bandId, expandedSub, ctx.env, 'canceled'))
+            );
+          }
+        }
+        break;
         }
         break;
       }
