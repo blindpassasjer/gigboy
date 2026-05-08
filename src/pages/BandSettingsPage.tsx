@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CreditCard } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, CreditCard, Trash2 } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
@@ -47,7 +47,6 @@ function formatSubscriptionStatus(status: string | null | undefined) {
 
 export default function BandSettingsPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const {
     bands,
@@ -65,10 +64,8 @@ export default function BandSettingsPage() {
   const [icon, setIcon] = useState('🎵');
   const [color, setColor] = useState('#c33232');
   const [useAutoColor, setUseAutoColor] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [busyAppearance, setBusyAppearance] = useState(false);
   const [logo, setLogo] = useState<string | undefined>();
-  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [busyLogo, setBusyLogo] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
@@ -80,7 +77,6 @@ export default function BandSettingsPage() {
     setColor(band.color ?? '#c33232');
     setUseAutoColor(!band.color);
     setLogo(band.logo);
-    setLogoFile(null);
   }, [band]);
 
   if (loading && !band) {
@@ -140,7 +136,6 @@ export default function BandSettingsPage() {
       return;
     }
 
-    setLogoFile(file);
     setBusyLogo(true);
     const logoError = await updateBandLogo(band.id, file);
     setBusyLogo(false);
@@ -161,7 +156,6 @@ export default function BandSettingsPage() {
       toast.error(logoError);
     } else {
       setLogo(undefined);
-      setLogoFile(null);
       toast.success('Logo removed.');
     }
   };
@@ -183,48 +177,41 @@ export default function BandSettingsPage() {
     }
   };
 
-  const handleSave = async () => {
-    if (!canEditBand) {
-      navigate(`/bands/${band.id}/library`);
-      return;
-    }
+  useEffect(() => {
+    if (!band || !canEditBand) return;
 
     const trimmedName = name.trim();
-    if (!trimmedName) {
-      toast.error('Band name is required.');
-      return;
-    }
-
-    if (description.length > 240) {
-      toast.error('Description must be 240 characters or fewer.');
-      return;
-    }
-
-    setBusy(true);
-
-    if (trimmedName !== band.name) {
-      const renameError = await renameBand(band.id, trimmedName);
-      if (renameError) {
-        setBusy(false);
-        toast.error(renameError);
-        return;
-      }
-    }
-
     const trimmedDescription = description.trim();
-    if (trimmedDescription !== (band.description ?? '')) {
-      const descError = await updateBandDescription(band.id, trimmedDescription);
-      if (descError) {
-        setBusy(false);
-        toast.error(descError);
-        return;
-      }
-    }
+    const currentDescription = band.description ?? '';
+    const nameChanged = trimmedName !== band.name;
+    const descriptionChanged = trimmedDescription !== currentDescription;
 
-    setBusy(false);
-    toast.success('Band profile saved.');
-    navigate(`/bands/${band.id}/library`);
-  };
+    if (!nameChanged && !descriptionChanged) return;
+    if (!trimmedName) return;
+
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        if (trimmedName !== band.name) {
+          const renameError = await renameBand(band.id, trimmedName);
+          if (renameError) {
+            toast.error(renameError);
+            return;
+          }
+        }
+
+        if (trimmedDescription !== currentDescription) {
+          const descError = await updateBandDescription(band.id, trimmedDescription);
+          if (descError) {
+            toast.error(descError);
+          }
+        }
+      })();
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [band, canEditBand, name, description, renameBand, updateBandDescription]);
 
   return (
     <section className="bands-page">
@@ -319,41 +306,31 @@ export default function BandSettingsPage() {
             <p className="bands-inline-note">Color updates immediately.</p>
           </div>
 
-          {/* ── Band Logo & Color ── */}
+          {/* ── Band Logo ── */}
           <div className="bands-logo-section">
-            {/* Logo Upload */}
-            <div className="bands-logo-upload-area">
-              <p className="bands-logo-section-title">Band Logo</p>
-              {logo && !logoFile ? (
-                <div className="bands-logo-preview">
-                  <div className="bands-logo-preview-image">
-                    <img src={logo} alt="Band logo" />
-                  </div>
-                  <button
-                    type="button"
-                    className="bands-logo-remove-btn"
-                    onClick={() => { void handleRemoveLogo(); }}
-                    disabled={!canEditBand || busyLogo}
-                  >
-                    {busyLogo ? 'Removing…' : 'Remove logo'}
-                  </button>
-                </div>
-              ) : (
+            <section className="bands-logo-upload-area">
+              <header className="press-kit-section-header">
+                <p className="press-kit-section-title">Band Logo</p>
+                <p className="press-kit-section-hint">Upload and manage your logo like Press Kit images.</p>
+              </header>
+
+              {canEditBand && (
                 <div
                   className={`bands-logo-upload-drop${dragActive ? ' active' : ''}`}
                   onDragOver={(e) => { e.preventDefault(); if (canEditBand && !busyLogo) setDragActive(true); }}
                   onDragLeave={() => setDragActive(false)}
                   onDrop={handleLogoDrop}
-                  onClick={() => document.getElementById('band-logo-input')?.click()}
+                  onClick={() => { if (canEditBand && !busyLogo) document.getElementById('band-logo-input')?.click(); }}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && canEditBand && !busyLogo) document.getElementById('band-logo-input')?.click(); }}
                 >
-                  <p style={{ margin: 0, textAlign: 'center', color: 'var(--muted)', fontSize: '.85rem' }}>
-                    {busyLogo ? 'Uploading…' : 'Drag & drop or click to upload'}
+                  <p className="songlist-item-meta" style={{ margin: 0 }}>
+                    {busyLogo ? 'Uploading…' : 'Drag & drop or click to upload logo'}
                   </p>
                 </div>
               )}
+
               <input
                 id="band-logo-input"
                 type="file"
@@ -362,7 +339,35 @@ export default function BandSettingsPage() {
                 style={{ display: 'none' }}
                 disabled={!canEditBand || busyLogo}
               />
-            </div>
+
+              {!logo && (
+                <p className="bands-status">No logo uploaded yet.</p>
+              )}
+
+              {logo && (
+                <div className="bands-logo-grid" role="list" aria-label="Band logo assets">
+                  <article className="bands-logo-card" role="listitem">
+                    <div className="bands-logo-card-image-wrap">
+                      <img src={logo} alt="Band logo" className="bands-logo-card-image" />
+                    </div>
+                    <div className="bands-logo-card-footer">
+                      <span className="bands-logo-card-title">Current logo</span>
+                      {canEditBand && (
+                        <button
+                          type="button"
+                          className="title-rename-btn"
+                          title="Remove logo"
+                          onClick={() => { void handleRemoveLogo(); }}
+                          disabled={busyLogo}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                </div>
+              )}
+            </section>
 
             {/* Logo Info & Color */}
             <div className="bands-logo-color-group">
@@ -386,25 +391,6 @@ export default function BandSettingsPage() {
             </div>
           </div>
 
-          {/* ── Actions ── */}
-          {canEditBand && (
-            <div style={{ display: 'flex', gap: '.5rem', marginTop: '1.5rem' }}>
-              <button
-                type="button"
-                className="setlist-action-btn"
-                onClick={() => void handleSave()}
-                disabled={busy}
-              >
-                {busy ? 'Saving…' : 'Save changes'}
-              </button>
-              <Link
-                to={`/bands/${band.id}/library`}
-                className="setlist-action-btn setlist-action-btn--secondary"
-              >
-                Cancel
-              </Link>
-            </div>
-          )}
         </section>
 
         <div className="bands-settings-left">

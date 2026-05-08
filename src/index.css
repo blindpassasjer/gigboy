@@ -2237,10 +2237,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .9rem;
 }
 
-.technical-rider-section:first-child {
-  border-top: none;
-}
-
 .technical-rider-sections-card {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -7783,7 +7779,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .bands-logo-section {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
   gap: 1rem;
   margin-top: .95rem;
   padding: .85rem;
@@ -7795,7 +7791,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .bands-logo-upload-area {
   display: flex;
   flex-direction: column;
-  gap: .5rem;
+  gap: .6rem;
 }
 
 .bands-logo-upload-drop {
@@ -7803,11 +7799,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 8rem;
-  border: 2px dashed var(--border);
-  border-radius: 8px;
-  padding: 1rem;
-  background: var(--surface);
+  min-height: 5rem;
+  border: 2px dashed var(--bands-hue);
+  border-radius: 10px;
+  padding: .75rem;
+  background: color-mix(in srgb, var(--bands-hue) 8%, var(--surface));
   cursor: pointer;
   transition: border-color .15s, background .15s;
 }
@@ -7826,34 +7822,60 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: none;
 }
 
-.bands-logo-preview {
-  display: flex;
-  flex-direction: column;
-  gap: .5rem;
+.bands-logo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: .6rem;
 }
 
-.bands-logo-preview-image {
+.bands-logo-card {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 8rem;
-  border-radius: 8px;
+  flex-direction: column;
+  gap: .35rem;
   background: var(--surface);
+  border-radius: 8px;
   border: 1px solid var(--border);
   overflow: hidden;
 }
 
-.bands-logo-preview-image img {
-  max-width: 100%;
-  max-height: 100%;
+.bands-logo-card-image-wrap {
+  position: relative;
+  background: color-mix(in srgb, var(--surface) 60%, var(--bg));
+}
+
+.bands-logo-card-image {
+  width: 100%;
+  aspect-ratio: 1;
   object-fit: contain;
+  display: block;
+  padding: .55rem;
+}
+
+.bands-logo-card-footer {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  padding: 0 .4rem .4rem;
+}
+
+.bands-logo-card-title {
+  flex: 1;
+  min-width: 0;
+  font-size: .8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
 }
 
 .bands-logo-color-group {
   display: flex;
   flex-direction: column;
-  gap: .5rem;
+  gap: .55rem;
+  border: 1px solid var(--bands-border);
+  border-radius: 8px;
+  padding: .7rem;
+  background: color-mix(in srgb, var(--bands-soft-bg) 58%, var(--surface));
 }
 
 .bands-logo-section-title {
@@ -8262,6 +8284,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   .bands-member-actions,
   .profile-invite-actions {
     justify-content: flex-start;
+  }
+
+  .bands-logo-section {
+    grid-template-columns: 1fr;
   }
 }
 
