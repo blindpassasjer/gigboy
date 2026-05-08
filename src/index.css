@@ -9233,7 +9233,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--border);
   border-radius: 8px;
   min-height: 200px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--bg) 60%, var(--surface));
 }
 
 .press-kit-body-columns {

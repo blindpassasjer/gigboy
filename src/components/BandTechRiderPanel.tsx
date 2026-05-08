@@ -348,6 +348,11 @@ export default function BandTechRiderPanel({
           </div>
 
           <div className="tech-rider-section" role="region" aria-label="Stageplot view">
+            <div className="technical-rider-sections-card">
+              <section className="technical-rider-section">
+                <div className="technical-rider-section-header">
+                  <h2>Stagerider</h2>
+                </div>
             <div ref={(el) => setToolbarPortalTarget(el)} />
             {activeRiderAsStageplot ? (
               <StageplotEditor
@@ -387,6 +392,8 @@ export default function BandTechRiderPanel({
                 showHeader={false}
               />
             ) : null}
+              </section>
+            </div>
           </div>
         </div>
 

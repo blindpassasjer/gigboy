@@ -112,18 +112,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     editor,
     selector: ({ editor: currentEditor }) => {
       if (!currentEditor) {
-        return {
-          isBold: false,
-          isItalic: false,
-          isHeading2: false,
-          isHeading3: false,
-          isBulletList: false,
-          isOrderedList: false,
-          canUndo: false,
-          canRedo: false,
-        };
+        return { isBold: false, isItalic: false, isHeading2: false, isHeading3: false, isBulletList: false, isOrderedList: false, canUndo: false, canRedo: false };
       }
-
       return {
         isBold: currentEditor.isActive('bold'),
         isItalic: currentEditor.isActive('italic'),
