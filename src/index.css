@@ -9265,6 +9265,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   letter-spacing: 0.04em;
 }
 
+.press-kit-section-hint {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .press-kit-editor .ProseMirror {
   padding: 12px 14px;
   min-height: 160px;

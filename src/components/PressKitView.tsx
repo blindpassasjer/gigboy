@@ -460,6 +460,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
           <section className="press-kit-images-section">
             <header className="press-kit-section-header">
               <p className="press-kit-section-title">Images</p>
+              {canEdit && <p className="press-kit-section-hint">Check the images to include in this press kit.</p>}
             </header>
             <div className="setlist-notes-editor">
 

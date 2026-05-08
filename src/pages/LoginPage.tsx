@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Share2, Sparkles, type LucideIcon } from 'lucide-react';
+import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardList, Piano, Activity, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
@@ -9,32 +9,47 @@ const LOGIN_FEATURES: { icon: LucideIcon; title: string; description: string }[]
   {
     icon: Music2,
     title: 'Song library',
-    description: 'Chord charts, lyrics, and notes — all in one place.',
+    description: 'Chord charts, tabs, lyrics, and hand notes — everything for your songs.',
   },
   {
     icon: ListMusic,
     title: 'Setlists',
-    description: 'Arrange sets in seconds. Rehearsal and concert views.',
+    description: 'Build sets in seconds. Rehearsal and concert modes included.',
   },
   {
     icon: Users,
     title: 'Band collaboration',
-    description: 'Shared workspace for your whole band.',
+    description: 'A shared workspace for every member of your band.',
   },
   {
     icon: MonitorSpeaker,
     title: 'Stage plots & riders',
-    description: 'Send pro-ready documents straight to the venue.',
+    description: 'Professional stage diagrams and tech riders, ready to send.',
+  },
+  {
+    icon: Newspaper,
+    title: 'Press kits',
+    description: 'Rich band bio, photos, and assets — share via a single link.',
+  },
+  {
+    icon: ClipboardList,
+    title: 'Input lists',
+    description: 'Build and share stage input lists with your FOH engineer.',
+  },
+  {
+    icon: Piano,
+    title: 'Chord diagrams',
+    description: 'Tap any chord for instant guitar and piano fingerings.',
+  },
+  {
+    icon: Activity,
+    title: 'Tuner & metronome',
+    description: 'Built-in chromatic tuner and visual metronome — no extra apps.',
   },
   {
     icon: Mic2,
     title: 'Rehearsal recordings',
-    description: 'Capture and replay run-throughs in the app.',
-  },
-  {
-    icon: Share2,
-    title: 'Public share links',
-    description: 'Share setlists and riders with engineers or fans.',
+    description: 'Record and replay run-throughs without leaving the app.',
   },
 ];
 
@@ -100,7 +115,7 @@ function LoginHero() {
       </div>
       <h1 className="login-hero-title">Your songs, your stage.</h1>
       <p className="login-hero-copy">
-        Plan, perform, and stay in sync with one shared workspace for your music.
+        Everything a working band needs — from rehearsal to the headline slot — in one shared workspace.
       </p>
       <ul className="login-feature-list">
         {LOGIN_FEATURES.map(({ icon: Icon, title, description }) => (
