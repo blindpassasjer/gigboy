@@ -8658,6 +8658,20 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .4rem;
 }
 
+.public-presskit-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: .4rem;
+}
+
+.public-presskit-band-name {
+  margin: 0 0 .15rem;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+}
+
 @media (max-width: 640px) {
   .public-share-branding-row {
     gap: .75rem;

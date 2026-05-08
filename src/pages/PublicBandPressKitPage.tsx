@@ -169,11 +169,13 @@ export default function PublicBandPressKitPage() {
       <header className="public-setlist-header public-presskit-header">
         <div className="public-share-branding-row">
           <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
-          <div className="public-share-band-stack">
-            {payload.bandLogo ? <img src={payload.bandLogo} alt={`${payload.bandName} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
-            <p className="public-setlist-band public-setlist-band--stack">{payload.bandName}</p>
-          </div>
         </div>
+        {payload.bandLogo ? (
+          <div className="public-presskit-logo-wrap">
+            <img src={payload.bandLogo} alt={`${payload.bandName} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" />
+          </div>
+        ) : null}
+        <p className="public-presskit-band-name">{payload.bandName}</p>
         <h1 className="public-setlist-title">Press Kit</h1>
         <p className="public-setlist-count">Public promo package</p>
         <div className="public-presskit-download-wrap">
@@ -243,10 +245,6 @@ export default function PublicBandPressKitPage() {
       <footer className="public-setlist-footer">
         <div className="public-share-branding-row public-share-branding-row--footer">
           <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
-          <div className="public-share-band-stack">
-            {payload.bandLogo ? <img src={payload.bandLogo} alt={`${payload.bandName} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
-            <p className="public-setlist-band public-setlist-band--stack">{payload.bandName}</p>
-          </div>
         </div>
         <p className="public-setlist-signoff">Built for musicians by Gigboy</p>
       </footer>
