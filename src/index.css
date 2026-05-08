@@ -2228,12 +2228,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
+  box-shadow: var(--shadow);
   padding: 1rem;
 }
 .technical-rider-section {
-  border-top: 1px solid var(--border);
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
   padding: .9rem;
 }
 
