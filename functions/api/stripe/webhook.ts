@@ -278,8 +278,6 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
           }
         }
         break;
-        }
-        break;
       }
 
       case 'invoice.payment_failed': {
