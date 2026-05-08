@@ -70,7 +70,7 @@ export default function DemoBanner() {
         <div className="demo-banner-bar">
           <span className="demo-banner-label">
             <Sparkles size={14} aria-hidden="true" />
-            Demo mode — data resets when you leave
+            Demo mode — example items are saved in Firebase
           </span>
           <div className="demo-banner-actions">
             <button

@@ -192,19 +192,10 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
   try {
     const demoBandId = `demo-band-${userId}`;
     const now = new Date().toISOString();
+    const bandRef = doc(firestore, 'bands', demoBandId);
 
-    // Skip if the demo band already exists (returning demo user)
-    const bandSnap = await getDoc(doc(firestore, 'bands', demoBandId));
-    if (bandSnap.exists()) {
-      try { sessionStorage.setItem(DEMO_SEED_SESSION_KEY, userId); } catch { /* ignore */ }
-      try { localStorage.setItem(ACTIVE_BAND_STORAGE_KEY, demoBandId); } catch { /* ignore */ }
-      return;
-    }
-
-    // Step 1: Create the band document first.
-    // Band sub-collection rules call get(bands/{bandId}), so the band must
-    // exist before we can write songs/setlists into it.
-    await setDoc(doc(firestore, 'bands', demoBandId), {
+    // Ensure the band document exists before sub-collection writes.
+    await setDoc(bandRef, {
       name: 'Demo Band',
       ownerId: userId,
       memberIds: [userId],
@@ -215,104 +206,156 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
       memberAvatars: {},
       createdAt: now,
       updatedAt: now,
-    });
+    }, { merge: true });
 
-    // Step 2: Populate band library and personal songs in one batch.
+    const docsToEnsure = [
+      ...DEMO_SONG_IDS.map((id) => doc(firestore, 'bands', demoBandId, 'songs', id)),
+      ...DEMO_SONG_IDS.map((id) => doc(firestore, 'users', userId, 'songs', id)),
+      doc(firestore, 'bands', demoBandId, 'songLists', 'demo-list-repertoire'),
+      doc(firestore, 'bands', demoBandId, 'setlists', 'demo-setlist-gig'),
+      doc(firestore, 'bands', demoBandId, 'technicalRiders', DEMO_TECH_RIDER_ID),
+      doc(firestore, 'bands', demoBandId, 'pressKits', DEMO_PRESS_KIT_ID),
+      doc(firestore, 'users', userId, 'songLists', 'demo-list-repertoire'),
+      doc(firestore, 'users', userId, 'setlists', 'demo-setlist-gig'),
+    ];
+
+    const existing = await Promise.all(docsToEnsure.map((ref) => getDoc(ref)));
+    const existingPathSet = new Set(existing.filter((snap) => snap.exists()).map((snap) => snap.ref.path));
+    const missing = (ref: ReturnType<typeof doc>) => !existingPathSet.has(ref.path);
+
+    // Populate only missing demo docs so reseeding never overwrites user edits.
     const batch = writeBatch(firestore);
+    let hasWrites = false;
 
     for (let i = 0; i < DEMO_SONGS.length; i++) {
       // Band-scoped songs (shown in the band library)
       const bandSongRef = doc(firestore, 'bands', demoBandId, 'songs', DEMO_SONG_IDS[i]);
-      batch.set(bandSongRef, {
-        ...DEMO_SONGS[i],
-        ownerId: userId,
-        collaboratorIds: [userId],
-        collaborationPermissions: { [userId]: 'editor' },
-      });
+      if (missing(bandSongRef)) {
+        batch.set(bandSongRef, {
+          ...DEMO_SONGS[i],
+          ownerId: userId,
+          collaboratorIds: [userId],
+          collaborationPermissions: { [userId]: 'editor' },
+        });
+        hasWrites = true;
+      }
 
       // Personal songs (shown in personal songbook)
       const userSongRef = doc(firestore, 'users', userId, 'songs', DEMO_SONG_IDS[i]);
-      batch.set(userSongRef, { ...DEMO_SONGS[i], ownerId: userId });
+      if (missing(userSongRef)) {
+        batch.set(userSongRef, { ...DEMO_SONGS[i], ownerId: userId });
+        hasWrites = true;
+      }
     }
 
     // Band song list
-    batch.set(doc(firestore, 'bands', demoBandId, 'songLists', 'demo-list-repertoire'), {
-      name: 'Demo Repertoire',
-      songIds: [...DEMO_SONG_IDS],
-      ownerId: userId,
-      sortOrder: 0,
-      createdAt: now,
-    });
+    const bandSongListRef = doc(firestore, 'bands', demoBandId, 'songLists', 'demo-list-repertoire');
+    if (missing(bandSongListRef)) {
+      batch.set(bandSongListRef, {
+        name: 'Demo Repertoire',
+        songIds: [...DEMO_SONG_IDS],
+        ownerId: userId,
+        sortOrder: 0,
+        createdAt: now,
+      });
+      hasWrites = true;
+    }
 
     // Band setlist
-    batch.set(doc(firestore, 'bands', demoBandId, 'setlists', 'demo-setlist-gig'), {
-      name: 'Demo Gig',
-      songIds: [DEMO_SONG_IDS[0], DEMO_SONG_IDS[1], DEMO_SONG_IDS[4]],
-      ownerId: userId,
-      sortOrder: 0,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const bandSetlistRef = doc(firestore, 'bands', demoBandId, 'setlists', 'demo-setlist-gig');
+    if (missing(bandSetlistRef)) {
+      batch.set(bandSetlistRef, {
+        name: 'Demo Gig',
+        songIds: [DEMO_SONG_IDS[0], DEMO_SONG_IDS[1], DEMO_SONG_IDS[4]],
+        ownerId: userId,
+        sortOrder: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+      hasWrites = true;
+    }
 
     // Band input list example
-    batch.set(doc(firestore, 'bands', demoBandId, 'technicalRiders', DEMO_TECH_RIDER_ID), {
-      name: 'Demo Club Rider',
-      icon: '📋',
-      ownerId: userId,
-      collaboratorIds: [userId],
-      collaborationPermissions: { [userId]: 'editor' },
-      sortOrder: 0,
-      lines: [
-        { id: 'line-vox', name: 'Lead vocal', description: '1x XLR for lead vocal mic (center stage).', sortOrder: 0 },
-        { id: 'line-gtr', name: 'Guitar amp', description: '1x SM57 on guitar cab.', sortOrder: 1 },
-        { id: 'line-bass', name: 'Bass DI', description: '1x active DI from bass pedalboard.', sortOrder: 2 },
-        { id: 'line-keys', name: 'Keys stereo', description: '2x DI (L/R) from keyboard rig.', sortOrder: 3 },
-      ],
-      preferredEquipment: [
-        { id: 'pref-wedge', name: '4x floor wedges', description: 'Independent sends preferred.', sortOrder: 0 },
-        { id: 'pref-mics', name: 'Vocal mics', description: 'SM58 or equivalent dynamic vocal microphones.', sortOrder: 1 },
-      ],
-      inventoryEquipment: [
-        { id: 'inv-inears', name: 'In-ear rack', description: 'Band brings own in-ear monitor rack.', sortOrder: 0 },
-        { id: 'inv-drum-mics', name: 'Kick + OH mics', description: 'Basic drum mics carried by band.', sortOrder: 1 },
-      ],
-      createdAt: now,
-      updatedAt: now,
-    });
+    const bandTechRiderRef = doc(firestore, 'bands', demoBandId, 'technicalRiders', DEMO_TECH_RIDER_ID);
+    if (missing(bandTechRiderRef)) {
+      batch.set(bandTechRiderRef, {
+        name: 'Demo Club Rider',
+        icon: '📋',
+        ownerId: userId,
+        collaboratorIds: [userId],
+        collaborationPermissions: { [userId]: 'editor' },
+        sortOrder: 0,
+        lines: [
+          { id: 'line-vox', name: 'Lead vocal', description: '1x XLR for lead vocal mic (center stage).', sortOrder: 0 },
+          { id: 'line-gtr', name: 'Guitar amp', description: '1x SM57 on guitar cab.', sortOrder: 1 },
+          { id: 'line-bass', name: 'Bass DI', description: '1x active DI from bass pedalboard.', sortOrder: 2 },
+          { id: 'line-keys', name: 'Keys stereo', description: '2x DI (L/R) from keyboard rig.', sortOrder: 3 },
+        ],
+        preferredEquipment: [
+          { id: 'pref-wedge', name: '4x floor wedges', description: 'Independent sends preferred.', sortOrder: 0 },
+          { id: 'pref-mics', name: 'Vocal mics', description: 'SM58 or equivalent dynamic vocal microphones.', sortOrder: 1 },
+        ],
+        inventoryEquipment: [
+          { id: 'inv-inears', name: 'In-ear rack', description: 'Band brings own in-ear monitor rack.', sortOrder: 0 },
+          { id: 'inv-drum-mics', name: 'Kick + OH mics', description: 'Basic drum mics carried by band.', sortOrder: 1 },
+        ],
+        createdAt: now,
+        updatedAt: now,
+      });
+      hasWrites = true;
+    }
 
     // Band press kit
-    batch.set(doc(firestore, 'bands', demoBandId, 'pressKits', DEMO_PRESS_KIT_ID), {
-      name: 'Demo Press Kit',
-      icon: '📰',
-      ownerId: userId,
-      richText: `<h2>Demo Band</h2><p>Demo Band is a five-piece cover act based in the city, delivering high-energy sets spanning rock, pop, and acoustic classics. With a polished live show and a repertoire of over 100 songs, the band has performed at festivals, corporate events, and intimate club venues alike.</p><h3>About</h3><p>Formed in 2019, Demo Band quickly built a reputation for tight musicianship and an engaging stage presence. The group covers artists including Oasis, Bob Dylan, Passenger, and America, always bringing their own feel to every performance.</p><h3>What We Offer</h3><ul><li>Fully self-contained PA and lighting rig available</li><li>Flexible set lengths from 45 minutes to 3 hours</li><li>Acoustic duo option for smaller spaces</li><li>Professional backline and experienced sound engineer</li></ul><h3>Contact</h3><p>For bookings and availability, reach out via the contact form on our website or email <strong>booking@demoband.example</strong>.</p>`,
-      imageIds: [],
-      sortOrder: 0,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const bandPressKitRef = doc(firestore, 'bands', demoBandId, 'pressKits', DEMO_PRESS_KIT_ID);
+    if (missing(bandPressKitRef)) {
+      batch.set(bandPressKitRef, {
+        name: 'Demo Press Kit',
+        icon: '📰',
+        ownerId: userId,
+        richText: `<h2>Demo Band</h2><p>Demo Band is a five-piece cover act based in the city, delivering high-energy sets spanning rock, pop, and acoustic classics. With a polished live show and a repertoire of over 100 songs, the band has performed at festivals, corporate events, and intimate club venues alike.</p><h3>About</h3><p>Formed in 2019, Demo Band quickly built a reputation for tight musicianship and an engaging stage presence. The group covers artists including Oasis, Bob Dylan, Passenger, and America, always bringing their own feel to every performance.</p><h3>What We Offer</h3><ul><li>Fully self-contained PA and lighting rig available</li><li>Flexible set lengths from 45 minutes to 3 hours</li><li>Acoustic duo option for smaller spaces</li><li>Professional backline and experienced sound engineer</li></ul><h3>Contact</h3><p>For bookings and availability, reach out via the contact form on our website or email <strong>booking@demoband.example</strong>.</p>`,
+        imageIds: [],
+        sortOrder: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+      hasWrites = true;
+    }
 
     // Personal song list
-    batch.set(doc(firestore, 'users', userId, 'songLists', 'demo-list-repertoire'), {
-      name: 'Demo Repertoire',
-      songIds: [...DEMO_SONG_IDS],
-      ownerId: userId,
-      collaboratorIds: [],
-      collaborationPermissions: {},
-      sortOrder: 0,
-    });
+    const userSongListRef = doc(firestore, 'users', userId, 'songLists', 'demo-list-repertoire');
+    if (missing(userSongListRef)) {
+      batch.set(userSongListRef, {
+        name: 'Demo Repertoire',
+        songIds: [...DEMO_SONG_IDS],
+        ownerId: userId,
+        collaboratorIds: [],
+        collaborationPermissions: {},
+        sortOrder: 0,
+      });
+      hasWrites = true;
+    }
 
     // Personal setlist
-    batch.set(doc(firestore, 'users', userId, 'setlists', 'demo-setlist-gig'), {
-      name: 'Demo Gig',
-      songIds: [DEMO_SONG_IDS[0], DEMO_SONG_IDS[1], DEMO_SONG_IDS[4]],
-      ownerId: userId,
-      collaboratorIds: [],
-      collaborationPermissions: {},
-      sortOrder: 0,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const userSetlistRef = doc(firestore, 'users', userId, 'setlists', 'demo-setlist-gig');
+    if (missing(userSetlistRef)) {
+      batch.set(userSetlistRef, {
+        name: 'Demo Gig',
+        songIds: [DEMO_SONG_IDS[0], DEMO_SONG_IDS[1], DEMO_SONG_IDS[4]],
+        ownerId: userId,
+        collaboratorIds: [],
+        collaborationPermissions: {},
+        sortOrder: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+      hasWrites = true;
+    }
+
+    if (!hasWrites) {
+      try { localStorage.setItem(ACTIVE_BAND_STORAGE_KEY, demoBandId); } catch { /* ignore */ }
+      try { sessionStorage.setItem(DEMO_SEED_SESSION_KEY, userId); } catch { /* ignore */ }
+      return;
+    }
 
     await batch.commit();
 
@@ -321,5 +364,6 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
     try { sessionStorage.setItem(DEMO_SEED_SESSION_KEY, userId); } catch { /* ignore */ }
   } catch (error) {
     console.warn('Failed to seed demo data.', error);
+    throw error instanceof Error ? error : new Error('Failed to seed demo data in Firebase.');
   }
 }

@@ -1667,8 +1667,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: inline-flex;
   align-items: center;
   gap: .35rem;
-  font-size: .82rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   letter-spacing: .02em;
   color: var(--song-item-chip-text);
   text-transform: uppercase;
@@ -4051,6 +4051,82 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: 1rem;
 }
 
+.image-preview-trigger {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: zoom-in;
+}
+
+.image-preview-trigger:focus-visible {
+  outline: 2px solid var(--bands-hue);
+  outline-offset: 2px;
+}
+
+.image-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.image-lightbox {
+  position: relative;
+  width: min(92vw, 920px);
+  max-height: 90vh;
+  border-radius: 12px;
+  padding: 0.6rem;
+  background: color-mix(in srgb, var(--surface) 94%, black);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, white 10%);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.image-lightbox-close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, white 25%, transparent);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.image-lightbox-close:hover {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.image-lightbox-image {
+  width: 100%;
+  height: auto;
+  max-height: calc(90vh - 5rem);
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+}
+
+.image-lightbox-caption {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text);
+  text-align: center;
+}
+
 .demo-modal {
   background: var(--surface);
   border-radius: var(--radius-lg);
@@ -5435,8 +5511,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-picker-section-title {
   margin: .45rem 0 .2rem;
-  font-size: .72rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -6995,6 +7071,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 .profile-section-heading h2,
 .profile-section-heading h3 {
   margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .profile-section-heading--subtle h3 {
@@ -8591,8 +8669,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .public-presskit-section-heading {
   margin: 0 0 .9rem;
-  font-size: .78rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .08em;
   color: var(--muted, #888);
@@ -9382,7 +9460,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .press-kit-section-title {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;

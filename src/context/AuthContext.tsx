@@ -623,6 +623,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await seedDemoData(db, result.user.uid);
       return null;
     } catch (err: unknown) {
+      if (auth.currentUser?.isAnonymous) {
+        await signOut(auth).catch(() => undefined);
+      }
       return err instanceof Error ? err.message : 'Failed to start demo.';
     }
   }, []);

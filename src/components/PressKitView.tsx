@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useEditor, useEditorState, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Download, Trash2, PenLine, Newspaper } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Download, Trash2, PenLine, Newspaper, X } from 'lucide-react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
@@ -168,6 +168,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [imageRenameValue, setImageRenameValue] = useState('');
   const [imagePage, setImagePage] = useState(1);
+  const [imagePreview, setImagePreview] = useState<{ url: string; title: string } | null>(null);
 
   // Sync kitImageIds when kit prop changes
   useEffect(() => {
@@ -207,6 +208,19 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
       setImagePage(totalPages);
     }
   }, [imageAssets.length, imagePage]);
+
+  useEffect(() => {
+    if (!imagePreview) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setImagePreview(null);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [imagePreview]);
 
   const uploadImages = async (files: FileList | null) => {
     if (!files || files.length === 0 || !canEdit || !storage) return;
@@ -551,9 +565,16 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                 return (
                   <div key={img.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
                     <div style={{ position: 'relative' }}>
-                      <img src={img.url} alt={img.title} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                      <button
+                        type="button"
+                        className="image-preview-trigger"
+                        onClick={() => setImagePreview({ url: img.url, title: img.title })}
+                        aria-label={`Preview ${img.title}`}
+                      >
+                        <img src={img.url} alt={img.title} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                      </button>
                       {canEdit && (
-                        <label style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '1.4rem', height: '1.4rem', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', cursor: 'pointer' }}>
+                        <label style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '1.4rem', height: '1.4rem', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', cursor: 'pointer', zIndex: 1 }}>
                           <input
                             type="checkbox"
                             checked={attached}
@@ -618,6 +639,24 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
           </section>
           </div>
         </div>
+
+        {imagePreview && (
+          <div className="image-lightbox-overlay" onClick={() => setImagePreview(null)} role="dialog" aria-modal="true" aria-label={`${imagePreview.title} preview`}>
+            <div className="image-lightbox" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="image-lightbox-close"
+                onClick={() => setImagePreview(null)}
+                title="Close preview"
+                aria-label="Close preview"
+              >
+                <X size={18} />
+              </button>
+              <img src={imagePreview.url} alt={imagePreview.title} className="image-lightbox-image" />
+              <p className="image-lightbox-caption">{imagePreview.title}</p>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CreditCard, Trash2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, Trash2, X } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { collection, deleteField, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import toast from '../utils/anchoredToast';
@@ -24,7 +24,7 @@ const BAND_COLOR_OPTIONS = [
   '#37474f',
 ] as const;
 
-const LOGO_ITEMS_PER_PAGE = 3;
+const LOGO_ITEMS_PER_PAGE = 4;
 
 interface LogoAsset {
   id: string;
@@ -83,6 +83,7 @@ export default function BandSettingsPage() {
   const [busyLogo, setBusyLogo] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [logoPage, setLogoPage] = useState(1);
+  const [logoPreview, setLogoPreview] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     if (!band) return;
@@ -301,6 +302,19 @@ export default function BandSettingsPage() {
     }
   }, [logoPage, logoTotalPages]);
 
+  useEffect(() => {
+    if (!logoPreview) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setLogoPreview(null);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [logoPreview]);
+
   return (
     <section className="bands-page">
       <header className="bands-header">
@@ -442,7 +456,14 @@ export default function BandSettingsPage() {
                     return (
                       <article key={asset.id} className="bands-logo-card" role="listitem">
                         <div className="bands-logo-card-image-wrap">
-                          <img src={asset.url} alt={asset.title} className="bands-logo-card-image" />
+                          <button
+                            type="button"
+                            className="image-preview-trigger"
+                            onClick={() => setLogoPreview({ url: asset.url, title: isCurrent ? 'Current logo' : asset.title })}
+                            aria-label={`Preview ${isCurrent ? 'current logo' : asset.title}`}
+                          >
+                            <img src={asset.url} alt={asset.title} className="bands-logo-card-image" />
+                          </button>
                         </div>
                         <div className="bands-logo-card-footer">
                           <span className="bands-logo-card-title">{isCurrent ? 'Current logo' : asset.title}</span>
@@ -540,6 +561,24 @@ export default function BandSettingsPage() {
           />
         </div>
       </div>
+
+      {logoPreview && (
+        <div className="image-lightbox-overlay" onClick={() => setLogoPreview(null)} role="dialog" aria-modal="true" aria-label={`${logoPreview.title} preview`}>
+          <div className="image-lightbox" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="image-lightbox-close"
+              onClick={() => setLogoPreview(null)}
+              title="Close preview"
+              aria-label="Close preview"
+            >
+              <X size={18} />
+            </button>
+            <img src={logoPreview.url} alt={logoPreview.title} className="image-lightbox-image" />
+            <p className="image-lightbox-caption">{logoPreview.title}</p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

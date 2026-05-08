@@ -451,9 +451,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           aria-expanded={bandSwitcherOpen}
         >
           <>
-            {effectiveActiveBand?.icon
-              ? <span className="sidebar-list-icon" aria-hidden="true">{effectiveActiveBand.icon}</span>
-              : <Users size={13} />}
+            <Users size={13} />
             <span className="sidebar-band-switcher-name">
               {effectiveActiveBand?.name ?? ''}
             </span>
@@ -484,9 +482,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   onNavigate?.();
                 }}
               >
-                {band.icon
-                  ? <span className="sidebar-list-icon" aria-hidden="true">{band.icon}</span>
-                  : <Users size={13} />}
+                <Users size={13} />
                 <span className="sidebar-band-switcher-option-name">{band.name}</span>
               </button>
             ))}
@@ -613,7 +609,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                           className="sidebar-list-item-btn"
                           onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/songlists/${songList.id}`); onNavigate?.(); }}
                         >
-                          {songList.icon ? <span className="sidebar-list-icon" aria-hidden="true">{songList.icon}</span> : <Folder size={14} />}
+                          <Folder size={14} />
                           <span className="sidebar-list-name">{songList.name}</span>
                           {songList.songIds.length > 0 && <span className="sidebar-list-count">{songList.songIds.length}</span>}
                         </button>
@@ -684,7 +680,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                           className="sidebar-list-item-btn"
                           onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/setlists/${setlist.id}`); onNavigate?.(); }}
                         >
-                          {setlist.icon ? <span className="sidebar-list-icon" aria-hidden="true">{setlist.icon}</span> : <ListMusic size={14} />}
+                          <ListMusic size={14} />
                           <span className="sidebar-list-name">{setlist.name}</span>
                           {setlist.songIds.length > 0 && <span className="sidebar-list-count">{setlist.songIds.length}</span>}
                         </button>
@@ -747,7 +743,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                             onNavigate?.();
                           }}
                         >
-                          {rider.icon ? <span className="sidebar-list-icon" aria-hidden="true">{rider.icon}</span> : <ClipboardList size={14} />}
+                          <ClipboardList size={14} />
                           <span className="sidebar-list-name">{rider.name}</span>
                         </button>
                       </div>
@@ -808,7 +804,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                             onNavigate?.();
                           }}
                         >
-                          {kit.icon ? <span className="sidebar-list-icon" aria-hidden="true">{kit.icon}</span> : <Newspaper size={14} />}
+                          <Newspaper size={14} />
                           <span className="sidebar-list-name">{kit.name}</span>
                         </button>
                       </div>
