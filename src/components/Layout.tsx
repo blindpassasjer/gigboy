@@ -9,7 +9,7 @@ import BrandMark from './BrandMark';
 import DemoBanner from './DemoBanner';
 import { useDarkModeContext } from '../context/DarkModeContext';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
-import { usePlan } from '../hooks/usePlan';
+import { usePlan, useBandPlan } from '../hooks/usePlan';
 import { db } from '../lib/firebase';
 import { declineInvite, loadPendingInvites } from '../lib/collaboration';
 import { declineBandInvite, loadPendingBandInvites } from '../lib/bandInvites';
@@ -45,6 +45,7 @@ export default function Layout({ children }: Props) {
   } = useBands();
   const { user } = useAuth();
   const planState = usePlan();
+  const activeBandPlanState = useBandPlan(activeBand ?? null);
   const {
     pendingIncomingCount,
     acceptedOutgoing,
@@ -139,13 +140,13 @@ export default function Layout({ children }: Props) {
   const createBandResource = useCallback(async (kind: 'songlist' | 'setlist' | 'rider') => {
     if (!routeBandId) return;
 
-    if (kind === 'setlist' && !planState.canUse('setlists')) {
-      toast.error('Setlists require a Pro or Band plan.');
+    if (kind === 'setlist' && !activeBandPlanState.canUse('setlists')) {
+      toast.error('Setlists require a Pro or Crew plan for this band.');
       return;
     }
 
-    if (kind === 'rider' && !planState.canUse('technicalRiders')) {
-      toast.error('Technical riders require a Pro or Band plan.');
+    if (kind === 'rider' && !activeBandPlanState.canUse('technicalRiders')) {
+      toast.error('Technical riders require a Pro or Crew plan for this band.');
       return;
     }
 

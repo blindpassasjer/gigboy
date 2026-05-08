@@ -53,7 +53,7 @@ export interface Band {
   memberUsernames: Record<string, string>;
   memberFullNames: Record<string, string>;
   memberAvatars: Record<string, string>;
-  billingPlan?: 'free' | 'crew';
+  billingPlan?: 'free' | 'pro' | 'crew';
   billingSubscriptionStatus?: SubscriptionStatus;
   billingCurrentPeriodEnd?: number | null;
   billingExtraMembers?: number;

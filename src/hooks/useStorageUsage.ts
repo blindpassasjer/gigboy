@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collectionGroup, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, collectionGroup, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { PLAN_LIMITS } from '../lib/planLimits';
 
@@ -14,6 +14,17 @@ interface UsageState {
 function toSafeNumber(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null;
   return value >= 0 ? value : null;
+}
+
+function sumStoredBytes(docs: Array<{ data(): Record<string, unknown> }>): number {
+  return docs.reduce((sum, snap) => {
+    const data = snap.data();
+    const sizeBytes = toSafeNumber(data.sizeBytes);
+    if (sizeBytes !== null) return sum + sizeBytes;
+
+    const legacySize = toSafeNumber(data.size);
+    return legacySize !== null ? sum + legacySize : sum;
+  }, 0);
 }
 
 export function useStorageUsage(userId: string | null | undefined, planQuotaBytes?: number) {
@@ -42,10 +53,18 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
       setState((current) => ({ ...current, loading: true }));
 
       try {
-        const [userSnapshot, recordingsSnapshot, pressKitImagesSnapshot] = await Promise.all([
+        const [
+          userSnapshot,
+          recordingsSnapshot,
+          pressKitImagesSnapshot,
+          memberBandsSnapshot,
+          ownedBandsSnapshot,
+        ] = await Promise.all([
           getDoc(doc(firestore, 'users', currentUserId)),
           getDocs(query(collectionGroup(firestore, 'recordings'), where('recorder.userId', '==', currentUserId))),
           getDocs(query(collectionGroup(firestore, 'pressKitImages'), where('createdBy', '==', currentUserId))),
+          getDocs(query(collection(firestore, 'bands'), where('memberIds', 'array-contains', currentUserId))),
+          getDocs(query(collection(firestore, 'bands'), where('ownerId', '==', currentUserId))),
         ]);
 
         if (cancelled) return;
@@ -55,20 +74,36 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
         const quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
 
-        const recordingBytes = recordingsSnapshot.docs.reduce((sum, snap) => {
-          const data = snap.data() as Record<string, unknown>;
-          const sizeBytes = toSafeNumber(data.sizeBytes);
-          if (sizeBytes !== null) return sum + sizeBytes;
+        const recordingBytes = sumStoredBytes(recordingsSnapshot.docs as Array<{ data(): Record<string, unknown> }>);
 
-          const legacySize = toSafeNumber(data.size);
-          return legacySize !== null ? sum + legacySize : sum;
-        }, 0);
+        const countedPressKitDocPaths = new Set(pressKitImagesSnapshot.docs.map((snap) => snap.ref.path));
+        const bandIds = new Set([
+          ...memberBandsSnapshot.docs.map((snap) => snap.id),
+          ...ownedBandsSnapshot.docs.map((snap) => snap.id),
+        ]);
 
-        const pressKitBytes = pressKitImagesSnapshot.docs.reduce((sum, snap) => {
-          const data = snap.data() as Record<string, unknown>;
-          const sizeBytes = toSafeNumber(data.sizeBytes);
-          return sizeBytes !== null ? sum + sizeBytes : sum;
-        }, 0);
+        const legacyPressKitSnapshots = await Promise.all(
+          Array.from(bandIds).map((bandId) => getDocs(collection(firestore, 'bands', bandId, 'pressKitImages')))
+        );
+
+        if (cancelled) return;
+
+        const pressKitBytes = sumStoredBytes(pressKitImagesSnapshot.docs as Array<{ data(): Record<string, unknown> }>)
+          + legacyPressKitSnapshots.reduce((sum, snapshot) => {
+            return sum + snapshot.docs.reduce((bandSum, snap) => {
+              if (countedPressKitDocPaths.has(snap.ref.path)) return bandSum;
+
+              const data = snap.data() as Record<string, unknown>;
+              const createdBy = typeof data.createdBy === 'string' ? data.createdBy.trim() : '';
+              if (createdBy.length > 0 && createdBy !== currentUserId) return bandSum;
+
+              const sizeBytes = toSafeNumber(data.sizeBytes);
+              if (sizeBytes !== null) return bandSum + sizeBytes;
+
+              const legacySize = toSafeNumber(data.size);
+              return legacySize !== null ? bandSum + legacySize : bandSum;
+            }, 0);
+          }, 0);
 
         const usedBytes = recordingBytes + pressKitBytes;
 

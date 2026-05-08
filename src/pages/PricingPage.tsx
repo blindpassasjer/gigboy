@@ -160,9 +160,9 @@ export default function PricingPage() {
       return;
     }
 
-    const isBandPlan = card.tier === 'crew';
+    const isBandPlan = card.tier === 'crew' || card.tier === 'pro';
     if (isBandPlan && !selectedBandId) {
-      toast.error('Select which band you want to manage before continuing.');
+      toast.error('Select which band you want to upgrade before continuing.');
       return;
     }
     const normalizedExtraMembers = isBandPlan ? Math.max(0, Math.min(500, Math.trunc(extraMemberCount))) : 0;
@@ -219,9 +219,9 @@ export default function PricingPage() {
           <span className="pricing-grid" />
         </div>
         <span className="pricing-kicker">Pricing</span>
-        <h1>Simple tiers for solo players and crews</h1>
+        <h1>Pay per band workspace</h1>
         <p>
-          Every account gets one band workspace. Upgrade to Pro for all solo features, or Crew to invite up to 5 members.
+          Every account gets one free band. Upgrade individual bands to Pro (all features, solo) or Crew (all features + up to 5 members).
         </p>
         <div className="pricing-hero-actions">
           <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-hero-back-link">
@@ -282,22 +282,23 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
+              {card.tier === 'crew' || card.tier === 'pro' ? (
+                <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
+                  <span>Band workspace</span>
+                  <select
+                    value={selectedBandId}
+                    onChange={(event) => setSelectedBandId(event.target.value)}
+                    disabled={busyTier === card.tier || ownedBands.length === 0}
+                  >
+                    {ownedBands.length === 0 ? <option value="">Create a band first</option> : null}
+                    {ownedBands.map((band) => (
+                      <option key={band.id} value={band.id}>{band.name}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               {card.tier === 'crew' ? (
-                <>
-                  <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
-                    <span>Band workspace</span>
-                    <select
-                      value={selectedBandId}
-                      onChange={(event) => setSelectedBandId(event.target.value)}
-                      disabled={busyTier === card.tier || ownedBands.length === 0}
-                    >
-                      {ownedBands.length === 0 ? <option value="">Create a band first</option> : null}
-                      {ownedBands.map((band) => (
-                        <option key={band.id} value={band.id}>{band.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="share-menu-field" style={{ marginBottom: '0.85rem' }}>
+                <label className="share-menu-field" style={{ marginBottom: '0.85rem' }}>
                     <span>Extra members ({billingCycle === 'annual' ? '200 kr / 20 USD each per year' : '20 kr / 2 USD each per month'})</span>
                     <input
                       type="number"
@@ -308,7 +309,6 @@ export default function PricingPage() {
                       disabled={busyTier === card.tier || ownedBands.length === 0}
                     />
                   </label>
-                </>
               ) : null}
               {card.tier === 'free' ? (
                 <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-card-btn">
@@ -318,12 +318,12 @@ export default function PricingPage() {
                 <button
                   type="button"
                   className="setlist-action-btn pricing-card-btn"
-                  disabled={busyTier === card.tier || isCurrentPlan || (card.tier === 'crew' && ownedBands.length === 0)}
+                  disabled={busyTier === card.tier || isCurrentPlan || ((card.tier === 'crew' || card.tier === 'pro') && ownedBands.length === 0)}
                   onClick={() => void handleCheckout(card)}
                 >
                   {busyTier === card.tier
                     ? 'Redirecting…'
-                    : card.tier === 'crew' && ownedBands.length === 0
+                    : (card.tier === 'crew' || card.tier === 'pro') && ownedBands.length === 0
                       ? 'Create a band first'
                       : ctaLabel}
                 </button>

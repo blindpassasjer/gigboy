@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
-import { usePlan } from '../hooks/usePlan';
+import { usePlan, useBandPlan } from '../hooks/usePlan';
 import type { HandNoteStroke, Song } from '../types';
 import LanguageBadge from '../components/LanguageBadge';
 import ChordDisplay from '../components/ChordDisplay';
@@ -67,13 +67,18 @@ export default function BandSetlistConcertPage() {
   const navigate = useNavigate();
   const { bandId, setlistId } = useParams<{ bandId: string; setlistId: string }>();
   const { user } = useAuth();
-  const { canUse } = usePlan();
+  const { canUse: canUseUser } = usePlan();
   const {
     bandSetlistsByBandId,
     bandSongsByBandId,
     refreshBandSetlists,
     refreshBandSongs,
+    bands,
   } = useBands();
+
+  const band = bands.find((b) => b.id === bandId) ?? null;
+  const { canUse } = useBandPlan(band);
+  void canUseUser;
 
   const bandSetlists = useMemo(() => (bandId ? (bandSetlistsByBandId[bandId] ?? []) : []), [bandId, bandSetlistsByBandId]);
   const bandSongs = useMemo(() => (bandId ? (bandSongsByBandId[bandId] ?? []) : []), [bandId, bandSongsByBandId]);
@@ -472,7 +477,7 @@ export default function BandSetlistConcertPage() {
 
   const handlePedalButtonClick = useCallback(() => {
     if (!canUse('bluetoothPedal')) {
-      window.alert('The Bluetooth pedal feature requires a Pro or Crew plan. Upgrade at gigboy.app/pricing.');
+      window.alert('The Bluetooth pedal feature requires a Pro or Crew plan for this band. Upgrade at gigboy.app/pricing.');
       return;
     }
     if (isPedalConnected) {

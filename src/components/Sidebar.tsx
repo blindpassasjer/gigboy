@@ -5,6 +5,7 @@ import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { usePlan } from '../hooks/usePlan';
+import { bandCanUse } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
@@ -47,7 +48,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   })();
   const { songs } = useSongs();
   const { clearActiveSelection } = useSongLists();
-  const { canUse, storageQuotaBytes } = usePlan();
+  const { storageQuotaBytes } = usePlan();
   const { user } = useAuth();
   const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes);
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
@@ -81,7 +82,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   } = useBands();
 
   const [addingBand, setAddingBand] = useState(false);
-  const atBandLimit = bands.filter((b) => b.ownerId === user?.id).length >= 1;
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
   const [addingBandInputListId, setAddingBandInputListId] = useState<string | null>(null);
@@ -494,10 +494,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           <button
             type="button"
             className="sidebar-icon-btn"
-            title={atBandLimit ? 'Band limit reached' : 'New band'}
-            aria-label={atBandLimit ? 'Band limit reached' : 'Create new band'}
-            disabled={atBandLimit}
-            onClick={() => { if (!atBandLimit) { setAddingBand(true); setDraftName(''); } }}
+            title="New band"
+            aria-label="Create new band"
+            onClick={() => { setAddingBand(true); setDraftName(''); }}
           >
             <Plus size={15} />
           </button>
@@ -643,11 +642,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={canUse('setlists') ? 'New band setlist' : 'Upgrade to Pro to create setlists'}
+                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'setlists') ? 'New band setlist' : 'Upgrade this band to Pro or Crew to create setlists'}
                     aria-label="Create new band setlist"
                     onClick={() => {
-                      if (!canUse('setlists')) {
-                        toast.error('Setlists require a Pro or Band plan.');
+                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'setlists')) {
+                        toast.error('Setlists require a Pro or Crew plan for this band.');
                         return;
                       }
                       setCollapsedBandSetlistIds((prev) => prev.filter((entry) => entry !== band.id));

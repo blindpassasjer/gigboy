@@ -5803,9 +5803,16 @@ input, select, textarea { font: inherit; color: var(--text); }
 .concert-scroll-region {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+}
+
+.concert-scroll-region > * {
+  width: 100%;
 }
 
 .concert-song-navigator {
@@ -9462,9 +9469,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: .08em;
 }
 
 .press-kit-section-hint {

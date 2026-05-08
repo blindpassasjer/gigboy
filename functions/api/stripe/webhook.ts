@@ -72,6 +72,13 @@ async function writeBandBillingSnapshot(
     return isBandBasePriceId(priceId, envConfig) && item.metadata?.bandId === bandId;
   }) ?? null;
 
+  // Pro band: base price item is a Pro price ID (not a Crew/band price ID)
+  const proBasePrices = new Set([envConfig.STRIPE_PRO_MONTHLY_PRICE_ID, envConfig.STRIPE_PRO_ANNUAL_PRICE_ID].filter(Boolean));
+  const proItem = sub.items.data.find((item) => {
+    const priceId = item.price?.id ?? '';
+    return proBasePrices.has(priceId) && item.metadata?.bandId === bandId;
+  }) ?? null;
+
   const extraItem = sub.items.data.find((item) => {
     const priceId = item.price?.id ?? '';
     return isBandExtraPriceId(priceId, envConfig) && item.metadata?.bandId === bandId;
@@ -83,15 +90,19 @@ async function writeBandBillingSnapshot(
     ? sub.customer
     : (sub.customer as Stripe.Customer)?.id ?? null;
 
+  // Determine the band's plan: 'crew' if Crew base item exists, 'pro' if Pro item exists, otherwise 'free'
+  const bandBillingPlan = active && baseItem ? 'crew' : active && proItem ? 'pro' : 'free';
+  const activeBandItem = baseItem ?? proItem;
+
   await setFirestoreDocument(env, ['bands', bandId], {
-    billingPlan: active && baseItem ? 'crew' : 'free',
+    billingPlan: bandBillingPlan,
     billingSubscriptionStatus: status,
-    billingCurrentPeriodEnd: baseItem?.current_period_end ?? sub.items.data[0]?.current_period_end ?? null,
-    billingExtraMembers: active && baseItem ? extraMembers : 0,
-    billingMemberLimit: active && baseItem ? 5 + extraMembers : 1,
+    billingCurrentPeriodEnd: activeBandItem?.current_period_end ?? sub.items.data[0]?.current_period_end ?? null,
+    billingExtraMembers: bandBillingPlan === 'crew' ? extraMembers : 0,
+    billingMemberLimit: bandBillingPlan === 'crew' ? 5 + extraMembers : 1,
     stripeCustomerId: customerId,
     stripeSubscriptionId: sub.id,
-    stripeBandItemId: baseItem?.id ?? null,
+    stripeBandItemId: activeBandItem?.id ?? null,
     stripeExtraMembersItemId: extraItem?.id ?? null,
   });
 }

@@ -54,9 +54,10 @@ export async function resolveOwnerBandMemberLimit(
 ): Promise<OwnerBandLimit> {
   const bandDoc = await getFirestoreDocument(env, ['bands', bandId]);
   const bandStatus = toSubscriptionStatus(bandDoc?.billingSubscriptionStatus);
-  const bandPlan = bandDoc?.billingPlan === 'crew' ? 'crew' : 'free';
+  const bandPlan = bandDoc?.billingPlan === 'crew' ? 'crew' : bandDoc?.billingPlan === 'pro' ? 'pro' : 'free';
   const bandActive = isPlanActive(bandPlan, bandStatus, false);
 
+  // Crew band: member invites allowed
   if (bandPlan === 'crew' && bandActive) {
     const extraMembers = toSafeExtraMembers(bandDoc?.billingExtraMembers);
     const storedLimit = typeof bandDoc?.billingMemberLimit === 'number'
@@ -66,6 +67,15 @@ export async function resolveOwnerBandMemberLimit(
       memberLimit: Math.max(storedLimit, 5 + extraMembers),
       isBandEligible: true,
       extraMembers,
+    };
+  }
+
+  // Pro band: all features but no member invites
+  if (bandPlan === 'pro' && bandActive) {
+    return {
+      memberLimit: 1,
+      isBandEligible: false,
+      extraMembers: 0,
     };
   }
 

@@ -87,15 +87,17 @@ function toBandBillingSnapshot(
 async function writeBandBillingSnapshot(
   env: Record<string, string | undefined>,
   bandId: string,
-  snapshot: BandBillingSnapshot
+  snapshot: BandBillingSnapshot,
+  plan: 'crew' | 'pro' = 'crew'
 ) {
   const active = snapshot.subscriptionStatus === 'active' || snapshot.subscriptionStatus === 'trialing';
+  const billingPlan = active ? plan : 'free';
   await setFirestoreDocument(env, ['bands', bandId], {
-    billingPlan: active ? 'band' : 'free',
+    billingPlan,
     billingSubscriptionStatus: snapshot.subscriptionStatus,
     billingCurrentPeriodEnd: snapshot.currentPeriodEnd,
-    billingExtraMembers: snapshot.extraMembers,
-    billingMemberLimit: active ? snapshot.memberLimit : 1,
+    billingExtraMembers: billingPlan === 'crew' ? snapshot.extraMembers : 0,
+    billingMemberLimit: billingPlan === 'crew' ? snapshot.memberLimit : 1,
     stripeCustomerId: snapshot.stripeCustomerId,
     stripeSubscriptionId: snapshot.stripeSubscriptionId,
     stripeBandItemId: snapshot.stripeBandItemId,
@@ -199,11 +201,11 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       return Response.json({ error: 'Extra member add-on is not configured for this environment.' }, { status: 400 });
     }
 
-    if (requestedPlan === 'crew' && !requestedBandId) {
-      return Response.json({ error: 'bandId is required for Crew subscriptions.' }, { status: 400 });
+    if ((requestedPlan === 'crew' || requestedPlan === 'pro') && !requestedBandId) {
+      return Response.json({ error: 'bandId is required for Pro and Crew subscriptions.' }, { status: 400 });
     }
 
-    if (requestedPlan === 'crew') {
+    if (requestedPlan === 'crew' || requestedPlan === 'pro') {
       const band = await getFirestoreDocument(ctx.env, ['bands', requestedBandId]);
       if (!band) {
         return Response.json({ error: 'Band not found.' }, { status: 404 });
@@ -226,7 +228,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       });
     }
 
-    if (requestedPlan === 'crew') {
+    if (requestedPlan === 'crew' || requestedPlan === 'pro') {
       const aggregateSubscription = await findAggregateBandSubscription(stripe, customerId, userId);
 
       if (aggregateSubscription) {
@@ -306,7 +308,8 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
         await writeBandBillingSnapshot(
           ctx.env as Record<string, string | undefined>,
           requestedBandId,
-          toBandBillingSnapshot(updatedSubscription, ctx.env, requestedBandId)
+          toBandBillingSnapshot(updatedSubscription, ctx.env, requestedBandId),
+          requestedPlan === 'pro' ? 'pro' : 'crew'
         );
 
         const aggregatePlan = planAndExtraMembersFromSubscription(
@@ -346,12 +349,12 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       allow_promotion_codes: true,
       metadata: {
         firebaseUid: userId,
-        ...(requestedPlan === 'crew' ? { bandId: requestedBandId } : {}),
+        ...(requestedPlan === 'crew' || requestedPlan === 'pro' ? { bandId: requestedBandId } : {}),
       },
       subscription_data: {
         metadata: {
           firebaseUid: userId,
-          ...(requestedPlan === 'crew' ? { gigboyMode: 'band_aggregate' } : {}),
+          ...(requestedPlan === 'crew' || requestedPlan === 'pro' ? { gigboyMode: 'band_aggregate' } : {}),
         },
       },
     });
