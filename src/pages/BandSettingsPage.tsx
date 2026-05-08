@@ -55,6 +55,7 @@ export default function BandSettingsPage() {
     renameBand,
     updateBandDescription,
     updateBandLibraryAppearance,
+    updateBandLogo,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
@@ -66,6 +67,10 @@ export default function BandSettingsPage() {
   const [useAutoColor, setUseAutoColor] = useState(true);
   const [busy, setBusy] = useState(false);
   const [busyAppearance, setBusyAppearance] = useState(false);
+  const [logo, setLogo] = useState<string | undefined>();
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [busyLogo, setBusyLogo] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
     if (!band) return;
@@ -74,6 +79,8 @@ export default function BandSettingsPage() {
     setIcon(band.icon ?? '🎵');
     setColor(band.color ?? '#c33232');
     setUseAutoColor(!band.color);
+    setLogo(band.logo);
+    setLogoFile(null);
   }, [band]);
 
   if (loading && !band) {
@@ -120,6 +127,60 @@ export default function BandSettingsPage() {
   const handleAutoColor = async () => {
     setUseAutoColor(true);
     await applyAppearance(icon, undefined);
+  };
+
+  const handleLogoSelect = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Logo file must be smaller than 5 MB.');
+      return;
+    }
+
+    setLogoFile(file);
+    setBusyLogo(true);
+    const logoError = await updateBandLogo(band.id, file);
+    setBusyLogo(false);
+
+    if (logoError) {
+      toast.error(logoError);
+    } else {
+      toast.success('Logo uploaded.');
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    setBusyLogo(true);
+    const logoError = await updateBandLogo(band.id, null);
+    setBusyLogo(false);
+
+    if (logoError) {
+      toast.error(logoError);
+    } else {
+      setLogo(undefined);
+      setLogoFile(null);
+      toast.success('Logo removed.');
+    }
+  };
+
+  const handleLogoDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      void handleLogoSelect(files[0]);
+    }
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      void handleLogoSelect(e.target.files[0]);
+    }
   };
 
   const handleSave = async () => {
@@ -256,6 +317,73 @@ export default function BandSettingsPage() {
               Auto color
             </button>
             <p className="bands-inline-note">Color updates immediately.</p>
+          </div>
+
+          {/* ── Band Logo & Color ── */}
+          <div className="bands-logo-section">
+            {/* Logo Upload */}
+            <div className="bands-logo-upload-area">
+              <p className="bands-logo-section-title">Band Logo</p>
+              {logo && !logoFile ? (
+                <div className="bands-logo-preview">
+                  <div className="bands-logo-preview-image">
+                    <img src={logo} alt="Band logo" />
+                  </div>
+                  <button
+                    type="button"
+                    className="bands-logo-remove-btn"
+                    onClick={() => { void handleRemoveLogo(); }}
+                    disabled={!canEditBand || busyLogo}
+                  >
+                    {busyLogo ? 'Removing…' : 'Remove logo'}
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className={`bands-logo-upload-drop${dragActive ? ' active' : ''}`}
+                  onDragOver={(e) => { e.preventDefault(); if (canEditBand && !busyLogo) setDragActive(true); }}
+                  onDragLeave={() => setDragActive(false)}
+                  onDrop={handleLogoDrop}
+                  onClick={() => document.getElementById('band-logo-input')?.click()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && canEditBand && !busyLogo) document.getElementById('band-logo-input')?.click(); }}
+                >
+                  <p style={{ margin: 0, textAlign: 'center', color: 'var(--muted)', fontSize: '.85rem' }}>
+                    {busyLogo ? 'Uploading…' : 'Drag & drop or click to upload'}
+                  </p>
+                </div>
+              )}
+              <input
+                id="band-logo-input"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                style={{ display: 'none' }}
+                disabled={!canEditBand || busyLogo}
+              />
+            </div>
+
+            {/* Logo Info & Color */}
+            <div className="bands-logo-color-group">
+              <div>
+                <p className="bands-logo-section-title">Logo Guidelines</p>
+                <div className="bands-logo-info">
+                  <p className="bands-logo-info-item">
+                    <strong>Transparency:</strong> PNG files with transparent backgrounds work best and look professional on any theme.
+                  </p>
+                  <p className="bands-logo-info-item">
+                    <strong>Size:</strong> Use square or wide logos (at least 400×400px). Keep file size under 5 MB.
+                  </p>
+                  <p className="bands-logo-info-item">
+                    <strong>Format:</strong> PNG, JPG, WebP, or GIF formats are supported.
+                  </p>
+                  <p className="bands-logo-info-item">
+                    <strong>Design:</strong> Solid colors or subtle gradients work well. Avoid intricate details that may not scale.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* ── Actions ── */}

@@ -44,6 +44,8 @@ export interface Band {
   description?: string;
   icon?: string;
   color?: string;
+  logo?: string;
+  logoStoragePath?: string;
   ownerId: string;
   memberIds: string[];
   memberRoles: Record<string, CollaborationPermission>;

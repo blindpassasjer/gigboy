@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { arrayUnion, collection, deleteDoc, deleteField, doc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import type {
   Band,
   CollaborationPermission,
@@ -18,7 +19,7 @@ import type {
   TrashedSongList,
   TrashedInputList,
 } from '../types';
-import { db, firebaseEnabled } from '../lib/firebase';
+import { db, storage, firebaseEnabled } from '../lib/firebase';
 import {
   cleanupLegacySoloDataOnServer,
   changeBandMemberRoleOnServer,
@@ -126,6 +127,8 @@ function normalizeBand(id: string, data: Record<string, unknown>): Band {
     description: typeof data.description === 'string' ? data.description : undefined,
     icon: typeof data.icon === 'string' ? data.icon : undefined,
     color: typeof data.color === 'string' ? data.color : undefined,
+    logo: typeof data.logo === 'string' ? data.logo : undefined,
+    logoStoragePath: typeof data.logoStoragePath === 'string' ? data.logoStoragePath : undefined,
     ownerId: typeof data.ownerId === 'string' ? data.ownerId : '',
     memberIds: Array.isArray(data.memberIds)
       ? data.memberIds.filter((entry): entry is string => typeof entry === 'string')
@@ -412,6 +415,7 @@ interface BandsContextValue {
   updateBandSongListIcon: (bandId: string, songListId: string, icon?: string) => Promise<string | null>;
   updateBandLibraryAppearance: (bandId: string, appearance: { icon?: string; color?: string }) => Promise<string | null>;
   updateBandLibraryIcon: (bandId: string, icon?: string) => Promise<string | null>;
+  updateBandLogo: (bandId: string, file: File | null) => Promise<string | null>;
   deleteBandSongList: (bandId: string, songListId: string) => Promise<string | null>;
   addSongToBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
   removeSongFromBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
@@ -1301,6 +1305,82 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       color: band?.color,
     });
   }, [bands, updateBandLibraryAppearance]);
+
+  const updateBandLogo = useCallback(async (bandId: string, file: File | null) => {
+    if (!db || !storage || !userId) {
+      return 'Bands require cloud sync.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) {
+      return 'Band not found.';
+    }
+
+    if (!canEditBandLibrary(band, userId)) {
+      return 'You do not have permission to edit this band.';
+    }
+
+    const previousBands = bands;
+    const now = new Date().toISOString();
+
+    if (!file) {
+      // Remove logo
+      const nextBands = bands
+        .map((entry) => (entry.id === bandId ? { ...entry, logo: undefined, logoStoragePath: undefined, updatedAt: now } : entry))
+        .sort(compareBands);
+
+      setBands(nextBands);
+
+      try {
+        await setDoc(doc(db, BANDS_COLLECTION, bandId), {
+          logo: deleteField(),
+          logoStoragePath: deleteField(),
+          updatedAt: now,
+        }, { merge: true });
+
+        // Delete the old file from storage if it exists
+        if (band.logoStoragePath) {
+          try {
+            await deleteObject(ref(storage, band.logoStoragePath));
+          } catch {
+            // Ignore deletion errors
+          }
+        }
+
+        return null;
+      } catch (error) {
+        setBands(previousBands);
+        return error instanceof Error ? error.message : 'Failed to remove band logo.';
+      }
+    }
+
+    // Upload new logo
+    try {
+      const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() ?? 'bin' : 'bin';
+      const logoStoragePath = `bands/${bandId}/logo.${ext}`;
+      const storageRef = ref(storage, logoStoragePath);
+
+      await uploadBytes(storageRef, file, { contentType: file.type || undefined });
+      const logoUrl = await getDownloadURL(storageRef);
+
+      const nextBands = bands
+        .map((entry) => (entry.id === bandId ? { ...entry, logo: logoUrl, logoStoragePath, updatedAt: now } : entry))
+        .sort(compareBands);
+
+      setBands(nextBands);
+
+      await setDoc(doc(db, BANDS_COLLECTION, bandId), {
+        logo: logoUrl,
+        logoStoragePath,
+        updatedAt: now,
+      }, { merge: true });
+
+      return null;
+    } catch (error) {
+      setBands(previousBands);
+      return error instanceof Error ? error.message : 'Failed to upload band logo.';
+    }
+  }, [bands, userId]);
 
   const inviteMember = useCallback(async (bandId: string, recipientUsername: string, role: CollaborationPermission) => {
     if (!userId) {
@@ -3070,6 +3150,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     removeSongFromBandLibrary,
     updateBandLibraryAppearance,
     updateBandLibraryIcon,
+    updateBandLogo,
     moveBandSong,
     addBandSongList,
     renameBandSongList,
