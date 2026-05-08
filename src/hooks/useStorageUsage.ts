@@ -23,7 +23,7 @@ function toSafeNonEmptyString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export function useStorageUsage(userId: string | null | undefined, planQuotaBytes?: number) {
+export function useStorageUsage(userId: string | null | undefined, planQuotaBytes?: number, bandId?: string | null) {
   const [state, setState] = useState<UsageState>({
     usedBytes: 0,
     quotaBytes: planQuotaBytes ?? DEFAULT_STORAGE_QUOTA_BYTES,
@@ -42,6 +42,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
     const firestore = db;
     const currentUserId = userId;
+    const currentBandId = bandId ?? null;
     const storageApi = storage;
     const storageSizeCache = new Map<string, number>();
 
@@ -88,102 +89,148 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
       setState((current) => ({ ...current, loading: true }));
 
       try {
-        const [
-          userSnapshotResult,
-          recordingsSnapshotResult,
-          ownPressKitImagesSnapshotResult,
-          memberBandsSnapshotResult,
-          ownerBandsSnapshotResult,
-        ] = await Promise.allSettled([
+        // ── Quota (always from user profile) ─────────────────────────────────
+        const userSnapshotResult = await Promise.allSettled([
           getDoc(doc(firestore, 'users', currentUserId)),
-          getDocs(query(collectionGroup(firestore, 'recordings'), where('recorder.userId', '==', currentUserId))),
-          getDocs(query(collectionGroup(firestore, 'pressKitImages'), where('createdBy', '==', currentUserId))),
-          getDocs(query(collection(firestore, 'bands'), where('memberIds', 'array-contains', currentUserId))),
-          getDocs(query(collection(firestore, 'bands'), where('ownerId', '==', currentUserId))),
         ]);
-
         if (cancelled) return;
-
-        const userSnapshot = userSnapshotResult.status === 'fulfilled' ? userSnapshotResult.value : null;
-        const recordingsSnapshot = recordingsSnapshotResult.status === 'fulfilled' ? recordingsSnapshotResult.value : null;
-        const ownPressKitImagesSnapshot = ownPressKitImagesSnapshotResult.status === 'fulfilled' ? ownPressKitImagesSnapshotResult.value : null;
-        const memberBandsSnapshot = memberBandsSnapshotResult.status === 'fulfilled' ? memberBandsSnapshotResult.value : null;
-        const ownerBandsSnapshot = ownerBandsSnapshotResult.status === 'fulfilled' ? ownerBandsSnapshotResult.value : null;
-
+        const userSnapshot = userSnapshotResult[0].status === 'fulfilled' ? userSnapshotResult[0].value : null;
         const userData = userSnapshot?.data() as Record<string, unknown> | undefined;
         const quotaFromProfile = toSafeNumber(userData?.storageQuotaBytes);
         const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
         const quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
 
-        const recordingSizes = await Promise.all(
-          (recordingsSnapshot?.docs ?? []).map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
-        );
-        const recordingBytes = recordingSizes.reduce((sum, value) => sum + value, 0);
+        let recordingBytes = 0;
+        let pressKitBytes = 0;
 
-        const bandIds = new Set<string>();
-        (memberBandsSnapshot?.docs ?? []).forEach((snap) => {
-          bandIds.add(snap.id);
-        });
-        (ownerBandsSnapshot?.docs ?? []).forEach((snap) => {
-          bandIds.add(snap.id);
-        });
+        if (currentBandId) {
+          // ── Band-scoped: only count assets belonging to this band ──────────
+          const [bandDocResult, pressKitImagesResult, bandSongsResult] = await Promise.allSettled([
+            getDoc(doc(firestore, 'bands', currentBandId)),
+            getDocs(collection(firestore, 'bands', currentBandId, 'pressKitImages')),
+            getDocs(collection(firestore, 'bands', currentBandId, 'songs')),
+          ]);
 
-        const pressKitImageSnapshots = await Promise.allSettled(
-          Array.from(bandIds).map((bandId) => getDocs(collection(firestore, 'bands', bandId, 'pressKitImages'))),
-        );
+          if (cancelled) return;
 
-        if (cancelled) return;
-
-        const seenPressKitDocPaths = new Set<string>();
-        const pressKitDocData: Array<Record<string, unknown>> = [];
-        if (ownPressKitImagesSnapshot) {
-          ownPressKitImagesSnapshot.docs.forEach((snap) => {
-            if (seenPressKitDocPaths.has(snap.ref.path)) return;
-            seenPressKitDocPaths.add(snap.ref.path);
-            pressKitDocData.push(snap.data() as Record<string, unknown>);
-          });
-        }
-
-        pressKitImageSnapshots.forEach((snapshot) => {
-          if (snapshot.status !== 'fulfilled') return;
-          snapshot.value.docs.forEach((snap) => {
-            if (seenPressKitDocPaths.has(snap.ref.path)) return;
-            seenPressKitDocPaths.add(snap.ref.path);
-            pressKitDocData.push(snap.data() as Record<string, unknown>);
-          });
-        });
-
-        const pressKitSizes = await Promise.all(
-          pressKitDocData.map((data) => readDocSizeWithStorageFallback(data)),
-        );
-        let pressKitBytes = pressKitSizes.reduce((sum, value) => sum + value, 0);
-
-        // Legacy logos may exist only as bands/{bandId}/logo.* without a pressKitImages doc.
-        const seenStoragePaths = new Set<string>();
-        pressKitDocData.forEach((data) => {
-          const storagePath = toSafeNonEmptyString(data.storagePath);
-          if (storagePath) seenStoragePaths.add(storagePath);
-        });
-
-        const legacyLogoPaths = new Set<string>();
-        (memberBandsSnapshot?.docs ?? []).forEach((snap) => {
-          const data = snap.data() as Record<string, unknown>;
-          const logoStoragePath = toSafeNonEmptyString(data.logoStoragePath);
-          if (!logoStoragePath || seenStoragePaths.has(logoStoragePath)) return;
-          legacyLogoPaths.add(logoStoragePath);
-        });
-        (ownerBandsSnapshot?.docs ?? []).forEach((snap) => {
-          const data = snap.data() as Record<string, unknown>;
-          const logoStoragePath = toSafeNonEmptyString(data.logoStoragePath);
-          if (!logoStoragePath || seenStoragePaths.has(logoStoragePath)) return;
-          legacyLogoPaths.add(logoStoragePath);
-        });
-
-        if (legacyLogoPaths.size > 0) {
-          const legacyLogoSizes = await Promise.all(
-            Array.from(legacyLogoPaths).map((storagePath) => getStorageObjectSize(storagePath)),
+          // Press kit images
+          const pressKitImageDocs = pressKitImagesResult.status === 'fulfilled'
+            ? pressKitImagesResult.value.docs
+            : [];
+          const seenStoragePaths = new Set<string>();
+          const pkSizes = await Promise.all(
+            pressKitImageDocs.map((snap) => {
+              const data = snap.data() as Record<string, unknown>;
+              const sp = toSafeNonEmptyString(data.storagePath);
+              if (sp) seenStoragePaths.add(sp);
+              return readDocSizeWithStorageFallback(data);
+            }),
           );
-          pressKitBytes += legacyLogoSizes.reduce((sum, value) => sum + value, 0);
+          pressKitBytes = pkSizes.reduce((sum, v) => sum + v, 0);
+
+          // Legacy logo not already covered by a pressKitImages doc
+          if (bandDocResult.status === 'fulfilled') {
+            const bandData = bandDocResult.value.data() as Record<string, unknown> | undefined;
+            const logoPath = toSafeNonEmptyString(bandData?.logoStoragePath);
+            if (logoPath && !seenStoragePaths.has(logoPath)) {
+              pressKitBytes += await getStorageObjectSize(logoPath);
+            }
+          }
+
+          // Recordings within this band's songs
+          const songIds = bandSongsResult.status === 'fulfilled'
+            ? bandSongsResult.value.docs.map((s) => s.id)
+            : [];
+          const recordingSnapshots = await Promise.allSettled(
+            songIds.map((songId) =>
+              getDocs(collection(firestore, 'bands', currentBandId, 'songs', songId, 'recordings')),
+            ),
+          );
+          if (cancelled) return;
+          const allRecordingDocs = recordingSnapshots.flatMap((r) =>
+            r.status === 'fulfilled' ? r.value.docs : [],
+          );
+          const recSizes = await Promise.all(
+            allRecordingDocs.map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
+          );
+          recordingBytes = recSizes.reduce((sum, v) => sum + v, 0);
+        } else {
+          // ── Cross-band: aggregate across all bands the user belongs to ─────
+          const [
+            recordingsSnapshotResult,
+            ownPressKitImagesSnapshotResult,
+            memberBandsSnapshotResult,
+            ownerBandsSnapshotResult,
+          ] = await Promise.allSettled([
+            getDocs(query(collectionGroup(firestore, 'recordings'), where('recorder.userId', '==', currentUserId))),
+            getDocs(query(collectionGroup(firestore, 'pressKitImages'), where('createdBy', '==', currentUserId))),
+            getDocs(query(collection(firestore, 'bands'), where('memberIds', 'array-contains', currentUserId))),
+            getDocs(query(collection(firestore, 'bands'), where('ownerId', '==', currentUserId))),
+          ]);
+
+          if (cancelled) return;
+
+          const recordingsSnapshot = recordingsSnapshotResult.status === 'fulfilled' ? recordingsSnapshotResult.value : null;
+          const ownPressKitImagesSnapshot = ownPressKitImagesSnapshotResult.status === 'fulfilled' ? ownPressKitImagesSnapshotResult.value : null;
+          const memberBandsSnapshot = memberBandsSnapshotResult.status === 'fulfilled' ? memberBandsSnapshotResult.value : null;
+          const ownerBandsSnapshot = ownerBandsSnapshotResult.status === 'fulfilled' ? ownerBandsSnapshotResult.value : null;
+
+          const recordingSizes = await Promise.all(
+            (recordingsSnapshot?.docs ?? []).map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
+          );
+          recordingBytes = recordingSizes.reduce((sum, value) => sum + value, 0);
+
+          const allBandIds = new Set<string>();
+          (memberBandsSnapshot?.docs ?? []).forEach((snap) => allBandIds.add(snap.id));
+          (ownerBandsSnapshot?.docs ?? []).forEach((snap) => allBandIds.add(snap.id));
+
+          const pressKitImageSnapshots = await Promise.allSettled(
+            Array.from(allBandIds).map((bid) => getDocs(collection(firestore, 'bands', bid, 'pressKitImages'))),
+          );
+
+          if (cancelled) return;
+
+          const seenPressKitDocPaths = new Set<string>();
+          const pressKitDocData: Array<Record<string, unknown>> = [];
+          ownPressKitImagesSnapshot?.docs.forEach((snap) => {
+            if (seenPressKitDocPaths.has(snap.ref.path)) return;
+            seenPressKitDocPaths.add(snap.ref.path);
+            pressKitDocData.push(snap.data() as Record<string, unknown>);
+          });
+          pressKitImageSnapshots.forEach((snapshot) => {
+            if (snapshot.status !== 'fulfilled') return;
+            snapshot.value.docs.forEach((snap) => {
+              if (seenPressKitDocPaths.has(snap.ref.path)) return;
+              seenPressKitDocPaths.add(snap.ref.path);
+              pressKitDocData.push(snap.data() as Record<string, unknown>);
+            });
+          });
+
+          const pressKitSizes = await Promise.all(
+            pressKitDocData.map((data) => readDocSizeWithStorageFallback(data)),
+          );
+          pressKitBytes = pressKitSizes.reduce((sum, value) => sum + value, 0);
+
+          const seenStoragePaths = new Set<string>();
+          pressKitDocData.forEach((data) => {
+            const sp = toSafeNonEmptyString(data.storagePath);
+            if (sp) seenStoragePaths.add(sp);
+          });
+
+          const legacyLogoPaths = new Set<string>();
+          [...(memberBandsSnapshot?.docs ?? []), ...(ownerBandsSnapshot?.docs ?? [])].forEach((snap) => {
+            const data = snap.data() as Record<string, unknown>;
+            const logoStoragePath = toSafeNonEmptyString(data.logoStoragePath);
+            if (!logoStoragePath || seenStoragePaths.has(logoStoragePath)) return;
+            legacyLogoPaths.add(logoStoragePath);
+          });
+
+          if (legacyLogoPaths.size > 0) {
+            const legacyLogoSizes = await Promise.all(
+              Array.from(legacyLogoPaths).map((sp) => getStorageObjectSize(sp)),
+            );
+            pressKitBytes += legacyLogoSizes.reduce((sum, value) => sum + value, 0);
+          }
         }
 
         const usedBytes = recordingBytes + pressKitBytes;
@@ -208,91 +255,83 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
     void load();
 
-    const recordingsQuery = query(
-      collectionGroup(firestore, 'recordings'),
-      where('recorder.userId', '==', currentUserId),
-    );
-
-    const ownPressKitImagesQuery = query(
-      collectionGroup(firestore, 'pressKitImages'),
-      where('createdBy', '==', currentUserId),
-    );
-
-    const memberBandsQuery = query(
-      collection(firestore, 'bands'),
-      where('memberIds', 'array-contains', currentUserId),
-    );
-
-    const ownerBandsQuery = query(
-      collection(firestore, 'bands'),
-      where('ownerId', '==', currentUserId),
-    );
-
-    const userDocRef = doc(firestore, 'users', currentUserId);
-    let ownedBandIds = new Set<string>();
-    let memberBandIds = new Set<string>();
-    const pressKitUnsubByBandId = new Map<string, () => void>();
-
     function requestReload() {
       void load();
     }
 
-    function reconcilePressKitListeners() {
-      const nextBandIds = new Set<string>([...ownedBandIds, ...memberBandIds]);
+    const userDocRef = doc(firestore, 'users', currentUserId);
+    const unsubscribeUser = onSnapshot(userDocRef, () => requestReload(), () => {});
+    const cleanups: Array<() => void> = [unsubscribeUser];
 
-      for (const [bandId, unsubscribe] of pressKitUnsubByBandId.entries()) {
-        if (!nextBandIds.has(bandId)) {
-          unsubscribe();
-          pressKitUnsubByBandId.delete(bandId);
+    if (currentBandId) {
+      // Band-scoped listeners
+      cleanups.push(
+        onSnapshot(doc(firestore, 'bands', currentBandId), () => requestReload(), () => {}),
+        onSnapshot(collection(firestore, 'bands', currentBandId, 'pressKitImages'), () => requestReload(), () => {}),
+        onSnapshot(collection(firestore, 'bands', currentBandId, 'songs'), () => requestReload(), () => {}),
+      );
+    } else {
+      // Cross-band listeners
+      const recordingsQuery = query(
+        collectionGroup(firestore, 'recordings'),
+        where('recorder.userId', '==', currentUserId),
+      );
+      const ownPressKitImagesQuery = query(
+        collectionGroup(firestore, 'pressKitImages'),
+        where('createdBy', '==', currentUserId),
+      );
+      const memberBandsQuery = query(
+        collection(firestore, 'bands'),
+        where('memberIds', 'array-contains', currentUserId),
+      );
+      const ownerBandsQuery = query(
+        collection(firestore, 'bands'),
+        where('ownerId', '==', currentUserId),
+      );
+
+      let ownedBandIds = new Set<string>();
+      let memberBandIds = new Set<string>();
+      const pressKitUnsubByBandId = new Map<string, () => void>();
+
+      function reconcilePressKitListeners() {
+        const nextBandIds = new Set<string>([...ownedBandIds, ...memberBandIds]);
+        for (const [bid, unsubscribe] of pressKitUnsubByBandId.entries()) {
+          if (!nextBandIds.has(bid)) {
+            unsubscribe();
+            pressKitUnsubByBandId.delete(bid);
+          }
         }
+        nextBandIds.forEach((bid) => {
+          if (pressKitUnsubByBandId.has(bid)) return;
+          pressKitUnsubByBandId.set(
+            bid,
+            onSnapshot(collection(firestore, 'bands', bid, 'pressKitImages'), () => requestReload(), () => {}),
+          );
+        });
       }
 
-      nextBandIds.forEach((bandId) => {
-        if (pressKitUnsubByBandId.has(bandId)) return;
-        const unsubscribe = onSnapshot(
-          collection(firestore, 'bands', bandId, 'pressKitImages'),
-          () => requestReload(),
+      cleanups.push(
+        onSnapshot(recordingsQuery, () => requestReload(), () => {}),
+        onSnapshot(ownPressKitImagesQuery, () => requestReload(), () => {}),
+        onSnapshot(
+          memberBandsQuery,
+          (snapshot) => { memberBandIds = new Set(snapshot.docs.map((s) => s.id)); reconcilePressKitListeners(); requestReload(); },
           () => {},
-        );
-        pressKitUnsubByBandId.set(bandId, unsubscribe);
-      });
+        ),
+        onSnapshot(
+          ownerBandsQuery,
+          (snapshot) => { ownedBandIds = new Set(snapshot.docs.map((s) => s.id)); reconcilePressKitListeners(); requestReload(); },
+          () => {},
+        ),
+        () => { pressKitUnsubByBandId.forEach((u) => u()); pressKitUnsubByBandId.clear(); },
+      );
     }
-
-    const unsubscribeUser = onSnapshot(userDocRef, () => requestReload(), () => {});
-    const unsubscribeRecordings = onSnapshot(recordingsQuery, () => requestReload(), () => {});
-    const unsubscribeOwnPressKitImages = onSnapshot(ownPressKitImagesQuery, () => requestReload(), () => {});
-
-    const unsubscribeMemberBands = onSnapshot(
-      memberBandsQuery,
-      (snapshot) => {
-        memberBandIds = new Set(snapshot.docs.map((snap) => snap.id));
-        reconcilePressKitListeners();
-        requestReload();
-      },
-      () => {},
-    );
-
-    const unsubscribeOwnerBands = onSnapshot(
-      ownerBandsQuery,
-      (snapshot) => {
-        ownedBandIds = new Set(snapshot.docs.map((snap) => snap.id));
-        reconcilePressKitListeners();
-        requestReload();
-      },
-      () => {},
-    );
 
     return () => {
       cancelled = true;
-      unsubscribeUser();
-      unsubscribeRecordings();
-      unsubscribeOwnPressKitImages();
-      unsubscribeMemberBands();
-      unsubscribeOwnerBands();
-      pressKitUnsubByBandId.forEach((unsubscribe) => unsubscribe());
-      pressKitUnsubByBandId.clear();
+      cleanups.forEach((fn) => fn());
     };
-  }, [userId, planQuotaBytes]);
+  }, [userId, planQuotaBytes, bandId]);
 
   return useMemo(() => {
     const usageRatio = state.quotaBytes > 0

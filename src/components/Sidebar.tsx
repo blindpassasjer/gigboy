@@ -62,11 +62,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const { clearActiveSelection } = useSongLists();
   const { storageQuotaBytes } = usePlan();
   const { user } = useAuth();
-  const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes);
-  const storagePercent = Math.round(storageUsage.usageRatio * 100);
-  const storageLabel = storageUsage.loading
-    ? 'Loading...'
-    : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)} (${storagePercent}%)`;
 
   const {
     bands,
@@ -113,6 +108,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   });
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const bandSwitcherRef = useRef<HTMLDivElement>(null);
+  const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes, activeBandId);
+  const storagePercent = Math.round(storageUsage.usageRatio * 100);
+  const storageLabel = storageUsage.loading
+    ? 'Loading...'
+    : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)} (${storagePercent}%)`;
   const visibleBands = bands;
   // Auto-select first band if active band is missing
   useEffect(() => {

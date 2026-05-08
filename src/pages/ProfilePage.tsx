@@ -456,7 +456,7 @@ export default function ProfilePage() {
               </div>
               <button
                 type="button"
-                className="setlist-action-btn setlist-action-btn--secondary"
+                className="setlist-action-btn setlist-action-btn--danger"
                 disabled={busyLogout}
                 onClick={() => { void onLogout(); }}
               >
