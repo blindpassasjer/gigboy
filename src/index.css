@@ -8489,6 +8489,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .public-share-branding-row {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: .95rem;
   flex-wrap: wrap;
   margin-bottom: .8rem;
@@ -8543,14 +8544,18 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .public-setlist-band-logo--large {
-  width: 3.3rem;
-  height: 3.3rem;
+  width: 26.4rem;
+  height: 26.4rem;
+  border-radius: 0;
+  border: none;
+  background: transparent;
 }
 
 .public-setlist-band--stack {
   margin: 0;
   line-height: 1.2;
   text-align: center;
+  font-size: 6.8rem;
 }
 
 .public-setlist-title {
@@ -8659,8 +8664,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .public-setlist-band-logo--large {
-    width: 2.9rem;
-    height: 2.9rem;
+    width: 26.4rem;
+    height: 26.4rem;
+    max-width: 100%;
   }
 }
 
@@ -8700,6 +8706,19 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .9rem;
 }
 
+.public-presskit-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.public-presskit-text-standalone-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
 .public-presskit-text-title {
   margin: 0;
   font-size: .95rem;
@@ -8708,7 +8727,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .public-presskit-rich-text {
-  margin-top: .55rem;
   color: var(--text);
   display: grid;
   gap: .55rem;

@@ -193,16 +193,17 @@ export default function PublicBandPressKitPage() {
       <div className="public-presskit-body">
         {payload.texts.length > 0 && (
           <section className="public-presskit-texts-section">
-            <h2 className="public-presskit-section-heading">About</h2>
             <div className="public-presskit-text-grid">
               {payload.texts.map((entry) => (
-                <article key={`${entry.title}-${entry.body.slice(0, 16)}`} className="public-presskit-text-item">
-                  <h3 className="public-presskit-text-title">{entry.title}</h3>
-                  <div
-                    className="public-presskit-rich-text"
-                    dangerouslySetInnerHTML={{ __html: sanitizePressKitHtml(entry.body) || `<p>${escapeHtml(entry.body)}</p>` }}
-                  />
-                </article>
+                <div key={`${entry.title}-${entry.body.slice(0, 16)}`} className="public-presskit-text-block">
+                  <h2 className="public-presskit-text-standalone-title">{entry.title}</h2>
+                  <article className="public-presskit-text-item">
+                    <div
+                      className="public-presskit-rich-text"
+                      dangerouslySetInnerHTML={{ __html: sanitizePressKitHtml(entry.body) || `<p>${escapeHtml(entry.body)}</p>` }}
+                    />
+                  </article>
+                </div>
               ))}
             </div>
           </section>
