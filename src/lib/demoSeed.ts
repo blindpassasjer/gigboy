@@ -13,6 +13,7 @@ const DEMO_SONG_IDS = [
   'demo-song-let-her-go',
 ];
 const DEMO_TECH_RIDER_ID = 'demo-technical-rider-club';
+const DEMO_PRESS_KIT_ID = 'demo-press-kit-main';
 
 interface DemoSong {
   title: string;
@@ -275,6 +276,18 @@ export async function seedDemoData(firestore: Firestore, userId: string): Promis
         { id: 'inv-inears', name: 'In-ear rack', description: 'Band brings own in-ear monitor rack.', sortOrder: 0 },
         { id: 'inv-drum-mics', name: 'Kick + OH mics', description: 'Basic drum mics carried by band.', sortOrder: 1 },
       ],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Band press kit
+    batch.set(doc(firestore, 'bands', demoBandId, 'pressKits', DEMO_PRESS_KIT_ID), {
+      name: 'Demo Press Kit',
+      icon: '📰',
+      ownerId: userId,
+      richText: `<h2>Demo Band</h2><p>Demo Band is a five-piece cover act based in the city, delivering high-energy sets spanning rock, pop, and acoustic classics. With a polished live show and a repertoire of over 100 songs, the band has performed at festivals, corporate events, and intimate club venues alike.</p><h3>About</h3><p>Formed in 2019, Demo Band quickly built a reputation for tight musicianship and an engaging stage presence. The group covers artists including Oasis, Bob Dylan, Passenger, and America, always bringing their own feel to every performance.</p><h3>What We Offer</h3><ul><li>Fully self-contained PA and lighting rig available</li><li>Flexible set lengths from 45 minutes to 3 hours</li><li>Acoustic duo option for smaller spaces</li><li>Professional backline and experienced sound engineer</li></ul><h3>Contact</h3><p>For bookings and availability, reach out via the contact form on our website or email <strong>booking@demoband.example</strong>.</p>`,
+      imageIds: [],
+      sortOrder: 0,
       createdAt: now,
       updatedAt: now,
     });
