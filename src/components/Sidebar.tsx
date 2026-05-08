@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Newspaper, Plus, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
@@ -16,6 +17,9 @@ function formatStorageBytes(bytes: number): string {
   }
   if (bytes >= 1024 * 1024) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  if (bytes > 0 && bytes < 1024) {
+    return '1 KB';
   }
   return `${Math.max(0, Math.round(bytes / 1024))} KB`;
 }
@@ -36,6 +40,14 @@ interface Props {
   mobile?: boolean;
   onNavigate?: () => void;
   onClose?: () => void;
+}
+
+function SidebarItemIcon({ icon, fallback }: { icon?: string; fallback: ReactNode }) {
+  const normalizedIcon = typeof icon === 'string' ? icon.trim() : '';
+  if (normalizedIcon.length > 0) {
+    return <span className="sidebar-list-icon" aria-hidden="true">{normalizedIcon}</span>;
+  }
+  return <span className="sidebar-list-icon" aria-hidden="true">{fallback}</span>;
 }
 
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
@@ -452,7 +464,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           aria-expanded={bandSwitcherOpen}
         >
           <>
-            <Users size={13} />
+            <SidebarItemIcon icon={effectiveActiveBand?.icon} fallback={<Users size={13} />} />
             <span className="sidebar-band-switcher-name">
               {effectiveActiveBand?.name ?? ''}
             </span>
@@ -483,7 +495,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   onNavigate?.();
                 }}
               >
-                <Users size={13} />
+                <SidebarItemIcon icon={band.icon} fallback={<Users size={13} />} />
                 <span className="sidebar-band-switcher-option-name">{band.name}</span>
               </button>
             ))}
@@ -535,7 +547,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     className="sidebar-list-item-btn"
                     onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/library`); onNavigate?.(); }}
                   >
-                    <ListMusic size={14} />
+                    <SidebarItemIcon icon={band.icon} fallback={<ListMusic size={14} />} />
                     <span className="sidebar-list-name">Library</span>
                     {(bandSongsByBandId[band.id]?.length ?? 0) > 0 && (
                       <span className="sidebar-list-count">{bandSongsByBandId[band.id]?.length ?? 0}</span>
@@ -610,7 +622,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                           className="sidebar-list-item-btn"
                           onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/songlists/${songList.id}`); onNavigate?.(); }}
                         >
-                          <Folder size={14} />
+                          <SidebarItemIcon icon={songList.icon} fallback={<Folder size={14} />} />
                           <span className="sidebar-list-name">{songList.name}</span>
                           {songList.songIds.length > 0 && <span className="sidebar-list-count">{songList.songIds.length}</span>}
                         </button>
@@ -681,7 +693,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                           className="sidebar-list-item-btn"
                           onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/setlists/${setlist.id}`); onNavigate?.(); }}
                         >
-                          <ListMusic size={14} />
+                          <SidebarItemIcon icon={setlist.icon} fallback={<ListMusic size={14} />} />
                           <span className="sidebar-list-name">{setlist.name}</span>
                           {setlist.songIds.length > 0 && <span className="sidebar-list-count">{setlist.songIds.length}</span>}
                         </button>
@@ -744,7 +756,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                             onNavigate?.();
                           }}
                         >
-                          <ClipboardList size={14} />
+                          <SidebarItemIcon icon={rider.icon} fallback={<ClipboardList size={14} />} />
                           <span className="sidebar-list-name">{rider.name}</span>
                         </button>
                       </div>
@@ -805,7 +817,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                             onNavigate?.();
                           }}
                         >
-                          <Newspaper size={14} />
+                          <SidebarItemIcon icon={kit.icon} fallback={<Newspaper size={14} />} />
                           <span className="sidebar-list-name">{kit.name}</span>
                         </button>
                       </div>

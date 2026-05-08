@@ -16,17 +16,6 @@ function toSafeNumber(value: unknown): number | null {
   return value >= 0 ? value : null;
 }
 
-function sumStoredBytes(docs: Array<{ data(): Record<string, unknown> }>): number {
-  return docs.reduce((sum, snap) => {
-    const data = snap.data();
-    const sizeBytes = toSafeNumber(data.sizeBytes);
-    if (sizeBytes !== null) return sum + sizeBytes;
-
-    const legacySize = toSafeNumber(data.size);
-    return legacySize !== null ? sum + legacySize : sum;
-  }, 0);
-}
-
 export function useStorageUsage(userId: string | null | undefined, planQuotaBytes?: number) {
   const [state, setState] = useState<UsageState>({
     usedBytes: 0,
@@ -56,13 +45,11 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         const [
           userSnapshot,
           recordingsSnapshot,
-          pressKitImagesSnapshot,
           memberBandsSnapshot,
-          ownedBandsSnapshot,
+          ownerBandsSnapshot,
         ] = await Promise.all([
           getDoc(doc(firestore, 'users', currentUserId)),
           getDocs(query(collectionGroup(firestore, 'recordings'), where('recorder.userId', '==', currentUserId))),
-          getDocs(query(collectionGroup(firestore, 'pressKitImages'), where('createdBy', '==', currentUserId))),
           getDocs(query(collection(firestore, 'bands'), where('memberIds', 'array-contains', currentUserId))),
           getDocs(query(collection(firestore, 'bands'), where('ownerId', '==', currentUserId))),
         ]);
@@ -74,36 +61,41 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
         const quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
 
-        const recordingBytes = sumStoredBytes(recordingsSnapshot.docs as Array<{ data(): Record<string, unknown> }>);
+        const recordingBytes = recordingsSnapshot.docs.reduce((sum, snap) => {
+          const data = snap.data() as Record<string, unknown>;
+          const sizeBytes = toSafeNumber(data.sizeBytes);
+          if (sizeBytes !== null) return sum + sizeBytes;
 
-        const countedPressKitDocPaths = new Set(pressKitImagesSnapshot.docs.map((snap) => snap.ref.path));
-        const bandIds = new Set([
-          ...memberBandsSnapshot.docs.map((snap) => snap.id),
-          ...ownedBandsSnapshot.docs.map((snap) => snap.id),
-        ]);
+          const legacySize = toSafeNumber(data.size);
+          return legacySize !== null ? sum + legacySize : sum;
+        }, 0);
 
-        const legacyPressKitSnapshots = await Promise.all(
-          Array.from(bandIds).map((bandId) => getDocs(collection(firestore, 'bands', bandId, 'pressKitImages')))
+        const bandIds = new Set<string>();
+        memberBandsSnapshot.docs.forEach((snap) => {
+          bandIds.add(snap.id);
+        });
+        ownerBandsSnapshot.docs.forEach((snap) => {
+          bandIds.add(snap.id);
+        });
+
+        const pressKitImageSnapshots = await Promise.all(
+          Array.from(bandIds).map((bandId) => getDocs(collection(firestore, 'bands', bandId, 'pressKitImages'))),
         );
 
         if (cancelled) return;
 
-        const pressKitBytes = sumStoredBytes(pressKitImagesSnapshot.docs as Array<{ data(): Record<string, unknown> }>)
-          + legacyPressKitSnapshots.reduce((sum, snapshot) => {
-            return sum + snapshot.docs.reduce((bandSum, snap) => {
-              if (countedPressKitDocPaths.has(snap.ref.path)) return bandSum;
+        const pressKitBytes = pressKitImageSnapshots.reduce((total, snapshot) => {
+          const bandTotal = snapshot.docs.reduce((sum, snap) => {
+            const data = snap.data() as Record<string, unknown>;
+            const sizeBytes = toSafeNumber(data.sizeBytes);
+            if (sizeBytes !== null) return sum + sizeBytes;
 
-              const data = snap.data() as Record<string, unknown>;
-              const createdBy = typeof data.createdBy === 'string' ? data.createdBy.trim() : '';
-              if (createdBy.length > 0 && createdBy !== currentUserId) return bandSum;
-
-              const sizeBytes = toSafeNumber(data.sizeBytes);
-              if (sizeBytes !== null) return bandSum + sizeBytes;
-
-              const legacySize = toSafeNumber(data.size);
-              return legacySize !== null ? bandSum + legacySize : bandSum;
-            }, 0);
+            const legacySize = toSafeNumber(data.size);
+            return legacySize !== null ? sum + legacySize : sum;
           }, 0);
+
+          return total + bandTotal;
+        }, 0);
 
         const usedBytes = recordingBytes + pressKitBytes;
 
