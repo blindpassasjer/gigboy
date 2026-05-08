@@ -495,7 +495,7 @@ export default function BandSettingsPage() {
                   </button>
                 </div>
               )}
-            </div>
+            </section>
             </div>
           </div>
 
