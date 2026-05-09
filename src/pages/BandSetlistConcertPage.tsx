@@ -881,22 +881,26 @@ export default function BandSetlistConcertPage() {
                         <span className="notes-save-status notes-save-status--error">Failed to save</span>
                       )}
 
-                      {handNotes.authors.length > 1 && (
+                      {handNotes.authors.length > 0 && (
                         <div className="notes-author-filters">
-                          <button
-                            className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
-                            onClick={handNotes.showAll}
-                            title="Show all users' notes"
-                          >
-                            All
-                          </button>
-                          <button
-                            className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
-                            onClick={handNotes.showMineOnly}
-                            title="Show only my notes"
-                          >
-                            Mine
-                          </button>
+                          {handNotes.authors.length > 1 && (
+                            <>
+                              <button
+                                className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
+                                onClick={handNotes.showAll}
+                                title="Show all users' notes"
+                              >
+                                All
+                              </button>
+                              <button
+                                className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
+                                onClick={handNotes.showMineOnly}
+                                title="Show only my notes"
+                              >
+                                Mine
+                              </button>
+                            </>
+                          )}
                           {handNotes.authors.map((author) => (
                             <button
                               key={author.uid}

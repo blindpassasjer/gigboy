@@ -78,27 +78,27 @@ export function useSongHandNotes(params: {
     }
 
     setVisibleAuthorIds((prev) => {
-      if (prev.length === 0) {
-        const authorIds = notes.map((note) => note.authorUid).filter(Boolean);
-        if (authorIds.length > 0) {
-          return Array.from(new Set(authorIds));
-        }
+      const authorIds = Array.from(new Set(notes.map((note) => note.authorUid).filter(Boolean)));
+
+      if (authorIds.length === 0) {
         return [userId];
       }
 
-      const validIds = new Set(notes.map((note) => note.authorUid));
+      if (prev.length === 0) {
+        return authorIds;
+      }
+
+      const validIds = new Set(authorIds);
       validIds.add(userId);
       const next = prev.filter((authorId) => validIds.has(authorId));
 
-      if (next.length > 0) {
+      // If the current selection no longer maps to any available note author
+      // (for example "Mine" but user has no note), show available authors.
+      if (next.some((authorId) => authorIds.includes(authorId))) {
         return next;
       }
 
-      const authorIds = notes.map((note) => note.authorUid).filter(Boolean);
-      if (authorIds.length > 0) {
-        return Array.from(new Set(authorIds));
-      }
-      return [userId];
+      return authorIds;
     });
   }, [notes, userId]);
 
