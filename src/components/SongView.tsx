@@ -170,6 +170,10 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setDrawEnabled(false);
   }, [song.id]);
 
+  useEffect(() => {
+    setTranspose(song.preferredTranspose ?? 0);
+  }, [song.id, song.preferredTranspose]);
+
   const handleChordClick = useCallback((chord: string, rect: DOMRect) => {
     setActiveChord(prev =>
       prev?.chord === chord && prev.rect.top === rect.top ? null : { chord, rect }
@@ -224,12 +228,36 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     navigate(songPageState?.backTo ?? '/', songPageState ? { state: songPageState } : undefined);
   }
 
+  async function handlePinTranspose() {
+    const nextSong: Song = {
+      ...song,
+      preferredTranspose: transpose,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const err = bandId
+      ? await updateBandSong(bandId, nextSong)
+      : await updateSong(nextSong);
+
+    if (err) {
+      toast.error(`Could not save pinned transpose: ${err}`);
+      return;
+    }
+
+    toast.success(
+      transpose === 0
+        ? 'Pinned to original key for this song.'
+        : `Pinned ${transpose > 0 ? '+' : ''}${transpose} semitones for this song.`
+    );
+  }
+
   const headerStyle = accentColor
     ? ({
       ...buildSongSurfaceStyle(accentColor),
       '--song-header-accent': accentColor,
     } as CSSProperties)
     : undefined;
+  const isTransposePinned = song.preferredTranspose === transpose;
 
   return (
     <div className="song-view">
@@ -296,6 +324,14 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                     <RotateCcw size={13} />
                   </button>
                 )}
+                <button
+                  onClick={() => { void handlePinTranspose(); }}
+                  aria-label="Pin current transpose"
+                  className={`transpose-btn transpose-btn--pin song-toolbar-tool-btn song-toolbar-setting-btn${isTransposePinned ? ' transpose-btn--pin-active' : ''}`}
+                  title={isTransposePinned ? 'This transposition is already pinned' : 'Pin this transposition for this song'}
+                >
+                  {isTransposePinned ? 'Pinned' : 'Pin'}
+                </button>
               </div>
 
               <div className="instrument-toggle song-toolbar-controls-group">

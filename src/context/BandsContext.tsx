@@ -231,6 +231,7 @@ function normalizeBandSong(id: string, data: Record<string, unknown>): Song {
     chordpro: typeof data.chordpro === 'string' ? data.chordpro : '',
     capo: typeof data.capo === 'number' ? data.capo : undefined,
     key: typeof data.key === 'string' ? data.key : undefined,
+    preferredTranspose: typeof data.preferredTranspose === 'number' ? data.preferredTranspose : undefined,
     tempo: typeof data.tempo === 'number' ? data.tempo : undefined,
     timeSignature: typeof data.timeSignature === 'string' ? data.timeSignature : undefined,
     sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : undefined,

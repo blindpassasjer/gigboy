@@ -281,6 +281,8 @@ export interface Song extends CollaborationMetadata {
   chordpro: string;
   capo?: number;
   key?: string;
+  /** Persisted semitone offset that should be applied when opening the song. */
+  preferredTranspose?: number;
   tempo?: number;
   timeSignature?: string;
   sortOrder?: number;

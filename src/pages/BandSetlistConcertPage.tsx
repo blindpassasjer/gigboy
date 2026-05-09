@@ -73,6 +73,7 @@ export default function BandSetlistConcertPage() {
     bandSongsByBandId,
     refreshBandSetlists,
     refreshBandSongs,
+    updateBandSong,
     bands,
   } = useBands();
 
@@ -171,6 +172,10 @@ export default function BandSetlistConcertPage() {
     setActiveChord(null);
   }, [currentIndex]);
 
+  useEffect(() => {
+    setTranspose(activeSong?.preferredTranspose ?? 0);
+  }, [activeSong?.id, activeSong?.preferredTranspose]);
+
   const handleStrokesChange = useCallback((strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
     setUndoStack((prev) => [...prev, handNotes.myStrokes]);
     handNotes.saveMyNotes(strokes, viewport);
@@ -252,6 +257,20 @@ export default function BandSetlistConcertPage() {
   const handleStopConcert = useCallback(async () => {
     navigate(backRoute);
   }, [navigate, backRoute]);
+
+  const handlePinTranspose = useCallback(async () => {
+    if (!bandId || !activeSong) return;
+    const nextSong: Song = {
+      ...activeSong,
+      preferredTranspose: transpose,
+      updatedAt: new Date().toISOString(),
+    };
+    const error = await updateBandSong(bandId, nextSong);
+    if (error) {
+      window.alert(`Could not save pinned transpose: ${error}`);
+      return;
+    }
+  }, [activeSong, bandId, transpose, updateBandSong]);
 
   const formatPedalSignalCode = useCallback((value: number | null) => {
     if (value === null) return 'Not set';
@@ -579,6 +598,7 @@ export default function BandSetlistConcertPage() {
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < setlistSongs.length - 1;
   const media = currentSong.playbackUrl ? parseSongMedia(currentSong.playbackUrl) : null;
+  const isTransposePinned = currentSong.preferredTranspose === transpose;
 
   return (
     <section className="concert-mode">
@@ -662,6 +682,14 @@ export default function BandSetlistConcertPage() {
                     <RotateCcw size={13} />
                   </button>
                 )}
+                <button
+                  onClick={() => { void handlePinTranspose(); }}
+                  aria-label="Pin current transpose"
+                  className={`transpose-btn transpose-btn--pin song-toolbar-tool-btn song-toolbar-setting-btn${isTransposePinned ? ' transpose-btn--pin-active' : ''}`}
+                  title={isTransposePinned ? 'This transposition is already pinned' : 'Pin this transposition for this song'}
+                >
+                  {isTransposePinned ? 'Pinned' : 'Pin'}
+                </button>
               </div>
 
               <div className="instrument-toggle song-toolbar-controls-group">
