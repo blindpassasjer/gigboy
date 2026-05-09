@@ -31,11 +31,6 @@ const USERS_COLLECTION = 'users';
 const USERNAMES_COLLECTION = 'usernames';
 const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_.-]{1,22}[a-z0-9])?$/;
 
-// Removed hardcoded Crew override for 'sebastian'.
-function hasCrewTierOverride(usernameLower: string | null) {
-  return false;
-}
-
 export function normalizeUsername(username: string) {
   return username.trim().toLowerCase();
 }
@@ -89,7 +84,6 @@ function profileFromData(data: Record<string, unknown> | undefined | null): User
   const memberLimit = typeof data.memberLimit === 'number' && Number.isFinite(data.memberLimit)
     ? Math.max(1, Math.trunc(data.memberLimit))
     : undefined;
-  const crewOverride = hasCrewTierOverride(usernameLower);
 
   return {
     username,
@@ -97,17 +91,13 @@ function profileFromData(data: Record<string, unknown> | undefined | null): User
     email: typeof data.email === 'string' ? data.email : undefined,
     avatar: typeof data.avatar === 'string' ? data.avatar : undefined,
     fullName: typeof data.fullName === 'string' ? data.fullName : undefined,
-    plan: crewOverride ? 'crew' : plan,
-    planOverride: crewOverride || data.planOverride === true,
+    plan,
+    planOverride: data.planOverride === true,
     subscriptionStatus,
     currentPeriodEnd,
-    storageQuotaBytes: crewOverride
-      ? Math.max(storageQuotaBytes ?? 0, PLAN_LIMITS.crew.storageQuotaBytes)
-      : storageQuotaBytes,
+    storageQuotaBytes,
     bandExtraMembers,
-    memberLimit: crewOverride
-      ? Math.max(memberLimit ?? 0, PLAN_LIMITS.crew.memberLimit)
-      : memberLimit,
+    memberLimit,
     stripeCustomerId: typeof data.stripeCustomerId === 'string' ? data.stripeCustomerId : undefined,
   };
 }
@@ -123,7 +113,6 @@ export async function claimUsername(db: Firestore, params: {
   username: string;
 }) {
   const normalized = normalizeUsername(params.username);
-  const crewOverride = hasCrewTierOverride(normalized);
   const validationError = validateUsername(normalized);
   if (validationError) {
     throw new Error(validationError);
@@ -162,13 +151,11 @@ export async function claimUsername(db: Firestore, params: {
       username: normalized,
       usernameLower: normalized,
       avatar: DEFAULT_AVATAR,
-      plan: crewOverride ? 'crew' : 'free',
-      planOverride: crewOverride,
+      plan: 'free',
+      planOverride: false,
       subscriptionStatus: null,
-      storageQuotaBytes: crewOverride
-        ? PLAN_LIMITS.crew.storageQuotaBytes
-        : PLAN_LIMITS.free.storageQuotaBytes,
-      memberLimit: crewOverride ? PLAN_LIMITS.crew.memberLimit : PLAN_LIMITS.free.memberLimit,
+      storageQuotaBytes: PLAN_LIMITS.free.storageQuotaBytes,
+      memberLimit: PLAN_LIMITS.free.memberLimit,
       updatedAt: serverTimestamp(),
       ...(existingProfile ? {} : { createdAt: serverTimestamp() }),
     }, { merge: true });
