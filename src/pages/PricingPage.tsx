@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Check,
   Disc3,
@@ -167,6 +167,21 @@ export default function PricingPage() {
     ? stateBandId
     : (ownedBands[0]?.id ?? '');
   const [selectedBandId, setSelectedBandId] = useState<string>(initialBandId);
+
+  useEffect(() => {
+    if (ownedBands.length === 0) {
+      if (selectedBandId) setSelectedBandId('');
+      return;
+    }
+
+    const hasSelectedBand = ownedBands.some((band) => band.id === selectedBandId);
+    if (hasSelectedBand) return;
+
+    const fallbackBandId = ownedBands.some((band) => band.id === stateBandId)
+      ? stateBandId
+      : ownedBands[0].id;
+    setSelectedBandId(fallbackBandId);
+  }, [ownedBands, selectedBandId, stateBandId]);
 
   const handleCheckout = async (card: PlanCard) => {
     if (card.tier === 'free') return;
