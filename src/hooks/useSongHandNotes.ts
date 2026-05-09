@@ -73,9 +73,11 @@ export function useSongHandNotes(params: {
       unsubscribe();
       setLoading(false);
     };
-  }, [enabled, scope, songId]);
+      if (visibleAuthorIds.length === 0) return notes.map(colorizeByAuthor);
 
-  useEffect(() => {
+      return notes
+        .filter((note) => visible.has(note.authorUid))
+        .map(colorizeByAuthor);
     if (!userId) {
       setVisibleAuthorIds([]);
       return;
