@@ -192,8 +192,8 @@ export default function BandTechRiderPanel({
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
 
-        <div className="song-list-sticky">
-          <header className="songlist-header bands-header setlist-header">
+        <div className="song-list-sticky list-sticky-header">
+          <header className="songlist-header bands-header setlist-header resource-header">
             <div className="setlist-title-block">
               {isRenaming && canEdit && activeRider ? (
                 <input
@@ -211,7 +211,7 @@ export default function BandTechRiderPanel({
                 />
               ) : (
                 <div className="song-list-title-row">
-                  <h1 className="song-list-heading setlist-title">
+                  <h1 className="song-list-heading resource-title setlist-title resource-title--setlist">
                     {canEdit && activeRider ? (
                       <div className="icon-picker-wrapper" ref={iconPickerRef}>
                         <button
@@ -224,7 +224,7 @@ export default function BandTechRiderPanel({
                           title="Change rider icon"
                           aria-label="Change rider icon"
                         >
-                          <span className="song-list-heading-icon" aria-hidden="true">
+                          <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">
                             {activeRider.icon ? activeRider.icon : <ClipboardList size={20} />}
                           </span>
                         </button>
@@ -265,7 +265,7 @@ export default function BandTechRiderPanel({
                         )}
                       </div>
                     ) : activeRider?.icon ? (
-                      <span className="song-list-heading-icon" aria-hidden="true">{activeRider.icon}</span>
+                      <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">{activeRider.icon}</span>
                     ) : null}
                     {activeRider?.name ?? 'Technical Rider'}
                   </h1>
@@ -283,7 +283,7 @@ export default function BandTechRiderPanel({
               )}
               <p className="setlist-subtitle">Manage input lists and stageplots for your band.</p>
             </div>
-            <div className="setlist-header-actions">
+            <div className="setlist-header-actions resource-header-actions">
               {activeRider ? (
                 <button
                   type="button"

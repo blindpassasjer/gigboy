@@ -199,8 +199,8 @@ export default function InputListEditor({
   return (
     <>
       {showHeader ? (
-        <div className="song-list-sticky">
-          <div className="setlist-header songlist-header">
+        <div className="song-list-sticky list-sticky-header">
+          <div className="setlist-header songlist-header resource-header">
             <div className="setlist-title-block">
               {isRenaming ? (
                 <input
@@ -219,7 +219,7 @@ export default function InputListEditor({
                 />
               ) : (
                 <div className="song-list-title-row">
-                  <h1 className="song-list-heading setlist-title">
+                  <h1 className="song-list-heading resource-title setlist-title resource-title--setlist">
                     {canEdit ? (
                       <div className="icon-picker-wrapper" ref={iconPickerRef}>
                         <button
@@ -232,7 +232,7 @@ export default function InputListEditor({
                           title="Change rider icon"
                           aria-label="Change rider icon"
                         >
-                          <span className="song-list-heading-icon" aria-hidden="true">{rider.icon ?? '🎤'}</span>
+                          <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">{rider.icon ?? '🎤'}</span>
                         </button>
                         {showIconEditor && (
                           <div className="icon-picker-popover" role="dialog" aria-label="Choose rider icon">
@@ -271,7 +271,7 @@ export default function InputListEditor({
                         )}
                       </div>
                     ) : rider.icon ? (
-                      <span className="song-list-heading-icon" aria-hidden="true">{rider.icon}</span>
+                      <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">{rider.icon}</span>
                     ) : null}
                     {rider.name}
                   </h1>
@@ -291,7 +291,7 @@ export default function InputListEditor({
                 ) : null}
               </div>
             </div>
-            <div className="setlist-header-actions">
+            <div className="setlist-header-actions resource-header-actions">
               <button
                 type="button"
                 className="setlist-action-btn setlist-action-btn--accent"

@@ -385,8 +385,8 @@ export default function SetlistsView({
 
   return (
     <div className="setlist-view">
-      <div className="song-list-sticky">
-        <div className="setlist-header songlist-header">
+      <div className="song-list-sticky list-sticky-header">
+        <div className="setlist-header songlist-header resource-header">
           <div className="setlist-title-block">
             {isRenaming ? (
               <input
@@ -406,7 +406,7 @@ export default function SetlistsView({
               />
             ) : (
               <div className="song-list-title-row">
-                <h1 className="song-list-heading setlist-title" onDoubleClick={startRenaming}>
+                <h1 className="song-list-heading resource-title setlist-title resource-title--setlist" onDoubleClick={startRenaming}>
                   <div className="icon-picker-wrapper" ref={iconPickerRef}>
                     <button
                       ref={iconTriggerRef}
@@ -418,7 +418,7 @@ export default function SetlistsView({
                       title="Change setlist icon"
                       aria-label="Change setlist icon"
                     >
-                      <span className="song-list-heading-icon" aria-hidden="true">{effectiveIcon ?? '🎵'}</span>
+                      <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">{effectiveIcon ?? '🎵'}</span>
                     </button>
                     {showIconEditor && (
                       <div className="icon-picker-popover" role="dialog" aria-label="Choose setlist icon">
@@ -500,7 +500,7 @@ export default function SetlistsView({
               {songs.length} song{songs.length === 1 ? '' : 's'}
             </p>
           </div>
-          <div className="setlist-header-actions">
+          <div className="setlist-header-actions resource-header-actions">
             {extraActions}
             {songs.length > 0 ? (
               <Link

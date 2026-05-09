@@ -110,13 +110,13 @@ export default function TrashView({
 
   return (
     <section className="bands-page bands-page--library trash-page">
-      <div className="setlist-header songlist-header">
+      <div className="setlist-header songlist-header resource-header">
         <div className="setlist-title-block">
-          <h1 className="song-list-heading">{title}</h1>
+          <h1 className="song-list-heading resource-title">{title}</h1>
           <p className="song-list-summary">Deleted items are automatically removed after 30 days.</p>
         </div>
         {onEmptyTrash && sortedItems.length > 0 ? (
-          <div className="setlist-header-actions">
+          <div className="setlist-header-actions resource-header-actions">
             <button
               type="button"
               className="setlist-action-btn setlist-action-btn--danger"

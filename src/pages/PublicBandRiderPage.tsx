@@ -140,7 +140,7 @@ export default function PublicBandRiderPage() {
 
   return (
     <main className="public-setlist-page technical-rider-public-page">
-      <header className="public-setlist-header public-presskit-header">
+      <header className="public-setlist-header public-presskit-header public-share-header">
         <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
         <div className="public-share-branding-row public-share-branding-row--header">
           {(rider.bandName || bandLogo) ? (
@@ -153,7 +153,7 @@ export default function PublicBandRiderPage() {
                   loading="lazy"
                 />
               ) : null}
-              {rider.bandName ? <p className="public-presskit-band-name">{rider.bandName}</p> : null}
+              {rider.bandName ? <p className="public-presskit-band-name public-share-band-name">{rider.bandName}</p> : null}
             </div>
           ) : null}
         </div>

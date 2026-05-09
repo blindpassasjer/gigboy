@@ -572,8 +572,8 @@ export default function StageplotEditor({
   return (
     <section className="setlist-view stageplot-view">
       {showHeader ? (
-        <div className="song-list-sticky">
-          <div className="setlist-header songlist-header">
+        <div className="song-list-sticky list-sticky-header">
+          <div className="setlist-header songlist-header resource-header">
             <div className="setlist-title-block">
               {renaming ? (
                 <input
@@ -592,7 +592,7 @@ export default function StageplotEditor({
                 />
               ) : (
                 <div className="song-list-title-row">
-                  <h1 className="song-list-heading setlist-title" onDoubleClick={() => canEdit && setRenaming(true)}>
+                  <h1 className="song-list-heading resource-title setlist-title resource-title--setlist" onDoubleClick={() => canEdit && setRenaming(true)}>
                     {canEdit ? (
                       <div className="icon-picker-wrapper" ref={iconPickerRef}>
                         <button
@@ -605,7 +605,7 @@ export default function StageplotEditor({
                           title="Change stageplot icon"
                           aria-label="Change stageplot icon"
                         >
-                          <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon ?? '🗺️'}</span>
+                          <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">{stageplot.icon ?? '🗺️'}</span>
                         </button>
                         {showIconEditor && (
                           <div className="icon-picker-popover" role="dialog" aria-label="Choose stageplot icon">
@@ -644,7 +644,7 @@ export default function StageplotEditor({
                         )}
                       </div>
                     ) : stageplot.icon ? (
-                      <span className="song-list-heading-icon" aria-hidden="true">{stageplot.icon}</span>
+                      <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">{stageplot.icon}</span>
                     ) : null}
                     <span>{stageplot.name}</span>
                   </h1>
@@ -668,7 +668,7 @@ export default function StageplotEditor({
                 ) : null}
               </div>
             </div>
-            <div className="setlist-header-actions">
+            <div className="setlist-header-actions resource-header-actions">
               <button
                 type="button"
                 className="setlist-action-btn setlist-action-btn--accent"

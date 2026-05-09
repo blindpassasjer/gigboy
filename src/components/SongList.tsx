@@ -499,8 +499,8 @@ export default function SongList({
 
   return (
     <div className="song-list-page">
-      <div className="song-list-sticky">
-      <div className={`${headerVariant === 'bands' ? 'bands-header' : 'songlist-header'} setlist-header`}>
+      <div className="song-list-sticky list-sticky-header">
+      <div className={`${headerVariant === 'bands' ? 'bands-header' : 'songlist-header'} setlist-header resource-header`}>
         <div className="setlist-title-block">
           {listName && (
             isRenaming ? (
@@ -521,7 +521,7 @@ export default function SongList({
               />
             ) : (
               <div className="song-list-title-row">
-                <h2 className="song-list-heading setlist-title">
+                <h2 className="song-list-heading resource-title setlist-title resource-title--setlist">
                   {onUpdateListAppearance ? (
                     <div className="icon-picker-wrapper" ref={iconPickerRef}>
                       <button
@@ -534,7 +534,7 @@ export default function SongList({
                         title={`Change ${listEntityLabel} icon`}
                         aria-label={`Change ${listEntityLabel} icon`}
                       >
-                        <span className="song-list-heading-icon" aria-hidden="true">{listIcon ?? '🎵'}</span>
+                        <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">{listIcon ?? '🎵'}</span>
                       </button>
                       {showListAppearanceEditor && (
                         <div className="icon-picker-popover" role="dialog" aria-label={`Choose ${listEntityLabel} icon`}>
@@ -587,7 +587,7 @@ export default function SongList({
                       )}
                     </div>
                   ) : (
-                    listIcon && <span className="song-list-heading-icon" aria-hidden="true">{listIcon}</span>
+                    listIcon && <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">{listIcon}</span>
                   )}
                   <span>{listName}</span>
                 </h2>
@@ -608,7 +608,7 @@ export default function SongList({
           <p className="song-list-summary setlist-song-count">{filtered.length} song{filtered.length === 1 ? '' : 's'}</p>
           {headerMeta ? <p className="song-list-summary setlist-song-count">{headerMeta}</p> : null}
         </div>
-        <div className="setlist-header-actions">
+        <div className="setlist-header-actions resource-header-actions">
           {canTriggerAddSongs && (
             <button
               type="button"
