@@ -30,10 +30,10 @@ export interface UserProfile {
 const USERS_COLLECTION = 'users';
 const USERNAMES_COLLECTION = 'usernames';
 const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9_.-]{1,22}[a-z0-9])?$/;
-const CREW_OVERRIDE_USERNAMES = new Set(['sebastian']);
 
+// Removed hardcoded Crew override for 'sebastian'.
 function hasCrewTierOverride(usernameLower: string | null) {
-  return Boolean(usernameLower && CREW_OVERRIDE_USERNAMES.has(usernameLower));
+  return false;
 }
 
 export function normalizeUsername(username: string) {
