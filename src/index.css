@@ -1834,13 +1834,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .transpose-btn:hover { background: var(--chord-bg); }
 .transpose-btn--reset { color: var(--muted); opacity: .7; }
 .transpose-btn--reset:hover { color: var(--danger); background: #fde8e8; opacity: 1; }
-.transpose-btn--pin { color: var(--muted); font-size: .75rem; font-weight: 600; letter-spacing: .01em; }
-.transpose-btn--pin:hover { color: var(--accent); }
-.transpose-btn--pin-active,
-.transpose-btn--pin-active:hover {
-  color: var(--accent);
-  background: var(--song-item-chip-bg);
-}
 .transpose-label { font-size: .82rem; color: var(--muted); min-width: 125px; text-align: center; }
 
 .toggle-label {
@@ -8449,18 +8442,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .bands-page .setlist-action-btn--danger,
 .bands-page .setlist-action-btn--danger:hover {
   color: #fff;
-}
-
-.bands-delete-confirm {
-  display: flex;
-  flex-direction: column;
-  gap: .75rem;
-}
-
-.bands-delete-confirm-actions {
-  display: flex;
-  gap: .6rem;
-  justify-content: flex-end;
 }
 
 .bands-invite-form {

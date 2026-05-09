@@ -242,19 +242,22 @@ export function SongsProvider({ children }: { children: ReactNode }) {
   const songs = [...userSongs];
 
   const addSong = useCallback(async (song: Song): Promise<string | null> => {
-    // Enforce free-tier song limit
-    if (plan === 'free') {
-      const limit = songLimit ?? PLAN_LIMITS.free.songLimit ?? 12;
-      const ownCount = userSongs.filter((s) => (s.ownerId ?? userId) === userId).length;
-      if (ownCount >= limit) {
-        return `You've reached the ${limit}-song limit on the Free plan. Upgrade to Pro to add unlimited songs.`;
-      }
-    }
-    let nextSong = song;
+    const limit = songLimit ?? PLAN_LIMITS.free.songLimit ?? 12;
+    const pendingAdd: { nextSong: Song | null; error: string | null } = {
+      nextSong: null,
+      error: null,
+    };
 
     setUserSongs((prev) => {
       const ownSongs = prev.filter((entry) => (entry.ownerId ?? userId) === userId);
-      nextSong = {
+
+      // Use the latest state snapshot so rapid imports cannot bypass the cap.
+      if (plan === 'free' && ownSongs.length >= limit) {
+        pendingAdd.error = `You've reached the ${limit}-song limit on the Free plan. Upgrade to Pro to add unlimited songs.`;
+        return prev;
+      }
+
+      const nextSong: Song = {
         ...song,
         ownerId: userId ?? undefined,
         collaboratorIds: song.collaboratorIds ?? [],
@@ -263,24 +266,34 @@ export function SongsProvider({ children }: { children: ReactNode }) {
         sortOrder: song.sortOrder ?? Math.min(...ownSongs.map((entry) => entry.sortOrder ?? 0), 0) - 1,
       };
 
+      pendingAdd.nextSong = nextSong;
       return normalizeSongs([nextSong, ...prev]);
     });
+
+    if (pendingAdd.error) {
+      return pendingAdd.error;
+    }
+
+    if (!pendingAdd.nextSong) {
+      return 'Failed to prepare song for save.';
+    }
+
     if (!db || !userId) {
       return null;
     }
 
     try {
-      const { id, ...rest } = nextSong;
+      const { id, ...rest } = pendingAdd.nextSong;
       const firestoreData = Object.fromEntries(
         Object.entries(rest).filter(([, v]) => v !== undefined)
       );
       await setDoc(doc(db, ...songsCollectionPath(userId), id), firestoreData);
       return null;
     } catch (err) {
-      setUserSongs((prev) => prev.filter((s) => s.id !== song.id));
+      setUserSongs((prev) => prev.filter((s) => s.id !== pendingAdd.nextSong?.id));
       return err instanceof Error ? err.message : 'Failed to save song.';
     }
-  }, [userId, plan, songLimit, userSongs]);
+  }, [userId, plan, songLimit]);
 
   const updateSong = useCallback(async (song: Song): Promise<string | null> => {
     let previousSong: Song | null = null;
@@ -384,8 +397,27 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       accessRole: 'owner',
     };
 
+    const limit = songLimit ?? PLAN_LIMITS.free.songLimit ?? 12;
+    const restoreCheck: { error: string | null } = { error: null };
+
+    setUserSongs((prev) => {
+      const ownCount = prev.filter((entry) => (entry.ownerId ?? userId) === userId).length;
+      const replacingExisting = prev.some((entry) => entry.id === restoredSong.id);
+
+      // Restoring a deleted song should still respect plan limits.
+      if (plan === 'free' && !replacingExisting && ownCount >= limit) {
+        restoreCheck.error = `You've reached the ${limit}-song limit on the Free plan. Delete a song or upgrade to Pro before restoring.`;
+        return prev;
+      }
+
+      return normalizeSongs([restoredSong, ...prev.filter((entry) => entry.id !== restoredSong.id)]);
+    });
+
+    if (restoreCheck.error) {
+      return restoreCheck.error;
+    }
+
     setTrashedSongs((prev) => prev.filter((entry) => entry.trashId !== trashId));
-    setUserSongs((prev) => normalizeSongs([restoredSong, ...prev.filter((entry) => entry.id !== restoredSong.id)]));
 
     if (!db || !userId) {
       return null;
@@ -408,7 +440,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       setTrashedSongs((prev) => [trashed, ...prev].sort(compareTrashByDeletedAtDesc));
       return error instanceof Error ? error.message : 'Failed to restore song.';
     }
-  }, [trashedSongs, userId]);
+  }, [plan, songLimit, trashedSongs, userId]);
 
   const deleteSongPermanently = useCallback(async (trashId: string): Promise<string | null> => {
     const previousTrash = trashedSongs;
