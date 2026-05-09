@@ -2846,10 +2846,17 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       [bandId]: nextRiders,
     }));
 
+    const sanitizedItems = items.map((item) => stripUndefinedFields(item));
+    const sanitizedDrawingLayers = drawingLayers.map((layer) => ({
+      ...stripUndefinedFields(layer),
+      viewport: stripUndefinedFields(layer.viewport),
+      strokes: layer.strokes.map((stroke) => stripUndefinedFields(stroke)),
+    }));
+
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_INPUT_LISTS_COLLECTION, riderId), {
-        items,
-        drawingLayers,
+        items: sanitizedItems,
+        drawingLayers: sanitizedDrawingLayers,
         updatedAt: now,
       }, { merge: true });
       return null;
