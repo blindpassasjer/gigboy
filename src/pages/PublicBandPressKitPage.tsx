@@ -183,15 +183,22 @@ export default function PublicBandPressKitPage() {
   return (
     <main className="public-setlist-page public-presskit-page">
       <header className="public-setlist-header public-presskit-header">
-        <div className="public-share-branding-row public-share-branding-row--left">
-          <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
+        <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
+        <div className="public-share-branding-row public-share-branding-row--header">
+          {(payload.bandName || payload.bandLogo) ? (
+            <div className="public-share-band-stack public-share-band-stack--header">
+              {payload.bandLogo ? (
+                <img
+                  src={payload.bandLogo}
+                  alt={`${payload.bandName} logo`}
+                  className="public-setlist-band-logo public-setlist-band-logo--large"
+                  loading="lazy"
+                />
+              ) : null}
+              {payload.bandName ? <p className="public-presskit-band-name">{payload.bandName}</p> : null}
+            </div>
+          ) : null}
         </div>
-        {payload.bandLogo ? (
-          <div className="public-presskit-logo-wrap">
-            <img src={payload.bandLogo} alt={`${payload.bandName} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" />
-          </div>
-        ) : null}
-        <p className="public-presskit-band-name">{payload.bandName}</p>
         <h1 className="public-setlist-title">{payload.pressKitIcon && <span aria-hidden="true">{payload.pressKitIcon} </span>}Press Kit</h1>
         <p className="public-setlist-count">Public promo package</p>
         <div className="public-presskit-download-wrap">
