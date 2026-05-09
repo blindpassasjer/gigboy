@@ -2244,12 +2244,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .9rem;
 }
 
-.technical-rider-sections-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  overflow: hidden;
-}
 .technical-rider-section-header {
   display: flex;
   align-items: center;
@@ -8906,12 +8900,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .tech-rider-section .setlist-view,
 .tech-rider-section .stageplot-view {
   min-width: 0;
-}
-
-@media (min-width: 1100px) {
-  .tech-rider-sections {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
 }
 
 .stageplot-stage-wrap {
