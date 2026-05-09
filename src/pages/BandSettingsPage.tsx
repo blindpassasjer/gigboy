@@ -3,6 +3,7 @@ import { ArrowLeft, CreditCard, Trash2, X } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { collection, deleteField, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import toast from '../utils/anchoredToast';
+import { showConfirmToast } from '../utils/toastDialogs';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
@@ -276,6 +277,11 @@ export default function BandSettingsPage() {
   };
 
   const handleRemoveLogo = async () => {
+    const confirmed = await showConfirmToast('Remove the current band logo?', {
+      confirmLabel: 'Remove logo',
+    });
+    if (!confirmed) return;
+
     setBusyLogo(true);
     const logoError = await updateBandLogo(band.id, null);
     setBusyLogo(false);

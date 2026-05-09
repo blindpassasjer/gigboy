@@ -5,6 +5,7 @@ import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo,
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
+import { showConfirmToast } from '../utils/toastDialogs';
 import { db, storage } from '../lib/firebase';
 import { createPressKitShare } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
@@ -325,6 +326,10 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   const removeImageAsset = async (asset: PressKitImageAsset) => {
     if (!canEdit) return;
+    const confirmed = await showConfirmToast(`Delete image "${asset.title}"? This cannot be undone.`, {
+      confirmLabel: 'Delete image',
+    });
+    if (!confirmed) return;
     if (storage && asset.storagePath) await deleteObject(ref(storage!, asset.storagePath)).catch(() => { /* best-effort */ });
     if (storage && asset.thumbStoragePath) await deleteObject(ref(storage!, asset.thumbStoragePath)).catch(() => { /* best-effort */ });
     if (db) await deleteDoc(doc(db, 'bands', bandId, 'pressKitImages', asset.id)).catch(() => { /* best-effort */ });
@@ -394,7 +399,10 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   const handleDelete = async () => {
     if (!canEdit) return;
-    if (!window.confirm(`Delete "${kit.name}"? This cannot be undone.`)) return;
+    const confirmed = await showConfirmToast(`Delete "${kit.name}"? This cannot be undone.`, {
+      confirmLabel: 'Delete press kit',
+    });
+    if (!confirmed) return;
     const error = await deleteBandPressKit(bandId, kit.id);
     if (error) { toast.error(error); return; }
     onDelete();
