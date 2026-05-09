@@ -75,6 +75,14 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
 
 const PLAN_ORDER: Record<PlanTier, number> = { free: 0, pro: 1, crew: 2 };
 
+function isBandPlanActive(plan: PlanTier, subscriptionStatus: string | null | undefined) {
+  if (plan === 'free') return true;
+  if (subscriptionStatus === 'active' || subscriptionStatus === 'trialing') return true;
+  // Legacy/partial band billing snapshots may miss status while plan is already set.
+  if (subscriptionStatus == null) return true;
+  return false;
+}
+
 /**
  * Pure function: can the given feature be used in the context of a specific band?
  * Uses the higher of the user's plan and the band's billingPlan.
@@ -92,9 +100,7 @@ export function bandCanUse(
   const bandPlan: PlanTier = band?.billingPlan === 'pro' || band?.billingPlan === 'crew'
     ? band.billingPlan
     : 'free';
-  const bandActive = bandPlan === 'free'
-    || band?.billingSubscriptionStatus === 'active'
-    || band?.billingSubscriptionStatus === 'trialing';
+  const bandActive = isBandPlanActive(bandPlan, band?.billingSubscriptionStatus);
 
   const userActive = userPlan === 'free'
     || userSubscriptionStatus === 'active'

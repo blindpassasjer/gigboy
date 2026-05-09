@@ -9,6 +9,14 @@ function isPlanActive(plan: PlanTier, subscriptionStatus: string | null, planOve
   return subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
 }
 
+function isBandPlanActive(plan: PlanTier, subscriptionStatus: string | null) {
+  if (plan === 'free') return true;
+  if (subscriptionStatus === 'active' || subscriptionStatus === 'trialing') return true;
+  // Legacy/partial band billing snapshots may miss status while plan is already set.
+  if (subscriptionStatus == null) return true;
+  return false;
+}
+
 const PLAN_ORDER: Record<PlanTier, number> = { free: 0, pro: 1, crew: 2 };
 
 export function usePlan() {
@@ -57,7 +65,7 @@ export function useBandPlan(band: Band | null) {
       ? band.billingPlan
       : 'free';
     const bandStatus = band?.billingSubscriptionStatus ?? null;
-    const bandPlanActive = bandPlan === 'free' || bandStatus === 'active' || bandStatus === 'trialing';
+    const bandPlanActive = isBandPlanActive(bandPlan, bandStatus);
 
     // Effective plan = highest of user plan and band plan
     const effectivePlan: PlanTier = (PLAN_ORDER[bandPlan] >= PLAN_ORDER[userPlan] && bandPlanActive)
