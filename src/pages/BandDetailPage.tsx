@@ -414,7 +414,7 @@ export default function BandDetailPage() {
           extraActions={(
             <button
               type="button"
-              className={`setlist-action-btn setlist-action-btn--secondary${activeBandSetlist.publicShareEnabled ? ' setlist-action-btn--active' : ''}`}
+              className="setlist-action-btn setlist-action-btn--accent"
               onClick={() => void handleShareSetlist()}
               title={activeBandSetlist.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
             >

@@ -501,6 +501,7 @@ export default function SetlistsView({
             </p>
           </div>
           <div className="setlist-header-actions">
+            {extraActions}
             {songs.length > 0 ? (
               <Link
                 className="setlist-action-btn setlist-action-btn--concert"
@@ -526,7 +527,6 @@ export default function SetlistsView({
             >
               <Plus size={14} />
             </button>
-            {extraActions}
             {canDeleteSetlist ? (
               <button
                 className="setlist-action-btn setlist-action-btn--secondary"
