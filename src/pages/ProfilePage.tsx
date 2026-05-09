@@ -294,10 +294,10 @@ export default function ProfilePage() {
               <span className="profile-account-badge profile-account-badge--plan">
                 <Sparkles size={14} /> Access: {planState.planLabel}
               </span>
-              <span className="profile-account-badge">
+              <span className={`profile-account-badge ${paidOwnedBands.length > 0 ? 'profile-account-badge--billing' : 'profile-account-badge--billing-empty'}`}>
                 <BadgeCheck size={14} /> {paidOwnedBands.length > 0 ? `${paidOwnedBands.length} paid band${paidOwnedBands.length === 1 ? '' : 's'}` : 'No paid bands'}
               </span>
-              <span className="profile-account-badge">
+              <span className="profile-account-badge profile-account-badge--bands">
                 <Users size={14} /> {bands.length} band{bands.length === 1 ? '' : 's'}
               </span>
               <button

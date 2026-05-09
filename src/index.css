@@ -7072,6 +7072,24 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 
+.profile-account-badge--billing {
+  color: color-mix(in srgb, #15803d 82%, var(--text));
+  border-color: color-mix(in srgb, #16a34a 28%, var(--border));
+  background: color-mix(in srgb, #16a34a 12%, var(--surface));
+}
+
+.profile-account-badge--billing-empty {
+  color: color-mix(in srgb, #b45309 82%, var(--text));
+  border-color: color-mix(in srgb, #d97706 26%, var(--border));
+  background: color-mix(in srgb, #d97706 11%, var(--surface));
+}
+
+.profile-account-badge--bands {
+  color: color-mix(in srgb, #1d4ed8 82%, var(--text));
+  border-color: color-mix(in srgb, #2563eb 28%, var(--border));
+  background: color-mix(in srgb, #2563eb 10%, var(--surface));
+}
+
 .profile-account-chip-btn {
   display: inline-flex;
   align-items: center;
