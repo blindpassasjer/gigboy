@@ -20,12 +20,33 @@ type AnchoredToastOptions = ToastOptions & {
   };
 };
 
+function dismissOnNextInteraction(toastId: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const dismiss = () => {
+    window.removeEventListener('pointerdown', dismiss, true);
+    window.removeEventListener('touchstart', dismiss, true);
+    window.removeEventListener('click', dismiss, true);
+    hotToast.dismiss(toastId);
+  };
+
+  // Delay listener registration so the interaction that triggered the toast
+  // does not immediately dismiss it.
+  window.setTimeout(() => {
+    window.addEventListener('pointerdown', dismiss, true);
+    window.addEventListener('touchstart', dismiss, true);
+    window.addEventListener('click', dismiss, true);
+  }, 0);
+}
+
 function showAnchoredToast(message: string | React.ReactNode, options?: AnchoredToastOptions): string {
   const anchor = getActiveToastAnchor();
   const icon = options?.icon;
   const action = options?.action;
 
-  return hotToast.custom(
+  const toastId = hotToast.custom(
     () => (
       <div style={{ ...toastCardStyle, ...getAnchoredToastStyle(anchor) }} role="status" aria-live="polite">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.8rem' }}>
@@ -66,6 +87,9 @@ function showAnchoredToast(message: string | React.ReactNode, options?: Anchored
       position: 'top-left',
     }
   );
+
+  dismissOnNextInteraction(toastId);
+  return toastId;
 }
 
 const toast = Object.assign(
