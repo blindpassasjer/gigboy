@@ -69,20 +69,23 @@ export default function PublicBandSetlistPage() {
           }));
 
         let bandLogo: string | undefined;
+        let bandNameFromBandDoc: string | undefined;
         try {
           const bandSnap = await getDoc(doc(firestore, 'bands', bandId));
           if (bandSnap.exists()) {
             const bandData = bandSnap.data() as Record<string, unknown>;
             bandLogo = typeof bandData.logo === 'string' ? bandData.logo : undefined;
+            bandNameFromBandDoc = typeof bandData.name === 'string' ? bandData.name : undefined;
           }
         } catch {
           bandLogo = undefined;
+          bandNameFromBandDoc = undefined;
         }
 
         setSetlist({
           name: typeof data.name === 'string' ? data.name : 'Setlist',
           icon: typeof data.icon === 'string' ? data.icon : undefined,
-          bandName: typeof data.bandName === 'string' ? data.bandName : undefined,
+          bandName: typeof data.bandName === 'string' ? data.bandName : bandNameFromBandDoc,
           bandLogo,
           songs,
         });
@@ -98,7 +101,7 @@ export default function PublicBandSetlistPage() {
 
   if (status === 'loading') {
     return (
-      <div className="public-setlist-page">
+      <div className="public-setlist-page public-setlist-page--wide">
         <p className="public-setlist-status">Loading setlist…</p>
       </div>
     );
@@ -106,7 +109,7 @@ export default function PublicBandSetlistPage() {
 
   if (status === 'not-found') {
     return (
-      <div className="public-setlist-page">
+      <div className="public-setlist-page public-setlist-page--wide">
         <p className="public-setlist-status">Setlist not found.</p>
       </div>
     );
@@ -114,7 +117,7 @@ export default function PublicBandSetlistPage() {
 
   if (status === 'private') {
     return (
-      <div className="public-setlist-page">
+      <div className="public-setlist-page public-setlist-page--wide">
         <p className="public-setlist-status">This setlist is not publicly shared.</p>
       </div>
     );
@@ -122,14 +125,14 @@ export default function PublicBandSetlistPage() {
 
   if (status === 'error' || !setlist) {
     return (
-      <div className="public-setlist-page">
+      <div className="public-setlist-page public-setlist-page--wide">
         <p className="public-setlist-status">Failed to load setlist.</p>
       </div>
     );
   }
 
   return (
-    <div className="public-setlist-page">
+    <div className="public-setlist-page public-setlist-page--wide">
       <header className="public-setlist-header">
         <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
         <div className="public-share-branding-row public-share-branding-row--header">
@@ -170,12 +173,7 @@ export default function PublicBandSetlistPage() {
         </ol>
       )}
 
-      <footer className="public-setlist-footer">
-        <div className="public-share-branding-row public-share-branding-row--footer">
-          <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
-        </div>
-        <p className="public-setlist-signoff">From Norway - with chords</p>
-      </footer>
+      <footer className="footer">From Norway - with chords</footer>
     </div>
   );
 }

@@ -8486,6 +8486,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--text, #1a1a1a);
 }
 
+.public-setlist-page--wide {
+  max-width: 980px;
+}
+
 .public-setlist-header {
   margin-bottom: 2rem;
 }
@@ -8671,6 +8675,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .public-presskit-page {
+  max-width: 980px;
+}
+
+.technical-rider-public-page {
   max-width: 980px;
 }
 

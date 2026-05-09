@@ -258,12 +258,7 @@ export default function PublicBandPressKitPage() {
         )}
       </div>
 
-      <footer className="public-setlist-footer">
-        <div className="public-share-branding-row public-share-branding-row--footer">
-          <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
-        </div>
-        <p className="public-setlist-signoff">Built for musicians by Gigboy</p>
-      </footer>
+      <footer className="footer">From Norway - with chords</footer>
     </main>
   );
 }
