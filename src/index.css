@@ -8827,6 +8827,42 @@ input, select, textarea { font: inherit; color: var(--text); }
     font-size: .9rem;
   }
 
+  .song-list-sticky {
+    --song-list-sticky-top-cover: 1rem;
+    gap: .65rem;
+    padding-bottom: .65rem;
+    margin-bottom: .65rem;
+  }
+
+  .song-list-sticky > .setlist-header {
+    padding: .95rem .9rem;
+    border-radius: 12px;
+    gap: .85rem;
+  }
+
+  .song-list-sticky .song-list-heading,
+  .song-list-sticky .song-list-heading.setlist-title {
+    font-size: clamp(1.15rem, 1rem + .9vw, 1.35rem);
+    padding-bottom: .35rem;
+  }
+
+  .song-list-sticky .setlist-song-count {
+    font-size: .82rem;
+  }
+
+  .song-list-sticky .setlist-header-actions {
+    gap: .45rem;
+  }
+
+  .song-list-sticky .setlist-action-btn {
+    font-size: .8rem;
+    min-height: 2.35rem;
+  }
+
+  .song-list-sticky .song-list-controls {
+    gap: .5rem;
+  }
+
   .public-share-branding-row {
     gap: .75rem;
   }
