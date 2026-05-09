@@ -411,8 +411,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   return (
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
-        <div className="song-list-sticky list-sticky-header">
-          <header className="songlist-header bands-header setlist-header resource-header">
+        <div className="list-sticky-header">
+          <header className="songlist-header bands-header resource-header">
             <div className="setlist-title-block">
               {isRenaming ? (
                 <input
@@ -429,7 +429,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                 />
               ) : (
                 <div className="song-list-title-row">
-                  <h1 className="song-list-heading resource-title setlist-title resource-title--setlist">
+                  <h1 className="resource-title setlist-title resource-title--setlist">
                     {canEdit && onUpdateIcon ? (
                       <div className="icon-picker-wrapper" ref={iconPickerRef}>
                         <button
@@ -442,7 +442,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                           title="Change press kit icon"
                           aria-label="Change press kit icon"
                         >
-                          <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">
+                          <span className="resource-title-icon" aria-hidden="true">
                             {kit.icon ? kit.icon : <Newspaper size={20} />}
                           </span>
                         </button>
@@ -483,7 +483,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                         )}
                       </div>
                     ) : kit.icon ? (
-                      <span className="song-list-heading-icon resource-title-icon" aria-hidden="true">{kit.icon}</span>
+                      <span className="resource-title-icon" aria-hidden="true">{kit.icon}</span>
                     ) : null}
                     {kit.name}
                   </h1>
@@ -496,7 +496,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
               )}
               <p className="setlist-subtitle">Write copy, attach images, and share your public press kit.</p>
             </div>
-            <div className="setlist-header-actions resource-header-actions">
+            <div className="resource-header-actions">
               <button
                 type="button"
                 className="setlist-action-btn setlist-action-btn--accent"

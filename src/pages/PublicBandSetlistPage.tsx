@@ -139,7 +139,7 @@ export default function PublicBandSetlistPage() {
           {(setlist.bandName || setlist.bandLogo) ? (
             <div className="public-share-band-stack public-share-band-stack--header">
               {setlist.bandLogo ? <img src={setlist.bandLogo} alt={`${setlist.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
-              {setlist.bandName ? <p className="public-presskit-band-name public-share-band-name">{setlist.bandName}</p> : null}
+              {setlist.bandName ? <p className="public-share-band-name">{setlist.bandName}</p> : null}
             </div>
           ) : null}
         </div>

@@ -182,7 +182,7 @@ export default function PublicBandPressKitPage() {
 
   return (
     <main className="public-setlist-page public-presskit-page">
-      <header className="public-setlist-header public-presskit-header public-share-header">
+      <header className="public-setlist-header public-share-header">
         <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
         <div className="public-share-branding-row public-share-branding-row--header">
           {(payload.bandName || payload.bandLogo) ? (
@@ -195,7 +195,7 @@ export default function PublicBandPressKitPage() {
                   loading="lazy"
                 />
               ) : null}
-              {payload.bandName ? <p className="public-presskit-band-name public-share-band-name">{payload.bandName}</p> : null}
+              {payload.bandName ? <p className="public-share-band-name">{payload.bandName}</p> : null}
             </div>
           ) : null}
         </div>
