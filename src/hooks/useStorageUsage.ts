@@ -23,7 +23,26 @@ function toSafeNonEmptyString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function resolveBandQuotaBytes(bandData: Record<string, unknown> | undefined): number {
+function isPaidPlanActive(status: unknown): boolean {
+  return status === 'active' || status === 'trialing';
+}
+
+function resolveUserQuotaBytes(userData: Record<string, unknown> | undefined): number {
+  const explicitQuota = toSafeNumber(userData?.storageQuotaBytes);
+  if (explicitQuota !== null) return explicitQuota;
+
+  const userPlan = userData?.plan === 'crew'
+    ? 'crew'
+    : userData?.plan === 'pro'
+      ? 'pro'
+      : 'free';
+  const planOverride = userData?.planOverride === true;
+  const active = planOverride || userPlan === 'free' || isPaidPlanActive(userData?.subscriptionStatus);
+  const effectivePlan = active ? userPlan : 'free';
+  return PLAN_LIMITS[effectivePlan].storageQuotaBytes;
+}
+
+function resolveBandQuotaBytes(bandData: Record<string, unknown> | undefined): number | null {
   const explicitBandQuota = toSafeNumber(bandData?.storageQuotaBytes);
   if (explicitBandQuota !== null) return explicitBandQuota;
 
@@ -33,10 +52,10 @@ function resolveBandQuotaBytes(bandData: Record<string, unknown> | undefined): n
       ? 'pro'
       : 'free';
   const billingStatus = bandData?.billingSubscriptionStatus;
-  const isPaidPlanActive = billingStatus === 'active' || billingStatus === 'trialing';
-  const effectivePlan = billingPlan === 'free' || isPaidPlanActive ? billingPlan : 'free';
+  const hasActiveBandBilling = billingPlan !== 'free' && isPaidPlanActive(billingStatus);
+  if (!hasActiveBandBilling) return null;
 
-  return PLAN_LIMITS[effectivePlan].storageQuotaBytes;
+  return PLAN_LIMITS[billingPlan].storageQuotaBytes;
 }
 
 export function useStorageUsage(userId: string | null | undefined, planQuotaBytes?: number, bandId?: string | null) {
@@ -123,7 +142,23 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           const bandData = bandDocResult.status === 'fulfilled'
             ? bandDocResult.value.data() as Record<string, unknown> | undefined
             : undefined;
-          quotaBytes = resolveBandQuotaBytes(bandData);
+          const quotaFromBand = resolveBandQuotaBytes(bandData);
+          if (quotaFromBand !== null) {
+            quotaBytes = quotaFromBand;
+          } else {
+            const ownerId = toSafeNonEmptyString(bandData?.ownerId);
+            if (ownerId) {
+              const ownerSnapshotResult = await Promise.allSettled([
+                getDoc(doc(firestore, 'users', ownerId)),
+              ]);
+              if (cancelled) return;
+              const ownerSnapshot = ownerSnapshotResult[0].status === 'fulfilled'
+                ? ownerSnapshotResult[0].value
+                : null;
+              const ownerData = ownerSnapshot?.data() as Record<string, unknown> | undefined;
+              quotaBytes = resolveUserQuotaBytes(ownerData);
+            }
+          }
 
           // Press kit images
           const pressKitImageDocs = pressKitImagesResult.status === 'fulfilled'
@@ -173,8 +208,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           if (cancelled) return;
           const userSnapshot = userSnapshotResult[0].status === 'fulfilled' ? userSnapshotResult[0].value : null;
           const userData = userSnapshot?.data() as Record<string, unknown> | undefined;
-          const quotaFromProfile = toSafeNumber(userData?.storageQuotaBytes);
-          const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
+          const baseQuota = resolveUserQuotaBytes(userData);
           quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
 
           const [
