@@ -38,6 +38,10 @@ Open [http://localhost:5173](http://localhost:5173).
 
 Without any environment variables the app runs in local-only mode — no login required and songs are stored in `localStorage`.
 
+## Testing
+
+Use the release checklist in [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) before deploying.
+
 ## Firebase setup (optional)
 
 To enable authentication and cloud storage, create a Firebase project and add the following variables to a `.env` file at the project root:
