@@ -15,20 +15,43 @@ export interface ParsedSong {
 
 export interface ParsedImportResult extends ParsedSong {
   warnings: string[];
+  detectedSource?: string;
 }
 
 const CHORD_TOKEN_RE = /^[A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?$/;
 const CHORD_SCAN_RE = /[A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?/g;
 // Matches a properly formed inline chord marker [G], [Am7], [C#m/G], etc. (not section labels)
 const INLINE_CHORD_MARKER_RE = /\[[A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?\]/;
+const CHORD_ROW_SEPARATOR_RE = /^(?:\||\/)+$/;
+const TAB_LINE_RE = /^(?:[A-Ga-gEeBb]|[Dd])\|[-0-9hHpPbBrRsSxX~vV/\\()\[\]{}*|:.\s]+$/;
+const SOURCE_BOILERPLATE_RE = /^(?:ultimate\s+guitar|chordify|songsterr|songselect|guitartuna|la\s*cuerda|lacuerda(?:\.net)?|cifra\s*club|cifraclub)\b/i;
+
+const SOURCE_MATCHERS: Array<{ label: string; pattern: RegExp }> = [
+  { label: 'Ultimate Guitar', pattern: /(?:ultimate\s+guitar|\[ch\]|\[tab\])/i },
+  { label: 'Chordify', pattern: /(?:^|\n)\|\s*[A-G][^\n]*\|/i },
+  { label: 'Songsterr', pattern: /(?:songsterr|songsteer|^(?:e|B|G|D|A|E)\|[-0-9hHpPbBrRsSxX~vV/\\()\[\]{}*|:.\s]+)/im },
+  { label: 'GuitarTuna', pattern: /(?:guitartuna|\bkey\s+[A-G][#b]?(?:m|maj|min|sus|dim|aug|add)?\d*\b.*\bcapo\s+\d+)/i },
+  { label: 'CCLI SongSelect', pattern: /(?:songselect|ccli\s+song\s*#)/i },
+  { label: 'LaCuerda', pattern: /(?:la\s*cuerda|lacuerda(?:\.net)?|\btono\s*:|\bestribillo\b)/i },
+  { label: 'Cifra Club', pattern: /(?:cifra\s*club|cifraclub|\btom\s*:|capotraste\s+na)/i },
+];
+
+function detectLikelySource(text: string): string | undefined {
+  for (const matcher of SOURCE_MATCHERS) {
+    if (matcher.pattern.test(text)) {
+      return matcher.label;
+    }
+  }
+  return undefined;
+}
 
 // Section label → ChordPro section type mapping (verse / chorus / bridge / null=generic)
 const SECTION_TYPE_MAP: Array<[RegExp, string | null]> = [
-  [/^(verse|verso|copla|strophe|stanza|couplet)(\s+\d+)?$/i, 'verse'],
-  [/^(chorus|refrain|refrán|estribillo)(\s+\d+)?$/i, 'chorus'],
-  [/^pre.?(chorus|estribillo)(\s+\d+)?$/i, 'chorus'],
-  [/^post.?(chorus|estribillo)(\s+\d+)?$/i, 'chorus'],
-  [/^(bridge|puente|middle[- ]?8?)(\s+\d+)?$/i, 'bridge'],
+  [/^(verse|verso|estrofa|copla|strophe|stanza|couplet|parte|parte\s+\d+|primeira\s+parte|segunda\s+parte)(\s+\d+)?$/i, 'verse'],
+  [/^(chorus|coro|refrain|refrán|refr[oã]o|estribillo)(\s+\d+)?$/i, 'chorus'],
+  [/^pre[ -.]?(chorus|coro|refr[oã]o|estribillo)(\s+\d+)?$/i, 'chorus'],
+  [/^post[ -.]?(chorus|coro|refr[oã]o|estribillo)(\s+\d+)?$/i, 'chorus'],
+  [/^(bridge|ponte|puente|middle[- ]?8?)(\s+\d+)?$/i, 'bridge'],
   [/^(hook)(\s+\d+)?$/i, 'chorus'],
   [/^(intro|outro|solo|interlude|interludio|coda|tag|instrumental|breakdown)(\s+\d+)?$/i, null],
 ];
@@ -41,7 +64,7 @@ function getSectionType(label: string): string | null | undefined {
 }
 
 // Returns the section label string if the line is a section marker, otherwise null.
-// Handles: [Verse 1], [Chorus], [Estribillo], Estribillo:, Verso:
+// Handles: [Verse 1], [Chorus], [Estribillo], Estribillo:, Verso:, Verse 1
 function parseSectionMarker(line: string): string | null {
   const trimmed = line.trim();
 
@@ -58,6 +81,10 @@ function parseSectionMarker(line: string): string | null {
   if (colonMatch) {
     const label = colonMatch[1].trim();
     if (getSectionType(label) !== undefined) return label;
+  }
+
+  if (getSectionType(trimmed) !== undefined) {
+    return trimmed;
   }
 
   return null;
@@ -80,12 +107,30 @@ function convertUGTabBlocks(text: string): string {
   return text;
 }
 
-// Pre-process Ultimate Guitar and cuerdas.net specific markup before parsing.
+function normalizeLabeledMetadataLine(line: string): string {
+  return line
+    .replace(/^(tom|tono)\s*:/i, 'Key:')
+    .replace(/^artist\s*:/i, 'Artist:')
+    .replace(/^artista\s*:/i, 'Artist:')
+    .replace(/^autor\s*:/i, 'Author:')
+    .replace(/^tempo\s*:/i, 'Tempo:')
+    .replace(/^bpm\s*:/i, 'Tempo:')
+    .replace(/^capotraste\s*:/i, 'Capo:')
+    .replace(/^capotraste\s+na\s+/i, 'Capo ')
+    .replace(/^capo\s+en\s+/i, 'Capo ');
+}
+
+// Pre-process common site-specific paste markup before parsing.
 function preprocessSongText(text: string): string {
   // UG inline chord tags: [ch]G[/ch] → [G]
   text = text.replace(/\[ch\]([^[]*?)\[\/ch\]/gi, (_, chord) => `[${chord.trim()}]`);
   // UG tab wrappers: [tab] ... [/tab] → ChordPro {start_of_tab} ... {end_of_tab}
   text = convertUGTabBlocks(text);
+  // Some sites paste inline metadata in localized labels we can normalize up front.
+  text = text
+    .split('\n')
+    .map((line) => normalizeLabeledMetadataLine(line.trimEnd()))
+    .join('\n');
   return text;
 }
 
@@ -118,8 +163,9 @@ function lineLooksLikeChordRow(line: string): boolean {
   if (!trimmed) return false;
   const tokens = trimmed.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return false;
-  const valid = tokens.filter((token) => CHORD_TOKEN_RE.test(token)).length;
-  return valid > 0 && valid / tokens.length >= 0.8;
+  const chordTokens = tokens.filter((token) => CHORD_TOKEN_RE.test(token)).length;
+  const separatorTokens = tokens.filter((token) => CHORD_ROW_SEPARATOR_RE.test(token)).length;
+  return chordTokens > 0 && (chordTokens + separatorTokens) / tokens.length >= 0.8;
 }
 
 function mergeChordRowWithLyrics(chordRow: string, lyricRow: string): string {
@@ -144,14 +190,91 @@ function mergeChordRowWithLyrics(chordRow: string, lyricRow: string): string {
   return out.trimEnd();
 }
 
+function looksLikeTabLine(line: string): boolean {
+  return TAB_LINE_RE.test(line.trim());
+}
+
+function extractChordValue(input: string): string | undefined {
+  const match = input.match(/[A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?/);
+  return match?.[0];
+}
+
+function extractFirstInteger(input: string): number | undefined {
+  const match = input.match(/(\d{1,3})/);
+  return match ? Number.parseInt(match[1], 10) : undefined;
+}
+
+function parseMetadataLine(line: string): Partial<ParsedSong> | null {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+
+  const artistMatch = trimmed.match(/^(?:by\s+|artist\s*:\s*)(.+)$/i);
+  if (artistMatch) {
+    return { artist: artistMatch[1].trim() };
+  }
+
+  const authorMatch = trimmed.match(/^(?:author|writer|writers|songwriter|composer)\s*:\s*(.+)$/i);
+  if (authorMatch) {
+    return { author: authorMatch[1].trim() };
+  }
+
+  const keyMatch = trimmed.match(/^(?:key|original\s+key|tonality|tone)\s*:?\s*(.+)$/i);
+  if (keyMatch) {
+    const key = extractChordValue(keyMatch[1]);
+    return key ? { key } : null;
+  }
+
+  const capoMatch = trimmed.match(/^(?:capo|capotraste)\b\s*:?\s*(.*)$/i);
+  if (capoMatch) {
+    const capo = extractFirstInteger(capoMatch[1]);
+    return typeof capo === 'number' ? { capo } : null;
+  }
+
+  const tempoMatch = trimmed.match(/^(?:tempo|bpm)\s*:?\s*(.+)$/i);
+  if (tempoMatch) {
+    const tempo = extractFirstInteger(tempoMatch[1]);
+    return typeof tempo === 'number' ? { tempo } : null;
+  }
+
+  return null;
+}
+
+function isMetadataNoise(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  return SOURCE_BOILERPLATE_RE.test(trimmed)
+    || /^ccli\s+song\s*#/i.test(trimmed)
+    || /^copyright\b/i.test(trimmed)
+    || /^transpos(e|ition)\b/i.test(trimmed)
+    || /^tuning\b/i.test(trimmed);
+}
+
+function lineStartsContent(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  return trimmed.startsWith('{')
+    || looksLikeSectionMarker(trimmed)
+    || looksLikeTabLine(trimmed)
+    || lineLooksLikeChordRow(trimmed)
+    || INLINE_CHORD_MARKER_RE.test(trimmed);
+}
+
 function parseLeadingMetadata(lines: string[]): {
   title?: string;
   artist?: string;
+  author?: string;
+  key?: string;
+  capo?: number;
+  tempo?: number;
   startIndex: number;
 } {
   let startIndex = 0;
   let title: string | undefined;
   let artist: string | undefined;
+  let author: string | undefined;
+  let key: string | undefined;
+  let capo: number | undefined;
+  let tempo: number | undefined;
 
   while (startIndex < lines.length && !lines[startIndex].trim()) {
     startIndex += 1;
@@ -161,33 +284,49 @@ function parseLeadingMetadata(lines: string[]): {
     return { startIndex };
   }
 
-  const first = lines[startIndex].trim();
-  const second = startIndex + 1 < lines.length ? lines[startIndex + 1].trim() : '';
+  while (startIndex < lines.length) {
+    const current = lines[startIndex]?.trim() ?? '';
 
-  const firstHasChord = lineLooksLikeChordRow(first) || INLINE_CHORD_MARKER_RE.test(first);
-  const firstIsSectionMarker = looksLikeSectionMarker(first);
-  if (!firstHasChord && !firstIsSectionMarker && first.length <= 90 && !first.startsWith('{')) {
-    title = first;
-    startIndex += 1;
+    if (!current) {
+      startIndex += 1;
+      if (title || artist || key || capo || tempo || author) {
+        continue;
+      }
+      continue;
+    }
+
+    if (isMetadataNoise(current)) {
+      startIndex += 1;
+      continue;
+    }
+
+    const parsedMetadata = parseMetadataLine(current);
+    if (parsedMetadata) {
+      artist = parsedMetadata.artist ?? artist;
+      author = parsedMetadata.author ?? author;
+      key = parsedMetadata.key ?? key;
+      capo = parsedMetadata.capo ?? capo;
+      tempo = parsedMetadata.tempo ?? tempo;
+      startIndex += 1;
+      continue;
+    }
+
+    if (!title && !lineStartsContent(current) && current.length <= 90) {
+      title = current;
+      startIndex += 1;
+      continue;
+    }
+
+    if (!artist && !lineStartsContent(current) && current.length <= 80) {
+      artist = current.replace(/^by\s+/i, '').trim();
+      startIndex += 1;
+      continue;
+    }
+
+    break;
   }
 
-  const byMatch = second.match(/^by\s+(.+)$/i);
-  if (byMatch) {
-    artist = byMatch[1].trim();
-    startIndex += 1;
-  } else if (
-    second &&
-    second.length <= 80 &&
-    !lineLooksLikeChordRow(second) &&
-    !INLINE_CHORD_MARKER_RE.test(second) &&
-    !looksLikeSectionMarker(second) &&
-    !second.startsWith('{')
-  ) {
-    artist = second;
-    startIndex += 1;
-  }
-
-  return { title, artist, startIndex };
+  return { title, artist, author, key, capo, tempo, startIndex };
 }
 
 /**
@@ -205,6 +344,8 @@ export function parsePastedSong(text: string): ParsedImportResult {
     return { chordpro: '', warnings: [] };
   }
 
+  const detectedSource = detectLikelySource(normalized);
+
   // Step 1: strip site-specific markup (UG [ch]/[tab] tags, etc.)
   const input = preprocessSongText(normalized);
 
@@ -213,8 +354,7 @@ export function parsePastedSong(text: string): ParsedImportResult {
   // Detect existing ChordPro: directive syntax OR properly formed inline chord markers.
   // Use INLINE_CHORD_MARKER_RE instead of /\[[A-G]/i to avoid false matches on
   // section labels like [Chorus] or [Bridge] that start with a letter in A–G.
-  const hasChordProMarkers =
-    /\{\s*[a-z_]+\s*:/.test(input) || INLINE_CHORD_MARKER_RE.test(input);
+  const hasChordProMarkers = /\{\s*[a-z_]+\s*:/.test(input);
 
   const lines = input.split('\n');
   const meta = parseLeadingMetadata(lines);
@@ -226,7 +366,12 @@ export function parsePastedSong(text: string): ParsedImportResult {
       ...parsed,
       title: parsed.title ?? meta.title,
       artist: parsed.artist ?? meta.artist,
+      author: parsed.author ?? meta.author,
+      key: parsed.key ?? meta.key,
+      capo: parsed.capo ?? meta.capo,
+      tempo: parsed.tempo ?? meta.tempo,
       warnings,
+      detectedSource,
     };
   }
 
@@ -252,6 +397,21 @@ export function parsePastedSong(text: string): ParsedImportResult {
       } else {
         // Intro, Outro, Solo, etc. — use a comment label
         out.push(`{comment: ${sectionLabel}}`);
+      }
+      continue;
+    }
+
+    if (looksLikeTabLine(current)) {
+      const tabBlock: string[] = [];
+      while (i < content.length && looksLikeTabLine(content[i] ?? '')) {
+        tabBlock.push((content[i] ?? '').trimEnd());
+        i += 1;
+      }
+      i -= 1;
+      if (tabBlock.length > 0) {
+        out.push('{start_of_tab}');
+        out.push(...tabBlock);
+        out.push('{end_of_tab}');
       }
       continue;
     }
@@ -287,6 +447,10 @@ export function parsePastedSong(text: string): ParsedImportResult {
   const withDirectives = [
     meta.title ? `{title: ${meta.title}}` : '',
     meta.artist ? `{artist: ${meta.artist}}` : '',
+    meta.author ? `{author: ${meta.author}}` : '',
+    meta.key ? `{key: ${meta.key}}` : '',
+    typeof meta.capo === 'number' ? `{capo: ${meta.capo}}` : '',
+    typeof meta.tempo === 'number' ? `{tempo: ${meta.tempo}}` : '',
     chordproBody,
   ]
     .filter(Boolean)
@@ -295,9 +459,13 @@ export function parsePastedSong(text: string): ParsedImportResult {
   return {
     title: meta.title,
     artist: meta.artist,
-    author: undefined,
+    author: meta.author,
+    key: meta.key,
+    capo: meta.capo,
+    tempo: meta.tempo,
     chordpro: withDirectives,
     warnings,
+    detectedSource,
   };
 }
 

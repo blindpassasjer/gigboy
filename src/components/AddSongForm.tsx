@@ -80,6 +80,8 @@ export default function AddSongForm({
   const [timeSignature, setTimeSignature] = useState(initialSong?.timeSignature ?? '');
   const [chordpro, setChordpro] = useState(initialSong?.chordpro ?? '');
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
+  const [parseStatus, setParseStatus] = useState<string | null>(null);
+  const [detectedSource, setDetectedSource] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -221,13 +223,8 @@ export default function AddSongForm({
     };
   }, [initialSong?.id, initialSong?.createdAt]);
 
-  function handleParsePasted() {
-    if (!chordpro.trim()) {
-      setErrors(['Add some content before parsing.']);
-      return;
-    }
-
-    const parsed = parsePastedSong(chordpro);
+  function applyParsedSong(rawText: string, source: 'manual' | 'paste') {
+    const parsed = parsePastedSong(rawText);
     if (parsed.title) setTitle(parsed.title);
     if (parsed.artist) setArtist(parsed.artist);
     if (parsed.author) setAuthor(parsed.author);
@@ -236,8 +233,41 @@ export default function AddSongForm({
     if (typeof parsed.tempo === 'number') setTempo(String(parsed.tempo));
     setChordpro(parsed.chordpro);
     setParseWarnings(parsed.warnings);
+    setDetectedSource(parsed.detectedSource ?? null);
+    setParseStatus(source === 'paste' ? 'Pasted content was parsed automatically.' : 'Text was parsed into ChordPro.');
     setErrors([]);
     setPreview(false);
+  }
+
+  function handleParsePasted() {
+    if (!chordpro.trim()) {
+      setErrors(['Add some content before parsing.']);
+      return;
+    }
+
+    applyParsedSong(chordpro, 'manual');
+  }
+
+  function handleChordproPaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const pastedText = event.clipboardData.getData('text/plain');
+    if (!pastedText.trim()) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const textarea = event.currentTarget;
+    const selectionStart = textarea.selectionStart ?? 0;
+    const selectionEnd = textarea.selectionEnd ?? selectionStart;
+    const nextValue = `${chordpro.slice(0, selectionStart)}${pastedText}${chordpro.slice(selectionEnd)}`;
+
+    applyParsedSong(nextValue, 'paste');
+  }
+
+  function handleChordproChange(value: string) {
+    setChordpro(value);
+    setParseStatus(null);
+    setDetectedSource(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -407,9 +437,11 @@ export default function AddSongForm({
           <div className="chordpro-label-row">
             <label>ChordPro Lyrics *</label>
             <div className="chordpro-label-actions">
-              <button type="button" className="preview-toggle" onClick={handleParsePasted}>
-                <Wand2 size={14} /> Parse
-              </button>
+              {mode === 'add' && (
+                <button type="button" className="preview-toggle" onClick={handleParsePasted}>
+                  <Wand2 size={14} /> Parse
+                </button>
+              )}
               <button type="button" className="preview-toggle" onClick={() => setPreview((v) => !v)}>
                 {preview ? 'Edit' : 'Preview'}
               </button>
@@ -445,7 +477,7 @@ export default function AddSongForm({
             <ChordProToolbar
               textareaRef={textareaRef}
               value={chordpro}
-              onChange={setChordpro}
+              onChange={handleChordproChange}
             />
           )}
           {preview ? (
@@ -461,7 +493,8 @@ export default function AddSongForm({
               <textarea
                 ref={textareaRef}
                 value={chordpro}
-                onChange={(e) => setChordpro(e.target.value)}
+                onChange={(e) => handleChordproChange(e.target.value)}
+                onPaste={handleChordproPaste}
                 placeholder={PLACEHOLDER}
                 rows={16}
                 spellCheck={false}
@@ -490,8 +523,14 @@ export default function AddSongForm({
               ))}
             </div>
           )}
+          {parseStatus && (
+            <p className="form-hint" role="status">{parseStatus}</p>
+          )}
+          {detectedSource && (
+            <p className="form-hint" role="status">Detected source format: {detectedSource}.</p>
+          )}
           <p className="form-hint">
-            Paste plain lyrics with chords and click <strong>Parse</strong> to convert, or write ChordPro directly:{' '}
+            Paste plain lyrics with chords to convert automatically, or write ChordPro directly{mode === 'add' ? ' and use Parse for existing text' : ''}:{' '}
             <code>[G]Amazing [C]grace</code>, <code>&#123;start_of_chorus&#125;</code>.
           </p>
         </div>

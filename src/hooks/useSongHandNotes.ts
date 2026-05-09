@@ -73,11 +73,9 @@ export function useSongHandNotes(params: {
       unsubscribe();
       setLoading(false);
     };
-      if (visibleAuthorIds.length === 0) return notes.map(colorizeByAuthor);
+  }, [enabled, scope, songId]);
 
-      return notes
-        .filter((note) => visible.has(note.authorUid))
-        .map(colorizeByAuthor);
+  useEffect(() => {
     if (!userId) {
       setVisibleAuthorIds([]);
       return;
@@ -113,10 +111,28 @@ export function useSongHandNotes(params: {
   }, [notes, user, userId]);
 
   const visibleNotes = useMemo(() => {
-    if (!hasManualVisibilitySelectionRef.current) return notes;
+    const colorizeByAuthor = (note: SongHandNoteDocument): SongHandNoteDocument => {
+      const authorColor = getUserNoteColor(note.authorUid);
+      return {
+        ...note,
+        strokes: note.strokes.map((stroke) => (
+          stroke.color === authorColor
+            ? stroke
+            : { ...stroke, color: authorColor }
+        )),
+      };
+    };
+
+    if (!hasManualVisibilitySelectionRef.current) {
+      return notes.map(colorizeByAuthor);
+    }
+
     if (visibleAuthorIds.length === 0) return [];
+
     const visible = new Set(visibleAuthorIds);
-    return notes.filter((note) => visible.has(note.authorUid));
+    return notes
+      .filter((note) => visible.has(note.authorUid))
+      .map(colorizeByAuthor);
   }, [notes, visibleAuthorIds]);
 
   const myNote = useMemo(() => {
