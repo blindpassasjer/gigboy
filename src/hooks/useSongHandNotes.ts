@@ -5,6 +5,7 @@ import {
   deleteSongHandNote,
   loadSongHandNotes,
   saveSongHandNote,
+  type SongHandNotesScope,
 } from '../lib/songHandNotes';
 import type {
   HandNoteStroke,
@@ -18,12 +19,18 @@ function displayNameForUser(user: User) {
 
 export function useSongHandNotes(params: {
   ownerId: string | null;
+  bandId?: string | null;
   songId: string;
   user: User | null;
   enabled: boolean;
 }) {
-  const { ownerId, songId, user, enabled } = params;
+  const { ownerId, bandId, songId, user, enabled } = params;
   const userId = user?.id ?? null;
+  const scope = useMemo<SongHandNotesScope | null>(() => {
+    if (bandId) return { type: 'band', bandId };
+    if (ownerId) return { type: 'user', ownerId };
+    return null;
+  }, [bandId, ownerId]);
 
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState<SongHandNoteDocument[]>([]);
@@ -42,17 +49,17 @@ export function useSongHandNotes(params: {
     }
 
     setVisibleAuthorIds([userId]);
-  }, [enabled, ownerId, songId, userId]);
+  }, [enabled, ownerId, bandId, songId, userId]);
 
   useEffect(() => {
-    if (!enabled || !db || !ownerId) {
+    if (!enabled || !db || !scope) {
       setNotes([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    loadSongHandNotes(db, ownerId, songId)
+    loadSongHandNotes(db, scope, songId)
       .then((loaded) => {
         setNotes(loaded);
       })
@@ -62,7 +69,7 @@ export function useSongHandNotes(params: {
       .finally(() => {
         setLoading(false);
       });
-  }, [enabled, ownerId, songId]);
+  }, [enabled, scope, songId]);
 
   useEffect(() => {
     if (!userId) {
@@ -115,7 +122,7 @@ export function useSongHandNotes(params: {
   }, [notes, userId]);
 
   const saveMyNotes = useCallback(async (strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
-    if (!db || !ownerId || !userId || !user) return;
+    if (!db || !scope || !userId || !user) return;
 
     const nextNote: SongHandNoteDocument = {
       authorUid: userId,
@@ -139,7 +146,7 @@ export function useSongHandNotes(params: {
 
     setSaveState('saving');
     try {
-      await saveSongHandNote({ db, ownerId, songId, note: nextNote });
+      await saveSongHandNote({ db, scope, songId, note: nextNote });
       setSaveState('saved');
       window.setTimeout(() => {
         setSaveState((current) => (current === 'saved' ? 'idle' : current));
@@ -148,17 +155,17 @@ export function useSongHandNotes(params: {
       console.error('Failed to save song hand notes.', error);
       setSaveState('error');
     }
-  }, [ownerId, songId, user, userId]);
+  }, [scope, songId, user, userId]);
 
   const clearMyNotes = useCallback(async () => {
-    if (!db || !ownerId || !userId) return;
+    if (!db || !scope || !userId) return;
 
     const previousNotes = notes;
     setNotes((prev) => prev.filter((entry) => entry.authorUid !== userId));
     setSaveState('saving');
 
     try {
-      await deleteSongHandNote({ db, ownerId, songId, authorUid: userId });
+      await deleteSongHandNote({ db, scope, songId, authorUid: userId });
       setSaveState('saved');
       window.setTimeout(() => {
         setSaveState((current) => (current === 'saved' ? 'idle' : current));
@@ -168,7 +175,7 @@ export function useSongHandNotes(params: {
       setNotes(previousNotes);
       setSaveState('error');
     }
-  }, [notes, ownerId, songId, userId]);
+  }, [notes, scope, songId, userId]);
 
   const showMineOnly = useCallback(() => {
     if (!userId) {

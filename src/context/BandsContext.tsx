@@ -23,7 +23,7 @@ import type {
 } from '../types';
 import { db, storage, firebaseEnabled } from '../lib/firebase';
 import {
-  cleanupLegacySoloDataOnServer,
+  cleanupLegacyBandMigrationDataOnServer,
   changeBandMemberRoleOnServer,
   createBandOnServer,
   deleteBandOnServer,
@@ -65,7 +65,7 @@ const BAND_SETLISTS_COLLECTION = 'setlists';
 const BAND_INPUT_LISTS_COLLECTION = 'technicalRiders';
 const BAND_PRESS_KITS_COLLECTION = 'pressKits';
 const MIGRATION_MARKER_PREFIX = 'gigboy-bands-migration';
-const SOLO_CLEANUP_MARKER = 'solo-cleanup-v1';
+const LEGACY_LIBRARY_CLEANUP_MARKER = 'solo-cleanup-v1';
 const SERVER_REPAIR_MARKER = 'server-repair-v1';
 const CLIENT_REPAIR_MARKER = 'client-repair-v1';
 const LEGACY_NAME_REPAIR_MARKER = 'legacy-name-repair-v1';
@@ -492,32 +492,32 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(firebaseEnabled);
   const [membershipRepairUserId, setMembershipRepairUserId] = useState<string | null>(null);
   const [serverRepairUserId, setServerRepairUserId] = useState<string | null>(null);
-  const [soloCleanupUserId, setSoloCleanupUserId] = useState<string | null>(null);
+  const [legacyCleanupUserId, setLegacyCleanupUserId] = useState<string | null>(null);
   const [legacyNameRepairUserId, setLegacyNameRepairUserId] = useState<string | null>(null);
 
-  // One-time cleanup for legacy solo data now that the app is bands-only.
+  // One-time cleanup for legacy pre-bands data now that the app is bands-only.
   useEffect(() => {
-    if (!userId || soloCleanupUserId === userId) return;
-    if (hasMigrationMarker(SOLO_CLEANUP_MARKER, userId)) {
-      setSoloCleanupUserId(userId);
+    if (!userId || legacyCleanupUserId === userId) return;
+    if (hasMigrationMarker(LEGACY_LIBRARY_CLEANUP_MARKER, userId)) {
+      setLegacyCleanupUserId(userId);
       return;
     }
 
-    setSoloCleanupUserId(userId);
-    void cleanupLegacySoloDataOnServer({
+    setLegacyCleanupUserId(userId);
+    void cleanupLegacyBandMigrationDataOnServer({
       userId,
       userEmail,
     }).then((result) => {
-      setMigrationMarker(SOLO_CLEANUP_MARKER, userId);
+      setMigrationMarker(LEGACY_LIBRARY_CLEANUP_MARKER, userId);
       if (result.deletedSoloBands > 0 || result.deletedUserDocs > 0) {
         console.info(
-          `[Gigboy] Cleaned legacy solo data: bands=${result.deletedSoloBands}, userDocs=${result.deletedUserDocs}`
+          `[Gigboy] Cleaned legacy band-migration data: bands=${result.deletedSoloBands}, userDocs=${result.deletedUserDocs}`
         );
       }
     }).catch((error) => {
-      console.error('[Gigboy] Legacy solo cleanup failed:', error);
+      console.error('[Gigboy] Legacy data cleanup failed:', error);
     });
-  }, [soloCleanupUserId, userId, userEmail]);
+  }, [legacyCleanupUserId, userId, userEmail]);
 
   // Server-side recovery: re-associate this user to likely matching bands by ownerId/username/email.
   useEffect(() => {

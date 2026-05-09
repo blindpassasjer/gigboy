@@ -7,7 +7,7 @@ import type { Song } from '../types';
 
 type AddSongScopeState = {
   addSongScope?: {
-    kind: 'solo' | 'band';
+    kind?: 'band';
     bandId?: string;
   };
   initialSongListId?: string;

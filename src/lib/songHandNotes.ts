@@ -11,8 +11,27 @@ import type { HandNoteStroke, SongHandNoteDocument } from '../types';
 const SONGS_COLLECTION = 'songs';
 const HAND_NOTES_COLLECTION = 'handNotes';
 
-function songHandNotesPath(ownerId: string, songId: string) {
-  return ['users', ownerId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION] as const;
+export type SongHandNotesScope =
+  | { type: 'user'; ownerId: string }
+  | { type: 'band'; bandId: string };
+
+function songHandNotesCollectionRef(db: Firestore, scope: SongHandNotesScope, songId: string) {
+  if (scope.type === 'band') {
+    return collection(db, 'bands', scope.bandId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION);
+  }
+  return collection(db, 'users', scope.ownerId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION);
+}
+
+function songHandNotesDocRef(
+  db: Firestore,
+  scope: SongHandNotesScope,
+  songId: string,
+  authorUid: string,
+) {
+  if (scope.type === 'band') {
+    return doc(db, 'bands', scope.bandId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION, authorUid);
+  }
+  return doc(db, 'users', scope.ownerId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION, authorUid);
 }
 
 export function clamp01(value: number) {
@@ -94,10 +113,10 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
 
 export async function loadSongHandNotes(
   db: Firestore,
-  ownerId: string,
+  scope: SongHandNotesScope,
   songId: string
 ): Promise<SongHandNoteDocument[]> {
-  const snapshot = await getDocs(collection(db, ...songHandNotesPath(ownerId, songId)));
+  const snapshot = await getDocs(songHandNotesCollectionRef(db, scope, songId));
 
   return snapshot.docs
     .map((entry) => normalizeNoteDocument(entry.id, entry.data()))
@@ -106,22 +125,22 @@ export async function loadSongHandNotes(
 
 export async function saveSongHandNote(params: {
   db: Firestore;
-  ownerId: string;
+  scope: SongHandNotesScope;
   songId: string;
   note: SongHandNoteDocument;
 }) {
-  const { db, ownerId, songId, note } = params;
+  const { db, scope, songId, note } = params;
   const { authorUid } = note;
 
-  await setDoc(doc(db, ...songHandNotesPath(ownerId, songId), authorUid), note);
+  await setDoc(songHandNotesDocRef(db, scope, songId, authorUid), note);
 }
 
 export async function deleteSongHandNote(params: {
   db: Firestore;
-  ownerId: string;
+  scope: SongHandNotesScope;
   songId: string;
   authorUid: string;
 }) {
-  const { db, ownerId, songId, authorUid } = params;
-  await deleteDoc(doc(db, ...songHandNotesPath(ownerId, songId), authorUid));
+  const { db, scope, songId, authorUid } = params;
+  await deleteDoc(songHandNotesDocRef(db, scope, songId, authorUid));
 }

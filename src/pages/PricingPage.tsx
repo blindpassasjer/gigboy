@@ -49,10 +49,10 @@ const PLAN_CARDS: PlanCard[] = [
   {
     tier: 'free',
     icon: Lock,
-    blurb: 'A lightweight solo account for trying Gigboy and keeping a small library.',
+    blurb: 'A lightweight account for trying Gigboy and keeping a small library.',
     monthlyPrice: 'Free',
     annualPrice: null,
-    featureBullets: ['12 songs', '100 MB recording storage', 'Song lists', 'One band workspace (solo)'],
+    featureBullets: ['12 songs', '100 MB recording storage', 'Song lists', 'One free band workspace'],
     ctaLabel: 'Current free plan',
   },
   {
@@ -61,7 +61,7 @@ const PLAN_CARDS: PlanCard[] = [
     blurb: 'Everything a power user needs for rehearsals, setlists, recordings, and sharing.',
     monthlyPrice: '50 kr or 5 USD',
     annualPrice: '500 kr or 50 USD',
-    featureBullets: ['Unlimited songs', '1 GB storage', 'Setlists, stage plots, riders', 'Recordings, metronome, pedal', 'One band workspace (solo)'],
+    featureBullets: ['Unlimited songs', '1 GB storage', 'Setlists, stage plots, riders', 'Recordings, metronome, pedal', 'One Pro band workspace'],
     ctaLabel: 'Upgrade to Pro',
     envKeyMonthly: 'VITE_STRIPE_PRO_MONTHLY_PRICE_ID',
     envKeyAnnual: 'VITE_STRIPE_PRO_ANNUAL_PRICE_ID',
@@ -221,7 +221,7 @@ export default function PricingPage() {
         <span className="pricing-kicker">Pricing</span>
         <h1>Pay per band workspace</h1>
         <p>
-          Every account gets one free band. Upgrade individual bands to Pro (all features, solo) or Crew (all features + up to 5 members).
+          Every account gets one free band. Upgrade individual bands to Pro (all features for one member) or Crew (all features + up to 5 members).
         </p>
         <div className="pricing-hero-actions">
           <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-hero-back-link">

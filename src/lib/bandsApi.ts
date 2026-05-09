@@ -148,7 +148,7 @@ export async function repairBandMembershipOnServer(params: {
   );
 }
 
-export async function cleanupLegacySoloDataOnServer(params: {
+export async function cleanupLegacyBandMigrationDataOnServer(params: {
   userId: string;
   userEmail: string;
 }) {

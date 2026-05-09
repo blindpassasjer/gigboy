@@ -9,7 +9,7 @@ interface Data extends Record<string, unknown> {
 }
 
 const BAND_SUBCOLLECTIONS = ['songs', 'songLists', 'setlists', 'stageplots', 'technicalRiders', 'trashItems'] as const;
-const USER_SOLO_SUBCOLLECTIONS = ['songs', 'songLists', 'setlists', 'stageplots', 'technicalRiders', 'trashItems', 'songListCategories'] as const;
+const USER_LEGACY_SUBCOLLECTIONS = ['songs', 'songLists', 'setlists', 'stageplots', 'technicalRiders', 'trashItems', 'songListCategories'] as const;
 
 async function deleteCollectionDocs(env: Record<string, string | undefined>, segments: string[]) {
   const docs = await listFirestoreDocuments(env, segments);
@@ -38,10 +38,10 @@ async function deleteBandCollectionWithNested(env: Record<string, string | undef
   return deletedDocs;
 }
 
-async function deleteUserSoloCollections(env: Record<string, string | undefined>, userId: string) {
+async function deleteUserLegacyCollections(env: Record<string, string | undefined>, userId: string) {
   let deletedDocs = 0;
 
-  for (const collectionName of USER_SOLO_SUBCOLLECTIONS) {
+  for (const collectionName of USER_LEGACY_SUBCOLLECTIONS) {
     const docs = await listFirestoreDocuments(env, ['users', userId, collectionName]);
     for (const entry of docs) {
       if (collectionName === 'songs') {
@@ -64,29 +64,29 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
   try {
     const allBands = await listFirestoreDocuments(ctx.env, ['bands']);
-    const soloBands = allBands.filter((entry) => {
+    const legacyBands = allBands.filter((entry) => {
       const name = typeof entry.data.name === 'string' ? entry.data.name.trim().toLowerCase() : '';
       const ownerId = typeof entry.data.ownerId === 'string' ? entry.data.ownerId : '';
       return ownerId === userId && name === 'solo';
     });
 
     let deletedBandDocs = 0;
-    for (const band of soloBands) {
+    for (const band of legacyBands) {
       deletedBandDocs += await deleteBandCollectionWithNested(ctx.env, band.id);
     }
 
-    const deletedUserDocs = await deleteUserSoloCollections(ctx.env, userId);
+    const deletedUserDocs = await deleteUserLegacyCollections(ctx.env, userId);
 
     return Response.json({
       ok: true,
-      deletedSoloBands: soloBands.length,
+      deletedSoloBands: legacyBands.length,
       deletedBandDocs,
       deletedUserDocs,
     });
   } catch (error) {
-    console.error('Failed to cleanup legacy solo data.', error);
+    console.error('Failed to cleanup legacy library data.', error);
     return Response.json({
-      error: error instanceof Error ? error.message : 'Failed to cleanup legacy solo data.',
+      error: error instanceof Error ? error.message : 'Failed to cleanup legacy library data.',
     }, { status: 500 });
   }
 };

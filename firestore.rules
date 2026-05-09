@@ -57,6 +57,19 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/bands/$(bandId));
     }
 
+    function userSongDocument(ownerId, songId) {
+      return get(/databases/$(database)/documents/users/$(ownerId)/songs/$(songId));
+    }
+
+    function userSongReadableByCurrentUser(ownerId, songId) {
+      return isOwner(ownerId)
+        || (
+          isSignedIn()
+          && userSongDocument(ownerId, songId).data.collaboratorIds is list
+          && userSongDocument(ownerId, songId).data.collaboratorIds.hasAny([request.auth.uid])
+        );
+    }
+
     function isBandMember(bandId) {
       return isSignedIn()
         && bandDocument(bandId).data.memberIds is list
@@ -139,6 +152,20 @@ service cloud.firestore {
         allow update: if isOwner(userId)
           || (isEditorOnResource() && collaborationMetadataUnchanged());
         allow delete: if isOwner(userId);
+
+        match /handNotes/{authorUid} {
+          allow read: if userSongReadableByCurrentUser(userId, songId);
+          allow create: if userSongReadableByCurrentUser(userId, songId)
+            && authorUid == request.auth.uid
+            && request.resource.data.authorUid == request.auth.uid;
+          allow update: if userSongReadableByCurrentUser(userId, songId)
+            && authorUid == request.auth.uid
+            && resource.data.authorUid == request.auth.uid
+            && request.resource.data.authorUid == resource.data.authorUid;
+          allow delete: if userSongReadableByCurrentUser(userId, songId)
+            && authorUid == request.auth.uid
+            && resource.data.authorUid == request.auth.uid;
+        }
       }
 
       match /stageplots/{stageplotId} {
@@ -256,6 +283,20 @@ service cloud.firestore {
       match /songs/{songId} {
         allow read: if isBandMember(bandId);
         allow create, update, delete: if isBandEditor(bandId);
+
+        match /handNotes/{authorUid} {
+          allow read: if isBandMember(bandId);
+          allow create: if isBandMember(bandId)
+            && authorUid == request.auth.uid
+            && request.resource.data.authorUid == request.auth.uid;
+          allow update: if isBandMember(bandId)
+            && authorUid == request.auth.uid
+            && resource.data.authorUid == request.auth.uid
+            && request.resource.data.authorUid == resource.data.authorUid;
+          allow delete: if isBandMember(bandId)
+            && authorUid == request.auth.uid
+            && resource.data.authorUid == request.auth.uid;
+        }
 
         match /recordings/{recordingId} {
           allow read: if isBandMember(bandId);

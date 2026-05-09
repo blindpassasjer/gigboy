@@ -145,6 +145,7 @@ export default function BandSetlistConcertPage() {
   const activeSong = setlistSongs[currentIndex] ?? null;
   const handNotes = useSongHandNotes({
     ownerId: activeSong?.ownerId ?? user?.id ?? null,
+    bandId: bandId ?? null,
     songId: activeSong?.id ?? '',
     user,
     enabled: showNotes,

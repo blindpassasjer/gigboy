@@ -103,6 +103,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
   const handNotes = useSongHandNotes({
     ownerId: song.ownerId ?? user?.id ?? null,
+    bandId: bandId ?? null,
     songId: song.id,
     user,
     enabled: showNotes,

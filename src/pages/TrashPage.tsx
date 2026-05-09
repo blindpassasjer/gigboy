@@ -75,7 +75,7 @@ export default function TrashPage() {
 
   return (
     <TrashView
-      title="Solo Trash"
+      title="Library Trash"
       emptyMessage="Trash is empty."
       items={items}
       onRestore={handleRestore}
