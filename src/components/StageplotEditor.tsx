@@ -573,7 +573,7 @@ export default function StageplotEditor({
     <section className="setlist-view stageplot-view">
       {showHeader ? (
         <div className="list-sticky-header">
-          <div className="songlist-header resource-header">
+          <div className="page-section-header resource-header">
             <div className="setlist-title-block">
               {renaming ? (
                 <input

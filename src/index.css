@@ -765,6 +765,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   touch-action: pan-y;
 }
 
+.page-section-header,
 .songlist-header {
   flex-wrap: wrap;
 }
@@ -5075,20 +5076,25 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 /* Non-band song list headers (for setlists/solo views) use the same elevated card language as newer page headers. */
+.page-section-header.resource-header:not(.bands-header),
 .songlist-header.resource-header:not(.bands-header) {
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
   border-radius: 14px;
   padding: .95rem 1rem;
   background:
-    linear-gradient(160deg, color-mix(in srgb, var(--surface) 90%, white), var(--surface));
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 16%, transparent), transparent 34%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface) 88%, white), var(--surface));
   box-shadow: var(--shadow);
 }
 
+.page-section-header.resource-header:not(.bands-header) .resource-title,
 .songlist-header.resource-header:not(.bands-header) .resource-title {
   font-size: var(--page-title-size);
   line-height: 1.2;
 }
 
+.page-section-header.resource-header:not(.bands-header) .setlist-song-count,
+.page-section-header.resource-header:not(.bands-header) .song-list-summary,
 .songlist-header.resource-header:not(.bands-header) .setlist-song-count,
 .songlist-header.resource-header:not(.bands-header) .song-list-summary {
   font-size: var(--page-copy-size);
@@ -6401,6 +6407,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .song-view-header { flex-direction: column; }
   .song-view-toolbar { align-items: flex-start; }
+  .page-section-header,
   .songlist-header { align-items: stretch; }
   .setlist-header-actions,
   .resource-header-actions {

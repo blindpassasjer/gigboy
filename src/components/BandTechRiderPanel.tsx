@@ -193,7 +193,7 @@ export default function BandTechRiderPanel({
       <div className="setlist-shell">
 
         <div className="list-sticky-header">
-          <header className="songlist-header bands-header resource-header">
+          <header className="page-section-header bands-header resource-header">
             <div className="setlist-title-block">
               {isRenaming && canEdit && activeRider ? (
                 <input

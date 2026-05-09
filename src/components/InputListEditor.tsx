@@ -200,7 +200,7 @@ export default function InputListEditor({
     <>
       {showHeader ? (
         <div className="list-sticky-header">
-          <div className="songlist-header resource-header">
+          <div className="page-section-header resource-header">
             <div className="setlist-title-block">
               {isRenaming ? (
                 <input

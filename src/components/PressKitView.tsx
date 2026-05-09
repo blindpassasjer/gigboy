@@ -412,7 +412,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
         <div className="list-sticky-header">
-          <header className="songlist-header bands-header resource-header">
+          <header className="page-section-header bands-header resource-header">
             <div className="setlist-title-block">
               {isRenaming ? (
                 <input
