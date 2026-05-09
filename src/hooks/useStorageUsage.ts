@@ -23,6 +23,22 @@ function toSafeNonEmptyString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function resolveBandQuotaBytes(bandData: Record<string, unknown> | undefined): number {
+  const explicitBandQuota = toSafeNumber(bandData?.storageQuotaBytes);
+  if (explicitBandQuota !== null) return explicitBandQuota;
+
+  const billingPlan = bandData?.billingPlan === 'crew'
+    ? 'crew'
+    : bandData?.billingPlan === 'pro'
+      ? 'pro'
+      : 'free';
+  const billingStatus = bandData?.billingSubscriptionStatus;
+  const isPaidPlanActive = billingStatus === 'active' || billingStatus === 'trialing';
+  const effectivePlan = billingPlan === 'free' || isPaidPlanActive ? billingPlan : 'free';
+
+  return PLAN_LIMITS[effectivePlan].storageQuotaBytes;
+}
+
 export function useStorageUsage(userId: string | null | undefined, planQuotaBytes?: number, bandId?: string | null) {
   const [state, setState] = useState<UsageState>({
     usedBytes: 0,
@@ -89,16 +105,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
       setState((current) => ({ ...current, loading: true }));
 
       try {
-        // ── Quota (always from user profile) ─────────────────────────────────
-        const userSnapshotResult = await Promise.allSettled([
-          getDoc(doc(firestore, 'users', currentUserId)),
-        ]);
-        if (cancelled) return;
-        const userSnapshot = userSnapshotResult[0].status === 'fulfilled' ? userSnapshotResult[0].value : null;
-        const userData = userSnapshot?.data() as Record<string, unknown> | undefined;
-        const quotaFromProfile = toSafeNumber(userData?.storageQuotaBytes);
-        const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
-        const quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
+        let quotaBytes = planQuotaBytes ?? DEFAULT_STORAGE_QUOTA_BYTES;
 
         let recordingBytes = 0;
         let pressKitBytes = 0;
@@ -112,6 +119,11 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           ]);
 
           if (cancelled) return;
+
+          const bandData = bandDocResult.status === 'fulfilled'
+            ? bandDocResult.value.data() as Record<string, unknown> | undefined
+            : undefined;
+          quotaBytes = resolveBandQuotaBytes(bandData);
 
           // Press kit images
           const pressKitImageDocs = pressKitImagesResult.status === 'fulfilled'
@@ -130,7 +142,6 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
           // Legacy logo not already covered by a pressKitImages doc
           if (bandDocResult.status === 'fulfilled') {
-            const bandData = bandDocResult.value.data() as Record<string, unknown> | undefined;
             const logoPath = toSafeNonEmptyString(bandData?.logoStoragePath);
             if (logoPath && !seenStoragePaths.has(logoPath)) {
               pressKitBytes += await getStorageObjectSize(logoPath);
@@ -156,6 +167,16 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           recordingBytes = recSizes.reduce((sum, v) => sum + v, 0);
         } else {
           // ── Cross-band: aggregate across all bands the user belongs to ─────
+          const userSnapshotResult = await Promise.allSettled([
+            getDoc(doc(firestore, 'users', currentUserId)),
+          ]);
+          if (cancelled) return;
+          const userSnapshot = userSnapshotResult[0].status === 'fulfilled' ? userSnapshotResult[0].value : null;
+          const userData = userSnapshot?.data() as Record<string, unknown> | undefined;
+          const quotaFromProfile = toSafeNumber(userData?.storageQuotaBytes);
+          const baseQuota = quotaFromProfile ?? DEFAULT_STORAGE_QUOTA_BYTES;
+          quotaBytes = planQuotaBytes !== undefined ? Math.max(baseQuota, planQuotaBytes) : baseQuota;
+
           const [
             recordingsSnapshotResult,
             ownPressKitImagesSnapshotResult,

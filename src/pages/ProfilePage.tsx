@@ -287,8 +287,6 @@ export default function ProfilePage() {
               <span className="profile-account-badge">
                 <Users size={14} /> {bands.length} band{bands.length === 1 ? '' : 's'}
               </span>
-            </div>
-            <div className="profile-account-hero-actions">
               <button
                 type="button"
                 className="profile-account-chip-btn"

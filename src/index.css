@@ -7042,7 +7042,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .profile-account-badges,
-.profile-account-hero-actions,
 .profile-feature-chips,
 .profile-subscription-actions,
 .profile-danger-actions {
@@ -7051,8 +7050,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .6rem;
 }
 
-.profile-account-hero-actions {
-  justify-content: flex-start;
+.profile-account-badges .profile-account-chip-btn {
+  margin-left: auto;
 }
 
 .profile-account-badge {
