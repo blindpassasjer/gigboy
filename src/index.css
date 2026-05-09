@@ -34,6 +34,10 @@
   --shadow:     0 1px 3px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.06);
   --shadow-md:  0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
   --shadow-lg:  0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.08);
+  --page-title-size: clamp(1.5rem, 1.2rem + 1.1vw, 1.95rem);
+  --section-title-size: clamp(1rem, .92rem + .35vw, 1.15rem);
+  --page-copy-size: .92rem;
+  --meta-copy-size: .84rem;
   --font-mono:  'JetBrains Mono', 'Courier New', Courier, monospace;
   font-size: 16px;
 }
@@ -6975,7 +6979,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .profile-account-hero-copy h1 {
   margin: 0;
-  font-size: 1.9rem;
+  font-size: clamp(1.7rem, 1.25rem + 1.4vw, 2.15rem);
+  line-height: 1.15;
 }
 
 .profile-account-hero-copy p {
@@ -7024,7 +7029,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .profile-settings-header h1 {
-  font-size: 1.45rem;
+  font-size: var(--page-title-size);
 }
 
 .profile-settings-header p,
@@ -7056,7 +7061,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: inline-flex;
   align-items: center;
   gap: .4rem;
-  font-size: 1.02rem;
+  font-size: var(--section-title-size);
 }
 
 .profile-settings-avatar-header {
@@ -7066,7 +7071,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .profile-settings-avatar-header h1 {
-  font-size: 1.45rem;
+  font-size: var(--page-title-size);
 }
 
 .profile-section-heading {
@@ -7079,12 +7084,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 .profile-section-heading h2,
 .profile-section-heading h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--section-title-size);
   font-weight: 600;
 }
 
 .profile-section-heading--subtle h3 {
-  font-size: 1rem;
+  font-size: var(--section-title-size);
 }
 
 .profile-subscription-overview,
@@ -7324,11 +7329,22 @@ input, select, textarea { font: inherit; color: var(--text); }
 .pricing-comparison-header h2,
 .checkout-result-card h1 {
   margin: 0;
+  line-height: 1.2;
+}
+
+.pricing-hero h1,
+.checkout-result-card h1 {
+  font-size: clamp(1.55rem, 1.2rem + 1.2vw, 2rem);
+}
+
+.pricing-comparison-header h2 {
+  font-size: var(--section-title-size);
 }
 
 .pricing-hero p,
 .checkout-result-card p {
   margin: 0;
+  font-size: var(--page-copy-size);
   color: var(--muted);
   max-width: 62ch;
 }
@@ -7625,11 +7641,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .profile-invites-header h1 {
-  font-size: 1.4rem;
+  font-size: var(--page-title-size);
+  line-height: 1.2;
 }
 
 .profile-invites-header p,
 .profile-invites-status {
+  font-size: var(--page-copy-size);
   color: var(--muted);
 }
 
@@ -7640,7 +7658,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .profile-invites-section h2 {
-  font-size: 1rem;
+  font-size: var(--section-title-size);
 }
 
 .profile-invites-list {
@@ -7674,7 +7692,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .profile-invite-main span {
   color: var(--muted);
-  font-size: .85rem;
+  font-size: var(--meta-copy-size);
 }
 
 .profile-invite-actions {
@@ -7719,13 +7737,14 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .bands-header:not(.bands-header--detail) h1,
 .bands-header:not(.bands-header--detail) .song-list-heading {
-  font-size: 1.45rem;
+  font-size: var(--page-title-size);
+  line-height: 1.2;
 }
 
 .bands-header p,
 .bands-status,
 .setlist-subtitle {
-  font-size: .88rem;
+  font-size: var(--page-copy-size);
   color: var(--muted);
 }
 
@@ -7828,7 +7847,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .bands-section-heading {
   margin: 0 0 .95rem;
-  font-size: 1rem;
+  font-size: var(--section-title-size);
   font-weight: 600;
   border-bottom: 1px solid var(--bands-border);
   padding-bottom: .5rem;
@@ -8617,19 +8636,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .public-setlist-title {
-  font-size: 1.7rem;
+  font-size: clamp(1.45rem, 1.15rem + 1.1vw, 1.9rem);
   font-weight: 700;
   margin: 0 0 .4rem;
   line-height: 1.2;
 }
 
 .public-setlist-count {
-  font-size: .85rem;
+  font-size: var(--meta-copy-size);
   color: var(--muted, #888);
   margin: 0;
 }
 
 .public-setlist-status {
+  font-size: var(--page-copy-size);
   color: var(--muted, #888);
   padding: 2rem 0;
 }
@@ -8670,14 +8690,14 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .public-setlist-song-title {
   font-weight: 600;
-  font-size: .95rem;
+  font-size: var(--page-copy-size);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .public-setlist-song-artist {
-  font-size: .82rem;
+  font-size: var(--meta-copy-size);
   color: var(--muted, #888);
   white-space: nowrap;
   overflow: hidden;
@@ -8728,7 +8748,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .public-presskit-band-name {
   margin: 0 0 .15rem;
-  font-size: 2rem;
+  font-size: clamp(1.8rem, 1.4rem + 1.3vw, 2.25rem);
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
@@ -8740,6 +8760,73 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 @media (max-width: 640px) {
+  .profile-settings-page,
+  .profile-invites-page,
+  .bands-page,
+  .pricing-page,
+  .checkout-result-page {
+    gap: .85rem;
+  }
+
+  .profile-account-hero,
+  .profile-invites-header,
+  .bands-header:not(.bands-header--detail),
+  .pricing-hero,
+  .checkout-result-card {
+    padding: .95rem .9rem;
+    border-radius: 14px;
+  }
+
+  .profile-account-hero-copy h1,
+  .profile-invites-header h1,
+  .bands-header:not(.bands-header--detail) h1,
+  .bands-header:not(.bands-header--detail) .song-list-heading,
+  .pricing-hero h1,
+  .checkout-result-card h1 {
+    font-size: clamp(1.35rem, 1.1rem + 1.3vw, 1.65rem);
+  }
+
+  .profile-section-heading h2,
+  .profile-section-heading h3,
+  .profile-invites-section h2,
+  .bands-section-heading,
+  .pricing-comparison-header h2 {
+    font-size: 1rem;
+  }
+
+  .profile-invites-header p,
+  .profile-invites-status,
+  .bands-header p,
+  .bands-status,
+  .setlist-subtitle,
+  .pricing-hero p,
+  .checkout-result-card p,
+  .public-setlist-status {
+    font-size: .88rem;
+    line-height: 1.45;
+  }
+
+  .public-setlist-page {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .public-setlist-title {
+    font-size: clamp(1.3rem, 1.05rem + 1.2vw, 1.55rem);
+  }
+
+  .public-presskit-band-name {
+    font-size: clamp(1.45rem, 1.1rem + 1.9vw, 1.9rem);
+  }
+
+  .public-setlist-count,
+  .public-setlist-song-artist {
+    font-size: .8rem;
+  }
+
+  .public-setlist-song-title {
+    font-size: .9rem;
+  }
+
   .public-share-branding-row {
     gap: .75rem;
   }
