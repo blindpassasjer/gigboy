@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { User } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import {
@@ -36,20 +36,24 @@ export function useSongHandNotes(params: {
   const [notes, setNotes] = useState<SongHandNoteDocument[]>([]);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [visibleAuthorIds, setVisibleAuthorIds] = useState<string[]>([]);
+  const hasSeenNotesRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) {
       setVisibleAuthorIds([]);
+      hasSeenNotesRef.current = false;
       return;
     }
 
     if (!userId) {
       setVisibleAuthorIds([]);
+      hasSeenNotesRef.current = false;
       return;
     }
 
     // Initialize to empty; actual visibility will be set by notes effect
     setVisibleAuthorIds([]);
+    hasSeenNotesRef.current = false;
   }, [enabled, ownerId, bandId, songId, userId]);
 
   useEffect(() => {
@@ -77,25 +81,27 @@ export function useSongHandNotes(params: {
       return;
     }
 
+    const authorIds = Array.from(new Set(notes.map((note) => note.authorUid).filter(Boolean)));
+
+    // First time we receive real notes from subscription: show all available authors
+    if (!hasSeenNotesRef.current && authorIds.length > 0) {
+      hasSeenNotesRef.current = true;
+      setVisibleAuthorIds(authorIds);
+      return;
+    }
+
     setVisibleAuthorIds((prev) => {
-      const authorIds = Array.from(new Set(notes.map((note) => note.authorUid).filter(Boolean)));
-
-      // If no notes yet, show all available + current user
+      // If no notes yet, show only current user
       if (authorIds.length === 0) {
+        hasSeenNotesRef.current = false;
         return [userId];
-      }
-
-      // First load: show all available authors
-      if (prev.length === 0) {
-        return authorIds;
       }
 
       const validIds = new Set(authorIds);
       validIds.add(userId);
       const next = prev.filter((authorId) => validIds.has(authorId));
 
-      // If the current selection no longer maps to any available note author
-      // (for example "Mine" but user has no note), show available authors.
+      // If current selection has valid authors, keep it
       if (next.length > 0 && next.some((authorId) => authorIds.includes(authorId))) {
         return next;
       }

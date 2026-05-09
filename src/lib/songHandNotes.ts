@@ -115,15 +115,23 @@ export function subscribeToSongHandNotes(
   db: Firestore,
   scope: SongHandNotesScope,
   songId: string,
-  onUpdate: (notes: SongHandNoteDocument[]) => void
+  onUpdate: (notes: SongHandNoteDocument[]) => void,
+  onError?: (error: Error) => void
 ): () => void {
   const collectionRef = songHandNotesCollectionRef(db, scope, songId);
-  const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
-    const notes = snapshot.docs
-      .map((entry) => normalizeNoteDocument(entry.id, entry.data()))
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    onUpdate(notes);
-  });
+  const unsubscribe = onSnapshot(
+    collectionRef,
+    (snapshot) => {
+      const notes = snapshot.docs
+        .map((entry) => normalizeNoteDocument(entry.id, entry.data()))
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      onUpdate(notes);
+    },
+    (error) => {
+      console.error('Failed to subscribe to song hand notes.', error);
+      onError?.(error as Error);
+    }
+  );
   return unsubscribe;
 }
 
