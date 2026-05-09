@@ -7050,6 +7050,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .6rem;
 }
 
+.profile-account-hero-actions {
+  justify-content: flex-end;
+}
+
 .profile-account-badge {
   display: inline-flex;
   align-items: center;
@@ -7066,6 +7070,36 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.profile-account-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .42rem .72rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #b91c1c 28%, var(--border));
+  background: color-mix(in srgb, #b91c1c 10%, var(--surface));
+  color: color-mix(in srgb, #b91c1c 80%, var(--text));
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, transform .08s ease;
+}
+
+.profile-account-chip-btn:hover,
+.profile-account-chip-btn:focus-visible {
+  border-color: color-mix(in srgb, #b91c1c 40%, var(--border));
+  background: color-mix(in srgb, #b91c1c 15%, var(--surface));
+}
+
+.profile-account-chip-btn:active {
+  transform: translateY(1px);
+}
+
+.profile-account-chip-btn:disabled {
+  opacity: .65;
+  cursor: not-allowed;
 }
 
 .profile-account-grid {

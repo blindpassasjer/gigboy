@@ -3,6 +3,7 @@ import type { Band, PlanTier } from '../types';
 export type ProFeature =
   | 'setlists'
   | 'technicalRiders'
+  | 'pressKits'
   | 'shareableLinks'
   | 'bluetoothPedal'
   | 'recordings'
@@ -43,6 +44,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
   free: {
     setlists: false,
     technicalRiders: false,
+    pressKits: false,
     shareableLinks: false,
     bluetoothPedal: false,
     recordings: false,
@@ -52,6 +54,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
   pro: {
     setlists: true,
     technicalRiders: true,
+    pressKits: true,
     shareableLinks: true,
     bluetoothPedal: true,
     recordings: true,
@@ -61,6 +64,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
   crew: {
     setlists: true,
     technicalRiders: true,
+    pressKits: true,
     shareableLinks: true,
     bluetoothPedal: true,
     recordings: true,

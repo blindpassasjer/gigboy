@@ -28,6 +28,8 @@ import {
   inviteBandMemberOnServer,
   repairBandMembershipOnServer,
   removeBandMemberOnServer,
+  createBandRiderOnServer,
+  createBandPressKitOnServer,
 } from '../lib/bandsApi';
 import {
   compareTrashByDeletedAtDesc,
@@ -888,26 +890,38 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const addBandPressKit = useCallback(async (bandId: string, name: string): Promise<{ kitId: string | null; error: string | null }> => {
-    if (!db || !userId) return { kitId: null, error: 'Not signed in.' };
-    const kitId = crypto.randomUUID();
-    const createdAt = new Date().toISOString();
+    if (!userId || !user?.email) return { kitId: null, error: 'Not signed in.' };
+
+    const trimmed = name.trim();
+    if (!trimmed) return { kitId: null, error: 'Press kit name is required.' };
+
     try {
-      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kitId), {
-        name: name.trim(),
+      const response = await createBandPressKitOnServer({
+        userId,
+        userEmail: user.email,
+        bandId,
+        name: trimmed,
+      });
+
+      const newKit: PressKit = {
+        id: response.kitId,
+        name: trimmed,
         richText: '',
         imageIds: [],
-        createdAt,
+        createdAt: new Date().toISOString(),
         createdBy: userId,
-      });
+      };
+
       setBandPressKitsByBandId((prev) => ({
         ...prev,
-        [bandId]: [...(prev[bandId] ?? []), { id: kitId, name: name.trim(), richText: '', imageIds: [], createdAt }],
+        [bandId]: [...(prev[bandId] ?? []), newKit],
       }));
-      return { kitId, error: null };
-    } catch {
-      return { kitId: null, error: 'Failed to create press kit.' };
+
+      return { kitId: response.kitId, error: null };
+    } catch (error) {
+      return { kitId: null, error: error instanceof Error ? error.message : 'Failed to create press kit.' };
     }
-  }, [userId]);
+  }, [userId, user?.email]);
 
   const deleteBandPressKit = useCallback(async (bandId: string, kitId: string): Promise<string | null> => {
     if (!db || !userId) return 'Not signed in.';
@@ -2582,11 +2596,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   }, [bandSetlistsByBandId, bands, userId]);
 
   const addBandInputList = useCallback(async (bandId: string, name: string) => {
-    if (!db || !userId) {
+    if (!userId || !user?.email) {
       return { riderId: null, error: 'Band riders require cloud sync.' };
     }
-
-    const firestore = db;
 
     const band = bands.find((entry) => entry.id === bandId);
     if (!band) return { riderId: null, error: 'Band not found.' };
@@ -2597,57 +2609,37 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const trimmed = name.trim();
     if (!trimmed) return { riderId: null, error: 'Rider name is required.' };
 
-    const now = new Date().toISOString();
-    const riderId = crypto.randomUUID();
-    const previousRiders = bandInputListsByBandId[bandId] ?? [];
-    const nextRider: InputList = {
-      id: riderId,
-      name: trimmed,
-      lines: [],
-      preferredEquipment: [],
-      inventoryEquipment: [],
-      ownerId: band.ownerId,
-      accessRole: 'owner',
-      bandName: band.name,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    const nextRiders = withSequentialInputListSortOrder(sortInputLists([...previousRiders, nextRider]));
-
-    setBandInputListsByBandId((prev) => ({
-      ...prev,
-      [bandId]: nextRiders,
-    }));
-
     try {
-      await Promise.all(nextRiders.map((rider) => setDoc(
-        doc(firestore, BANDS_COLLECTION, bandId, BAND_INPUT_LISTS_COLLECTION, rider.id),
-        {
-          name: rider.name,
-          icon: rider.icon ?? null,
-          lines: rider.lines,
-          preferredEquipment: rider.preferredEquipment,
-          inventoryEquipment: rider.inventoryEquipment,
-          publicShareEnabled: rider.publicShareEnabled || null,
-          bandName: rider.bandName ?? null,
-          ownerId: rider.ownerId ?? null,
-          sortOrder: rider.sortOrder ?? null,
-          createdAt: rider.createdAt,
-          updatedAt: rider.updatedAt,
-        },
-        { merge: true }
-      )));
+      const response = await createBandRiderOnServer({
+        userId,
+        userEmail: user.email,
+        bandId,
+        name: trimmed,
+      });
 
-      return { riderId, error: null };
-    } catch (error) {
+      const newRider: InputList = {
+        id: response.riderId,
+        name: trimmed,
+        lines: [],
+        preferredEquipment: [],
+        inventoryEquipment: [],
+        ownerId: band.ownerId,
+        accessRole: 'owner',
+        bandName: band.name,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
       setBandInputListsByBandId((prev) => ({
         ...prev,
-        [bandId]: previousRiders,
+        [bandId]: [...(prev[bandId] ?? []), newRider],
       }));
-      return { riderId: null, error: error instanceof Error ? error.message : 'Failed to create input list.' };
+
+      return { riderId: response.riderId, error: null };
+    } catch (error) {
+      return { riderId: null, error: error instanceof Error ? error.message : 'Failed to create technical rider.' };
     }
-  }, [bandInputListsByBandId, bands, userId]);
+  }, [bands, userId, user?.email]);
 
   const renameBandInputList = useCallback(async (bandId: string, riderId: string, name: string) => {
     if (!db || !userId) {

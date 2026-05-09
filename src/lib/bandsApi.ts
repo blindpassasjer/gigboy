@@ -188,3 +188,27 @@ export async function deleteAccountOnServer(params: {
     }
   );
 }
+
+export async function createBandRiderOnServer(params: {
+  userId: string;
+  userEmail: string;
+  bandId: string;
+  name: string;
+}) {
+  return postJson<{ ok: true; riderId: string }>(`/api/bands/${params.bandId}/create-rider`, { name: params.name }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
+export async function createBandPressKitOnServer(params: {
+  userId: string;
+  userEmail: string;
+  bandId: string;
+  name: string;
+}) {
+  return postJson<{ ok: true; kitId: string }>(`/api/bands/${params.bandId}/create-press-kit`, { name: params.name }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}

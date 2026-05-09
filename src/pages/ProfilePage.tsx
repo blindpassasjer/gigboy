@@ -288,6 +288,16 @@ export default function ProfilePage() {
                 <Users size={14} /> {bands.length} band{bands.length === 1 ? '' : 's'}
               </span>
             </div>
+            <div className="profile-account-hero-actions">
+              <button
+                type="button"
+                className="profile-account-chip-btn"
+                disabled={busyLogout}
+                onClick={() => { void onLogout(); }}
+              >
+                <LogOut size={14} /> {busyLogout ? 'Signing out…' : 'Log out'}
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -451,17 +461,9 @@ export default function ProfilePage() {
           <section className="profile-settings-card profile-settings-card--wide profile-danger-card">
             <div className="profile-section-heading">
               <div>
-                <h2>Security and sign out</h2>
-                <p className="profile-settings-muted">Use the current session controls here. Password reset stays in the auth flow.</p>
+                <h2>Danger zone</h2>
+                <p className="profile-settings-muted">Permanently delete your account and all bands you own.</p>
               </div>
-              <button
-                type="button"
-                className="setlist-action-btn setlist-action-btn--danger"
-                disabled={busyLogout}
-                onClick={() => { void onLogout(); }}
-              >
-                <LogOut size={16} /> {busyLogout ? 'Signing out…' : 'Log out'}
-              </button>
             </div>
 
             <section className="profile-account-danger-zone" aria-label="Account danger zone">

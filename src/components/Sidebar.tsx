@@ -791,10 +791,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders') ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
+                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'pressKits') ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
                     aria-label="Create new press kit"
                     onClick={() => {
-                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders')) {
+                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'pressKits')) {
                         toast.error('Press kits require a Pro or Crew plan for this band.');
                         return;
                       }
