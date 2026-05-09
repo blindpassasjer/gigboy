@@ -8490,13 +8490,21 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-bottom: 2rem;
 }
 
+.public-setlist-header .public-page-nav-brand {
+  margin-bottom: .65rem;
+}
+
 .public-share-branding-row {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
   gap: .95rem;
   flex-wrap: wrap;
   margin-bottom: .8rem;
+}
+
+.public-share-branding-row--header {
+  margin-bottom: 1.05rem;
 }
 
 .public-share-branding-row--footer {
@@ -8516,6 +8524,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: flex-start;
   gap: .35rem;
   min-width: 3.4rem;
+}
+
+.public-share-band-stack--header {
+  margin: 0 auto;
 }
 
 .public-setlist-band {
@@ -8559,7 +8571,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0;
   line-height: 1.2;
   text-align: center;
-  font-size: 6.8rem;
+  font-size: clamp(2rem, 8vw, 3.4rem);
 }
 
 .public-setlist-title {

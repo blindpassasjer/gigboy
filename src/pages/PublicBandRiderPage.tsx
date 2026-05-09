@@ -141,19 +141,19 @@ export default function PublicBandRiderPage() {
   return (
     <div className="public-setlist-page technical-rider-public-page">
       <header className="public-setlist-header">
-        <div className="public-share-branding-row">
-          <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
+        <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
+        <div className="public-share-branding-row public-share-branding-row--header">
           {(rider.bandName || bandLogo) ? (
-            <div className="public-share-band-stack">
+            <div className="public-share-band-stack public-share-band-stack--header">
               {bandLogo ? <img src={bandLogo} alt={`${rider.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
-              {rider.bandName ? <p className="public-setlist-band public-setlist-band--stack">{rider.bandName}</p> : null}
+              {rider.bandName ? <h1 className="public-setlist-band public-setlist-band--stack">{rider.bandName}</h1> : null}
             </div>
           ) : null}
         </div>
-        <h1 className="public-setlist-title">
+        <h2 className="public-setlist-title">
           {rider.icon ? <span aria-hidden="true">{rider.icon} </span> : null}
           {rider.name}
-        </h1>
+        </h2>
       </header>
 
       {stageplot && (stageplot.items.length > 0 || stageplot.drawingLayers.length > 0) ? (
@@ -287,12 +287,6 @@ export default function PublicBandRiderPage() {
       <footer className="public-setlist-footer">
         <div className="public-share-branding-row public-share-branding-row--footer">
           <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
-          {(rider.bandName || bandLogo) ? (
-            <div className="public-share-band-stack">
-              {bandLogo ? <img src={bandLogo} alt={`${rider.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
-              {rider.bandName ? <p className="public-setlist-band public-setlist-band--stack">{rider.bandName}</p> : null}
-            </div>
-          ) : null}
         </div>
         <p className="public-setlist-signoff">From Norway - with chords</p>
       </footer>

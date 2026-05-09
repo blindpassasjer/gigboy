@@ -146,19 +146,19 @@ export default function PublicBandStageplotPage() {
   return (
     <div className="public-setlist-page">
       <header className="public-setlist-header">
-        <div className="public-share-branding-row">
-          <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
+        <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
+        <div className="public-share-branding-row public-share-branding-row--header">
           {(stageplot.bandName || bandLogo) ? (
-            <div className="public-share-band-stack">
+            <div className="public-share-band-stack public-share-band-stack--header">
               {bandLogo ? <img src={bandLogo} alt={`${stageplot.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
-              {stageplot.bandName ? <p className="public-setlist-band public-setlist-band--stack">{stageplot.bandName}</p> : null}
+              {stageplot.bandName ? <h1 className="public-setlist-band public-setlist-band--stack">{stageplot.bandName}</h1> : null}
             </div>
           ) : null}
         </div>
-        <h1 className="public-setlist-title">
+        <h2 className="public-setlist-title">
           {stageplot.icon ? <span aria-hidden="true">{stageplot.icon} </span> : null}
           {stageplot.name}
-        </h1>
+        </h2>
         <p className="public-setlist-count">{stageplot.items.length} item{stageplot.items.length === 1 ? '' : 's'}</p>
       </header>
 
@@ -202,12 +202,6 @@ export default function PublicBandStageplotPage() {
       <footer className="public-setlist-footer">
         <div className="public-share-branding-row public-share-branding-row--footer">
           <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
-          {(stageplot.bandName || bandLogo) ? (
-            <div className="public-share-band-stack">
-              {bandLogo ? <img src={bandLogo} alt={`${stageplot.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
-              {stageplot.bandName ? <p className="public-setlist-band public-setlist-band--stack">{stageplot.bandName}</p> : null}
-            </div>
-          ) : null}
         </div>
         <p className="public-setlist-signoff">From Norway - with chords</p>
       </footer>
