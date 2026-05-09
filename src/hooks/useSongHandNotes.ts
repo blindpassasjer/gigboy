@@ -3,8 +3,8 @@ import type { User } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import {
   deleteSongHandNote,
-  loadSongHandNotes,
   saveSongHandNote,
+  subscribeToSongHandNotes,
   type SongHandNotesScope,
 } from '../lib/songHandNotes';
 import type {
@@ -48,7 +48,8 @@ export function useSongHandNotes(params: {
       return;
     }
 
-    setVisibleAuthorIds([userId]);
+    // Initialize to empty; actual visibility will be set by notes effect
+    setVisibleAuthorIds([]);
   }, [enabled, ownerId, bandId, songId, userId]);
 
   useEffect(() => {
@@ -59,16 +60,15 @@ export function useSongHandNotes(params: {
     }
 
     setLoading(true);
-    loadSongHandNotes(db, scope, songId)
-      .then((loaded) => {
-        setNotes(loaded);
-      })
-      .catch((error) => {
-        console.error('Failed to load song hand notes.', error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    const unsubscribe = subscribeToSongHandNotes(db, scope, songId, (loaded) => {
+      setNotes(loaded);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribe();
+      setLoading(false);
+    };
   }, [enabled, scope, songId]);
 
   useEffect(() => {
@@ -80,10 +80,12 @@ export function useSongHandNotes(params: {
     setVisibleAuthorIds((prev) => {
       const authorIds = Array.from(new Set(notes.map((note) => note.authorUid).filter(Boolean)));
 
+      // If no notes yet, show all available + current user
       if (authorIds.length === 0) {
         return [userId];
       }
 
+      // First load: show all available authors
       if (prev.length === 0) {
         return authorIds;
       }
@@ -94,10 +96,11 @@ export function useSongHandNotes(params: {
 
       // If the current selection no longer maps to any available note author
       // (for example "Mine" but user has no note), show available authors.
-      if (next.some((authorId) => authorIds.includes(authorId))) {
+      if (next.length > 0 && next.some((authorId) => authorIds.includes(authorId))) {
         return next;
       }
 
+      // Fallback: show all available authors
       return authorIds;
     });
   }, [notes, userId]);

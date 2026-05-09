@@ -2,7 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDocs,
+  onSnapshot,
   setDoc,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
@@ -111,16 +111,20 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
   };
 }
 
-export async function loadSongHandNotes(
+export function subscribeToSongHandNotes(
   db: Firestore,
   scope: SongHandNotesScope,
-  songId: string
-): Promise<SongHandNoteDocument[]> {
-  const snapshot = await getDocs(songHandNotesCollectionRef(db, scope, songId));
-
-  return snapshot.docs
-    .map((entry) => normalizeNoteDocument(entry.id, entry.data()))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  songId: string,
+  onUpdate: (notes: SongHandNoteDocument[]) => void
+): () => void {
+  const collectionRef = songHandNotesCollectionRef(db, scope, songId);
+  const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+    const notes = snapshot.docs
+      .map((entry) => normalizeNoteDocument(entry.id, entry.data()))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    onUpdate(notes);
+  });
+  return unsubscribe;
 }
 
 export async function saveSongHandNote(params: {
