@@ -6943,7 +6943,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .profile-account-hero {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 1rem;
   padding: 1.2rem 1.25rem;
   border-radius: 18px;
@@ -7051,7 +7052,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .profile-account-hero-actions {
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .profile-account-badge {

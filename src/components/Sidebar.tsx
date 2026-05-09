@@ -53,6 +53,8 @@ function SidebarItemIcon({ icon, fallback }: { icon?: string; fallback: ReactNod
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const navigate = useNavigate();
   const { pathname, state } = useLocation();
+  const routeSegments = pathname.split('/').filter(Boolean);
+  const routeBandId = routeSegments[0] === 'bands' ? routeSegments[1] ?? null : null;
   const stateBandId = (() => {
     if (!state || typeof state !== 'object') return null;
     const candidate = (state as { bandId?: unknown }).bandId;
@@ -108,7 +110,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   });
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const bandSwitcherRef = useRef<HTMLDivElement>(null);
-  const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes, activeBandId);
+  const resolvedActiveBandId = routeBandId ?? stateBandId ?? activeBandId;
+  const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes, resolvedActiveBandId);
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
   const storageLabel = storageUsage.loading
     ? 'Loading...'
@@ -136,12 +139,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   }, [bandSwitcherOpen]);
 
   useEffect(() => {
-    if (!stateBandId) return;
-    setActiveBandId((current) => (current === stateBandId ? current : stateBandId));
+    const nextBandId = routeBandId ?? stateBandId;
+    if (!nextBandId) return;
+    setActiveBandId((current) => (current === nextBandId ? current : nextBandId));
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem('gigboy-active-band-id', stateBandId);
+      window.localStorage.setItem('gigboy-active-band-id', nextBandId);
     }
-  }, [stateBandId]);
+  }, [routeBandId, stateBandId]);
 
   useEffect(() => {
     const missingBandSongCollections = bands
