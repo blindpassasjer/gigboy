@@ -31,7 +31,7 @@ import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { useAuth } from '../context/AuthContext';
-import { usePlan } from '../hooks/usePlan';
+import { usePlan, useBandPlan } from '../hooks/usePlan';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
@@ -72,6 +72,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const { updateSong, deleteSong } = useSongs();
   const { songLists, addSongToList, removeSongFromList } = useSongLists();
   const {
+    bands,
     bandSongListsByBandId,
     updateBandSong,
     addSongToBandSongList,
@@ -80,7 +81,12 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   } = useBands();
   const effectiveSongLists = bandId ? (bandSongListsByBandId[bandId] ?? []) : songLists;
   const { user } = useAuth();
-  const { canUse } = usePlan();
+  
+  // Use band plan if viewing from band context, otherwise use personal plan
+  const band = bandId ? (bands.find((b) => b.id === bandId) ?? null) : null;
+  const userPlanState = usePlan();
+  const bandPlanState = useBandPlan(band);
+  const { canUse } = bandId && band ? bandPlanState : userPlanState;
 
   // Hand notes state
   const [showNotes, setShowNotes] = useState(false);
@@ -423,7 +429,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   }
                   setShowMetronome((prev) => !prev);
                 }}
-                title={!canUse('metronome') ? 'Upgrade to Pro to use the metronome' : (showMetronome ? 'Hide metronome' : 'Show metronome')}
+                title={!canUse('metronome') ? 'Upgrade to Pro, Crew, or join a Crew band to use the metronome' : (showMetronome ? 'Hide metronome' : 'Show metronome')}
                 aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
               >
                 <Metronome size={14} />
@@ -554,22 +560,13 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                       {handNotes.authors.length > 0 && (
                         <div className="notes-author-filters">
                           {handNotes.authors.length > 1 && (
-                            <>
-                              <button
-                                className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
-                                onClick={handNotes.showAll}
-                                title="Show all users' notes"
-                              >
-                                All
-                              </button>
-                              <button
-                                className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
-                                onClick={handNotes.showMineOnly}
-                                title="Show only my notes"
-                              >
-                                Mine
-                              </button>
-                            </>
+                            <button
+                              className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
+                              onClick={handNotes.showAll}
+                              title="Show all users' notes"
+                            >
+                              All
+                            </button>
                           )}
                           {handNotes.authors.map((author) => (
                             <button

@@ -884,22 +884,13 @@ export default function BandSetlistConcertPage() {
                       {handNotes.authors.length > 0 && (
                         <div className="notes-author-filters">
                           {handNotes.authors.length > 1 && (
-                            <>
-                              <button
-                                className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
-                                onClick={handNotes.showAll}
-                                title="Show all users' notes"
-                              >
-                                All
-                              </button>
-                              <button
-                                className={`notes-author-chip${handNotes.visibleAuthorIds.length === 1 && handNotes.visibleAuthorIds[0] === user.id ? ' notes-author-chip--active' : ''}`}
-                                onClick={handNotes.showMineOnly}
-                                title="Show only my notes"
-                              >
-                                Mine
-                              </button>
-                            </>
+                            <button
+                              className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
+                              onClick={handNotes.showAll}
+                              title="Show all users' notes"
+                            >
+                              All
+                            </button>
                           )}
                           {handNotes.authors.map((author) => (
                             <button

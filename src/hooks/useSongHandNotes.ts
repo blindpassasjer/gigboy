@@ -186,15 +186,6 @@ export function useSongHandNotes(params: {
     }
   }, [notes, scope, songId, userId]);
 
-  const showMineOnly = useCallback(() => {
-    if (!userId) {
-      setVisibleAuthorIds([]);
-      return;
-    }
-
-    setVisibleAuthorIds([userId]);
-  }, [userId]);
-
   const showAll = useCallback(() => {
     setVisibleAuthorIds(authors.map((author) => author.uid));
   }, [authors]);
@@ -218,7 +209,6 @@ export function useSongHandNotes(params: {
     myStrokes: myNote?.strokes ?? [],
     saveMyNotes,
     clearMyNotes,
-    showMineOnly,
     showAll,
     toggleVisibleAuthor,
   };
