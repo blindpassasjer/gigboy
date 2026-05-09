@@ -192,7 +192,7 @@ export default function PublicBandPressKitPage() {
           </div>
         ) : null}
         <p className="public-presskit-band-name">{payload.bandName}</p>
-        <h1 className="public-setlist-title">Press Kit</h1>
+        <h1 className="public-setlist-title">{payload.pressKitIcon && <span aria-hidden="true">{payload.pressKitIcon} </span>}Press Kit</h1>
         <p className="public-setlist-count">Public promo package</p>
         <div className="public-presskit-download-wrap">
           <button

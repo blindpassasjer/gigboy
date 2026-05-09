@@ -141,7 +141,7 @@ export default function PublicUserSetlistPage() {
                   <span className="public-setlist-song-artist">{song.artist}</span>
                 )}
                 {song.note && (
-                  <span className="public-setlist-song-note">{song.note}</span>
+                  <span className="public-setlist-song-note">Note: {song.note}</span>
                 )}
               </div>
             </li>

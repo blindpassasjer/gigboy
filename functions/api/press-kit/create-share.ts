@@ -100,6 +100,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
   const selectedStageplotIds = asStringArray(body.selectedStageplotIds, 100);
   const selectedRiderIds = asStringArray(body.selectedRiderIds, 100);
+  const pressKitIcon = cleanString(body.pressKitIcon, 4);
   const texts = asTextEntries(body.texts);
   const images = asImageEntries(body.images);
 
@@ -159,6 +160,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     bandId,
     bandName,
     ...(bandLogo ? { bandLogo } : {}),
+    ...(pressKitIcon ? { pressKitIcon } : {}),
     createdBy: userId,
     createdAt: now,
     snapshot: {

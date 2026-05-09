@@ -352,6 +352,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         userId,
         userEmail,
         bandId,
+        pressKitIcon: kit.icon,
         selectedStageplotIds: [],
         selectedRiderIds: [],
         texts: richText ? [{ title: kit.name, body: richText }] : [],

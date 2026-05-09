@@ -21,6 +21,7 @@ export const onRequestGet: PagesFunction<Record<string, string | undefined>> = a
     bandId: typeof share.bandId === 'string' ? share.bandId : '',
     bandName: typeof share.bandName === 'string' ? share.bandName : 'Band',
     bandLogo: typeof share.bandLogo === 'string' ? share.bandLogo : undefined,
+    pressKitIcon: typeof share.pressKitIcon === 'string' ? share.pressKitIcon : undefined,
     createdAt: typeof share.createdAt === 'string' ? share.createdAt : undefined,
     stageplots: Array.isArray(snapshot.stageplots) ? snapshot.stageplots : [],
     riders: Array.isArray(snapshot.riders) ? snapshot.riders : [],

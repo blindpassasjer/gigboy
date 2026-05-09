@@ -10,6 +10,7 @@ interface CreateShareInput {
   userId: string;
   userEmail: string;
   bandId: string;
+  pressKitIcon?: string;
   selectedStageplotIds: string[];
   selectedRiderIds: string[];
   texts: PressKitTextItem[];
@@ -33,6 +34,7 @@ export async function createPressKitShare(input: CreateShareInput): Promise<{ to
     headers: await buildHeaders({ userId: input.userId, userEmail: input.userEmail }),
     body: JSON.stringify({
       bandId: input.bandId,
+      pressKitIcon: input.pressKitIcon,
       selectedStageplotIds: input.selectedStageplotIds,
       selectedRiderIds: input.selectedRiderIds,
       texts: input.texts,
@@ -56,6 +58,7 @@ export interface PublicPressKitPayload {
   bandId: string;
   bandName: string;
   bandLogo?: string;
+  pressKitIcon?: string;
   createdAt?: string;
   generatedAt?: string;
   stageplots: Array<{
@@ -93,6 +96,7 @@ export async function fetchPublicPressKit(token: string): Promise<PublicPressKit
     bandId: typeof payload.bandId === 'string' ? payload.bandId : '',
     bandName: typeof payload.bandName === 'string' ? payload.bandName : 'Band',
     bandLogo: typeof payload.bandLogo === 'string' ? payload.bandLogo : undefined,
+    pressKitIcon: typeof payload.pressKitIcon === 'string' ? payload.pressKitIcon : undefined,
     createdAt: typeof payload.createdAt === 'string' ? payload.createdAt : undefined,
     generatedAt: typeof payload.generatedAt === 'string' ? payload.generatedAt : undefined,
     stageplots: Array.isArray(payload.stageplots) ? payload.stageplots as PublicPressKitPayload['stageplots'] : [],

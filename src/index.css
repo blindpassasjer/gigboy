@@ -9552,7 +9552,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text);
 }
 
 .press-kit-section-hint {
