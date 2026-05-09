@@ -548,16 +548,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                         </>
                       )}
 
-                      {handNotes.saveState === 'saving' && (
-                        <span className="notes-save-status notes-save-status--saving">Saving…</span>
-                      )}
-                      {handNotes.saveState === 'saved' && (
-                        <span className="notes-save-status notes-save-status--saved">Saved</span>
-                      )}
-                      {handNotes.saveState === 'error' && (
-                        <span className="notes-save-status notes-save-status--error">Failed to save</span>
-                      )}
-
                       {handNotes.authors.length > 0 && (
                         <div className="notes-author-filters">
                           {handNotes.authors.length > 1 && (
@@ -587,6 +577,16 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                             </button>
                           ))}
                         </div>
+                      )}
+
+                      {handNotes.saveState === 'saving' && (
+                        <span className="notes-save-status notes-save-status--saving">Saving…</span>
+                      )}
+                      {handNotes.saveState === 'saved' && (
+                        <span className="notes-save-status notes-save-status--saved">Saved</span>
+                      )}
+                      {handNotes.saveState === 'error' && (
+                        <span className="notes-save-status notes-save-status--error">Failed to save</span>
                       )}
                     </div>
                   </div>

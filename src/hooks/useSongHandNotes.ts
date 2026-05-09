@@ -37,24 +37,23 @@ export function useSongHandNotes(params: {
   const [notes, setNotes] = useState<SongHandNoteDocument[]>([]);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [visibleAuthorIds, setVisibleAuthorIds] = useState<string[]>([]);
-  const hasSeenNotesRef = useRef(false);
+  const hasManualVisibilitySelectionRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) {
       setVisibleAuthorIds([]);
-      hasSeenNotesRef.current = false;
+      hasManualVisibilitySelectionRef.current = false;
       return;
     }
 
     if (!userId) {
       setVisibleAuthorIds([]);
-      hasSeenNotesRef.current = false;
+      hasManualVisibilitySelectionRef.current = false;
       return;
     }
 
-    // Initialize to empty; actual visibility will be set by notes effect
+    hasManualVisibilitySelectionRef.current = false;
     setVisibleAuthorIds([]);
-    hasSeenNotesRef.current = false;
   }, [enabled, ownerId, bandId, songId, userId]);
 
   useEffect(() => {
@@ -84,30 +83,21 @@ export function useSongHandNotes(params: {
 
     const authorIds = Array.from(new Set(notes.map((note) => note.authorUid).filter(Boolean)));
 
-    // First time we receive real notes from subscription: show all available authors
-    if (!hasSeenNotesRef.current && authorIds.length > 0) {
-      hasSeenNotesRef.current = true;
+    if (!hasManualVisibilitySelectionRef.current) {
       setVisibleAuthorIds(authorIds);
       return;
     }
 
     setVisibleAuthorIds((prev) => {
-      // If no notes yet, show only current user
-      if (authorIds.length === 0) {
-        hasSeenNotesRef.current = false;
-        return [userId];
-      }
+      if (authorIds.length === 0) return [];
 
       const validIds = new Set(authorIds);
-      validIds.add(userId);
       const next = prev.filter((authorId) => validIds.has(authorId));
 
-      // If current selection has valid authors, keep it
-      if (next.length > 0 && next.some((authorId) => authorIds.includes(authorId))) {
+      if (next.length > 0) {
         return next;
       }
 
-      // Fallback: show all available authors
       return authorIds;
     });
   }, [notes, userId]);
@@ -195,10 +185,12 @@ export function useSongHandNotes(params: {
   }, [notes, scope, songId, userId]);
 
   const showAll = useCallback(() => {
+    hasManualVisibilitySelectionRef.current = true;
     setVisibleAuthorIds(authors.map((author) => author.uid));
   }, [authors]);
 
   const toggleVisibleAuthor = useCallback((authorId: string) => {
+    hasManualVisibilitySelectionRef.current = true;
     setVisibleAuthorIds((prev) => {
       if (prev.includes(authorId)) {
         return prev.filter((entry) => entry !== authorId);
