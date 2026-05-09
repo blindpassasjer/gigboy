@@ -147,17 +147,17 @@ export default function Layout({ children }: Props) {
     if (!routeBandId) return;
 
     if (kind === 'setlist' && !activeBandPlanState.canUse('setlists')) {
-      toast.error('Setlists require a Pro or Crew plan for this band.');
+      toast.error('Setlists require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
       return;
     }
 
     if (kind === 'rider' && !activeBandPlanState.canUse('technicalRiders')) {
-      toast.error('Technical riders require a Pro or Crew plan for this band.');
+      toast.error('Technical riders require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
       return;
     }
 
     if (kind === 'pressKit' && !activeBandPlanState.canUse('technicalRiders')) {
-      toast.error('Press kits require a Pro or Crew plan for this band.');
+      toast.error('Press kits require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
       return;
     }
 

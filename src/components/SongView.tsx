@@ -381,7 +381,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}${!canUse('metronome') ? ' song-toolbar-tool-btn--locked' : ''}`}
                 onClick={() => {
                   if (!canUse('metronome')) {
-                    toast.error('The metronome requires a Pro or Band plan.');
+                    toast.error('The metronome requires a Pro or Crew plan.', { action: { label: 'Upgrade', href: '/upgrade' } });
                     return;
                   }
                   setShowMetronome((prev) => !prev);

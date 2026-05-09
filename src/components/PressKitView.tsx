@@ -3,13 +3,14 @@ import { useEditor, useEditorState, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Download, Trash2, PenLine, Newspaper, X } from 'lucide-react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
-import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { db, storage } from '../lib/firebase';
 import { createPressKitShare } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
 import { ICON_OPTIONS } from '../lib/iconOptions';
+import { createTrashPayload, createTrashTimestamps, TRASH_COLLECTION } from '../lib/trash';
 import { createWebpThumbnail } from '../utils/imageThumbnail';
 import type { PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
@@ -56,7 +57,7 @@ function normalizeEmojiIcon(value: string): string | undefined {
 }
 
 export default function PressKitView({ bandId, bandName, kit, canEdit, userId, userEmail, onDelete, onRename, onUpdateIcon }: Props) {
-  const { deleteBandPressKit } = useBands();
+  const { deleteBandPressKit, refreshBandPressKits, refreshBandTrash, updateBandLogo } = useBands();
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(kit.name);
@@ -326,17 +327,94 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   const removeImageAsset = async (asset: PressKitImageAsset) => {
     if (!canEdit) return;
-    const confirmed = await showConfirmToast(`Delete image "${asset.title}"? This cannot be undone.`, {
-      confirmLabel: 'Delete image',
+    if (asset.id === 'band-logo') {
+      const confirmed = await showConfirmToast(`Move logo "${asset.title}" to trash?`, {
+        confirmLabel: 'Move to trash',
+      });
+      if (!confirmed) return;
+
+      const error = await updateBandLogo(bandId, null);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      setImageAssets((current) => current.filter((entry) => entry.id !== asset.id));
+      setKitImageIds((current) => current.filter((entryId) => entryId !== asset.id));
+      void refreshBandPressKits(bandId);
+      void refreshBandTrash(bandId);
+      toast.success('Logo moved to trash.');
+      return;
+    }
+
+    const confirmed = await showConfirmToast(`Move image "${asset.title}" to trash? It will be permanently deleted after 30 days.`, {
+      confirmLabel: 'Move to trash',
     });
     if (!confirmed) return;
-    if (storage && asset.storagePath) await deleteObject(ref(storage!, asset.storagePath)).catch(() => { /* best-effort */ });
-    if (storage && asset.thumbStoragePath) await deleteObject(ref(storage!, asset.thumbStoragePath)).catch(() => { /* best-effort */ });
-    if (db) await deleteDoc(doc(db, 'bands', bandId, 'pressKitImages', asset.id)).catch(() => { /* best-effort */ });
-    setImageAssets((current) => current.filter((a) => a.id !== asset.id));
-    const next = kitImageIds.filter((id) => id !== asset.id);
-    setKitImageIds(next);
-    if (db) await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { imageIds: next }, { merge: true });
+
+    if (!db) {
+      toast.error('Band libraries require cloud sync.');
+      return;
+    }
+    const firestore = db;
+
+    try {
+      const kitsSnapshot = await getDocs(query(collection(firestore, 'bands', bandId, 'pressKits')));
+      const linkedPressKitIds = kitsSnapshot.docs
+        .filter((entry) => {
+          const data = entry.data() as Record<string, unknown>;
+          return Array.isArray(data.imageIds) && data.imageIds.includes(asset.id);
+        })
+        .map((entry) => entry.id);
+
+      const { deletedAt, purgeAt } = createTrashTimestamps();
+      const trashId = crypto.randomUUID();
+      const now = new Date().toISOString();
+
+      await Promise.all([
+        setDoc(
+          doc(firestore, 'bands', bandId, TRASH_COLLECTION, trashId),
+          createTrashPayload('pressKitImage', deletedAt, purgeAt, {
+            image: {
+              id: asset.id,
+              title: asset.title,
+              url: asset.url,
+              thumbUrl: asset.thumbUrl,
+              storagePath: asset.storagePath,
+              thumbStoragePath: asset.thumbStoragePath,
+              mimeType: asset.mimeType,
+              sizeBytes: asset.sizeBytes,
+              thumbSizeBytes: asset.thumbSizeBytes,
+              createdAt: asset.createdAt,
+              createdBy: userId ?? undefined,
+            },
+            linkedPressKitIds,
+          })
+        ),
+        deleteDoc(doc(firestore, 'bands', bandId, 'pressKitImages', asset.id)),
+        ...kitsSnapshot.docs
+          .filter((entry) => linkedPressKitIds.includes(entry.id))
+          .map((entry) => {
+            const data = entry.data() as Record<string, unknown>;
+            const imageIds = Array.isArray(data.imageIds)
+              ? data.imageIds.filter((id): id is string => typeof id === 'string' && id !== asset.id)
+              : [];
+            return setDoc(
+              doc(firestore, 'bands', bandId, 'pressKits', entry.id),
+              { imageIds, updatedAt: now },
+              { merge: true }
+            );
+          }),
+      ]);
+
+      setImageAssets((current) => current.filter((a) => a.id !== asset.id));
+      setKitImageIds((current) => current.filter((id) => id !== asset.id));
+      void refreshBandPressKits(bandId);
+      void refreshBandTrash(bandId);
+      toast.success('Image moved to trash.');
+    } catch {
+      toast.error('Failed to move image to trash.');
+    }
   };
 
   // ── Share / Download ──────────────────────────────────────────────────────

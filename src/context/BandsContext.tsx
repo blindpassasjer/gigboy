@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { arrayUnion, collection, deleteDoc, deleteField, doc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { arrayUnion, collection, deleteDoc, deleteField, doc, getDoc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import type {
   Band,
@@ -18,6 +18,8 @@ import type {
   TrashedSong,
   TrashedSongList,
   TrashedInputList,
+  TrashedPressKitImage,
+  TrashedBandLogo,
 } from '../types';
 import { db, storage, firebaseEnabled } from '../lib/firebase';
 import {
@@ -40,6 +42,8 @@ import {
   parseSongListTrashRecord,
   parseSongTrashRecord,
   parseInputListTrashRecord,
+  parsePressKitImageTrashRecord,
+  parseBandLogoTrashRecord,
   TRASH_COLLECTION,
 } from '../lib/trash';
 import {
@@ -389,7 +393,9 @@ type BandTrashItem =
   | (TrashedSong & { bandId: string })
   | (TrashedSongList & { bandId: string })
   | (TrashedSetlist & { bandId: string })
-  | (TrashedInputList & { bandId: string });
+  | (TrashedInputList & { bandId: string })
+  | (TrashedPressKitImage & { bandId: string })
+  | (TrashedBandLogo & { bandId: string });
 
 interface BandsContextValue {
   bands: Band[];
@@ -909,7 +915,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         richText: '',
         imageIds: [],
         createdAt: new Date().toISOString(),
-        createdBy: userId,
       };
 
       setBandPressKitsByBandId((prev) => ({
@@ -999,6 +1004,12 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const parsedInputLists = snapshot.docs
       .map((entry) => parseInputListTrashRecord(entry.id, entry.data() as Record<string, unknown>))
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+    const parsedPressKitImages = snapshot.docs
+      .map((entry) => parsePressKitImageTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+    const parsedBandLogos = snapshot.docs
+      .map((entry) => parseBandLogoTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
     const items: BandTrashItem[] = [
       ...parsedSongs.map((entry) => ({
@@ -1032,6 +1043,24 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         deletedAt: entry.deletedAt,
         purgeAt: entry.purgeAt,
         inputList: entry.data,
+      })),
+      ...parsedPressKitImages.map((entry) => ({
+        bandId,
+        trashId: entry.id,
+        itemType: 'pressKitImage' as const,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+        image: entry.data.image,
+        linkedPressKitIds: entry.data.linkedPressKitIds,
+      })),
+      ...parsedBandLogos.map((entry) => ({
+        bandId,
+        trashId: entry.id,
+        itemType: 'bandLogo' as const,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+        image: entry.data.image,
+        linkedPressKitIds: entry.data.linkedPressKitIds,
       })),
     ];
 
@@ -1251,7 +1280,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBands(previousBands);
       return error instanceof Error ? error.message : 'Failed to rename band.';
     }
-  }, [bands, userId]);
+  }, [bandPressKitsByBandId, bands, userId]);
 
   const updateBandDescription = useCallback(async (bandId: string, description: string) => {
     if (!db || !userId) {
@@ -1360,45 +1389,100 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const logoThumbStoragePath = `bands/${bandId}/logo-thumb.webp`;
 
     if (!file) {
-      // Remove logo
+      const previousPressKits = bandPressKitsByBandId[bandId] ?? [];
+      const linkedPressKitIds = previousPressKits
+        .filter((kit) => Array.isArray(kit.imageIds) && kit.imageIds.includes(logoImageId))
+        .map((kit) => kit.id);
+      const nextPressKits = previousPressKits.map((kit) => ({
+        ...kit,
+        imageIds: kit.imageIds.filter((entryId) => entryId !== logoImageId),
+      }));
+
+      const { deletedAt, purgeAt } = createTrashTimestamps();
+      const trashId = crypto.randomUUID();
+
       const nextBands = bands
         .map((entry) => (entry.id === bandId ? { ...entry, logo: undefined, logoStoragePath: undefined, updatedAt: now } : entry))
         .sort(compareBands);
 
+      const firestore = db;
+
       setBands(nextBands);
+      setBandPressKitsByBandId((prev) => ({
+        ...prev,
+        [bandId]: nextPressKits,
+      }));
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: [
+          {
+            bandId,
+            trashId,
+            itemType: 'bandLogo' as const,
+            deletedAt,
+            purgeAt,
+            image: {
+              id: 'band-logo' as const,
+              title: 'Band Logo',
+              url: band.logo ?? '',
+              storagePath: band.logoStoragePath,
+              thumbStoragePath: logoThumbStoragePath,
+            },
+            linkedPressKitIds,
+          },
+          ...(prev[bandId] ?? []),
+        ].sort(compareTrashByDeletedAtDesc),
+      }));
 
       try {
-        await setDoc(doc(db, BANDS_COLLECTION, bandId), {
-          logo: deleteField(),
-          logoStoragePath: deleteField(),
-          updatedAt: now,
-        }, { merge: true });
+        const logoImageSnapshot = await getDoc(doc(db, 'bands', bandId, 'pressKitImages', logoImageId));
+        const logoImageData = logoImageSnapshot.exists()
+          ? (logoImageSnapshot.data() as Record<string, unknown>)
+          : null;
 
-        // Delete the old file from storage if it exists
-        if (band.logoStoragePath) {
-          try {
-            await deleteObject(ref(storage, band.logoStoragePath));
-          } catch {
-            // Ignore deletion errors
-          }
-        }
+        const logoPayload = {
+          id: 'band-logo' as const,
+          title: typeof logoImageData?.title === 'string' ? logoImageData.title : 'Band Logo',
+          url: typeof logoImageData?.url === 'string' ? logoImageData.url : (band.logo ?? ''),
+          thumbUrl: typeof logoImageData?.thumbUrl === 'string' ? logoImageData.thumbUrl : undefined,
+          storagePath: typeof logoImageData?.storagePath === 'string' ? logoImageData.storagePath : band.logoStoragePath,
+          thumbStoragePath: typeof logoImageData?.thumbStoragePath === 'string' ? logoImageData.thumbStoragePath : logoThumbStoragePath,
+          mimeType: typeof logoImageData?.mimeType === 'string' ? logoImageData.mimeType : undefined,
+          sizeBytes: typeof logoImageData?.sizeBytes === 'number' ? logoImageData.sizeBytes : undefined,
+          thumbSizeBytes: typeof logoImageData?.thumbSizeBytes === 'number' ? logoImageData.thumbSizeBytes : undefined,
+          createdAt: typeof logoImageData?.createdAt === 'string' ? logoImageData.createdAt : undefined,
+          createdBy: typeof logoImageData?.createdBy === 'string' ? logoImageData.createdBy : undefined,
+        };
 
-        try {
-          await deleteObject(ref(storage, logoThumbStoragePath));
-        } catch {
-          // Ignore deletion errors
-        }
-
-        // Remove from press kit images
-        try {
-          await deleteDoc(doc(db, 'bands', bandId, 'pressKitImages', logoImageId));
-        } catch {
-          // Ignore deletion errors
-        }
+        await Promise.all([
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId), createTrashPayload('bandLogo', deletedAt, purgeAt, {
+            image: logoPayload,
+            linkedPressKitIds,
+          })),
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId), {
+            logo: deleteField(),
+            logoStoragePath: deleteField(),
+            updatedAt: now,
+          }, { merge: true }),
+          deleteDoc(doc(firestore, 'bands', bandId, 'pressKitImages', logoImageId)).catch(() => undefined),
+          ...nextPressKits.map((kit) => setDoc(
+            doc(firestore, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kit.id),
+            { imageIds: kit.imageIds, updatedAt: now },
+            { merge: true }
+          )),
+        ]);
 
         return null;
       } catch (error) {
         setBands(previousBands);
+        setBandPressKitsByBandId((prev) => ({
+          ...prev,
+          [bandId]: previousPressKits,
+        }));
+        setBandTrashByBandId((prev) => ({
+          ...prev,
+          [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
+        }));
         return error instanceof Error ? error.message : 'Failed to remove band logo.';
       }
     }
@@ -3103,6 +3187,131 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    if (target.itemType === 'pressKitImage') {
+      const previousPressKits = bandPressKitsByBandId[bandId] ?? [];
+      const linkedKitIds = target.linkedPressKitIds ?? [];
+      const nextPressKits = previousPressKits.map((kit) => {
+        if (!linkedKitIds.includes(kit.id)) return kit;
+        if (kit.imageIds.includes(target.image.id)) return kit;
+        return { ...kit, imageIds: [...kit.imageIds, target.image.id] };
+      });
+
+      setBandPressKitsByBandId((prev) => ({
+        ...prev,
+        [bandId]: nextPressKits,
+      }));
+
+      try {
+        await Promise.all([
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId, 'pressKitImages', target.image.id), {
+            title: target.image.title,
+            url: target.image.url,
+            thumbUrl: target.image.thumbUrl ?? null,
+            storagePath: target.image.storagePath ?? null,
+            thumbStoragePath: target.image.thumbStoragePath ?? null,
+            mimeType: target.image.mimeType ?? null,
+            sizeBytes: target.image.sizeBytes ?? null,
+            thumbSizeBytes: target.image.thumbSizeBytes ?? null,
+            createdAt: target.image.createdAt ?? null,
+            createdBy: target.image.createdBy ?? null,
+          }),
+          ...nextPressKits
+            .filter((kit) => linkedKitIds.includes(kit.id))
+            .map((kit) => setDoc(
+              doc(firestore, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kit.id),
+              { imageIds: kit.imageIds, updatedAt: new Date().toISOString() },
+              { merge: true }
+            )),
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId)),
+        ]);
+        return null;
+      } catch (error) {
+        setBandPressKitsByBandId((prev) => ({
+          ...prev,
+          [bandId]: previousPressKits,
+        }));
+        setBandTrashByBandId((prev) => ({
+          ...prev,
+          [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
+        }));
+        return error instanceof Error ? error.message : 'Failed to restore press kit image.';
+      }
+    }
+
+    if (target.itemType === 'bandLogo') {
+      const previousBands = bands;
+      const previousPressKits = bandPressKitsByBandId[bandId] ?? [];
+      const linkedKitIds = target.linkedPressKitIds ?? [];
+      const now = new Date().toISOString();
+
+      const nextBands = bands
+        .map((entry) => (
+          entry.id === bandId
+            ? {
+                ...entry,
+                logo: target.image.url,
+                logoStoragePath: target.image.storagePath,
+                updatedAt: now,
+              }
+            : entry
+        ))
+        .sort(compareBands);
+
+      const nextPressKits = previousPressKits.map((kit) => {
+        if (!linkedKitIds.includes(kit.id)) return kit;
+        if (kit.imageIds.includes('band-logo')) return kit;
+        return { ...kit, imageIds: [...kit.imageIds, 'band-logo'] };
+      });
+
+      setBands(nextBands);
+      setBandPressKitsByBandId((prev) => ({
+        ...prev,
+        [bandId]: nextPressKits,
+      }));
+
+      try {
+        await Promise.all([
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId), {
+            logo: target.image.url,
+            logoStoragePath: target.image.storagePath ?? null,
+            updatedAt: now,
+          }, { merge: true }),
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId, 'pressKitImages', 'band-logo'), {
+            title: target.image.title,
+            url: target.image.url,
+            thumbUrl: target.image.thumbUrl ?? null,
+            storagePath: target.image.storagePath ?? null,
+            thumbStoragePath: target.image.thumbStoragePath ?? null,
+            mimeType: target.image.mimeType ?? null,
+            sizeBytes: target.image.sizeBytes ?? null,
+            thumbSizeBytes: target.image.thumbSizeBytes ?? null,
+            createdAt: target.image.createdAt ?? null,
+            createdBy: target.image.createdBy ?? null,
+          }),
+          ...nextPressKits
+            .filter((kit) => linkedKitIds.includes(kit.id))
+            .map((kit) => setDoc(
+              doc(firestore, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kit.id),
+              { imageIds: kit.imageIds, updatedAt: now },
+              { merge: true }
+            )),
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId)),
+        ]);
+        return null;
+      } catch (error) {
+        setBands(previousBands);
+        setBandPressKitsByBandId((prev) => ({
+          ...prev,
+          [bandId]: previousPressKits,
+        }));
+        setBandTrashByBandId((prev) => ({
+          ...prev,
+          [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
+        }));
+        return error instanceof Error ? error.message : 'Failed to restore band logo.';
+      }
+    }
+
     const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
     const restoredSetlist: Setlist = {
       ...target.setlist,
@@ -3150,7 +3359,16 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }));
       return error instanceof Error ? error.message : 'Failed to restore band setlist.';
     }
-  }, [bandSetlistsByBandId, bandSongListsByBandId, bandSongsByBandId, bandInputListsByBandId, bandTrashByBandId, bands, userId]);
+  }, [
+    bandInputListsByBandId,
+    bandPressKitsByBandId,
+    bandSetlistsByBandId,
+    bandSongListsByBandId,
+    bandSongsByBandId,
+    bandTrashByBandId,
+    bands,
+    userId,
+  ]);
 
   const deleteBandTrashItemPermanently = useCallback(async (bandId: string, trashId: string): Promise<string | null> => {
     if (!db || !userId) {
@@ -3162,18 +3380,37 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const band = bands.find((entry) => entry.id === bandId);
     if (!band) return 'Band not found.';
 
-    const isMember = band.memberIds.includes(userId);
-    if (!isMember) {
-      return 'You do not have permission to edit this band.';
+    if (band.ownerId !== userId) {
+      return 'Only the band owner can permanently delete trash items.';
     }
 
     const previousItems = bandTrashByBandId[bandId] ?? [];
+    const target = previousItems.find((entry) => entry.trashId === trashId);
+    if (!target) {
+      return 'Trash item not found.';
+    }
+
     setBandTrashByBandId((prev) => ({
       ...prev,
       [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
     }));
 
     try {
+      if ((target.itemType === 'pressKitImage' || target.itemType === 'bandLogo') && storage) {
+        const storageDeletes: Promise<unknown>[] = [];
+        if (target.image.storagePath) {
+          storageDeletes.push(deleteObject(ref(storage, target.image.storagePath)).catch(() => undefined));
+        }
+        if (target.image.thumbStoragePath) {
+          storageDeletes.push(deleteObject(ref(storage, target.image.thumbStoragePath)).catch(() => undefined));
+        }
+
+        await Promise.all([
+          ...storageDeletes,
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, 'pressKitImages', target.image.id)).catch(() => undefined),
+        ]);
+      }
+
       await deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId));
       return null;
     } catch (error) {

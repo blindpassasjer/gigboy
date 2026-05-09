@@ -504,6 +504,26 @@ export default function BandDetailPage() {
         };
       }
 
+      if (entry.itemType === 'pressKitImage') {
+        return {
+          itemType: 'pressKitImage' as const,
+          trashId: entry.trashId,
+          name: entry.image.title,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
+      if (entry.itemType === 'bandLogo') {
+        return {
+          itemType: 'bandLogo' as const,
+          trashId: entry.trashId,
+          name: entry.image.title,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
       return {
         itemType: 'setlist' as const,
         trashId: entry.trashId,
@@ -519,7 +539,7 @@ export default function BandDetailPage() {
         emptyMessage="Trash is empty."
         items={trashItems}
         onRestore={canEditBand ? (trashId) => restoreBandTrashItem(band.id, trashId) : undefined}
-        onDeletePermanently={canEditBand ? (trashId) => deleteBandTrashItemPermanently(band.id, trashId) : undefined}
+        onDeletePermanently={isOwner ? (trashId) => deleteBandTrashItemPermanently(band.id, trashId) : undefined}
         onEmptyTrash={isOwner ? async () => {
           let failedCount = 0;
 
@@ -559,7 +579,7 @@ export default function BandDetailPage() {
           <button
             type="button"
             className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={() => navigate(canEditBand ? `/bands/${band.id}/settings` : `/bands/${band.id}/members`)}
+            onClick={() => navigate(isOwner ? `/bands/${band.id}/settings` : `/bands/${band.id}/members`)}
             title="Band settings"
           >
             <Settings size={14} />

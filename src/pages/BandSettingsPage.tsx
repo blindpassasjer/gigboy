@@ -101,11 +101,11 @@ export default function BandSettingsPage() {
     setColor(band.color ?? '#c33232');
     setUseAutoColor(!band.color);
     setLogo(band.logo);
-  }, [band]);
+  }, [band?.id]);
 
   const bandId = band?.id ?? null;
   const isOwner = band?.ownerId === user?.id;
-  const canEditBand = band ? (isOwner || band.memberRoles[user?.id ?? ''] === 'editor') : false;
+  const canEditBand = isOwner;
   const bandPlan = band?.billingPlan ?? 'free';
   const memberLimit = band?.billingMemberLimit
     ?? (bandPlan === 'crew' ? 5 + (band?.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
@@ -224,6 +224,17 @@ export default function BandSettingsPage() {
       <section className="bands-page">
         <p className="bands-status">Band not found.</p>
         <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary">Back to bands</Link>
+      </section>
+    );
+  }
+
+  if (!isOwner) {
+    return (
+      <section className="bands-page">
+        <p className="bands-status">Only the band owner can access band settings.</p>
+        <Link to={`/bands/${band.id}/members`} className="setlist-action-btn setlist-action-btn--secondary">
+          <ArrowLeft size={16} /> Back to members
+        </Link>
       </section>
     );
   }

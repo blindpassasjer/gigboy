@@ -285,7 +285,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (!name) return;
 
     const result = await addBandPressKit(bandId, name);
-    if (result.error) { toast.error(result.error); return; }
+    if (result.error) { 
+      const isUpgradeError = result.error.toLowerCase().includes('pro') || result.error.toLowerCase().includes('crew') || result.error.toLowerCase().includes('plan');
+      toast.error(result.error, isUpgradeError ? { action: { label: 'Upgrade', href: '/upgrade' } } : undefined); 
+      return; 
+    }
     setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== bandId));
     if (result.kitId) {
       clearGlobalSelection();
@@ -302,7 +306,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addBandInputList(bandId, name);
     if (result.error) {
-      toast.error(result.error);
+      const isUpgradeError = result.error.toLowerCase().includes('pro') || result.error.toLowerCase().includes('crew') || result.error.toLowerCase().includes('plan');
+      toast.error(result.error, isUpgradeError ? { action: { label: 'Upgrade', href: '/upgrade' } } : undefined);
       return;
     }
     if (result.riderId) {
@@ -658,7 +663,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     aria-label="Create new band setlist"
                     onClick={() => {
                       if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'setlists')) {
-                        toast.error('Setlists require a Pro or Crew plan for this band.');
+                        toast.error('Setlists require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
                         return;
                       }
                       setCollapsedBandSetlistIds((prev) => prev.filter((entry) => entry !== band.id));
@@ -729,7 +734,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     aria-label="Create new technical rider"
                     onClick={() => {
                       if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders')) {
-                        toast.error('Technical riders require a Pro or Crew plan for this band.');
+                        toast.error('Technical riders require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
                         return;
                       }
                       setCollapsedBandInputListIds((prev) => prev.filter((id) => id !== band.id));
@@ -795,7 +800,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     aria-label="Create new press kit"
                     onClick={() => {
                       if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'pressKits')) {
-                        toast.error('Press kits require a Pro or Crew plan for this band.');
+                        toast.error('Press kits require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
                         return;
                       }
                       setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));
