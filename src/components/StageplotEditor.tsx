@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link2, PenLine, Plus, Trash2, Undo2, X, Map } from 'lucide-react';
+import { Link2, PenLine, Plus, RotateCcw, RotateCw, Trash2, Undo2, X, Map } from 'lucide-react';
 import type { HandNoteStroke, SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import { showConfirmToast } from '../utils/toastDialogs';
@@ -71,6 +71,12 @@ function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   return [...trimmed].slice(0, 2).join('');
+}
+
+function normalizeRotation(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  const wrapped = ((value % 360) + 360) % 360;
+  return wrapped;
 }
 
 function userLayerFrom(layers: SongHandNoteDocument[], userId: string | null) {
@@ -181,6 +187,7 @@ export default function StageplotEditor({
     color: template.color,
     x,
     y,
+    rotation: 0,
   });
 
   const addItemAtPosition = (template: { kind: string; label: string; color: string }, x: number, y: number) => {
@@ -286,6 +293,7 @@ export default function StageplotEditor({
         color: '#6b7280',
         x: 0.5,
         y: 0.5,
+        rotation: 0,
       },
     ];
 
@@ -303,6 +311,22 @@ export default function StageplotEditor({
       return nextItems;
     });
     setSelectedItemId(null);
+  };
+
+  const rotateSelectedItem = (deltaDegrees: number) => {
+    if (!canEdit || !selectedItemId) return;
+
+    const nextItems = items.map((item) => (
+      item.id === selectedItemId
+        ? {
+            ...item,
+            rotation: normalizeRotation((item.rotation ?? 0) + deltaDegrees),
+          }
+        : item
+    ));
+
+    setItems(nextItems);
+    void persistContent(nextItems, drawingLayers);
   };
 
   useEffect(() => {
@@ -497,6 +521,12 @@ export default function StageplotEditor({
             <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
               <X size={12} /> Clear
             </button>
+            <button type="button" className="notes-toolbar-btn" onClick={() => rotateSelectedItem(-15)} disabled={!selectedItemId}>
+              <RotateCcw size={12} /> -15deg
+            </button>
+            <button type="button" className="notes-toolbar-btn" onClick={() => rotateSelectedItem(15)} disabled={!selectedItemId}>
+              <RotateCw size={12} /> +15deg
+            </button>
             <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
               <Trash2 size={12} /> Remove
             </button>
@@ -670,6 +700,7 @@ export default function StageplotEditor({
             style={{
               left: `${item.x * 100}%`,
               top: `${item.y * 100}%`,
+              transform: `translate(-50%, -50%) rotate(${normalizeRotation(item.rotation)}deg)`,
               borderColor: item.color ?? 'var(--border)',
               color: item.color ?? 'var(--text)',
             }}

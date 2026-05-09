@@ -126,6 +126,7 @@ export interface StageplotItem {
   label: string;
   x: number;
   y: number;
+  rotation?: number;
   color?: string;
   icon?: string;
 }

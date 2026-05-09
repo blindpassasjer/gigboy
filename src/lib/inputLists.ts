@@ -10,6 +10,9 @@ function normalizeStageplotItem(raw: unknown): StageplotItem | null {
     label: typeof data.label === 'string' ? data.label : 'Item',
     x: typeof data.x === 'number' && Number.isFinite(data.x) ? data.x : 0.5,
     y: typeof data.y === 'number' && Number.isFinite(data.y) ? data.y : 0.5,
+    rotation: typeof data.rotation === 'number' && Number.isFinite(data.rotation)
+      ? ((data.rotation % 360) + 360) % 360
+      : 0,
     color: typeof data.color === 'string' ? data.color : undefined,
     icon: typeof data.icon === 'string' ? data.icon : undefined,
   };

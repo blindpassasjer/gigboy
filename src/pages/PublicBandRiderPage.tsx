@@ -25,6 +25,9 @@ function normalizeItem(raw: unknown): StageplotItem | null {
     label: typeof data.label === 'string' ? data.label : 'Item',
     x: typeof data.x === 'number' ? data.x : 0.5,
     y: typeof data.y === 'number' ? data.y : 0.5,
+    rotation: typeof data.rotation === 'number' && Number.isFinite(data.rotation)
+      ? ((data.rotation % 360) + 360) % 360
+      : 0,
     color: typeof data.color === 'string' ? data.color : undefined,
     icon: typeof data.icon === 'string' ? data.icon : undefined,
   };
@@ -169,6 +172,7 @@ export default function PublicBandRiderPage() {
                 style={{
                   left: `${item.x * 100}%`,
                   top: `${item.y * 100}%`,
+                  transform: `translate(-50%, -50%) rotate(${item.rotation ?? 0}deg)`,
                   borderColor: item.color ?? 'var(--border)',
                   color: item.color ?? 'var(--text)',
                 }}
