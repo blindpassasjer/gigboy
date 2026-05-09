@@ -90,6 +90,22 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const bandPlanState = useBandPlan(band);
   const { canUse } = bandId && band ? bandPlanState : userPlanState;
 
+  // DIAGNOSTIC LOGGING: Remove after debugging
+  if (typeof window !== 'undefined') {
+    // Only log once per mount
+    useEffect(() => {
+      // Log band, bandPlanState, and metronome access
+      // Avoid logging large objects repeatedly
+      // eslint-disable-next-line no-console
+      console.log('[SongView DIAG]', {
+        bandId,
+        band,
+        bandPlanState,
+        canUseMetronome: canUse('metronome'),
+      });
+    }, [bandId, band, bandPlanState, canUse]);
+  }
+
   // Hand notes state
   const [showNotes, setShowNotes] = useState(false);
   const [drawEnabled, setDrawEnabled] = useState(false);

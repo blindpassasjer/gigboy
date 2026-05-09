@@ -73,11 +73,17 @@ export default function SongHandNotesOverlay({
   const [viewport, setViewport] = useState({ width: 1, height: 1 });
   const [revision, setRevision] = useState(0);
 
-  const syncViewportFromStage = useCallback(() => {
+  const measureTarget = useCallback(() => {
     const stage = stageRef.current;
-    if (!stage) return;
+    if (!stage) return null;
+    return stage.parentElement ?? stage;
+  }, []);
 
-    const rect = stage.getBoundingClientRect();
+  const syncViewportFromStage = useCallback(() => {
+    const target = measureTarget();
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
     const width = Math.max(Math.round(rect.width), 1);
     const height = Math.max(Math.round(rect.height), 1);
 
@@ -85,7 +91,7 @@ export default function SongHandNotesOverlay({
       if (current.width === width && current.height === height) return current;
       return { width, height };
     });
-  }, []);
+  }, [measureTarget]);
 
   useEffect(() => {
     myStrokesRef.current = myStrokes;
@@ -98,7 +104,7 @@ export default function SongHandNotesOverlay({
   useEffect(() => {
     syncViewportFromStage();
 
-    const element = stageRef.current;
+    const element = measureTarget();
     if (!element) return;
 
     const observer = new ResizeObserver((entries) => {
@@ -114,7 +120,24 @@ export default function SongHandNotesOverlay({
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [syncViewportFromStage]);
+  }, [measureTarget, syncViewportFromStage]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    // The song surface height can settle one or two frames after mount.
+    const raf1 = window.requestAnimationFrame(() => {
+      syncViewportFromStage();
+    });
+    const raf2 = window.requestAnimationFrame(() => {
+      syncViewportFromStage();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(raf1);
+      window.cancelAnimationFrame(raf2);
+    };
+  }, [visible, notes, syncViewportFromStage]);
 
   useEffect(() => {
     if (!visible) return;

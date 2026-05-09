@@ -80,8 +80,22 @@ export default function BandSetlistConcertPage() {
   } = useBands();
 
   const band = bands.find((b) => b.id === bandId) ?? null;
-  const { canUse } = useBandPlan(band);
+  const bandPlanState = useBandPlan(band);
+  const { canUse } = bandPlanState;
   void canUseUser;
+
+  // DIAGNOSTIC LOGGING: Remove after debugging
+  if (typeof window !== 'undefined') {
+    useEffect(() => {
+      // eslint-disable-next-line no-console
+      console.log('[BandSetlistConcertPage DIAG]', {
+        bandId,
+        band,
+        bandPlanState,
+        canUseMetronome: canUse('metronome'),
+      });
+    }, [bandId, band, bandPlanState, canUse]);
+  }
 
   const bandSetlists = useMemo(() => (bandId ? (bandSetlistsByBandId[bandId] ?? []) : []), [bandId, bandSetlistsByBandId]);
   const bandSongs = useMemo(() => (bandId ? (bandSongsByBandId[bandId] ?? []) : []), [bandId, bandSongsByBandId]);
