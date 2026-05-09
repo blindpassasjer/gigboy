@@ -10,7 +10,6 @@ import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import { usePlan } from '../hooks/usePlan';
 import { createPortalSession } from '../lib/billingApi';
-import { PLAN_LABELS } from '../lib/planLimits';
 
 function formatStorageBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 * 1024 ? 0 : 1)} GB`;
@@ -35,6 +34,12 @@ function formatSubscriptionStatus(status: string | null, complimentary: boolean)
   if (complimentary) return 'Complimentary';
   if (!status) return 'Not subscribed';
   return status.replace('_', ' ');
+}
+
+function isBandBillingActive(plan: string | null | undefined, status: string | null | undefined) {
+  if (plan !== 'pro' && plan !== 'crew') return false;
+  if (status === 'active' || status === 'trialing') return true;
+  return status == null;
 }
 
 export default function ProfilePage() {
@@ -63,9 +68,17 @@ export default function ProfilePage() {
 
   const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
   const ownedBands = useMemo(() => bands.filter((band) => band.ownerId === user?.id), [bands, user?.id]);
+  const paidOwnedBands = useMemo(
+    () => ownedBands.filter((band) => isBandBillingActive(band.billingPlan, band.billingSubscriptionStatus)),
+    [ownedBands],
+  );
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
-  const renewalDate = formatPeriodEnd(user?.currentPeriodEnd ?? null);
-  const hasPaidPlan = planState.plan === 'pro' || planState.plan === 'crew';
+  const renewalDate = formatPeriodEnd(
+    paidOwnedBands
+      .map((band) => band.billingCurrentPeriodEnd ?? null)
+      .filter((value): value is number => typeof value === 'number')
+      .sort((left, right) => left - right)[0] ?? null,
+  );
   const deletePhraseMatches = deleteStepTwoPhrase.trim().toUpperCase() === 'DELETE MY ACCOUNT';
 
   useEffect(() => {
@@ -279,10 +292,10 @@ export default function ProfilePage() {
             <p>@{user.username ?? 'setup'} · {user.email}</p>
             <div className="profile-account-badges">
               <span className="profile-account-badge profile-account-badge--plan">
-                <Sparkles size={14} /> {PLAN_LABELS[user.plan]}
+                <Sparkles size={14} /> Access: {planState.planLabel}
               </span>
               <span className="profile-account-badge">
-                <BadgeCheck size={14} /> {formatSubscriptionStatus(user.subscriptionStatus, user.planOverride)}
+                <BadgeCheck size={14} /> {paidOwnedBands.length > 0 ? `${paidOwnedBands.length} paid band${paidOwnedBands.length === 1 ? '' : 's'}` : 'No paid bands'}
               </span>
               <span className="profile-account-badge">
                 <Users size={14} /> {bands.length} band{bands.length === 1 ? '' : 's'}
@@ -304,20 +317,25 @@ export default function ProfilePage() {
         <section className="profile-settings-card profile-account-summary-card">
           <div className="profile-section-heading">
             <div>
-              <h2>Subscription</h2>
-              <p className="profile-settings-muted">Billing status, limits, and what this account can use right now.</p>
+              <h2>Billing</h2>
+              <p className="profile-settings-muted">This Stripe customer belongs to your account, but paid libraries are billed per owned band workspace.</p>
             </div>
           </div>
           <div className="profile-subscription-overview">
             <div className="profile-stat-card">
-              <span className="profile-stat-label">Current plan</span>
-              <strong>{planState.planLabel}</strong>
-              <small>{planState.planOverride ? 'Admin override' : formatSubscriptionStatus(user.subscriptionStatus, false)}</small>
+              <span className="profile-stat-label">Billing account</span>
+              <strong>{user.stripeCustomerId ? 'Connected' : 'Not connected'}</strong>
+              <small>{user.stripeCustomerId ? 'Manage all band charges in one Stripe portal' : 'Connect by starting a band upgrade'}</small>
             </div>
             <div className="profile-stat-card">
-              <span className="profile-stat-label">Renewal</span>
+              <span className="profile-stat-label">Next renewal</span>
               <strong>{renewalDate ?? '—'}</strong>
-              <small>{hasPaidPlan ? 'Billing period end' : 'No recurring subscription'}</small>
+              <small>{paidOwnedBands.length > 0 ? 'Earliest active band renewal' : 'No active paid bands'}</small>
+            </div>
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Paid bands</span>
+              <strong>{paidOwnedBands.length}</strong>
+              <small>{ownedBands.length > 0 ? `${ownedBands.length} owned total` : 'You do not own any bands yet'}</small>
             </div>
             <div className="profile-stat-card">
               <span className="profile-stat-label">Storage</span>
@@ -331,6 +349,10 @@ export default function ProfilePage() {
               <strong>{planState.songLimit === null ? 'Unlimited' : `${planState.songLimit} songs`}</strong>
             </article>
             <article className="profile-limit-card">
+              <span>Current access</span>
+              <strong>{planState.planLabel}</strong>
+            </article>
+            <article className="profile-limit-card">
               <span>Member capacity</span>
               <strong>{planState.memberLimit} member{planState.memberLimit === 1 ? '' : 's'}</strong>
             </article>
@@ -340,7 +362,7 @@ export default function ProfilePage() {
               <div className="profile-section-heading profile-section-heading--subtle">
                 <div>
                   <h3>Band subscriptions</h3>
-                  <p className="profile-settings-muted">One billing account, with each owned band managed as its own line item.</p>
+                  <p className="profile-settings-muted">Each owned band has its own paid workspace status, even when Stripe bills them under one customer.</p>
                 </div>
               </div>
               <div className="profile-band-subscriptions-list">
@@ -384,7 +406,7 @@ export default function ProfilePage() {
             <span className={planState.canUse('multiUserNotes') ? 'is-enabled' : ''}>Multi-user notes</span>
           </div>
           <div className="profile-subscription-actions">
-            {hasPaidPlan && user.stripeCustomerId ? (
+            {user.stripeCustomerId ? (
               <button
                 type="button"
                 className="setlist-action-btn"
@@ -395,7 +417,7 @@ export default function ProfilePage() {
               </button>
             ) : (
               <Link to="/pricing" className="setlist-action-btn">
-                <Sparkles size={16} /> Upgrade plan
+                <Sparkles size={16} /> Open band pricing
               </Link>
             )}
             <Link to="/pricing" className="setlist-action-btn setlist-action-btn--secondary">Compare plans</Link>
