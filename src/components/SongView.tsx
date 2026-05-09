@@ -35,6 +35,7 @@ import { usePlan, useBandPlan } from '../hooks/usePlan';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
+import { getUserNoteColor } from '../lib/userColors';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import SongMediaPlayer from './SongMediaPlayer';
 import SongRecorder from './SongRecorder';
@@ -699,7 +700,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             drawEnabled={drawEnabled}
             notes={handNotes.visibleNotes}
             myStrokes={handNotes.myStrokes}
-            strokeColor="#22c55e"
+            strokeColor={getUserNoteColor(user?.id ?? null)}
             onMyStrokesChange={handleStrokesChange}
           />
         </div>

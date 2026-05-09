@@ -30,6 +30,7 @@ import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import type { ChordNotation } from '../utils/chordParser';
 import { transposeChord } from '../utils/chordParser';
 import { parseSongMedia } from '../utils/songMedia';
+import { getUserNoteColor } from '../lib/userColors';
 
 interface ActiveChord {
   chord: string;
@@ -975,7 +976,7 @@ export default function BandSetlistConcertPage() {
                 drawEnabled={drawEnabled}
                 notes={handNotes.visibleNotes}
                 myStrokes={handNotes.myStrokes}
-                strokeColor="#22c55e"
+                strokeColor={getUserNoteColor(user?.id ?? null)}
                 onMyStrokesChange={handleStrokesChange}
               />
             </div>

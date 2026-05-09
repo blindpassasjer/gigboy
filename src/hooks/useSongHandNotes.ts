@@ -7,6 +7,7 @@ import {
   subscribeToSongHandNotes,
   type SongHandNotesScope,
 } from '../lib/songHandNotes';
+import { getUserNoteColor } from '../lib/userColors';
 import type {
   HandNoteStroke,
   SongHandNoteAuthor,
@@ -133,13 +134,20 @@ export function useSongHandNotes(params: {
   const saveMyNotes = useCallback(async (strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
     if (!db || !scope || !userId || !user) return;
 
+    // Normalize all strokes to user's assigned color
+    const userColor = getUserNoteColor(userId);
+    const normalizedStrokes = strokes.map((stroke) => ({
+      ...stroke,
+      color: userColor,
+    }));
+
     const nextNote: SongHandNoteDocument = {
       authorUid: userId,
       authorName: displayNameForUser(user),
       authorAvatar: user.avatar,
       updatedAt: new Date().toISOString(),
       viewport,
-      strokes,
+      strokes: normalizedStrokes,
     };
 
     setVisibleAuthorIds((prev) => {
