@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link2, PenLine, Plus, RotateCcw, RotateCw, Trash2, Undo2, X, Map } from 'lucide-react';
+import { Link2, PenLine, Plus, Trash2, Undo2, X, Map } from 'lucide-react';
 import type { HandNoteStroke, SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import { showConfirmToast } from '../utils/toastDialogs';
@@ -313,20 +313,59 @@ export default function StageplotEditor({
     setSelectedItemId(null);
   };
 
-  const rotateSelectedItem = (deltaDegrees: number) => {
-    if (!canEdit || !selectedItemId) return;
+  const rotateItemWithHandle = (itemId: string, event: React.PointerEvent<HTMLSpanElement>) => {
+    if (!canEdit || drawEnabled) return;
 
-    const nextItems = items.map((item) => (
-      item.id === selectedItemId
-        ? {
-            ...item,
-            rotation: normalizeRotation((item.rotation ?? 0) + deltaDegrees),
-          }
-        : item
-    ));
+    const stage = stageRef.current;
+    if (!stage) return;
 
-    setItems(nextItems);
-    void persistContent(nextItems, drawingLayers);
+    event.preventDefault();
+    event.stopPropagation();
+
+    const target = event.currentTarget;
+    const pointerId = event.pointerId;
+    target.setPointerCapture(pointerId);
+
+    const rect = stage.getBoundingClientRect();
+    const targetItem = items.find((item) => item.id === itemId);
+    if (!targetItem) return;
+
+    const centerX = rect.left + (targetItem.x * rect.width);
+    const centerY = rect.top + (targetItem.y * rect.height);
+    const startRotation = normalizeRotation(targetItem.rotation);
+    const startPointerAngle = (Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180) / Math.PI;
+    const angleOffset = startPointerAngle - startRotation;
+
+    let latestItems = items;
+
+    const move = (moveEvent: PointerEvent) => {
+      const pointerAngle = (Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX) * 180) / Math.PI;
+      const nextRotation = normalizeRotation(pointerAngle - angleOffset);
+
+      setItems((prev) => {
+        const next = prev.map((item) => (
+          item.id === itemId
+            ? {
+                ...item,
+                rotation: nextRotation,
+              }
+            : item
+        ));
+        latestItems = next;
+        return next;
+      });
+    };
+
+    const release = () => {
+      target.removeEventListener('pointermove', move);
+      target.removeEventListener('pointerup', release);
+      target.removeEventListener('pointercancel', release);
+      void persistContent(latestItems, drawingLayers);
+    };
+
+    target.addEventListener('pointermove', move);
+    target.addEventListener('pointerup', release, { once: true });
+    target.addEventListener('pointercancel', release, { once: true });
   };
 
   useEffect(() => {
@@ -521,12 +560,6 @@ export default function StageplotEditor({
             <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
               <X size={12} /> Clear
             </button>
-            <button type="button" className="notes-toolbar-btn" onClick={() => rotateSelectedItem(-15)} disabled={!selectedItemId}>
-              <RotateCcw size={12} /> -15deg
-            </button>
-            <button type="button" className="notes-toolbar-btn" onClick={() => rotateSelectedItem(15)} disabled={!selectedItemId}>
-              <RotateCw size={12} /> +15deg
-            </button>
             <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
               <Trash2 size={12} /> Remove
             </button>
@@ -720,6 +753,14 @@ export default function StageplotEditor({
               className="stageplot-instrument-icon stageplot-instrument-icon--item"
             />
             <span>{item.label}</span>
+            {canEdit && selectedItemId === item.id ? (
+              <span
+                className="stageplot-rotation-handle"
+                aria-label="Rotate item"
+                title="Drag to rotate"
+                onPointerDown={(event) => rotateItemWithHandle(item.id, event)}
+              />
+            ) : null}
           </button>
         ))}
 

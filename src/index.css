@@ -9273,6 +9273,33 @@ input, select, textarea { font: inherit; color: var(--text); }
   pointer-events: none;
 }
 
+.stageplot-item .stageplot-rotation-handle {
+  position: absolute;
+  left: 50%;
+  top: -20px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--accent) 65%, #fff 35%);
+  background: color-mix(in srgb, var(--surface) 60%, #fff 40%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+  transform: translateX(-50%);
+  cursor: grabbing;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.stageplot-item .stageplot-rotation-handle::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  width: 1px;
+  height: 10px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
 .stageplot-item span {
   max-width: 100%;
   overflow-wrap: anywhere;
