@@ -5074,6 +5074,26 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
 }
 
+/* Non-band song list headers (for setlists/solo views) use the same elevated card language as newer page headers. */
+.songlist-header.resource-header:not(.bands-header) {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: 14px;
+  padding: .95rem 1rem;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--surface) 90%, white), var(--surface));
+  box-shadow: var(--shadow);
+}
+
+.songlist-header.resource-header:not(.bands-header) .resource-title {
+  font-size: var(--page-title-size);
+  line-height: 1.2;
+}
+
+.songlist-header.resource-header:not(.bands-header) .setlist-song-count,
+.songlist-header.resource-header:not(.bands-header) .song-list-summary {
+  font-size: var(--page-copy-size);
+}
+
 .setlist-song-count {
   font-size: .88rem;
   color: var(--muted);
