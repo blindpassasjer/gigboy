@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBeforeUnload, useNavigate, useBlocker } from 'react-router-dom';
 import { flushSync } from 'react-dom';
-import { Save, Wand2 } from 'lucide-react';
+import { FileUp, Save, Wand2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
@@ -11,6 +11,7 @@ import { LANGUAGE_NAMES } from '../utils/languages';
 import { parsePastedSong } from '../utils/chordFormatParser';
 import { extractTabBlocks } from '../utils/tabParser';
 import { parseSongMedia } from '../utils/songMedia';
+import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
 
 interface Props {
   onSave: (song: Song) => Promise<string | null>;
@@ -86,7 +87,9 @@ export default function AddSongForm({
   const [errors, setErrors] = useState<string[]>([]);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [songListId, setSongListId] = useState(initialSongListId ?? '');
+  const [isImportingFile, setIsImportingFile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const autosaveTimerRef = useRef<number | null>(null);
   const saveGenerationRef = useRef(0);
   const tabBlocks = useMemo(() => extractTabBlocks(chordpro), [chordpro]);
@@ -237,6 +240,44 @@ export default function AddSongForm({
     setParseStatus(source === 'paste' ? 'Pasted content was parsed automatically.' : 'Text was parsed into ChordPro.');
     setErrors([]);
     setPreview(false);
+  }
+
+  async function handleSongFileImport(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+
+    setIsImportingFile(true);
+    try {
+      const imported = await parseImportedSongFile(file);
+      setTitle(imported.title);
+      setArtist(imported.artist ?? '');
+      if (imported.author !== undefined) {
+        setAuthor(imported.author ?? '');
+      }
+      if (imported.language) {
+        setLanguage(imported.language);
+      }
+      setTags((imported.tags ?? []).join(', '));
+      setKey(imported.key ?? '');
+      setCapo(typeof imported.capo === 'number' ? String(imported.capo) : '');
+      setTempo(typeof imported.tempo === 'number' ? String(imported.tempo) : '');
+      setTimeSignature(imported.timeSignature ?? '');
+      setChordpro(imported.chordpro);
+      setParseWarnings(imported.warnings);
+      setDetectedSource(imported.detectedSource ?? null);
+      setParseStatus(`${mode === 'edit' ? 'Updated' : 'Imported'} from ${file.name}.`);
+      setPreview(false);
+      setErrors([]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to import this file.';
+      setErrors([message]);
+      toast.error(message);
+    } finally {
+      setIsImportingFile(false);
+      if (importInputRef.current) {
+        importInputRef.current.value = '';
+      }
+    }
   }
 
   function handleParsePasted() {
@@ -437,6 +478,14 @@ export default function AddSongForm({
           <div className="chordpro-label-row">
             <label>ChordPro Lyrics *</label>
             <div className="chordpro-label-actions">
+              <button
+                type="button"
+                className="preview-toggle"
+                onClick={() => importInputRef.current?.click()}
+                disabled={isImportingFile}
+              >
+                <FileUp size={14} /> {isImportingFile ? 'Importing…' : mode === 'edit' ? 'Update from file' : 'Import file'}
+              </button>
               {mode === 'add' && (
                 <button type="button" className="preview-toggle" onClick={handleParsePasted}>
                   <Wand2 size={14} /> Parse
@@ -473,6 +522,15 @@ export default function AddSongForm({
               )}
             </div>
           </div>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept={SONG_TEXT_IMPORT_ACCEPT}
+            onChange={(event) => {
+              void handleSongFileImport(event.target.files);
+            }}
+            style={{ display: 'none' }}
+          />
           {!preview && (
             <ChordProToolbar
               textareaRef={textareaRef}

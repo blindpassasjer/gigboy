@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
-import { Link2, Settings } from 'lucide-react';
+import { FileUp, Link2, Settings } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
+import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import BandTechRiderPanel from '../components/BandTechRiderPanel';
@@ -12,12 +13,14 @@ import PressKitView from '../components/PressKitView';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
+import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
 
 export default function BandDetailPage() {
   const { id } = useParams();
   const { pathname, state } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addSong } = useSongs();
   const {
     bands,
     bandSongsByBandId,
@@ -104,6 +107,8 @@ export default function BandDetailPage() {
   const activeBandPressKit = bandSection === 'press-kit'
     ? bandPressKits.find((entry) => entry.id === bandResourceId) ?? null
     : null;
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [isImportingSongs, setIsImportingSongs] = useState(false);
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
 
   useEffect(() => {
@@ -198,6 +203,73 @@ export default function BandDetailPage() {
     }
 
     toast.success('Song moved to band trash.');
+  };
+
+  const handleImportSongs = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    if (!canEditBand) {
+      toast.error('You do not have permission to edit this band library.');
+      return;
+    }
+
+    setIsImportingSongs(true);
+    let importedCount = 0;
+    const failedFiles: string[] = [];
+
+    for (const file of Array.from(files)) {
+      try {
+        const imported = await parseImportedSongFile(file);
+        const now = new Date().toISOString();
+        const song: Song = {
+          id: crypto.randomUUID(),
+          title: imported.title,
+          artist: imported.artist,
+          author: imported.author,
+          language: imported.language ?? 'en',
+          secondaryLanguages: imported.secondaryLanguages,
+          tags: imported.tags,
+          key: imported.key,
+          capo: imported.capo,
+          tempo: imported.tempo,
+          timeSignature: imported.timeSignature,
+          chordpro: imported.chordpro,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        const saveError = await addSong(song);
+        if (saveError) {
+          throw new Error(saveError);
+        }
+
+        const linkError = await addSongToBandLibrary(band.id, song);
+        if (linkError) {
+          throw new Error(linkError);
+        }
+
+        importedCount += 1;
+      } catch {
+        failedFiles.push(file.name);
+      }
+    }
+
+    if (importedCount > 0 && failedFiles.length === 0) {
+      toast.success(`Imported ${importedCount} song${importedCount === 1 ? '' : 's'} to ${band.name}.`);
+    } else if (importedCount > 0) {
+      toast.success(`Imported ${importedCount} song${importedCount === 1 ? '' : 's'}. ${failedFiles.length} failed.`);
+    } else {
+      toast.error('No songs were imported.');
+    }
+
+    if (failedFiles.length > 0) {
+      const examples = failedFiles.slice(0, 2).join(', ');
+      toast.error(`Failed: ${examples}${failedFiles.length > 2 ? '…' : ''}`);
+    }
+
+    setIsImportingSongs(false);
+    if (importInputRef.current) {
+      importInputRef.current.value = '';
+    }
   };
 
   const handleMoveSong = async (songId: string, beforeSongId: string | null) => {
@@ -561,6 +633,16 @@ export default function BandDetailPage() {
 
   return (
     <section className="bands-page bands-page--library">
+      <input
+        ref={importInputRef}
+        type="file"
+        accept={SONG_TEXT_IMPORT_ACCEPT}
+        multiple
+        onChange={(event) => {
+          void handleImportSongs(event.target.files);
+        }}
+        style={{ display: 'none' }}
+      />
       <SongList
         songs={bandSongs}
         listName={band.name}
@@ -577,14 +659,28 @@ export default function BandDetailPage() {
           if (error) toast.error(error);
         } : undefined}
         headerActions={(
-          <button
-            type="button"
-            className="setlist-action-btn setlist-action-btn--secondary"
-            onClick={() => navigate(isOwner ? `/bands/${band.id}/settings` : `/bands/${band.id}/members`)}
-            title="Band settings"
-          >
-            <Settings size={14} />
-          </button>
+          <>
+            {canEditBand && (
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => importInputRef.current?.click()}
+                title="Import local song files"
+                disabled={isImportingSongs}
+              >
+                <FileUp size={14} />
+                {isImportingSongs ? 'Importing…' : 'Import files'}
+              </button>
+            )}
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => navigate(isOwner ? `/bands/${band.id}/settings` : `/bands/${band.id}/members`)}
+              title="Band settings"
+            >
+              <Settings size={14} />
+            </button>
+          </>
         )}
         onDeleteSong={handleDeleteSong}
         onMoveSong={handleMoveSong}

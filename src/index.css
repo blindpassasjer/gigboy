@@ -1403,6 +1403,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: #e4f1ff;
 }
 
+.song-action-btn--import {
+  color: #0f6b66;
+  border-color: #8ecfc9;
+  background: #e8fbf8;
+}
+
+.song-action-btn--import:hover {
+  color: #0b5651;
+  border-color: #67bdb6;
+  background: #d8f5f1;
+}
+
 .song-action-btn--rename {
   color: #8a5400;
   border-color: transparent;
@@ -1498,9 +1510,19 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-list-page .song-action-btn--edit,
+.song-list-page .song-action-btn--import,
 .song-list-page .song-action-btn--remove,
 .song-list-page .song-action-btn--delete {
   background: transparent;
+}
+
+.song-list-page .song-action-btn--import {
+  border-color: transparent;
+}
+
+.song-list-page .song-action-btn--import:hover {
+  border-color: color-mix(in srgb, #0f6b66 34%, transparent);
+  background: color-mix(in srgb, #0f6b66 10%, transparent);
 }
 
 .song-list-page .song-action-btn--edit {
@@ -1545,6 +1567,18 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-view .song-action-btn--edit {
   color: #1f5ea8;
+  border-color: transparent;
+  background: transparent;
+}
+
+.song-view .song-action-btn--import {
+  color: #0f6b66;
+  border-color: transparent;
+  background: transparent;
+}
+
+.song-view .song-action-btn--import:hover {
+  color: #0b5651;
   border-color: transparent;
   background: transparent;
 }

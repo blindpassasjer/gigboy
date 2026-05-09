@@ -10,6 +10,7 @@ import {
   SlidersHorizontal,
   Check,
   Plus,
+  FileUp,
   SquarePen,
   PenLine,
   Trash2,
@@ -40,6 +41,7 @@ import SongHandNotesOverlay from './SongHandNotesOverlay';
 import SongMediaPlayer from './SongMediaPlayer';
 import SongRecorder from './SongRecorder';
 import { parseSongMedia } from '../utils/songMedia';
+import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
 
 interface Props {
   song: Song;
@@ -69,7 +71,9 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const [chordNotation, setChordNotation] = useState<ChordNotation>('anglo');
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [listMenuOpen, setListMenuOpen] = useState(false);
+  const [updatingFromFile, setUpdatingFromFile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const updateFromFileInputRef = useRef<HTMLInputElement>(null);
   const { updateSong, deleteSong } = useSongs();
   const { songLists, addSongToList, removeSongFromList } = useSongLists();
   const {
@@ -274,6 +278,54 @@ export default function SongView({ song, accentColor, bandId }: Props) {
         ? 'Pinned to original key for this song.'
         : `Pinned ${transpose > 0 ? '+' : ''}${transpose} semitones for this song.`
     );
+  }
+
+  async function handleUpdateFromFile(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+
+    setUpdatingFromFile(true);
+    try {
+      const imported = await parseImportedSongFile(file);
+      const nextSong: Song = {
+        ...song,
+        title: imported.title || song.title,
+        artist: imported.artist ?? song.artist,
+        author: imported.author ?? song.author,
+        language: imported.language ?? song.language,
+        secondaryLanguages: imported.secondaryLanguages ?? song.secondaryLanguages,
+        tags: imported.tags ?? song.tags,
+        key: imported.key ?? song.key,
+        capo: imported.capo ?? song.capo,
+        tempo: imported.tempo ?? song.tempo,
+        timeSignature: imported.timeSignature ?? song.timeSignature,
+        chordpro: imported.chordpro,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const error = bandId
+        ? await updateBandSong(bandId, nextSong)
+        : await updateSong(nextSong);
+
+      if (error) {
+        toast.error(`Could not update song from file: ${error}`);
+        return;
+      }
+
+      if (imported.warnings.length > 0) {
+        toast.success(`Updated from ${file.name} with ${imported.warnings.length} warning${imported.warnings.length === 1 ? '' : 's'}.`);
+      } else {
+        toast.success(`Updated from ${file.name}.`);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to import this file.';
+      toast.error(message);
+    } finally {
+      setUpdatingFromFile(false);
+      if (updateFromFileInputRef.current) {
+        updateFromFileInputRef.current.value = '';
+      }
+    }
   }
 
   const headerStyle = accentColor
@@ -674,6 +726,26 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   </div>
                 )}
               </div>
+
+              <button
+                className="song-action-btn song-action-btn--import song-action-btn--labeled"
+                onClick={() => updateFromFileInputRef.current?.click()}
+                title={`Update ${song.title} from file`}
+                aria-label={`Update ${song.title} from file`}
+                disabled={updatingFromFile}
+              >
+                <FileUp size={14} />
+                {updatingFromFile ? 'Updating…' : 'Update from file'}
+              </button>
+              <input
+                ref={updateFromFileInputRef}
+                type="file"
+                accept={SONG_TEXT_IMPORT_ACCEPT}
+                onChange={(event) => {
+                  void handleUpdateFromFile(event.target.files);
+                }}
+                style={{ display: 'none' }}
+              />
 
               <button
                 className="song-action-btn song-action-btn--edit song-action-btn--labeled"
