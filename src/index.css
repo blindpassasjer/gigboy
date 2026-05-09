@@ -8527,6 +8527,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .public-share-band-stack--header {
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -8570,8 +8571,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 .public-setlist-band--stack {
   margin: 0;
   line-height: 1.2;
-  text-align: center;
+  width: 100%;
+  text-align: left;
   font-size: clamp(2rem, 8vw, 3.4rem);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text, #111);
 }
 
 .public-setlist-title {
