@@ -56,6 +56,7 @@ import {
 import { useAuth } from './AuthContext';
 import { moveIdBefore } from '../utils/arrayUtils';
 import { createWebpThumbnail } from '../utils/imageThumbnail';
+import { PLAN_LIMITS } from '../lib/planLimits';
 
 const BANDS_COLLECTION = 'bands';
 const BAND_SONGS_COLLECTION = 'songs';
@@ -1651,8 +1652,15 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return 'You do not have permission to edit this band library.';
     }
 
-    const songId = song.id || crypto.randomUUID();
+    // Enforce free-tier band library song limit
     const currentBandSongs = bandSongsByBandId[bandId] ?? [];
+    const billingPlan = band.billingPlan === 'pro' || band.billingPlan === 'crew' ? band.billingPlan : 'free';
+    const limit = PLAN_LIMITS[billingPlan].songLimit;
+    if (limit !== null && currentBandSongs.length >= limit) {
+      return `This band has reached the ${limit}-song limit for ${billingPlan === 'free' ? 'Free' : billingPlan === 'pro' ? 'Pro' : 'Crew'} plan. Upgrade the band to add more songs.`;
+    }
+
+    const songId = song.id || crypto.randomUUID();
     const nextSortOrder = currentBandSongs.reduce((max, entry) => {
       if (typeof entry.sortOrder !== 'number') return max;
       return Math.max(max, entry.sortOrder);

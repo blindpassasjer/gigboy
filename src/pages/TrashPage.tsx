@@ -58,14 +58,15 @@ export default function TrashPage() {
   };
 
   const handleEmptyTrash = async () => {
-    let failedCount = 0;
+    const results = await Promise.allSettled(
+      items.map((item) => handleDeletePermanently(item.trashId))
+    );
 
-    for (const item of items) {
-      const error = await handleDeletePermanently(item.trashId);
-      if (error) {
-        failedCount += 1;
-      }
-    }
+    const failedCount = results.reduce((count, result) => {
+      if (result.status === 'rejected') return count + 1;
+      if (result.value) return count + 1;
+      return count;
+    }, 0);
 
     if (failedCount === 0) return null;
     if (failedCount === items.length) return 'Failed to empty trash.';

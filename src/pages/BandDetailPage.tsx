@@ -541,14 +541,15 @@ export default function BandDetailPage() {
         onRestore={canEditBand ? (trashId) => restoreBandTrashItem(band.id, trashId) : undefined}
         onDeletePermanently={isOwner ? (trashId) => deleteBandTrashItemPermanently(band.id, trashId) : undefined}
         onEmptyTrash={isOwner ? async () => {
-          let failedCount = 0;
+          const results = await Promise.allSettled(
+            trashItems.map((item) => deleteBandTrashItemPermanently(band.id, item.trashId))
+          );
 
-          for (const item of trashItems) {
-            const error = await deleteBandTrashItemPermanently(band.id, item.trashId);
-            if (error) {
-              failedCount += 1;
-            }
-          }
+          const failedCount = results.reduce((count, result) => {
+            if (result.status === 'rejected') return count + 1;
+            if (result.value) return count + 1;
+            return count;
+          }, 0);
 
           if (failedCount === 0) return null;
           if (failedCount === trashItems.length) return 'Failed to empty trash.';
