@@ -82,9 +82,10 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   } = useBands();
   const effectiveSongLists = bandId ? (bandSongListsByBandId[bandId] ?? []) : songLists;
   const { user } = useAuth();
+  const availableBands = bands ?? [];
   
   // Use band plan if viewing from band context, otherwise use personal plan
-  const band = bandId ? (bands.find((b) => b.id === bandId) ?? null) : null;
+  const band = bandId ? (availableBands.find((b) => b.id === bandId) ?? null) : null;
   const userPlanState = usePlan();
   const bandPlanState = useBandPlan(band);
   const { canUse } = bandId && band ? bandPlanState : userPlanState;

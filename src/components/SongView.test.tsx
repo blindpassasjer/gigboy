@@ -43,6 +43,7 @@ vi.mock('../context/SongListsContext', () => ({
 
 vi.mock('../context/BandsContext', () => ({
   useBands: () => ({
+    bands: [],
     bandSongListsByBandId: {},
     updateBandSong: mocks.updateBandSong,
     addSongToBandSongList: vi.fn(),
@@ -59,6 +60,9 @@ vi.mock('../context/AuthContext', () => ({
 
 vi.mock('../hooks/usePlan', () => ({
   usePlan: () => ({
+    canUse: () => true,
+  }),
+  useBandPlan: () => ({
     canUse: () => true,
   }),
 }));

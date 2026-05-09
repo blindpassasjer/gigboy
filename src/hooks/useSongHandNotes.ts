@@ -111,7 +111,8 @@ export function useSongHandNotes(params: {
   }, [notes, user, userId]);
 
   const visibleNotes = useMemo(() => {
-    if (visibleAuthorIds.length === 0) return notes;
+    if (!hasManualVisibilitySelectionRef.current) return notes;
+    if (visibleAuthorIds.length === 0) return [];
     const visible = new Set(visibleAuthorIds);
     return notes.filter((note) => visible.has(note.authorUid));
   }, [notes, visibleAuthorIds]);
@@ -141,8 +142,9 @@ export function useSongHandNotes(params: {
     };
 
     setVisibleAuthorIds((prev) => {
+      // In auto mode we always show all authors, so avoid forcing a single-author filter.
+      if (!hasManualVisibilitySelectionRef.current) return prev;
       if (prev.includes(userId)) return prev;
-      if (prev.length === 0) return [userId];
       return [...prev, userId];
     });
 
