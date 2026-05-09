@@ -136,6 +136,11 @@ export default function Layout({ children }: Props) {
   const hasAnyPendingInvites = pendingInvites.length > 0 || pendingBandInvites.length > 0;
   const hasAnyInviteContent = hasAnyPendingInvites || acceptedOutgoing.length > 0;
 
+  useEffect(() => {
+    if (!mainContentRef.current) return;
+    mainContentRef.current.scrollTop = 0;
+  }, [pathname]);
+
   const createBandResource = useCallback(async (kind: 'songlist' | 'setlist' | 'rider') => {
     if (!routeBandId) return;
 

@@ -139,26 +139,27 @@ export default function PublicBandRiderPage() {
   }
 
   return (
-    <div className="public-setlist-page technical-rider-public-page">
-      <header className="public-setlist-header">
-        <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
-        <div className="public-share-branding-row public-share-branding-row--header">
-          {(rider.bandName || bandLogo) ? (
-            <div className="public-share-band-stack public-share-band-stack--header">
-              {bandLogo ? <img src={bandLogo} alt={`${rider.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" /> : null}
-              {rider.bandName ? <h1 className="public-setlist-band public-setlist-band--stack">{rider.bandName}</h1> : null}
-            </div>
-          ) : null}
+    <main className="public-setlist-page technical-rider-public-page">
+      <header className="public-setlist-header public-presskit-header">
+        <div className="public-share-branding-row">
+          <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
         </div>
-        <h2 className="public-setlist-title">
+        {bandLogo ? (
+          <div className="public-presskit-logo-wrap">
+            <img src={bandLogo} alt={`${rider.bandName ?? 'Band'} logo`} className="public-setlist-band-logo public-setlist-band-logo--large" loading="lazy" />
+          </div>
+        ) : null}
+        {rider.bandName ? <p className="public-presskit-band-name">{rider.bandName}</p> : null}
+        <h1 className="public-setlist-title">
           {rider.icon ? <span aria-hidden="true">{rider.icon} </span> : null}
           {rider.name}
-        </h2>
+        </h1>
       </header>
 
-      {stageplot && (stageplot.items.length > 0 || stageplot.drawingLayers.length > 0) ? (
-        <section className="technical-rider-section technical-rider-public-section">
-          <h2>Stage Plot</h2>
+      <div className="public-presskit-body">
+        {stageplot && (stageplot.items.length > 0 || stageplot.drawingLayers.length > 0) ? (
+          <section className="technical-rider-section technical-rider-public-section">
+            <h2>Stage Plot</h2>
           <div className="stageplot-stage song-notes-stage stageplot-stage--public">
             <div className="stageplot-stage-grid" />
             <div className="stageplot-front-edge" aria-hidden="true" />
@@ -283,8 +284,9 @@ export default function PublicBandRiderPage() {
           </table>
         </div>
       </section>
+      </div>
 
       <footer className="footer">From Norway - with chords</footer>
-    </div>
+    </main>
   );
 }
