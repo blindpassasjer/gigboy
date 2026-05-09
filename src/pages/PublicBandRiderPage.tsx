@@ -164,6 +164,93 @@ export default function PublicBandRiderPage() {
       </header>
 
       <div className="public-presskit-body">
+        <section className="technical-rider-section technical-rider-public-section">
+          <h2>Technical Lines</h2>
+          <div className="technical-rider-table-wrap">
+            <table className="technical-rider-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rider.lines.map((line, index) => (
+                  <tr key={line.id}>
+                    <td>{index + 1}</td>
+                    <td>{line.name}</td>
+                    <td>{line.description || '-'}</td>
+                  </tr>
+                ))}
+                {rider.lines.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="technical-rider-empty-cell">No line items listed.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="technical-rider-section technical-rider-public-section">
+          <h2>Preferred Equipment</h2>
+          <div className="technical-rider-table-wrap">
+            <table className="technical-rider-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rider.preferredEquipment.map((item, index) => (
+                  <tr key={item.id}>
+                    <td>{index + 1}</td>
+                    <td>{item.name}</td>
+                    <td>{item.description || '-'}</td>
+                  </tr>
+                ))}
+                {rider.preferredEquipment.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="technical-rider-empty-cell">No equipment listed.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="technical-rider-section technical-rider-public-section">
+          <h2>We Bring (Inventory)</h2>
+          <div className="technical-rider-table-wrap">
+            <table className="technical-rider-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rider.inventoryEquipment.map((item, index) => (
+                  <tr key={item.id}>
+                    <td>{index + 1}</td>
+                    <td>{item.name}</td>
+                    <td>{item.description || '-'}</td>
+                  </tr>
+                ))}
+                {rider.inventoryEquipment.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="technical-rider-empty-cell">No equipment listed.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         {stageplot && (stageplot.items.length > 0 || stageplot.drawingLayers.length > 0) ? (
           <section className="technical-rider-section technical-rider-public-section">
             <h2>Stage Plot</h2>
@@ -204,93 +291,6 @@ export default function PublicBandRiderPage() {
           </div>
         </section>
       ) : null}
-
-      <section className="technical-rider-section technical-rider-public-section">
-        <h2>Technical Lines</h2>
-        <div className="technical-rider-table-wrap">
-          <table className="technical-rider-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rider.lines.map((line, index) => (
-                <tr key={line.id}>
-                  <td>{index + 1}</td>
-                  <td>{line.name}</td>
-                  <td>{line.description || '-'}</td>
-                </tr>
-              ))}
-              {rider.lines.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="technical-rider-empty-cell">No line items listed.</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="technical-rider-section technical-rider-public-section">
-        <h2>Preferred Equipment</h2>
-        <div className="technical-rider-table-wrap">
-          <table className="technical-rider-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rider.preferredEquipment.map((item, index) => (
-                <tr key={item.id}>
-                  <td>{index + 1}</td>
-                  <td>{item.name}</td>
-                  <td>{item.description || '-'}</td>
-                </tr>
-              ))}
-              {rider.preferredEquipment.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="technical-rider-empty-cell">No equipment listed.</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="technical-rider-section technical-rider-public-section">
-        <h2>We Bring (Inventory)</h2>
-        <div className="technical-rider-table-wrap">
-          <table className="technical-rider-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rider.inventoryEquipment.map((item, index) => (
-                <tr key={item.id}>
-                  <td>{index + 1}</td>
-                  <td>{item.name}</td>
-                  <td>{item.description || '-'}</td>
-                </tr>
-              ))}
-              {rider.inventoryEquipment.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="technical-rider-empty-cell">No equipment listed.</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
       </div>
 
       <footer className="footer">From Norway - with chords</footer>
