@@ -8533,7 +8533,11 @@ input, select, textarea { font: inherit; color: var(--text); }
 .public-share-band-stack--header {
   width: 100%;
   margin: 0 auto;
-  align-items: flex-start;
+  align-items: center;
+}
+
+.public-share-branding-row--left {
+  justify-content: flex-start;
 }
 
 .public-setlist-band {
@@ -8701,6 +8705,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   line-height: 1.2;
   text-align: left;
   color: var(--text, #1a1a1a);
+}
+
+.public-share-band-stack--header .public-presskit-band-name {
+  align-self: flex-start;
 }
 
 @media (max-width: 640px) {

@@ -183,7 +183,7 @@ export default function PublicBandPressKitPage() {
   return (
     <main className="public-setlist-page public-presskit-page">
       <header className="public-setlist-header public-presskit-header">
-        <div className="public-share-branding-row">
+        <div className="public-share-branding-row public-share-branding-row--left">
           <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
         </div>
         {payload.bandLogo ? (
