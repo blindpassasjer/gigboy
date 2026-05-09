@@ -31,6 +31,7 @@ import type { ChordNotation } from '../utils/chordParser';
 import { transposeChord } from '../utils/chordParser';
 import { parseSongMedia } from '../utils/songMedia';
 import { getUserNoteColor } from '../lib/userColors';
+import toast from '../utils/anchoredToast';
 
 interface ActiveChord {
   chord: string;
@@ -149,7 +150,7 @@ export default function BandSetlistConcertPage() {
     bandId: bandId ?? null,
     songId: activeSong?.id ?? '',
     user,
-    enabled: showNotes,
+    enabled: Boolean(user && activeSong?.id),
   });
 
   const backRoute = bandId && setlistId
@@ -767,9 +768,15 @@ export default function BandSetlistConcertPage() {
 
               <button
                 type="button"
-                className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}`}
-                onClick={() => setShowMetronome((value) => !value)}
-                title={showMetronome ? 'Hide metronome' : 'Show metronome'}
+                className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}${!canUse('metronome') ? ' song-toolbar-tool-btn--locked' : ''}`}
+                onClick={() => {
+                  if (!canUse('metronome')) {
+                    toast.error('The metronome requires a Pro, Crew plan, or a Crew band membership.', { action: { label: 'Upgrade', href: '/upgrade' } });
+                    return;
+                  }
+                  setShowMetronome((value) => !value);
+                }}
+                title={!canUse('metronome') ? 'Upgrade to Pro, Crew, or join a Crew band to use the metronome' : (showMetronome ? 'Hide metronome' : 'Show metronome')}
                 aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
               >
                 <Metronome size={14} />

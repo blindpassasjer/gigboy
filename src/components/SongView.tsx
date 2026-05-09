@@ -113,7 +113,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     bandId: bandId ?? null,
     songId: song.id,
     user,
-    enabled: showNotes,
+    enabled: Boolean(user && song.id),
   });
 
   const handleStrokesChange = useCallback((strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
