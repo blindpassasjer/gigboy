@@ -8811,6 +8811,24 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-self: center;
 }
 
+/* Unified page header skin across app and public pages. */
+.page-section-header.resource-header,
+.bands-header:not(.bands-header--detail),
+.profile-account-hero,
+.profile-invites-header,
+.pricing-hero,
+.checkout-result-card,
+.public-setlist-header,
+.public-share-header {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: .95rem 1rem;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 14%, transparent), transparent 30%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface) 90%, white), var(--surface));
+  box-shadow: var(--shadow);
+}
+
 @media (max-width: 640px) {
   .profile-settings-page,
   .profile-invites-page,
