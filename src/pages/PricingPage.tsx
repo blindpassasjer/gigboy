@@ -45,6 +45,21 @@ interface ComparisonFeature {
   crew: string;
 }
 
+const STRIPE_PRICE_IDS = {
+  pro: {
+    monthly: 'price_1TTcMZQ9ZHGjaIIRVQd0Kkqr',
+    annual: 'price_1TTd6uQ9ZHGjaIIRvkQ1SHbe',
+  },
+  crew: {
+    monthly: 'price_1TTcSVQ9ZHGjaIIRqMNvXTgI',
+    annual: 'price_1TTd2aQ9ZHGjaIIRIbNu0NKp',
+  },
+  extraMember: {
+    monthly: 'price_1TTdUEQ9ZHGjaIIRFEPOnaH0',
+    annual: 'price_1TTdV0Q9ZHGjaIIRdt4HC9IQ',
+  },
+} as const;
+
 const PLAN_CARDS: PlanCard[] = [
   {
     tier: 'free',
@@ -103,8 +118,14 @@ const COMPARISON_FEATURES: ComparisonFeature[] = [
 
 function resolvePriceId(card: PlanCard, cycle: BillingCycle) {
   const key = cycle === 'annual' ? card.envKeyAnnual : card.envKeyMonthly;
-  if (!key) return null;
-  return (import.meta.env[key] as string | undefined)?.trim() || null;
+  const fallbackPriceId = cycle === 'annual'
+    ? STRIPE_PRICE_IDS[card.tier as 'pro' | 'crew']?.annual
+    : STRIPE_PRICE_IDS[card.tier as 'pro' | 'crew']?.monthly;
+
+  if (!key) return fallbackPriceId ?? null;
+
+  const envPriceId = (import.meta.env[key] as string | undefined)?.trim();
+  return envPriceId || fallbackPriceId || null;
 }
 
 const PLAN_ORDER: Record<PlanTier, number> = {
@@ -171,7 +192,9 @@ export default function PricingPage() {
         billingCycle === 'annual'
           ? (import.meta.env.VITE_STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID as string | undefined)
           : (import.meta.env.VITE_STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID as string | undefined)
-      )?.trim() || null
+      )?.trim() || (billingCycle === 'annual'
+        ? STRIPE_PRICE_IDS.extraMember.annual
+        : STRIPE_PRICE_IDS.extraMember.monthly)
       : null;
 
     if (normalizedExtraMembers > 0 && !extraMemberPriceId) {
