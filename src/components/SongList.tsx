@@ -313,15 +313,26 @@ export default function SongList({
     setPickerQuery('');
   };
 
-  const commitRename = () => {
+  const commitRename = ({ keepEditing = false }: { keepEditing?: boolean } = {}) => {
     if (!onRenameList || !listName) {
-      setIsRenaming(false);
+      if (!keepEditing) {
+        setIsRenaming(false);
+      }
       return;
     }
 
     const trimmed = renameValue.trim();
     if (trimmed && trimmed !== listName) {
       void onRenameList(trimmed);
+    }
+
+    if (keepEditing) {
+      setRenameValue(trimmed || listName);
+      requestAnimationFrame(() => {
+        renameInputRef.current?.focus();
+        renameInputRef.current?.select();
+      });
+      return;
     }
 
     setRenameValue(listName);
@@ -509,14 +520,18 @@ export default function SongList({
                 type="text"
                 value={renameValue}
                 onChange={(event) => setRenameValue(event.target.value)}
+                onFocus={(event) => event.currentTarget.select()}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') commitRename();
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    commitRename({ keepEditing: true });
+                  }
                   if (event.key === 'Escape') {
                     setRenameValue(listName);
                     setIsRenaming(false);
                   }
                 }}
-                onBlur={commitRename}
+                onBlur={() => commitRename()}
                 className="setlist-name-input"
               />
             ) : (

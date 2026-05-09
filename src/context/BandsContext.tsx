@@ -1048,6 +1048,18 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return { bandId: null, error: 'Band name is required.' };
     }
 
+    // Check free-tier band limit before attempting to create
+    const userPlan = user?.plan ?? 'free';
+    if (userPlan === 'free') {
+      const ownedBandCount = bands.filter((b) => b.ownerId === userId).length;
+      if (ownedBandCount > 0) {
+        return {
+          bandId: null,
+          error: 'Free tier accounts can only create one band workspace. Upgrade to Pro or Crew to create more.',
+        };
+      }
+    }
+
     try {
       const response = await createBandOnServer({ userId, userEmail, name: trimmedName, description, icon });
       if (db) {

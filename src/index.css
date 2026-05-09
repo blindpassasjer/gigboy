@@ -904,6 +904,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0 1.5rem;
 }
 
+:where(.song-list-sticky, .list-sticky-header) + :where(.tech-rider-sections, .press-kit-body-columns) {
+  padding-top: var(--sticky-header-content-gap, 0.75rem);
+}
+
 .song-list-controls {
   display: flex;
   gap: .75rem;
@@ -9133,14 +9137,11 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .tech-rider-sections {
+  --sticky-header-content-gap: .75rem;
   display: grid;
   gap: 1rem;
   align-items: start;
   scroll-margin-top: 8rem;
-}
-
-.song-list-sticky + .tech-rider-sections {
-  padding-top: .75rem;
 }
 
 .tech-rider-section {
@@ -9765,13 +9766,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .press-kit-body-columns {
+  --sticky-header-content-gap: .35rem;
   display: grid;
   gap: 1rem;
   margin-top: 1rem;
-}
-
-.song-list-sticky + .press-kit-body-columns {
-  padding-top: .2rem;
 }
 
 @media (min-width: 768px) {

@@ -343,7 +343,7 @@ export default function ProfilePage() {
                       <span>
                         {band.billingPlan === 'crew'
                           ? `${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)} · ${band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0))} members`
-                          : 'No active Crew subscription for this band.'}
+                          : 'No active PRO or CREW subscription for this band'}
                       </span>
                       {band.billingCurrentPeriodEnd ? (
                         <span>Renews {formatPeriodEnd(band.billingCurrentPeriodEnd) ?? '—'}</span>

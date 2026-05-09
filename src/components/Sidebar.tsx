@@ -725,9 +725,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title="New technical rider"
+                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders') ? 'New technical rider' : 'Upgrade this band to Pro or Crew to create technical riders'}
                     aria-label="Create new technical rider"
                     onClick={() => {
+                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders')) {
+                        toast.error('Technical riders require a Pro or Crew plan for this band.');
+                        return;
+                      }
                       setCollapsedBandInputListIds((prev) => prev.filter((id) => id !== band.id));
                       setAddingBandInputListId(band.id);
                       setDraftName('');
@@ -787,9 +791,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title="New press kit"
+                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders') ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
                     aria-label="Create new press kit"
                     onClick={() => {
+                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders')) {
+                        toast.error('Press kits require a Pro or Crew plan for this band.');
+                        return;
+                      }
                       setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));
                       setAddingBandPressKitId(band.id);
                       setDraftName('');

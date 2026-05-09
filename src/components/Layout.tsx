@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, Music, Folder, ListMusic, ClipboardList } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, Music, Folder, ListMusic, ClipboardList, Newspaper } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -42,6 +42,7 @@ export default function Layout({ children }: Props) {
     addBandSongList,
     addBandSetlist,
     addBandInputList,
+    addBandPressKit,
   } = useBands();
   const { user } = useAuth();
   const {
@@ -98,7 +99,8 @@ export default function Layout({ children }: Props) {
     && (bandSection === 'library'
       || bandSection === 'songlists'
       || bandSection === 'setlists'
-      || bandSection === 'riders');
+      || bandSection === 'riders'
+      || bandSection === 'press-kit');
   const wasConcertRouteRef = useRef(isConcertRoute);
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -141,7 +143,7 @@ export default function Layout({ children }: Props) {
     mainContentRef.current.scrollTop = 0;
   }, [pathname]);
 
-  const createBandResource = useCallback(async (kind: 'songlist' | 'setlist' | 'rider') => {
+  const createBandResource = useCallback(async (kind: 'songlist' | 'setlist' | 'rider' | 'pressKit') => {
     if (!routeBandId) return;
 
     if (kind === 'setlist' && !activeBandPlanState.canUse('setlists')) {
@@ -154,10 +156,16 @@ export default function Layout({ children }: Props) {
       return;
     }
 
+    if (kind === 'pressKit' && !activeBandPlanState.canUse('technicalRiders')) {
+      toast.error('Press kits require a Pro or Crew plan for this band.');
+      return;
+    }
+
     const defaults = {
       songlist: 'New songlist',
       setlist: 'New setlist',
       rider: 'New rider',
+      pressKit: 'New press kit',
     } as const;
 
     if (kind === 'songlist') {
@@ -200,6 +208,18 @@ export default function Layout({ children }: Props) {
       return;
     }
 
+    if (kind === 'pressKit') {
+      const result = await addBandPressKit(routeBandId, defaults.pressKit);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      if (result.kitId) {
+        navigate(`/bands/${routeBandId}/press-kit/${result.kitId}`);
+      }
+      return;
+    }
+
     const result = await addBandInputList(routeBandId, defaults.rider);
     if (result.error) {
       toast.error(result.error);
@@ -217,6 +237,7 @@ export default function Layout({ children }: Props) {
       });
     }
   }, [
+    addBandPressKit,
     addBandSetlist,
     addBandSongList,
     addBandInputList,
@@ -266,6 +287,20 @@ export default function Layout({ children }: Props) {
           onClick={() => void createBandResource('setlist')}
         >
           <ListMusic size={20} />
+        </button>
+      );
+    }
+
+    if (bandSection === 'press-kit') {
+      return (
+        <button
+          type="button"
+          className="fab-add-song"
+          title="Create press kit"
+          aria-label="Create press kit"
+          onClick={() => void createBandResource('pressKit')}
+        >
+          <Newspaper size={20} />
         </button>
       );
     }
