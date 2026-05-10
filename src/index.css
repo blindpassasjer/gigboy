@@ -6393,12 +6393,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .topbar-brand {
     gap: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .topbar-brand .brand-name {
-    font-size: 1.2rem !important;
+    font-size: clamp(1.45rem, 7.4vw, 2.2rem) !important;
     transform: none;
     letter-spacing: .02em;
+    white-space: nowrap;
+    max-width: 100%;
   }
 
   .sidebar-storage .topbar-storage {
