@@ -6383,13 +6383,36 @@ input, select, textarea { font: inherit; color: var(--text); }
     gap: .5rem;
   }
 
-  .topbar-brand span,
   .topbar-link-label {
     display: none;
   }
 
-  .topbar-storage {
+  .topbar > .topbar-storage {
     display: none;
+  }
+
+  .topbar-brand {
+    gap: 0;
+  }
+
+  .topbar-brand .brand-name {
+    font-size: 1.2rem !important;
+    transform: none;
+    letter-spacing: .02em;
+  }
+
+  .sidebar-storage .topbar-storage {
+    display: flex;
+    padding: .2rem .35rem;
+  }
+
+  .sidebar-storage .topbar-storage-meter {
+    height: .95rem;
+  }
+
+  .sidebar-storage .topbar-storage-meter-label {
+    font-size: .68rem;
+    padding: 0 .35rem;
   }
 
   .topbar-nav {
