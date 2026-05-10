@@ -53,8 +53,6 @@ function SidebarItemIcon({ icon, fallback }: { icon?: string; fallback: ReactNod
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const navigate = useNavigate();
   const { pathname, state } = useLocation();
-  const routeSegments = pathname.split('/').filter(Boolean);
-  const routeBandId = routeSegments[0] === 'bands' ? routeSegments[1] ?? null : null;
   const stateBandId = (() => {
     if (!state || typeof state !== 'object') return null;
     const candidate = (state as { bandId?: unknown }).bandId;
@@ -110,8 +108,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   });
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const bandSwitcherRef = useRef<HTMLDivElement>(null);
-  const resolvedActiveBandId = routeBandId ?? stateBandId ?? activeBandId;
-  const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes, resolvedActiveBandId);
+  const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes, activeBandId);
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
   const storageLabel = storageUsage.loading
     ? 'Loading...'
@@ -139,13 +136,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   }, [bandSwitcherOpen]);
 
   useEffect(() => {
-    const nextBandId = routeBandId ?? stateBandId;
-    if (!nextBandId) return;
-    setActiveBandId((current) => (current === nextBandId ? current : nextBandId));
+    if (!stateBandId) return;
+    setActiveBandId((current) => (current === stateBandId ? current : stateBandId));
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem('gigboy-active-band-id', nextBandId);
+      window.localStorage.setItem('gigboy-active-band-id', stateBandId);
     }
-  }, [routeBandId, stateBandId]);
+  }, [stateBandId]);
 
   useEffect(() => {
     const missingBandSongCollections = bands
@@ -289,11 +285,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (!name) return;
 
     const result = await addBandPressKit(bandId, name);
-    if (result.error) { 
-      const isUpgradeError = result.error.toLowerCase().includes('pro') || result.error.toLowerCase().includes('crew') || result.error.toLowerCase().includes('plan');
-      toast.error(result.error, isUpgradeError ? { action: { label: 'Upgrade', href: '/upgrade' } } : undefined); 
-      return; 
-    }
+    if (result.error) { toast.error(result.error); return; }
     setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== bandId));
     if (result.kitId) {
       clearGlobalSelection();
@@ -310,8 +302,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addBandInputList(bandId, name);
     if (result.error) {
-      const isUpgradeError = result.error.toLowerCase().includes('pro') || result.error.toLowerCase().includes('crew') || result.error.toLowerCase().includes('plan');
-      toast.error(result.error, isUpgradeError ? { action: { label: 'Upgrade', href: '/upgrade' } } : undefined);
+      toast.error(result.error);
       return;
     }
     if (result.riderId) {
@@ -667,7 +658,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     aria-label="Create new band setlist"
                     onClick={() => {
                       if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'setlists')) {
-                        toast.error('Setlists require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
+                        toast.error('Setlists require a Pro or Crew plan for this band.');
                         return;
                       }
                       setCollapsedBandSetlistIds((prev) => prev.filter((entry) => entry !== band.id));
@@ -738,7 +729,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     aria-label="Create new technical rider"
                     onClick={() => {
                       if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders')) {
-                        toast.error('Technical riders require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
+                        toast.error('Technical riders require a Pro or Crew plan for this band.');
                         return;
                       }
                       setCollapsedBandInputListIds((prev) => prev.filter((id) => id !== band.id));
@@ -800,11 +791,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'pressKits') ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
+                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders') ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
                     aria-label="Create new press kit"
                     onClick={() => {
-                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'pressKits')) {
-                        toast.error('Press kits require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
+                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders')) {
+                        toast.error('Press kits require a Pro or Crew plan for this band.');
                         return;
                       }
                       setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));

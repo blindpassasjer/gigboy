@@ -151,7 +151,7 @@ export default function PublicUserSetlistPage() {
 
       <footer className="public-setlist-footer">
         <Link to="/" className="public-setlist-footer-link public-page-nav-brand--large"><BrandMark size={18} /></Link>
-        <p className="public-setlist-signoff">From Norway - with chords</p>
+        <p className="public-setlist-signoff">From Norway <3 with chords</p>
       </footer>
     </div>
   );

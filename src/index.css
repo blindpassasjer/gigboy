@@ -5186,6 +5186,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-color: var(--accent-h, var(--accent));
 }
 
+.setlist-action-btn--import {
+  background: linear-gradient(120deg, #f59e0b, #f97316);
+  border-color: #ea580c;
+  color: #fff7ed;
+}
+
+.setlist-action-btn--import:hover {
+  background: linear-gradient(120deg, #d97706, #ea580c);
+  border-color: #c2410c;
+}
+
 .setlist-action-btn--concert {
   background: linear-gradient(120deg, #0f766e, #0b8f84);
   color: #f4fffd;
@@ -8489,6 +8500,34 @@ input, select, textarea { font: inherit; color: var(--text); }
 .bands-page .setlist-action-btn--accent:hover {
   background: linear-gradient(120deg, color-mix(in srgb, var(--bands-hue) 82%, #0d5f5a), color-mix(in srgb, var(--bands-hue) 64%, #0d9488));
   border-color: color-mix(in srgb, var(--bands-hue) 80%, #0d5f5a);
+}
+
+.bands-page .setlist-action-btn--concert {
+  background: linear-gradient(120deg, #0f766e, #0b8f84);
+  border-color: #0f766e;
+  color: #f4fffd;
+}
+
+.bands-page .setlist-action-btn--concert:hover {
+  background: linear-gradient(120deg, #0a645e, #0a7a71);
+  border-color: #0a645e;
+}
+
+.bands-page .setlist-action-btn--concert:disabled {
+  background: linear-gradient(120deg, #0f766e, #0b8f84);
+  border-color: #0f766e;
+  color: #f4fffd;
+}
+
+.bands-page .setlist-action-btn--import {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--bands-hue) 35%, #f59e0b), color-mix(in srgb, var(--bands-hue) 20%, #f97316));
+  border-color: color-mix(in srgb, var(--bands-hue) 34%, #ea580c);
+  color: #fff7ed;
+}
+
+.bands-page .setlist-action-btn--import:hover {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--bands-hue) 30%, #d97706), color-mix(in srgb, var(--bands-hue) 18%, #ea580c));
+  border-color: color-mix(in srgb, var(--bands-hue) 32%, #c2410c);
 }
 
 .bands-page .setlist-action-btn--danger,

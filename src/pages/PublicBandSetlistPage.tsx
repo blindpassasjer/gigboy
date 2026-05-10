@@ -173,7 +173,7 @@ export default function PublicBandSetlistPage() {
         </ol>
       )}
 
-      <footer className="footer">From Norway - with chords</footer>
+      <footer className="footer">From Norway <3 with chords</footer>
     </div>
   );
 }

@@ -293,7 +293,7 @@ export default function PublicBandRiderPage() {
       ) : null}
       </div>
 
-      <footer className="footer">From Norway - with chords</footer>
+      <footer className="footer">From Norway <3 with chords</footer>
     </main>
   );
 }

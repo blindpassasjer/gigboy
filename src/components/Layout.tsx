@@ -147,17 +147,17 @@ export default function Layout({ children }: Props) {
     if (!routeBandId) return;
 
     if (kind === 'setlist' && !activeBandPlanState.canUse('setlists')) {
-      toast.error('Setlists require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
+      toast.error('Setlists require a Pro or Crew plan for this band.');
       return;
     }
 
     if (kind === 'rider' && !activeBandPlanState.canUse('technicalRiders')) {
-      toast.error('Technical riders require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
+      toast.error('Technical riders require a Pro or Crew plan for this band.');
       return;
     }
 
     if (kind === 'pressKit' && !activeBandPlanState.canUse('technicalRiders')) {
-      toast.error('Press kits require a Pro or Crew plan for this band.', { action: { label: 'Upgrade', href: '/upgrade' } });
+      toast.error('Press kits require a Pro or Crew plan for this band.');
       return;
     }
 
@@ -499,7 +499,7 @@ export default function Layout({ children }: Props) {
       markAcceptedAsSeen(unseenAcceptedOutgoing);
     }
     void refreshInvitesPopover();
-  }, [invitesOpen, unseenAcceptedOutgoing, markAcceptedAsSeen, refreshInvitesPopover]);
+  }, [invitesOpen, markAcceptedAsSeen, refreshInvitesPopover, unseenAcceptedOutgoing, user?.email, user?.id]);
 
   useEffect(() => {
     if (!invitesOpen) return;
@@ -828,7 +828,7 @@ export default function Layout({ children }: Props) {
           className={`main-content${isConcertRoute ? ' main-content--concert' : ''}${isBandRoute || (themedBandId && pathname.startsWith('/profile')) ? ' main-content--band' : ''}`}
         >
           {children}
-          <footer className="footer">From Norway - with chords</footer>
+          <footer className="footer">From Norway <3 with chords</footer>
         </main>
         {renderContextFab()}
       </div>

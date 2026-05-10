@@ -663,7 +663,7 @@ export default function BandDetailPage() {
             {canEditBand && (
               <button
                 type="button"
-                className="setlist-action-btn setlist-action-btn--secondary"
+                className="setlist-action-btn setlist-action-btn--import"
                 onClick={() => importInputRef.current?.click()}
                 title="Import local song files"
                 disabled={isImportingSongs}

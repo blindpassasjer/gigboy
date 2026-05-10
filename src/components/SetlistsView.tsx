@@ -501,7 +501,6 @@ export default function SetlistsView({
             </p>
           </div>
           <div className="resource-header-actions">
-            {extraActions}
             {songs.length > 0 ? (
               <Link
                 className="setlist-action-btn setlist-action-btn--concert"
@@ -520,6 +519,7 @@ export default function SetlistsView({
                 <Play size={14} />
               </button>
             )}
+            {extraActions}
             <button
               className="setlist-action-btn setlist-action-btn--secondary"
               onClick={openSongPicker}
