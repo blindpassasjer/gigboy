@@ -499,7 +499,7 @@ export default function Layout({ children }: Props) {
       markAcceptedAsSeen(unseenAcceptedOutgoing);
     }
     void refreshInvitesPopover();
-  }, [invitesOpen, markAcceptedAsSeen, refreshInvitesPopover, unseenAcceptedOutgoing, user?.email, user?.id]);
+  }, [invitesOpen, unseenAcceptedOutgoing, markAcceptedAsSeen, refreshInvitesPopover]);
 
   useEffect(() => {
     if (!invitesOpen) return;
