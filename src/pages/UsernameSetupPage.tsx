@@ -62,7 +62,7 @@ export default function UsernameSetupPage() {
             Sign out
           </button>
         </form>
-        <footer className="footer">From Norway <3 with chords</footer>
+        <footer className="footer">From Norway {'<3'} with chords</footer>
       </div>
     </div>
   );

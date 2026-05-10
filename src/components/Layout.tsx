@@ -828,7 +828,7 @@ export default function Layout({ children }: Props) {
           className={`main-content${isConcertRoute ? ' main-content--concert' : ''}${isBandRoute || (themedBandId && pathname.startsWith('/profile')) ? ' main-content--band' : ''}`}
         >
           {children}
-          <footer className="footer">From Norway <3 with chords</footer>
+          <footer className="footer">From Norway {'<3'} with chords</footer>
         </main>
         {renderContextFab()}
       </div>
