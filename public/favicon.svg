@@ -1,20 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <title>GIGBOY - Blue Songbook</title>
+  <title>GIGBOY - Walking Sign</title>
   <rect width="256" height="256" fill="#ffffff"/>
 
-  <!-- Centered blue book -->
-  <g transform="translate(128 128)">
-    <rect x="-72" y="-86" width="24" height="172" rx="10" fill="#1d4ed8"/>
-    <rect x="-48" y="-86" width="120" height="172" rx="14" fill="#2563eb"/>
-    <rect x="-48" y="-86" width="120" height="172" rx="14" fill="none" stroke="#1e40af" stroke-width="6"/>
+  <!-- Rounded square sign frame -->
+  <rect x="18" y="18" width="220" height="220" rx="28" fill="none" stroke="#1f4fb8" stroke-width="9"/>
 
-    <!-- Centered white-blue note -->
-    <g transform="translate(12 6)">
-      <ellipse cx="0" cy="34" rx="17" ry="19" fill="#dbeafe"/>
-      <ellipse cx="0" cy="34" rx="11" ry="13" fill="#ffffff"/>
-      <rect x="10" y="-30" width="10" height="68" rx="5" fill="#ffffff"/>
-      <path d="M20 -30 L56 -22 L56 6 L20 -2 Z" fill="#bfdbfe"/>
-      <path d="M20 -30 L52 -23" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
-    </g>
+  <!-- Ground line -->
+  <rect x="56" y="204" width="144" height="4" rx="2" fill="#1f4fb8"/>
+
+  <!-- Simple walking figure -->
+  <g fill="#1f4fb8" stroke="#1f4fb8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="129" cy="61" r="12" stroke="none"/>
+
+    <path d="M118 76 C124 70 137 70 143 78 L153 92 C156 96 156 102 151 105 C147 108 142 107 139 104 L131 94 L123 102 C119 106 114 106 110 103 C106 99 106 94 110 90 Z" stroke="none"/>
+
+    <path d="M122 102 L102 121 C99 124 94 124 91 121 C88 118 88 113 92 110 L111 93" stroke-width="5" fill="none"/>
+    <path d="M133 101 L161 116 C165 118 167 123 164 127 C161 131 156 132 152 129 L125 115" stroke-width="5" fill="none"/>
+
+    <path d="M123 110 L132 147 C133 152 130 156 126 158 C121 160 116 158 114 154 L106 122" stroke="none"/>
+    <path d="M132 144 L151 182 C154 187 152 193 147 195 C142 197 136 195 133 190 L116 157" stroke="none"/>
+    <path d="M116 157 L95 180 C92 184 86 185 82 182 C78 178 78 172 82 168 L103 145" stroke="none"/>
+
+    <path d="M146 182 H173 C177 182 181 186 181 191 C181 195 177 198 173 198 H146" stroke="none"/>
+    <path d="M76 180 H100 C104 180 108 184 108 189 C108 193 104 196 100 196 H76" stroke="none"/>
+
+    <rect x="107" y="148" width="15" height="8" rx="3" fill="#ffffff" stroke="none"/>
+    <rect x="136" y="180" width="12" height="8" rx="3" fill="#ffffff" stroke="none"/>
+    <rect x="89" y="176" width="12" height="7" rx="3" fill="#ffffff" stroke="none"/>
   </g>
 </svg>
