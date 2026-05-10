@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
-import { FileUp, Link2, Settings } from 'lucide-react';
+import { Link2, Settings, Upload } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
@@ -668,7 +668,7 @@ export default function BandDetailPage() {
                 title="Import local song files"
                 disabled={isImportingSongs}
               >
-                <FileUp size={14} />
+                <Upload size={14} />
                 {isImportingSongs ? 'Importing…' : 'Import files'}
               </button>
             )}
