@@ -663,13 +663,13 @@ export default function BandDetailPage() {
             {canEditBand && (
               <button
                 type="button"
-                className="setlist-action-btn setlist-action-btn--import"
+                className="setlist-action-btn setlist-action-btn--secondary"
                 onClick={() => importInputRef.current?.click()}
-                title="Import local song files"
+                title={isImportingSongs ? 'Importing songs…' : 'Import local song files'}
+                aria-label={isImportingSongs ? 'Importing songs' : 'Import local song files'}
                 disabled={isImportingSongs}
               >
                 <Upload size={14} />
-                {isImportingSongs ? 'Importing…' : 'Import files'}
               </button>
             )}
             <button
