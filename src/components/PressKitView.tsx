@@ -192,8 +192,6 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const [busyUpload, setBusyUpload] = useState(false);
   const [dropActive, setDropActive] = useState(false);
   const [kitImageIds, setKitImageIds] = useState<string[]>(kit.imageIds ?? []);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [imageRenameValue, setImageRenameValue] = useState('');
   const [imagePage, setImagePage] = useState(1);
   const [imagePreview, setImagePreview] = useState<{ url: string; title: string } | null>(null);
   const [downloadingImageId, setDownloadingImageId] = useState<string | null>(null);
@@ -331,14 +329,6 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     const next = attached ? [...kitImageIds, imageId] : kitImageIds.filter((id) => id !== imageId);
     setKitImageIds(next);
     if (db) await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { imageIds: next }, { merge: true });
-  };
-
-  const renameImageAsset = async (id: string, newTitle: string) => {
-    const trimmed = newTitle.trim();
-    if (!trimmed) return;
-    setImageAssets((current) => current.map((a) => a.id === id ? { ...a, title: trimmed } : a));
-    if (db) await setDoc(doc(db, 'bands', bandId, 'pressKitImages', id), { title: trimmed }, { merge: true });
-    setRenamingId(null);
   };
 
   const toggleAllImages = async (attachAll: boolean) => {
@@ -844,20 +834,6 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0 0.4rem 0.4rem' }}>
-                      {renamingId === img.id ? (
-                        <input
-                          autoFocus
-                          type="text"
-                          value={imageRenameValue}
-                          onChange={(e) => setImageRenameValue(e.target.value)}
-                          onBlur={() => void renameImageAsset(img.id, imageRenameValue || img.title)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') void renameImageAsset(img.id, imageRenameValue || img.title);
-                            if (e.key === 'Escape') setRenamingId(null);
-                          }}
-                          style={{ flex: 1, minWidth: 0, fontSize: '0.8rem', padding: '2px 6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-                        />
-                      ) : <span style={{ flex: 1 }} aria-hidden="true" />}
                       <button
                         type="button"
                         className="title-rename-btn"
@@ -869,10 +845,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                         <ArrowDownToLine size={13} />
                       </button>
                       {canEdit && (
-                        <>
-                          <button type="button" className="title-rename-btn" title="Rename image" aria-label={`Rename ${img.title}`} onClick={() => { setRenamingId(img.id); setImageRenameValue(img.title); }}><PenLine size={13} /></button>
-                          <button type="button" className="title-rename-btn" title="Delete image" aria-label={`Delete ${img.title}`} onClick={() => void removeImageAsset(img)}><Trash2 size={13} /></button>
-                        </>
+                        <button type="button" className="title-rename-btn" title="Delete image" aria-label={`Delete ${img.title}`} onClick={() => void removeImageAsset(img)}><Trash2 size={13} /></button>
                       )}
                     </div>
                   </div>
