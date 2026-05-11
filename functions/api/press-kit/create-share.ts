@@ -75,7 +75,8 @@ function asVideoEntries(value: unknown): string[] {
       if (!entry) return false;
       try {
         const parsed = new URL(entry);
-        const host = parsed.hostname.toLowerCase();
+        const host = parsed.hostname?.toLowerCase();
+        if (!host) return false;
         if (host === 'youtu.be' || host.endsWith('youtube.com')) return true;
         if (host.endsWith('vevo.com')) return true;
         if (host === 'vimeo.com' || host === 'www.vimeo.com' || host === 'player.vimeo.com') return true;
