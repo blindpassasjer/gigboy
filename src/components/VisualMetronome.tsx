@@ -20,6 +20,8 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
   const baseBpm = typeof tempo === 'number' && Number.isFinite(tempo) && tempo > 0
     ? Math.round(tempo)
     : null;
+  // BPM is managed locally and never persisted to song data.
+  // Tempo overrides are session-only and reset when the song changes.
   const [bpm, setBpm] = useState<number>(baseBpm ?? 80);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(String(bpm));
