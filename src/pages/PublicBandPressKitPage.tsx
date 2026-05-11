@@ -314,9 +314,9 @@ export default function PublicBandPressKitPage() {
         )}
 
         {hasVideos && (
-          <section className="public-presskit-images-section">
+          <section className="public-presskit-videos-section">
             <h2 className="public-presskit-section-heading">Videos</h2>
-            <div className="public-presskit-images-grid">
+            <div className="public-presskit-videos-grid">
               {payload.videoUrls.map((url) => {
                 const media = parsePressKitMedia(url);
                 if (!media) return null;
