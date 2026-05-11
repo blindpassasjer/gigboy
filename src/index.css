@@ -9244,8 +9244,69 @@ input, select, textarea { font: inherit; color: var(--text); }
   cursor: default;
 }
 
+.public-presskit-videos-grid {
+  display: grid;
+  gap: .75rem;
+}
+
+.public-presskit-video-card {
+  gap: .55rem;
+}
+
+.public-presskit-video-shell {
+  width: 100%;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--bands-hue) 30%, var(--border));
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bands-hue) 6%, var(--surface));
+}
+
+/* 4:3 gives a taller frame than 16:9 for public embeds. */
+.public-presskit-video-shell--widescreen {
+  aspect-ratio: 4 / 3;
+}
+
+.public-presskit-video-shell--spotify {
+  aspect-ratio: auto;
+}
+
+.public-presskit-video-embed {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+.public-presskit-video-shell--widescreen .public-presskit-video-embed {
+  height: 100%;
+}
+
+.public-presskit-video-footer {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.public-presskit-video-url {
+  flex: 1;
+  min-width: 0;
+  padding: .5rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+}
+
+.public-presskit-video-url:focus {
+  border-color: var(--accent);
+}
+
 @media (min-width: 900px) {
   .public-presskit-images-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .public-presskit-videos-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -9944,6 +10005,27 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0.2rem 0 0;
   font-size: 0.78rem;
   color: var(--muted);
+}
+
+.press-kit-video-url-input {
+  flex: 1;
+  min-width: 0;
+  padding: .5rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+
+.press-kit-video-url-input::placeholder {
+  color: var(--muted);
+}
+
+.press-kit-video-url-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .press-kit-editor .ProseMirror {
