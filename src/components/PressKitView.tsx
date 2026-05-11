@@ -857,13 +857,12 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                           }}
                           style={{ flex: 1, minWidth: 0, fontSize: '0.8rem', padding: '2px 6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
                         />
-                      ) : (
-                        <span style={{ flex: 1, minWidth: 0, fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{img.title}</span>
-                      )}
+                      ) : <span style={{ flex: 1 }} aria-hidden="true" />}
                       <button
                         type="button"
                         className="title-rename-btn"
                         title="Download image"
+                        aria-label={`Download ${img.title}`}
                         onClick={() => { void handleImageDownload(img); }}
                         disabled={downloadingImageId === img.id}
                       >
@@ -871,8 +870,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                       </button>
                       {canEdit && (
                         <>
-                          <button type="button" className="title-rename-btn" title="Rename image" onClick={() => { setRenamingId(img.id); setImageRenameValue(img.title); }}><PenLine size={13} /></button>
-                          <button type="button" className="title-rename-btn" title="Delete image" onClick={() => void removeImageAsset(img)}><Trash2 size={13} /></button>
+                          <button type="button" className="title-rename-btn" title="Rename image" aria-label={`Rename ${img.title}`} onClick={() => { setRenamingId(img.id); setImageRenameValue(img.title); }}><PenLine size={13} /></button>
+                          <button type="button" className="title-rename-btn" title="Delete image" aria-label={`Delete ${img.title}`} onClick={() => void removeImageAsset(img)}><Trash2 size={13} /></button>
                         </>
                       )}
                     </div>

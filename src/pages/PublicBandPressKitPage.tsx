@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Download, ArrowDownToLine } from 'lucide-react';
+import { Download, ArrowDownToLine, Copy } from 'lucide-react';
 import BrandMark from '../components/BrandMark';
 import { fetchPublicPressKit } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
@@ -107,7 +107,17 @@ export default function PublicBandPressKitPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyDownload, setBusyDownload] = useState(false);
   const [downloadingImage, setDownloadingImage] = useState<string | null>(null);
+  const [copiedVideoUrl, setCopiedVideoUrl] = useState<string | null>(null);
   const [payload, setPayload] = useState<PublicPressKitPayload | null>(null);
+  const copyResetTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyResetTimer.current) {
+        window.clearTimeout(copyResetTimer.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -167,6 +177,48 @@ export default function PublicBandPressKitPage() {
       triggerBlobDownload(blob, `${slugifyFileName(payload.bandName)}-press-kit.zip`);
     } finally {
       setBusyDownload(false);
+    }
+  };
+
+  const handleCopyVideoUrl = async (url: string) => {
+    const text = url.trim();
+    if (!text) return;
+
+    const copyWithLegacyFallback = () => {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', 'true');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const copied = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (!copied) throw new Error('Unable to copy');
+    };
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        copyWithLegacyFallback();
+      }
+
+      setCopiedVideoUrl(url);
+      if (copyResetTimer.current) {
+        window.clearTimeout(copyResetTimer.current);
+      }
+      copyResetTimer.current = window.setTimeout(() => {
+        setCopiedVideoUrl((current) => (current === url ? null : current));
+      }, 1800);
+    } catch {
+      try {
+        copyWithLegacyFallback();
+        setCopiedVideoUrl(url);
+      } catch {
+        // Ignore clipboard errors.
+      }
     }
   };
 
@@ -244,7 +296,6 @@ export default function PublicBandPressKitPage() {
                 <article key={`${entry.title}-${entry.url}`} className="public-presskit-image-card">
                   <img src={entry.url} alt={entry.title} className="public-presskit-image" loading="lazy" />
                   <div className="public-presskit-image-footer">
-                    <p className="public-presskit-image-title">{entry.title}</p>
                     <button
                       type="button"
                       className="public-presskit-dl-btn"
@@ -272,48 +323,76 @@ export default function PublicBandPressKitPage() {
 
                 if (media.provider === 'youtube' || media.provider === 'vevo') {
                   return (
-                    <article key={url} className="public-presskit-image-card">
-                      <iframe
-                        src={media.embedUrl}
-                        width="100%"
-                        title={media.provider === 'vevo' ? 'VEVO video' : 'YouTube video'}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                        loading="lazy"
-                        referrerPolicy="strict-origin-when-cross-origin"
-                        className="public-presskit-image"
-                      />
+                    <article key={url} className="public-presskit-image-card public-presskit-video-card">
+                      <div className="public-presskit-video-shell public-presskit-video-shell--widescreen">
+                        <iframe
+                          src={media.embedUrl}
+                          width="100%"
+                          title={media.provider === 'vevo' ? 'VEVO video' : 'YouTube video'}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="strict-origin-when-cross-origin"
+                          className="public-presskit-video-embed"
+                        />
+                      </div>
+                      <div className="public-presskit-video-footer">
+                        <input type="text" readOnly value={url} className="public-presskit-video-url" onFocus={(event) => event.currentTarget.select()} />
+                        <button type="button" className="public-presskit-dl-btn" onClick={() => void handleCopyVideoUrl(url)}>
+                          <Copy size={13} />
+                          <span>{copiedVideoUrl === url ? 'Copied' : 'Copy URL'}</span>
+                        </button>
+                      </div>
                     </article>
                   );
                 }
 
                 if (media.provider === 'vimeo') {
                   return (
-                    <article key={url} className="public-presskit-image-card">
-                      <iframe
-                        src={media.embedUrl}
-                        width="100%"
-                        title="Vimeo video"
-                        allow="autoplay; fullscreen; picture-in-picture"
-                        allowFullScreen
-                        loading="lazy"
-                        className="public-presskit-image"
-                      />
+                    <article key={url} className="public-presskit-image-card public-presskit-video-card">
+                      <div className="public-presskit-video-shell public-presskit-video-shell--widescreen">
+                        <iframe
+                          src={media.embedUrl}
+                          width="100%"
+                          title="Vimeo video"
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          allowFullScreen
+                          loading="lazy"
+                          className="public-presskit-video-embed"
+                        />
+                      </div>
+                      <div className="public-presskit-video-footer">
+                        <input type="text" readOnly value={url} className="public-presskit-video-url" onFocus={(event) => event.currentTarget.select()} />
+                        <button type="button" className="public-presskit-dl-btn" onClick={() => void handleCopyVideoUrl(url)}>
+                          <Copy size={13} />
+                          <span>{copiedVideoUrl === url ? 'Copied' : 'Copy URL'}</span>
+                        </button>
+                      </div>
                     </article>
                   );
                 }
 
                 if (media.provider === 'spotify') {
                   return (
-                    <article key={url} className="public-presskit-image-card">
-                      <iframe
-                        src={media.embedUrl}
-                        width="100%"
-                        height={media.embedHeight}
-                        title="Spotify player"
-                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                        loading="lazy"
-                      />
+                    <article key={url} className="public-presskit-image-card public-presskit-video-card">
+                      <div className="public-presskit-video-shell public-presskit-video-shell--spotify">
+                        <iframe
+                          src={media.embedUrl}
+                          width="100%"
+                          height={media.embedHeight}
+                          title="Spotify player"
+                          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                          loading="lazy"
+                          className="public-presskit-video-embed"
+                        />
+                      </div>
+                      <div className="public-presskit-video-footer">
+                        <input type="text" readOnly value={url} className="public-presskit-video-url" onFocus={(event) => event.currentTarget.select()} />
+                        <button type="button" className="public-presskit-dl-btn" onClick={() => void handleCopyVideoUrl(url)}>
+                          <Copy size={13} />
+                          <span>{copiedVideoUrl === url ? 'Copied' : 'Copy URL'}</span>
+                        </button>
+                      </div>
                     </article>
                   );
                 }

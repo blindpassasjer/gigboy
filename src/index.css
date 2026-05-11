@@ -9200,7 +9200,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .public-presskit-image-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: .5rem;
   margin-top: .5rem;
   padding: 0 .2rem;
@@ -9242,6 +9242,56 @@ input, select, textarea { font: inherit; color: var(--text); }
 .public-presskit-dl-btn:disabled {
   opacity: .55;
   cursor: default;
+}
+
+.public-presskit-video-card {
+  gap: .55rem;
+}
+
+.public-presskit-video-shell {
+  width: 100%;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 86%, var(--surface));
+}
+
+.public-presskit-video-shell--widescreen {
+  aspect-ratio: 16 / 9;
+}
+
+.public-presskit-video-shell--spotify {
+  aspect-ratio: auto;
+}
+
+.public-presskit-video-embed {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+.public-presskit-video-shell--widescreen .public-presskit-video-embed {
+  height: 100%;
+}
+
+.public-presskit-video-footer {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.public-presskit-video-url {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: .38rem .52rem;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: .78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (min-width: 900px) {
