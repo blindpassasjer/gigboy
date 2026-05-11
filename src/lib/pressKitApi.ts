@@ -107,7 +107,7 @@ export async function fetchPublicPressKit(token: string): Promise<PublicPressKit
     texts: Array.isArray(payload.texts) ? payload.texts as PressKitTextItem[] : [],
     images: Array.isArray(payload.images) ? payload.images as PressKitImageItem[] : [],
     videoUrls: Array.isArray(payload.videoUrls)
-      ? payload.videoUrls.filter((entry): entry is string => typeof entry === 'string')
+      ? (payload.videoUrls as unknown[]).filter((entry): entry is string => typeof entry === 'string')
       : [],
   };
 }
