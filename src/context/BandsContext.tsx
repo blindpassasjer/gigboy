@@ -891,6 +891,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         icon: typeof data.icon === 'string' ? data.icon : undefined,
         richText: typeof data.richText === 'string' ? data.richText : '',
         imageIds: Array.isArray(data.imageIds) ? (data.imageIds as string[]) : [],
+        videoUrls: Array.isArray(data.videoUrls)
+          ? data.videoUrls.filter((entry): entry is string => typeof entry === 'string')
+          : [],
         createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
       };
     });

@@ -4,6 +4,7 @@ import { Download, ArrowDownToLine } from 'lucide-react';
 import BrandMark from '../components/BrandMark';
 import { fetchPublicPressKit } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
+import { parsePressKitMedia } from '../utils/pressKitMedia';
 
 type PublicPressKitPayload = Awaited<ReturnType<typeof fetchPublicPressKit>>;
 
@@ -179,6 +180,7 @@ export default function PublicBandPressKitPage() {
 
   const hasTexts = payload.texts.length > 0;
   const hasImages = payload.images.length > 0;
+  const hasVideos = payload.videoUrls.length > 0;
 
   return (
     <main className="public-setlist-page public-presskit-page">
@@ -260,7 +262,69 @@ export default function PublicBandPressKitPage() {
           </section>
         )}
 
-        {!hasTexts && !hasImages && (
+        {hasVideos && (
+          <section className="public-presskit-images-section">
+            <h2 className="public-presskit-section-heading">Videos</h2>
+            <div className="public-presskit-images-grid">
+              {payload.videoUrls.map((url) => {
+                const media = parsePressKitMedia(url);
+                if (!media) return null;
+
+                if (media.provider === 'youtube' || media.provider === 'vevo') {
+                  return (
+                    <article key={url} className="public-presskit-image-card">
+                      <iframe
+                        src={media.embedUrl}
+                        width="100%"
+                        title={media.provider === 'vevo' ? 'VEVO video' : 'YouTube video'}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        className="public-presskit-image"
+                      />
+                    </article>
+                  );
+                }
+
+                if (media.provider === 'vimeo') {
+                  return (
+                    <article key={url} className="public-presskit-image-card">
+                      <iframe
+                        src={media.embedUrl}
+                        width="100%"
+                        title="Vimeo video"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        loading="lazy"
+                        className="public-presskit-image"
+                      />
+                    </article>
+                  );
+                }
+
+                if (media.provider === 'spotify') {
+                  return (
+                    <article key={url} className="public-presskit-image-card">
+                      <iframe
+                        src={media.embedUrl}
+                        width="100%"
+                        height={media.embedHeight}
+                        title="Spotify player"
+                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                        loading="lazy"
+                      />
+                    </article>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+          </section>
+        )}
+
+        {!hasTexts && !hasImages && !hasVideos && (
           <p className="public-setlist-status">This press kit has no content yet.</p>
         )}
       </div>

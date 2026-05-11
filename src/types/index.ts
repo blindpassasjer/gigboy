@@ -190,6 +190,8 @@ export interface PressKit {
   icon?: string;
   richText: string;
   imageIds: string[];
+  /** Video URLs (YouTube, Vimeo, VEVO, Spotify) to embed in the public press kit. */
+  videoUrls?: string[];
   createdAt?: string;
 }
 

@@ -27,6 +27,7 @@ export const onRequestGet: PagesFunction<Record<string, string | undefined>> = a
     riders: Array.isArray(snapshot.riders) ? snapshot.riders : [],
     texts: Array.isArray(snapshot.texts) ? snapshot.texts : [],
     images: Array.isArray(snapshot.images) ? snapshot.images : [],
+    videoUrls: Array.isArray(snapshot.videoUrls) ? snapshot.videoUrls : [],
     generatedAt: typeof snapshot.generatedAt === 'string' ? snapshot.generatedAt : undefined,
   });
 };

@@ -66,6 +66,28 @@ function asImageEntries(value: unknown): PressKitImageEntry[] {
     .slice(0, 50);
 }
 
+function asVideoEntries(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((entry): entry is string => typeof entry === 'string')
+    .map((entry) => cleanString(entry, 2000))
+    .filter((entry) => {
+      if (!entry) return false;
+      try {
+        const parsed = new URL(entry);
+        const host = parsed.hostname.toLowerCase();
+        if (host === 'youtu.be' || host.endsWith('youtube.com')) return true;
+        if (host.endsWith('vevo.com')) return true;
+        if (host === 'vimeo.com' || host === 'www.vimeo.com' || host === 'player.vimeo.com') return true;
+        if (host === 'open.spotify.com' || host === 'spotify.com' || host === 'www.spotify.com') return true;
+        return false;
+      } catch {
+        return false;
+      }
+    })
+    .slice(0, 20);
+}
+
 export const onRequestPost: PagesFunction<Record<string, string | undefined>, never, Data> = async (ctx) => {
   const userId = ctx.data.userId;
   if (!userId) {
@@ -103,6 +125,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const pressKitIcon = cleanString(body.pressKitIcon, 4);
   const texts = asTextEntries(body.texts);
   const images = asImageEntries(body.images);
+  const videoUrls = asVideoEntries(body.videoUrls);
 
   const stageplots: Array<Record<string, unknown>> = [];
   for (const stageplotId of selectedStageplotIds) {
@@ -134,7 +157,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     });
   }
 
-  if (stageplots.length === 0 && riders.length === 0 && texts.length === 0 && images.length === 0) {
+  if (stageplots.length === 0 && riders.length === 0 && texts.length === 0 && images.length === 0 && videoUrls.length === 0) {
     return Response.json({ error: 'Select at least one item to share.' }, { status: 400 });
   }
 
@@ -168,6 +191,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       riders,
       texts,
       images,
+      videoUrls,
       generatedAt: now,
     },
   });

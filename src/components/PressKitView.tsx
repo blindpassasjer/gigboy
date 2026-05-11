@@ -14,6 +14,7 @@ import { createTrashPayload, createTrashTimestamps, TRASH_COLLECTION } from '../
 import { createWebpThumbnail } from '../utils/imageThumbnail';
 import type { PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
+import { parsePressKitMedia } from '../utils/pressKitMedia';
 
 interface PressKitImageAsset {
   id: string;
@@ -419,6 +420,34 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   // ── Share / Download ──────────────────────────────────────────────────────
   const [busyShare, setBusyShare] = useState(false);
+
+  // ── Video URLs ───────────────────────────────────────────────────────────
+  const [videoUrls, setVideoUrls] = useState<string[]>(kit.videoUrls ?? []);
+
+  useEffect(() => {
+    setVideoUrls(kit.videoUrls ?? []);
+  }, [kit.id, kit.videoUrls]);
+
+  const saveVideoUrls = async (urls: string[]) => {
+    if (!db || !canEdit) return;
+    const cleaned = urls.map((u) => u.trim()).filter(Boolean);
+    const validUrls = cleaned.filter((url) => parsePressKitMedia(url));
+
+    if (validUrls.length !== cleaned.length) {
+      toast.error('Some links were ignored. Only YouTube, Vimeo, VEVO, and Spotify URLs are supported.');
+    }
+
+    try {
+      await setDoc(
+        doc(db, 'bands', bandId, 'pressKits', kit.id),
+        { videoUrls: validUrls.length > 0 ? validUrls : null },
+        { merge: true },
+      );
+      setVideoUrls(validUrls);
+    } catch {
+      toast.error('Failed to save video links.');
+    }
+  };
   const [busyDownload, setBusyDownload] = useState(false);
 
   const attachedImages = imageAssets.filter((img) => kitImageIds.includes(img.id));
@@ -440,6 +469,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         selectedRiderIds: [],
         texts: richText ? [{ title: kit.name, body: richText }] : [],
         images: attachedImages.map(({ title, url }) => ({ title, url })),
+        videoUrls: videoUrls.map((u) => u.trim()).filter(Boolean),
       });
       await navigator.clipboard.writeText(result.publicUrl);
       toast.success('Public link copied to clipboard.');
@@ -777,6 +807,62 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
               )}
             </div>
           </section>
+          </div>
+
+          <div className="press-kit-section-card">
+            <section className="press-kit-videos-section">
+              <header className="press-kit-section-header">
+                <p className="press-kit-section-title">Videos</p>
+                {canEdit && <p className="press-kit-section-hint">Add YouTube, Vimeo, VEVO, or Spotify URLs to embed in your public press kit.</p>}
+              </header>
+              <div className="setlist-notes-editor">
+                {videoUrls.map((url, idx) => (
+                  <div key={idx} className="press-kit-video-url-row">
+                    <input
+                      type="url"
+                      value={url}
+                      disabled={!canEdit}
+                      onChange={(e) => {
+                        const next = [...videoUrls];
+                        next[idx] = e.target.value;
+                        setVideoUrls(next);
+                      }}
+                      onBlur={() => void saveVideoUrls(videoUrls)}
+                      placeholder="https://youtube.com/... / https://vimeo.com/... / https://vevo.com/..."
+                      className="press-kit-video-url-input"
+                    />
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="title-rename-btn"
+                        title="Remove video"
+                        onClick={() => {
+                          const next = videoUrls.filter((_, i) => i !== idx);
+                          setVideoUrls(next);
+                          void saveVideoUrls(next);
+                        }}
+                        aria-label="Remove video"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    style={{ marginTop: '0.5rem' }}
+                    onClick={() => setVideoUrls([...videoUrls, ''])}
+                  >
+                    + Add video
+                  </button>
+                )}
+                {videoUrls.length === 0 && !canEdit && (
+                  <p className="bands-status">No videos added.</p>
+                )}
+              </div>
+            </section>
           </div>
         </div>
 

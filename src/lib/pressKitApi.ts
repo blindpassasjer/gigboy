@@ -15,6 +15,7 @@ interface CreateShareInput {
   selectedRiderIds: string[];
   texts: PressKitTextItem[];
   images: PressKitImageItem[];
+  videoUrls: string[];
 }
 
 async function buildHeaders(headers: ApiHeaders) {
@@ -39,6 +40,7 @@ export async function createPressKitShare(input: CreateShareInput): Promise<{ to
       selectedRiderIds: input.selectedRiderIds,
       texts: input.texts,
       images: input.images,
+      videoUrls: input.videoUrls,
     }),
   });
 
@@ -81,6 +83,7 @@ export interface PublicPressKitPayload {
   }>;
   texts: PressKitTextItem[];
   images: PressKitImageItem[];
+  videoUrls: string[];
 }
 
 export async function fetchPublicPressKit(token: string): Promise<PublicPressKitPayload> {
@@ -103,5 +106,8 @@ export async function fetchPublicPressKit(token: string): Promise<PublicPressKit
     riders: Array.isArray(payload.riders) ? payload.riders as PublicPressKitPayload['riders'] : [],
     texts: Array.isArray(payload.texts) ? payload.texts as PressKitTextItem[] : [],
     images: Array.isArray(payload.images) ? payload.images as PressKitImageItem[] : [],
+    videoUrls: Array.isArray(payload.videoUrls)
+      ? payload.videoUrls.filter((entry): entry is string => typeof entry === 'string')
+      : [],
   };
 }
