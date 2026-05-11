@@ -4,8 +4,27 @@ import App from './App.tsx'
 import '@radix-ui/themes/styles.css'
 import './index.css'
 import { migrateLocalStorageKeys } from './lib/migrateLocalStorage.ts'
+import { isDynamicImportFailure, recoverFromDynamicImportFailure } from './lib/chunkRecovery.ts'
 
 migrateLocalStorageKeys()
+
+function installChunkRecoveryHandlers() {
+  window.addEventListener('error', (event) => {
+    const maybeError = event.error ?? event.message
+    if (isDynamicImportFailure(maybeError)) {
+      recoverFromDynamicImportFailure()
+    }
+  })
+
+  window.addEventListener('unhandledrejection', (event) => {
+    if (isDynamicImportFailure(event.reason)) {
+      event.preventDefault()
+      recoverFromDynamicImportFailure()
+    }
+  })
+}
+
+installChunkRecoveryHandlers()
 
 async function setupPwa() {
   if (!import.meta.env.PROD) return

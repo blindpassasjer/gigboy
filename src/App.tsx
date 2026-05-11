@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { createBrowserRouter, RouterProvider, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Routes, Route, Navigate, useRouteError } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Theme } from '@radix-ui/themes';
 import { useBands } from './context/BandsContext';
@@ -9,6 +9,7 @@ import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { BandsProvider } from './context/BandsContext';
+import { isDynamicImportFailure, recoverFromDynamicImportFailure } from './lib/chunkRecovery';
 
 const Layout = lazy(() => import('./components/Layout'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -27,6 +28,53 @@ const CheckoutResultPage = lazy(() => import('./pages/CheckoutResultPage'));
 const PublicBandSetlistPage = lazy(() => import('./pages/PublicBandSetlistPage'));
 const PublicBandRiderPage = lazy(() => import('./pages/PublicBandRiderPage'));
 const PublicBandPressKitPage = lazy(() => import('./pages/PublicBandPressKitPage'));
+
+function getRouteErrorMessage(error: unknown): string {
+  if (typeof error === 'string') return error;
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    return typeof message === 'string' ? message : '';
+  }
+
+  return '';
+}
+
+function RouterErrorFallback() {
+  const routeError = useRouteError();
+  const chunkFailure = isDynamicImportFailure(routeError);
+  const errorMessage = getRouteErrorMessage(routeError);
+
+  const handleReload = () => {
+    if (!recoverFromDynamicImportFailure()) {
+      window.location.reload();
+    }
+  };
+
+  return (
+    <div className="app-status" role="alert" style={{ textAlign: 'left' }}>
+      <h2 style={{ marginBottom: '0.5rem', color: 'var(--text)' }}>We hit a loading problem</h2>
+      <p>
+        {chunkFailure
+          ? 'A new version was deployed while this tab was open. Reload to sync the latest app files.'
+          : 'Something went wrong while opening this page. Try reloading the app.'}
+      </p>
+      <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+        <button type="button" className="btn-primary" onClick={handleReload}>
+          Reload app
+        </button>
+        <button type="button" className="btn-secondary" onClick={() => window.location.assign('/profile')}>
+          Go to profile
+        </button>
+      </div>
+      {!chunkFailure && errorMessage && (
+        <p style={{ marginTop: '0.9rem', fontSize: '0.88rem', opacity: 0.9 }}>{errorMessage}</p>
+      )}
+    </div>
+  );
+}
+
+const routerErrorElement = <RouterErrorFallback />;
 
 /** Redirects to the last active band's library, or profile if no active band. */
 function RootRedirect() {
@@ -97,14 +145,14 @@ function PricingRoute() {
 }
 
 const router = createBrowserRouter([
-  { path: '/public/bands/:bandId/:bandName/setlists/:setlistId', element: <PublicBandSetlistPage /> },
-  { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage /> },
-  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandRiderPage /> },
-  { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandRiderPage /> },
-  { path: '/public/press-kit/:token', element: <PublicBandPressKitPage /> },
-  { path: '/pricing', element: <PricingRoute /> },
-  { path: '/checkout-result', element: <CheckoutResultPage /> },
-  { path: '*', element: <AuthenticatedApp /> },
+  { path: '/public/bands/:bandId/:bandName/setlists/:setlistId', element: <PublicBandSetlistPage />, errorElement: routerErrorElement },
+  { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage />, errorElement: routerErrorElement },
+  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
+  { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
+  { path: '/public/press-kit/:token', element: <PublicBandPressKitPage />, errorElement: routerErrorElement },
+  { path: '/pricing', element: <PricingRoute />, errorElement: routerErrorElement },
+  { path: '/checkout-result', element: <CheckoutResultPage />, errorElement: routerErrorElement },
+  { path: '*', element: <AuthenticatedApp />, errorElement: routerErrorElement },
 ]);
 
 function AppContent() {
