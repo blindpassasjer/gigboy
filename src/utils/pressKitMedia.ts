@@ -23,7 +23,8 @@ function normalizeUrl(rawUrl: string): URL | null {
 }
 
 function parseYoutube(url: URL): PressKitMedia | null {
-  const host = url.hostname.toLowerCase();
+  const host = url.hostname?.toLowerCase();
+  if (!host) return null;
   let videoId = '';
 
   if (host === 'youtu.be' || host === 'www.youtu.be') {
@@ -59,8 +60,8 @@ function parseYoutube(url: URL): PressKitMedia | null {
   };
 }
 
-function parseVimeo(url: URL): PressKitMedia | null {
-  const host = url.hostname.toLowerCase();
+function parseVimeo(url: UR?.toLowerCase();
+  if (!host || (host !== 'vimeo.com' && host !== 'www.vimeo.com' && host !== 'player.vimeo.com')
   if (host !== 'vimeo.com' && host !== 'www.vimeo.com' && host !== 'player.vimeo.com') return null;
 
   const parts = url.pathname.split('/').filter(Boolean);
@@ -82,8 +83,8 @@ function parseVimeo(url: URL): PressKitMedia | null {
   };
 }
 
-function parseSpotify(url: URL): PressKitMedia | null {
-  const host = url.hostname.toLowerCase();
+function parseSpotify(url: ?.toLowerCase();
+  if (!host || (host !== 'open.spotify.com' && host !== 'spotify.com' && host !== 'www.spotify.com')
   if (host !== 'open.spotify.com' && host !== 'spotify.com' && host !== 'www.spotify.com') {
     return null;
   }
