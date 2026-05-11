@@ -1,0 +1,20 @@
+{
+  "name": "GIGBOY",
+  "short_name": "GIGBOY",
+  "icons": [
+    {
+      "src": "/pwa-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1a6fc4",
+  "theme_color": "#1a6fc4"
+}

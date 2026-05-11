@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useEditor, useEditorState, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Download, Trash2, PenLine, Newspaper, X } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Download, Trash2, PenLine, Newspaper, X, ArrowDownToLine } from 'lucide-react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
@@ -37,6 +37,26 @@ function slugifyFileName(value: string): string {
 
 function sanitizePathSegment(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'image';
+}
+
+function inferImageExtension(url: string, mimeType: string): string {
+  const normalizedMime = mimeType.split(';')[0].trim().toLowerCase();
+  const fromMime = normalizedMime.startsWith('image/') ? normalizedMime.slice(6) : '';
+  if (fromMime) return fromMime;
+
+  const pathname = new URL(url, window.location.origin).pathname;
+  const fileName = pathname.split('/').pop() ?? '';
+  const ext = fileName.includes('.') ? fileName.split('.').pop() ?? '' : '';
+  return ext.toLowerCase() || 'jpg';
+}
+
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const blobUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = blobUrl;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(blobUrl);
 }
 
 interface Props {
@@ -176,6 +196,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const [imageRenameValue, setImageRenameValue] = useState('');
   const [imagePage, setImagePage] = useState(1);
   const [imagePreview, setImagePreview] = useState<{ url: string; title: string } | null>(null);
+  const [downloadingImageId, setDownloadingImageId] = useState<string | null>(null);
 
   // Sync kitImageIds when kit prop changes
   useEffect(() => {
@@ -418,35 +439,102 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     }
   };
 
+  const handleImageDownload = async (asset: PressKitImageAsset) => {
+    setDownloadingImageId(asset.id);
+    try {
+      const response = await fetch(asset.url);
+      if (!response.ok) throw new Error('Failed to download image.');
+      const blob = await response.blob();
+      const ext = inferImageExtension(asset.url, blob.type);
+      triggerBlobDownload(blob, `${slugifyFileName(asset.title)}.${ext}`);
+    } catch {
+      toast.error('Failed to download image.');
+    } finally {
+      setDownloadingImageId(null);
+    }
+  };
+
   // ── Share / Download ──────────────────────────────────────────────────────
   const [busyShare, setBusyShare] = useState(false);
 
   // ── Video URLs ───────────────────────────────────────────────────────────
   const [videoUrls, setVideoUrls] = useState<string[]>(kit.videoUrls ?? []);
+  const [selectedVideoUrls, setSelectedVideoUrls] = useState<string[]>(
+    kit.selectedVideoUrls ?? kit.videoUrls ?? [],
+  );
+  const [newVideoUrl, setNewVideoUrl] = useState('');
 
   useEffect(() => {
-    setVideoUrls(kit.videoUrls ?? []);
-  }, [kit.id, kit.videoUrls]);
+    const nextVideoUrls = kit.videoUrls ?? [];
+    const nextSelected = kit.selectedVideoUrls ?? nextVideoUrls;
+    setVideoUrls(nextVideoUrls);
+    setSelectedVideoUrls(nextSelected.filter((url) => nextVideoUrls.includes(url)));
+  }, [kit.id, kit.videoUrls, kit.selectedVideoUrls]);
 
-  const saveVideoUrls = async (urls: string[]) => {
+  const saveVideoState = async (nextVideoUrls: string[], nextSelectedVideoUrls: string[]) => {
     if (!db || !canEdit) return;
-    const cleaned = urls.map((u) => u.trim()).filter(Boolean);
-    const validUrls = cleaned.filter((url) => parsePressKitMedia(url));
+    const cleanedUrls = nextVideoUrls.map((u) => u.trim()).filter(Boolean);
+    const validUrls = cleanedUrls.filter((url) => parsePressKitMedia(url));
+    const validSelected = nextSelectedVideoUrls
+      .map((u) => u.trim())
+      .filter((url) => validUrls.includes(url));
 
-    if (validUrls.length !== cleaned.length) {
+    if (validUrls.length !== cleanedUrls.length) {
       toast.error('Some links were ignored. Only YouTube, Vimeo, VEVO, and Spotify URLs are supported.');
     }
 
     try {
       await setDoc(
         doc(db, 'bands', bandId, 'pressKits', kit.id),
-        { videoUrls: validUrls.length > 0 ? validUrls : null },
+        {
+          videoUrls: validUrls.length > 0 ? validUrls : null,
+          selectedVideoUrls: validSelected.length > 0 ? validSelected : null,
+        },
         { merge: true },
       );
       setVideoUrls(validUrls);
+      setSelectedVideoUrls(validSelected);
     } catch {
       toast.error('Failed to save video links.');
     }
+  };
+
+  const addVideoUrl = async () => {
+    if (!canEdit) return;
+    const trimmed = newVideoUrl.trim();
+    if (!trimmed) return;
+
+    if (!parsePressKitMedia(trimmed)) {
+      toast.error('Use a valid YouTube, Vimeo, VEVO, or Spotify link.');
+      return;
+    }
+
+    if (videoUrls.includes(trimmed)) {
+      toast.error('That video is already added.');
+      return;
+    }
+
+    const nextUrls = [...videoUrls, trimmed];
+    const nextSelected = [...selectedVideoUrls, trimmed];
+    setNewVideoUrl('');
+    await saveVideoState(nextUrls, nextSelected);
+  };
+
+  const removeVideoUrl = async (url: string) => {
+    const nextUrls = videoUrls.filter((entry) => entry !== url);
+    const nextSelected = selectedVideoUrls.filter((entry) => entry !== url);
+    await saveVideoState(nextUrls, nextSelected);
+  };
+
+  const toggleVideoSelection = async (url: string, selected: boolean) => {
+    const nextSelected = selected
+      ? Array.from(new Set([...selectedVideoUrls, url]))
+      : selectedVideoUrls.filter((entry) => entry !== url);
+    await saveVideoState(videoUrls, nextSelected);
+  };
+
+  const toggleAllVideos = async (selectAll: boolean) => {
+    await saveVideoState(videoUrls, selectAll ? [...videoUrls] : []);
   };
   const [busyDownload, setBusyDownload] = useState(false);
 
@@ -469,7 +557,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         selectedRiderIds: [],
         texts: richText ? [{ title: kit.name, body: richText }] : [],
         images: attachedImages.map(({ title, url }) => ({ title, url })),
-        videoUrls: videoUrls.map((u) => u.trim()).filter(Boolean),
+        videoUrls: selectedVideoUrls.map((u) => u.trim()).filter(Boolean),
       });
       await navigator.clipboard.writeText(result.publicUrl);
       toast.success('Public link copied to clipboard.');
@@ -772,6 +860,15 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                       ) : (
                         <span style={{ flex: 1, minWidth: 0, fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{img.title}</span>
                       )}
+                      <button
+                        type="button"
+                        className="title-rename-btn"
+                        title="Download image"
+                        onClick={() => { void handleImageDownload(img); }}
+                        disabled={downloadingImageId === img.id}
+                      >
+                        <ArrowDownToLine size={13} />
+                      </button>
                       {canEdit && (
                         <>
                           <button type="button" className="title-rename-btn" title="Rename image" onClick={() => { setRenamingId(img.id); setImageRenameValue(img.title); }}><PenLine size={13} /></button>
@@ -805,65 +902,125 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                   </button>
                 </div>
               )}
+              <section className="press-kit-videos-section" style={{ marginTop: '1rem' }}>
+                <header className="press-kit-section-header">
+                  <p className="press-kit-section-title">Videos</p>
+                  {canEdit && <p className="press-kit-section-hint">Add videos and choose which ones are included in the public share link.</p>}
+                </header>
+                <div className="setlist-notes-editor">
+                  {canEdit && (
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                      <input
+                        type="url"
+                        value={newVideoUrl}
+                        onChange={(e) => setNewVideoUrl(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            void addVideoUrl();
+                          }
+                        }}
+                        placeholder="https://youtube.com/... / https://vimeo.com/... / https://vevo.com/..."
+                        className="press-kit-video-url-input"
+                      />
+                      <button
+                        type="button"
+                        className="setlist-action-btn setlist-action-btn--secondary"
+                        onClick={() => void addVideoUrl()}
+                      >
+                        Add
+                      </button>
+                    </div>
+                  )}
+
+                  {canEdit && videoUrls.length > 0 && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.8rem', color: 'var(--muted)', cursor: 'pointer', userSelect: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={videoUrls.length > 0 && videoUrls.every((url) => selectedVideoUrls.includes(url))}
+                        ref={(el) => {
+                          if (!el) return;
+                          const anySelected = videoUrls.some((url) => selectedVideoUrls.includes(url));
+                          const allSelected = videoUrls.every((url) => selectedVideoUrls.includes(url));
+                          el.indeterminate = anySelected && !allSelected;
+                        }}
+                        onChange={(e) => { void toggleAllVideos(e.target.checked); }}
+                      />
+                      Select all videos for sharing
+                    </label>
+                  )}
+
+                  {videoUrls.length === 0 ? (
+                    <p className="bands-status">No videos added yet.</p>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.6rem' }}>
+                      {videoUrls.map((url) => {
+                        const media = parsePressKitMedia(url);
+                        const selected = selectedVideoUrls.includes(url);
+                        return (
+                          <div key={url} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                            <div style={{ position: 'relative' }}>
+                              {media ? (
+                                media.provider === 'spotify' ? (
+                                  <iframe
+                                    src={media.embedUrl}
+                                    width="100%"
+                                    height={media.embedHeight ?? 152}
+                                    title="Spotify player"
+                                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <iframe
+                                    src={media.embedUrl}
+                                    width="100%"
+                                    title={`${media.provider} video`}
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                    loading="lazy"
+                                    referrerPolicy="strict-origin-when-cross-origin"
+                                    style={{ aspectRatio: '16 / 9', border: 0, display: 'block' }}
+                                  />
+                                )
+                              ) : (
+                                <div style={{ aspectRatio: '16 / 9', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>Unsupported link</div>
+                              )}
+
+                              <label style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '1.4rem', height: '1.4rem', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', cursor: canEdit ? 'pointer' : 'default', zIndex: 1 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  disabled={!canEdit}
+                                  onChange={(e) => { void toggleVideoSelection(url, e.target.checked); }}
+                                  style={{ accentColor: 'var(--bands-hue)' }}
+                                />
+                              </label>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0 0.4rem 0.4rem' }}>
+                              <span style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{url}</span>
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  className="title-rename-btn"
+                                  title="Remove video"
+                                  onClick={() => { void removeVideoUrl(url); }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
           </section>
           </div>
 
-          <div className="press-kit-section-card">
-            <section className="press-kit-videos-section">
-              <header className="press-kit-section-header">
-                <p className="press-kit-section-title">Videos</p>
-                {canEdit && <p className="press-kit-section-hint">Add YouTube, Vimeo, VEVO, or Spotify URLs to embed in your public press kit.</p>}
-              </header>
-              <div className="setlist-notes-editor">
-                {videoUrls.map((url, idx) => (
-                  <div key={idx} className="press-kit-video-url-row">
-                    <input
-                      type="url"
-                      value={url}
-                      disabled={!canEdit}
-                      onChange={(e) => {
-                        const next = [...videoUrls];
-                        next[idx] = e.target.value;
-                        setVideoUrls(next);
-                      }}
-                      onBlur={() => void saveVideoUrls(videoUrls)}
-                      placeholder="https://youtube.com/... / https://vimeo.com/... / https://vevo.com/..."
-                      className="press-kit-video-url-input"
-                    />
-                    {canEdit && (
-                      <button
-                        type="button"
-                        className="title-rename-btn"
-                        title="Remove video"
-                        onClick={() => {
-                          const next = videoUrls.filter((_, i) => i !== idx);
-                          setVideoUrls(next);
-                          void saveVideoUrls(next);
-                        }}
-                        aria-label="Remove video"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {canEdit && (
-                  <button
-                    type="button"
-                    className="setlist-action-btn setlist-action-btn--secondary"
-                    style={{ marginTop: '0.5rem' }}
-                    onClick={() => setVideoUrls([...videoUrls, ''])}
-                  >
-                    + Add video
-                  </button>
-                )}
-                {videoUrls.length === 0 && !canEdit && (
-                  <p className="bands-status">No videos added.</p>
-                )}
-              </div>
-            </section>
-          </div>
         </div>
 
         {imagePreview && (

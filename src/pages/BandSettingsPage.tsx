@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CreditCard, Trash2, X } from 'lucide-react';
+import { ArrowLeft, CreditCard, Trash2, X, ArrowDownToLine } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { collection, deleteField, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import toast from '../utils/anchoredToast';
@@ -25,7 +25,27 @@ const BAND_COLOR_OPTIONS = [
   '#37474f',
 ] as const;
 
-const LOGO_ITEMS_PER_PAGE = 4;
+const LOGO_ITEMS_PER_PAGE = 3;
+
+function inferImageExtension(url: string, mimeType: string): string {
+  const normalizedMime = mimeType.split(';')[0].trim().toLowerCase();
+  const fromMime = normalizedMime.startsWith('image/') ? normalizedMime.slice(6) : '';
+  if (fromMime) return fromMime;
+
+  const pathname = new URL(url, window.location.origin).pathname;
+  const fileName = pathname.split('/').pop() ?? '';
+  const ext = fileName.includes('.') ? fileName.split('.').pop() ?? '' : '';
+  return ext.toLowerCase() || 'jpg';
+}
+
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const blobUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = blobUrl;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(blobUrl);
+}
 
 interface LogoAsset {
   id: string;
@@ -89,6 +109,7 @@ export default function BandSettingsPage() {
   const [dragActive, setDragActive] = useState(false);
   const [logoPage, setLogoPage] = useState(1);
   const [logoPreview, setLogoPreview] = useState<{ url: string; title: string } | null>(null);
+  const [downloadingLogoId, setDownloadingLogoId] = useState<string | null>(null);
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
@@ -214,6 +235,27 @@ export default function BandSettingsPage() {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [logoPreview]);
+
+  const handleLogoDownload = async (asset: LogoAsset) => {
+    setDownloadingLogoId(asset.id);
+    try {
+      const response = await fetch(asset.url);
+      if (!response.ok) throw new Error('Failed to download logo.');
+      const blob = await response.blob();
+      const ext = inferImageExtension(asset.url, blob.type);
+      const safeName = (asset.title || 'logo')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'logo';
+      triggerBlobDownload(blob, `${safeName}.${ext}`);
+    } catch {
+      toast.error('Failed to download logo.');
+    } finally {
+      setDownloadingLogoId(null);
+    }
+  };
 
   if (loading && !band) {
     return <p className="bands-status">Loading band…</p>;
@@ -520,6 +562,15 @@ export default function BandSettingsPage() {
                         </div>
                         <div className="bands-logo-card-footer">
                           <span className="bands-logo-card-title">{isCurrent ? 'Current logo' : asset.title}</span>
+                          <button
+                            type="button"
+                            className="title-rename-btn"
+                            title="Download logo"
+                            onClick={() => { void handleLogoDownload(asset); }}
+                            disabled={downloadingLogoId === asset.id}
+                          >
+                            <ArrowDownToLine size={13} />
+                          </button>
                           {canEditBand && !isCurrent && (
                             <button
                               type="button"

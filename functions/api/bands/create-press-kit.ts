@@ -83,6 +83,7 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       richText: '',
       imageIds: [],
       videoUrls: [],
+      selectedVideoUrls: [],
       createdAt: now,
       createdBy: userId,
     });

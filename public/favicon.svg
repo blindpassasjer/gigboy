@@ -1,24 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <title>GIGBOY - Gb Logo</title>
-  <rect width="256" height="256" fill="none"/>
-
-  <circle cx="128" cy="128" r="108" fill="#1f73cc"/>
-
-  <g fill="#ffffff">
-    <!-- G letter -->
-    <path d="M115 89 C103 77 86 74 71 81 C58 88 49 102 49 118 C49 136 61 152 78 158 C94 164 112 160 124 147 L124 129 L95 129 L95 143 L106 143 C99 148 89 149 80 145 C69 141 62 131 62 119 C62 107 69 97 80 92 C91 88 102 91 110 100 Z"/>
-
-    <!-- Music-note style b stem + head -->
-    <rect x="132" y="58" width="15" height="103" rx="7"/>
-    <ellipse cx="124" cy="188" rx="20" ry="15"/>
-
-    <!-- top hook -->
-    <path d="M147 58 C159 58 168 70 168 82 C168 91 163 99 156 103 C160 94 157 84 147 79 Z"/>
-
-    <!-- b bowl -->
-    <path d="M147 113 C154 108 161 106 169 106 C186 106 200 120 200 137 C200 154 186 168 169 168 C157 168 146 160 141 149 C136 138 139 122 147 113 Z"/>
-  </g>
-
-  <!-- carve inside of b bowl -->
-  <ellipse cx="164" cy="139" rx="14" ry="13" fill="#1f73cc"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <circle cx="24" cy="24" r="24" fill="#1a6fc4"/>
+  <text x="50%" y="58%" text-anchor="middle" dominant-baseline="middle" font-family="'Inter', Arial, sans-serif" font-weight="bold" font-size="22" fill="#fff" letter-spacing="-2">GIG</text>
 </svg>

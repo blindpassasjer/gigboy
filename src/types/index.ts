@@ -192,6 +192,8 @@ export interface PressKit {
   imageIds: string[];
   /** Video URLs (YouTube, Vimeo, VEVO, Spotify) to embed in the public press kit. */
   videoUrls?: string[];
+  /** Selected video URLs to include in shared public press-kit links. */
+  selectedVideoUrls?: string[];
   createdAt?: string;
 }
 

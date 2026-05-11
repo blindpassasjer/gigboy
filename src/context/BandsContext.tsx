@@ -894,6 +894,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         videoUrls: Array.isArray(data.videoUrls)
           ? data.videoUrls.filter((entry): entry is string => typeof entry === 'string')
           : [],
+        selectedVideoUrls: Array.isArray(data.selectedVideoUrls)
+          ? data.selectedVideoUrls.filter((entry): entry is string => typeof entry === 'string')
+          : undefined,
         createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
       };
     });
