@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { Pause, Play, Volume2, VolumeX, Plus, Minus } from 'lucide-react';
 
 interface Props {
   tempo?: number;
@@ -21,6 +21,9 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
     ? Math.round(tempo)
     : null;
   const [bpm, setBpm] = useState<number>(baseBpm ?? 80);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(String(bpm));
+  const editInputRef = useRef<HTMLInputElement>(null);
   const beatsPerBar = useMemo(() => parseBeatsPerBar(timeSignature), [timeSignature]);
   const [isRunning, setIsRunning] = useState(false);
   const [activeBeat, setActiveBeat] = useState(0);
@@ -51,6 +54,7 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
   useEffect(() => {
     if (!baseBpm) return;
     setBpm(baseBpm);
+    setEditValue(String(baseBpm));
   }, [baseBpm]);
 
   useEffect(() => {
@@ -72,6 +76,32 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
     return () => window.clearInterval(intervalId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bpm, beatsPerBar, isRunning, soundEnabled]);
+
+  const handleTempoClick = () => {
+    setIsEditing(true);
+    setEditValue(String(bpm));
+  };
+
+  const handleTempoCommit = () => {
+    const parsed = Number.parseInt(editValue, 10);
+    if (Number.isFinite(parsed) && parsed > 0 && parsed <= 300) {
+      setBpm(Math.round(parsed));
+    }
+    setIsEditing(false);
+  };
+
+  const handleTempoKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleTempoCommit();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+    }
+  };
+
+  const handleTempoIncrement = (delta: number) => {
+    const newBpm = Math.max(30, Math.min(300, bpm + delta));
+    setBpm(newBpm);
+  };
 
   const playState = isRunning ? 'running' : 'paused';
 
@@ -106,7 +136,50 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
           }}
           aria-hidden="true"
         />
-        <span className="visual-metronome-tempo">♩ {bpm} bpm</span>
+        <div className="visual-metronome-tempo-controls">
+          <button
+            type="button"
+            className="visual-metronome-tempo-btn"
+            onClick={() => handleTempoIncrement(-1)}
+            title="Decrease tempo by 1 BPM"
+            aria-label="Decrease tempo"
+          >
+            <Minus size={12} />
+          </button>
+          {isEditing ? (
+            <input
+              ref={editInputRef}
+              type="number"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={handleTempoCommit}
+              onKeyDown={handleTempoKeyDown}
+              autoFocus
+              className="visual-metronome-tempo-input"
+              min="30"
+              max="300"
+            />
+          ) : (
+            <button
+              type="button"
+              className="visual-metronome-tempo-display"
+              onClick={handleTempoClick}
+              title="Click to change tempo"
+              aria-label="Edit tempo"
+            >
+              ♩ {bpm} bpm
+            </button>
+          )}
+          <button
+            type="button"
+            className="visual-metronome-tempo-btn"
+            onClick={() => handleTempoIncrement(1)}
+            title="Increase tempo by 1 BPM"
+            aria-label="Increase tempo"
+          >
+            <Plus size={12} />
+          </button>
+        </div>
       </div>
 
       <div className="visual-metronome-beats" aria-hidden="true">

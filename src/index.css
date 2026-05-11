@@ -1991,11 +1991,65 @@ input, select, textarea { font: inherit; color: var(--text); }
   animation-timing-function: linear;
 }
 
-.visual-metronome-tempo {
+.visual-metronome-tempo-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+}
+
+.visual-metronome-tempo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: 5px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+  flex-shrink: 0;
+}
+
+.visual-metronome-tempo-btn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: var(--accent);
+}
+
+.visual-metronome-tempo-display {
   font-size: .76rem;
   font-weight: 700;
   color: var(--accent);
   letter-spacing: .02em;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+
+.visual-metronome-tempo-display:hover {
+  opacity: .8;
+}
+
+.visual-metronome-tempo-input {
+  width: 3rem;
+  font-size: .76rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: .02em;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  padding: 0.2rem 0.3rem;
+  text-align: center;
+  outline: none;
+}
+
+.visual-metronome-tempo-input:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .visual-metronome-beats {
