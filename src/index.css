@@ -9126,18 +9126,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .75rem;
 }
 
-.public-presskit-videos-section {
-  border: 1px solid color-mix(in srgb, var(--bands-hue) 24%, var(--border));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--bands-hue) 4%, var(--surface));
-  padding: .9rem;
-}
-
-.public-presskit-videos-grid {
-  display: grid;
-  gap: .75rem;
-}
-
 .public-presskit-text-item {
   border: 1px solid color-mix(in srgb, var(--bands-hue) 24%, var(--border));
   border-radius: 12px;
@@ -9212,7 +9200,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .public-presskit-image-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: .5rem;
   margin-top: .5rem;
   padding: 0 .2rem;
@@ -9256,68 +9244,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   cursor: default;
 }
 
-.public-presskit-video-card {
-  gap: .55rem;
-}
-
-.public-presskit-video-shell {
-  width: 100%;
-  border-radius: 9px;
-  border: 1px solid color-mix(in srgb, var(--bands-hue) 30%, var(--border));
-  overflow: hidden;
-  background: color-mix(in srgb, var(--bands-hue) 6%, var(--surface));
-}
-
-.public-presskit-video-shell--widescreen {
-  aspect-ratio: 16 / 9;
-}
-
-.public-presskit-video-shell--spotify {
-  aspect-ratio: auto;
-}
-
-.public-presskit-video-embed {
-  display: block;
-  width: 100%;
-  border: 0;
-}
-
-.public-presskit-video-shell--widescreen .public-presskit-video-embed {
-  height: 100%;
-}
-
-.public-presskit-video-footer {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-}
-
-.public-presskit-video-url {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid color-mix(in srgb, var(--bands-hue) 34%, var(--border));
-  border-radius: 7px;
-  padding: .38rem .52rem;
-  background: color-mix(in srgb, var(--bands-hue) 4%, var(--surface));
-  color: color-mix(in srgb, var(--bands-hue) 76%, var(--text));
-  font-size: .78rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.public-presskit-video-url:focus-visible {
-  outline: none;
-  border-color: var(--bands-hue);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bands-hue) 20%, transparent);
-}
-
 @media (min-width: 900px) {
   .public-presskit-images-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .public-presskit-videos-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
