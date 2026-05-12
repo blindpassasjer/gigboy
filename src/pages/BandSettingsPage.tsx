@@ -602,6 +602,17 @@ export default function BandSettingsPage() {
                           >
                             <ArrowDownToLine size={13} />
                           </button>
+                          {canEditBand && (
+                            <button
+                              type="button"
+                              className="title-rename-btn"
+                              title="Delete logo"
+                              onClick={() => { void handleRemoveLogo(); }}
+                              disabled={busyLogo}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                           {canEditBand && !isCurrent && (
                             <button
                               type="button"
@@ -610,17 +621,6 @@ export default function BandSettingsPage() {
                               disabled={busyLogo}
                             >
                               Use
-                            </button>
-                          )}
-                          {canEditBand && isCurrent && (
-                            <button
-                              type="button"
-                              className="title-rename-btn"
-                              title="Remove logo"
-                              onClick={() => { void handleRemoveLogo(); }}
-                              disabled={busyLogo}
-                            >
-                              <Trash2 size={13} />
                             </button>
                           )}
                         </div>
