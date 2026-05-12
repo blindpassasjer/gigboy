@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, CreditCard, Trash2, X, ArrowDownToLine } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { collection, deleteField, doc, getDocs, query, setDoc } from 'firebase/firestore';
@@ -25,7 +25,9 @@ const BAND_COLOR_OPTIONS = [
   '#37474f',
 ] as const;
 
-const LOGO_ITEMS_PER_PAGE = 3;
+const LOGO_CARD_MIN_WIDTH_PX = 130;
+const LOGO_GRID_GAP_PX = 10;
+const LOGO_GRID_ROWS_PER_PAGE = 4;
 
 function inferImageExtension(url: string, mimeType: string): string {
   const normalizedMime = mimeType.split(';')[0].trim().toLowerCase();
@@ -108,11 +110,13 @@ export default function BandSettingsPage() {
   const [busyLogo, setBusyLogo] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [logoPage, setLogoPage] = useState(1);
+  const [logoItemsPerPage, setLogoItemsPerPage] = useState(8);
   const [logoPreview, setLogoPreview] = useState<{ url: string; title: string } | null>(null);
   const [downloadingLogoId, setDownloadingLogoId] = useState<string | null>(null);
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const logoGridRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!band) return;
@@ -213,9 +217,36 @@ export default function BandSettingsPage() {
   const combinedLogoAssets = currentLogoAsset && !logoAssets.some((asset) => asset.url === currentLogoAsset.url)
     ? [currentLogoAsset, ...logoAssets]
     : logoAssets;
-  const logoTotalPages = Math.max(1, Math.ceil(combinedLogoAssets.length / LOGO_ITEMS_PER_PAGE));
-  const logoPageStart = (logoPage - 1) * LOGO_ITEMS_PER_PAGE;
-  const pagedLogoAssets = combinedLogoAssets.slice(logoPageStart, logoPageStart + LOGO_ITEMS_PER_PAGE);
+  const logoTotalPages = Math.max(1, Math.ceil(combinedLogoAssets.length / logoItemsPerPage));
+  const logoPageStart = (logoPage - 1) * logoItemsPerPage;
+  const pagedLogoAssets = combinedLogoAssets.slice(logoPageStart, logoPageStart + logoItemsPerPage);
+
+  useEffect(() => {
+    const computeItemsPerPage = () => {
+      const containerWidth = logoGridRef.current?.clientWidth ?? window.innerWidth;
+      const columns = Math.max(1, Math.floor((containerWidth + LOGO_GRID_GAP_PX) / (LOGO_CARD_MIN_WIDTH_PX + LOGO_GRID_GAP_PX)));
+      setLogoItemsPerPage(columns * LOGO_GRID_ROWS_PER_PAGE);
+    };
+
+    computeItemsPerPage();
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => {
+          computeItemsPerPage();
+        })
+      : null;
+
+    if (logoGridRef.current && resizeObserver) {
+      resizeObserver.observe(logoGridRef.current);
+    }
+
+    window.addEventListener('resize', computeItemsPerPage);
+
+    return () => {
+      window.removeEventListener('resize', computeItemsPerPage);
+      resizeObserver?.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (logoPage > logoTotalPages) {
@@ -539,7 +570,7 @@ export default function BandSettingsPage() {
               {loadingLogoAssets && <p className="bands-status">Loading logo assets…</p>}
 
               {combinedLogoAssets.length > 0 && (
-                <div className="bands-logo-grid" role="list" aria-label="Band logo assets">
+                <div className="bands-logo-grid" role="list" aria-label="Band logo assets" ref={logoGridRef}>
                   {pagedLogoAssets.map((asset) => {
                     const isCurrent = asset.url === logo;
                     return (
@@ -599,7 +630,7 @@ export default function BandSettingsPage() {
                 </div>
               )}
 
-              {combinedLogoAssets.length > LOGO_ITEMS_PER_PAGE && (
+              {combinedLogoAssets.length > logoItemsPerPage && (
                 <div className="media-pagination">
                   <button
                     type="button"

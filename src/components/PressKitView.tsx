@@ -747,7 +747,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
             </section>
           </div>
 
-          {/* ── Images ─────────────────────────────────────────────────── */}
+          {/* ── Images + Videos ─────────────────────────────────────────── */}
+          <div className="press-kit-column-stack">
           <div className="press-kit-section-card">
           <section className="press-kit-images-section">
             <header className="press-kit-section-header">
@@ -874,123 +875,127 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                   </button>
                 </div>
               )}
-              <section className="press-kit-videos-section" style={{ marginTop: '1rem' }}>
-                <header className="press-kit-section-header">
-                  <p className="press-kit-section-title">Videos</p>
-                  {canEdit && <p className="press-kit-section-hint">Add videos and choose which ones are included in the public share link.</p>}
-                </header>
-                <div className="setlist-notes-editor">
-                  {canEdit && (
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                      <input
-                        type="url"
-                        value={newVideoUrl}
-                        onChange={(e) => setNewVideoUrl(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            void addVideoUrl();
-                          }
-                        }}
-                        placeholder="https://youtube.com/... / https://vimeo.com/... / https://vevo.com/..."
-                        className="press-kit-video-url-input"
-                      />
-                      <button
-                        type="button"
-                        className="setlist-action-btn setlist-action-btn--secondary"
-                        onClick={() => void addVideoUrl()}
-                      >
-                        Add
-                      </button>
-                    </div>
-                  )}
-
-                  {canEdit && videoUrls.length > 0 && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.8rem', color: 'var(--muted)', cursor: 'pointer', userSelect: 'none' }}>
-                      <input
-                        type="checkbox"
-                        checked={videoUrls.length > 0 && videoUrls.every((url) => selectedVideoUrls.includes(url))}
-                        ref={(el) => {
-                          if (!el) return;
-                          const anySelected = videoUrls.some((url) => selectedVideoUrls.includes(url));
-                          const allSelected = videoUrls.every((url) => selectedVideoUrls.includes(url));
-                          el.indeterminate = anySelected && !allSelected;
-                        }}
-                        onChange={(e) => { void toggleAllVideos(e.target.checked); }}
-                      />
-                      Select all videos for sharing
-                    </label>
-                  )}
-
-                  {videoUrls.length === 0 ? (
-                    <p className="bands-status">No videos added yet.</p>
-                  ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.6rem' }}>
-                      {videoUrls.map((url) => {
-                        const media = parsePressKitMedia(url);
-                        const selected = selectedVideoUrls.includes(url);
-                        return (
-                          <div key={url} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                            <div style={{ position: 'relative' }}>
-                              {media ? (
-                                media.provider === 'spotify' ? (
-                                  <iframe
-                                    src={media.embedUrl}
-                                    width="100%"
-                                    height={media.embedHeight ?? 152}
-                                    title="Spotify player"
-                                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                                    loading="lazy"
-                                  />
-                                ) : (
-                                  <iframe
-                                    src={media.embedUrl}
-                                    width="100%"
-                                    title={`${media.provider} video`}
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                    loading="lazy"
-                                    referrerPolicy="strict-origin-when-cross-origin"
-                                    style={{ aspectRatio: '16 / 9', border: 0, display: 'block' }}
-                                  />
-                                )
-                              ) : (
-                                <div style={{ aspectRatio: '16 / 9', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>Unsupported link</div>
-                              )}
-
-                              <label style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '1.4rem', height: '1.4rem', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', cursor: canEdit ? 'pointer' : 'default', zIndex: 1 }}>
-                                <input
-                                  type="checkbox"
-                                  checked={selected}
-                                  disabled={!canEdit}
-                                  onChange={(e) => { void toggleVideoSelection(url, e.target.checked); }}
-                                  style={{ accentColor: 'var(--bands-hue)' }}
-                                />
-                              </label>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0 0.4rem 0.4rem' }}>
-                              <span style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{url}</span>
-                              {canEdit && (
-                                <button
-                                  type="button"
-                                  className="title-rename-btn"
-                                  title="Remove video"
-                                  onClick={() => { void removeVideoUrl(url); }}
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </section>
             </div>
           </section>
+          </div>
+
+          <div className="press-kit-section-card">
+            <section className="press-kit-videos-section">
+              <header className="press-kit-section-header">
+                <p className="press-kit-section-title">Videos</p>
+                {canEdit && <p className="press-kit-section-hint">Add videos and choose which ones are included in the public share link.</p>}
+              </header>
+              <div className="setlist-notes-editor">
+                {canEdit && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <input
+                      type="url"
+                      value={newVideoUrl}
+                      onChange={(e) => setNewVideoUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          void addVideoUrl();
+                        }
+                      }}
+                      placeholder="https://youtube.com/... / https://vimeo.com/... / https://vevo.com/..."
+                      className="press-kit-video-url-input"
+                    />
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      onClick={() => void addVideoUrl()}
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
+
+                {canEdit && videoUrls.length > 0 && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.8rem', color: 'var(--muted)', cursor: 'pointer', userSelect: 'none' }}>
+                    <input
+                      type="checkbox"
+                      checked={videoUrls.length > 0 && videoUrls.every((url) => selectedVideoUrls.includes(url))}
+                      ref={(el) => {
+                        if (!el) return;
+                        const anySelected = videoUrls.some((url) => selectedVideoUrls.includes(url));
+                        const allSelected = videoUrls.every((url) => selectedVideoUrls.includes(url));
+                        el.indeterminate = anySelected && !allSelected;
+                      }}
+                      onChange={(e) => { void toggleAllVideos(e.target.checked); }}
+                    />
+                    Select all videos for sharing
+                  </label>
+                )}
+
+                {videoUrls.length === 0 ? (
+                  <p className="bands-status">No videos added yet.</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.6rem' }}>
+                    {videoUrls.map((url) => {
+                      const media = parsePressKitMedia(url);
+                      const selected = selectedVideoUrls.includes(url);
+                      return (
+                        <div key={url} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                          <div style={{ position: 'relative' }}>
+                            {media ? (
+                              media.provider === 'spotify' ? (
+                                <iframe
+                                  src={media.embedUrl}
+                                  width="100%"
+                                  height={media.embedHeight ?? 152}
+                                  title="Spotify player"
+                                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <iframe
+                                  src={media.embedUrl}
+                                  width="100%"
+                                  title={`${media.provider} video`}
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                  allowFullScreen
+                                  loading="lazy"
+                                  referrerPolicy="strict-origin-when-cross-origin"
+                                  style={{ aspectRatio: '16 / 9', border: 0, display: 'block' }}
+                                />
+                              )
+                            ) : (
+                              <div style={{ aspectRatio: '16 / 9', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>Unsupported link</div>
+                            )}
+
+                            <label style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '1.4rem', height: '1.4rem', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', cursor: canEdit ? 'pointer' : 'default', zIndex: 1 }}>
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                disabled={!canEdit}
+                                onChange={(e) => { void toggleVideoSelection(url, e.target.checked); }}
+                                style={{ accentColor: 'var(--bands-hue)' }}
+                              />
+                            </label>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0 0.4rem 0.4rem' }}>
+                            <span style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{url}</span>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                className="title-rename-btn"
+                                title="Remove video"
+                                onClick={() => { void removeVideoUrl(url); }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
           </div>
 
         </div>

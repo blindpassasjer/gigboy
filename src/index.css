@@ -256,6 +256,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   opacity: 0.75;
 }
 
+.brand-name-mirror-g {
+  font-weight: 900;
+  color: var(--accent);
+  transform: scaleX(-1);
+  display: inline-block;
+}
+
 
 
 .topbar-nav {
@@ -10033,6 +10040,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.press-kit-column-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .press-kit-text-section,
