@@ -2,8 +2,12 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const distDir = resolve(process.cwd(), 'dist');
-const redirectsPath = resolve(distDir, '_redirects');
+const routesPath = resolve(distDir, '_routes.json');
 
 await mkdir(distDir, { recursive: true });
-// Allow API requests to reach Functions; route everything else to SPA
-await writeFile(redirectsPath, '/api/* :splat 200\n/* /index.html 200\n');
+// Cloudflare Pages routing: /api/* requests go to Functions, everything else is static/SPA
+await writeFile(routesPath, JSON.stringify({
+  version: 1,
+  include: ['/api/*'],
+  exclude: []
+}, null, 2));
