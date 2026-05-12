@@ -6734,18 +6734,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .song-toolbar-row--actions .song-actions {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-wrap: wrap;
     gap: .45rem;
   }
 
   .song-toolbar-row--actions .add-to-list-wrap,
   .song-toolbar-row--actions .song-action-btn--labeled {
-    width: 100%;
+    width: auto;
   }
 
   .song-toolbar-row--actions .add-to-list-wrap > .rec-btn {
-    width: 100%;
     justify-content: center;
   }
 
@@ -6762,6 +6761,22 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
   .chord-display { padding: .75rem; font-size: .88rem; }
   .song-view-title { font-size: 1.3rem; }
+}
+
+@media (max-width: 640px) {
+  .song-toolbar-row--actions .add-to-list-wrap > .rec-btn,
+  .song-toolbar-row--actions .song-action-btn--labeled {
+    width: 2.4rem;
+    height: 2.4rem;
+    min-height: 2.4rem;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .song-toolbar-row--actions .song-action-label {
+    display: none;
+  }
 }
 
 /* ─── Touch/coarse-pointer: drag handle and song picker improvements ────────── */

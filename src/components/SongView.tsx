@@ -690,7 +690,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   title="Manage songlists"
                   aria-label="Manage songlists"
                 >
-                  <ListPlus size={15} /> Songlists
+                  <ListPlus size={15} />
+                  <span className="song-action-label">Songlists</span>
                 </button>
                 {listMenuOpen && (
                   <div className="list-dropdown">
@@ -735,7 +736,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 disabled={updatingFromFile}
               >
                 <FileUp size={14} />
-                {updatingFromFile ? 'Updating…' : 'Update from file'}
+                <span className="song-action-label">{updatingFromFile ? 'Updating…' : 'Update from file'}</span>
               </button>
               <input
                 ref={updateFromFileInputRef}
@@ -754,7 +755,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 aria-label={`Edit ${song.title}`}
               >
                 <SquarePen size={14} />
-                Edit
+                <span className="song-action-label">Edit</span>
               </button>
               {canDeleteSong ? (
                 <button
@@ -764,7 +765,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   aria-label={`Delete ${song.title}`}
                 >
                   <Trash2 size={14} />
-                  Delete
+                  <span className="song-action-label">Delete</span>
                 </button>
               ) : null}
             </div>
