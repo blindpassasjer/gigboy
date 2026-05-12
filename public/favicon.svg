@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
   <circle cx="24" cy="24" r="23" fill="#ffffff" stroke="#1a6fc4" stroke-width="2"/>
   <g>
-    <text x="24.6" y="57%" text-anchor="end" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="31" fill="#1a6fc4" letter-spacing="0.32">GI</text>
-    <text x="25.3" y="57%" text-anchor="start" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="31" fill="#1a6fc4" transform="translate(25.3 0) scale(-1 1) translate(-25.3 0)">G</text>
+    <text x="24" y="24" text-anchor="end" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="31" fill="#1a6fc4" letter-spacing="0.32">GI</text>
+    <text x="24" y="24" text-anchor="start" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="31" fill="#1a6fc4" transform="scaleX(-1)" transform-origin="24 24">G</text>
   </g>
 </svg>
