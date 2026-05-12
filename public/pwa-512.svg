@@ -1,14 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <circle cx="256" cy="256" r="244" fill="#ffffff" stroke="#1a6fc4" stroke-width="24"/>
-  <text
-    x="50%"
-    y="57%"
-    text-anchor="middle"
-    dominant-baseline="middle"
-    font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif"
-    font-weight="900"
-    font-size="250"
-    fill="#1a6fc4"
-    letter-spacing="2.56"
-  >GIG</text>
+  <g>
+    <text x="256" y="290" text-anchor="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="250" fill="#1a6fc4" letter-spacing="2.56">GI</text>
+    <text x="336" y="290" text-anchor="start" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="250" fill="#1a6fc4" transform="translate(364, 290) scale(-1, 1) translate(-364, -290)">G</text>
+  </g>
 </svg>
