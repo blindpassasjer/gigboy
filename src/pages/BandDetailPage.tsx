@@ -596,14 +596,28 @@ export default function BandDetailPage() {
         };
       }
 
-      return {
-        itemType: 'setlist' as const,
-        trashId: entry.trashId,
-        name: entry.setlist.name,
-        deletedAt: entry.deletedAt,
-        purgeAt: entry.purgeAt,
-      };
-    });
+      if (entry.itemType === 'pressKit') {
+        return {
+          itemType: 'pressKit' as const,
+          trashId: entry.trashId,
+          name: entry.pressKit.name,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
+      if (entry.itemType === 'setlist') {
+        return {
+          itemType: 'setlist' as const,
+          trashId: entry.trashId,
+          name: entry.setlist.name,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
+      return null;
+    }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
     return (
       <TrashView
