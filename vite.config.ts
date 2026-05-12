@@ -98,7 +98,7 @@ export default defineConfig(({ command }) => ({
         short_name: 'GIGBOY',
         description: 'Your songs. Your stage.',
 
-        theme_color: '#0f172a',
+        theme_color: '#1a6fc4',
         background_color: '#ffffff',
         display: 'standalone',
         scope: './',
