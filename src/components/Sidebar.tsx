@@ -10,6 +10,7 @@ import { bandCanUse } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
+import BandUpgradeModal from './BandUpgradeModal';
 
 function formatStorageBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) {
@@ -94,6 +95,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [addingBandInputListId, setAddingBandInputListId] = useState<string | null>(null);
   const [addingBandPressKitId, setAddingBandPressKitId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [pendingBandName, setPendingBandName] = useState('');
   const [bandLibraryDropTargetId, setBandLibraryDropTargetId] = useState<string | null>(null);
   const [bandSongListDropTargetId, setBandSongListDropTargetId] = useState<string | null>(null);
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
@@ -246,6 +249,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         clearGlobalSelection();
         navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
         onNavigate?.();
+      } else if (result.error) {
+        // Check if this is the "upgrade needed to create another band" error
+        if (result.error.includes('Free tier accounts can only create one band workspace')) {
+          setPendingBandName(name);
+          setShowUpgradeModal(true);
+        } else {
+          toast.error(result.error);
+        }
       }
     }
   };
@@ -852,6 +863,16 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           ))}
         </div>
       </div>
+      )}
+
+      {showUpgradeModal && (
+        <BandUpgradeModal
+          bandName={pendingBandName}
+          onClose={() => {
+            setShowUpgradeModal(false);
+            setPendingBandName('');
+          }}
+        />
       )}
     </aside>
     </div>

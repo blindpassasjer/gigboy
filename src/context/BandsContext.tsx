@@ -410,7 +410,7 @@ interface BandsContextValue {
   loading: boolean;
   cloudRequired: boolean;
   refreshBands: () => Promise<void>;
-  createBand: (name: string, description?: string, icon?: string) => Promise<{ bandId: string | null; error: string | null }>;
+  createBand: (name: string, description?: string, icon?: string, options?: { bypassBandLimitCheck?: boolean }) => Promise<{ bandId: string | null; error: string | null }>;
   deleteBand: (bandId: string) => Promise<string | null>;
   renameBand: (bandId: string, name: string) => Promise<string | null>;
   updateBandDescription: (bandId: string, description: string) => Promise<string | null>;
@@ -1089,7 +1089,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }));
   }, [userId]);
 
-  const createBand = useCallback(async (name: string, description?: string, icon?: string) => {
+  const createBand = useCallback(async (name: string, description?: string, icon?: string, options?: { bypassBandLimitCheck?: boolean }) => {
     if (!userId) {
       return { bandId: null, error: 'Bands require a signed-in account.' };
     }
@@ -1099,9 +1099,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return { bandId: null, error: 'Band name is required.' };
     }
 
-    // Check free-tier band limit before attempting to create
+    // Check free-tier band limit before attempting to create (unless explicitly bypassed for paid band creation)
     const userPlan = user?.plan ?? 'free';
-    if (userPlan === 'free') {
+    if (userPlan === 'free' && !options?.bypassBandLimitCheck) {
       const ownedBandCount = bands.filter((b) => b.ownerId === userId).length;
       if (ownedBandCount > 0) {
         return {
