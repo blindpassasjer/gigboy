@@ -898,7 +898,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                           void addVideoUrl();
                         }
                       }}
-                      placeholder="https://youtube.com/... / https://vimeo.com/... / https://vevo.com/..."
+                      placeholder="YouTube, Vimeo or Vevo"
                       className="press-kit-video-url-input"
                     />
                     <button

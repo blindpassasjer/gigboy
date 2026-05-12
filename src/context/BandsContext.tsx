@@ -1157,14 +1157,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return { bandId: null, error: 'Band name is required.' };
     }
 
-    // Check free-tier band limit before attempting to create (unless explicitly bypassed for paid band creation)
-    const userPlan = user?.plan ?? 'free';
-    if (userPlan === 'free' && !options?.bypassBandLimitCheck) {
-      const ownedBandCount = bands.filter((b) => b.ownerId === userId).length;
-      if (ownedBandCount > 0) {
+    // Check if user is trying to create a free band but already owns one (unless explicitly bypassed for paid band creation)
+    if (!options?.bypassBandLimitCheck) {
+      const ownedFreeBands = bands.filter((b) => b.ownerId === userId && (!b.billingPlan || b.billingPlan === 'free'));
+      if (ownedFreeBands.length > 0) {
         return {
           bandId: null,
-          error: 'Free tier accounts can only create one band workspace. Upgrade to Pro or Crew to create more.',
+          error: 'You can only have one free band. Additional bands require a Pro or Crew subscription.',
         };
       }
     }

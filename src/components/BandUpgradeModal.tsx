@@ -117,10 +117,10 @@ export default function BandUpgradeModal({ bandName, onClose, onBandCreated }: B
         <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Upgrade to Create More Bands
+              Create Band with a Paid Plan
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Your free account allows one band workspace. Create "{bandName}" with a paid plan.
+              You already have a free band. Additional bands require a Pro or Crew subscription. Create "{bandName}" with a paid plan.
             </p>
           </div>
           <button

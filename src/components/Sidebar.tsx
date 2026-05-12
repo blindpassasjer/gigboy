@@ -250,8 +250,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
         onNavigate?.();
       } else if (result.error) {
-        // Check if this is the "upgrade needed to create another band" error
-        if (result.error.includes('Free tier accounts can only create one band workspace')) {
+        // Check if this is the "free band limit" error
+        if (result.error.includes('Users can only have one free band')) {
           setPendingBandName(name);
           setShowUpgradeModal(true);
         } else {
@@ -520,10 +520,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             title="New band"
             aria-label="Create new band"
             onClick={() => {
-              // If user is on free plan and already owns a band, show upgrade modal immediately
-              const userPlan = user?.plan ?? 'free';
-              const ownedBandCount = bands.filter((b) => b.ownerId === user?.id).length;
-              if (userPlan === 'free' && ownedBandCount > 0) {
+              // If user already owns a free band, force them to upgrade for additional bands
+              const userOwnedBands = bands.filter((b) => b.ownerId === user?.id);
+              const hasFreeBand = userOwnedBands.some((b) => !b.billingPlan || b.billingPlan === 'free');
+              if (hasFreeBand) {
                 setPendingBandName('');
                 setShowUpgradeModal(true);
                 return;
