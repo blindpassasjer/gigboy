@@ -4,22 +4,10 @@
   "description": "Your songs. Your stage.",
   "icons": [
     {
-      "src": "/pwa-192.png",
-      "sizes": "192x192",
+      "src": "/icon.png",
+      "sizes": "372x372",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/pwa-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/pwa-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ],
   "start_url": ".",

@@ -91,11 +91,7 @@ export default defineConfig(({ command }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
-        'favicon.svg',
-        'apple-touch-icon.png',
-        'pwa-192.png',
-        'pwa-512.png',
-        'pwa-maskable-512.png',
+        'icon.png',
       ],
       manifest: {
         name: 'GIGBOY',
@@ -110,22 +106,10 @@ export default defineConfig(({ command }) => ({
         orientation: 'portrait',
         icons: [
           {
-            src: 'pwa-192.png',
-            sizes: '192x192',
+            src: 'icon.png',
+            sizes: '372x372',
             type: 'image/png',
             purpose: 'any',
-          },
-          {
-            src: 'pwa-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: 'pwa-maskable-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
           },
         ],
       },
