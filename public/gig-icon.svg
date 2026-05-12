@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <circle cx="128" cy="128" r="122" fill="#ffffff" stroke="#1a6fc4" stroke-width="12"/>
   <g>
-    <text x="67" y="128" text-anchor="middle" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="124" fill="#1a6fc4">G</text>
-    <text x="128" y="128" text-anchor="middle" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="124" fill="#1a6fc4">I</text>
+    <text x="67" y="128" text-anchor="middle" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="140" fill="#1a6fc4">G</text>
+    <text x="128" y="128" text-anchor="middle" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="140" fill="#1a6fc4">I</text>
     <g transform="translate(189 128) scale(-1 1)">
-      <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="124" fill="#1a6fc4">G</text>
+      <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="900" font-size="140" fill="#1a6fc4">G</text>
     </g>
   </g>
 </svg>

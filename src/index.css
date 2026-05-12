@@ -6246,6 +6246,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-bottom: 2px solid var(--chord-bg);
 }
 
+/* Keep setlist-style page headers visually aligned with other page heading outlines. */
+.page-section-header.resource-header .resource-title.resource-title--setlist {
+  border-bottom-width: 1px;
+}
+
 /* ─── Add-to-list dropdown ──────────────────────────────────────────────────── */
 .add-to-list-wrap { position: relative; }
 
