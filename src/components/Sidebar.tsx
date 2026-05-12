@@ -519,7 +519,18 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             className="sidebar-icon-btn"
             title="New band"
             aria-label="Create new band"
-            onClick={() => { setAddingBand(true); setDraftName(''); }}
+            onClick={() => {
+              // If user is on free plan and already owns a band, show upgrade modal immediately
+              const userPlan = user?.plan ?? 'free';
+              const ownedBandCount = bands.filter((b) => b.ownerId === user?.id).length;
+              if (userPlan === 'free' && ownedBandCount > 0) {
+                setPendingBandName('');
+                setShowUpgradeModal(true);
+                return;
+              }
+              setAddingBand(true);
+              setDraftName('');
+            }}
           >
             <Plus size={15} />
           </button>
