@@ -12,12 +12,12 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const bandId = ctx.params.bandId;
+    const body = await ctx.request.json<{ bandId?: string; name?: string }>();
+    const bandId = body.bandId?.trim() || ctx.params.bandId;
     if (!bandId) {
       return Response.json({ error: 'Band ID is required.' }, { status: 400 });
     }
 
-    const body = await ctx.request.json<{ name?: string }>();
     const name = body.name?.trim() ?? '';
 
     if (!name) {

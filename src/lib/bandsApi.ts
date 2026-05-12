@@ -195,7 +195,7 @@ export async function createBandRiderOnServer(params: {
   bandId: string;
   name: string;
 }) {
-  return postJson<{ ok: true; riderId: string }>(`/api/bands/${params.bandId}/create-rider`, { name: params.name }, {
+  return postJson<{ ok: true; riderId: string }>(`/api/bands/create-rider`, { bandId: params.bandId, name: params.name }, {
     userId: params.userId,
     userEmail: params.userEmail,
   });
@@ -207,7 +207,7 @@ export async function createBandPressKitOnServer(params: {
   bandId: string;
   name: string;
 }) {
-  return postJson<{ ok: true; kitId: string }>(`/api/bands/${params.bandId}/create-press-kit`, { name: params.name }, {
+  return postJson<{ ok: true; kitId: string }>(`/api/bands/create-press-kit`, { bandId: params.bandId, name: params.name }, {
     userId: params.userId,
     userEmail: params.userEmail,
   });
