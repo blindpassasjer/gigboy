@@ -18,6 +18,7 @@ import type {
   TrashedSong,
   TrashedSongList,
   TrashedInputList,
+  TrashedPressKit,
   TrashedPressKitImage,
   TrashedBandLogo,
 } from '../types';
@@ -42,6 +43,7 @@ import {
   parseSongListTrashRecord,
   parseSongTrashRecord,
   parseInputListTrashRecord,
+  parsePressKitTrashRecord,
   parsePressKitImageTrashRecord,
   parseBandLogoTrashRecord,
   TRASH_COLLECTION,
@@ -396,6 +398,7 @@ type BandTrashItem =
   | (TrashedSongList & { bandId: string })
   | (TrashedSetlist & { bandId: string })
   | (TrashedInputList & { bandId: string })
+  | (TrashedPressKit & { bandId: string })
   | (TrashedPressKitImage & { bandId: string })
   | (TrashedBandLogo & { bandId: string });
 
@@ -938,17 +941,61 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
   const deleteBandPressKit = useCallback(async (bandId: string, kitId: string): Promise<string | null> => {
     if (!db || !userId) return 'Not signed in.';
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const isEditor = band.ownerId === userId || band.memberRoles[userId] === 'editor';
+    if (!isEditor) return 'You do not have permission to edit this band.';
+
+    const previousKits = bandPressKitsByBandId[bandId] ?? [];
+    const kitToDelete = previousKits.find((entry) => entry.id === kitId);
+    if (!kitToDelete) return null;
+
+    const { deletedAt, purgeAt } = createTrashTimestamps();
+    const trashId = crypto.randomUUID();
+
+    const nextKits = previousKits.filter((k) => k.id !== kitId);
+    setBandPressKitsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextKits,
+    }));
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: [
+        {
+          bandId,
+          trashId,
+          itemType: 'pressKit' as const,
+          deletedAt,
+          purgeAt,
+          pressKit: kitToDelete,
+        },
+        ...(prev[bandId] ?? []),
+      ].sort(compareTrashByDeletedAtDesc),
+    }));
+
     try {
-      await deleteDoc(doc(db, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kitId));
+      await Promise.all([
+        setDoc(
+          doc(db, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId),
+          createTrashPayload('pressKit', deletedAt, purgeAt, kitToDelete)
+        ),
+        deleteDoc(doc(db, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, kitId)),
+      ]);
+      return null;
+    } catch (error) {
       setBandPressKitsByBandId((prev) => ({
         ...prev,
-        [bandId]: (prev[bandId] ?? []).filter((k) => k.id !== kitId),
+        [bandId]: previousKits,
       }));
-      return null;
-    } catch {
-      return 'Failed to delete press kit.';
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
+      }));
+      return error instanceof Error ? error.message : 'Failed to move press kit to trash.';
     }
-  }, [userId]);
+  }, [bandPressKitsByBandId, bands, userId]);
 
   const renameBandPressKit = useCallback(async (bandId: string, kitId: string, name: string): Promise<string | null> => {
     if (!db || !userId) return 'Band press kits require cloud sync.';
@@ -1012,6 +1059,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const parsedInputLists = snapshot.docs
       .map((entry) => parseInputListTrashRecord(entry.id, entry.data() as Record<string, unknown>))
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+    const parsedPressKits = snapshot.docs
+      .map((entry) => parsePressKitTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
     const parsedPressKitImages = snapshot.docs
       .map((entry) => parsePressKitImageTrashRecord(entry.id, entry.data() as Record<string, unknown>))
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
@@ -1051,6 +1101,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         deletedAt: entry.deletedAt,
         purgeAt: entry.purgeAt,
         inputList: entry.data,
+      })),
+      ...parsedPressKits.map((entry) => ({
+        bandId,
+        trashId: entry.id,
+        itemType: 'pressKit' as const,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+        pressKit: entry.data,
       })),
       ...parsedPressKitImages.map((entry) => ({
         bandId,
@@ -3199,6 +3257,46 @@ export function BandsProvider({ children }: { children: ReactNode }) {
           [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
         }));
         return error instanceof Error ? error.message : 'Failed to restore band input list.';
+      }
+    }
+
+    if (target.itemType === 'pressKit') {
+      const previousPressKits = bandPressKitsByBandId[bandId] ?? [];
+      const restoredPressKit: PressKit = {
+        ...target.pressKit,
+      };
+      const nextPressKits = [
+        ...previousPressKits.filter((entry) => entry.id !== restoredPressKit.id),
+        restoredPressKit,
+      ];
+
+      setBandPressKitsByBandId((prev) => ({
+        ...prev,
+        [bandId]: nextPressKits,
+      }));
+
+      try {
+        const { id, ...restoredPayload } = restoredPressKit;
+        const payload = Object.fromEntries(
+          Object.entries(restoredPayload).filter(([, value]) => value !== undefined)
+        );
+
+        await Promise.all([
+          setDoc(doc(firestore, BANDS_COLLECTION, bandId, BAND_PRESS_KITS_COLLECTION, id), payload),
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId)),
+        ]);
+
+        return null;
+      } catch (error) {
+        setBandPressKitsByBandId((prev) => ({
+          ...prev,
+          [bandId]: previousPressKits,
+        }));
+        setBandTrashByBandId((prev) => ({
+          ...prev,
+          [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
+        }));
+        return error instanceof Error ? error.message : 'Failed to restore press kit.';
       }
     }
 

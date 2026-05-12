@@ -182,7 +182,7 @@ export interface InputList extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'technicalRider' | 'pressKitImage' | 'bandLogo';
+export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'technicalRider' | 'pressKit' | 'pressKitImage' | 'bandLogo';
 
 export interface PressKit {
   id: string;
@@ -221,6 +221,11 @@ export interface TrashedSetlist extends TrashMetadata {
 export interface TrashedInputList extends TrashMetadata {
   itemType: 'technicalRider';
   inputList: InputList;
+}
+
+export interface TrashedPressKit extends TrashMetadata {
+  itemType: 'pressKit';
+  pressKit: PressKit;
 }
 
 export interface TrashedPressKitImage extends TrashMetadata {

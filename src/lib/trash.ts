@@ -1,4 +1,4 @@
-import type { Setlist, Song, SongList, InputList, TrashItemType } from '../types';
+import type { Setlist, Song, SongList, InputList, PressKit, TrashItemType } from '../types';
 
 export const TRASH_COLLECTION = 'trashItems';
 export const TRASH_RETENTION_DAYS = 30;
@@ -113,6 +113,24 @@ export function parseInputListTrashRecord(id: string, raw: Record<string, unknow
   return {
     id,
     itemType: 'technicalRider',
+    deletedAt: raw.deletedAt,
+    purgeAt: raw.purgeAt,
+    data,
+  };
+}
+
+export function parsePressKitTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<PressKit> | null {
+  if (raw.itemType !== 'pressKit') return null;
+  if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
+  if (!raw.data || typeof raw.data !== 'object') return null;
+
+  const data = raw.data as PressKit;
+  if (typeof data.id !== 'string' || typeof data.name !== 'string' || typeof data.richText !== 'string') return null;
+  if (!Array.isArray(data.imageIds)) return null;
+
+  return {
+    id,
+    itemType: 'pressKit',
     deletedAt: raw.deletedAt,
     purgeAt: raw.purgeAt,
     data,

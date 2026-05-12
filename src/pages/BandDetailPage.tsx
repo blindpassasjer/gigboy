@@ -576,6 +576,16 @@ export default function BandDetailPage() {
         };
       }
 
+      if (entry.itemType === 'pressKit') {
+        return {
+          trashId: entry.trashId,
+          itemType: 'pressKit' as const,
+          name: entry.pressKit.name,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
       if (entry.itemType === 'pressKitImage') {
         return {
           itemType: 'pressKitImage' as const,
