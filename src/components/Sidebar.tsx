@@ -114,9 +114,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     ? 'Loading...'
     : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)} (${storagePercent}%)`;
   const visibleBands = bands;
-  // Users can only create 1 free band. Any additional band requires checkout/subscription.
-  const ownedFreeBandCount = bands.filter((b) => b.ownerId === user?.id && (!b.billingPlan || b.billingPlan === 'free')).length;
-  const requiresUpgradeForAdditionalBands = ownedFreeBandCount >= 1;
+  // Users get 1 band free. Any additional band requires payment.
+  const ownedBandCount = bands.filter((b) => b.ownerId === user?.id).length;
+  const requiresUpgradeForAdditionalBands = ownedBandCount >= 1;
 
   // Auto-select first band if active band is missing
   useEffect(() => {
@@ -241,27 +241,31 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     setDraftName('');
     setAddingBand(false);
     if (name) {
-      if (requiresUpgradeForAdditionalBands) {
-        toast.error('Create more bands by upgrading on the billing page.');
-        navigate('/pricing', {
-          state: {
-            source: 'sidebar-new-band',
-            requestedBandName: name,
-            bandId: activeBandId,
-          },
-        });
-        return;
-      }
-
-      const result = await createBand(name);
+      // If user already owns a band, bypass the limit check to create this band temporarily.
+      // After checkout, it will get a paid subscription.
+      const result = await createBand(name, undefined, undefined, {
+        bypassBandLimitCheck: requiresUpgradeForAdditionalBands,
+      });
       if (result.bandId) {
-        setActiveBandId(result.bandId);
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem('gigboy-active-band-id', result.bandId);
+        // If user needs to pay for this band, redirect to pricing with the band ID
+        if (requiresUpgradeForAdditionalBands) {
+          navigate('/pricing', {
+            state: {
+              source: 'sidebar-new-band',
+              bandId: result.bandId,
+                         requestedBandName: name,
+            },
+          });
+        } else {
+          // First band is free, navigate directly to it
+          setActiveBandId(result.bandId);
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem('gigboy-active-band-id', result.bandId);
+          }
+          clearGlobalSelection();
+          navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
+          onNavigate?.();
         }
-        clearGlobalSelection();
-        navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
-        onNavigate?.();
       } else if (result.error) {
         if (
           result.error.includes('Free tier accounts can only create one band workspace')
@@ -542,17 +546,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             title="New band"
             aria-label="Create new band"
             onClick={() => {
-              // If user lacks active Pro/Crew access and already owns a band, redirect to billing immediately
-              if (requiresUpgradeForAdditionalBands) {
-                toast.error('Create more bands by upgrading on the billing page.');
-                navigate('/pricing', {
-                  state: {
-                    source: 'sidebar-new-band',
-                    bandId: activeBandId,
-                  },
-                });
-                return;
-              }
               setAddingBand(true);
               setDraftName('');
             }}

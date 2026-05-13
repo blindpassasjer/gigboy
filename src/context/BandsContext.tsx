@@ -1160,16 +1160,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return { bandId: null, error: 'Band name is required.' };
     }
 
-    // First band is free; additional bands require checkout/subscription.
+    // First band is free; additional bands require payment via checkout.
     if (!options?.bypassBandLimitCheck) {
-      const ownedFreeBandCount = bands.filter(
-        (b) => b.ownerId === userId && (!b.billingPlan || b.billingPlan === 'free')
-      ).length;
+      const ownedBandCount = bands.filter((b) => b.ownerId === userId).length;
 
-      if (ownedFreeBandCount >= 1) {
+      if (ownedBandCount >= 1) {
         return {
           bandId: null,
-          error: 'You can only have one free band. Create additional bands by subscribing to a Pro or Crew plan for each.',
+          error: 'Additional bands require a paid Pro or Crew subscription for each.',
         };
       }
     }

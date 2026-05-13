@@ -30,17 +30,16 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       return Response.json({ error: 'Band description must be 240 characters or fewer.' }, { status: 400 });
     }
 
-    // First band is free for everyone. Additional bands require checkout/subscription.
+    // First band is free for everyone. Additional bands require paid subscription.
     const profile = await getFirestoreDocument(ctx.env, ['users', userId]);
     const planOverride = profile?.planOverride === true;
 
-    // If user already owns any band, they've used their free band slot.
-    // They can't create more free bands without paying.
+    // If user already owns any band, they need to pay for the next one
     const ownedBandCount = await countFirestoreDocumentsByField(ctx.env, 'bands', 'ownerId', userId);
 
     if (ownedBandCount >= 1 && !planOverride) {
       return Response.json(
-        { error: 'You can only have one free band. Create additional bands by subscribing to a Pro or Crew plan for each.' },
+        { error: 'Additional bands require a paid Pro or Crew subscription for each.' },
         { status: 403 }
       );
     }
