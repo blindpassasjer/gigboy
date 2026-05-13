@@ -413,7 +413,7 @@ interface BandsContextValue {
   loading: boolean;
   cloudRequired: boolean;
   refreshBands: () => Promise<void>;
-  createBand: (name: string, description?: string, icon?: string, options?: { bypassBandLimitCheck?: boolean }) => Promise<{ bandId: string | null; error: string | null }>;
+  createBand: (name: string, description?: string, icon?: string) => Promise<{ bandId: string | null; error: string | null }>;
   deleteBand: (bandId: string) => Promise<string | null>;
   renameBand: (bandId: string, name: string) => Promise<string | null>;
   updateBandDescription: (bandId: string, description: string) => Promise<string | null>;
@@ -1150,7 +1150,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }));
   }, [userId]);
 
-  const createBand = useCallback(async (name: string, description?: string, icon?: string, options?: { bypassBandLimitCheck?: boolean }) => {
+  const createBand = useCallback(async (name: string, description?: string, icon?: string) => {
     if (!userId) {
       return { bandId: null, error: 'Bands require a signed-in account.' };
     }
@@ -1161,15 +1161,13 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
 
     // First band is free; additional bands require payment via checkout.
-    if (!options?.bypassBandLimitCheck) {
-      const ownedBandCount = bands.filter((b) => b.ownerId === userId).length;
+    const ownedBandCount = bands.filter((b) => b.ownerId === userId).length;
 
-      if (ownedBandCount >= 1) {
-        return {
-          bandId: null,
-          error: 'Additional bands require a paid Pro or Crew subscription for each.',
-        };
-      }
+    if (ownedBandCount >= 1) {
+      return {
+        bandId: null,
+        error: 'Additional bands require a paid Pro or Crew subscription for each.',
+      };
     }
 
     try {

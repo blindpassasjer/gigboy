@@ -116,9 +116,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     ? 'Loading...'
     : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)} (${storagePercent}%)`;
   const visibleBands = bands;
-  // Users get 1 band free. Any additional band requires payment.
-  const ownedBandCount = bands.filter((b) => b.ownerId === user?.id).length;
-  const requiresUpgradeForAdditionalBands = ownedBandCount >= 1;
 
   // Auto-select first band if active band is missing
   useEffect(() => {
@@ -243,43 +240,26 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     setDraftName('');
     setAddingBand(false);
     if (name) {
-      // If user already owns a band, bypass the limit check to create this band temporarily.
-      // After checkout, it will get a paid subscription.
-      const result = await createBand(name, undefined, undefined, {
-        bypassBandLimitCheck: requiresUpgradeForAdditionalBands,
-      });
+      const result = await createBand(name, undefined, undefined);
       if (result.bandId) {
-        // If user needs to pay for this band, redirect to pricing with the band ID
-        if (requiresUpgradeForAdditionalBands) {
-          navigate('/pricing', {
-            state: {
-              source: 'sidebar-new-band',
-              bandId: result.bandId,
-                         requestedBandName: name,
-            },
-          });
-        } else {
-          // First band is free, navigate directly to it
-          setActiveBandId(result.bandId);
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem('gigboy-active-band-id', result.bandId);
-          }
-          clearGlobalSelection();
-          navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
-          onNavigate?.();
+        // First band is free, navigate directly to it
+        setActiveBandId(result.bandId);
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('gigboy-active-band-id', result.bandId);
         }
+        clearGlobalSelection();
+        navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
+        onNavigate?.();
       } else if (result.error) {
         if (
           result.error.includes('Free tier accounts can only create one band workspace')
           || result.error.includes('Additional bands require a Pro or Crew subscription')
           || result.error.includes('one free band')
         ) {
-          toast.error('Create more bands by upgrading on the billing page.');
           navigate('/pricing', {
             state: {
-              source: 'sidebar-new-band',
+              source: 'create-new-band',
               requestedBandName: name,
-              bandId: activeBandId,
             },
           });
         } else {

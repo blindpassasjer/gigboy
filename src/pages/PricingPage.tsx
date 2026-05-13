@@ -165,6 +165,7 @@ export default function PricingPage() {
     requestedBandName?: unknown;
   } | null) ?? null;
   const redirectedFromSidebarNewBand = pricingState?.source === 'sidebar-new-band';
+  const redirectedFromCreateNewBand = pricingState?.source === 'create-new-band';
   const requestedBandName = typeof pricingState?.requestedBandName === 'string'
     ? pricingState.requestedBandName.trim()
     : '';
@@ -206,7 +207,7 @@ export default function PricingPage() {
     }
 
     const isBandPlan = card.tier === 'crew' || card.tier === 'pro';
-    if (isBandPlan && !selectedBandId) {
+    if (isBandPlan && !redirectedFromCreateNewBand && !selectedBandId) {
       toast.error('Select which band you want to upgrade before continuing.');
       return;
     }
@@ -234,7 +235,10 @@ export default function PricingPage() {
         priceId,
         successUrl: `${window.location.origin}/checkout-result?status=success`,
         cancelUrl: `${window.location.origin}/checkout-result?status=cancel`,
-        ...(isBandPlan ? { bandId: selectedBandId } : {}),
+        ...(isBandPlan && !redirectedFromCreateNewBand ? { bandId: selectedBandId } : {}),
+        ...(redirectedFromCreateNewBand && requestedBandName
+          ? { newBandData: { name: requestedBandName } }
+          : {}),
         ...(normalizedExtraMembers > 0 && extraMemberPriceId
           ? {
             extraMemberPriceId,
@@ -275,6 +279,13 @@ export default function PricingPage() {
             {requestedBandName
               ? `You already used your free band. Upgrade below to create "${requestedBandName}" as a paid workspace.`
               : 'You already used your free band. Upgrade below to create another paid workspace.'}
+          </div>
+        ) : null}
+        {redirectedFromCreateNewBand ? (
+          <div className="pricing-hero-notice">
+            {requestedBandName
+              ? `Subscribe below to create "${requestedBandName}" as a new band workspace.`
+              : 'Subscribe below to create a new band workspace.'}
           </div>
         ) : null}
         <div className="pricing-hero-actions">
@@ -336,7 +347,7 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              {card.tier === 'crew' || card.tier === 'pro' ? (
+              {(card.tier === 'crew' || card.tier === 'pro') && !redirectedFromCreateNewBand ? (
                 <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
                   <span>Band workspace</span>
                   <select
@@ -372,12 +383,12 @@ export default function PricingPage() {
                 <button
                   type="button"
                   className="setlist-action-btn pricing-card-btn"
-                  disabled={busyTier === card.tier || isCurrentPlan || ((card.tier === 'crew' || card.tier === 'pro') && ownedBands.length === 0)}
+                  disabled={busyTier === card.tier || isCurrentPlan || ((card.tier === 'crew' || card.tier === 'pro') && !redirectedFromCreateNewBand && ownedBands.length === 0)}
                   onClick={() => void handleCheckout(card)}
                 >
                   {busyTier === card.tier
                     ? 'Redirecting…'
-                    : (card.tier === 'crew' || card.tier === 'pro') && ownedBands.length === 0
+                    : (card.tier === 'crew' || card.tier === 'pro') && !redirectedFromCreateNewBand && ownedBands.length === 0
                       ? 'Create a band first'
                       : ctaLabel}
                 </button>

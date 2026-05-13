@@ -138,6 +138,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
     extraMemberPriceId?: string;
     extraMemberCount?: number;
     bandId?: string;
+    newBandData?: { name?: string };
   }>().catch(() => null);
 
   if (!body?.priceId || !body?.successUrl || !body?.cancelUrl) {
@@ -201,12 +202,44 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       return Response.json({ error: 'Extra member add-on is not configured for this environment.' }, { status: 400 });
     }
 
-    if ((requestedPlan === 'crew' || requestedPlan === 'pro') && !requestedBandId) {
+    // Handle band creation or retrieval
+    const hasNewBandData = typeof body.newBandData === 'object' && body.newBandData !== null;
+    const newBandName = hasNewBandData && typeof body.newBandData.name === 'string'
+      ? body.newBandData.name.trim()
+      : '';
+
+    let bandIdToUse = requestedBandId;
+
+    if (hasNewBandData && newBandName) {
+      // Creating a new band for this subscription
+      if (requestedPlan !== 'crew' && requestedPlan !== 'pro') {
+        return Response.json({ error: 'New bands must be on Pro or Crew plans.' }, { status: 400 });
+      }
+
+      // Create the band document
+      const bandId = `band_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await setFirestoreDocument(ctx.env, ['bands', bandId], {
+        id: bandId,
+        name: newBandName,
+        ownerId: userId,
+        createdAt: Math.floor(Date.now() / 1000),
+        billingPlan: requestedPlan,
+        billingSubscriptionStatus: 'incomplete', // Will be updated to active after payment
+        billingCurrentPeriodEnd: null,
+        billingExtraMembers: 0,
+        billingMemberLimit: requestedPlan === 'crew' ? 6 : 1, // Crew allows 5 members + owner
+        stripeCustomerId: customerId, // Store here temporarily; will update after subscription
+        stripeSubscriptionId: null,
+        stripeBandItemId: null,
+        stripeExtraMembersItemId: null,
+      });
+      bandIdToUse = bandId;
+    } else if ((requestedPlan === 'crew' || requestedPlan === 'pro') && !requestedBandId) {
       return Response.json({ error: 'bandId is required for Pro and Crew subscriptions.' }, { status: 400 });
     }
 
     if (requestedPlan === 'crew' || requestedPlan === 'pro') {
-      const band = await getFirestoreDocument(ctx.env, ['bands', requestedBandId]);
+      const band = await getFirestoreDocument(ctx.env, ['bands', bandIdToUse]);
       if (!band) {
         return Response.json({ error: 'Band not found.' }, { status: 404 });
       }
@@ -234,14 +267,14 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       if (aggregateSubscription) {
         const existingBaseItem = aggregateSubscription.items.data.find((item) => {
           const priceId = item.price?.id ?? '';
-          return isBandBasePriceId(priceId, ctx.env) && item.metadata?.bandId === requestedBandId;
+          return isBandBasePriceId(priceId, ctx.env) && item.metadata?.bandId === bandIdToUse;
         }) ?? null;
 
         const existingExtraItem = aggregateSubscription.items.data.find((item) => {
           const priceId = item.price?.id ?? '';
           const isExtra = priceId === ctx.env.STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID
             || priceId === ctx.env.STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID;
-          return isExtra && item.metadata?.bandId === requestedBandId;
+          return isExtra && item.metadata?.bandId === bandIdToUse;
         }) ?? null;
 
         const subscriptionItems: Stripe.SubscriptionUpdateParams.Item[] = [];
@@ -252,7 +285,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
             price: body.priceId,
             quantity: 1,
             metadata: {
-              bandId: requestedBandId,
+              bandId: bandIdToUse,
               itemType: 'band_base',
             },
           });
@@ -261,7 +294,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
             price: body.priceId,
             quantity: 1,
             metadata: {
-              bandId: requestedBandId,
+              bandId: bandIdToUse,
               itemType: 'band_base',
             },
           });
@@ -274,7 +307,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
               price: body.extraMemberPriceId,
               quantity: requestedExtraMemberCount,
               metadata: {
-                bandId: requestedBandId,
+                bandId: bandIdToUse,
                 itemType: 'band_extra_members',
               },
             });
@@ -283,7 +316,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
               price: body.extraMemberPriceId,
               quantity: requestedExtraMemberCount,
               metadata: {
-                bandId: requestedBandId,
+                bandId: bandIdToUse,
                 itemType: 'band_extra_members',
               },
             });
@@ -307,8 +340,8 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
 
         await writeBandBillingSnapshot(
           ctx.env as Record<string, string | undefined>,
-          requestedBandId,
-          toBandBillingSnapshot(updatedSubscription, ctx.env, requestedBandId),
+          bandIdToUse,
+          toBandBillingSnapshot(updatedSubscription, ctx.env, bandIdToUse),
           requestedPlan === 'pro' ? 'pro' : 'crew'
         );
 
@@ -349,7 +382,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       allow_promotion_codes: true,
       metadata: {
         firebaseUid: userId,
-        ...(requestedPlan === 'crew' || requestedPlan === 'pro' ? { bandId: requestedBandId } : {}),
+        ...(requestedPlan === 'crew' || requestedPlan === 'pro' ? { bandId: bandIdToUse } : {}),
       },
       subscription_data: {
         metadata: {
