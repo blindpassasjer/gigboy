@@ -292,7 +292,7 @@ export default function ProfilePage() {
             <p>@{user.username ?? 'setup'} · {user.email}</p>
             <div className="profile-account-badges">
               <span className="profile-account-badge profile-account-badge--plan">
-                <Sparkles size={14} /> Access: {planState.planLabel}
+                <Sparkles size={14} /> Free account
               </span>
               <span className={`profile-account-badge ${paidOwnedBands.length > 0 ? 'profile-account-badge--billing' : 'profile-account-badge--billing-empty'}`}>
                 <BadgeCheck size={14} /> {paidOwnedBands.length > 0 ? `${paidOwnedBands.length} paid band${paidOwnedBands.length === 1 ? '' : 's'}` : 'No paid bands'}
@@ -345,16 +345,16 @@ export default function ProfilePage() {
           </div>
           <div className="profile-limit-grid">
             <article className="profile-limit-card">
-              <span>Songs</span>
-              <strong>{planState.songLimit === null ? 'Unlimited' : `${planState.songLimit} songs`}</strong>
+              <span>Paid bands</span>
+              <strong>{paidOwnedBands.length} active</strong>
             </article>
             <article className="profile-limit-card">
-              <span>Current access</span>
-              <strong>{planState.planLabel}</strong>
+              <span>Total bands</span>
+              <strong>{ownedBands.length} owned</strong>
             </article>
             <article className="profile-limit-card">
-              <span>Member capacity</span>
-              <strong>{planState.memberLimit} member{planState.memberLimit === 1 ? '' : 's'}</strong>
+              <span>Storage</span>
+              <strong>{storageUsage.loading ? 'Loading…' : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)}`}</strong>
             </article>
           </div>
           {ownedBands.length > 0 ? (
@@ -396,15 +396,6 @@ export default function ProfilePage() {
               ) : null}
             </div>
           ) : null}
-          <div className="profile-feature-chips" aria-label="Included paid features">
-            <span className={planState.canUse('setlists') ? 'is-enabled' : ''}>Setlists</span>
-            <span className={planState.canUse('technicalRiders') ? 'is-enabled' : ''}>Technical riders</span>
-            <span className={planState.canUse('shareableLinks') ? 'is-enabled' : ''}>Sharing</span>
-            <span className={planState.canUse('bluetoothPedal') ? 'is-enabled' : ''}>Bluetooth pedal</span>
-            <span className={planState.canUse('recordings') ? 'is-enabled' : ''}>Recordings</span>
-            <span className={planState.canUse('metronome') ? 'is-enabled' : ''}>Metronome</span>
-            <span className={planState.canUse('multiUserNotes') ? 'is-enabled' : ''}>Multi-user notes</span>
-          </div>
           <div className="profile-subscription-actions">
             {user.stripeCustomerId ? (
               <button

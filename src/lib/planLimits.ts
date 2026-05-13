@@ -73,8 +73,6 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
   },
 };
 
-const PLAN_ORDER: Record<PlanTier, number> = { free: 0, pro: 1, crew: 2 };
-
 function isBandPlanActive(plan: PlanTier, subscriptionStatus: string | null | undefined) {
   if (plan === 'free') return true;
   if (subscriptionStatus === 'active' || subscriptionStatus === 'trialing') return true;
@@ -85,31 +83,16 @@ function isBandPlanActive(plan: PlanTier, subscriptionStatus: string | null | un
 
 /**
  * Pure function: can the given feature be used in the context of a specific band?
- * Uses the higher of the user's plan and the band's billingPlan.
- * Pass `planOverride: true` to bypass all checks (admin/demo).
+ * Uses the band's billingPlan as authoritative for band-scoped features.
  */
-export function bandCanUse(
-  band: Band | null,
-  userPlan: PlanTier,
-  userSubscriptionStatus: string | null,
-  planOverride: boolean,
-  feature: ProFeature
-): boolean {
-  if (planOverride) return true;
+export function bandCanUse(band: Band | null, feature: ProFeature): boolean {
+  if (!band) return false;
 
-  const bandPlan: PlanTier = band?.billingPlan === 'pro' || band?.billingPlan === 'crew'
+  const bandPlan: PlanTier = band.billingPlan === 'pro' || band.billingPlan === 'crew'
     ? band.billingPlan
     : 'free';
-  const bandActive = isBandPlanActive(bandPlan, band?.billingSubscriptionStatus);
+  const bandActive = isBandPlanActive(bandPlan, band.billingSubscriptionStatus);
 
-  const userActive = userPlan === 'free'
-    || userSubscriptionStatus === 'active'
-    || userSubscriptionStatus === 'trialing';
-
-  const effectivePlan: PlanTier =
-    (PLAN_ORDER[bandPlan] >= PLAN_ORDER[userPlan] && bandActive) ? bandPlan : userPlan;
-  const effectiveActive = effectivePlan === bandPlan ? bandActive : userActive;
-
-  if (!effectiveActive && effectivePlan !== 'free') return false;
-  return PLAN_FEATURE_ACCESS[effectivePlan][feature];
+  if (!bandActive) return false;
+  return PLAN_FEATURE_ACCESS[bandPlan][feature];
 }

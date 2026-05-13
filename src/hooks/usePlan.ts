@@ -17,7 +17,6 @@ function isBandPlanActive(plan: PlanTier, subscriptionStatus: string | null) {
   return false;
 }
 
-const PLAN_ORDER: Record<PlanTier, number> = { free: 0, pro: 1, crew: 2 };
 
 export function usePlan() {
   const { user } = useAuth();
@@ -53,35 +52,33 @@ export function usePlan() {
 
 /**
  * Returns effective plan state for a specific band workspace.
- * Elevates the user's plan to the band's billingPlan when the band has a higher tier.
+ * Uses the band's billingPlan as authoritative.
  */
 export function useBandPlan(band: Band | null) {
-  const { user } = useAuth();
-
   return useMemo(() => {
-    const userPlan: PlanTier = user?.plan ?? 'free';
-    const planOverride = user?.planOverride === true;
     const bandPlan: PlanTier = band?.billingPlan === 'pro' || band?.billingPlan === 'crew'
       ? band.billingPlan
       : 'free';
     const bandStatus = band?.billingSubscriptionStatus ?? null;
     const bandPlanActive = isBandPlanActive(bandPlan, bandStatus);
-
-    // Effective plan = highest of user plan and band plan
-    const effectivePlan: PlanTier = (PLAN_ORDER[bandPlan] >= PLAN_ORDER[userPlan] && bandPlanActive)
-      ? bandPlan
-      : userPlan;
-    const userActive = isPlanActive(userPlan, user?.subscriptionStatus ?? null, planOverride);
-    const effectiveActive = effectivePlan === 'free' || (effectivePlan === bandPlan ? bandPlanActive : userActive);
+    const limits = PLAN_LIMITS[bandPlan];
 
     return {
-      plan: effectivePlan,
-      isCrew: effectivePlan === 'crew' && effectiveActive,
-      canUse(feature: ProFeature): boolean {
-        if (planOverride) return true;
-        if (!effectiveActive) return false;
-        return PLAN_FEATURE_ACCESS[effectivePlan][feature];
+      plan: bandPlan,
+      planLabel: PLAN_LABELS[bandPlan],
+      isActive: bandPlanActive,
+      isFree: bandPlan === 'free',
+      isPro: bandPlanActive && (bandPlan === 'pro' || bandPlan === 'crew'),
+      isCrew: bandPlanActive && bandPlan === 'crew',
+      planOverride: false, // Band plans don't have override
+      subscriptionStatus: bandStatus,
+      songLimit: limits.songLimit,
+      storageQuotaBytes: limits.storageQuotaBytes,
+      memberLimit: limits.memberLimit,
+      canUse(feature: ProFeature) {
+        if (!bandPlanActive) return false;
+        return PLAN_FEATURE_ACCESS[bandPlan][feature];
       },
     };
-  }, [band, user]);
+  }, [band]);
 }

@@ -28,16 +28,7 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       return Response.json({ error: 'Technical rider name must be 150 characters or fewer.' }, { status: 400 });
     }
 
-    // Get user profile to check plan
-    const userProfile = await getFirestoreDocument(ctx.env, ['users', userId]);
-    const userPlan = userProfile?.plan === 'pro' || userProfile?.plan === 'crew' ? userProfile.plan : 'free';
-    const userSubscriptionStatus = userProfile?.subscriptionStatus;
-    const userPlanOverride = userProfile?.planOverride === true;
-
-    // Determine if user's plan is active
-    const isUserPlanActive = userPlan === 'free' || userPlanOverride || userSubscriptionStatus === 'active' || userSubscriptionStatus === 'trialing';
-
-    // Get band to check its plan (band plan can override user plan)
+    // Get band to check its plan
     const band = await getFirestoreDocument(ctx.env, ['bands', bandId]);
     if (!band) {
       return Response.json({ error: 'Band not found.' }, { status: 404 });
@@ -50,24 +41,13 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       return Response.json({ error: 'You do not have permission to create technical riders for this band.' }, { status: 403 });
     }
 
-    // Determine effective plan (higher of user plan and band plan)
+    // Determine band plan
     const bandPlan = band.billingPlan === 'pro' || band.billingPlan === 'crew' ? band.billingPlan : 'free';
     const bandSubscriptionStatus = band.billingSubscriptionStatus;
     const isBandPlanActive = bandPlan === 'free' || bandSubscriptionStatus === 'active' || bandSubscriptionStatus === 'trialing';
 
-    // Determine which plan to use
-    let effectivePlan = userPlan;
-    let effectiveActive = isUserPlanActive;
-
-    if (bandPlan === 'pro' || bandPlan === 'crew') {
-      if (isBandPlanActive) {
-        effectivePlan = bandPlan;
-        effectiveActive = true;
-      }
-    }
-
     // Technical riders require Pro or Crew plan
-    if (effectivePlan === 'free' || !effectiveActive) {
+    if (bandPlan === 'free' || !isBandPlanActive) {
       return Response.json(
         { error: 'Technical riders require a Pro or Crew plan. Upgrade to create technical riders for this band.' },
         { status: 403 }

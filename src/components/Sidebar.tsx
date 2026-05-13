@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Newspaper,
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
-import { usePlan } from '../hooks/usePlan';
+import { useBandPlan } from '../hooks/usePlan';
 import { bandCanUse } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
@@ -60,7 +60,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   })();
   const { songs } = useSongs();
   const { clearActiveSelection } = useSongLists();
-  const { storageQuotaBytes } = usePlan();
   const { user } = useAuth();
 
   const {
@@ -106,6 +105,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (typeof window === 'undefined') return null;
     try { return window.localStorage.getItem('gigboy-active-band-id'); } catch { return null; }
   });
+  const activeBand = bands.find(b => b.id === activeBandId) || null;
+  const bandPlan = useBandPlan(activeBand);
+  const storageQuotaBytes = bandPlan.storageQuotaBytes;
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const bandSwitcherRef = useRef<HTMLDivElement>(null);
   const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes, activeBandId);
@@ -694,10 +696,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'setlists') ? 'New band setlist' : 'Upgrade this band to Pro or Crew to create setlists'}
+                    title={bandCanUse(band, 'setlists') ? 'New band setlist' : 'Upgrade this band to Pro or Crew to create setlists'}
                     aria-label="Create new band setlist"
                     onClick={() => {
-                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'setlists')) {
+                      if (!bandCanUse(band, 'setlists')) {
                         toast.error('Setlists require a Pro or Crew plan for this band.');
                         return;
                       }
@@ -765,10 +767,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders') ? 'New technical rider' : 'Upgrade this band to Pro or Crew to create technical riders'}
+                    title={bandCanUse(band, 'technicalRiders') ? 'New technical rider' : 'Upgrade this band to Pro or Crew to create technical riders'}
                     aria-label="Create new technical rider"
                     onClick={() => {
-                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders')) {
+                      if (!bandCanUse(band, 'technicalRiders')) {
                         toast.error('Technical riders require a Pro or Crew plan for this band.');
                         return;
                       }
@@ -831,10 +833,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders') ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
+                    title={bandCanUse(band, 'pressKits') ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
                     aria-label="Create new press kit"
                     onClick={() => {
-                      if (!bandCanUse(band, user?.plan ?? 'free', user?.subscriptionStatus ?? null, user?.planOverride === true, 'technicalRiders')) {
+                      if (!bandCanUse(band, 'pressKits')) {
                         toast.error('Press kits require a Pro or Crew plan for this band.');
                         return;
                       }
