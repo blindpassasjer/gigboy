@@ -118,7 +118,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const hasActivePaidBandCreationAccess = user?.planOverride === true
     || ((user?.plan === 'pro' || user?.plan === 'crew')
       && (user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing'));
-  const requiresUpgradeForAdditionalBands = ownedBandCount > 0 && !hasActivePaidBandCreationAccess;
+  // Users can only create 1 free band. Any additional band requires checkout/subscription.
+  const ownedFreeBandCount = bands.filter((b) => b.ownerId === user?.id && (!b.billingPlan || b.billingPlan === 'free')).length;
+  const requiresUpgradeForAdditionalBands = ownedFreeBandCount >= 1;
 
   // Auto-select first band if active band is missing
   useEffect(() => {
