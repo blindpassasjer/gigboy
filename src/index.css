@@ -7558,6 +7558,20 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
 }
 
+.pricing-source-banner {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: min(100%, 62ch);
+  padding: .62rem .86rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: color-mix(in srgb, var(--fg) 90%, var(--accent));
+  font-size: .92rem;
+  line-height: 1.45;
+}
+
 .pricing-hero-back-link {
   min-height: 2.7rem;
   padding: .75rem 1.3rem;

@@ -10,7 +10,6 @@ import { bandCanUse } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
-import BandUpgradeModal from './BandUpgradeModal';
 
 function formatStorageBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) {
@@ -95,8 +94,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [addingBandInputListId, setAddingBandInputListId] = useState<string | null>(null);
   const [addingBandPressKitId, setAddingBandPressKitId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [pendingBandName, setPendingBandName] = useState('');
   const [bandLibraryDropTargetId, setBandLibraryDropTargetId] = useState<string | null>(null);
   const [bandSongListDropTargetId, setBandSongListDropTargetId] = useState<string | null>(null);
   const [bandSetlistDropTargetId, setBandSetlistDropTargetId] = useState<string | null>(null);
@@ -250,10 +247,15 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
         onNavigate?.();
       } else if (result.error) {
-        // Check if this is the "free band limit" error
-        if (result.error.includes('Users can only have one free band')) {
-          setPendingBandName(name);
-          setShowUpgradeModal(true);
+        if (result.error.includes('Free tier accounts can only create one band workspace')) {
+          toast.error('Create more bands by upgrading on the billing page.');
+          navigate('/pricing', {
+            state: {
+              source: 'sidebar-new-band',
+              requestedBandName: name,
+              bandId: activeBandId,
+            },
+          });
         } else {
           toast.error(result.error);
         }
@@ -520,12 +522,17 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             title="New band"
             aria-label="Create new band"
             onClick={() => {
-              // If user already owns a free band, force them to upgrade for additional bands
-              const userOwnedBands = bands.filter((b) => b.ownerId === user?.id);
-              const hasFreeBand = userOwnedBands.some((b) => !b.billingPlan || b.billingPlan === 'free');
-              if (hasFreeBand) {
-                setPendingBandName('');
-                setShowUpgradeModal(true);
+              // If user is on free plan and already owns a band, redirect to billing immediately
+              const userPlan = user?.plan ?? 'free';
+              const ownedBandCount = bands.filter((b) => b.ownerId === user?.id).length;
+              if (userPlan === 'free' && ownedBandCount > 0) {
+                toast.error('Create more bands by upgrading on the billing page.');
+                navigate('/pricing', {
+                  state: {
+                    source: 'sidebar-new-band',
+                    bandId: activeBandId,
+                  },
+                });
                 return;
               }
               setAddingBand(true);
@@ -874,16 +881,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           ))}
         </div>
       </div>
-      )}
-
-      {showUpgradeModal && (
-        <BandUpgradeModal
-          bandName={pendingBandName}
-          onClose={() => {
-            setShowUpgradeModal(false);
-            setPendingBandName('');
-          }}
-        />
       )}
     </aside>
     </div>

@@ -159,8 +159,17 @@ export default function PricingPage() {
   const [extraMemberCount, setExtraMemberCount] = useState(0);
 
   const ownedBands = bands.filter((band) => band.ownerId === user?.id);
+  const pricingState = (location.state as {
+    bandId?: unknown;
+    source?: unknown;
+    requestedBandName?: unknown;
+  } | null) ?? null;
+  const redirectedFromSidebarNewBand = pricingState?.source === 'sidebar-new-band';
+  const requestedBandName = typeof pricingState?.requestedBandName === 'string'
+    ? pricingState.requestedBandName.trim()
+    : '';
   const stateBandId = (() => {
-    const candidate = (location.state as { bandId?: unknown } | null)?.bandId;
+    const candidate = pricingState?.bandId;
     return typeof candidate === 'string' ? candidate : '';
   })();
   const initialBandId = ownedBands.some((band) => band.id === stateBandId)
@@ -261,6 +270,13 @@ export default function PricingPage() {
         <p>
           Every account gets one free band. Upgrade individual bands to Pro (all features for one member) or Crew (all features + up to 5 members).
         </p>
+        {redirectedFromSidebarNewBand ? (
+          <div className="pricing-source-banner" role="status">
+            {requestedBandName
+              ? `You already used your free band. Upgrade below to create "${requestedBandName}" as a paid workspace.`
+              : 'You already used your free band. Upgrade below to create another paid workspace.'}
+          </div>
+        ) : null}
         <div className="pricing-hero-actions">
           <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-hero-back-link">
             Back to account
