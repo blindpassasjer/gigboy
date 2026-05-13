@@ -43,6 +43,7 @@ export async function createCheckoutSession(params: {
   successUrl: string;
   cancelUrl: string;
   bandId?: string;
+  newBandData?: { name?: string };
   extraMemberPriceId?: string;
   extraMemberCount?: number;
 }) {

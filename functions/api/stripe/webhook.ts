@@ -1,6 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import Stripe from 'stripe';
-import { setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
 import {
   getStripeClient,
   updateUserPlan,
@@ -152,6 +152,21 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
         const checkoutBandId = typeof session.metadata?.bandId === 'string'
           ? session.metadata.bandId.trim()
           : '';
+        const pendingBandName = typeof session.metadata?.pendingBandName === 'string'
+          ? session.metadata.pendingBandName.trim()
+          : '';
+
+        if (pendingBandName && checkoutBandId) {
+          const existingBand = await getFirestoreDocument(env, ['bands', checkoutBandId]);
+          if (!existingBand) {
+            await setFirestoreDocument(env, ['bands', checkoutBandId], {
+              id: checkoutBandId,
+              name: pendingBandName,
+              ownerId: uid,
+              createdAt: Math.floor(Date.now() / 1000),
+            });
+          }
+        }
 
         // For band subscriptions, ensure items have bandId metadata
         if (checkoutBandId) {

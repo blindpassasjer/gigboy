@@ -26,6 +26,10 @@ interface Data extends Record<string, unknown> {
   userId?: string;
 }
 
+function generateBandId() {
+  return `band_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
 function isAllowedReturnUrl(url: string, requestOrigin: string): boolean {
   try {
     return new URL(url).origin === requestOrigin;
@@ -159,6 +163,31 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
 
   const requestedPlan = planTierFromPriceId(body.priceId, ctx.env as Record<string, string | undefined>);
   const requestedBandId = typeof body.bandId === 'string' ? body.bandId.trim() : '';
+  const hasNewBandData = typeof body.newBandData === 'object' && body.newBandData !== null;
+  const newBandName = hasNewBandData && typeof body.newBandData.name === 'string'
+    ? body.newBandData.name.trim()
+    : '';
+  const isNewBandRequest = !requestedBandId && newBandName !== '';
+  const bandIdToUse = requestedBandId || (isNewBandRequest ? generateBandId() : '');
+
+  if (isNewBandRequest && (requestedPlan !== 'crew' && requestedPlan !== 'pro')) {
+    return Response.json({ error: 'New bands must be on Pro or Crew plans.' }, { status: 400 });
+  }
+
+  if ((requestedPlan === 'crew' || requestedPlan === 'pro') && !requestedBandId && !isNewBandRequest) {
+    return Response.json({ error: 'bandId is required for Pro and Crew subscriptions.' }, { status: 400 });
+  }
+
+  if ((requestedPlan === 'crew' || requestedPlan === 'pro') && !isNewBandRequest) {
+    const band = await getFirestoreDocument(ctx.env, ['bands', bandIdToUse]);
+    if (!band) {
+      return Response.json({ error: 'Band not found.' }, { status: 404 });
+    }
+    if (band.ownerId !== userId) {
+      return Response.json({ error: 'Only the band owner can manage this subscription.' }, { status: 403 });
+    }
+  }
+
   const requestedExtraMemberCount =
     typeof body.extraMemberCount === 'number' && Number.isFinite(body.extraMemberCount)
       ? Math.trunc(body.extraMemberCount)
@@ -200,52 +229,6 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
 
     if (body.extraMemberPriceId && !allowedExtraMemberPrices.has(body.extraMemberPriceId)) {
       return Response.json({ error: 'Extra member add-on is not configured for this environment.' }, { status: 400 });
-    }
-
-    // Handle band creation or retrieval
-    const hasNewBandData = typeof body.newBandData === 'object' && body.newBandData !== null;
-    const newBandName = hasNewBandData && typeof body.newBandData.name === 'string'
-      ? body.newBandData.name.trim()
-      : '';
-
-    let bandIdToUse = requestedBandId;
-
-    if (hasNewBandData && newBandName) {
-      // Creating a new band for this subscription
-      if (requestedPlan !== 'crew' && requestedPlan !== 'pro') {
-        return Response.json({ error: 'New bands must be on Pro or Crew plans.' }, { status: 400 });
-      }
-
-      // Create the band document
-      const bandId = `band_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      await setFirestoreDocument(ctx.env, ['bands', bandId], {
-        id: bandId,
-        name: newBandName,
-        ownerId: userId,
-        createdAt: Math.floor(Date.now() / 1000),
-        billingPlan: requestedPlan,
-        billingSubscriptionStatus: 'incomplete', // Will be updated to active after payment
-        billingCurrentPeriodEnd: null,
-        billingExtraMembers: 0,
-        billingMemberLimit: requestedPlan === 'crew' ? 6 : 1, // Crew allows 5 members + owner
-        stripeCustomerId: customerId, // Store here temporarily; will update after subscription
-        stripeSubscriptionId: null,
-        stripeBandItemId: null,
-        stripeExtraMembersItemId: null,
-      });
-      bandIdToUse = bandId;
-    } else if ((requestedPlan === 'crew' || requestedPlan === 'pro') && !requestedBandId) {
-      return Response.json({ error: 'bandId is required for Pro and Crew subscriptions.' }, { status: 400 });
-    }
-
-    if (requestedPlan === 'crew' || requestedPlan === 'pro') {
-      const band = await getFirestoreDocument(ctx.env, ['bands', bandIdToUse]);
-      if (!band) {
-        return Response.json({ error: 'Band not found.' }, { status: 404 });
-      }
-      if (band.ownerId !== userId) {
-        return Response.json({ error: 'Only the band owner can manage this subscription.' }, { status: 403 });
-      }
     }
 
     let customerId = typeof profile?.stripeCustomerId === 'string' ? profile.stripeCustomerId : null;
@@ -338,6 +321,15 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
           proration_behavior: 'create_prorations',
         });
 
+        if (isNewBandRequest) {
+          await setFirestoreDocument(ctx.env as Record<string, string | undefined>, ['bands', bandIdToUse], {
+            id: bandIdToUse,
+            name: newBandName,
+            ownerId: userId,
+            createdAt: Math.floor(Date.now() / 1000),
+          });
+        }
+
         await writeBandBillingSnapshot(
           ctx.env as Record<string, string | undefined>,
           bandIdToUse,
@@ -373,6 +365,19 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       });
     }
 
+    const sessionMetadata: Record<string, string> = {
+      firebaseUid: userId,
+    };
+    const subscriptionMetadata: Record<string, string> = {
+      firebaseUid: userId,
+    };
+
+    if (requestedPlan === 'crew' || requestedPlan === 'pro') {
+      subscriptionMetadata.gigboyMode = 'band_aggregate';
+      if (bandIdToUse) sessionMetadata.bandId = bandIdToUse;
+      if (isNewBandRequest) sessionMetadata.pendingBandName = newBandName;
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
@@ -380,15 +385,9 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       success_url: body.successUrl,
       cancel_url: body.cancelUrl,
       allow_promotion_codes: true,
-      metadata: {
-        firebaseUid: userId,
-        ...(requestedPlan === 'crew' || requestedPlan === 'pro' ? { bandId: bandIdToUse } : {}),
-      },
+      metadata: sessionMetadata,
       subscription_data: {
-        metadata: {
-          firebaseUid: userId,
-          ...(requestedPlan === 'crew' || requestedPlan === 'pro' ? { gigboyMode: 'band_aggregate' } : {}),
-        },
+        metadata: subscriptionMetadata,
       },
     });
 
