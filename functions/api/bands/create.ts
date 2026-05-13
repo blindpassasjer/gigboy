@@ -30,24 +30,22 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       return Response.json({ error: 'Band description must be 240 characters or fewer.' }, { status: 400 });
     }
 
-    // Check free-tier band limit: max 1 free band per user
+    // First band is free for everyone. Additional bands require active Pro/Crew or override.
     const profile = await getFirestoreDocument(ctx.env, ['users', userId]);
     const userPlan = profile?.plan === 'pro' || profile?.plan === 'crew' ? profile.plan : 'free';
     const subscriptionStatus = profile?.subscriptionStatus;
     const planOverride = profile?.planOverride === true;
-    
-    // If user is on free tier (not pro/crew with active subscription), check they don't already have a free band
-    const isActivePlan = userPlan === 'free' || planOverride || subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
-    if (userPlan === 'free' && isActivePlan) {
-      // Count existing bands owned by this user
-      const ownedBandCount = await countFirestoreDocumentsByField(ctx.env, 'bands', 'ownerId', userId);
-      
-      if (ownedBandCount > 0) {
-        return Response.json(
-          { error: 'Free tier accounts can only create one band workspace. Upgrade to Pro or Crew to create more.' },
-          { status: 403 }
-        );
-      }
+
+    const hasActivePaidBandCreationAccess = planOverride
+      || ((userPlan === 'pro' || userPlan === 'crew')
+        && (subscriptionStatus === 'active' || subscriptionStatus === 'trialing'));
+
+    const ownedBandCount = await countFirestoreDocumentsByField(ctx.env, 'bands', 'ownerId', userId);
+    if (ownedBandCount > 0 && !hasActivePaidBandCreationAccess) {
+      return Response.json(
+        { error: 'Additional bands require a Pro or Crew subscription.' },
+        { status: 403 }
+      );
     }
 
     const bandId = crypto.randomUUID();

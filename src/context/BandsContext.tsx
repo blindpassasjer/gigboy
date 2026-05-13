@@ -485,6 +485,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const userUsername = user?.username ?? '';
   const userFullName = user?.fullName ?? '';
   const userAvatar = user?.avatar ?? '';
+  const userPlan = user?.plan ?? 'free';
+  const userSubscriptionStatus = user?.subscriptionStatus ?? null;
+  const userPlanOverride = user?.planOverride === true;
   const [bands, setBands] = useState<Band[]>([]);
   const [bandSongsByBandId, setBandSongsByBandId] = useState<Record<string, Song[]>>({});
   const [bandSongListsByBandId, setBandSongListsByBandId] = useState<Record<string, SongList[]>>({});
@@ -1157,13 +1160,17 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return { bandId: null, error: 'Band name is required.' };
     }
 
-    // Check if user is trying to create a free band but already owns one (unless explicitly bypassed for paid band creation)
+    // First band is free; additional bands require active Pro/Crew (or plan override).
     if (!options?.bypassBandLimitCheck) {
-      const ownedFreeBands = bands.filter((b) => b.ownerId === userId && (!b.billingPlan || b.billingPlan === 'free'));
-      if (ownedFreeBands.length > 0) {
+      const ownedBandCount = bands.filter((b) => b.ownerId === userId).length;
+      const hasActivePaidBandCreationAccess = userPlanOverride
+        || ((userPlan === 'pro' || userPlan === 'crew')
+          && (userSubscriptionStatus === 'active' || userSubscriptionStatus === 'trialing'));
+
+      if (ownedBandCount > 0 && !hasActivePaidBandCreationAccess) {
         return {
           bandId: null,
-          error: 'You can only have one free band. Additional bands require a Pro or Crew subscription.',
+          error: 'Additional bands require a Pro or Crew subscription.',
         };
       }
     }
@@ -1223,7 +1230,17 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         };
       }
     }
-  }, [userAvatar, userEmail, userFullName, userId, userUsername]);
+  }, [
+    bands,
+    userAvatar,
+    userEmail,
+    userFullName,
+    userId,
+    userPlan,
+    userPlanOverride,
+    userSubscriptionStatus,
+    userUsername,
+  ]);
 
   const deleteBand = useCallback(async (bandId: string) => {
     if (!userId) {

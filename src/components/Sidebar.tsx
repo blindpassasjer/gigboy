@@ -114,6 +114,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     ? 'Loading...'
     : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)} (${storagePercent}%)`;
   const visibleBands = bands;
+  const ownedBandCount = bands.filter((band) => band.ownerId === user?.id).length;
+  const hasActivePaidBandCreationAccess = user?.planOverride === true
+    || ((user?.plan === 'pro' || user?.plan === 'crew')
+      && (user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing'));
+  const requiresUpgradeForAdditionalBands = ownedBandCount > 0 && !hasActivePaidBandCreationAccess;
+
   // Auto-select first band if active band is missing
   useEffect(() => {
     if (visibleBands.length === 0 && bands.length === 0) return;
@@ -237,6 +243,18 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     setDraftName('');
     setAddingBand(false);
     if (name) {
+      if (requiresUpgradeForAdditionalBands) {
+        toast.error('Create more bands by upgrading on the billing page.');
+        navigate('/pricing', {
+          state: {
+            source: 'sidebar-new-band',
+            requestedBandName: name,
+            bandId: activeBandId,
+          },
+        });
+        return;
+      }
+
       const result = await createBand(name);
       if (result.bandId) {
         setActiveBandId(result.bandId);
@@ -247,7 +265,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
         onNavigate?.();
       } else if (result.error) {
-        if (result.error.includes('Free tier accounts can only create one band workspace')) {
+        if (
+          result.error.includes('Free tier accounts can only create one band workspace')
+          || result.error.includes('Additional bands require a Pro or Crew subscription')
+          || result.error.includes('one free band')
+        ) {
           toast.error('Create more bands by upgrading on the billing page.');
           navigate('/pricing', {
             state: {
@@ -522,10 +544,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             title="New band"
             aria-label="Create new band"
             onClick={() => {
-              // If user is on free plan and already owns a band, redirect to billing immediately
-              const userPlan = user?.plan ?? 'free';
-              const ownedBandCount = bands.filter((b) => b.ownerId === user?.id).length;
-              if (userPlan === 'free' && ownedBandCount > 0) {
+              // If user lacks active Pro/Crew access and already owns a band, redirect to billing immediately
+              if (requiresUpgradeForAdditionalBands) {
                 toast.error('Create more bands by upgrading on the billing page.');
                 navigate('/pricing', {
                   state: {
