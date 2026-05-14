@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
-  Check,
+  Disc3,
+  Gauge,
+  Headphones,
+  Link2,
+  ListMusic,
   Lock,
+  Mic2,
+  Music,
+  NotebookPen,
+  Share2,
   Sparkles,
   Users,
 } from 'lucide-react';
@@ -16,13 +24,18 @@ import type { PlanTier } from '../types';
 
 type BillingCycle = 'monthly' | 'annual';
 
+interface FeatureBullet {
+  icon: typeof Sparkles;
+  label: string;
+}
+
 interface PlanCard {
   tier: PlanTier;
   icon: typeof Sparkles;
   blurb: string;
   monthlyPrice: string;
   annualPrice: string | null;
-  featureBullets: string[];
+  featureBullets: FeatureBullet[];
   ctaLabel: string;
   envKeyMonthly?: string;
   envKeyAnnual?: string;
@@ -51,20 +64,20 @@ const PLAN_CARDS: PlanCard[] = [
     monthlyPrice: 'Free',
     annualPrice: null,
     featureBullets: [
-      'One free band workspace',
-      '12 songs',
-      '100 MB storage',
-      'Song lists',
-      'Setlists',
-      'Stage plots',
-      'Input list',
-      'Shareable links',
-      'Bluetooth pedal',
-      'Recordings',
-      'Metronome',
-      'Multi-user notes',
-      'Members: 1 owner',
-      'Extra members: —',
+      { icon: Users, label: 'One free band workspace' },
+      { icon: Music, label: '12 songs' },
+      { icon: Disc3, label: '100 MB storage' },
+      { icon: ListMusic, label: 'Song lists' },
+      { icon: NotebookPen, label: 'Setlists' },
+      { icon: Share2, label: 'Stage plots' },
+      { icon: Link2, label: 'Input list' },
+      { icon: Share2, label: 'Shareable links' },
+      { icon: Gauge, label: 'Bluetooth pedal' },
+      { icon: Headphones, label: 'Recordings' },
+      { icon: Mic2, label: 'Metronome' },
+      { icon: Sparkles, label: 'Multi-user notes' },
+      { icon: Users, label: 'Members: 1 owner' },
+      { icon: Users, label: 'Extra members: —' },
     ],
     ctaLabel: 'Current free plan',
   },
@@ -75,20 +88,20 @@ const PLAN_CARDS: PlanCard[] = [
     monthlyPrice: '50 kr or 5 USD',
     annualPrice: '500 kr or 50 USD',
     featureBullets: [
-      'One Pro band workspace',
-      'Unlimited songs',
-      '1 GB storage',
-      'Song lists',
-      'Setlists',
-      'Stage plots',
-      'Input list',
-      'Shareable links',
-      'Bluetooth pedal',
-      'Recordings',
-      'Metronome',
-      'Multi-user notes',
-      'Members: 1 owner',
-      'Extra members: —',
+      { icon: Users, label: 'One Pro band workspace' },
+      { icon: Music, label: 'Unlimited songs' },
+      { icon: Disc3, label: '1 GB storage' },
+      { icon: ListMusic, label: 'Song lists' },
+      { icon: NotebookPen, label: 'Setlists' },
+      { icon: Share2, label: 'Stage plots' },
+      { icon: Link2, label: 'Input list' },
+      { icon: Share2, label: 'Shareable links' },
+      { icon: Gauge, label: 'Bluetooth pedal' },
+      { icon: Headphones, label: 'Recordings' },
+      { icon: Mic2, label: 'Metronome' },
+      { icon: Sparkles, label: 'Multi-user notes' },
+      { icon: Users, label: 'Members: 1 owner' },
+      { icon: Users, label: 'Extra members: —' },
     ],
     ctaLabel: 'Upgrade to Pro',
     envKeyMonthly: 'VITE_STRIPE_PRO_MONTHLY_PRICE_ID',
@@ -101,20 +114,20 @@ const PLAN_CARDS: PlanCard[] = [
     monthlyPrice: '150 kr or 15 USD',
     annualPrice: '1500 kr or 150 USD',
     featureBullets: [
-      'Shared Crew band workspace',
-      'Unlimited songs',
-      '5 GB storage',
-      'Song lists',
-      'Setlists',
-      'Stage plots',
-      'Input list',
-      'Shareable links',
-      'Bluetooth pedal',
-      'Recordings',
-      'Metronome',
-      'Multi-user notes',
-      'Members: Up to 5',
-      'Extra members are a Crew-only add-on: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly',
+      { icon: Users, label: 'Shared Crew band workspace' },
+      { icon: Music, label: 'Unlimited songs' },
+      { icon: Disc3, label: '5 GB storage' },
+      { icon: ListMusic, label: 'Song lists' },
+      { icon: NotebookPen, label: 'Setlists' },
+      { icon: Share2, label: 'Stage plots' },
+      { icon: Link2, label: 'Input list' },
+      { icon: Share2, label: 'Shareable links' },
+      { icon: Gauge, label: 'Bluetooth pedal' },
+      { icon: Headphones, label: 'Recordings' },
+      { icon: Mic2, label: 'Metronome' },
+      { icon: Sparkles, label: 'Multi-user notes' },
+      { icon: Users, label: 'Members: Up to 5' },
+      { icon: Users, label: 'Extra members are a Crew-only add-on: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly' },
     ],
     ctaLabel: 'Upgrade to Crew',
     envKeyMonthly: 'VITE_STRIPE_BAND_MONTHLY_PRICE_ID',
@@ -346,12 +359,15 @@ export default function PricingPage() {
                 <span>{priceSuffix}</span>
               </div>
               <ul className="pricing-feature-list">
-                {card.featureBullets.map((feature) => (
-                  <li key={feature}>
-                    <Check size={16} />
-                    <span>{feature}</span>
-                  </li>
-                ))}
+                {card.featureBullets.map((feature) => {
+                  const FeatureIcon = feature.icon;
+                  return (
+                    <li key={feature.label}>
+                      <FeatureIcon size={16} />
+                      <span>{feature.label}</span>
+                    </li>
+                  );
+                })}
               </ul>
               {(card.tier === 'crew' || card.tier === 'pro') && !redirectedFromCreateNewBand ? (
                 <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>

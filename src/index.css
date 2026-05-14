@@ -7648,6 +7648,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 18px;
   border: 1px solid var(--border);
   background: var(--surface);
+  min-height: 100%;
 }
 
 .pricing-card--active {
@@ -7719,6 +7720,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .pricing-card-btn {
+  margin-top: auto;
   width: 100%;
   justify-content: center;
 }
