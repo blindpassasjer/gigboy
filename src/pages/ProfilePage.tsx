@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, BadgeCheck, CreditCard, LogOut, Sparkles, Trash2, Users } from 'lucide-react';
+import { BadgeCheck, CreditCard, LogOut, Sparkles, Trash2, Users } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
