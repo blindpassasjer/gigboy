@@ -10,6 +10,7 @@ import { bandCanUse } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
+import UpgradePrompt from './UpgradePrompt';
 
 function formatStorageBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) {
@@ -87,7 +88,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addBandInputList,
   } = useBands();
 
+  const ownedBandCount = bands.filter(b => b.ownerId === user?.id).length;
+
   const [addingBand, setAddingBand] = useState(false);
+  const [showingBandUpgrade, setShowingBandUpgrade] = useState(false);
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
   const [addingBandInputListId, setAddingBandInputListId] = useState<string | null>(null);
@@ -528,8 +532,20 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             title="New band"
             aria-label="Create new band"
             onClick={() => {
-              setAddingBand(true);
-              setDraftName('');
+              if (showingBandUpgrade) {
+                setShowingBandUpgrade(false);
+                return;
+              }
+              if (addingBand) {
+                setAddingBand(false);
+                return;
+              }
+              if (ownedBandCount >= 1) {
+                setShowingBandUpgrade(true);
+              } else {
+                setAddingBand(true);
+                setDraftName('');
+              }
             }}
           >
             <Plus size={15} />
@@ -547,6 +563,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             onCancel={() => setAddingBand(false)}
             placeholder="Band name..."
           />
+        )}
+        {showingBandUpgrade && (
+          <UpgradePrompt feature="setlists" label="Creating additional bands requires a Pro or Crew subscription." />
         )}
         <div className="sidebar-bands-list">
           {visibleBands.filter((band) => band.id === activeBandId).map((band) => (

@@ -357,45 +357,6 @@ export default function ProfilePage() {
               <strong>{storageUsage.loading ? 'Loading…' : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)}`}</strong>
             </article>
           </div>
-          {ownedBands.length > 0 ? (
-            <div className="profile-band-subscriptions">
-              <div className="profile-section-heading profile-section-heading--subtle">
-                <div>
-                  <h3>Band subscriptions</h3>
-                  <p className="profile-settings-muted">Each owned band has its own paid workspace status, even when Stripe bills them under one customer.</p>
-                </div>
-              </div>
-              <div className="profile-band-subscriptions-list">
-                {ownedBands.map((band) => (
-                  <article key={band.id} className="profile-band-subscription-row">
-                    <div className="profile-band-subscription-copy">
-                      <strong>{band.name}</strong>
-                      <span>
-                        {band.billingPlan === 'crew'
-                          ? `${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)} · ${band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0))} members`
-                          : 'No active PRO or CREW subscription for this band'}
-                      </span>
-                      {band.billingCurrentPeriodEnd ? (
-                        <span>Renews {formatPeriodEnd(band.billingCurrentPeriodEnd) ?? '—'}</span>
-                      ) : null}
-                    </div>
-                    <Link
-                      to="/pricing"
-                      state={{ bandId: band.id }}
-                      className="setlist-action-btn setlist-action-btn--secondary"
-                    >
-                      Open billing
-                    </Link>
-                  </article>
-                ))}
-              </div>
-              {ownedBands.length > 1 ? (
-                <p className="profile-settings-muted">
-                  You own {ownedBands.length} bands. They can all live on one Stripe bill while still being managed per band.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
           <div className="profile-subscription-actions">
             {user.stripeCustomerId ? (
               <button
@@ -413,6 +374,48 @@ export default function ProfilePage() {
             )}
             <Link to="/pricing" className="setlist-action-btn setlist-action-btn--secondary">Compare plans</Link>
           </div>
+        </section>
+
+        <section className="profile-settings-card profile-account-band-subscriptions-card">
+          <div className="profile-section-heading">
+            <div>
+              <h2>Band subscriptions</h2>
+              <p className="profile-settings-muted">Each owned band has its own paid workspace status, even when Stripe bills them under one customer.</p>
+            </div>
+          </div>
+          {ownedBands.length > 0 ? (
+            <div className="profile-band-subscriptions-list">
+              {ownedBands.map((band) => (
+                <article key={band.id} className="profile-band-subscription-row">
+                  <div className="profile-band-subscription-copy">
+                    <strong>{band.name}</strong>
+                    <span>
+                      {band.billingPlan === 'crew'
+                        ? `${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)} · ${band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0))} members`
+                        : 'No active PRO or CREW subscription for this band'}
+                    </span>
+                    {band.billingCurrentPeriodEnd ? (
+                      <span>Renews {formatPeriodEnd(band.billingCurrentPeriodEnd) ?? '—'}</span>
+                    ) : null}
+                  </div>
+                  <Link
+                    to="/pricing"
+                    state={{ bandId: band.id }}
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                  >
+                    Open billing
+                  </Link>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="profile-settings-muted">No band subscriptions yet.</p>
+          )}
+          {ownedBands.length > 1 ? (
+            <p className="profile-settings-muted">
+              You own {ownedBands.length} bands. They can all live on one Stripe bill while still being managed per band.
+            </p>
+          ) : null}
         </section>
 
         <section className="profile-settings-card">
@@ -469,74 +472,75 @@ export default function ProfilePage() {
             </button>
           </form>
 
-          <section className="profile-settings-card profile-settings-card--wide profile-danger-card">
-            <div className="profile-section-heading">
-              <div>
-                <h2>Danger zone</h2>
-                <p className="profile-settings-muted">Permanently delete your account and all bands you own.</p>
-              </div>
+        </section>
+
+        <section className="profile-settings-card profile-danger-card">
+          <div className="profile-section-heading">
+            <div>
+              <h2>Danger zone</h2>
+              <p className="profile-settings-muted">Permanently delete your account and all bands you own.</p>
+            </div>
+          </div>
+
+          <div className="profile-account-danger-zone" aria-label="Account danger zone">
+            <div className="profile-account-danger-zone-header">
+              <h3><AlertTriangle size={16} /> Danger zone</h3>
+              <p className="profile-settings-muted">Deleting your account permanently removes owned bands and profile data.</p>
             </div>
 
-            <section className="profile-account-danger-zone" aria-label="Account danger zone">
-              <div className="profile-account-danger-zone-header">
-                <h3><AlertTriangle size={16} /> Danger zone</h3>
-                <p className="profile-settings-muted">Deleting your account permanently removes owned bands and profile data.</p>
-              </div>
+            {!deleteConfirmOpen ? (
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--danger"
+                onClick={onStartDeleteAccount}
+              >
+                <Trash2 size={16} /> Delete account
+              </button>
+            ) : (
+              <div className="profile-account-delete-confirm">
+                <label className="profile-account-delete-check">
+                  <input
+                    type="checkbox"
+                    checked={deleteStepOneConfirmed}
+                    onChange={(event) => setDeleteStepOneConfirmed(event.target.checked)}
+                    disabled={busyDeleteAccount}
+                  />
+                  <span>I understand this action permanently deletes my account and all bands I own.</span>
+                </label>
 
-              {!deleteConfirmOpen ? (
-                <button
-                  type="button"
-                  className="setlist-action-btn setlist-action-btn--danger"
-                  onClick={onStartDeleteAccount}
-                >
-                  <Trash2 size={16} /> Delete account
-                </button>
-              ) : (
-                <div className="profile-account-delete-confirm">
-                  <label className="profile-account-delete-check">
-                    <input
-                      type="checkbox"
-                      checked={deleteStepOneConfirmed}
-                      onChange={(event) => setDeleteStepOneConfirmed(event.target.checked)}
-                      disabled={busyDeleteAccount}
-                    />
-                    <span>I understand this action permanently deletes my account and all bands I own.</span>
-                  </label>
+                <label className="form-field">
+                  <span>Type <strong>DELETE MY ACCOUNT</strong> to confirm</span>
+                  <input
+                    type="text"
+                    value={deleteStepTwoPhrase}
+                    onChange={(event) => setDeleteStepTwoPhrase(event.target.value)}
+                    placeholder="DELETE MY ACCOUNT"
+                    autoComplete="off"
+                    disabled={busyDeleteAccount}
+                  />
+                </label>
 
-                  <label className="form-field">
-                    <span>Type <strong>DELETE MY ACCOUNT</strong> to confirm</span>
-                    <input
-                      type="text"
-                      value={deleteStepTwoPhrase}
-                      onChange={(event) => setDeleteStepTwoPhrase(event.target.value)}
-                      placeholder="DELETE MY ACCOUNT"
-                      autoComplete="off"
-                      disabled={busyDeleteAccount}
-                    />
-                  </label>
-
-                  <div className="profile-danger-actions">
-                    <button
-                      type="button"
-                      className="setlist-action-btn setlist-action-btn--danger"
-                      disabled={busyDeleteAccount || !deleteStepOneConfirmed || !deletePhraseMatches}
-                      onClick={() => { void onDeleteAccount(); }}
-                    >
-                      <Trash2 size={16} /> {busyDeleteAccount ? 'Deleting…' : 'Delete account permanently'}
-                    </button>
-                    <button
-                      type="button"
-                      className="setlist-action-btn setlist-action-btn--secondary"
-                      disabled={busyDeleteAccount}
-                      onClick={onCancelDeleteAccount}
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                <div className="profile-danger-actions">
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--danger"
+                    disabled={busyDeleteAccount || !deleteStepOneConfirmed || !deletePhraseMatches}
+                    onClick={() => { void onDeleteAccount(); }}
+                  >
+                    <Trash2 size={16} /> {busyDeleteAccount ? 'Deleting…' : 'Delete account permanently'}
+                  </button>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    disabled={busyDeleteAccount}
+                    onClick={onCancelDeleteAccount}
+                  >
+                    Cancel
+                  </button>
                 </div>
-              )}
-            </section>
-          </section>
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </section>

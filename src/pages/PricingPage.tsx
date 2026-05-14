@@ -1,16 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Check,
-  Disc3,
-  Gauge,
-  Headphones,
-  Link2,
-  ListMusic,
   Lock,
-  Mic2,
-  Music,
-  NotebookPen,
-  Share2,
   Sparkles,
   Users,
 } from 'lucide-react';
@@ -37,14 +28,6 @@ interface PlanCard {
   envKeyAnnual?: string;
 }
 
-interface ComparisonFeature {
-  label: string;
-  icon: typeof Music;
-  free: string;
-  pro: string;
-  crew: string;
-}
-
 const STRIPE_PRICE_IDS = {
   pro: {
     monthly: 'price_1TTcMZQ9ZHGjaIIRVQd0Kkqr',
@@ -67,7 +50,22 @@ const PLAN_CARDS: PlanCard[] = [
     blurb: 'A lightweight account for trying Gigboy and keeping a small library.',
     monthlyPrice: 'Free',
     annualPrice: null,
-    featureBullets: ['12 songs', '100 MB recording storage', 'Song lists', 'One free band workspace'],
+    featureBullets: [
+      'One free band workspace',
+      '12 songs',
+      '100 MB storage',
+      'Song lists',
+      'Setlists',
+      'Stage plots',
+      'Input list',
+      'Shareable links',
+      'Bluetooth pedal',
+      'Recordings',
+      'Metronome',
+      'Multi-user notes',
+      'Members: 1 owner',
+      'Extra members: —',
+    ],
     ctaLabel: 'Current free plan',
   },
   {
@@ -76,7 +74,22 @@ const PLAN_CARDS: PlanCard[] = [
     blurb: 'Everything a power user needs for rehearsals, setlists, recordings, and sharing.',
     monthlyPrice: '50 kr or 5 USD',
     annualPrice: '500 kr or 50 USD',
-    featureBullets: ['Unlimited songs', '1 GB storage', 'Setlists, stage plots, riders', 'Recordings, metronome, pedal', 'One Pro band workspace'],
+    featureBullets: [
+      'One Pro band workspace',
+      'Unlimited songs',
+      '1 GB storage',
+      'Song lists',
+      'Setlists',
+      'Stage plots',
+      'Input list',
+      'Shareable links',
+      'Bluetooth pedal',
+      'Recordings',
+      'Metronome',
+      'Multi-user notes',
+      'Members: 1 owner',
+      'Extra members: —',
+    ],
     ctaLabel: 'Upgrade to Pro',
     envKeyMonthly: 'VITE_STRIPE_PRO_MONTHLY_PRICE_ID',
     envKeyAnnual: 'VITE_STRIPE_PRO_ANNUAL_PRICE_ID',
@@ -87,32 +100,25 @@ const PLAN_CARDS: PlanCard[] = [
     blurb: 'A shared workspace for a band owner with member access and room to grow.',
     monthlyPrice: '150 kr or 15 USD',
     annualPrice: '1500 kr or 150 USD',
-    featureBullets: ['Unlimited songs', '5 GB storage', 'Up to 5 members included', 'Extra members are a Crew-only add-on'],
+    featureBullets: [
+      'Shared Crew band workspace',
+      'Unlimited songs',
+      '5 GB storage',
+      'Song lists',
+      'Setlists',
+      'Stage plots',
+      'Input list',
+      'Shareable links',
+      'Bluetooth pedal',
+      'Recordings',
+      'Metronome',
+      'Multi-user notes',
+      'Members: Up to 5',
+      'Extra members are a Crew-only add-on: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly',
+    ],
     ctaLabel: 'Upgrade to Crew',
     envKeyMonthly: 'VITE_STRIPE_BAND_MONTHLY_PRICE_ID',
     envKeyAnnual: 'VITE_STRIPE_BAND_ANNUAL_PRICE_ID',
-  },
-];
-
-const COMPARISON_FEATURES: ComparisonFeature[] = [
-  { label: 'Song library', icon: Music, free: '12 songs', pro: 'Unlimited', crew: 'Unlimited' },
-  { label: 'Storage', icon: Disc3, free: '100 MB', pro: '1 GB', crew: '5 GB' },
-  { label: 'Song lists', icon: ListMusic, free: 'Yes', pro: 'Yes', crew: 'Yes' },
-  { label: 'Setlists', icon: NotebookPen, free: 'No', pro: 'Yes', crew: 'Yes' },
-  { label: 'Stage plots', icon: Share2, free: 'No', pro: 'Yes', crew: 'Yes' },
-  { label: 'Input list', icon: Link2, free: 'No', pro: 'Yes', crew: 'Yes' },
-  { label: 'Shareable links', icon: Share2, free: 'No', pro: 'Yes', crew: 'Yes' },
-  { label: 'Bluetooth pedal', icon: Gauge, free: 'No', pro: 'Yes', crew: 'Yes' },
-  { label: 'Recordings', icon: Headphones, free: 'No', pro: 'Yes', crew: 'Yes' },
-  { label: 'Metronome', icon: Mic2, free: 'No', pro: 'Yes', crew: 'Yes' },
-  { label: 'Multi-user notes', icon: Sparkles, free: 'No', pro: 'Yes', crew: 'Yes' },
-  { label: 'Members', icon: Users, free: '1 owner', pro: '1 owner', crew: 'Up to 5' },
-  {
-    label: 'Extra members',
-    icon: Users,
-    free: '—',
-    pro: '—',
-    crew: 'Crew add-on only: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly',
   },
 ];
 
@@ -398,41 +404,6 @@ export default function PricingPage() {
         })}
       </div>
 
-      <section className="pricing-comparison">
-        <div className="pricing-comparison-header">
-          <h2>Compare features</h2>
-        </div>
-        <div className="pricing-table-wrap">
-          <table className="pricing-table">
-            <thead>
-              <tr>
-                <th>Feature</th>
-                <th>Free</th>
-                <th>Pro</th>
-                <th>Crew</th>
-              </tr>
-            </thead>
-            <tbody>
-              {COMPARISON_FEATURES.map((feature) => {
-                const Icon = feature.icon;
-                return (
-                  <tr key={feature.label}>
-                    <td>
-                      <span className="pricing-feature-cell-label">
-                        <Icon size={15} />
-                        <span>{feature.label}</span>
-                      </span>
-                    </td>
-                    <td>{feature.free}</td>
-                    <td>{feature.pro}</td>
-                    <td>{feature.crew}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
     </section>
   );
 }
