@@ -176,6 +176,7 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [busyTier, setBusyTier] = useState<PlanTier | null>(null);
   const [extraMemberCount, setExtraMemberCount] = useState(0);
+  const [newBandName, setNewBandName] = useState<string>('');
 
   const ownedBands = bands.filter((band) => band.ownerId === user?.id);
   const pricingState = (location.state as {
@@ -192,19 +193,21 @@ export default function PricingPage() {
     const candidate = pricingState?.bandId;
     return typeof candidate === 'string' ? candidate : '';
   })();
-  const initialBandId = ownedBands.some((band) => band.id === stateBandId)
-    ? stateBandId
-    : (ownedBands[0]?.id ?? '');
+  const initialBandId = ownedBands.length === 0
+    ? 'new'
+    : ownedBands.some((band) => band.id === stateBandId)
+      ? stateBandId
+      : (ownedBands[0]?.id ?? 'new');
   const [selectedBandId, setSelectedBandId] = useState<string>(initialBandId);
 
   useEffect(() => {
     if (ownedBands.length === 0) {
-      if (selectedBandId) setSelectedBandId('');
+      if (selectedBandId !== 'new') setSelectedBandId('new');
       return;
     }
 
     const hasSelectedBand = ownedBands.some((band) => band.id === selectedBandId);
-    if (hasSelectedBand) return;
+    if (hasSelectedBand || selectedBandId === 'new') return;
 
     const fallbackBandId = ownedBands.some((band) => band.id === stateBandId)
       ? stateBandId
@@ -226,8 +229,12 @@ export default function PricingPage() {
     }
 
     const isBandPlan = card.tier === 'crew' || card.tier === 'pro';
-    if (isBandPlan && !redirectedFromCreateNewBand && !selectedBandId) {
+    if (isBandPlan && !redirectedFromCreateNewBand && selectedBandId !== 'new' && !selectedBandId) {
       toast.error('Select which band you want to upgrade before continuing.');
+      return;
+    }
+    if (isBandPlan && !redirectedFromCreateNewBand && selectedBandId === 'new' && !newBandName.trim()) {
+      toast.error('Enter a name for the new band.');
       return;
     }
     const normalizedExtraMembers = isBandPlan ? Math.max(0, Math.min(500, Math.trunc(extraMemberCount))) : 0;
@@ -254,7 +261,10 @@ export default function PricingPage() {
         priceId,
         successUrl: `${window.location.origin}/checkout-result?status=success`,
         cancelUrl: `${window.location.origin}/checkout-result?status=cancel`,
-        ...(isBandPlan && !redirectedFromCreateNewBand ? { bandId: selectedBandId } : {}),
+        ...(isBandPlan && !redirectedFromCreateNewBand && selectedBandId !== 'new' ? { bandId: selectedBandId } : {}),
+        ...(isBandPlan && !redirectedFromCreateNewBand && selectedBandId === 'new'
+          ? { newBandData: { name: newBandName.trim() } }
+          : {}),
         ...(redirectedFromCreateNewBand && requestedBandName
           ? { newBandData: { name: requestedBandName } }
           : {}),
@@ -370,19 +380,33 @@ export default function PricingPage() {
                 })}
               </ul>
               {(card.tier === 'crew' || card.tier === 'pro') && !redirectedFromCreateNewBand ? (
-                <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
-                  <span>Band workspace</span>
-                  <select
-                    value={selectedBandId}
-                    onChange={(event) => setSelectedBandId(event.target.value)}
-                    disabled={busyTier === card.tier || ownedBands.length === 0}
-                  >
-                    {ownedBands.length === 0 ? <option value="">Create a band first</option> : null}
-                    {ownedBands.map((band) => (
-                      <option key={band.id} value={band.id}>{band.name}</option>
-                    ))}
-                  </select>
-                </label>
+                <>
+                  <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
+                    <span>Band workspace</span>
+                    <select
+                      value={selectedBandId}
+                      onChange={(event) => setSelectedBandId(event.target.value)}
+                      disabled={busyTier === card.tier}
+                    >
+                      {ownedBands.map((band) => (
+                        <option key={band.id} value={band.id}>{band.name}</option>
+                      ))}
+                      <option value="new">Create a new band</option>
+                    </select>
+                  </label>
+                  {selectedBandId === 'new' ? (
+                    <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
+                      <span>Band name</span>
+                      <input
+                        type="text"
+                        value={newBandName}
+                        onChange={(event) => setNewBandName(event.target.value)}
+                        placeholder="Enter band name"
+                        disabled={busyTier === card.tier}
+                      />
+                    </label>
+                  ) : null}
+                </>
               ) : null}
               {card.tier === 'crew' ? (
                 <label className="share-menu-field" style={{ marginBottom: '0.85rem' }}>

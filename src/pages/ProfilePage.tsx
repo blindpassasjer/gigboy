@@ -335,27 +335,18 @@ export default function ProfilePage() {
             <div className="profile-stat-card">
               <span className="profile-stat-label">Paid bands</span>
               <strong>{paidOwnedBands.length}</strong>
-              <small>{ownedBands.length > 0 ? `${ownedBands.length} owned total` : 'You do not own any bands yet'}</small>
+              <small>{paidOwnedBands.length > 0 ? 'Active paid bands' : 'No active paid bands'}</small>
             </div>
             <div className="profile-stat-card">
               <span className="profile-stat-label">Storage</span>
               <strong>{storageUsage.loading ? 'Loading…' : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)}`}</strong>
               <small>{storageUsage.loading ? 'Calculating usage' : `${storagePercent}% used`}</small>
             </div>
-          </div>
-          <div className="profile-limit-grid">
-            <article className="profile-limit-card">
-              <span>Paid bands</span>
-              <strong>{paidOwnedBands.length} active</strong>
-            </article>
-            <article className="profile-limit-card">
-              <span>Total bands</span>
-              <strong>{ownedBands.length} owned</strong>
-            </article>
-            <article className="profile-limit-card">
-              <span>Storage</span>
-              <strong>{storageUsage.loading ? 'Loading…' : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)}`}</strong>
-            </article>
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Total bands</span>
+              <strong>{ownedBands.length}</strong>
+              <small>{ownedBands.length > 0 ? 'Owned bands total' : 'You do not own any bands yet'}</small>
+            </div>
           </div>
           <div className="profile-subscription-actions">
             {user.stripeCustomerId ? (
@@ -483,10 +474,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="profile-account-danger-zone" aria-label="Account danger zone">
-            <div className="profile-account-danger-zone-header">
-              <h3><AlertTriangle size={16} /> Danger zone</h3>
-              <p className="profile-settings-muted">Deleting your account permanently removes owned bands and profile data.</p>
-            </div>
+            <p className="profile-settings-muted">Deleting your account permanently removes owned bands and profile data.</p>
 
             {!deleteConfirmOpen ? (
               <button
