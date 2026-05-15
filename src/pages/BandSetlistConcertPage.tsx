@@ -205,10 +205,17 @@ export default function BandSetlistConcertPage() {
     }
   }, [activeSong, bandId, transpose, updateBandSong]);
 
-  const scrollByPage = useCallback((direction: 'up' | 'down') => {
+  const scrollByLines = useCallback((direction: 'up' | 'down') => {
     const scrollRegion = songScrollRef.current;
     if (!scrollRegion) return;
-    const step = Math.max(120, Math.round(scrollRegion.clientHeight * 0.22));
+
+    const computedLineHeight = window.getComputedStyle(scrollRegion).lineHeight;
+    const parsedLineHeight = Number.parseFloat(computedLineHeight);
+    const lineHeight = Number.isFinite(parsedLineHeight) && parsedLineHeight > 0
+      ? parsedLineHeight
+      : 24;
+
+    const step = Math.round(lineHeight * 5);
     scrollRegion.scrollBy({
       top: direction === 'up' ? -step : step,
       behavior: 'smooth',
@@ -264,7 +271,7 @@ export default function BandSetlistConcertPage() {
 
       if (event.key === 'PageDown' || event.key === 'MediaTrackNext') {
         event.preventDefault();
-        scrollByPage('down');
+        scrollByLines('down');
       }
 
       if (event.key === 'ArrowLeft') {
@@ -274,17 +281,17 @@ export default function BandSetlistConcertPage() {
 
       if (event.key === 'PageUp' || event.key === 'MediaTrackPrevious') {
         event.preventDefault();
-        scrollByPage('up');
+        scrollByLines('up');
       }
 
       if (event.key === 'ArrowUp') {
         event.preventDefault();
-        scrollByPage('up');
+        scrollByLines('up');
       }
 
       if (event.key === 'ArrowDown') {
         event.preventDefault();
-        scrollByPage('down');
+        scrollByLines('down');
       }
 
       if (event.key.toLowerCase() === 'n') {
@@ -295,7 +302,7 @@ export default function BandSetlistConcertPage() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [goToNext, goToPrevious, scrollByPage]);
+  }, [goToNext, goToPrevious, scrollByLines]);
 
   if (!setlist) {
     return (

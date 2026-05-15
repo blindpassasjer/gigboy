@@ -6090,17 +6090,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .concert-nav-footer {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 1rem;
+  right: 1rem;
   bottom: .95rem;
   z-index: 12;
   margin: 0;
-  padding: 0 1rem;
+  padding: 0;
   background: transparent;
   backdrop-filter: none;
   border-top: none;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   gap: .75rem;
   pointer-events: none;
