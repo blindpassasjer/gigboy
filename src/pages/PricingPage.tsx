@@ -18,7 +18,7 @@ import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalBands } from '../context/BandsContext';
 import { createCheckoutSession } from '../lib/billingApi';
-import { useBandPlan, usePlan } from '../hooks/usePlan';
+import { useBandPlan } from '../hooks/usePlan';
 import { PLAN_LABELS } from '../lib/planLimits';
 import type { PlanTier } from '../types';
 
