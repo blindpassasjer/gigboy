@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
-import { usePlan, useBandPlan } from '../hooks/usePlan';
+import { useBandPlan } from '../hooks/usePlan';
 import type { HandNoteStroke, Song } from '../types';
 import LanguageBadge from '../components/LanguageBadge';
 import ChordDisplay from '../components/ChordDisplay';
@@ -41,7 +41,6 @@ export default function BandSetlistConcertPage() {
   const navigate = useNavigate();
   const { bandId, setlistId } = useParams<{ bandId: string; setlistId: string }>();
   const { user } = useAuth();
-  const { canUse: canUseUser } = usePlan();
   const {
     bandSetlistsByBandId,
     bandSongsByBandId,
@@ -54,20 +53,6 @@ export default function BandSetlistConcertPage() {
   const band = bands.find((b) => b.id === bandId) ?? null;
   const bandPlanState = useBandPlan(band);
   const { canUse } = bandPlanState;
-  void canUseUser;
-
-  // DIAGNOSTIC LOGGING: Remove after debugging
-  if (typeof window !== 'undefined') {
-    useEffect(() => {
-      // eslint-disable-next-line no-console
-      console.log('[BandSetlistConcertPage DIAG]', {
-        bandId,
-        band,
-        bandPlanState,
-        canUseMetronome: canUse('metronome'),
-      });
-    }, [bandId, band, bandPlanState, canUse]);
-  }
 
   const bandSetlists = useMemo(() => (bandId ? (bandSetlistsByBandId[bandId] ?? []) : []), [bandId, bandSetlistsByBandId]);
   const bandSongs = useMemo(() => (bandId ? (bandSongsByBandId[bandId] ?? []) : []), [bandId, bandSongsByBandId]);
@@ -205,7 +190,7 @@ export default function BandSetlistConcertPage() {
     }
   }, [activeSong, bandId, transpose, updateBandSong]);
 
-  const scrollByLines = useCallback((direction: 'up' | 'down') => {
+  const scrollByLines = useCallback((direction: 'up' | 'down', lineCount = 1) => {
     const scrollRegion = songScrollRef.current;
     if (!scrollRegion) return;
 
@@ -215,7 +200,7 @@ export default function BandSetlistConcertPage() {
       ? parsedLineHeight
       : 24;
 
-    const step = Math.round(lineHeight * 5);
+    const step = Math.round(lineHeight * lineCount);
     scrollRegion.scrollBy({
       top: direction === 'up' ? -step : step,
       behavior: 'smooth',
@@ -233,8 +218,6 @@ export default function BandSetlistConcertPage() {
   const goToNext = useCallback(() => {
     setCurrentIndex((current) => Math.min(current + 1, setlistSongs.length - 1));
   }, [setlistSongs.length]);
-
-
 
   const onSwipeStart = useCallback((e: React.PointerEvent) => {
     swipeRef.current = { x: e.clientX, y: e.clientY };
@@ -271,7 +254,7 @@ export default function BandSetlistConcertPage() {
 
       if (event.key === 'PageDown' || event.key === 'MediaTrackNext') {
         event.preventDefault();
-        scrollByLines('down');
+        scrollByLines('down', 4);
       }
 
       if (event.key === 'ArrowLeft') {
@@ -281,7 +264,7 @@ export default function BandSetlistConcertPage() {
 
       if (event.key === 'PageUp' || event.key === 'MediaTrackPrevious') {
         event.preventDefault();
-        scrollByLines('up');
+        scrollByLines('up', 4);
       }
 
       if (event.key === 'ArrowUp') {
