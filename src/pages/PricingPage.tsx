@@ -335,35 +335,35 @@ export default function PricingPage() {
           <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-hero-back-link">
             Back to account
           </Link>
-          {(ownedBands.length > 0 || selectedBandId === 'new') ? (
-            <div className="pricing-hero-band-select">
-              <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
-                <span>Band workspace</span>
-                <select
-                  value={selectedBandId}
-                  onChange={(event) => setSelectedBandId(event.target.value)}
-                >
-                  {ownedBands.map((band) => (
-                    <option key={band.id} value={band.id}>{band.name}</option>
-                  ))}
-                  <option value="new">Create a new band</option>
-                </select>
-              </label>
-              {selectedBandId === 'new' ? (
+          <div className="pricing-hero-actions-controls">
+            {(ownedBands.length > 0 || selectedBandId === 'new') ? (
+              <div className="pricing-hero-band-select">
                 <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
-                  <span>Band name</span>
-                  <input
-                    type="text"
-                    value={newBandName}
-                    onChange={(event) => setNewBandName(event.target.value)}
-                    placeholder="Enter band name"
-                  />
+                  <span>Band workspace</span>
+                  <select
+                    value={selectedBandId}
+                    onChange={(event) => setSelectedBandId(event.target.value)}
+                  >
+                    {ownedBands.map((band) => (
+                      <option key={band.id} value={band.id}>{band.name}</option>
+                    ))}
+                    <option value="new">Create a new band</option>
+                  </select>
                 </label>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-        <div className="pricing-cycle-toggle" role="tablist" aria-label="Billing cycle">
+                {selectedBandId === 'new' ? (
+                  <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
+                    <span>Band name</span>
+                    <input
+                      type="text"
+                      value={newBandName}
+                      onChange={(event) => setNewBandName(event.target.value)}
+                      placeholder="Enter band name"
+                    />
+                  </label>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="pricing-cycle-toggle" role="tablist" aria-label="Billing cycle">
           <button
             type="button"
             className={billingCycle === 'monthly' ? 'active' : ''}
@@ -379,6 +379,8 @@ export default function PricingPage() {
             Annual
           </button>
         </div>
+      </div>
+    </div>
       </header>
 
       <div className="pricing-card-grid">

@@ -7555,7 +7555,30 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .pricing-hero-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pricing-hero-actions-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  min-width: 16rem;
+}
+
+.pricing-hero-band-select {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  min-width: 18rem;
+  width: min(100%, 28rem);
+}
+
+.pricing-hero-actions .share-menu-field {
+  margin-bottom: 0;
 }
 
 .pricing-source-banner {
@@ -7632,6 +7655,50 @@ input, select, textarea { font: inherit; color: var(--text); }
 .pricing-cycle-toggle button.active {
   color: var(--text);
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.pricing-hero-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pricing-hero-actions-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  min-width: 16rem;
+}
+
+.pricing-hero-band-select {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  min-width: 18rem;
+  width: min(100%, 28rem);
+}
+
+.pricing-hero-actions .share-menu-field {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .pricing-hero-actions {
+    align-items: stretch;
+  }
+
+  .pricing-hero-actions-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pricing-hero-band-select,
+  .pricing-cycle-toggle {
+    width: 100%;
+  }
 }
 
 .pricing-card-grid {
