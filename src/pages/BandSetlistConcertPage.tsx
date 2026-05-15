@@ -190,61 +190,6 @@ export default function BandSetlistConcertPage() {
     }
   }, [activeSong, bandId, transpose, updateBandSong]);
 
-  const scrollByLines = useCallback((direction: 'up' | 'down') => {
-    const scrollRegion = songScrollRef.current;
-    if (!scrollRegion) return;
-
-    const computedLineHeight = window.getComputedStyle(scrollRegion).lineHeight;
-    const parsedLineHeight = Number.parseFloat(computedLineHeight);
-    const lineHeight = Number.isFinite(parsedLineHeight) && parsedLineHeight > 0
-      ? parsedLineHeight
-      : 24;
-
-    const step = Math.round(lineHeight);
-    scrollRegion.scrollBy({
-      top: direction === 'up' ? -step : step,
-      behavior: 'smooth',
-    });
-  }, []);
-
-  const scrollByViewport = useCallback((direction: 'up' | 'down') => {
-    const scrollRegion = songScrollRef.current;
-    if (!scrollRegion) return;
-
-    const step = scrollRegion.clientHeight || scrollRegion.offsetHeight || window.innerHeight;
-    scrollRegion.scrollBy({
-      top: direction === 'up' ? -step : step,
-      behavior: 'smooth',
-    });
-  }, []);
-
-  const getScrollAction = useCallback((event: KeyboardEvent): { direction: 'up' | 'down'; mode: 'viewport' | 'line' } | null => {
-    const key = event.key;
-    const code = event.code;
-
-    const pageUpKeys = ['PageUp', 'MediaTrackPrevious', 'NumpadPageUp', 'BrowserBack'];
-    const pageDownKeys = ['PageDown', 'MediaTrackNext', 'NumpadPageDown', 'BrowserForward'];
-    const arrowUpKeys = ['ArrowUp'];
-    const arrowDownKeys = ['ArrowDown'];
-
-    if (pageUpKeys.includes(key) || pageUpKeys.includes(code)) {
-      return { direction: 'up', mode: 'viewport' };
-    }
-
-    if (pageDownKeys.includes(key) || pageDownKeys.includes(code)) {
-      return { direction: 'down', mode: 'viewport' };
-    }
-
-    if (arrowUpKeys.includes(key) || arrowUpKeys.includes(code)) {
-      return { direction: 'up', mode: 'line' };
-    }
-
-    if (arrowDownKeys.includes(key) || arrowDownKeys.includes(code)) {
-      return { direction: 'down', mode: 'line' };
-    }
-
-    return null;
-  }, []);
 
   const goToSong = useCallback((index: number) => {
     setCurrentIndex(Math.min(Math.max(index, 0), setlistSongs.length - 1));
@@ -291,17 +236,6 @@ export default function BandSetlistConcertPage() {
         goToNext();
       }
 
-      const scrollAction = getScrollAction(event);
-      if (scrollAction) {
-        event.preventDefault();
-        if (scrollAction.mode === 'viewport') {
-          scrollByViewport(scrollAction.direction);
-        } else {
-          scrollByLines(scrollAction.direction);
-        }
-        return;
-      }
-
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
         goToPrevious();
@@ -315,7 +249,7 @@ export default function BandSetlistConcertPage() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [goToNext, goToPrevious, scrollByLines]);
+  }, [goToNext, goToPrevious]);
 
   if (!setlist) {
     return (
