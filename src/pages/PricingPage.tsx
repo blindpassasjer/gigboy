@@ -18,9 +18,9 @@ import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalBands } from '../context/BandsContext';
 import { createCheckoutSession } from '../lib/billingApi';
-import { usePlan } from '../hooks/usePlan';
+import { useBandPlan, usePlan } from '../hooks/usePlan';
 import { PLAN_LABELS } from '../lib/planLimits';
-import type { PlanTier } from '../types';
+import type { Band, PlanTier } from '../types';
 
 type BillingCycle = 'monthly' | 'annual';
 
@@ -153,13 +153,23 @@ const PLAN_ORDER: Record<PlanTier, number> = {
   crew: 2,
 };
 
-function getCtaLabel(card: PlanCard, currentPlan: PlanTier, isCurrentPlan: boolean) {
+function getCtaLabel(
+  card: PlanCard,
+  currentPlan: PlanTier,
+  isCurrentPlan: boolean,
+  creatingNewBand: boolean,
+) {
   if (card.tier === 'free') {
-    return isCurrentPlan ? card.ctaLabel : 'Use Free';
+    if (isCurrentPlan) return card.ctaLabel;
+    return creatingNewBand ? 'Create a free band' : 'Downgrade to Free';
   }
 
   if (isCurrentPlan) {
     return `${PLAN_LABELS[card.tier]} active`;
+  }
+
+  if (creatingNewBand) {
+    return `Create a new ${PLAN_LABELS[card.tier]} band`;
   }
 
   const isUpgrade = PLAN_ORDER[card.tier] > PLAN_ORDER[currentPlan];
@@ -199,6 +209,11 @@ export default function PricingPage() {
       ? stateBandId
       : (ownedBands[0]?.id ?? 'new');
   const [selectedBandId, setSelectedBandId] = useState<string>(initialBandId);
+
+  const selectedBand = selectedBandId === 'new'
+    ? null
+    : ownedBands.find((band) => band.id === selectedBandId) ?? null;
+  const selectedBandPlanState = useBandPlan(selectedBand);
 
   useEffect(() => {
     if (ownedBands.length === 0) {
@@ -321,6 +336,33 @@ export default function PricingPage() {
           <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-hero-back-link">
             Back to account
           </Link>
+          {(ownedBands.length > 0 || selectedBandId === 'new') ? (
+            <div className="pricing-hero-band-select">
+              <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
+                <span>Band workspace</span>
+                <select
+                  value={selectedBandId}
+                  onChange={(event) => setSelectedBandId(event.target.value)}
+                >
+                  {ownedBands.map((band) => (
+                    <option key={band.id} value={band.id}>{band.name}</option>
+                  ))}
+                  <option value="new">Create a new band</option>
+                </select>
+              </label>
+              {selectedBandId === 'new' ? (
+                <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
+                  <span>Band name</span>
+                  <input
+                    type="text"
+                    value={newBandName}
+                    onChange={(event) => setNewBandName(event.target.value)}
+                    placeholder="Enter band name"
+                  />
+                </label>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <div className="pricing-cycle-toggle" role="tablist" aria-label="Billing cycle">
           <button
@@ -343,10 +385,12 @@ export default function PricingPage() {
       <div className="pricing-card-grid">
         {PLAN_CARDS.map((card) => {
           const Icon = card.icon;
-          const isCurrentPlan = plan === card.tier;
+          const creatingNewBand = selectedBandId === 'new';
+          const selectedBandPlan = selectedBandPlanState.plan;
+          const isCurrentPlan = !creatingNewBand && selectedBandPlan === card.tier;
           const displayPrice = billingCycle === 'annual' && card.annualPrice ? card.annualPrice : card.monthlyPrice;
           const priceSuffix = card.tier === 'free' ? '' : billingCycle === 'annual' ? '/year' : '/month';
-          const ctaLabel = getCtaLabel(card, plan, isCurrentPlan);
+          const ctaLabel = getCtaLabel(card, selectedBandPlan, isCurrentPlan, creatingNewBand);
 
           return (
             <section
@@ -379,35 +423,6 @@ export default function PricingPage() {
                   );
                 })}
               </ul>
-              {(card.tier === 'crew' || card.tier === 'pro') && !redirectedFromCreateNewBand ? (
-                <>
-                  <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
-                    <span>Band workspace</span>
-                    <select
-                      value={selectedBandId}
-                      onChange={(event) => setSelectedBandId(event.target.value)}
-                      disabled={busyTier === card.tier}
-                    >
-                      {ownedBands.map((band) => (
-                        <option key={band.id} value={band.id}>{band.name}</option>
-                      ))}
-                      <option value="new">Create a new band</option>
-                    </select>
-                  </label>
-                  {selectedBandId === 'new' ? (
-                    <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
-                      <span>Band name</span>
-                      <input
-                        type="text"
-                        value={newBandName}
-                        onChange={(event) => setNewBandName(event.target.value)}
-                        placeholder="Enter band name"
-                        disabled={busyTier === card.tier}
-                      />
-                    </label>
-                  ) : null}
-                </>
-              ) : null}
               {card.tier === 'crew' ? (
                 <label className="share-menu-field" style={{ marginBottom: '0.85rem' }}>
                     <span>Extra members ({billingCycle === 'annual' ? '200 kr / 20 USD each per year' : '20 kr / 2 USD each per month'})</span>
@@ -417,7 +432,7 @@ export default function PricingPage() {
                       max={500}
                       value={extraMemberCount}
                       onChange={(event) => setExtraMemberCount(Number(event.target.value) || 0)}
-                      disabled={busyTier === card.tier || ownedBands.length === 0}
+                      disabled={busyTier === card.tier}
                     />
                   </label>
               ) : null}
@@ -429,14 +444,10 @@ export default function PricingPage() {
                 <button
                   type="button"
                   className="setlist-action-btn pricing-card-btn"
-                  disabled={busyTier === card.tier || isCurrentPlan || ((card.tier === 'crew' || card.tier === 'pro') && !redirectedFromCreateNewBand && ownedBands.length === 0)}
+                  disabled={busyTier === card.tier || isCurrentPlan}
                   onClick={() => void handleCheckout(card)}
                 >
-                  {busyTier === card.tier
-                    ? 'Redirecting…'
-                    : (card.tier === 'crew' || card.tier === 'pro') && !redirectedFromCreateNewBand && ownedBands.length === 0
-                      ? 'Create a band first'
-                      : ctaLabel}
+                  {busyTier === card.tier ? 'Redirecting…' : ctaLabel}
                 </button>
               )}
             </section>
