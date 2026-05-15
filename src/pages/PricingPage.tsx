@@ -20,7 +20,7 @@ import { useOptionalBands } from '../context/BandsContext';
 import { createCheckoutSession } from '../lib/billingApi';
 import { useBandPlan, usePlan } from '../hooks/usePlan';
 import { PLAN_LABELS } from '../lib/planLimits';
-import type { Band, PlanTier } from '../types';
+import type { PlanTier } from '../types';
 
 type BillingCycle = 'monthly' | 'annual';
 
@@ -182,7 +182,6 @@ export default function PricingPage() {
   const bandsContext = useOptionalBands();
   const bands = bandsContext?.bands ?? [];
   const location = useLocation();
-  const { plan } = usePlan();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [busyTier, setBusyTier] = useState<PlanTier | null>(null);
   const [extraMemberCount, setExtraMemberCount] = useState(0);
