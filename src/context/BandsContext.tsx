@@ -223,6 +223,7 @@ function normalizeBandSong(id: string, data: Record<string, unknown>): Song {
     id,
     title,
     artist: typeof data.artist === 'string' ? data.artist : undefined,
+    author: typeof data.author === 'string' ? data.author : undefined,
     playbackUrl,
     language: typeof data.language === 'string' ? data.language : 'en',
     secondaryLanguages: Array.isArray(data.secondaryLanguages)

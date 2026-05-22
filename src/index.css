@@ -3349,6 +3349,47 @@ input, select, textarea { font: inherit; color: var(--text); }
   grid-column: 1 / -1;
 }
 
+/* Chord finder tool card */
+.song-toolbar-tool-card--chord-finder {
+  min-width: 0;
+}
+
+.chord-finder {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.chord-finder-input {
+  width: 100%;
+  padding: .3rem .5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: .88rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.chord-finder-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.chord-finder-result {
+  display: flex;
+  justify-content: center;
+  padding-top: .25rem;
+  overflow-x: auto;
+}
+
+.chord-finder-unavailable {
+  font-size: .82rem;
+  color: var(--muted);
+  padding: .25rem 0;
+}
+
 /* Recorder avatar badge (band context) */
 .rec-avatar {
   display: inline-flex;

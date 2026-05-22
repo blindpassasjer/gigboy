@@ -18,6 +18,7 @@ import {
   Mic,
   AudioLines,
   Metronome,
+  Search,
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { HandNoteStroke, Song } from '../types';
@@ -40,6 +41,7 @@ import { getUserNoteColor } from '../lib/userColors';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import SongMediaPlayer from './SongMediaPlayer';
 import SongRecorder from './SongRecorder';
+import ChordFinder from './ChordFinder';
 import { parseSongMedia } from '../utils/songMedia';
 import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
 
@@ -118,6 +120,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const [showTuner, setShowTuner] = useState(false);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
   const [showRecorder, setShowRecorder] = useState(false);
+  const [showChordFinder, setShowChordFinder] = useState(false);
   const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
   const media = song.playbackUrl ? parseSongMedia(song.playbackUrl) : null;
   const canDeleteSong = !song.ownerId || song.accessRole === 'owner';
@@ -197,6 +200,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setAutoPlayMediaOnOpen(false);
     setShowNotes(false);
     setDrawEnabled(false);
+    setShowChordFinder(false);
   }, [song.id]);
 
   useEffect(() => {
@@ -552,9 +556,20 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   Recorder
                 </button>
               )}
+
+              <button
+                type="button"
+                className={`song-toolbar-tool-btn${showChordFinder ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => setShowChordFinder((prev) => !prev)}
+                title={showChordFinder ? 'Hide chord finder' : 'Show chord finder'}
+                aria-label={showChordFinder ? 'Hide chord finder' : 'Show chord finder'}
+              >
+                <Search size={14} />
+                Chord finder
+              </button>
             </div>
 
-            {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes) || (user && showRecorder)) && (
+            {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes) || (user && showRecorder) || showChordFinder) && (
               <div className="song-toolbar-tools-grid">
                 {showTuner && (
                   <div className="song-toolbar-tool-card">
@@ -675,6 +690,16 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 {user && showRecorder && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--recorder">
                     <SongRecorder song={song} user={user} bandId={bandId} />
+                  </div>
+                )}
+
+                {showChordFinder && (
+                  <div className="song-toolbar-tool-card song-toolbar-tool-card--chord-finder">
+                    <span className="song-toolbar-tool-card-title">
+                      <Search size={13} />
+                      Chord finder
+                    </span>
+                    <ChordFinder instrument={chordInstrument} />
                   </div>
                 )}
               </div>

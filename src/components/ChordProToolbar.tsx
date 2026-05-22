@@ -33,7 +33,7 @@ function insertAtCursor(
   onChange(before + text + after);
   const pos = newCursorOffset !== undefined ? start + newCursorOffset : start + text.length;
   requestAnimationFrame(() => {
-    textarea.focus();
+    textarea.focus({ preventScroll: true });
     textarea.setSelectionRange(pos, pos);
   });
 }

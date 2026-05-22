@@ -56,7 +56,7 @@ function normalizeQualityForLookup(suffix: string): string {
   return compact;
 }
 
-function normalizeForLookup(chord: string): string {
+export function normalizeForLookup(chord: string): string {
   const base = chord.split('/')[0].trim().replace(/♯/g, '#').replace(/♭/g, 'b');
   const match = base.match(/^([A-Ga-g])([#b]?)(.*)$/);
   if (!match) return base;
@@ -172,7 +172,7 @@ function getFullIntervals(suffix: string): number[] {
   return uniqSorted(intervals);
 }
 
-function parseChordModel(chord: string): ChordModel | null {
+export function parseChordModel(chord: string): ChordModel | null {
   const base = chord.split('/')[0];
   const m = base.match(/^([A-G][#b]?)(.*)$/);
   if (!m) return null;
@@ -194,7 +194,7 @@ function inversionLabel(index: number): string {
   return `${index}th inv`;
 }
 
-function buildPianoNotes(rootPc: number, intervals: number[], inversion: number): number[] {
+export function buildPianoNotes(rootPc: number, intervals: number[], inversion: number): number[] {
   if (intervals.length === 0) return [];
 
   const MIDI_START = 48; // C3
@@ -233,7 +233,7 @@ const GRID_W = (NUM_STRINGS - 1) * STR_GAP;
 const SVG_W = GML + GRID_W + GMR;
 const STRING_LABELS = ['E', 'A', 'D', 'G', 'B', 'e'];
 
-function GuitarDiagram({ frets }: { frets: number[] }) {
+export function GuitarDiagram({ frets }: { frets: number[] }) {
   const played = frets.filter(f => f > 0);
   const minFret = played.length ? Math.min(...played) : 0;
   const maxFret = played.length ? Math.max(...played) : 4;
@@ -333,7 +333,7 @@ const BLACK_PCS: { pc: number; wOff: number }[] = [
   { pc: 10, wOff: 6 }, // A#
 ];
 
-function PianoDiagram({ activeNotes }: { activeNotes: Set<number> }) {
+export function PianoDiagram({ activeNotes }: { activeNotes: Set<number> }) {
   const OCTAVES = 3;
   const MIDI_START = 48; // C3
   const WKW = 20;  // white key width
