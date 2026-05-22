@@ -266,6 +266,10 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
           const el = audioRef.current;
           if (el && el.duration > 0) setProgress(el.currentTime / el.duration);
         }}
+        onSeeked={() => {
+          const el = audioRef.current;
+          if (el && el.duration > 0) setProgress(el.currentTime / el.duration);
+        }}
       />
       <div className="recorder-preview-playback">
         <button className="play-btn" onClick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Play'}>
@@ -604,6 +608,10 @@ export default function SongRecorder({ song, user, bandId }: Props) {
               onPause={() => setIsPreviewPlaying(false)}
               onEnded={() => { setIsPreviewPlaying(false); setPreviewProgress(0); }}
               onTimeUpdate={() => {
+                const el = previewAudioRef.current;
+                if (el && el.duration > 0) setPreviewProgress(el.currentTime / el.duration);
+              }}
+              onSeeked={() => {
                 const el = previewAudioRef.current;
                 if (el && el.duration > 0) setPreviewProgress(el.currentTime / el.duration);
               }}
