@@ -296,16 +296,24 @@ interface Props {
   instrument: DiagramInstrument;
 }
 
+// All strings open by default — mirrors how a guitar actually sits at rest.
+// This means the user only needs to mute unwanted strings and fret the right ones,
+// rather than also having to explicitly open strings like G and e in a C chord.
+const DEFAULT_STRINGS = [0, 0, 0, 0, 0, 0];
+
 export default function ChordFinder({ instrument }: Props) {
-  const [strings, setStrings] = useState<number[]>([-1, -1, -1, -1, -1, -1]);
+  const [strings, setStrings] = useState<number[]>([...DEFAULT_STRINGS]);
   const [startFret, setStartFret] = useState(1);
   const [activePCs, setActivePCs] = useState<Set<number>>(new Set());
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   function handleStringChange(i: number, fret: number) {
+    setHasInteracted(true);
     setStrings(prev => { const next = [...prev]; next[i] = fret; return next; });
   }
 
   function handleTogglePC(pc: number) {
+    setHasInteracted(true);
     setActivePCs(prev => {
       const next = new Set(prev);
       if (next.has(pc)) next.delete(pc); else next.add(pc);
@@ -314,9 +322,10 @@ export default function ChordFinder({ instrument }: Props) {
   }
 
   function handleReset() {
-    setStrings([-1, -1, -1, -1, -1, -1]);
+    setStrings([...DEFAULT_STRINGS]);
     setStartFret(1);
     setActivePCs(new Set());
+    setHasInteracted(false);
   }
 
   const guitarMatches = useMemo(() => {
@@ -339,7 +348,7 @@ export default function ChordFinder({ instrument }: Props) {
   const soundingCount = instrument === 'guitar'
     ? strings.filter(f => f !== -1).length
     : activePCs.size;
-  const hasInput = soundingCount >= 2;
+  const hasInput = hasInteracted && soundingCount >= 2;
 
   return (
     <div className="chord-finder">
@@ -392,7 +401,7 @@ export default function ChordFinder({ instrument }: Props) {
               : 'Click keys to select notes'}
           </span>
         )}
-        {(soundingCount > 0) && (
+        {hasInteracted && (
           <button className="chord-finder-reset" onClick={handleReset} aria-label="Reset">
             Reset
           </button>
