@@ -285,7 +285,9 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
           waveformBars={recording.waveformBars}
         />
 
-        <span className="recorder-elapsed" title="Duration">{formatTime(recording.durationMs)}</span>
+        <span className="recorder-elapsed" title="Duration">
+          {formatTime(progress * recording.durationMs)} / {formatTime(recording.durationMs)}
+        </span>
       </div>
 
       <div className="recording-rename-row">
@@ -632,6 +634,9 @@ export default function SongRecorder({ song, user, bandId }: Props) {
                 className="recorder-preview-bar"
                 waveformBars={previewWaveformBars ?? undefined}
               />
+              <span className="recorder-elapsed" title="Duration">
+                {formatTime(previewProgress * previewDurationMs)} / {formatTime(previewDurationMs)}
+              </span>
             </div>
             <div className="recorder-save-form">
               <input
