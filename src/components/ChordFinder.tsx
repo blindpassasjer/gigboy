@@ -1,11 +1,35 @@
 import { useMemo, useState } from 'react';
+import { GUITAR_CHORDS } from '../data/guitarChords';
 import type { DiagramInstrument } from './ChordDiagram';
 
 // ─── Chord identification ─────────────────────────────────────────────────────
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-// Ordered by preference: simpler/more common chords first
+// Standard tuning: E2 A2 D3 G3 B3 E4
+const OPEN_MIDI = [40, 45, 50, 55, 59, 64];
+
+// Build reverse lookup: sorted pitch-class signature → chord names from GUITAR_CHORDS.
+// This is the same data ChordDiagram uses for the guitar diagram, so results are
+// perfectly consistent with what the diagram would show.
+const GUITAR_PC_LOOKUP = (() => {
+  const map = new Map<string, string[]>();
+  for (const [name, frets] of Object.entries(GUITAR_CHORDS)) {
+    const midi = frets
+      .map((f, i) => (f === -1 ? null : OPEN_MIDI[i] + f))
+      .filter((m): m is number => m !== null);
+    const key = Array.from(new Set(midi.map(m => m % 12)))
+      .sort((a, b) => a - b)
+      .join(',');
+    const list = map.get(key) ?? [];
+    list.push(name);
+    map.set(key, list);
+  }
+  return map;
+})();
+
+// Interval-based fallback for voicings not in the database, and for piano mode.
+// Covers every chord type that ChordDiagram's piano view can render.
 const QUALITIES: { suffix: string; intervals: number[] }[] = [
   { suffix: '',      intervals: [0, 4, 7] },
   { suffix: 'm',     intervals: [0, 3, 7] },
@@ -22,29 +46,44 @@ const QUALITIES: { suffix: string; intervals: number[] }[] = [
   { suffix: 'aug',   intervals: [0, 4, 8] },
   { suffix: 'dim7',  intervals: [0, 3, 6, 9] },
   { suffix: 'm7b5',  intervals: [0, 3, 6, 10] },
+  { suffix: '9',     intervals: [0, 2, 4, 7, 10] },
+  { suffix: 'maj9',  intervals: [0, 2, 4, 7, 11] },
+  { suffix: 'm9',    intervals: [0, 2, 3, 7, 10] },
 ];
 
-function identifyChords(pcs: Set<number>, bassPC: number): string[] {
-  if (pcs.size < 2) return [];
-  const results: { name: string; score: number }[] = [];
+function pcSignature(pcs: Set<number>): string {
+  return Array.from(pcs).sort((a, b) => a - b).join(',');
+}
 
+function identifyGuitarChords(pcs: Set<number>, bassPC: number): string[] {
+  if (pcs.size < 2) return [];
+  // Primary: exact database match (same source as ChordDiagram)
+  const dbMatches = GUITAR_PC_LOOKUP.get(pcSignature(pcs)) ?? [];
+  if (dbMatches.length > 0) return dbMatches.slice(0, 4);
+  // Fallback: interval analysis for voicings not in the database
+  return identifyByIntervals(pcs, bassPC);
+}
+
+function identifyPianoChords(pcs: Set<number>, bassPC: number): string[] {
+  if (pcs.size < 2) return [];
+  return identifyByIntervals(pcs, bassPC);
+}
+
+function identifyByIntervals(pcs: Set<number>, bassPC: number): string[] {
+  const results: { name: string; score: number }[] = [];
   for (let root = 0; root < 12; root++) {
     for (const q of QUALITIES) {
       const required = q.intervals.map(i => (root + i) % 12);
       if (!required.every(pc => pcs.has(pc))) continue;
-
       const rootName = NOTE_NAMES[root];
       const isSlash = bassPC !== root;
       const name = isSlash
         ? `${rootName}${q.suffix}/${NOTE_NAMES[bassPC]}`
         : `${rootName}${q.suffix}`;
-
-      // Root-position chords and simpler qualities score higher
       const score = (bassPC === root ? 10 : 0) - (pcs.size - q.intervals.length) - (isSlash ? 2 : 0);
       results.push({ name, score });
     }
   }
-
   results.sort((a, b) => b.score - a.score);
   const seen = new Set<string>();
   return results
@@ -55,8 +94,6 @@ function identifyChords(pcs: Set<number>, bassPC: number): string[] {
 
 // ─── Interactive guitar fretboard ─────────────────────────────────────────────
 
-// Standard tuning: E2 A2 D3 G3 B3 E4
-const OPEN_MIDI = [40, 45, 50, 55, 59, 64];
 const STRING_LABELS = ['E', 'A', 'D', 'G', 'B', 'e'];
 const NUM_STRINGS = 6;
 const FRETS_SHOWN = 5;
@@ -288,14 +325,14 @@ export default function ChordFinder({ instrument }: Props) {
       .filter((m): m is number => m !== null);
     if (sounding.length < 2) return [];
     const pcs = new Set(sounding.map(m => m % 12));
-    const bassPC = sounding.reduce((a, b) => a < b ? a : b) % 12;
-    return identifyChords(pcs, bassPC);
+    const bassPC = Math.min(...sounding) % 12;
+    return identifyGuitarChords(pcs, bassPC);
   }, [strings]);
 
   const pianoMatches = useMemo(() => {
     if (activePCs.size < 2) return [];
     const bassPC = Math.min(...activePCs);
-    return identifyChords(activePCs, bassPC);
+    return identifyPianoChords(activePCs, bassPC);
   }, [activePCs]);
 
   const matches = instrument === 'guitar' ? guitarMatches : pianoMatches;
