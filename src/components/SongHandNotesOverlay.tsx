@@ -45,11 +45,17 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: HandNoteStroke | Acti
   ctx.shadowColor = stroke.color;
   ctx.shadowBlur = Math.max(stroke.width * 0.75, 1);
 
+  // Quadratic bezier through midpoints for smooth handwriting curves
   ctx.moveTo(stroke.points[0] * width, stroke.points[1] * height);
-
-  for (let index = 2; index < stroke.points.length; index += 2) {
-    ctx.lineTo(stroke.points[index] * width, stroke.points[index + 1] * height);
+  for (let i = 2; i < stroke.points.length - 2; i += 2) {
+    const cpX = stroke.points[i] * width;
+    const cpY = stroke.points[i + 1] * height;
+    const midX = (cpX + stroke.points[i + 2] * width) / 2;
+    const midY = (cpY + stroke.points[i + 3] * height) / 2;
+    ctx.quadraticCurveTo(cpX, cpY, midX, midY);
   }
+  const n = stroke.points.length;
+  ctx.lineTo(stroke.points[n - 2] * width, stroke.points[n - 1] * height);
 
   ctx.stroke();
   ctx.shadowBlur = 0;
@@ -71,6 +77,7 @@ export default function SongHandNotesOverlay({
   const activeStrokeRef = useRef<ActiveStrokeState | null>(null);
 
   const [viewport, setViewport] = useState({ width: 1, height: 1 });
+  const viewportRef = useRef({ width: 1, height: 1 });
   const [revision, setRevision] = useState(0);
 
   const measureTarget = useCallback(() => {
@@ -89,7 +96,9 @@ export default function SongHandNotesOverlay({
 
     setViewport((current) => {
       if (current.width === width && current.height === height) return current;
-      return { width, height };
+      const next = { width, height };
+      viewportRef.current = next;
+      return next;
     });
   }, [measureTarget]);
 
@@ -114,7 +123,9 @@ export default function SongHandNotesOverlay({
       const height = Math.max(Math.round(entry.contentRect.height), 1);
       setViewport((current) => {
         if (current.width === width && current.height === height) return current;
-        return { width, height };
+        const next = { width, height };
+        viewportRef.current = next;
+        return next;
       });
     });
 
@@ -235,21 +246,56 @@ export default function SongHandNotesOverlay({
     const active = activeStrokeRef.current;
     if (!active) return;
 
-    const point = pointFromPointerEvent(event);
-    if (!point) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
 
-    const total = active.points.length;
-    const lastX = active.points[total - 2];
-    const lastY = active.points[total - 1];
-    const dx = point.x - lastX;
-    const dy = point.y - lastY;
-    const minDistance = 0.0025;
+    const stage = stageRef.current;
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
 
-    if ((dx * dx) + (dy * dy) < (minDistance * minDistance)) return;
+    const { width, height } = viewportRef.current;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    active.points.push(point.x, point.y);
-    setRevision((prev) => prev + 1);
-  }, [drawEnabled, pointFromPointerEvent]);
+    // Coalesced events capture all touch samples batched between frames
+    const raw = event.nativeEvent.getCoalescedEvents?.() ?? [];
+    const events: PointerEvent[] = raw.length > 0 ? raw : [event.nativeEvent];
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = active.color;
+    ctx.lineWidth = active.width;
+    ctx.shadowColor = active.color;
+    ctx.shadowBlur = Math.max(active.width * 0.75, 1);
+
+    for (const ce of events) {
+      const px = clamp01((ce.clientX - rect.left) / rect.width);
+      const py = clamp01((ce.clientY - rect.top) / rect.height);
+
+      const total = active.points.length;
+      const lastX = active.points[total - 2];
+      const lastY = active.points[total - 1];
+      const dx = px - lastX;
+      const dy = py - lastY;
+      if (dx * dx + dy * dy < 0.0025 * 0.0025) continue;
+
+      const x1 = lastX * width;
+      const y1 = lastY * height;
+      const x2 = px * width;
+      const y2 = py * height;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      active.points.push(px, py);
+    }
+
+    ctx.shadowBlur = 0;
+  }, [drawEnabled]);
 
   const handlePointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!drawEnabled) return;
@@ -272,9 +318,11 @@ export default function SongHandNotesOverlay({
 
   const handlePointerCancel = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (pointerIdRef.current !== event.pointerId) return;
-    event.preventDefault();
-    finishStroke();
-  }, [finishStroke]);
+    // Discard: system interrupted the gesture, not the user's intention to commit
+    activeStrokeRef.current = null;
+    pointerIdRef.current = null;
+    setRevision((prev) => prev + 1);
+  }, []);
 
   if (!visible) return null;
 
@@ -286,7 +334,6 @@ export default function SongHandNotesOverlay({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
-      onPointerLeave={handlePointerUp}
     >
       <canvas ref={canvasRef} className="song-hand-notes-canvas" />
     </div>

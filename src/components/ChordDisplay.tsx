@@ -86,12 +86,15 @@ function LineRenderer({
       return <div className="section-label">Bridge</div>;
     if (dir === 'interlude' || dir === 'start_of_interlude')
       return <div className="section-label">Interlude</div>;
+    if (dir === 'solo' || dir === 'start_of_solo')
+      return <div className="section-label">Solo</div>;
     if (dir === 'outro' || dir === 'start_of_outro')
       return <div className="section-label">Outro</div>;
     if (
       dir === 'end_of_chorus' ||
       dir === 'end_of_intro' ||
       dir === 'end_of_interlude' ||
+      dir === 'end_of_solo' ||
       dir === 'end_of_outro' ||
       dir === 'end_of_verse' ||
       dir === 'end_of_bridge'

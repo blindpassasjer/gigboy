@@ -16,6 +16,7 @@ const SECTIONS: Section[] = [
   { label: 'Bridge',     name: 'bridge',     icon: <GitBranch size={13} />,color: 'section-bridge' },
   { label: 'Pre-chorus', name: 'pre_chorus', icon: <ArrowRight size={13} />,color: 'section-prechorus' },
   { label: 'Interlude',  name: 'interlude',  icon: <Music2 size={13} />,   color: 'section-interlude' },
+  { label: 'Solo',       name: 'solo',       icon: <Guitar size={13} />,   color: 'section-solo' },
   { label: 'Outro',      name: 'outro',      icon: <Repeat2 size={13} />,  color: 'section-outro' },
 ];
 

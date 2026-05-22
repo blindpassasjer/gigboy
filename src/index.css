@@ -3357,37 +3357,95 @@ input, select, textarea { font: inherit; color: var(--text); }
 .chord-finder {
   display: flex;
   flex-direction: column;
-  gap: .5rem;
+  gap: .6rem;
 }
 
-.chord-finder-input {
-  width: 100%;
-  padding: .3rem .5rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
-  font-size: .88rem;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-
-.chord-finder-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.chord-finder-result {
+.chord-finder-diagram {
   display: flex;
-  justify-content: center;
-  padding-top: .25rem;
+  gap: .5rem;
+  align-items: flex-start;
   overflow-x: auto;
 }
 
-.chord-finder-unavailable {
+.chord-finder-fret-nav {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  padding-top: .5rem;
+}
+
+.chord-finder-nav-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: .2rem .35rem;
+  font-size: .7rem;
+  color: var(--text);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.chord-finder-nav-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chord-finder-nav-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.chord-finder-result-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+  min-height: 2rem;
+}
+
+.chord-finder-matches {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+.chord-finder-match {
+  font-size: .8rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: .1rem .4rem;
+}
+
+.chord-finder-match--primary {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+  border-color: var(--accent);
+  padding: .15rem .55rem;
+}
+
+.chord-finder-no-match,
+.chord-finder-hint {
   font-size: .82rem;
   color: var(--muted);
-  padding: .25rem 0;
+}
+
+.chord-finder-reset {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: .15rem .5rem;
+  font-size: .78rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.chord-finder-reset:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Recorder avatar badge (band context) */
@@ -3687,6 +3745,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 .section-prechorus:hover  { background: #1a6090; border-color: #1a6090; color: #fff; }
 .section-interlude  { border-color: #d7d3fb; background: #f2f0ff; color: #5b4db2; }
 .section-interlude:hover  { background: #5b4db2; border-color: #5b4db2; color: #fff; }
+.section-solo       { border-color: #fcd34d; background: #fffbeb; color: #92400e; }
+.section-solo:hover       { background: #92400e; border-color: #92400e; color: #fff; }
 .section-outro      { border-color: #f6cfd8; background: #fff0f4; color: #b34763; }
 .section-outro:hover      { background: #b34763; border-color: #b34763; color: #fff; }
 .section-tab        { border-color: #c5dff0; background: #eaf4fb; color: #1a5f8a; }
