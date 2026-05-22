@@ -208,7 +208,20 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
     if (!audioRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = (e.clientX - rect.left) / rect.width;
-    audioRef.current.currentTime = ratio * (audioRef.current.duration || 0);
+    const audio = audioRef.current;
+    const duration = audio.duration;
+    let targetTime = ratio * (duration || 0);
+    if (!isFinite(duration) || duration <= 0) {
+      // If duration not known, try to use seekable end
+      if (audio.seekable && audio.seekable.length > 0) {
+        targetTime = ratio * audio.seekable.end(0);
+      } else {
+        // Fallback: set currentTime to ratio of a large number; browser will clamp
+        targetTime = ratio * Number.MAX_SAFE_INTEGER;
+      }
+    }
+    if (!isFinite(targetTime)) targetTime = 0;
+    audio.currentTime = targetTime;
   }
 
   function openRename() {
@@ -245,6 +258,7 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
       <audio
         ref={audioRef}
         src={recording.downloadUrl}
+        preload="metadata"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onEnded={() => { setIsPlaying(false); setProgress(0); }}
@@ -540,7 +554,20 @@ export default function SongRecorder({ song, user, bandId }: Props) {
     if (!previewAudioRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = (e.clientX - rect.left) / rect.width;
-    previewAudioRef.current.currentTime = ratio * (previewAudioRef.current.duration || 0);
+    const audio = previewAudioRef.current;
+    const duration = audio.duration;
+    let targetTime = ratio * (duration || 0);
+    if (!isFinite(duration) || duration <= 0) {
+      // If duration not known, try to use seekable end
+      if (audio.seekable && audio.seekable.length > 0) {
+        targetTime = ratio * audio.seekable.end(0);
+      } else {
+        // Fallback: set currentTime to ratio of a large number; browser will clamp
+        targetTime = ratio * Number.MAX_SAFE_INTEGER;
+      }
+    }
+    if (!isFinite(targetTime)) targetTime = 0;
+    audio.currentTime = targetTime;
   }
 
   return (
@@ -572,6 +599,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
             <audio
               ref={previewAudioRef}
               src={previewUrl}
+              preload="metadata"
               onPlay={() => setIsPreviewPlaying(true)}
               onPause={() => setIsPreviewPlaying(false)}
               onEnded={() => { setIsPreviewPlaying(false); setPreviewProgress(0); }}
