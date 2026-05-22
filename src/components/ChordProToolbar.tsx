@@ -1,5 +1,6 @@
-import { useState, type RefObject } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { Music2, Repeat2, GitBranch, ArrowRight, Guitar } from 'lucide-react';
+import TabSequencerModal from './TabSequencerModal';
 
 interface Props {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -57,6 +58,10 @@ function insertSection(
 
 export default function ChordProToolbar({ textareaRef, value, onChange }: Props) {
   const [chordInput, setChordInput] = useState('');
+  const [showTabSequencer, setShowTabSequencer] = useState(false);
+
+  // Capture the cursor position when the modal opens so we insert at the right spot
+  const pendingCursorRef = useRef(0);
 
   function handleSectionClick(name: string) {
     if (!textareaRef.current) return;
@@ -65,16 +70,26 @@ export default function ChordProToolbar({ textareaRef, value, onChange }: Props)
 
   function handleInsertTab() {
     if (!textareaRef.current) return;
+    pendingCursorRef.current = textareaRef.current.selectionStart;
+    setShowTabSequencer(true);
+  }
+
+  function handleTabSequencerInsert(tabLines: string[]) {
+    setShowTabSequencer(false);
+    if (!textareaRef.current) return;
     const textarea = textareaRef.current;
-    const start = textarea.selectionStart;
+    const start = pendingCursorRef.current;
     const before = value.slice(0, start);
+    const after = value.slice(start);
     const needsNewline = before.length > 0 && !before.endsWith('\n');
     const prefix = needsNewline ? '\n' : '';
-    const TEMPLATE = `e|---|\nB|---|\nG|---|\nD|---|\nA|---|\nE|---|`;
-    const block = `${prefix}{start_of_tab}\n${TEMPLATE}\n{end_of_tab}\n`;
-    // Place cursor on the first tab line (after "{start_of_tab}\n")
-    const cursorOffset = prefix.length + '{start_of_tab}\n'.length;
-    insertAtCursor(textarea, block, value, onChange, cursorOffset);
+    const block = `${prefix}{start_of_tab}\n${tabLines.join('\n')}\n{end_of_tab}\n`;
+    onChange(before + block + after);
+    const newPos = start + block.length;
+    requestAnimationFrame(() => {
+      textarea.focus({ preventScroll: true });
+      textarea.setSelectionRange(newPos, newPos);
+    });
   }
 
   function handleChordInsert() {
@@ -92,6 +107,13 @@ export default function ChordProToolbar({ textareaRef, value, onChange }: Props)
   }
 
   return (
+    <>
+    {showTabSequencer && (
+      <TabSequencerModal
+        onInsert={handleTabSequencerInsert}
+        onClose={() => setShowTabSequencer(false)}
+      />
+    )}
     <div className="chordpro-toolbar">
       <div className="toolbar-group">
         <span className="toolbar-label">Section</span>
@@ -152,5 +174,6 @@ export default function ChordProToolbar({ textareaRef, value, onChange }: Props)
         </button>
       </div>
     </div>
+    </>
   );
 }

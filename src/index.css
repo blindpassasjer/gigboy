@@ -3789,6 +3789,198 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 0 0 6px 6px;
 }
 
+/* ─── Tab Sequencer Modal ─────────────────────────────────────────────────────── */
+.tab-seq-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.tab-seq-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: min(98vw, 780px);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tab-seq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab-seq-title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tab-seq-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.tab-seq-close:hover { color: var(--text); border-color: var(--border); background: var(--bg); }
+
+.tab-seq-body {
+  padding: .75rem 1rem;
+  overflow-x: auto;
+  flex: 1 1 auto;
+}
+
+/* Bar number header row */
+.tab-seq-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 3px;
+}
+
+.tab-seq-bar-cell {
+  flex: 1;
+  min-width: 28px;
+  text-align: center;
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--muted);
+  user-select: none;
+}
+.tab-seq-bar-cell--beat { color: var(--text); }
+
+/* String rows */
+.tab-seq-string-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 3px;
+}
+
+.tab-seq-string-label {
+  width: 20px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: .8rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  user-select: none;
+}
+
+/* Individual step cells */
+.tab-seq-cell {
+  flex: 1;
+  min-width: 28px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: .72rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .1s, border-color .1s, color .1s, transform .1s;
+  user-select: none;
+}
+.tab-seq-cell:hover { background: var(--chord-bg); border-color: var(--accent); color: var(--accent); }
+
+.tab-seq-cell--barstart {
+  border-color: color-mix(in srgb, var(--border) 60%, var(--muted));
+}
+
+.tab-seq-cell--active {
+  background: var(--chord-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tab-seq-cell--active:hover { background: var(--accent); color: var(--accent-contrast); }
+
+.tab-seq-cell--selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  transform: scale(1.12);
+  z-index: 1;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.tab-seq-cell--selected:hover { background: var(--accent); }
+
+.tab-seq-cell-dash { opacity: .25; }
+
+.tab-seq-hint {
+  padding: 0 1rem .5rem;
+  font-size: .72rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.tab-seq-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .65rem 1rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: .5rem;
+}
+
+.tab-seq-footer-actions {
+  display: flex;
+  gap: .5rem;
+}
+
+.tab-seq-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .35rem .85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+
+.tab-seq-btn--ghost {
+  background: transparent;
+  color: var(--muted);
+}
+.tab-seq-btn--ghost:hover { background: var(--bg); color: var(--text); border-color: var(--muted); }
+
+.tab-seq-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.tab-seq-btn--primary:hover { background: var(--accent-h); border-color: var(--accent-h); }
+.tab-seq-btn--primary:disabled { opacity: .4; cursor: default; }
+.tab-seq-btn--primary:disabled:hover { background: var(--accent); border-color: var(--accent); }
+
 .form-hint { font-size: .8rem; color: var(--muted); margin-top: .3rem; }
 .form-hint code {
   background: var(--chord-bg);
