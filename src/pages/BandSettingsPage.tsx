@@ -126,6 +126,9 @@ export default function BandSettingsPage() {
     setColor(band.color ?? '#c33232');
     setUseAutoColor(!band.color);
     setLogo(band.logo);
+  // Intentionally depends only on band.id — resets form when switching bands,
+  // not on every property change (which would overwrite the user's in-progress edits).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [band?.id]);
 
   const bandId = band?.id ?? null;

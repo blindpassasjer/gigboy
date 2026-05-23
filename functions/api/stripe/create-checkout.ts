@@ -3,10 +3,7 @@ import Stripe from 'stripe';
 import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
 import {
   getStripeClient,
-  mapStripeStatus,
-  planAndExtraMembersFromSubscription,
   planTierFromPriceId,
-  updateUserPlan,
 } from '../../_helpers/stripe';
 
 interface Env {
@@ -36,96 +33,6 @@ function isAllowedReturnUrl(url: string, requestOrigin: string): boolean {
   } catch {
     return false;
   }
-}
-
-interface BandBillingSnapshot {
-  subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | null;
-  currentPeriodEnd: number | null;
-  extraMembers: number;
-  memberLimit: number;
-  stripeCustomerId: string | null;
-  stripeSubscriptionId: string | null;
-  stripeBandItemId: string | null;
-  stripeExtraMembersItemId: string | null;
-}
-
-function isBandBasePriceId(priceId: string, env: Env): boolean {
-  return priceId === env.STRIPE_BAND_MONTHLY_PRICE_ID || priceId === env.STRIPE_BAND_ANNUAL_PRICE_ID;
-}
-
-function toBandBillingSnapshot(
-  subscription: Stripe.Subscription,
-  env: Env,
-  bandId: string
-): BandBillingSnapshot {
-  const status = mapStripeStatus(subscription.status);
-  const baseItem = subscription.items.data.find((item) => {
-    const priceId = item.price?.id ?? '';
-    return isBandBasePriceId(priceId, env) && item.metadata?.bandId === bandId;
-  }) ?? null;
-
-  const extraItem = subscription.items.data.find((item) => {
-    const priceId = item.price?.id ?? '';
-    const isExtra = priceId === env.STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID
-      || priceId === env.STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID;
-    return isExtra && item.metadata?.bandId === bandId;
-  }) ?? null;
-
-  const extraMembers = Math.max(0, Math.min(500, Math.trunc(extraItem?.quantity ?? 0)));
-  const memberLimit = 5 + extraMembers;
-
-  return {
-    subscriptionStatus: status,
-    currentPeriodEnd: baseItem?.current_period_end ?? subscription.items.data[0]?.current_period_end ?? null,
-    extraMembers,
-    memberLimit,
-    stripeCustomerId: typeof subscription.customer === 'string'
-      ? subscription.customer
-      : (subscription.customer as Stripe.Customer)?.id ?? null,
-    stripeSubscriptionId: subscription.id,
-    stripeBandItemId: baseItem?.id ?? null,
-    stripeExtraMembersItemId: extraItem?.id ?? null,
-  };
-}
-
-async function writeBandBillingSnapshot(
-  env: Record<string, string | undefined>,
-  bandId: string,
-  snapshot: BandBillingSnapshot,
-  plan: 'crew' | 'pro' = 'crew'
-) {
-  const active = snapshot.subscriptionStatus === 'active' || snapshot.subscriptionStatus === 'trialing';
-  const billingPlan = active ? plan : 'free';
-  await setFirestoreDocument(env, ['bands', bandId], {
-    billingPlan,
-    billingSubscriptionStatus: snapshot.subscriptionStatus,
-    billingCurrentPeriodEnd: snapshot.currentPeriodEnd,
-    billingExtraMembers: billingPlan === 'crew' ? snapshot.extraMembers : 0,
-    billingMemberLimit: billingPlan === 'crew' ? snapshot.memberLimit : 1,
-    stripeCustomerId: snapshot.stripeCustomerId,
-    stripeSubscriptionId: snapshot.stripeSubscriptionId,
-    stripeBandItemId: snapshot.stripeBandItemId,
-    stripeExtraMembersItemId: snapshot.stripeExtraMembersItemId,
-  });
-}
-
-async function findAggregateBandSubscription(
-  stripe: Stripe,
-  customerId: string,
-  userId: string
-): Promise<Stripe.Subscription | null> {
-  const list = await stripe.subscriptions.list({
-    customer: customerId,
-    status: 'all',
-    limit: 25,
-  });
-
-  const match = list.data.find((sub) => {
-    if (sub.metadata?.gigboyMode !== 'band_aggregate') return false;
-    return sub.metadata?.firebaseUid === userId;
-  });
-
-  return match ?? null;
 }
 
 export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {

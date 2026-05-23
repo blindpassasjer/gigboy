@@ -56,7 +56,7 @@ function normalizeQualityForLookup(suffix: string): string {
   return compact;
 }
 
-export function normalizeForLookup(chord: string): string {
+function normalizeForLookup(chord: string): string {
   const base = chord.split('/')[0].trim().replace(/♯/g, '#').replace(/♭/g, 'b');
   const match = base.match(/^([A-Ga-g])([#b]?)(.*)$/);
   if (!match) return base;
@@ -172,7 +172,7 @@ function getFullIntervals(suffix: string): number[] {
   return uniqSorted(intervals);
 }
 
-export function parseChordModel(chord: string): ChordModel | null {
+function parseChordModel(chord: string): ChordModel | null {
   const base = chord.split('/')[0];
   const m = base.match(/^([A-G][#b]?)(.*)$/);
   if (!m) return null;
@@ -194,7 +194,7 @@ function inversionLabel(index: number): string {
   return `${index}th inv`;
 }
 
-export function buildPianoNotes(rootPc: number, intervals: number[], inversion: number): number[] {
+function buildPianoNotes(rootPc: number, intervals: number[], inversion: number): number[] {
   if (intervals.length === 0) return [];
 
   const MIDI_START = 48; // C3

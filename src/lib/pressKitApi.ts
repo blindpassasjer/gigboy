@@ -1,10 +1,5 @@
-import { auth } from './firebase';
 import type { PressKitImageItem, PressKitTextItem } from './pressKitZip';
-
-interface ApiHeaders {
-  userId: string;
-  userEmail: string;
-}
+import { type ApiHeaders, buildHeaders } from './apiClient';
 
 interface CreateShareInput {
   userId: string;

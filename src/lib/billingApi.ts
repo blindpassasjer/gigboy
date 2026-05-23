@@ -1,20 +1,4 @@
-import { auth } from './firebase';
-
-interface ApiHeaders {
-  userId: string;
-  userEmail: string;
-}
-
-async function buildHeaders(headers: ApiHeaders) {
-  const token = await auth?.currentUser?.getIdToken();
-  const normalizedEmail = headers.userEmail.trim().toLowerCase();
-  return {
-    'Content-Type': 'application/json',
-    ...(normalizedEmail ? { 'x-gigboy-user-email': normalizedEmail } : {}),
-    ...(headers.userId ? { 'x-gigboy-user-id': headers.userId } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
+import { type ApiHeaders, buildHeaders } from './apiClient';
 
 async function postJson<T>(path: string, body: Record<string, unknown>, headers: ApiHeaders): Promise<T> {
   const response = await fetch(path, {

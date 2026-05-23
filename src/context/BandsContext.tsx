@@ -486,9 +486,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const userUsername = user?.username ?? '';
   const userFullName = user?.fullName ?? '';
   const userAvatar = user?.avatar ?? '';
-  const userPlan = user?.plan ?? 'free';
-  const userSubscriptionStatus = user?.subscriptionStatus ?? null;
-  const userPlanOverride = user?.planOverride === true;
   const [bands, setBands] = useState<Band[]>([]);
   const [bandSongsByBandId, setBandSongsByBandId] = useState<Record<string, Song[]>>({});
   const [bandSongListsByBandId, setBandSongListsByBandId] = useState<Record<string, SongList[]>>({});
@@ -1232,9 +1229,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     userEmail,
     userFullName,
     userId,
-    userPlan,
-    userPlanOverride,
-    userSubscriptionStatus,
     userUsername,
   ]);
 
@@ -1358,7 +1352,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBands(previousBands);
       return error instanceof Error ? error.message : 'Failed to rename band.';
     }
-  }, [bandPressKitsByBandId, bands, userId]);
+  }, [bands, userId]);
 
   const updateBandDescription = useCallback(async (bandId: string, description: string) => {
     if (!db || !userId) {
@@ -1622,7 +1616,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBands(previousBands);
       return error instanceof Error ? error.message : 'Failed to upload band logo.';
     }
-  }, [bands, userId]);
+  }, [bandPressKitsByBandId, bands, userId]);
 
   const inviteMember = useCallback(async (bandId: string, recipientUsername: string, role: CollaborationPermission) => {
     if (!userId) {

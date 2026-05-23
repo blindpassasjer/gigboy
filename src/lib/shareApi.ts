@@ -1,21 +1,5 @@
 import type { CollaborationPermission, ShareResourceType } from '../types';
-import { auth } from './firebase';
-
-interface ApiHeaders {
-  userId: string;
-  userEmail: string;
-}
-
-async function buildHeaders(_headers: ApiHeaders) {
-  const token = await auth?.currentUser?.getIdToken();
-  const normalizedEmail = _headers.userEmail.trim().toLowerCase();
-  return {
-    'Content-Type': 'application/json',
-    ...(normalizedEmail ? { 'x-gigboy-user-email': normalizedEmail } : {}),
-    ...(_headers.userId ? { 'x-gigboy-user-id': _headers.userId } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
+import { type ApiHeaders, buildHeaders } from './apiClient';
 
 async function postJson<T>(path: string, body: Record<string, unknown>, headers: ApiHeaders): Promise<T> {
   const response = await fetch(path, {

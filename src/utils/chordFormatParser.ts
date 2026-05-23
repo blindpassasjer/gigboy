@@ -23,13 +23,13 @@ const CHORD_SCAN_RE = /[A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](
 // Matches a properly formed inline chord marker [G], [Am7], [C#m/G], etc. (not section labels)
 const INLINE_CHORD_MARKER_RE = /\[[A-G](?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\d*(?:\/[A-G](?:#|b)?)?\]/;
 const CHORD_ROW_SEPARATOR_RE = /^(?:\||\/)+$/;
-const TAB_LINE_RE = /^(?:[A-Ga-gEeBb]|[Dd])\|[-0-9hHpPbBrRsSxX~vV/\\()\[\]{}*|:.\s]+$/;
+const TAB_LINE_RE = /^(?:[A-Ga-gEeBb]|[Dd])\|[-0-9hHpPbBrRsSxX~vV/\\()[\]{}*|:.\s]+$/;
 const SOURCE_BOILERPLATE_RE = /^(?:ultimate\s+guitar|chordify|songsterr|songselect|guitartuna|la\s*cuerda|lacuerda(?:\.net)?|cifra\s*club|cifraclub)\b/i;
 
 const SOURCE_MATCHERS: Array<{ label: string; pattern: RegExp }> = [
   { label: 'Ultimate Guitar', pattern: /(?:ultimate\s+guitar|\[ch\]|\[tab\])/i },
   { label: 'Chordify', pattern: /(?:^|\n)\|\s*[A-G][^\n]*\|/i },
-  { label: 'Songsterr', pattern: /(?:songsterr|songsteer|^(?:e|B|G|D|A|E)\|[-0-9hHpPbBrRsSxX~vV/\\()\[\]{}*|:.\s]+)/im },
+  { label: 'Songsterr', pattern: /(?:songsterr|songsteer|^(?:e|B|G|D|A|E)\|[-0-9hHpPbBrRsSxX~vV/\\()[\]{}*|:.\s]+)/im },
   { label: 'GuitarTuna', pattern: /(?:guitartuna|\bkey\s+[A-G][#b]?(?:m|maj|min|sus|dim|aug|add)?\d*\b.*\bcapo\s+\d+)/i },
   { label: 'CCLI SongSelect', pattern: /(?:songselect|ccli\s+song\s*#)/i },
   { label: 'LaCuerda', pattern: /(?:la\s*cuerda|lacuerda(?:\.net)?|\btono\s*:|\bestribillo\b)/i },

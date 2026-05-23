@@ -141,6 +141,7 @@ export default function Layout({ children }: Props) {
   useEffect(() => {
     if (!mainContentRef.current) return;
     mainContentRef.current.scrollTop = 0;
+    toast.dismiss();
   }, [pathname]);
 
   const createBandResource = useCallback(async (kind: 'songlist' | 'setlist' | 'rider' | 'pressKit') => {
