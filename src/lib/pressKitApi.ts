@@ -13,16 +13,6 @@ interface CreateShareInput {
   videoUrls: string[];
 }
 
-async function buildHeaders(headers: ApiHeaders) {
-  const token = await auth?.currentUser?.getIdToken();
-  const normalizedEmail = headers.userEmail.trim().toLowerCase();
-  return {
-    'Content-Type': 'application/json',
-    ...(normalizedEmail ? { 'x-gigboy-user-email': normalizedEmail } : {}),
-    ...(headers.userId ? { 'x-gigboy-user-id': headers.userId } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
 
 export async function createPressKitShare(input: CreateShareInput): Promise<{ token: string; publicUrl: string }> {
   const response = await fetch('/api/press-kit/create-share', {
