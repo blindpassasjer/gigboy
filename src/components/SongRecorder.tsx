@@ -207,21 +207,12 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
   function handleSeek(e: React.MouseEvent<HTMLDivElement>) {
     if (!audioRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = (e.clientX - rect.left) / rect.width;
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const audio = audioRef.current;
-    const duration = audio.duration;
-    let targetTime = ratio * (duration || 0);
-    if (!isFinite(duration) || duration <= 0) {
-      // If duration not known, try to use seekable end
-      if (audio.seekable && audio.seekable.length > 0) {
-        targetTime = ratio * audio.seekable.end(0);
-      } else {
-        // Fallback: set currentTime to ratio of a large number; browser will clamp
-        targetTime = ratio * Number.MAX_SAFE_INTEGER;
-      }
-    }
-    if (!isFinite(targetTime)) targetTime = 0;
-    audio.currentTime = targetTime;
+    const duration = isFinite(audio.duration) && audio.duration > 0
+      ? audio.duration
+      : recording.durationMs / 1000;
+    if (duration > 0) audio.currentTime = ratio * duration;
   }
 
   function openRename() {
@@ -264,11 +255,13 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
         onEnded={() => { setIsPlaying(false); setProgress(0); }}
         onTimeUpdate={() => {
           const el = audioRef.current;
-          if (el && el.duration > 0) setProgress(el.currentTime / el.duration);
+          const dur = el && (isFinite(el.duration) && el.duration > 0 ? el.duration : recording.durationMs / 1000);
+          if (el && dur) setProgress(el.currentTime / dur);
         }}
         onSeeked={() => {
           const el = audioRef.current;
-          if (el && el.duration > 0) setProgress(el.currentTime / el.duration);
+          const dur = el && (isFinite(el.duration) && el.duration > 0 ? el.duration : recording.durationMs / 1000);
+          if (el && dur) setProgress(el.currentTime / dur);
         }}
       />
       <div className="recorder-preview-playback">
@@ -559,21 +552,12 @@ export default function SongRecorder({ song, user, bandId }: Props) {
   function handlePreviewSeek(e: React.MouseEvent<HTMLDivElement>) {
     if (!previewAudioRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = (e.clientX - rect.left) / rect.width;
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const audio = previewAudioRef.current;
-    const duration = audio.duration;
-    let targetTime = ratio * (duration || 0);
-    if (!isFinite(duration) || duration <= 0) {
-      // If duration not known, try to use seekable end
-      if (audio.seekable && audio.seekable.length > 0) {
-        targetTime = ratio * audio.seekable.end(0);
-      } else {
-        // Fallback: set currentTime to ratio of a large number; browser will clamp
-        targetTime = ratio * Number.MAX_SAFE_INTEGER;
-      }
-    }
-    if (!isFinite(targetTime)) targetTime = 0;
-    audio.currentTime = targetTime;
+    const duration = isFinite(audio.duration) && audio.duration > 0
+      ? audio.duration
+      : previewDurationMs / 1000;
+    if (duration > 0) audio.currentTime = ratio * duration;
   }
 
   return (
@@ -611,11 +595,13 @@ export default function SongRecorder({ song, user, bandId }: Props) {
               onEnded={() => { setIsPreviewPlaying(false); setPreviewProgress(0); }}
               onTimeUpdate={() => {
                 const el = previewAudioRef.current;
-                if (el && el.duration > 0) setPreviewProgress(el.currentTime / el.duration);
+                const dur = el && (isFinite(el.duration) && el.duration > 0 ? el.duration : previewDurationMs / 1000);
+                if (el && dur) setPreviewProgress(el.currentTime / dur);
               }}
               onSeeked={() => {
                 const el = previewAudioRef.current;
-                if (el && el.duration > 0) setPreviewProgress(el.currentTime / el.duration);
+                const dur = el && (isFinite(el.duration) && el.duration > 0 ? el.duration : previewDurationMs / 1000);
+                if (el && dur) setPreviewProgress(el.currentTime / dur);
               }}
             />
             <div className="recorder-preview-playback">

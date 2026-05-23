@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { Minus, Plus, X } from 'lucide-react';
 
 // String order: high e at top → low E at bottom (standard tab notation)
 const STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E'];
 const NUM_STRINGS = 6;
-const NUM_STEPS = 16;
+const STEPS_PER_BAR = 4;
 const MAX_FRET = 24;
+const MIN_BARS = 1;
+const MAX_BARS = 16;
 
-type Grid = (number | null)[][];  // grid[stringIdx][stepIdx]
+type CellValue = number | 'x' | null;
+type Grid = CellValue[][];  // grid[stringIdx][stepIdx]
 
-function makeEmptyGrid(): Grid {
-  return Array.from({ length: NUM_STRINGS }, () => Array(NUM_STEPS).fill(null));
+function makeEmptyGrid(numSteps: number): Grid {
+  return Array.from({ length: NUM_STRINGS }, () => Array(numSteps).fill(null));
 }
 
 /**
@@ -24,18 +27,24 @@ function makeEmptyGrid(): Grid {
  *   E|----------|
  */
 function gridToTabLines(grid: Grid): string[] {
+  const numSteps = grid[0]?.length ?? 0;
   // Determine per-column width: 2 if any string at that step has fret >= 10, else 1
-  const colWidths = Array.from({ length: NUM_STEPS }, (_, c) =>
-    grid.some(row => row[c] !== null && row[c]! >= 10) ? 2 : 1,
+  const colWidths = Array.from({ length: numSteps }, (_, c) =>
+    grid.some(row => {
+      const v = row[c];
+      return typeof v === 'number' && v >= 10;
+    }) ? 2 : 1,
   );
 
   return grid.map((row, si) => {
     let line = STRING_LABELS[si] + '|';
-    for (let c = 0; c < NUM_STEPS; c++) {
+    for (let c = 0; c < numSteps; c++) {
       const fret = row[c];
       const w = colWidths[c];
       if (fret === null) {
         line += '-'.repeat(w);
+      } else if (fret === 'x') {
+        line += 'x'.padEnd(w, '-');
       } else {
         line += String(fret).padEnd(w, '-');
       }
@@ -51,7 +60,9 @@ interface Props {
 }
 
 export default function TabSequencerModal({ onInsert, onClose }: Props) {
-  const [grid, setGrid] = useState<Grid>(makeEmptyGrid);
+  const [numBars, setNumBars] = useState(4);
+  const numSteps = numBars * STEPS_PER_BAR;
+  const [grid, setGrid] = useState<Grid>(() => makeEmptyGrid(4 * STEPS_PER_BAR));
   // selectedCell: [stringIdx, stepIdx] | null
   const [selected, setSelected] = useState<[number, number] | null>(null);
   const [pendingDigits, setPendingDigits] = useState('');
@@ -71,7 +82,24 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [selected, onClose]);
 
-  function setFret(si: number, step: number, fret: number | null) {
+  function addBar() {
+    if (numBars >= MAX_BARS) return;
+    setNumBars(b => b + 1);
+    setGrid(prev => prev.map(row => [...row, null, null, null, null]));
+  }
+
+  function removeBar() {
+    if (numBars <= MIN_BARS) return;
+    // Deselect if selected cell is in the bar being removed
+    if (selected && selected[1] >= (numBars - 1) * STEPS_PER_BAR) {
+      setSelected(null);
+      setPendingDigits('');
+    }
+    setNumBars(b => b - 1);
+    setGrid(prev => prev.map(row => row.slice(0, -STEPS_PER_BAR)));
+  }
+
+  function setFret(si: number, step: number, fret: CellValue) {
     setGrid(prev => prev.map((row, ri) =>
       ri === si ? row.map((f, ci) => ci === step ? fret : f) : row,
     ));
@@ -89,7 +117,7 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
 
   function moveTo(si: number, step: number) {
     const newSi = Math.max(0, Math.min(NUM_STRINGS - 1, si));
-    const newStep = Math.max(0, Math.min(NUM_STEPS - 1, step));
+    const newStep = Math.max(0, Math.min(numSteps - 1, step));
     setSelected([newSi, newStep]);
     setPendingDigits('');
   }
@@ -136,6 +164,14 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
     if (e.key === 'ArrowDown') { e.preventDefault(); moveTo(si + 1, step); return; }
     if (e.key === 'ArrowUp') { e.preventDefault(); moveTo(si - 1, step); return; }
 
+    if (e.key.toLowerCase() === 'x') {
+      e.preventDefault();
+      setFret(si, step, 'x');
+      setPendingDigits('');
+      moveTo(si, step + 1);
+      return;
+    }
+
     if (e.key >= '0' && e.key <= '9') {
       e.preventDefault();
       const next = pendingDigits + e.key;
@@ -157,7 +193,7 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
   }
 
   function handleClear() {
-    setGrid(makeEmptyGrid());
+    setGrid(makeEmptyGrid(numSteps));
     deselect();
   }
 
@@ -167,7 +203,9 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
       return pendingDigits;
     }
     const fret = grid[si][step];
-    return fret === null ? '–' : String(fret);
+    if (fret === null) return '–';
+    if (fret === 'x') return 'x';
+    return String(fret);
   }
 
   const isEmpty = grid.every(row => row.every(f => f === null));
@@ -194,10 +232,10 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
         </div>
 
         <div className="tab-seq-body">
-          {/* Bar header */}
+          {/* Bar number header row */}
           <div className="tab-seq-bar-row">
             <div className="tab-seq-string-label" />
-            {Array.from({ length: NUM_STEPS }, (_, i) => (
+            {Array.from({ length: numSteps }, (_, i) => (
               <div
                 key={i}
                 className={`tab-seq-bar-cell${i % 4 === 0 ? ' tab-seq-bar-cell--beat' : ''}`}
@@ -211,9 +249,10 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
           {Array.from({ length: NUM_STRINGS }, (_, si) => (
             <div key={si} className="tab-seq-string-row">
               <div className="tab-seq-string-label">{STRING_LABELS[si]}</div>
-              {Array.from({ length: NUM_STEPS }, (_, step) => {
+              {Array.from({ length: numSteps }, (_, step) => {
                 const fret = grid[si][step];
                 const isActive = fret !== null;
+                const isMuted = fret === 'x';
                 const isSelected = selected?.[0] === si && selected?.[1] === step;
                 const isBarStart = step % 4 === 0;
 
@@ -223,13 +262,14 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
                     type="button"
                     className={[
                       'tab-seq-cell',
-                      isActive ? 'tab-seq-cell--active' : '',
+                      isActive && !isMuted ? 'tab-seq-cell--active' : '',
+                      isMuted ? 'tab-seq-cell--muted' : '',
                       isSelected ? 'tab-seq-cell--selected' : '',
                       isBarStart && !isSelected && !isActive ? 'tab-seq-cell--barstart' : '',
                     ].filter(Boolean).join(' ')}
                     onClick={() => handleCellClick(si, step)}
                     onContextMenu={(e) => handleCellRightClick(e, si, step)}
-                    title={`${STRING_LABELS[si]} string · step ${step + 1}${isActive ? ` · fret ${fret}` : ''}`}
+                    title={`${STRING_LABELS[si]} string · step ${step + 1}${isMuted ? ' · muted' : isActive ? ` · fret ${fret}` : ''}`}
                   >
                     {isActive || isSelected
                       ? cellLabel(si, step)
@@ -240,10 +280,35 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
               })}
             </div>
           ))}
+
+          {/* Bar count controls */}
+          <div className="tab-seq-bar-controls">
+            <button
+              type="button"
+              className="tab-seq-bar-ctrl-btn"
+              onClick={removeBar}
+              disabled={numBars <= MIN_BARS}
+              aria-label="Remove bar"
+            >
+              <Minus size={12} />
+              Bar
+            </button>
+            <span className="tab-seq-bar-count">{numBars} bar{numBars !== 1 ? 's' : ''}</span>
+            <button
+              type="button"
+              className="tab-seq-bar-ctrl-btn"
+              onClick={addBar}
+              disabled={numBars >= MAX_BARS}
+              aria-label="Add bar"
+            >
+              <Plus size={12} />
+              Bar
+            </button>
+          </div>
         </div>
 
         <div className="tab-seq-hint">
-          Click to select · type fret (0–24) · Backspace to clear · Arrow keys / Tab to navigate · Right-click to mute
+          Click to select · type fret (0–24) or <strong>x</strong> (mute) · Backspace to clear · Arrow keys / Tab to navigate · Right-click to clear
         </div>
 
         <div className="tab-seq-footer">
