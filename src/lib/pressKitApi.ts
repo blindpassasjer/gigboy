@@ -1,5 +1,5 @@
 import type { PressKitImageItem, PressKitTextItem } from './pressKitZip';
-import { type ApiHeaders, buildHeaders } from './apiClient';
+import { buildHeaders } from './apiClient';
 
 interface CreateShareInput {
   userId: string;
