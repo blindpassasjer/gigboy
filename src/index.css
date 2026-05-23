@@ -139,6 +139,7 @@ textarea {
     .visual-tuner-string-btn,
     .tab-play-btn,
     .tab-loop-btn,
+    .tab-edit-btn,
     .sidebar-list-item-btn,
     .sidebar-band-item-btn,
     .sidebar-setlist-item-btn,
@@ -3152,6 +3153,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 .tab-loop-btn--active { color: var(--accent); }
 .tab-loop-btn--active:hover { background: var(--accent); color: #fff; }
 
+.tab-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .28rem .6rem;
+  background: var(--chord-bg);
+  color: var(--muted);
+  border: none;
+  border-left: 1px solid #d8d2f0;
+  transition: background .15s, color .15s;
+  cursor: pointer;
+}
+.tab-edit-btn:hover { background: var(--bg); color: var(--text); }
+
 .tab-editor-guides {
   margin-top: .6rem;
   display: flex;
@@ -4044,6 +4059,39 @@ input, select, textarea { font: inherit; color: var(--text); }
 .tab-seq-btn--primary:hover { background: var(--accent-h); border-color: var(--accent-h); }
 .tab-seq-btn--primary:disabled { opacity: .4; cursor: default; }
 .tab-seq-btn--primary:disabled:hover { background: var(--accent); border-color: var(--accent); }
+
+.tab-seq-playback {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.tab-seq-btn--play {
+  background: var(--chord-bg);
+  color: var(--accent);
+  border: none;
+  border-radius: 0;
+  gap: .3rem;
+}
+.tab-seq-btn--play:hover:not(:disabled) { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+.tab-seq-btn--play:disabled { opacity: .4; cursor: default; }
+.tab-seq-btn--playing { background: #fde8e8; color: var(--danger); }
+.tab-seq-btn--playing:hover { background: var(--danger); color: #fff; }
+
+.tab-seq-btn--loop {
+  background: var(--chord-bg);
+  color: var(--muted);
+  border: none;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  padding: .28rem .55rem;
+}
+.tab-seq-btn--loop:hover { background: var(--bg); color: var(--text); }
+.tab-seq-btn--loop-active { color: var(--accent); }
+.tab-seq-btn--loop-active:hover { background: var(--accent); color: var(--accent-contrast); }
 
 .form-hint { font-size: .8rem; color: var(--muted); margin-top: .3rem; }
 .form-hint code {

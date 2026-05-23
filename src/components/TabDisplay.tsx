@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Play, Repeat, Square } from 'lucide-react';
+import { Pencil, Play, Repeat, Square } from 'lucide-react';
 import { playTab, stopPlayback } from '../lib/midiPlayer';
 import { buildBeatGuide } from '../utils/tabParser';
 
@@ -8,6 +8,7 @@ interface Props {
   transpose?: number;
   timeSignature?: string;
   showPlayback?: boolean;
+  onEdit?: () => void;
 }
 
 function extractLinePrefix(line: string): { prefix: string; content: string } {
@@ -21,6 +22,7 @@ export default function TabDisplay({
   transpose = 0,
   timeSignature,
   showPlayback = true,
+  onEdit,
 }: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
@@ -102,6 +104,16 @@ export default function TabDisplay({
           >
             <Repeat size={12} />
           </button>
+          {onEdit && (
+            <button
+              type="button"
+              className="tab-edit-btn"
+              onClick={onEdit}
+              title="Edit tab"
+            >
+              <Pencil size={12} />
+            </button>
+          )}
         </div>
       )}
     </div>

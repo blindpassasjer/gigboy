@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { Minus, Plus, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Minus, Play, Plus, Repeat, Square, X } from 'lucide-react';
+import { playTab, stopPlayback } from '../lib/midiPlayer';
 
 // String order: high e at top → low E at bottom (standard tab notation)
 const STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E'];
@@ -14,6 +15,64 @@ type Grid = CellValue[][];  // grid[stringIdx][stepIdx]
 
 function makeEmptyGrid(numSteps: number): Grid {
   return Array.from({ length: NUM_STRINGS }, () => Array(numSteps).fill(null));
+}
+
+/**
+ * Parse existing tab lines back into a Grid (reverse of gridToTabLines).
+ * Handles single- and double-width columns and 'x' muted strings.
+ */
+function tabLinesToGrid(tabLines: string[]): { grid: Grid; numBars: number } {
+  const contents = tabLines
+    .slice(0, NUM_STRINGS)
+    .map(line => line.replace(/^[eEbBgGdDaA]\s*[|:]\s*/, '').replace(/\|$/, ''));
+
+  const maxLen = contents.length > 0 ? Math.max(...contents.map(s => s.length)) : 0;
+  if (maxLen === 0) {
+    return { grid: makeEmptyGrid(4 * STEPS_PER_BAR), numBars: 4 };
+  }
+
+  const padded = contents.map(s => s.padEnd(maxLen, '-'));
+  const steps: CellValue[][] = Array.from({ length: NUM_STRINGS }, () => []);
+
+  let col = 0;
+  while (col < maxLen) {
+    // Step is 2 chars wide if any string has two consecutive digits here
+    let advance = 1;
+    for (let si = 0; si < padded.length; si++) {
+      if (col + 1 < maxLen && /\d/.test(padded[si][col]) && /\d/.test(padded[si][col + 1])) {
+        advance = 2;
+        break;
+      }
+    }
+    for (let si = 0; si < NUM_STRINGS; si++) {
+      const s = padded[si] ?? '';
+      const ch = col < s.length ? s[col] : '-';
+      if (ch === 'x' || ch === 'X') {
+        steps[si].push('x');
+      } else if (/\d/.test(ch)) {
+        let fretStr = ch;
+        if (advance === 2 && col + 1 < s.length && /\d/.test(s[col + 1])) {
+          fretStr += s[col + 1];
+        }
+        steps[si].push(parseInt(fretStr, 10));
+      } else {
+        steps[si].push(null);
+      }
+    }
+    col += advance;
+  }
+
+  const numSteps = steps[0]?.length ?? 0;
+  const numBars = Math.max(1, Math.ceil(numSteps / STEPS_PER_BAR));
+  const targetSteps = numBars * STEPS_PER_BAR;
+
+  const grid: Grid = Array.from({ length: NUM_STRINGS }, (_, si) => {
+    const row = steps[si] ?? [];
+    while (row.length < targetSteps) row.push(null);
+    return row.slice(0, targetSteps);
+  });
+
+  return { grid, numBars };
 }
 
 /**
@@ -57,16 +116,75 @@ function gridToTabLines(grid: Grid): string[] {
 interface Props {
   onInsert: (tabLines: string[]) => void;
   onClose: () => void;
+  initialTabLines?: string[];
 }
 
-export default function TabSequencerModal({ onInsert, onClose }: Props) {
-  const [numBars, setNumBars] = useState(4);
+export default function TabSequencerModal({ onInsert, onClose, initialTabLines }: Props) {
+  const isEditing = !!initialTabLines?.length;
+  const [numBars, setNumBars] = useState(() => {
+    if (initialTabLines?.length) return tabLinesToGrid(initialTabLines).numBars;
+    return 4;
+  });
   const numSteps = numBars * STEPS_PER_BAR;
-  const [grid, setGrid] = useState<Grid>(() => makeEmptyGrid(4 * STEPS_PER_BAR));
+  const [grid, setGrid] = useState<Grid>(() => {
+    if (initialTabLines?.length) return tabLinesToGrid(initialTabLines).grid;
+    return makeEmptyGrid(4 * STEPS_PER_BAR);
+  });
   // selectedCell: [stringIdx, stepIdx] | null
   const [selected, setSelected] = useState<[number, number] | null>(null);
   const [pendingDigits, setPendingDigits] = useState('');
   const hiddenInputRef = useRef<HTMLInputElement>(null);
+
+  // Playback state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
+  const playTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLoopingRef = useRef(false);
+  const playOnceRef = useRef<() => Promise<void>>();
+
+  const startOnce = useCallback(async () => {
+    const tabLines = gridToTabLines(grid);
+    const durationMs = await playTab(tabLines, 120, 0);
+    if (durationMs > 0) {
+      playTimerRef.current = setTimeout(() => {
+        playTimerRef.current = null;
+        if (isLoopingRef.current) {
+          playOnceRef.current?.();
+        } else {
+          setIsPlaying(false);
+        }
+      }, durationMs);
+    } else {
+      setIsPlaying(false);
+    }
+  }, [grid]);
+
+  playOnceRef.current = startOnce;
+
+  const handlePlay = useCallback(async () => {
+    if (isPlaying) {
+      stopPlayback();
+      if (playTimerRef.current) { clearTimeout(playTimerRef.current); playTimerRef.current = null; }
+      setIsPlaying(false);
+      return;
+    }
+    setIsPlaying(true);
+    await startOnce();
+  }, [isPlaying, startOnce]);
+
+  function toggleLoop() {
+    const next = !isLooping;
+    setIsLooping(next);
+    isLoopingRef.current = next;
+  }
+
+  // Stop playback when modal closes
+  useEffect(() => {
+    return () => {
+      stopPlayback();
+      if (playTimerRef.current) clearTimeout(playTimerRef.current);
+    };
+  }, []);
 
   // Focus hidden input whenever selection changes
   useEffect(() => {
@@ -315,6 +433,26 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
           <button type="button" className="tab-seq-btn tab-seq-btn--ghost" onClick={handleClear}>
             Clear
           </button>
+          <div className="tab-seq-playback">
+            <button
+              type="button"
+              className={`tab-seq-btn tab-seq-btn--play${isPlaying ? ' tab-seq-btn--playing' : ''}`}
+              onClick={handlePlay}
+              disabled={isEmpty}
+              title={isPlaying ? 'Stop' : 'Play preview'}
+            >
+              {isPlaying ? <Square size={12} fill="currentColor" /> : <Play size={12} fill="currentColor" />}
+              {isPlaying ? 'Stop' : 'Play'}
+            </button>
+            <button
+              type="button"
+              className={`tab-seq-btn tab-seq-btn--loop${isLooping ? ' tab-seq-btn--loop-active' : ''}`}
+              onClick={toggleLoop}
+              title={isLooping ? 'Disable loop' : 'Enable loop'}
+            >
+              <Repeat size={12} />
+            </button>
+          </div>
           <div className="tab-seq-footer-actions">
             <button type="button" className="tab-seq-btn tab-seq-btn--ghost" onClick={onClose}>
               Cancel
@@ -325,7 +463,7 @@ export default function TabSequencerModal({ onInsert, onClose }: Props) {
               onClick={handleInsert}
               disabled={isEmpty}
             >
-              Insert Tab
+              {isEditing ? 'Update Tab' : 'Insert Tab'}
             </button>
           </div>
         </div>

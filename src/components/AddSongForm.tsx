@@ -7,6 +7,7 @@ import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordProToolbar from './ChordProToolbar';
 import TabDisplay from './TabDisplay';
+import TabSequencerModal from './TabSequencerModal';
 import { LANGUAGE_NAMES } from '../utils/languages';
 import { parsePastedSong } from '../utils/chordFormatParser';
 import { extractTabBlocks } from '../utils/tabParser';
@@ -93,6 +94,23 @@ export default function AddSongForm({
   const autosaveTimerRef = useRef<number | null>(null);
   const saveGenerationRef = useRef(0);
   const tabBlocks = useMemo(() => extractTabBlocks(chordpro), [chordpro]);
+  const [editingTabIdx, setEditingTabIdx] = useState<number | null>(null);
+
+  function replaceNthTabBlock(source: string, index: number, newTabLines: string[]): string {
+    let count = 0;
+    return source.replace(
+      /\{start_of_tab\}([\s\S]*?)\{end_of_tab\}/gi,
+      (match) => count++ === index
+        ? `{start_of_tab}\n${newTabLines.join('\n')}\n{end_of_tab}`
+        : match,
+    );
+  }
+
+  function handleEditTabInsert(newTabLines: string[]) {
+    if (editingTabIdx === null) return;
+    setChordpro(prev => replaceNthTabBlock(prev, editingTabIdx, newTabLines));
+    setEditingTabIdx(null);
+  }
 
   const initialValues = useMemo<SongFormValues>(() => ({
     title: initialSong?.title ?? '',
@@ -397,6 +415,14 @@ export default function AddSongForm({
   }, [mode, isDirty, formValues, lastSavedValues, onSave, onSongListChange, buildSong]);
 
   return (
+    <>
+    {editingTabIdx !== null && (
+      <TabSequencerModal
+        initialTabLines={tabBlocks[editingTabIdx]}
+        onInsert={handleEditTabInsert}
+        onClose={() => setEditingTabIdx(null)}
+      />
+    )}
     <div className="add-song-page">
       <h1>{mode === 'edit' ? 'Edit Song' : 'Add Song'}</h1>
       <form onSubmit={mode === 'edit' ? (e) => e.preventDefault() : handleSubmit} className="add-song-form">
@@ -567,7 +593,7 @@ export default function AddSongForm({
                       key={`tab-guide-${idx}`}
                       tabLines={block}
                       timeSignature={timeSignature.trim() || undefined}
-                      showPlayback={false}
+                      onEdit={() => setEditingTabIdx(idx)}
                     />
                   ))}
                 </div>
@@ -602,5 +628,6 @@ export default function AddSongForm({
         )}
       </form>
     </div>
+    </>
   );
 }
