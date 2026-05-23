@@ -3082,10 +3082,15 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-weight: 700;
 }
 
+/* ─── Section containers ─────────────────────────────────────────────────────── */
+.chord-section {
+  margin: .5rem 0 1rem;
+}
+
 /* ─── Tab Block ──────────────────────────────────────────────────────────────── */
 .tab-block {
   margin: .75rem 0;
-  display: inline-block;
+  display: block;
   max-width: 100%;
 }
 

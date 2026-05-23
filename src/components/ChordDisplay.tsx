@@ -42,6 +42,26 @@ export default function ChordDisplay({
   );
 }
 
+const SECTION_LABELS: Record<string, string> = {
+  verse: 'Verse',
+  chorus: 'Chorus',
+  intro: 'Intro',
+  bridge: 'Bridge',
+  pre_chorus: 'Pre-Chorus',
+  interlude: 'Interlude',
+  solo: 'Solo',
+  outro: 'Outro',
+};
+
+interface LineRendererProps {
+  line: ParsedLine;
+  transpose: number;
+  showChords: boolean;
+  notation: ChordNotation;
+  timeSignature?: string;
+  onChordClick?: (chord: string, rect: DOMRect) => void;
+}
+
 function LineRenderer({
   line,
   transpose,
@@ -49,14 +69,7 @@ function LineRenderer({
   notation,
   timeSignature,
   onChordClick,
-}: {
-  line: ParsedLine;
-  transpose: number;
-  showChords: boolean;
-  notation: ChordNotation;
-  timeSignature?: string;
-  onChordClick?: (chord: string, rect: DOMRect) => void;
-}) {
+}: LineRendererProps) {
   if (line.type === 'empty') return <div className="chord-line chord-line--empty" />;
 
   if (line.type === 'comment') return null;
@@ -71,35 +84,39 @@ function LineRenderer({
     );
   }
 
+  if (line.type === 'section') {
+    const label = SECTION_LABELS[line.sectionType ?? ''] ?? line.sectionType ?? '';
+    return (
+      <div className={`chord-section chord-section--${line.sectionType}`}>
+        {label && <div className="section-label">{label}</div>}
+        {line.sectionLines?.map((subline, j) => (
+          <LineRenderer
+            key={j}
+            line={subline}
+            transpose={transpose}
+            showChords={showChords}
+            notation={notation}
+            timeSignature={timeSignature}
+            onChordClick={onChordClick}
+          />
+        ))}
+      </div>
+    );
+  }
+
   if (line.type === 'directive') {
     const dir = line.directive!;
     if (dir === 'title') return <h2 className="song-title-directive">{line.directiveValue}</h2>;
     if (dir === 'subtitle' || dir === 'artist')
       return <p className="song-subtitle-directive">{line.directiveValue}</p>;
-    if (dir === 'chorus' || dir === 'start_of_chorus')
-      return <div className="section-label">Chorus</div>;
-    if (dir === 'intro' || dir === 'start_of_intro')
-      return <div className="section-label">Intro</div>;
-    if (dir === 'verse' || dir === 'start_of_verse')
-      return <div className="section-label">Verse</div>;
-    if (dir === 'bridge' || dir === 'start_of_bridge')
-      return <div className="section-label">Bridge</div>;
-    if (dir === 'interlude' || dir === 'start_of_interlude')
-      return <div className="section-label">Interlude</div>;
-    if (dir === 'solo' || dir === 'start_of_solo')
-      return <div className="section-label">Solo</div>;
-    if (dir === 'outro' || dir === 'start_of_outro')
-      return <div className="section-label">Outro</div>;
-    if (
-      dir === 'end_of_chorus' ||
-      dir === 'end_of_intro' ||
-      dir === 'end_of_interlude' ||
-      dir === 'end_of_solo' ||
-      dir === 'end_of_outro' ||
-      dir === 'end_of_verse' ||
-      dir === 'end_of_bridge'
-    )
-      return null;
+    // Short-form section labels (e.g. {chorus} without start/end)
+    if (dir === 'chorus') return <div className="section-label">Chorus</div>;
+    if (dir === 'intro') return <div className="section-label">Intro</div>;
+    if (dir === 'verse') return <div className="section-label">Verse</div>;
+    if (dir === 'bridge') return <div className="section-label">Bridge</div>;
+    if (dir === 'interlude') return <div className="section-label">Interlude</div>;
+    if (dir === 'solo') return <div className="section-label">Solo</div>;
+    if (dir === 'outro') return <div className="section-label">Outro</div>;
     if (line.directiveValue) return <div className="section-label">{line.directiveValue}</div>;
     return null;
   }

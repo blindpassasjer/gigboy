@@ -63,35 +63,68 @@ export function parseLine(raw: string): ParsedLine {
   return { type: 'chord-lyric', segments, raw };
 }
 
+const SECTION_START_RE = /^\{start_of_(\w+)\}$/;
+const SECTION_END_RE = /^\{end_of_(\w+)\}$/;
+
+/** Consume a {start_of_tab}...{end_of_tab} block starting at i+1. Returns the tab lines and new i. */
+function consumeTabBlock(rawLines: string[], startI: number): { tabLines: string[]; nextI: number } {
+  const tabLines: string[] = [];
+  let i = startI + 1;
+  while (i < rawLines.length) {
+    const inner = rawLines[i].trim().toLowerCase();
+    if (inner === '{end_of_tab}' || inner === '{eot}') { i++; break; }
+    tabLines.push(rawLines[i]);
+    i++;
+  }
+  return { tabLines, nextI: i };
+}
+
 /** Parse full ChordPro text into an array of lines.
- * Tab blocks ({start_of_tab}...{end_of_tab}) are collapsed into a single 'tab' line. */
+ * Tab blocks are collapsed into 'tab' lines.
+ * Section blocks (start_of_* / end_of_*) are grouped into 'section' lines with nested content. */
 export function parseChordPro(text: string): ParsedLine[] {
   const rawLines = text.split('\n');
-  const result: ParsedLine[] = [];
-  let i = 0;
 
-  while (i < rawLines.length) {
-    const trimmed = rawLines[i].trim().toLowerCase();
-    if (trimmed === '{start_of_tab}' || trimmed === '{sot}') {
-      const tabLines: string[] = [];
-      i++;
-      while (i < rawLines.length) {
-        const inner = rawLines[i].trim().toLowerCase();
-        if (inner === '{end_of_tab}' || inner === '{eot}') {
-          i++;
-          break;
-        }
-        tabLines.push(rawLines[i]);
-        i++;
+  function parseRange(startI: number, endI: number): ParsedLine[] {
+    const result: ParsedLine[] = [];
+    let i = startI;
+
+    while (i < endI) {
+      const trimmed = rawLines[i].trim().toLowerCase();
+
+      // Tab block
+      if (trimmed === '{start_of_tab}' || trimmed === '{sot}') {
+        const { tabLines, nextI } = consumeTabBlock(rawLines, i);
+        result.push({ type: 'tab', tabLines, raw: '' });
+        i = nextI;
+        continue;
       }
-      result.push({ type: 'tab', tabLines, raw: '' });
-    } else {
+
+      // Section block — but not tab (handled above)
+      const sectionMatch = trimmed.match(SECTION_START_RE);
+      if (sectionMatch && sectionMatch[1] !== 'tab') {
+        const sectionType = sectionMatch[1];
+        const endDirective = `{end_of_${sectionType}}`;
+        // Find the matching end
+        let j = i + 1;
+        while (j < endI && rawLines[j].trim().toLowerCase() !== endDirective) j++;
+        const sectionLines = parseRange(i + 1, j);
+        result.push({ type: 'section', sectionType, sectionLines, raw: '' });
+        i = j < endI ? j + 1 : j; // skip the end directive if found
+        continue;
+      }
+
+      // End-of-section directives that escaped grouping — drop them
+      if (trimmed.match(SECTION_END_RE)) { i++; continue; }
+
       result.push(parseLine(rawLines[i]));
       i++;
     }
+
+    return result;
   }
 
-  return result;
+  return parseRange(0, rawLines.length);
 }
 
 /** Check if any segment in a line has a chord. */

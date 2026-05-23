@@ -327,7 +327,7 @@ export interface SongHandNoteAuthor {
 }
 
 export interface ParsedLine {
-  type: 'chord-lyric' | 'directive' | 'comment' | 'empty' | 'tab';
+  type: 'chord-lyric' | 'directive' | 'comment' | 'empty' | 'tab' | 'section';
   segments?: ChordSegment[];
   /** Directive name (e.g. "title", "chorus") */
   directive?: string;
@@ -335,6 +335,10 @@ export interface ParsedLine {
   raw: string;
   /** Lines inside a {start_of_tab}...{end_of_tab} block (only present when type === 'tab') */
   tabLines?: string[];
+  /** Section name, e.g. "verse", "chorus" (only present when type === 'section') */
+  sectionType?: string;
+  /** Content lines nested inside a section block (only present when type === 'section') */
+  sectionLines?: ParsedLine[];
 }
 
 export interface ChordSegment {
