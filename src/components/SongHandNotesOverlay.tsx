@@ -67,14 +67,14 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: HandNoteStroke | Acti
   ctx.shadowBlur = 0;
 }
 
-function findScrollContainer(el: HTMLElement): HTMLElement | null {
+function findScrollContainer(el: HTMLElement): HTMLElement {
   let current: HTMLElement | null = el.parentElement;
   while (current) {
     const style = window.getComputedStyle(current);
     if (style.overflowY === 'auto' || style.overflowY === 'scroll') return current;
     current = current.parentElement;
   }
-  return null;
+  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
 }
 
 export default function SongHandNotesOverlay({
@@ -244,13 +244,11 @@ export default function SongHandNotesOverlay({
         pointerIdRef.current = null;
         setRevision((prev) => prev + 1);
       }
-      if (!twoFingerScrollRef.current) {
+      if (!twoFingerScrollRef.current && stageRef.current) {
         const points = [...activePointersRef.current.values()];
         const midY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
-        const el = stageRef.current ? findScrollContainer(stageRef.current) : null;
-        if (el) {
-          twoFingerScrollRef.current = { midY, scrollTop: el.scrollTop, el };
-        }
+        const el = findScrollContainer(stageRef.current);
+        twoFingerScrollRef.current = { midY, scrollTop: el.scrollTop, el };
       }
       return;
     }
