@@ -93,6 +93,8 @@ export default function SongHandNotesOverlay({
   const activeStrokeRef = useRef<ActiveStrokeState | null>(null);
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const twoFingerScrollRef = useRef<TwoFingerScrollState | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const allVisibleStrokesRef = useRef<HandNoteStroke[]>([]);
 
   const [viewport, setViewport] = useState({ width: 1, height: 1 });
   const viewportRef = useRef({ width: 1, height: 1 });
@@ -127,6 +129,10 @@ export default function SongHandNotesOverlay({
   const allVisibleStrokes = useMemo(() => {
     return notes.flatMap((note) => note.strokes);
   }, [notes]);
+
+  useEffect(() => {
+    allVisibleStrokesRef.current = allVisibleStrokes;
+  }, [allVisibleStrokes]);
 
   useEffect(() => {
     syncViewportFromStage();
@@ -299,30 +305,16 @@ export default function SongHandNotesOverlay({
     const active = activeStrokeRef.current;
     if (!active) return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
-
     const stage = stageRef.current;
     if (!stage) return;
     const rect = stage.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
 
-    const { width, height } = viewportRef.current;
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
     // Coalesced events capture all touch samples batched between frames
     const raw = event.nativeEvent.getCoalescedEvents?.() ?? [];
     const events: PointerEvent[] = raw.length > 0 ? raw : [event.nativeEvent];
 
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = active.color;
-    ctx.lineWidth = active.width;
-    ctx.shadowColor = active.color;
-    ctx.shadowBlur = Math.max(active.width * 0.75, 1);
-
+    let added = false;
     for (const ce of events) {
       const px = clamp01((ce.clientX - rect.left) / rect.width);
       const py = clamp01((ce.clientY - rect.top) / rect.height);
@@ -334,20 +326,33 @@ export default function SongHandNotesOverlay({
       const dy = py - lastY;
       if (dx * dx + dy * dy < 0.0025 * 0.0025) continue;
 
-      const x1 = lastX * width;
-      const y1 = lastY * height;
-      const x2 = px * width;
-      const y2 = py * height;
-
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-
       active.points.push(px, py);
+      added = true;
     }
 
-    ctx.shadowBlur = 0;
+    if (!added) return;
+
+    // Redraw via rAF using the same bezier drawStroke used for finalized strokes,
+    // so the live stroke looks identical to the committed result (no jagged-to-smooth jump).
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx) return;
+
+      const { width, height } = viewportRef.current;
+      const dpr = window.devicePixelRatio || 1;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      for (const stroke of allVisibleStrokesRef.current) {
+        drawStroke(ctx, stroke, width, height);
+      }
+      if (activeStrokeRef.current) {
+        drawStroke(ctx, activeStrokeRef.current, width, height);
+      }
+    });
   }, [drawEnabled]);
 
   const handlePointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
@@ -388,6 +393,15 @@ export default function SongHandNotesOverlay({
     activeStrokeRef.current = null;
     pointerIdRef.current = null;
     setRevision((prev) => prev + 1);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
   }, []);
 
   if (!visible) return null;
