@@ -421,6 +421,7 @@ export default function AddSongForm({
         initialTabLines={tabBlocks[editingTabIdx]}
         onInsert={handleEditTabInsert}
         onClose={() => setEditingTabIdx(null)}
+        tempo={tempo ? parseInt(tempo, 10) : undefined}
       />
     )}
     <div className="add-song-page">
@@ -562,6 +563,7 @@ export default function AddSongForm({
               textareaRef={textareaRef}
               value={chordpro}
               onChange={handleChordproChange}
+              tempo={tempo ? parseInt(tempo, 10) : undefined}
             />
           )}
           {preview ? (

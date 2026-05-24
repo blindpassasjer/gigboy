@@ -118,9 +118,10 @@ interface Props {
   onInsert: (tabLines: string[]) => void;
   onClose: () => void;
   initialTabLines?: string[];
+  tempo?: number;
 }
 
-export default function TabSequencerModal({ onInsert, onClose, initialTabLines }: Props) {
+export default function TabSequencerModal({ onInsert, onClose, initialTabLines, tempo }: Props) {
   const isEditing = !!initialTabLines?.length;
   const [numBars, setNumBars] = useState(() => {
     if (initialTabLines?.length) return tabLinesToGrid(initialTabLines).numBars;
@@ -146,7 +147,7 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines }
 
   const startOnce = useCallback(async () => {
     const tabLines = gridToTabLines(grid);
-    const durationMs = await playTab(tabLines, 120, 0);
+    const durationMs = await playTab(tabLines, tempo ?? 120, 0);
     if (durationMs > 0) {
       playTimerRef.current = setTimeout(() => {
         playTimerRef.current = null;
@@ -429,7 +430,7 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines }
 
         {showMetronome && (
           <div className="tab-seq-metronome-panel">
-            <VisualMetronome tempo={120} />
+            <VisualMetronome tempo={tempo ?? 120} />
           </div>
         )}
 
@@ -438,9 +439,6 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines }
         </div>
 
         <div className="tab-seq-footer">
-          <button type="button" className="tab-seq-btn tab-seq-btn--ghost" onClick={handleClear}>
-            Clear
-          </button>
           <div className="tab-seq-playback">
             <button
               type="button"
@@ -459,6 +457,7 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines }
               title={isLooping ? 'Disable loop' : 'Enable loop'}
             >
               <Repeat size={12} />
+              Loop
             </button>
             <button
               type="button"
@@ -467,9 +466,14 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines }
               title={showMetronome ? 'Hide metronome' : 'Show metronome'}
             >
               <Timer size={12} />
+              Metro
             </button>
           </div>
           <div className="tab-seq-footer-actions">
+            <button type="button" className="tab-seq-btn tab-seq-btn--ghost" onClick={handleClear}>
+              Clear
+            </button>
+            <span className="tab-seq-footer-sep" aria-hidden="true" />
             <button type="button" className="tab-seq-btn tab-seq-btn--ghost" onClick={onClose}>
               Cancel
             </button>

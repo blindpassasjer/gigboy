@@ -3094,6 +3094,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .tab-block {
   margin: .75rem 0;
   display: block;
+  width: fit-content;
   max-width: 100%;
 }
 
@@ -3115,6 +3116,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 .tab-guide-line {
   color: var(--accent);
   font-weight: 700;
+}
+
+.tab-guide-emoji {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+  overflow: visible;
 }
 
 .tab-playback-controls {
@@ -4095,8 +4103,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: none;
   border-left: 1px solid var(--border);
   border-radius: 0;
-  padding: .28rem .55rem;
-  justify-content: center;
 }
 .tab-seq-btn--loop:hover { background: var(--bg); color: var(--text); }
 .tab-seq-btn--loop-active {
@@ -4112,8 +4118,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: none;
   border-left: 1px solid var(--border);
   border-radius: 0;
-  padding: .28rem .55rem;
-  justify-content: center;
 }
 .tab-seq-btn--metronome:hover { background: var(--bg); color: var(--text); }
 .tab-seq-btn--metronome-active {
@@ -4122,6 +4126,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-left-color: color-mix(in srgb, var(--accent) 35%, var(--border));
 }
 .tab-seq-btn--metronome-active:hover { background: var(--accent); color: var(--accent-contrast); }
+
+.tab-seq-footer-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 0 .15rem;
+}
 
 .tab-seq-metronome-panel {
   border-top: 1px solid var(--border);

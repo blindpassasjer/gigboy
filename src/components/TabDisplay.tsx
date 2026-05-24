@@ -79,7 +79,9 @@ export default function TabDisplay({
   return (
     <div className="tab-block">
       <pre className="tab-content">
-        <span className="tab-guide-line">{`${firstPrefix}${guide}`}</span>
+        <span className="tab-guide-line">
+          {firstPrefix ? <><span className="tab-guide-emoji">🎵</span>{firstPrefix.slice(1)}</> : null}{guide}
+        </span>
         {'\n'}
         {displayLines.join('\n')}
       </pre>

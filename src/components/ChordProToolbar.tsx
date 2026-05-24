@@ -6,6 +6,7 @@ interface Props {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   value: string;
   onChange: (value: string) => void;
+  tempo?: number;
 }
 
 type Section = { label: string; name: string; icon: React.ReactNode; color: string };
@@ -56,7 +57,7 @@ function insertSection(
   insertAtCursor(textarea, block, value, onChange, cursorOffset);
 }
 
-export default function ChordProToolbar({ textareaRef, value, onChange }: Props) {
+export default function ChordProToolbar({ textareaRef, value, onChange, tempo }: Props) {
   const [chordInput, setChordInput] = useState('');
   const [showTabSequencer, setShowTabSequencer] = useState(false);
 
@@ -112,6 +113,7 @@ export default function ChordProToolbar({ textareaRef, value, onChange }: Props)
       <TabSequencerModal
         onInsert={handleTabSequencerInsert}
         onClose={() => setShowTabSequencer(false)}
+        tempo={tempo}
       />
     )}
     <div className="chordpro-toolbar">
