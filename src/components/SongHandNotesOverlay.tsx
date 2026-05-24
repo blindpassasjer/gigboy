@@ -20,6 +20,12 @@ interface ActiveStrokeState {
   createdAt: string;
 }
 
+interface TwoFingerScrollState {
+  midY: number;
+  scrollTop: number;
+  el: HTMLElement;
+}
+
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: HandNoteStroke | ActiveStrokeState, width: number, height: number) {
   if (stroke.points.length < 2) return;
 
@@ -61,6 +67,16 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: HandNoteStroke | Acti
   ctx.shadowBlur = 0;
 }
 
+function findScrollContainer(el: HTMLElement): HTMLElement | null {
+  let current: HTMLElement | null = el.parentElement;
+  while (current) {
+    const style = window.getComputedStyle(current);
+    if (style.overflowY === 'auto' || style.overflowY === 'scroll') return current;
+    current = current.parentElement;
+  }
+  return null;
+}
+
 export default function SongHandNotesOverlay({
   visible,
   drawEnabled,
@@ -75,6 +91,8 @@ export default function SongHandNotesOverlay({
   const pointerIdRef = useRef<number | null>(null);
   const myStrokesRef = useRef<HandNoteStroke[]>(myStrokes);
   const activeStrokeRef = useRef<ActiveStrokeState | null>(null);
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const twoFingerScrollRef = useRef<TwoFingerScrollState | null>(null);
 
   const [viewport, setViewport] = useState({ width: 1, height: 1 });
   const viewportRef = useRef({ width: 1, height: 1 });
@@ -216,6 +234,28 @@ export default function SongHandNotesOverlay({
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!drawEnabled) return;
+
+    activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    // Second finger: cancel any in-progress stroke and switch to two-finger scroll mode.
+    if (activePointersRef.current.size >= 2) {
+      if (activeStrokeRef.current) {
+        activeStrokeRef.current = null;
+        pointerIdRef.current = null;
+        setRevision((prev) => prev + 1);
+      }
+      if (!twoFingerScrollRef.current) {
+        const points = [...activePointersRef.current.values()];
+        const midY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+        const el = stageRef.current ? findScrollContainer(stageRef.current) : null;
+        if (el) {
+          twoFingerScrollRef.current = { midY, scrollTop: el.scrollTop, el };
+        }
+      }
+      return;
+    }
+
+    // Single finger: start drawing.
     if (pointerIdRef.current !== null) return;
 
     // Ensure first stroke frame renders with real stage size instead of fallback 1x1.
@@ -241,6 +281,21 @@ export default function SongHandNotesOverlay({
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!drawEnabled) return;
+
+    // Keep tracked position current for all active pointers.
+    if (activePointersRef.current.has(event.pointerId)) {
+      activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
+
+    // Two-finger scroll: move the scroll container by the midpoint delta.
+    if (twoFingerScrollRef.current && activePointersRef.current.size >= 2) {
+      const points = [...activePointersRef.current.values()];
+      const midY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+      const { midY: startMidY, scrollTop, el } = twoFingerScrollRef.current;
+      el.scrollTop = scrollTop + (startMidY - midY);
+      return;
+    }
+
     if (pointerIdRef.current !== event.pointerId) return;
 
     const active = activeStrokeRef.current;
@@ -298,6 +353,13 @@ export default function SongHandNotesOverlay({
   }, [drawEnabled]);
 
   const handlePointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    activePointersRef.current.delete(event.pointerId);
+
+    // Clear scroll state once all fingers are lifted.
+    if (activePointersRef.current.size === 0) {
+      twoFingerScrollRef.current = null;
+    }
+
     if (!drawEnabled) return;
     if (pointerIdRef.current !== event.pointerId) return;
 
@@ -317,6 +379,12 @@ export default function SongHandNotesOverlay({
   }, [drawEnabled, finishStroke, pointFromPointerEvent]);
 
   const handlePointerCancel = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    activePointersRef.current.delete(event.pointerId);
+
+    if (activePointersRef.current.size === 0) {
+      twoFingerScrollRef.current = null;
+    }
+
     if (pointerIdRef.current !== event.pointerId) return;
     // Discard: system interrupted the gesture, not the user's intention to commit
     activeStrokeRef.current = null;

@@ -161,6 +161,15 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     if (next && !showNotes) {
       setShowNotes(true);
     }
+    if (next) {
+      try {
+        const key = 'gigboy-draw-scroll-tip-seen';
+        if (!localStorage.getItem(key)) {
+          localStorage.setItem(key, '1');
+          toast('Use two fingers to scroll while drawing', { icon: '✌️' });
+        }
+      } catch { /* ignore storage errors */ }
+    }
   }, [showNotes]);
 
   useEffect(() => {
