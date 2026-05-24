@@ -465,7 +465,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 style={{ width: `${storagePercent}%` }}
               />
               <span className="topbar-storage-meter-label">{storageLabel}</span>
-              <span className="topbar-storage-meter-label topbar-storage-meter-label-fill" style={{ width: `${storagePercent}%` }}>
+              <span className="topbar-storage-meter-label topbar-storage-meter-label-fill" style={{ clipPath: `inset(0 ${100 - storagePercent}% 0 0)` }}>
                 {storageLabel}
               </span>
             </div>

@@ -350,9 +350,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .topbar-storage-meter-label-fill {
-  justify-content: flex-start;
   color: #fff;
-  overflow: hidden;
 }
 
 .topbar-storage-percent {
@@ -906,6 +904,11 @@ input, select, textarea { font: inherit; color: var(--text); }
 .list-sticky-header > .resource-header {
   margin: 0 1.5rem;
   width: auto;
+}
+
+.song-list-sticky > .page-section-header.resource-header:not(.bands-header),
+.list-sticky-header > .page-section-header.resource-header:not(.bands-header) {
+  box-shadow: none;
 }
 
 .song-list-sticky > .press-kit-toolbar,
@@ -4093,10 +4096,38 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-left: 1px solid var(--border);
   border-radius: 0;
   padding: .28rem .55rem;
+  justify-content: center;
 }
 .tab-seq-btn--loop:hover { background: var(--bg); color: var(--text); }
-.tab-seq-btn--loop-active { color: var(--accent); }
+.tab-seq-btn--loop-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--chord-bg));
+  border-left-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
 .tab-seq-btn--loop-active:hover { background: var(--accent); color: var(--accent-contrast); }
+
+.tab-seq-btn--metronome {
+  background: var(--chord-bg);
+  color: var(--muted);
+  border: none;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  padding: .28rem .55rem;
+  justify-content: center;
+}
+.tab-seq-btn--metronome:hover { background: var(--bg); color: var(--text); }
+.tab-seq-btn--metronome-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--chord-bg));
+  border-left-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+.tab-seq-btn--metronome-active:hover { background: var(--accent); color: var(--accent-contrast); }
+
+.tab-seq-metronome-panel {
+  border-top: 1px solid var(--border);
+  padding: .6rem 1rem;
+  background: var(--chord-bg);
+}
 
 .form-hint { font-size: .8rem; color: var(--muted); margin-top: .3rem; }
 .form-hint code {

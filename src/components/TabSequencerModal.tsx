@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Minus, Play, Plus, Repeat, Square, X } from 'lucide-react';
+import { Minus, Play, Plus, Repeat, Square, Timer, X } from 'lucide-react';
 import { playTab, stopPlayback } from '../lib/midiPlayer';
+import VisualMetronome from './VisualMetronome';
 
 // String order: high e at top → low E at bottom (standard tab notation)
 const STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E'];
@@ -138,6 +139,7 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines }
   // Playback state
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
+  const [showMetronome, setShowMetronome] = useState(false);
   const playTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoopingRef = useRef(false);
   const playOnceRef = useRef<() => Promise<void>>();
@@ -425,6 +427,12 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines }
           </div>
         </div>
 
+        {showMetronome && (
+          <div className="tab-seq-metronome-panel">
+            <VisualMetronome tempo={120} />
+          </div>
+        )}
+
         <div className="tab-seq-hint">
           Click to select · type fret (0–24) or <strong>x</strong> (mute) · Backspace to clear · Arrow keys / Tab to navigate · Right-click to clear
         </div>
@@ -451,6 +459,14 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines }
               title={isLooping ? 'Disable loop' : 'Enable loop'}
             >
               <Repeat size={12} />
+            </button>
+            <button
+              type="button"
+              className={`tab-seq-btn tab-seq-btn--metronome${showMetronome ? ' tab-seq-btn--metronome-active' : ''}`}
+              onClick={() => setShowMetronome(v => !v)}
+              title={showMetronome ? 'Hide metronome' : 'Show metronome'}
+            >
+              <Timer size={12} />
             </button>
           </div>
           <div className="tab-seq-footer-actions">
