@@ -118,11 +118,13 @@ export default function SongHandNotesOverlay({
     const width = Math.max(Math.round(rect.width), 1);
     const height = Math.max(Math.round(rect.height), 1);
 
+    // Update ref immediately so rAF drawing in the same event-loop tick uses correct dimensions,
+    // even before React re-renders with the new viewport state.
+    viewportRef.current = { width, height };
+
     setViewport((current) => {
       if (current.width === width && current.height === height) return current;
-      const next = { width, height };
-      viewportRef.current = next;
-      return next;
+      return { width, height };
     });
   }, [measureTarget]);
 
@@ -149,11 +151,10 @@ export default function SongHandNotesOverlay({
       if (!entry) return;
       const width = Math.max(Math.round(entry.contentRect.width), 1);
       const height = Math.max(Math.round(entry.contentRect.height), 1);
+      viewportRef.current = { width, height };
       setViewport((current) => {
         if (current.width === width && current.height === height) return current;
-        const next = { width, height };
-        viewportRef.current = next;
-        return next;
+        return { width, height };
       });
     });
 
