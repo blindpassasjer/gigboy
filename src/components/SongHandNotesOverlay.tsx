@@ -285,7 +285,9 @@ export default function SongHandNotesOverlay({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
     const off = offscreenRef.current;
-    if (off) ctx.drawImage(off, 0, 0);
+    // Pass explicit CSS destination size so the DPR transform isn't applied
+    // a second time to the already-DPR-scaled offscreen canvas pixels.
+    if (off) ctx.drawImage(off, 0, 0, width, height);
 
     if (activeStrokeRef.current) {
       drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, isV2: true }, width, height);
@@ -442,7 +444,7 @@ export default function SongHandNotesOverlay({
 
       // Blit cached strokes — O(1) instead of O(n strokes)
       const off = offscreenRef.current;
-      if (off) ctx.drawImage(off, 0, 0);
+      if (off) ctx.drawImage(off, 0, 0, width, height);
 
       if (activeStrokeRef.current) {
         drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, isV2: true }, width, height);
