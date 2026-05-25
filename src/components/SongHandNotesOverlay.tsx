@@ -285,9 +285,14 @@ export default function SongHandNotesOverlay({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
     const off = offscreenRef.current;
-    // Pass explicit CSS destination size so the DPR transform isn't applied
-    // a second time to the already-DPR-scaled offscreen canvas pixels.
-    if (off) ctx.drawImage(off, 0, 0, width, height);
+    if (off) {
+      // The offscreen canvas was drawn in physical pixels (via setTransform(dpr,...)).
+      // Reset to identity so drawImage copies at 1:1 physical pixels, avoiding an
+      // accidental second DPR upscale from the current transform.
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(off, 0, 0);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
 
     if (activeStrokeRef.current) {
       drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, isV2: true }, width, height);
