@@ -96,6 +96,10 @@ export default function SongHandNotesOverlay({
   const rafRef = useRef<number | null>(null);
   const allVisibleStrokesRef = useRef<HandNoteStroke[]>([]);
 
+  const offscreenRef = useRef<HTMLCanvasElement | null>(null);
+  const offscreenStrokesRef = useRef<HandNoteStroke[]>([]);
+  const offscreenViewportRef = useRef({ width: 0, height: 0 });
+
   const [viewport, setViewport] = useState({ width: 1, height: 1 });
   const viewportRef = useRef({ width: 1, height: 1 });
   const [revision, setRevision] = useState(0);
@@ -187,23 +191,52 @@ export default function SongHandNotesOverlay({
     if (!canvas) return;
 
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.max(Math.floor(viewport.width * dpr), 1);
-    canvas.height = Math.max(Math.floor(viewport.height * dpr), 1);
-    canvas.style.width = `${viewport.width}px`;
-    canvas.style.height = `${viewport.height}px`;
+    const { width, height } = viewport;
+    const physW = Math.max(Math.floor(width * dpr), 1);
+    const physH = Math.max(Math.floor(height * dpr), 1);
+
+    canvas.width = physW;
+    canvas.height = physH;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    // Rebuild the offscreen cache only when strokes or viewport actually changed,
+    // not when only `revision` changed (e.g. active stroke start/end).
+    if (
+      offscreenStrokesRef.current !== allVisibleStrokes ||
+      offscreenViewportRef.current.width !== width ||
+      offscreenViewportRef.current.height !== height
+    ) {
+      offscreenStrokesRef.current = allVisibleStrokes;
+      offscreenViewportRef.current = { width, height };
+
+      let off = offscreenRef.current;
+      if (!off || off.width !== physW || off.height !== physH) {
+        off = document.createElement('canvas');
+        off.width = physW;
+        off.height = physH;
+        offscreenRef.current = off;
+      }
+      const offCtx = off.getContext('2d');
+      if (offCtx) {
+        offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        offCtx.clearRect(0, 0, width, height);
+        for (const stroke of allVisibleStrokes) {
+          drawStroke(offCtx, stroke, width, height);
+        }
+      }
+    }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, viewport.width, viewport.height);
-
-    for (const stroke of allVisibleStrokes) {
-      drawStroke(ctx, stroke, viewport.width, viewport.height);
-    }
+    ctx.clearRect(0, 0, width, height);
+    const off = offscreenRef.current;
+    if (off) ctx.drawImage(off, 0, 0);
 
     if (activeStrokeRef.current) {
-      drawStroke(ctx, activeStrokeRef.current, viewport.width, viewport.height);
+      drawStroke(ctx, activeStrokeRef.current, width, height);
     }
   }, [allVisibleStrokes, viewport, revision]);
 
@@ -346,9 +379,10 @@ export default function SongHandNotesOverlay({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
 
-      for (const stroke of allVisibleStrokesRef.current) {
-        drawStroke(ctx, stroke, width, height);
-      }
+      // Blit cached strokes — O(1) instead of O(n strokes)
+      const off = offscreenRef.current;
+      if (off) ctx.drawImage(off, 0, 0);
+
       if (activeStrokeRef.current) {
         drawStroke(ctx, activeStrokeRef.current, width, height);
       }
