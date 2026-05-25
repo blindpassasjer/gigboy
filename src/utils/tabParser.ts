@@ -7,7 +7,12 @@
 const STRING_MIDI_BASE = [64, 59, 55, 50, 45, 40]; // e B G D A E
 
 export interface TabNoteEvent {
-  /** Raw column index in the tab string — used to preserve relative timing. */
+  /**
+   * Step index (0-based iteration count through the tab).
+   * Each step represents one 16th-note slot regardless of how many
+   * characters the step occupies (1 for single-digit frets, 2 for frets ≥ 10).
+   * Used to compute the time offset: stepIndex × stepSeconds.
+   */
   columnIndex: number;
   /** MIDI note numbers (one per string that has a note at this column). */
   notes: number[];
@@ -98,6 +103,7 @@ export function parseTabLines(tabLines: string[]): TabNoteEvent[] {
 
   const events: TabNoteEvent[] = [];
   let col = 0;
+  let stepIndex = 0;
 
   while (col < maxLen) {
     const notes: number[] = [];
@@ -120,10 +126,13 @@ export function parseTabLines(tabLines: string[]): TabNoteEvent[] {
     }
 
     if (notes.length > 0) {
-      events.push({ columnIndex: col, notes });
+      // Use stepIndex (iteration count) not col so that two-digit frets
+      // (which advance col by 2) don't shift the timing of later steps.
+      events.push({ columnIndex: stepIndex, notes });
     }
 
     col += advance;
+    stepIndex++;
   }
 
   return events;
