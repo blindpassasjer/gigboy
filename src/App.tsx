@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider, Routes, Route, Navigate, useRouteError } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Theme } from '@radix-ui/themes';
@@ -44,6 +44,12 @@ function RouterErrorFallback() {
   const routeError = useRouteError();
   const chunkFailure = isDynamicImportFailure(routeError);
   const errorMessage = getRouteErrorMessage(routeError);
+
+  useEffect(() => {
+    if (chunkFailure) {
+      recoverFromDynamicImportFailure();
+    }
+  }, [chunkFailure]);
 
   const handleReload = () => {
     if (!recoverFromDynamicImportFailure()) {

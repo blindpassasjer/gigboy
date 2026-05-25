@@ -33,10 +33,7 @@ async function setupPwa() {
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
-      const shouldRefresh = window.confirm('A new version is available. Reload now?')
-      if (shouldRefresh) {
-        void updateSW(true)
-      }
+      void updateSW(true)
     },
     onOfflineReady() {
       console.info('GIGBOY is ready to work offline.')
