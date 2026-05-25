@@ -143,9 +143,9 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines, 
   const [showMetronome, setShowMetronome] = useState(false);
   const playTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoopingRef = useRef(false);
-  const playOnceRef = useRef<() => Promise<void>>();
+  const playOnceRef = useRef<() => Promise<boolean>>();
 
-  const startOnce = useCallback(async () => {
+  const startOnce = useCallback(async (): Promise<boolean> => {
     const tabLines = gridToTabLines(grid);
     const durationMs = await playTab(tabLines, tempo ?? 120, 0);
     if (durationMs > 0) {
@@ -161,9 +161,9 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines, 
           setIsPlaying(false);
         }
       }, totalMs);
-    } else {
-      setIsPlaying(false);
+      return true;
     }
+    return false;
   }, [grid, numSteps, tempo]);
 
   playOnceRef.current = startOnce;
@@ -175,8 +175,11 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines, 
       setIsPlaying(false);
       return;
     }
-    setIsPlaying(true);
-    await startOnce();
+    // Start transport first, then sync the metronome to the already-running transport.
+    // Previously setIsPlaying(true) was called before await, so the metronome interval
+    // started ~50-100ms before audio (Tone.start() + module load latency), causing drift.
+    const started = await startOnce();
+    if (started) setIsPlaying(true);
   }, [isPlaying, startOnce]);
 
   function toggleLoop() {
