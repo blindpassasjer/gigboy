@@ -31,6 +31,8 @@ interface StrokeForRendering {
   stroke: HandNoteStroke | ActiveStrokeState;
   /** Width of the canvas when this stroke was saved. Used to scale strokeWidth proportionally. */
   savedViewportWidth: number;
+  /** Height of the canvas when this stroke was saved. Used to convert v1 y-coords to v2-equivalent. */
+  savedViewportHeight: number;
   /**
    * v2: both x and y are width-relative (y can exceed 1).
    * v1 / false: legacy — y is height-relative (y ∈ [0,1]).
@@ -50,19 +52,30 @@ interface StrokeForRendering {
  */
 function drawStroke(
   ctx: CanvasRenderingContext2D,
-  { stroke, savedViewportWidth, isV2 }: StrokeForRendering,
+  { stroke, savedViewportWidth, savedViewportHeight, isV2 }: StrokeForRendering,
   currentWidth: number,
   currentHeight: number,
 ) {
   if (stroke.points.length < 2) return;
 
-  // Scale strokeWidth so it occupies the same fraction of canvas width on any device.
-  const widthScale = savedViewportWidth > 0 ? currentWidth / savedViewportWidth : 1;
+  // Notes without valid viewport data (savedViewportWidth <= 1) must not be
+  // scaled — treating them as "drawn on a 1px canvas" would produce enormous
+  // strokes.  Use widthScale = 1 so the raw stroke.width is rendered as-is.
+  const hasValidViewport = savedViewportWidth > 1;
+  const widthScale = hasValidViewport ? currentWidth / savedViewportWidth : 1;
   const lineWidth = Math.max(stroke.width * widthScale, 0.5);
 
-  // Coordinate helpers — v2 keeps aspect ratio; v1 maps y to canvas height (legacy).
+  // Coordinate helpers:
+  //   v2:              rx = nx * W,  ry = ny * W  (aspect-ratio preserved)
+  //   v1 with viewport: convert y to v2-space via the saved aspect ratio so
+  //                     shapes look the same on any screen size.
+  //   v1 legacy (no valid viewport): fall back to mapping y onto canvas height.
   const rx = (nx: number) => nx * currentWidth;
-  const ry = (ny: number) => isV2 ? ny * currentWidth : ny * currentHeight;
+  const ry = (ny: number) => {
+    if (isV2) return ny * currentWidth;
+    if (hasValidViewport) return (ny * savedViewportHeight / savedViewportWidth) * currentWidth;
+    return ny * currentHeight;
+  };
 
   // Show a visible dot as soon as the pointer touches down.
   if (stroke.points.length < 4) {
@@ -168,6 +181,7 @@ export default function SongHandNotesOverlay({
       note.strokes.map((stroke) => ({
         stroke,
         savedViewportWidth: note.viewport.width,
+        savedViewportHeight: note.viewport.height,
         isV2: note.coordinateSystem === 'v2',
       }))
     );
@@ -274,7 +288,7 @@ export default function SongHandNotesOverlay({
     if (off) ctx.drawImage(off, 0, 0);
 
     if (activeStrokeRef.current) {
-      drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, isV2: true }, width, height);
+      drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, isV2: true }, width, height);
     }
   }, [allStrokesForRendering, viewport, revision]);
 
@@ -431,7 +445,7 @@ export default function SongHandNotesOverlay({
       if (off) ctx.drawImage(off, 0, 0);
 
       if (activeStrokeRef.current) {
-        drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, isV2: true }, width, height);
+        drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, isV2: true }, width, height);
       }
     });
   }, [drawEnabled]);
