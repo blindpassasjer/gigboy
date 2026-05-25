@@ -41,7 +41,7 @@ export function clamp01(value: number) {
   return value;
 }
 
-function normalizeStroke(raw: unknown): HandNoteStroke | null {
+function normalizeStroke(raw: unknown, isV2 = false): HandNoteStroke | null {
   if (!raw || typeof raw !== 'object') return null;
   const data = raw as Record<string, unknown>;
 
@@ -53,7 +53,11 @@ function normalizeStroke(raw: unknown): HandNoteStroke | null {
   if (!Array.isArray(data.points)) return null;
   const points = data.points
     .filter((entry): entry is number => typeof entry === 'number' && Number.isFinite(entry))
-    .map(clamp01);
+    .map((v, i) => {
+      // v2: Y values (odd indices) are width-relative and may exceed 1 — only clamp X and ensure Y >= 0.
+      if (isV2 && i % 2 === 1) return Math.max(0, v);
+      return clamp01(v);
+    });
 
   if (points.length < 4 || points.length % 2 !== 0) return null;
 
@@ -97,8 +101,11 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
     height: typeof viewportData.height === 'number' && viewportData.height > 0 ? viewportData.height : 1,
   };
 
+  const coordinateSystem = data.coordinateSystem === 'v2' ? 'v2' as const : undefined;
+  const isV2 = coordinateSystem === 'v2';
+
   const strokes = Array.isArray(data.strokes)
-    ? data.strokes.map(normalizeStroke).filter((stroke): stroke is HandNoteStroke => Boolean(stroke))
+    ? data.strokes.map((s) => normalizeStroke(s, isV2)).filter((stroke): stroke is HandNoteStroke => Boolean(stroke))
     : [];
 
   return {
@@ -107,6 +114,7 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
     authorAvatar,
     updatedAt,
     viewport,
+    coordinateSystem,
     strokes,
   };
 }

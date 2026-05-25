@@ -407,6 +407,7 @@ export default function StageplotEditor({
       authorAvatar: currentUser.avatar ?? null,
       updatedAt: new Date().toISOString(),
       viewport,
+      coordinateSystem: 'v2',
       strokes,
     };
 
@@ -432,6 +433,7 @@ export default function StageplotEditor({
         width: viewportRect?.width ?? 1,
         height: viewportRect?.height ?? 1,
       },
+      coordinateSystem: 'v2',
       strokes: lastStrokes,
     };
 
@@ -455,6 +457,7 @@ export default function StageplotEditor({
         width: viewportRect?.width ?? 1,
         height: viewportRect?.height ?? 1,
       },
+      coordinateSystem: 'v2',
       strokes: [],
     };
 

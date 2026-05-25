@@ -156,6 +156,7 @@ export function useSongHandNotes(params: {
       authorAvatar: user.avatar,
       updatedAt: new Date().toISOString(),
       viewport,
+      coordinateSystem: 'v2',
       strokes: normalizedStrokes,
     };
 

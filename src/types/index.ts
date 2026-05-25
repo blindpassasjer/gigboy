@@ -302,8 +302,14 @@ export interface Song extends CollaborationMetadata {
 export interface HandNoteStroke {
   id: string;
   color: string;
+  /** Stroke width in logical pixels, relative to the viewport width used when drawing. */
   width: number;
-  /** Normalized points [x0, y0, x1, y1, ...] in 0..1 space */
+  /**
+   * Normalized points [x0, y0, x1, y1, ...].
+   * v1 (default): x = clientX/viewportWidth ∈ [0,1], y = clientY/viewportHeight ∈ [0,1]
+   * v2: both x and y are divided by viewportWidth, so y can exceed 1 on tall canvases.
+   *     This preserves the aspect ratio of handwriting across different screen sizes.
+   */
   points: number[];
   createdAt: string;
 }
@@ -317,6 +323,12 @@ export interface SongHandNoteDocument {
     width: number;
     height: number;
   };
+  /**
+   * Coordinate system used for stroke points.
+   * Absent / 'v1': legacy — y is normalised by viewport height (no aspect-ratio guarantee).
+   * 'v2': both x and y are normalised by viewport width — aspect ratio is preserved.
+   */
+  coordinateSystem?: 'v2';
   strokes: HandNoteStroke[];
 }
 

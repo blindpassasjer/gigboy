@@ -26,15 +26,49 @@ interface TwoFingerScrollState {
   el: HTMLElement;
 }
 
-function drawStroke(ctx: CanvasRenderingContext2D, stroke: HandNoteStroke | ActiveStrokeState, width: number, height: number) {
+/** Stroke paired with the rendering context needed for cross-device scaling. */
+interface StrokeForRendering {
+  stroke: HandNoteStroke | ActiveStrokeState;
+  /** Width of the canvas when this stroke was saved. Used to scale strokeWidth proportionally. */
+  savedViewportWidth: number;
+  /**
+   * v2: both x and y are width-relative (y can exceed 1).
+   * v1 / false: legacy — y is height-relative (y ∈ [0,1]).
+   */
+  isV2: boolean;
+}
+
+/**
+ * Draw a single stroke onto `ctx`.
+ *
+ * @param currentWidth  CSS-pixel width of the canvas being drawn onto.
+ * @param currentHeight CSS-pixel height of the canvas being drawn onto.
+ * @param savedViewportWidth  Width at which the stroke was originally recorded.
+ *   Used to scale strokeWidth so it looks proportionally the same on any screen.
+ * @param isV2  When true, y coordinates are width-relative (same scale as x).
+ *   When false (legacy), y coordinates are height-relative.
+ */
+function drawStroke(
+  ctx: CanvasRenderingContext2D,
+  { stroke, savedViewportWidth, isV2 }: StrokeForRendering,
+  currentWidth: number,
+  currentHeight: number,
+) {
   if (stroke.points.length < 2) return;
+
+  // Scale strokeWidth so it occupies the same fraction of canvas width on any device.
+  const widthScale = savedViewportWidth > 0 ? currentWidth / savedViewportWidth : 1;
+  const lineWidth = Math.max(stroke.width * widthScale, 0.5);
+
+  // Coordinate helpers — v2 keeps aspect ratio; v1 maps y to canvas height (legacy).
+  const rx = (nx: number) => nx * currentWidth;
+  const ry = (ny: number) => isV2 ? ny * currentWidth : ny * currentHeight;
 
   // Show a visible dot as soon as the pointer touches down.
   if (stroke.points.length < 4) {
-    const x = stroke.points[0] * width;
-    const y = stroke.points[1] * height;
-    const radius = Math.max(stroke.width * 0.8, 1.6);
-
+    const x = rx(stroke.points[0]);
+    const y = ry(stroke.points[1]);
+    const radius = Math.max(lineWidth * 0.8, 1.6);
     ctx.beginPath();
     ctx.fillStyle = stroke.color;
     ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -46,22 +80,22 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: HandNoteStroke | Acti
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = stroke.color;
-  ctx.lineWidth = stroke.width;
+  ctx.lineWidth = lineWidth;
   // Subtle glow helps strokes stand out on mixed lyric/chord backgrounds.
   ctx.shadowColor = stroke.color;
-  ctx.shadowBlur = Math.max(stroke.width * 0.75, 1);
+  ctx.shadowBlur = Math.max(lineWidth * 0.75, 1);
 
-  // Quadratic bezier through midpoints for smooth handwriting curves
-  ctx.moveTo(stroke.points[0] * width, stroke.points[1] * height);
+  // Quadratic bezier through midpoints for smooth handwriting curves.
+  ctx.moveTo(rx(stroke.points[0]), ry(stroke.points[1]));
   for (let i = 2; i < stroke.points.length - 2; i += 2) {
-    const cpX = stroke.points[i] * width;
-    const cpY = stroke.points[i + 1] * height;
-    const midX = (cpX + stroke.points[i + 2] * width) / 2;
-    const midY = (cpY + stroke.points[i + 3] * height) / 2;
+    const cpX = rx(stroke.points[i]);
+    const cpY = ry(stroke.points[i + 1]);
+    const midX = (cpX + rx(stroke.points[i + 2])) / 2;
+    const midY = (cpY + ry(stroke.points[i + 3])) / 2;
     ctx.quadraticCurveTo(cpX, cpY, midX, midY);
   }
   const n = stroke.points.length;
-  ctx.lineTo(stroke.points[n - 2] * width, stroke.points[n - 1] * height);
+  ctx.lineTo(rx(stroke.points[n - 2]), ry(stroke.points[n - 1]));
 
   ctx.stroke();
   ctx.shadowBlur = 0;
@@ -94,27 +128,23 @@ export default function SongHandNotesOverlay({
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const twoFingerScrollRef = useRef<TwoFingerScrollState | null>(null);
   const rafRef = useRef<number | null>(null);
-  const allVisibleStrokesRef = useRef<HandNoteStroke[]>([]);
+  const allStrokesForRenderingRef = useRef<StrokeForRendering[]>([]);
 
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
-  const offscreenStrokesRef = useRef<HandNoteStroke[]>([]);
+  const offscreenStrokesRef = useRef<StrokeForRendering[]>([]);
   const offscreenViewportRef = useRef({ width: 0, height: 0 });
 
   const [viewport, setViewport] = useState({ width: 1, height: 1 });
   const viewportRef = useRef({ width: 1, height: 1 });
   const [revision, setRevision] = useState(0);
 
-  const measureTarget = useCallback(() => {
-    const stage = stageRef.current;
-    if (!stage) return null;
-    return stage.parentElement ?? stage;
-  }, []);
-
+  // Observe the overlay element itself (stageRef) so the measured viewport
+  // always matches the element used for pointer-event coordinate normalisation.
   const syncViewportFromStage = useCallback(() => {
-    const target = measureTarget();
-    if (!target) return;
+    const stage = stageRef.current;
+    if (!stage) return;
 
-    const rect = target.getBoundingClientRect();
+    const rect = stage.getBoundingClientRect();
     const width = Math.max(Math.round(rect.width), 1);
     const height = Math.max(Math.round(rect.height), 1);
 
@@ -126,24 +156,31 @@ export default function SongHandNotesOverlay({
       if (current.width === width && current.height === height) return current;
       return { width, height };
     });
-  }, [measureTarget]);
+  }, []);
 
   useEffect(() => {
     myStrokesRef.current = myStrokes;
   }, [myStrokes]);
 
-  const allVisibleStrokes = useMemo(() => {
-    return notes.flatMap((note) => note.strokes);
+  /** All visible strokes wrapped with their rendering context. */
+  const allStrokesForRendering = useMemo<StrokeForRendering[]>(() => {
+    return notes.flatMap((note) =>
+      note.strokes.map((stroke) => ({
+        stroke,
+        savedViewportWidth: note.viewport.width,
+        isV2: note.coordinateSystem === 'v2',
+      }))
+    );
   }, [notes]);
 
   useEffect(() => {
-    allVisibleStrokesRef.current = allVisibleStrokes;
-  }, [allVisibleStrokes]);
+    allStrokesForRenderingRef.current = allStrokesForRendering;
+  }, [allStrokesForRendering]);
 
   useEffect(() => {
     syncViewportFromStage();
 
-    const element = measureTarget();
+    const element = stageRef.current;
     if (!element) return;
 
     const observer = new ResizeObserver((entries) => {
@@ -160,7 +197,7 @@ export default function SongHandNotesOverlay({
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [measureTarget, syncViewportFromStage]);
+  }, [syncViewportFromStage]);
 
   useEffect(() => {
     if (!visible) return;
@@ -204,11 +241,11 @@ export default function SongHandNotesOverlay({
     // Rebuild the offscreen cache only when strokes or viewport actually changed,
     // not when only `revision` changed (e.g. active stroke start/end).
     if (
-      offscreenStrokesRef.current !== allVisibleStrokes ||
+      offscreenStrokesRef.current !== allStrokesForRendering ||
       offscreenViewportRef.current.width !== width ||
       offscreenViewportRef.current.height !== height
     ) {
-      offscreenStrokesRef.current = allVisibleStrokes;
+      offscreenStrokesRef.current = allStrokesForRendering;
       offscreenViewportRef.current = { width, height };
 
       let off = offscreenRef.current;
@@ -222,8 +259,8 @@ export default function SongHandNotesOverlay({
       if (offCtx) {
         offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         offCtx.clearRect(0, 0, width, height);
-        for (const stroke of allVisibleStrokes) {
-          drawStroke(offCtx, stroke, width, height);
+        for (const strokeCtx of allStrokesForRendering) {
+          drawStroke(offCtx, strokeCtx, width, height);
         }
       }
     }
@@ -237,10 +274,18 @@ export default function SongHandNotesOverlay({
     if (off) ctx.drawImage(off, 0, 0);
 
     if (activeStrokeRef.current) {
-      drawStroke(ctx, activeStrokeRef.current, width, height);
+      drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, isV2: true }, width, height);
     }
-  }, [allVisibleStrokes, viewport, revision]);
+  }, [allStrokesForRendering, viewport, revision]);
 
+  /**
+   * Normalise a pointer position into the v2 coordinate space:
+   * x = clientX_relative / rect.width  ∈ [0, 1]
+   * y = clientY_relative / rect.width  ∈ [0, rect.height/rect.width]
+   *
+   * Dividing y by WIDTH (not height) preserves the aspect ratio of any drawn shape
+   * when the canvas is displayed on a screen with a different viewport size.
+   */
   const pointFromPointerEvent = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     const stage = stageRef.current;
     if (!stage) return null;
@@ -249,7 +294,7 @@ export default function SongHandNotesOverlay({
     if (rect.width <= 0 || rect.height <= 0) return null;
 
     const x = clamp01((event.clientX - rect.left) / rect.width);
-    const y = clamp01((event.clientY - rect.top) / rect.height);
+    const y = Math.max(0, (event.clientY - rect.top) / rect.width);
     return { x, y };
   }, []);
 
@@ -350,8 +395,9 @@ export default function SongHandNotesOverlay({
 
     let added = false;
     for (const ce of events) {
+      // v2: both x and y divided by width to preserve aspect ratio.
       const px = clamp01((ce.clientX - rect.left) / rect.width);
-      const py = clamp01((ce.clientY - rect.top) / rect.height);
+      const py = Math.max(0, (ce.clientY - rect.top) / rect.width);
 
       const total = active.points.length;
       const lastX = active.points[total - 2];
@@ -385,7 +431,7 @@ export default function SongHandNotesOverlay({
       if (off) ctx.drawImage(off, 0, 0);
 
       if (activeStrokeRef.current) {
-        drawStroke(ctx, activeStrokeRef.current, width, height);
+        drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, isV2: true }, width, height);
       }
     });
   }, [drawEnabled]);
