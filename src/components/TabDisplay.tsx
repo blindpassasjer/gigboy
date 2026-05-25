@@ -13,8 +13,8 @@ interface Props {
 
 function extractLinePrefix(line: string): { prefix: string; content: string } {
   const match = line.match(/^[eEbBgGdDaA]\s*[|:]\s*/);
-  if (!match) return { prefix: '', content: line };
-  return { prefix: match[0], content: line.slice(match[0].length) };
+  if (!match) return { prefix: '', content: line.replace(/\|$/, '') };
+  return { prefix: match[0], content: line.slice(match[0].length).replace(/\|$/, '') };
 }
 
 export default function TabDisplay({

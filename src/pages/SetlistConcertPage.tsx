@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  AudioLines,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
   List,
   Maximize2,
+  Metronome,
   Minimize2,
   Pause,
   Play,
@@ -53,6 +55,8 @@ export default function SetlistConcertPage() {
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [showTopbar, setShowTopbar] = useState(false);
   const [showSongNavigator, setShowSongNavigator] = useState(true);
+  const [showTuner, setShowTuner] = useState(false);
+  const [showMetronome, setShowMetronome] = useState(false);
   const [teleprompterActive, setTeleprompterActive] = useState(false);
   const [teleprompterSpeed, setTeleprompterSpeed] = useState(28);
   const [isFullscreen, setIsFullscreen] = useState(() => {
@@ -412,6 +416,24 @@ export default function SetlistConcertPage() {
             {isFullscreen ? 'Exit full' : 'Full screen'}
           </button>
 
+          <button
+            type="button"
+            className={`concert-chip-btn${showTuner ? ' song-toolbar-tool-btn--active' : ''}`}
+            onClick={() => setShowTuner((v) => !v)}
+            aria-label={showTuner ? 'Hide tuner' : 'Show tuner'}
+          >
+            <AudioLines size={14} /> Tuner
+          </button>
+
+          <button
+            type="button"
+            className={`concert-chip-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}`}
+            onClick={() => setShowMetronome((v) => !v)}
+            aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
+          >
+            <Metronome size={14} /> Metronome
+          </button>
+
           <div className="concert-teleprompter" aria-label="Auto scroll controls">
             <button
               type="button"
@@ -452,6 +474,23 @@ export default function SetlistConcertPage() {
             <span className="concert-teleprompter-speed">{teleprompterSpeed}px/s</span>
           </div>
         </div>
+
+        {(showTuner || showMetronome) && (
+          <div className="song-toolbar-tools-grid concert-toolbar-tools-grid">
+            {showTuner && (
+              <div className="song-toolbar-tool-card">
+                <span className="song-toolbar-tool-card-title"><AudioLines size={13} /> Tuner</span>
+                <VisualTuner className="song-view-tuner" />
+              </div>
+            )}
+            {showMetronome && (
+              <div className="song-toolbar-tool-card">
+                <span className="song-toolbar-tool-card-title"><Metronome size={13} /> Metronome</span>
+                <VisualMetronome tempo={currentSong.tempo} timeSignature={currentSong.timeSignature} className="song-view-metronome" />
+              </div>
+            )}
+          </div>
+        )}
       </header>
       )}
 
@@ -470,12 +509,6 @@ export default function SetlistConcertPage() {
               {currentSong.capo !== undefined && currentSong.capo > 0 && (
                 <span className="capo-badge">Capo {currentSong.capo}</span>
               )}
-              <VisualMetronome
-                tempo={currentSong.tempo}
-                timeSignature={currentSong.timeSignature}
-                className="concert-metronome"
-              />
-              <VisualTuner className="concert-tuner" />
               {currentSong.timeSignature && <span className="meta-pill">{currentSong.timeSignature}</span>}
             </div>
           </div>
@@ -563,6 +596,29 @@ export default function SetlistConcertPage() {
           anchorRect={activeChord.rect}
           onClose={() => setActiveChord(null)}
         />
+      )}
+
+      {!showTopbar && (showTuner || showMetronome) && (
+        <div className="floating-tools">
+          {showTuner && (
+            <div className="floating-tool-card">
+              <div className="floating-tool-card-header">
+                <span><AudioLines size={13} /> Tuner</span>
+                <button className="floating-tool-close" onClick={() => setShowTuner(false)} aria-label="Close tuner"><X size={14} /></button>
+              </div>
+              <VisualTuner className="song-view-tuner" />
+            </div>
+          )}
+          {showMetronome && (
+            <div className="floating-tool-card">
+              <div className="floating-tool-card-header">
+                <span><Metronome size={13} /> Metronome</span>
+                <button className="floating-tool-close" onClick={() => setShowMetronome(false)} aria-label="Close metronome"><X size={14} /></button>
+              </div>
+              <VisualMetronome tempo={currentSong.tempo} timeSignature={currentSong.timeSignature} className="song-view-metronome" />
+            </div>
+          )}
+        </div>
       )}
     </section>
   );

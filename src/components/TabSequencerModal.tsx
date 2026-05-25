@@ -149,6 +149,10 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines, 
     const tabLines = gridToTabLines(grid);
     const durationMs = await playTab(tabLines, tempo ?? 120, 0);
     if (durationMs > 0) {
+      // Use the full tab duration (numSteps × 16th-note) + small release buffer
+      // instead of the last-note-position estimate, to avoid a gap before looping.
+      const stepMs = (60 / (tempo ?? 120)) / 4 * 1000;
+      const totalMs = numSteps * stepMs + 200;
       playTimerRef.current = setTimeout(() => {
         playTimerRef.current = null;
         if (isLoopingRef.current) {
@@ -156,11 +160,11 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines, 
         } else {
           setIsPlaying(false);
         }
-      }, durationMs);
+      }, totalMs);
     } else {
       setIsPlaying(false);
     }
-  }, [grid]);
+  }, [grid, numSteps, tempo]);
 
   playOnceRef.current = startOnce;
 
@@ -430,7 +434,7 @@ export default function TabSequencerModal({ onInsert, onClose, initialTabLines, 
 
         {showMetronome && (
           <div className="tab-seq-metronome-panel">
-            <VisualMetronome tempo={tempo ?? 120} />
+            <VisualMetronome tempo={tempo ?? 120} isPlaying={isPlaying} />
           </div>
         )}
 

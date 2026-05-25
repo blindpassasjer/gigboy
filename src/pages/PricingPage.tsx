@@ -85,8 +85,8 @@ const PLAN_CARDS: PlanCard[] = [
     tier: 'pro',
     icon: Sparkles,
     blurb: 'Everything a power user needs for rehearsals, setlists, recordings, and sharing.',
-    monthlyPrice: '50 kr or 5 USD',
-    annualPrice: '500 kr or 50 USD',
+    monthlyPrice: '5 USD',
+    annualPrice: '50 USD',
     featureBullets: [
       { icon: Users, label: 'One Pro band workspace' },
       { icon: Music, label: 'Unlimited songs' },
@@ -111,8 +111,8 @@ const PLAN_CARDS: PlanCard[] = [
     tier: 'crew',
     icon: Users,
     blurb: 'A shared workspace for a band owner with member access and room to grow.',
-    monthlyPrice: '150 kr or 15 USD',
-    annualPrice: '1500 kr or 150 USD',
+    monthlyPrice: '15 USD',
+    annualPrice: '150 USD',
     featureBullets: [
       { icon: Users, label: 'Shared Crew band workspace' },
       { icon: Music, label: 'Unlimited songs' },
@@ -127,7 +127,7 @@ const PLAN_CARDS: PlanCard[] = [
       { icon: Mic2, label: 'Metronome' },
       { icon: Sparkles, label: 'Multi-user notes' },
       { icon: Users, label: 'Members: Up to 5' },
-      { icon: Users, label: 'Extra members are a Crew-only add-on: 20 kr / 2 USD monthly, 200 kr / 20 USD yearly' },
+      { icon: Users, label: 'Extra members are a Crew-only add-on: 2 USD monthly, 20 USD yearly' },
     ],
     ctaLabel: 'Upgrade to Crew',
     envKeyMonthly: 'VITE_STRIPE_BAND_MONTHLY_PRICE_ID',
@@ -426,7 +426,7 @@ export default function PricingPage() {
               </ul>
               {card.tier === 'crew' ? (
                 <label className="share-menu-field" style={{ marginBottom: '0.85rem' }}>
-                    <span>Extra members ({billingCycle === 'annual' ? '200 kr / 20 USD each per year' : '20 kr / 2 USD each per month'})</span>
+                    <span>Extra members ({billingCycle === 'annual' ? '20 USD each per year' : '2 USD each per month'})</span>
                     <input
                       type="number"
                       min={0}

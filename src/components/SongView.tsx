@@ -19,6 +19,7 @@ import {
   AudioLines,
   Metronome,
   Search,
+  X,
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { HandNoteStroke, Song } from '../types';
@@ -76,6 +77,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const [updatingFromFile, setUpdatingFromFile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const updateFromFileInputRef = useRef<HTMLInputElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [toolbarVisible, setToolbarVisible] = useState(true);
   const { updateSong, deleteSong } = useSongs();
   const { songLists, addSongToList, removeSongFromList } = useSongLists();
   const {
@@ -176,6 +179,18 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [listMenuOpen]);
+
+  // Track toolbar visibility to show floating tools when scrolled away
+  useEffect(() => {
+    const el = toolbarRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setToolbarVisible(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Close chord diagram when song changes
   useEffect(() => { setActiveChord(null); }, [song.id]);
@@ -351,7 +366,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
           </div>
         </div>
 
-        <div className="song-view-toolbar">
+        <div className="song-view-toolbar" ref={toolbarRef}>
           <section className="song-toolbar-section song-toolbar-section--settings">
             <div className="song-toolbar-section-head">
               <h2 className="song-toolbar-section-title"><SlidersHorizontal size={14} /> Settings</h2>
@@ -459,7 +474,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               {song.capo !== undefined && song.capo > 0 && (
                 <span className="capo-badge">Capo {song.capo}</span>
               )}
-              {song.timeSignature && <span className="meta-pill">{song.timeSignature}</span>}
             </div>
           </section>
 
@@ -815,6 +829,104 @@ export default function SongView({ song, accentColor, bandId }: Props) {
           anchorRect={activeChord.rect}
           onClose={() => setActiveChord(null)}
         />
+      )}
+
+      {!toolbarVisible && (showTuner || showMetronome || (user && showNotes) || (media && showMediaPlayer && song.playbackUrl) || (user && showRecorder) || showChordFinder) && (
+        <div className="floating-tools">
+          {showTuner && (
+            <div className="floating-tool-card">
+              <div className="floating-tool-card-header">
+                <span><AudioLines size={13} /> Tuner</span>
+                <button className="floating-tool-close" onClick={() => setShowTuner(false)} aria-label="Close tuner"><X size={14} /></button>
+              </div>
+              <VisualTuner className="song-view-tuner" />
+            </div>
+          )}
+          {showMetronome && (
+            <div className="floating-tool-card">
+              <div className="floating-tool-card-header">
+                <span><Metronome size={13} /> Metronome</span>
+                <button className="floating-tool-close" onClick={() => setShowMetronome(false)} aria-label="Close metronome"><X size={14} /></button>
+              </div>
+              <VisualMetronome tempo={song.tempo} timeSignature={song.timeSignature} className="song-view-metronome" />
+            </div>
+          )}
+          {user && showNotes && (
+            <div className="floating-tool-card">
+              <div className="floating-tool-card-header">
+                <span><PenLine size={13} /> Notes</span>
+                <button className="floating-tool-close" onClick={() => handleToggleNotes(false)} aria-label="Close notes"><X size={14} /></button>
+              </div>
+              <div className="song-notes-panel">
+                <label
+                  className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
+                  title="Enable touch drawing"
+                >
+                  <input
+                    type="checkbox"
+                    checked={drawEnabled}
+                    onChange={(e) => handleToggleDraw(e.target.checked)}
+                  />
+                  Draw
+                </label>
+                {drawEnabled && (
+                  <>
+                    <button className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0} title="Undo last stroke">Undo</button>
+                    <button className="notes-toolbar-btn notes-toolbar-btn--danger" onClick={handleClearNotes} disabled={handNotes.myStrokes.length === 0} title="Clear my notes">Clear</button>
+                  </>
+                )}
+                {handNotes.authors.length > 0 && (
+                  <div className="notes-author-filters">
+                    {handNotes.authors.length > 1 && (
+                      <button className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`} onClick={handNotes.showAll} title="Show all users' notes">All</button>
+                    )}
+                    {handNotes.authors.map((author) => (
+                      <button
+                        key={author.uid}
+                        className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
+                        onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
+                        title={`Toggle notes by ${author.name}`}
+                      >
+                        {author.avatar ? <span className="notes-author-chip-avatar">{author.avatar}</span> : <span className="notes-author-chip-initials">{author.name.slice(0, 1).toUpperCase()}</span>}
+                        {author.uid === user.id ? 'Me' : author.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {handNotes.saveState === 'saving' && <span className="notes-save-status notes-save-status--saving">Saving…</span>}
+                {handNotes.saveState === 'saved' && <span className="notes-save-status notes-save-status--saved">Saved</span>}
+                {handNotes.saveState === 'error' && <span className="notes-save-status notes-save-status--error">Failed to save</span>}
+              </div>
+            </div>
+          )}
+          {media && showMediaPlayer && song.playbackUrl && (
+            <div className="floating-tool-card">
+              <div className="floating-tool-card-header">
+                <span><Play size={13} /> Playback</span>
+                <button className="floating-tool-close" onClick={() => setShowMediaPlayer(false)} aria-label="Close playback"><X size={14} /></button>
+              </div>
+              <SongMediaPlayer mediaUrl={song.playbackUrl} autoPlay={false} onAutoPlayHandled={() => {}} />
+            </div>
+          )}
+          {user && showRecorder && (
+            <div className="floating-tool-card">
+              <div className="floating-tool-card-header">
+                <span><Mic size={13} /> Recorder</span>
+                <button className="floating-tool-close" onClick={() => setShowRecorder(false)} aria-label="Close recorder"><X size={14} /></button>
+              </div>
+              <SongRecorder song={song} user={user} bandId={bandId} />
+            </div>
+          )}
+          {showChordFinder && (
+            <div className="floating-tool-card">
+              <div className="floating-tool-card-header">
+                <span><Search size={13} /> Chord finder</span>
+                <button className="floating-tool-close" onClick={() => setShowChordFinder(false)} aria-label="Close chord finder"><X size={14} /></button>
+              </div>
+              <ChordFinder instrument={chordInstrument} />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

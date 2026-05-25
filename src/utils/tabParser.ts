@@ -28,12 +28,13 @@ export function fretToMidi(stringIndex: number, fret: number): number {
 }
 
 /**
- * Strip the string label prefix from a tab line.
+ * Strip the string label prefix and trailing bar marker from a tab line.
  * Handles formats like "e|", "B |", "G:", "e", etc.
  */
 function stripStringLabel(line: string): string {
   // Remove leading string label (single letter optionally followed by |, :, or space)
-  return line.replace(/^[eEbBgGdDaA]\s*[|:]\s*/, '');
+  // and strip any trailing | bar marker
+  return line.replace(/^[eEbBgGdDaA]\s*[|:]\s*/, '').replace(/\|$/, '');
 }
 
 /** Parse a time signature like "4/4" or "6/8". Falls back to 4/4. */

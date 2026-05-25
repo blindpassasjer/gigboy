@@ -6263,6 +6263,71 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--text);
 }
 
+/* Floating tools panel — shown when active tools scroll out of view or topbar is hidden */
+.floating-tools {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+  pointer-events: none;
+}
+
+.concert-mode .floating-tools {
+  bottom: 5rem;
+}
+
+.floating-tool-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .7rem .85rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .18);
+  pointer-events: all;
+  min-width: 220px;
+  max-width: 360px;
+}
+
+.floating-tool-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .55rem;
+  font-size: .76rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--muted);
+}
+
+.floating-tool-card-header > span {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.floating-tool-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 2px 4px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.floating-tool-close:hover {
+  color: var(--text);
+  background: var(--border);
+}
+
 .concert-chords-stack {
   display: inline-flex;
   flex-direction: column;

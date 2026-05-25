@@ -5,6 +5,8 @@ interface Props {
   tempo?: number;
   timeSignature?: string;
   className?: string;
+  /** When provided, syncs the metronome start/stop to external playback */
+  isPlaying?: boolean;
 }
 
 function parseBeatsPerBar(timeSignature?: string): number {
@@ -16,7 +18,7 @@ function parseBeatsPerBar(timeSignature?: string): number {
   return Math.min(numerator, 12);
 }
 
-export default function VisualMetronome({ tempo, timeSignature, className = '' }: Props) {
+export default function VisualMetronome({ tempo, timeSignature, className = '', isPlaying }: Props) {
   const baseBpm = typeof tempo === 'number' && Number.isFinite(tempo) && tempo > 0
     ? Math.round(tempo)
     : null;
@@ -62,6 +64,17 @@ export default function VisualMetronome({ tempo, timeSignature, className = '' }
   useEffect(() => {
     setActiveBeat(0);
   }, [bpm, beatsPerBar]);
+
+  // Sync to external playback: start/stop and reset beat on play
+  useEffect(() => {
+    if (isPlaying === undefined) return;
+    if (isPlaying) {
+      setActiveBeat(0);
+      setIsRunning(true);
+    } else {
+      setIsRunning(false);
+    }
+  }, [isPlaying]);
 
   useEffect(() => {
     if (!isRunning) return;
