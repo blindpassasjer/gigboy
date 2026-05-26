@@ -116,7 +116,15 @@ function songFromOwnedDoc(id: string, data: Record<string, unknown>, ownerId: st
                 ? data.media_url
                 : undefined;
 
-  const song = { id, ownerId, ...(data as Omit<Song, 'id'>), playbackUrl } as Song;
+  const song: Song = {
+    ...(data as Omit<Song, 'id' | 'title' | 'language' | 'chordpro'>),
+    id,
+    ownerId,
+    title: typeof data.title === 'string' ? data.title : '',
+    language: typeof data.language === 'string' ? data.language : 'en',
+    chordpro: typeof data.chordpro === 'string' ? data.chordpro : '',
+    playbackUrl,
+  };
   const role = ownerId === currentUserId
     ? 'owner'
     : song.collaborationPermissions?.[currentUserId];

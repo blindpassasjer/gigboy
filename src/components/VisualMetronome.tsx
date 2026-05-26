@@ -65,6 +65,12 @@ export default function VisualMetronome({ tempo, timeSignature, className = '', 
     setActiveBeat(0);
   }, [bpm, beatsPerBar]);
 
+  useEffect(() => {
+    return () => {
+      void audioCtxRef.current?.close();
+    };
+  }, []);
+
   // Sync to external playback: start/stop and reset beat on play
   useEffect(() => {
     if (isPlaying === undefined) return;

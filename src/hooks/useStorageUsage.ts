@@ -315,15 +315,15 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
     }
 
     const userDocRef = doc(firestore, 'users', currentUserId);
-    const unsubscribeUser = onSnapshot(userDocRef, () => requestReload(), () => {});
+    const unsubscribeUser = onSnapshot(userDocRef, () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); });
     const cleanups: Array<() => void> = [unsubscribeUser];
 
     if (currentBandId) {
       // Band-scoped listeners
       cleanups.push(
-        onSnapshot(doc(firestore, 'bands', currentBandId), () => requestReload(), () => {}),
-        onSnapshot(collection(firestore, 'bands', currentBandId, 'pressKitImages'), () => requestReload(), () => {}),
-        onSnapshot(collection(firestore, 'bands', currentBandId, 'songs'), () => requestReload(), () => {}),
+        onSnapshot(doc(firestore, 'bands', currentBandId), () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); }),
+        onSnapshot(collection(firestore, 'bands', currentBandId, 'pressKitImages'), () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); }),
+        onSnapshot(collection(firestore, 'bands', currentBandId, 'songs'), () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); }),
       );
     } else {
       // Cross-band listeners
@@ -360,23 +360,23 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           if (pressKitUnsubByBandId.has(bid)) return;
           pressKitUnsubByBandId.set(
             bid,
-            onSnapshot(collection(firestore, 'bands', bid, 'pressKitImages'), () => requestReload(), () => {}),
+            onSnapshot(collection(firestore, 'bands', bid, 'pressKitImages'), () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); }),
           );
         });
       };
 
       cleanups.push(
-        onSnapshot(recordingsQuery, () => requestReload(), () => {}),
-        onSnapshot(ownPressKitImagesQuery, () => requestReload(), () => {}),
+        onSnapshot(recordingsQuery, () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); }),
+        onSnapshot(ownPressKitImagesQuery, () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); }),
         onSnapshot(
           memberBandsQuery,
           (snapshot) => { memberBandIds = new Set(snapshot.docs.map((s) => s.id)); reconcilePressKitListeners(); requestReload(); },
-          () => {},
+          (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); },
         ),
         onSnapshot(
           ownerBandsQuery,
           (snapshot) => { ownedBandIds = new Set(snapshot.docs.map((s) => s.id)); reconcilePressKitListeners(); requestReload(); },
-          () => {},
+          (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); },
         ),
         () => { pressKitUnsubByBandId.forEach((u) => u()); pressKitUnsubByBandId.clear(); },
       );

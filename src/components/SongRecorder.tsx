@@ -107,6 +107,7 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
 
   useEffect(() => {
     let cancelled = false;
+    const abortController = new AbortController();
 
     async function loadWaveform() {
       if (waveformBars && waveformBars.length > 0) {
@@ -115,7 +116,7 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
       }
 
       try {
-        const response = await fetch(audioUrl);
+        const response = await fetch(audioUrl, { signal: abortController.signal });
         const arrayBuffer = await response.arrayBuffer();
         const audioContext = new AudioContext();
 
@@ -126,8 +127,8 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
         } finally {
           void audioContext.close();
         }
-      } catch {
-        if (!cancelled) {
+      } catch (err) {
+        if (!cancelled && !(err instanceof DOMException && err.name === 'AbortError')) {
           setBars(Array.from({ length: WAVEFORM_SAMPLES }, () => 0.3));
         }
       }
@@ -138,6 +139,7 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
 
     return () => {
       cancelled = true;
+      abortController.abort();
     };
   }, [audioUrl, waveformBars]);
 
@@ -401,6 +403,8 @@ export default function SongRecorder({ song, user, bandId }: Props) {
   const elapsedStartRef = useRef<number>(0);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
+  previewUrlRef.current = previewUrl;
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -415,6 +419,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
     return () => {
       stopStream();
       if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
   }, [stopStream]);
 
