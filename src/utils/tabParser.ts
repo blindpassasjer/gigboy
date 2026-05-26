@@ -60,22 +60,37 @@ export function parseTimeSignature(timeSignature?: string): TimeSignatureInfo {
 /**
  * Build a character-level beat guide line aligned to tab columns.
  * Columns are treated as 16th-note resolution.
+ *
+ * @param length           Total character length of the guide string.
+ * @param timeSignature    Optional "N/N" time signature string.
+ * @param stepCharPositions  Optional array mapping step index → character position.
+ *   When provided, beat markers are placed at the actual character positions of each
+ *   step rather than assuming every step is 1 character wide. This is necessary when
+ *   two-digit frets (≥ 10) make some steps 2 characters wide.
  */
-export function buildBeatGuide(length: number, timeSignature?: string): string {
+export function buildBeatGuide(length: number, timeSignature?: string, stepCharPositions?: number[]): string {
   if (length <= 0) return '';
   const { beatsPerBar, beatUnit } = parseTimeSignature(timeSignature);
   const columnsPerBeat = Math.max(1, Math.round(16 / beatUnit));
   const columnsPerBar = Math.max(1, beatsPerBar * columnsPerBeat);
 
   const chars = new Array<string>(length).fill('-');
-  for (let col = 0; col < length; col++) {
-    if (col % columnsPerBar === 0) {
-      chars[col] = '|';
-      continue;
+
+  const placeMarker = (stepIdx: number, charPos: number) => {
+    if (charPos >= length) return;
+    if (stepIdx % columnsPerBar === 0) {
+      chars[charPos] = '|';
+    } else if (stepIdx % columnsPerBeat === 0) {
+      const beatIdx = Math.floor((stepIdx % columnsPerBar) / columnsPerBeat) + 1;
+      chars[charPos] = String(beatIdx % 10);
     }
-    if (col % columnsPerBeat === 0) {
-      const beatIdx = Math.floor((col % columnsPerBar) / columnsPerBeat) + 1;
-      chars[col] = String(beatIdx % 10);
+  };
+
+  if (stepCharPositions && stepCharPositions.length > 0) {
+    stepCharPositions.forEach((charPos, stepIdx) => placeMarker(stepIdx, charPos));
+  } else {
+    for (let col = 0; col < length; col++) {
+      placeMarker(col, col);
     }
   }
 
