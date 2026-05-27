@@ -704,7 +704,7 @@ export default function Layout({ children }: Props) {
                                 <li key={invite.id} className="topbar-invite-item">
                                   <div className="topbar-invite-main">
                                     <strong>{invite.bandName}</strong>
-                                    <span>{invite.inviterEmail} invited you as {invite.role}</span>
+                                    <span>{invite.inviterEmail} invited you as {invite.role === 'editor' ? 'member' : invite.role}</span>
                                   </div>
                                   <div className="topbar-invite-actions">
                                     <button

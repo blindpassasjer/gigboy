@@ -371,7 +371,7 @@ export default function ProfileInvitesPage() {
                     <li key={invite.id} className="profile-invite-card">
                       <div className="profile-invite-main">
                         <strong>{invite.bandName}</strong>
-                        <span>{invite.inviterEmail} invited you as {invite.role}</span>
+                        <span>{invite.inviterEmail} invited you as {invite.role === 'editor' ? 'member' : invite.role}</span>
                       </div>
                       <div className="profile-invite-actions">
                         <button

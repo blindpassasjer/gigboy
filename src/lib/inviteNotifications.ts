@@ -58,7 +58,7 @@ function bandInviteToNotification(invite: BandInvite): AcceptedInviteNotificatio
     inviteId: invite.id,
     kind: 'band',
     title: invite.bandName,
-    description: `${invite.recipientEmail} accepted your band invite as ${invite.role}.`,
+    description: `${invite.recipientEmail} accepted your band invite as ${invite.role === 'editor' ? 'member' : invite.role}.`,
     recipientEmail: invite.recipientEmail,
     recipientUid: invite.recipientUid,
     respondedAt: invite.respondedAt,
