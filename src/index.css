@@ -6272,8 +6272,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-direction: column;
   gap: .55rem;
-  max-height: calc(100vh - 8rem);
-  overflow-y: auto;
   pointer-events: none;
 }
 
