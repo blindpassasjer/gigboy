@@ -192,9 +192,9 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  // Close chord diagram when song changes
-  useEffect(() => { setActiveChord(null); }, [song.id]);
+  // Reset transient UI state when song changes
   useEffect(() => {
+    setActiveChord(null);
     setShowMetronome(false);
     setShowTuner(false);
     setShowMediaPlayer(false);

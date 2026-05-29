@@ -243,10 +243,6 @@ export default function SongList({
   }, [listIcon]);
 
   useEffect(() => {
-    setRenameValue(listName ?? '');
-  }, [listName]);
-
-  useEffect(() => {
     if (!isRenaming) return;
     renameInputRef.current?.focus();
     renameInputRef.current?.select();
