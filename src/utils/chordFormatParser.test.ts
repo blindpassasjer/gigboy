@@ -60,6 +60,30 @@ E|-0-------------|`);
     expect(parsed.chordpro).toContain('e|-------0-------|');
   });
 
+  it('does not swallow the e string when a chord annotation sits directly above the tab', () => {
+    const parsed = parsePastedSong(`Mi Unicornio Azul
+Silvio Rodriguez
+
+   C                   Em
+e|----------------------------------------|
+B|-1---1-------------1-0---0------------0-|
+G|-0---0-----------0---0---0-----------0--|
+D|---2---2---2-2/3-------2---2---2-2/3----|
+A|-3---3---3------------------------------|
+E|---------------------0---0---0----------|`);
+
+    expect(parsed.chordpro).toContain('{start_of_tab}');
+    // All 6 strings must be inside the tab block
+    expect(parsed.chordpro).toContain('e|--');
+    expect(parsed.chordpro).toContain('E|--');
+    // The e string must not be merged into a chord-lyric line
+    const tabBlockMatch = parsed.chordpro.match(/\{start_of_tab\}([\s\S]*?)\{end_of_tab\}/);
+    expect(tabBlockMatch).not.toBeNull();
+    const tabBlock = tabBlockMatch![1];
+    expect(tabBlock).toContain('e|');
+    expect(tabBlock).toContain('E|');
+  });
+
   it('parses GuitarTuna-style key and capo metadata', () => {
     const parsed = parsePastedSong(`Let Her Go
 Passenger

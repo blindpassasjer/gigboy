@@ -417,12 +417,19 @@ export function parsePastedSong(text: string): ParsedImportResult {
     }
 
     if (lineLooksLikeChordRow(current)) {
-      const merged = mergeChordRowWithLyrics(current, next);
-      if (merged.trim()) {
-        out.push(merged);
-      }
-      if (next.trim()) {
-        i += 1;
+      if (looksLikeTabLine(next)) {
+        // Chord annotation sits directly above a tab string line — output the
+        // chords alone and leave the tab line to be picked up as a tab block.
+        const chordsOnly = mergeChordRowWithLyrics(current, '');
+        if (chordsOnly.trim()) out.push(chordsOnly);
+      } else {
+        const merged = mergeChordRowWithLyrics(current, next);
+        if (merged.trim()) {
+          out.push(merged);
+        }
+        if (next.trim()) {
+          i += 1;
+        }
       }
       continue;
     }
