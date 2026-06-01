@@ -7,7 +7,8 @@ import { parseTabLines } from '../utils/tabParser';
 type ToneModule = typeof import('tone');
 
 let toneModulePromise: Promise<ToneModule> | null = null;
-let synthInstance: InstanceType<ToneModule['PolySynth']> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let synthInstance: any | null = null;
 
 function getTone(): Promise<ToneModule> {
   if (!toneModulePromise) {
@@ -16,13 +17,16 @@ function getTone(): Promise<ToneModule> {
   return toneModulePromise;
 }
 
-function getSynth(Tone: ToneModule): InstanceType<ToneModule['PolySynth']> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSynth(Tone: ToneModule): any {
   if (!synthInstance) {
-    synthInstance = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: 'triangle' as const },
-      envelope: { attack: 0.001, decay: 0.18, sustain: 0.0, release: 0.5 },
-    }).toDestination();
-    synthInstance.volume.value = -8;
+    // PluckSynth uses Karplus-Strong algorithm — close to a plucked guitar string.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const PluckSynthCtor = Tone.PluckSynth as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pluckOptions: any = { attackNoise: 1, dampening: 3800, resonance: 0.97 };
+    synthInstance = new Tone.PolySynth(PluckSynthCtor, pluckOptions).toDestination();
+    synthInstance.volume.value = -6;
   }
   return synthInstance;
 }

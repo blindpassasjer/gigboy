@@ -6,6 +6,7 @@ import { buildBeatGuide } from '../utils/tabParser';
 interface Props {
   tabLines: string[];
   transpose?: number;
+  bpm?: number;
   timeSignature?: string;
   showPlayback?: boolean;
   onEdit?: () => void;
@@ -51,6 +52,7 @@ function getStepCharPositions(contents: string[]): number[] {
 export default function TabDisplay({
   tabLines,
   transpose = 0,
+  bpm = 120,
   timeSignature,
   showPlayback = true,
   onEdit,
@@ -63,7 +65,7 @@ export default function TabDisplay({
   const playRef = useRef<() => Promise<void>>();
 
   const startOnce = useCallback(async () => {
-    const durationMs = await playTab(tabLines, 120, transpose);
+    const durationMs = await playTab(tabLines, bpm, transpose);
     if (durationMs > 0) {
       timerRef.current = setTimeout(() => {
         timerRef.current = null;

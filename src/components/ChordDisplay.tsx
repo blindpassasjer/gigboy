@@ -10,6 +10,7 @@ interface Props {
   transpose?: number;
   showChords?: boolean;
   notation?: ChordNotation;
+  bpm?: number;
   timeSignature?: string;
   instrument?: DiagramInstrument;
   onChordClick?: (chord: string, rect: DOMRect) => void;
@@ -20,6 +21,7 @@ export default function ChordDisplay({
   transpose = 0,
   showChords = true,
   notation = 'anglo',
+  bpm,
   timeSignature,
   onChordClick,
 }: Props) {
@@ -34,6 +36,7 @@ export default function ChordDisplay({
           transpose={transpose}
           showChords={showChords}
           notation={notation}
+          bpm={bpm}
           timeSignature={timeSignature}
           onChordClick={onChordClick}
         />
@@ -58,6 +61,7 @@ interface LineRendererProps {
   transpose: number;
   showChords: boolean;
   notation: ChordNotation;
+  bpm?: number;
   timeSignature?: string;
   onChordClick?: (chord: string, rect: DOMRect) => void;
 }
@@ -67,6 +71,7 @@ function LineRenderer({
   transpose,
   showChords,
   notation,
+  bpm,
   timeSignature,
   onChordClick,
 }: LineRendererProps) {
@@ -79,6 +84,7 @@ function LineRenderer({
       <TabDisplay
         tabLines={line.tabLines ?? []}
         transpose={transpose}
+        bpm={bpm}
         timeSignature={timeSignature}
       />
     );
@@ -96,6 +102,7 @@ function LineRenderer({
             transpose={transpose}
             showChords={showChords}
             notation={notation}
+            bpm={bpm}
             timeSignature={timeSignature}
             onChordClick={onChordClick}
           />

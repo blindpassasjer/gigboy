@@ -594,6 +594,7 @@ export default function AddSongForm({
                     <TabDisplay
                       key={`tab-guide-${idx}`}
                       tabLines={block}
+                      bpm={tempo ? parseInt(tempo, 10) : undefined}
                       timeSignature={timeSignature.trim() || undefined}
                       onEdit={() => setEditingTabIdx(idx)}
                     />

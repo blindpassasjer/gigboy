@@ -647,6 +647,7 @@ export default function BandSetlistConcertPage() {
                 transpose={transpose}
                 showChords={showChords}
                 notation={chordNotation}
+                bpm={currentSong.tempo}
                 timeSignature={currentSong.timeSignature}
                 instrument={chordInstrument}
                 onChordClick={showChords && !drawEnabled
