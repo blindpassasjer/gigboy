@@ -20,8 +20,8 @@ function extractLinePrefix(line: string): { prefix: string; content: string } {
 /**
  * Returns the character position where each step starts within the tab content strings.
  * Steps with a fret ≥ 10 on any string are 2 chars wide; all others are 1 char wide.
- * This is used to place beat-guide markers at the correct character offsets even when
- * two-digit frets cause some steps to be wider than one character.
+ * Bar-separator columns (where every string has |) are skipped so they don't shift
+ * beat-guide markers — the tab display keeps | visible but guides ignore them.
  */
 function getStepCharPositions(contents: string[]): number[] {
   if (contents.length === 0) return [];
@@ -30,6 +30,11 @@ function getStepCharPositions(contents: string[]): number[] {
   const positions: number[] = [];
   let col = 0;
   while (col < maxLen) {
+    // Skip bar-separator columns
+    if (padded.every(s => s[col] === '|')) {
+      col++;
+      continue;
+    }
     positions.push(col);
     let advance = 1;
     for (const s of padded) {

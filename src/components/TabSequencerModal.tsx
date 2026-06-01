@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Minus, Play, Plus, Repeat, Square, Timer, X } from 'lucide-react';
 import { playTab, stopPlayback } from '../lib/midiPlayer';
+import { stripStringLabel } from '../utils/tabParser';
 import VisualMetronome from './VisualMetronome';
 
 // String order: high e at top → low E at bottom (standard tab notation)
@@ -25,7 +26,7 @@ function makeEmptyGrid(numSteps: number): Grid {
 function tabLinesToGrid(tabLines: string[]): { grid: Grid; numBars: number } {
   const contents = tabLines
     .slice(0, NUM_STRINGS)
-    .map(line => line.replace(/^[eEbBgGdDaA]\s*[|:]\s*/, '').replace(/\|$/, ''));
+    .map(stripStringLabel);
 
   const maxLen = contents.length > 0 ? Math.max(...contents.map(s => s.length)) : 0;
   if (maxLen === 0) {
