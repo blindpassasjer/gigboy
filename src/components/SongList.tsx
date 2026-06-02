@@ -124,7 +124,6 @@ export default function SongList({
 }: Props) {
   const { pathname } = useLocation();
   const [query, setQuery] = useState('');
-  const [langFilter, setLangFilter] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
     () => (localStorage.getItem('gigboy-view-mode') === 'cards' ? 'cards' : 'list')
   );
@@ -166,11 +165,6 @@ export default function SongList({
   const canAddSongsToList = Boolean(allSongs && onAddSong);
   const canTriggerAddSongs = canAddSongsToList || Boolean(onAddSongsClick);
 
-  const languages = useMemo(
-    () => Array.from(new Set(songs.map((s) => s.language))).sort(),
-    [songs]
-  );
-
   const availableSongs = useMemo(() => {
     if (!allSongs) return [];
 
@@ -193,15 +187,15 @@ export default function SongList({
   }, [availableSongs, pickerQuery]);
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase();
+    const q = query.trim().toLowerCase();
     const base = songs.filter((s) => {
       const matchesQuery =
         !q ||
         s.title.toLowerCase().includes(q) ||
         (s.artist ?? '').toLowerCase().includes(q) ||
-        (s.tags ?? []).some((t) => t.toLowerCase().includes(q));
-      const matchesLang = !langFilter || s.language === langFilter;
-      return matchesQuery && matchesLang;
+        (s.tags ?? []).some((t) => t.toLowerCase().includes(q)) ||
+        languageName(s.language).toLowerCase().includes(q);
+      return matchesQuery;
     });
 
     if (sortBy === 'custom') return base;
@@ -231,7 +225,7 @@ export default function SongList({
       sorted.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || a.title.localeCompare(b.title));
     }
     return sorted;
-  }, [songs, query, langFilter, sortBy]);
+  }, [songs, query, sortBy]);
 
   const songPreviews = useMemo(
     () => Object.fromEntries(filtered.map((song) => [song.id, getSongPreview(song)])),
@@ -667,24 +661,12 @@ export default function SongList({
           <Search size={16} className="search-icon" />
           <input
             type="text"
-            placeholder="Search songs, artists, tags…"
+            placeholder="Search songs, artists, tags, language…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="search-input"
           />
         </div>
-        <select
-          value={langFilter}
-          onChange={(e) => setLangFilter(e.target.value)}
-          className="lang-select"
-        >
-          <option value="">All languages</option>
-          {languages.map((l) => (
-            <option key={l} value={l}>
-              {languageName(l)}
-            </option>
-          ))}
-        </select>
         <div className="sort-select-wrapper">
           <ArrowUpDown size={14} className="sort-select-icon" />
           <select
