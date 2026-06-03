@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { verifyFirebaseIdToken } from '../_helpers/auth';
+import { checkRateLimit } from '../_helpers/rateLimiter';
 
 interface Env {
   FIREBASE_PROJECT_ID?: string;
@@ -10,8 +11,33 @@ interface Data extends Record<string, unknown> {
   userEmail?: string;
 }
 
+const RATE_LIMIT_RULES: Array<{
+  test: (path: string) => boolean;
+  limit: number;
+  windowMs: number;
+}> = [
+  { test: (p) => p === '/api/users/delete-account',      limit: 2,  windowMs: 600_000 },
+  { test: (p) => p === '/api/bands/repair-membership',   limit: 2,  windowMs: 600_000 },
+  { test: (p) => p.startsWith('/api/stripe/') && p !== '/api/stripe/webhook', limit: 5, windowMs: 60_000 },
+  { test: (p) => p.startsWith('/api/bands/invite'),      limit: 20, windowMs: 60_000 },
+  { test: (p) => p.startsWith('/api/share/invite'),      limit: 20, windowMs: 60_000 },
+  { test: (p) => p.startsWith('/api/auth/'),             limit: 10, windowMs: 60_000 },
+  { test: (p) => p.startsWith('/api/public/press-kit/'), limit: 60, windowMs: 60_000 },
+];
+
 export const onRequest: PagesFunction<Env, never, Data> = async (ctx) => {
   const path = new URL(ctx.request.url).pathname;
+
+  const ip = ctx.request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  for (const rule of RATE_LIMIT_RULES) {
+    if (rule.test(path)) {
+      if (!checkRateLimit(`${ip}:${path}`, rule.limit, rule.windowMs)) {
+        return new Response('Too Many Requests', { status: 429 });
+      }
+      break;
+    }
+  }
+
   if (
     path.startsWith('/api/auth/') ||
     path.startsWith('/api/health/') ||
