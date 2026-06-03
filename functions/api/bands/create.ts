@@ -3,6 +3,7 @@ import { getFirestoreDocument, setFirestoreDocument, countFirestoreDocumentsByFi
 
 interface Data extends Record<string, unknown> {
   userId?: string;
+  userEmail?: string;
 }
 
 export const onRequestPost: PagesFunction<Record<string, string | undefined>, never, Data> = async (ctx) => {
@@ -12,7 +13,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userEmail = ctx.request.headers.get('x-gigboy-user-email')?.trim() ?? '';
+    const userEmail = typeof ctx.data.userEmail === 'string' ? ctx.data.userEmail : '';
     const body = await ctx.request.json<{ name?: string; description?: string; icon?: string }>();
     const name = body.name?.trim() ?? '';
     const description = body.description?.trim() || undefined;

@@ -12,6 +12,13 @@ export const onRequestGet: PagesFunction<Record<string, string | undefined>> = a
     return Response.json({ error: 'Press kit not found.' }, { status: 404 });
   }
 
+  if (typeof share.expiresAt === 'string') {
+    const expiresAtMs = Date.parse(share.expiresAt);
+    if (!Number.isNaN(expiresAtMs) && expiresAtMs < Date.now()) {
+      return Response.json({ error: 'This press kit link has expired.' }, { status: 410 });
+    }
+  }
+
   const snapshot =
     typeof share.snapshot === 'object' && share.snapshot !== null
       ? (share.snapshot as Record<string, unknown>)

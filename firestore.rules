@@ -269,7 +269,7 @@ service cloud.firestore {
     }
 
     match /bands/{bandId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && isBandMember(bandId);
       allow create: if isSignedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.memberIds is list

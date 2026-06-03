@@ -21,6 +21,7 @@ interface Env {
 
 interface Data extends Record<string, unknown> {
   userId?: string;
+  userEmail?: string;
 }
 
 function generateBandId() {
@@ -115,7 +116,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
     );
   }
 
-  const userEmail = ctx.request.headers.get('x-gigboy-user-email')?.trim() ?? undefined;
+  const userEmail = typeof ctx.data.userEmail === 'string' && ctx.data.userEmail ? ctx.data.userEmail : undefined;
 
   try {
     const stripe = getStripeClient(secretKey);

@@ -4,6 +4,7 @@ import { resolveOwnerBandMemberLimit } from '../../_helpers/band-limits';
 
 interface Data extends Record<string, unknown> {
   userId?: string;
+  userEmail?: string;
 }
 
 function normalizeUsername(username: string) {
@@ -17,7 +18,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const inviterEmail = ctx.request.headers.get('x-gigboy-user-email')?.trim() ?? '';
+    const inviterEmail = typeof ctx.data.userEmail === 'string' ? ctx.data.userEmail : '';
     const body = await ctx.request.json<{
       bandId?: string;
       recipientUsername?: string;

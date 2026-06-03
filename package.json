@@ -24,6 +24,8 @@
     "@tiptap/pm": "^3.22.5",
     "@tiptap/react": "^3.22.5",
     "@tiptap/starter-kit": "^3.22.5",
+    "@types/dompurify": "^3.0.5",
+    "dompurify": "^3.4.8",
     "firebase": "^11.0.0",
     "jszip": "^3.10.1",
     "lucide-react": "^1.11.0",

@@ -7,6 +7,7 @@ import {
 
 interface Data extends Record<string, unknown> {
   userId?: string;
+  userEmail?: string;
 }
 
 function normalizeEmail(email: string) {
@@ -34,7 +35,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const ownerEmail = ctx.request.headers.get('x-gigboy-user-email')?.trim() ?? '';
+  const ownerEmail = typeof ctx.data.userEmail === 'string' ? ctx.data.userEmail : '';
   const body = await ctx.request.json<{
     recipientQuery?: string;
     recipientEmail?: string;

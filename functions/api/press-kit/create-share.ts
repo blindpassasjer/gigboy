@@ -164,6 +164,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
   const token = generateToken();
   const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString();
   const bandName = typeof bandDoc.name === 'string' ? bandDoc.name : 'Band';
   const rawBandLogo = typeof bandDoc.logo === 'string' ? cleanString(bandDoc.logo, 2000) : '';
   let bandLogo = '';
@@ -187,6 +188,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     ...(pressKitIcon ? { pressKitIcon } : {}),
     createdBy: userId,
     createdAt: now,
+    expiresAt,
     snapshot: {
       stageplots,
       riders,

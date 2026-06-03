@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Download, ArrowDownToLine, Copy } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import BrandMark from '../components/BrandMark';
 import { fetchPublicPressKit } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
@@ -17,59 +18,21 @@ function slugifyFileName(value: string): string {
     .replace(/^-|-$/g, '') || 'press-kit';
 }
 
-const ALLOWED_RICH_TEXT_TAGS = new Set(['p', 'h2', 'h3', 'ul', 'ol', 'li', 'strong', 'em', 'br', 'hr', 'a']);
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A') {
+    node.setAttribute('target', '_blank');
+    node.setAttribute('rel', 'noopener noreferrer nofollow');
+  }
+});
 
 function sanitizePressKitHtml(raw: string): string {
-  if (typeof window === 'undefined' || !raw.trim()) return '';
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(raw, 'text/html');
-
-  const sanitizeNode = (node: Node): Node | null => {
-    if (node.nodeType === Node.TEXT_NODE) return node.cloneNode(true);
-    if (node.nodeType !== Node.ELEMENT_NODE) return null;
-
-    const source = node as HTMLElement;
-    const tag = source.tagName.toLowerCase();
-    if (!ALLOWED_RICH_TEXT_TAGS.has(tag)) {
-      const fragment = doc.createDocumentFragment();
-      source.childNodes.forEach((child) => {
-        const cleanChild = sanitizeNode(child);
-        if (cleanChild) fragment.appendChild(cleanChild);
-      });
-      return fragment;
-    }
-
-    const clean = doc.createElement(tag);
-
-    if (tag === 'a') {
-      const href = source.getAttribute('href') ?? '';
-      try {
-        const url = new URL(href, window.location.origin);
-        if (url.protocol === 'http:' || url.protocol === 'https:') {
-          clean.setAttribute('href', url.toString());
-          clean.setAttribute('target', '_blank');
-          clean.setAttribute('rel', 'noopener noreferrer nofollow');
-        }
-      } catch {
-        // Ignore invalid links.
-      }
-    }
-
-    source.childNodes.forEach((child) => {
-      const cleanChild = sanitizeNode(child);
-      if (cleanChild) clean.appendChild(cleanChild);
-    });
-
-    return clean;
-  };
-
-  const container = doc.createElement('div');
-  doc.body.childNodes.forEach((child) => {
-    const cleanChild = sanitizeNode(child);
-    if (cleanChild) container.appendChild(cleanChild);
+  if (!raw.trim()) return '';
+  return DOMPurify.sanitize(raw, {
+    ALLOWED_TAGS: ['p', 'h2', 'h3', 'ul', 'ol', 'li', 'strong', 'em', 'br', 'hr', 'a'],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    FORCE_BODY: true,
+    ALLOW_DATA_ATTR: false,
   });
-
-  return container.innerHTML;
 }
 
 function escapeHtml(raw: string): string {
