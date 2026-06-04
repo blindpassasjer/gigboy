@@ -686,10 +686,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, 'setlists') ? 'New band setlist' : 'Upgrade this band to Pro or Crew to create setlists'}
+                    title={bandCanUse(band, 'setlists', user?.plan, user?.subscriptionStatus, user?.planOverride) ? 'New band setlist' : 'Upgrade this band to Pro or Crew to create setlists'}
                     aria-label="Create new band setlist"
                     onClick={() => {
-                      if (!bandCanUse(band, 'setlists')) {
+                      if (!bandCanUse(band, 'setlists', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
                         toast.error('Setlists require a Pro or Crew plan for this band.');
                         return;
                       }
@@ -757,10 +757,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, 'technicalRiders') ? 'New technical rider' : 'Upgrade this band to Pro or Crew to create technical riders'}
+                    title={bandCanUse(band, 'technicalRiders', user?.plan, user?.subscriptionStatus, user?.planOverride) ? 'New technical rider' : 'Upgrade this band to Pro or Crew to create technical riders'}
                     aria-label="Create new technical rider"
                     onClick={() => {
-                      if (!bandCanUse(band, 'technicalRiders')) {
+                      if (!bandCanUse(band, 'technicalRiders', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
                         toast.error('Technical riders require a Pro or Crew plan for this band.');
                         return;
                       }
@@ -823,10 +823,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, 'pressKits') ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
+                    title={bandCanUse(band, 'pressKits', user?.plan, user?.subscriptionStatus, user?.planOverride) ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
                     aria-label="Create new press kit"
                     onClick={() => {
-                      if (!bandCanUse(band, 'pressKits')) {
+                      if (!bandCanUse(band, 'pressKits', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
                         toast.error('Press kits require a Pro or Crew plan for this band.');
                         return;
                       }

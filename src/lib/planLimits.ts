@@ -81,11 +81,21 @@ function isBandPlanActive(plan: PlanTier, subscriptionStatus: string | null | un
   return false;
 }
 
+const PLAN_ORDER: Record<PlanTier, number> = { free: 0, pro: 1, crew: 2 };
+
 /**
  * Pure function: can the given feature be used in the context of a specific band?
- * Uses the band's billingPlan as authoritative for band-scoped features.
+ * Elevates to the user's plan when the band's billingPlan is a lower tier.
+ * Pass planOverride: true to bypass all checks (admin/demo).
  */
-export function bandCanUse(band: Band | null, feature: ProFeature): boolean {
+export function bandCanUse(
+  band: Band | null,
+  feature: ProFeature,
+  userPlan: PlanTier = 'free',
+  userSubscriptionStatus: string | null = null,
+  planOverride = false
+): boolean {
+  if (planOverride) return true;
   if (!band) return false;
 
   const bandPlan: PlanTier = band.billingPlan === 'pro' || band.billingPlan === 'crew'
@@ -93,6 +103,14 @@ export function bandCanUse(band: Band | null, feature: ProFeature): boolean {
     : 'free';
   const bandActive = isBandPlanActive(bandPlan, band.billingSubscriptionStatus);
 
-  if (!bandActive) return false;
-  return PLAN_FEATURE_ACCESS[bandPlan][feature];
+  const userActive = userPlan === 'free'
+    || userSubscriptionStatus === 'active'
+    || userSubscriptionStatus === 'trialing';
+
+  const effectivePlan: PlanTier =
+    (PLAN_ORDER[bandPlan] >= PLAN_ORDER[userPlan] && bandActive) ? bandPlan : userPlan;
+  const effectiveActive = effectivePlan === bandPlan ? bandActive : userActive;
+
+  if (!effectiveActive && effectivePlan !== 'free') return false;
+  return PLAN_FEATURE_ACCESS[effectivePlan][feature];
 }

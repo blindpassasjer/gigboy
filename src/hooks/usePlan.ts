@@ -50,35 +50,48 @@ export function usePlan() {
   }, [user]);
 }
 
+const PLAN_ORDER: Record<PlanTier, number> = { free: 0, pro: 1, crew: 2 };
+
 /**
  * Returns effective plan state for a specific band workspace.
- * Uses the band's billingPlan as authoritative.
+ * Elevates to the user's plan when the band's billingPlan is a lower tier.
  */
 export function useBandPlan(band: Band | null) {
+  const { user } = useAuth();
+
   return useMemo(() => {
+    const userPlan: PlanTier = user?.plan ?? 'free';
+    const planOverride = user?.planOverride === true;
     const bandPlan: PlanTier = band?.billingPlan === 'pro' || band?.billingPlan === 'crew'
       ? band.billingPlan
       : 'free';
     const bandStatus = band?.billingSubscriptionStatus ?? null;
     const bandPlanActive = isBandPlanActive(bandPlan, bandStatus);
-    const limits = PLAN_LIMITS[bandPlan];
+
+    const effectivePlan: PlanTier = (PLAN_ORDER[bandPlan] >= PLAN_ORDER[userPlan] && bandPlanActive)
+      ? bandPlan
+      : userPlan;
+    const userActive = isPlanActive(userPlan, user?.subscriptionStatus ?? null, planOverride);
+    const effectiveActive = effectivePlan === 'free' || (effectivePlan === bandPlan ? bandPlanActive : userActive);
+    const limits = PLAN_LIMITS[effectivePlan];
 
     return {
-      plan: bandPlan,
-      planLabel: PLAN_LABELS[bandPlan],
-      isActive: bandPlanActive,
-      isFree: bandPlan === 'free',
-      isPro: bandPlanActive && (bandPlan === 'pro' || bandPlan === 'crew'),
-      isCrew: bandPlanActive && bandPlan === 'crew',
-      planOverride: false, // Band plans don't have override
+      plan: effectivePlan,
+      planLabel: PLAN_LABELS[effectivePlan],
+      isActive: effectiveActive,
+      isFree: effectivePlan === 'free',
+      isPro: effectiveActive && (effectivePlan === 'pro' || effectivePlan === 'crew'),
+      isCrew: effectiveActive && effectivePlan === 'crew',
+      planOverride,
       subscriptionStatus: bandStatus,
       songLimit: limits.songLimit,
       storageQuotaBytes: limits.storageQuotaBytes,
       memberLimit: limits.memberLimit,
       canUse(feature: ProFeature) {
-        if (!bandPlanActive) return false;
-        return PLAN_FEATURE_ACCESS[bandPlan][feature];
+        if (planOverride) return true;
+        if (!effectiveActive) return false;
+        return PLAN_FEATURE_ACCESS[effectivePlan][feature];
       },
     };
-  }, [band]);
+  }, [band, user]);
 }
