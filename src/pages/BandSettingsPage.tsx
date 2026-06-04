@@ -7,8 +7,7 @@ import { showConfirmToast } from '../utils/toastDialogs';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
-import { PLAN_LABELS } from '../lib/planLimits';
-import { useStorageUsage } from '../hooks/useStorageUsage';
+import { useBandPlan } from '../hooks/usePlan';
 import { db } from '../lib/firebase';
 
 const BAND_COLOR_OPTIONS = [
@@ -64,13 +63,6 @@ function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   return [...trimmed].slice(0, 2).join('');
-}
-
-function formatStorageBytes(bytes: number): string {
-  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 * 1024 ? 0 : 1)} GB`;
-  if (bytes >= 1024 * 1024) return `${Math.round(bytes / (1024 * 1024))} MB`;
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${bytes} B`;
 }
 
 function formatPeriodEnd(value: number | null | undefined) {
@@ -141,15 +133,10 @@ export default function BandSettingsPage() {
 
   const bandId = band?.id ?? null;
   const isOwner = band?.ownerId === user?.id;
-  const storageUsage = useStorageUsage(user?.id, undefined, bandId);
-  const storagePercent = Math.round(storageUsage.usageRatio * 100);
-  const storageLabel = storageUsage.loading
-    ? '…'
-    : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)} (${storagePercent}%)`;
   const canEditBand = isOwner;
-  const bandPlan = band?.billingPlan ?? 'free';
+  const bandPlanState = useBandPlan(band);
   const memberLimit = band?.billingMemberLimit
-    ?? (bandPlan === 'crew' ? 5 + (band?.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
+    ?? (bandPlanState.isCrew ? 5 + (band?.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
   const renewalDate = formatPeriodEnd(band?.billingCurrentPeriodEnd ?? null);
 
   useEffect(() => {
@@ -679,7 +666,7 @@ export default function BandSettingsPage() {
             <h2 className="bands-section-heading">Subscription</h2>
             <div className="bands-subscription-row">
               <div className="bands-subscription-copy">
-                <strong>{PLAN_LABELS[bandPlan]}</strong>
+                <strong>{bandPlanState.planLabel}</strong>
                 <span>{formatSubscriptionStatus(band.billingSubscriptionStatus ?? null)}</span>
                 <span>{renewalDate ? `Renews ${renewalDate}` : 'No recurring band subscription'}</span>
               </div>
@@ -702,34 +689,6 @@ export default function BandSettingsPage() {
                     : 'Capacity is managed through the band owner account'}
                 </span>
                 <span>{band.memberIds.length} currently in the band</span>
-              </div>
-            </div>
-            <div className="bands-subscription-row">
-              <div className="bands-subscription-copy" style={{ flex: 1 }}>
-                <strong>Storage</strong>
-                <div
-                  className="topbar-storage"
-                  title={storageUsage.loading
-                    ? 'Loading storage usage'
-                    : `${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
-                  aria-label={storageUsage.loading
-                    ? 'Loading storage usage'
-                    : `Storage usage ${storagePercent} percent, ${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
-                >
-                  <div className="topbar-storage-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={storagePercent}>
-                    <span
-                      className={[
-                        'topbar-storage-meter-fill',
-                        storagePercent >= 90 ? 'is-critical' : storagePercent >= 75 ? 'is-warning' : '',
-                      ].filter(Boolean).join(' ')}
-                      style={{ width: `${storagePercent}%` }}
-                    />
-                    <span className="topbar-storage-meter-label">{storageLabel}</span>
-                    <span className="topbar-storage-meter-label topbar-storage-meter-label-fill" style={{ clipPath: `inset(0 ${100 - storagePercent}% 0 0)` }}>
-                      {storageLabel}
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
           </section>

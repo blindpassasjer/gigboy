@@ -4,6 +4,7 @@ import { BadgeCheck, CreditCard, LogOut, Sparkles, Trash2, Users } from 'lucide-
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
+import { usePlan } from '../hooks/usePlan';
 import UserAvatar from '../components/UserAvatar';
 import { AVATAR_OPTIONS } from '../lib/avatars';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
@@ -36,6 +37,7 @@ function isBandBillingActive(plan: string | null | undefined, status: string | n
 export default function ProfilePage() {
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, deleteAccount, logout } = useAuth();
   const { bands } = useBands();
+  const { planLabel } = usePlan();
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
@@ -279,7 +281,7 @@ export default function ProfilePage() {
             <p>@{user.username ?? 'setup'} · {user.email}</p>
             <div className="profile-account-badges">
               <span className="profile-account-badge profile-account-badge--plan">
-                <Sparkles size={14} /> Free account
+                <Sparkles size={14} /> {planLabel} account
               </span>
               <span className={`profile-account-badge ${paidOwnedBands.length > 0 ? 'profile-account-badge--billing' : 'profile-account-badge--billing-empty'}`}>
                 <BadgeCheck size={14} /> {paidOwnedBands.length > 0 ? `${paidOwnedBands.length} paid band${paidOwnedBands.length === 1 ? '' : 's'}` : 'No paid bands'}
@@ -320,14 +322,9 @@ export default function ProfilePage() {
               <small>{paidOwnedBands.length > 0 ? 'Earliest active band renewal' : 'No active paid bands'}</small>
             </div>
             <div className="profile-stat-card">
-              <span className="profile-stat-label">Paid bands</span>
-              <strong>{paidOwnedBands.length}</strong>
-              <small>{paidOwnedBands.length > 0 ? 'Active paid bands' : 'No active paid bands'}</small>
-            </div>
-            <div className="profile-stat-card">
-              <span className="profile-stat-label">Total bands</span>
+              <span className="profile-stat-label">Owned bands</span>
               <strong>{ownedBands.length}</strong>
-              <small>{ownedBands.length > 0 ? 'Owned bands total' : 'You do not own any bands yet'}</small>
+              <small>{paidOwnedBands.length > 0 ? `${paidOwnedBands.length} paid` : 'No paid bands'}</small>
             </div>
           </div>
           <div className="profile-subscription-actions">
