@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mic, MicOff, Play, Pause, Trash2, Save, X, Pencil, Check } from 'lucide-react';
 import { useSongRecordings } from '../hooks/useSongRecordings';
-import { usePlan } from '../hooks/usePlan';
+import { usePlan, useBandPlan } from '../hooks/usePlan';
+import { useBands } from '../context/BandsContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import UpgradePrompt from './UpgradePrompt';
 import type { Song } from '../types';
@@ -375,7 +376,11 @@ export default function SongRecorder({ song, user, bandId }: Props) {
     scope,
     songId: song.id,
   });
-  const { canUse, storageQuotaBytes } = usePlan();
+  const { bands } = useBands();
+  const activeBand = bandId ? (bands.find((b) => b.id === bandId) ?? null) : null;
+  const userPlanState = usePlan();
+  const bandPlanState = useBandPlan(activeBand);
+  const { canUse, storageQuotaBytes } = activeBand ? bandPlanState : userPlanState;
   const { usedBytes } = useStorageUsage(user.id);
 
   const [recState, setRecState] = useState<RecorderState>('idle');

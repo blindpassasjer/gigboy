@@ -7,16 +7,7 @@ import { useBands } from '../context/BandsContext';
 import UserAvatar from '../components/UserAvatar';
 import { AVATAR_OPTIONS } from '../lib/avatars';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
-import { useStorageUsage } from '../hooks/useStorageUsage';
-import { usePlan } from '../hooks/usePlan';
 import { createPortalSession } from '../lib/billingApi';
-
-function formatStorageBytes(bytes: number): string {
-  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 * 1024 ? 0 : 1)} GB`;
-  if (bytes >= 1024 * 1024) return `${Math.round(bytes / (1024 * 1024))} MB`;
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${bytes} B`;
-}
 
 function formatPeriodEnd(value: number | null) {
   if (!value) return null;
@@ -45,9 +36,6 @@ function isBandBillingActive(plan: string | null | undefined, status: string | n
 export default function ProfilePage() {
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, deleteAccount, logout } = useAuth();
   const { bands } = useBands();
-  const planState = usePlan();
-  const storageUsage = useStorageUsage(user?.id, planState.storageQuotaBytes);
-
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
@@ -72,7 +60,6 @@ export default function ProfilePage() {
     () => ownedBands.filter((band) => isBandBillingActive(band.billingPlan, band.billingSubscriptionStatus)),
     [ownedBands],
   );
-  const storagePercent = Math.round(storageUsage.usageRatio * 100);
   const renewalDate = formatPeriodEnd(
     paidOwnedBands
       .map((band) => band.billingCurrentPeriodEnd ?? null)
@@ -338,11 +325,6 @@ export default function ProfilePage() {
               <small>{paidOwnedBands.length > 0 ? 'Active paid bands' : 'No active paid bands'}</small>
             </div>
             <div className="profile-stat-card">
-              <span className="profile-stat-label">Storage</span>
-              <strong>{storageUsage.loading ? 'Loading…' : `${formatStorageBytes(storageUsage.usedBytes)} / ${formatStorageBytes(storageUsage.quotaBytes)}`}</strong>
-              <small>{storageUsage.loading ? 'Calculating usage' : `${storagePercent}% used`}</small>
-            </div>
-            <div className="profile-stat-card">
               <span className="profile-stat-label">Total bands</span>
               <strong>{ownedBands.length}</strong>
               <small>{ownedBands.length > 0 ? 'Owned bands total' : 'You do not own any bands yet'}</small>
@@ -382,8 +364,10 @@ export default function ProfilePage() {
                     <strong>{band.name}</strong>
                     <span>
                       {band.billingPlan === 'crew'
-                        ? `${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)} · ${band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0))} members`
-                        : 'No active PRO or CREW subscription for this band'}
+                        ? `Crew · ${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)} · ${band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0))} members`
+                        : band.billingPlan === 'pro'
+                          ? `Pro · ${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)}`
+                          : 'No active PRO or CREW subscription for this band'}
                     </span>
                     {band.billingCurrentPeriodEnd ? (
                       <span>Renews {formatPeriodEnd(band.billingCurrentPeriodEnd) ?? '—'}</span>
