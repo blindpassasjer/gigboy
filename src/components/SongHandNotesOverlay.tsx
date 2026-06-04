@@ -31,13 +31,14 @@ interface StrokeForRendering {
   stroke: HandNoteStroke | ActiveStrokeState;
   /** Width of the canvas when this stroke was saved. Used to scale strokeWidth proportionally. */
   savedViewportWidth: number;
-  /** Height of the canvas when this stroke was saved. Used to convert v1 y-coords to v2-equivalent. */
+  /** Height of the canvas when this stroke was saved. Used to convert v1 y-coords. */
   savedViewportHeight: number;
   /**
+   * v3: x is width-relative, y is height-relative (both ∈ [0,1]).
    * v2: both x and y are width-relative (y can exceed 1).
-   * v1 / false: legacy — y is height-relative (y ∈ [0,1]).
+   * v1 / undefined: legacy — y is height-relative via saved aspect ratio.
    */
-  isV2: boolean;
+  coordinateSystem: 'v1' | 'v2' | 'v3';
 }
 
 /**
@@ -47,12 +48,14 @@ interface StrokeForRendering {
  * @param currentHeight CSS-pixel height of the canvas being drawn onto.
  * @param savedViewportWidth  Width at which the stroke was originally recorded.
  *   Used to scale strokeWidth so it looks proportionally the same on any screen.
- * @param isV2  When true, y coordinates are width-relative (same scale as x).
- *   When false (legacy), y coordinates are height-relative.
+ * @param coordinateSystem  How x/y points are stored:
+ *   v3 — x is width-relative, y is height-relative (both ∈ [0,1]).
+ *   v2 — both x and y are width-relative (y can exceed 1).
+ *   v1 — legacy: y is height-relative via saved aspect ratio.
  */
 function drawStroke(
   ctx: CanvasRenderingContext2D,
-  { stroke, savedViewportWidth, savedViewportHeight, isV2 }: StrokeForRendering,
+  { stroke, savedViewportWidth, savedViewportHeight, coordinateSystem }: StrokeForRendering,
   currentWidth: number,
   currentHeight: number,
 ) {
@@ -66,13 +69,14 @@ function drawStroke(
   const lineWidth = Math.max(stroke.width * widthScale, 0.5);
 
   // Coordinate helpers:
-  //   v2:              rx = nx * W,  ry = ny * W  (aspect-ratio preserved)
-  //   v1 with viewport: convert y to v2-space via the saved aspect ratio so
-  //                     shapes look the same on any screen size.
+  //   v3: x = nx * W,  y = ny * H  — notes stay at the correct fractional position in content.
+  //   v2: x = nx * W,  y = ny * W  — aspect-ratio preserved but drifts on different-width screens.
+  //   v1 with viewport: convert y via saved aspect ratio.
   //   v1 legacy (no valid viewport): fall back to mapping y onto canvas height.
   const rx = (nx: number) => nx * currentWidth;
   const ry = (ny: number) => {
-    if (isV2) return ny * currentWidth;
+    if (coordinateSystem === 'v3') return ny * currentHeight;
+    if (coordinateSystem === 'v2') return ny * currentWidth;
     if (hasValidViewport) return (ny * savedViewportHeight / savedViewportWidth) * currentWidth;
     return ny * currentHeight;
   };
@@ -182,7 +186,7 @@ export default function SongHandNotesOverlay({
         stroke,
         savedViewportWidth: note.viewport.width,
         savedViewportHeight: note.viewport.height,
-        isV2: note.coordinateSystem === 'v2',
+        coordinateSystem: (note.coordinateSystem ?? 'v1') as 'v1' | 'v2' | 'v3',
       }))
     );
   }, [notes]);
@@ -295,17 +299,17 @@ export default function SongHandNotesOverlay({
     }
 
     if (activeStrokeRef.current) {
-      drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, isV2: true }, width, height);
+      drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, coordinateSystem: 'v3' as const }, width, height);
     }
   }, [allStrokesForRendering, viewport, revision]);
 
   /**
-   * Normalise a pointer position into the v2 coordinate space:
+   * Normalise a pointer position into the v3 coordinate space:
    * x = clientX_relative / rect.width  ∈ [0, 1]
-   * y = clientY_relative / rect.width  ∈ [0, rect.height/rect.width]
+   * y = clientY_relative / rect.height ∈ [0, 1]
    *
-   * Dividing y by WIDTH (not height) preserves the aspect ratio of any drawn shape
-   * when the canvas is displayed on a screen with a different viewport size.
+   * Dividing y by HEIGHT ensures notes appear at the same fractional position in the
+   * song content on any screen size, fixing cross-device and orientation-change drift.
    */
   const pointFromPointerEvent = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     const stage = stageRef.current;
@@ -315,7 +319,7 @@ export default function SongHandNotesOverlay({
     if (rect.width <= 0 || rect.height <= 0) return null;
 
     const x = clamp01((event.clientX - rect.left) / rect.width);
-    const y = Math.max(0, (event.clientY - rect.top) / rect.width);
+    const y = clamp01((event.clientY - rect.top) / rect.height);
     return { x, y };
   }, []);
 
@@ -416,9 +420,9 @@ export default function SongHandNotesOverlay({
 
     let added = false;
     for (const ce of events) {
-      // v2: both x and y divided by width to preserve aspect ratio.
+      // v3: x divided by width, y divided by height.
       const px = clamp01((ce.clientX - rect.left) / rect.width);
-      const py = Math.max(0, (ce.clientY - rect.top) / rect.width);
+      const py = clamp01((ce.clientY - rect.top) / rect.height);
 
       const total = active.points.length;
       const lastX = active.points[total - 2];
@@ -452,7 +456,7 @@ export default function SongHandNotesOverlay({
       if (off) ctx.drawImage(off, 0, 0, width, height);
 
       if (activeStrokeRef.current) {
-        drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, isV2: true }, width, height);
+        drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, coordinateSystem: 'v3' as const }, width, height);
       }
     });
   }, [drawEnabled]);

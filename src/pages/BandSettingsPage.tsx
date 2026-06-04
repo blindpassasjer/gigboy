@@ -137,7 +137,9 @@ export default function BandSettingsPage() {
   const bandPlanState = useBandPlan(band);
   const memberLimit = band?.billingMemberLimit
     ?? (bandPlanState.isCrew ? 5 + (band?.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
-  const renewalDate = formatPeriodEnd(band?.billingCurrentPeriodEnd ?? null);
+  const planFromBand = band?.billingPlan === 'pro' || band?.billingPlan === 'crew';
+  const effectiveStatus = planFromBand ? (band?.billingSubscriptionStatus ?? null) : (user?.subscriptionStatus ?? null);
+  const renewalDate = formatPeriodEnd(planFromBand ? (band?.billingCurrentPeriodEnd ?? null) : (user?.currentPeriodEnd ?? null));
 
   useEffect(() => {
     if (!band || !canEditBand) return;
@@ -667,8 +669,8 @@ export default function BandSettingsPage() {
             <div className="bands-subscription-row">
               <div className="bands-subscription-copy">
                 <strong>{bandPlanState.planLabel}</strong>
-                <span>{formatSubscriptionStatus(band.billingSubscriptionStatus ?? null)}</span>
-                <span>{renewalDate ? `Renews ${renewalDate}` : 'No recurring band subscription'}</span>
+                <span>{bandPlanState.planOverride ? 'Complimentary' : formatSubscriptionStatus(effectiveStatus)}</span>
+                <span>{renewalDate ? `Renews ${renewalDate}` : planFromBand ? 'No recurring band subscription' : bandPlanState.isFree ? 'No active subscription' : 'Managed through your account'}</span>
               </div>
               {isOwner ? (
                 <Link

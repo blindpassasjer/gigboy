@@ -101,7 +101,9 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
     height: typeof viewportData.height === 'number' && viewportData.height > 0 ? viewportData.height : 1,
   };
 
-  const coordinateSystem = data.coordinateSystem === 'v2' ? 'v2' as const : undefined;
+  const coordinateSystem = data.coordinateSystem === 'v3' ? 'v3' as const
+    : data.coordinateSystem === 'v2' ? 'v2' as const
+    : undefined;
   const isV2 = coordinateSystem === 'v2';
 
   const strokes = Array.isArray(data.strokes)

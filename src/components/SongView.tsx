@@ -119,12 +119,15 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     }
     : undefined);
 
+  const isBandOwner = Boolean(band && user && band.ownerId === user.id);
+
   const handNotes = useSongHandNotes({
     ownerId: song.ownerId ?? user?.id ?? null,
     bandId: bandId ?? null,
     songId: song.id,
     user,
     enabled: Boolean(user && song.id),
+    isOwner: isBandOwner,
   });
 
   const handleStrokesChange = useCallback((strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
@@ -571,23 +574,29 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             </div>
 
             {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes) || (user && showRecorder) || showChordFinder) && (
-              <div className="song-toolbar-tools-grid">
+              <div className={`song-toolbar-tools-grid${!toolbarVisible ? ' song-toolbar-tools-grid--floating' : ''}`}>
                 {showTuner && (
                   <div className="song-toolbar-tool-card">
-                    <span className="song-toolbar-tool-card-title">
-                      <AudioLines size={13} />
-                      Tuner
-                    </span>
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">
+                        <AudioLines size={13} />
+                        Tuner
+                      </span>
+                      <button className="floating-tool-close" onClick={() => setShowTuner(false)} aria-label="Close tuner"><X size={14} /></button>
+                    </div>
                     <VisualTuner className="song-view-tuner" />
                   </div>
                 )}
 
                 {showMetronome && (
                   <div className="song-toolbar-tool-card">
-                    <span className="song-toolbar-tool-card-title">
-                      <Metronome size={13} />
-                      Metronome
-                    </span>
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">
+                        <Metronome size={13} />
+                        Metronome
+                      </span>
+                      <button className="floating-tool-close" onClick={() => setShowMetronome(false)} aria-label="Close metronome"><X size={14} /></button>
+                    </div>
                     <VisualMetronome
                       tempo={song.tempo}
                       timeSignature={song.timeSignature}
@@ -598,7 +607,10 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
                 {user && showNotes && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--notes">
-                    <span className="song-toolbar-tool-card-title">Handwritten notes</span>
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">Handwritten notes</span>
+                      <button className="floating-tool-close" onClick={() => handleToggleNotes(false)} aria-label="Close notes"><X size={14} /></button>
+                    </div>
                     <div className="song-notes-panel">
                       <label
                         className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
@@ -645,21 +657,32 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                             </button>
                           )}
                           {handNotes.authors.map((author) => (
-                            <button
-                              key={author.uid}
-                              className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
-                              onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
-                              title={`Toggle notes by ${author.name}`}
-                            >
-                              {author.avatar ? (
-                                <span className="notes-author-chip-avatar">{author.avatar}</span>
-                              ) : (
-                                <span className="notes-author-chip-initials">
-                                  {author.name.slice(0, 1).toUpperCase()}
-                                </span>
+                            <span key={author.uid} className="notes-author-chip-group">
+                              <button
+                                className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
+                                onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
+                                title={`Toggle notes by ${author.name}`}
+                              >
+                                {author.avatar ? (
+                                  <span className="notes-author-chip-avatar">{author.avatar}</span>
+                                ) : (
+                                  <span className="notes-author-chip-initials">
+                                    {author.name.slice(0, 1).toUpperCase()}
+                                  </span>
+                                )}
+                                {author.uid === user.id ? 'Me' : author.name}
+                              </button>
+                              {isBandOwner && author.uid !== user.id && (
+                                <button
+                                  className="notes-author-chip-delete"
+                                  onClick={() => handNotes.deleteNotesByAuthor(author.uid)}
+                                  title={`Delete notes by ${author.name}`}
+                                  aria-label={`Delete notes by ${author.name}`}
+                                >
+                                  <X size={10} />
+                                </button>
                               )}
-                              {author.uid === user.id ? 'Me' : author.name}
-                            </button>
+                            </span>
                           ))}
                         </div>
                       )}
@@ -679,7 +702,10 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
                 {media && showMediaPlayer && song.playbackUrl && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--media">
-                    <span className="song-toolbar-tool-card-title">Playback</span>
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">Playback</span>
+                      <button className="floating-tool-close" onClick={() => setShowMediaPlayer(false)} aria-label="Close playback"><X size={14} /></button>
+                    </div>
                     <SongMediaPlayer
                       mediaUrl={song.playbackUrl}
                       autoPlay={autoPlayMediaOnOpen}
@@ -690,16 +716,23 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
                 {user && showRecorder && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--recorder">
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">Recorder</span>
+                      <button className="floating-tool-close" onClick={() => setShowRecorder(false)} aria-label="Close recorder"><X size={14} /></button>
+                    </div>
                     <SongRecorder song={song} user={user} bandId={bandId} />
                   </div>
                 )}
 
                 {showChordFinder && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--chord-finder">
-                    <span className="song-toolbar-tool-card-title">
-                      <Search size={13} />
-                      Chord finder
-                    </span>
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">
+                        <Search size={13} />
+                        Chord finder
+                      </span>
+                      <button className="floating-tool-close" onClick={() => setShowChordFinder(false)} aria-label="Close chord finder"><X size={14} /></button>
+                    </div>
                     <ChordFinder instrument={chordInstrument} />
                   </div>
                 )}
@@ -831,103 +864,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
         />
       )}
 
-      {!toolbarVisible && (showTuner || showMetronome || (user && showNotes) || (media && showMediaPlayer && song.playbackUrl) || (user && showRecorder) || showChordFinder) && (
-        <div className="floating-tools">
-          {showTuner && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><AudioLines size={13} /> Tuner</span>
-                <button className="floating-tool-close" onClick={() => setShowTuner(false)} aria-label="Close tuner"><X size={14} /></button>
-              </div>
-              <VisualTuner className="song-view-tuner" />
-            </div>
-          )}
-          {showMetronome && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><Metronome size={13} /> Metronome</span>
-                <button className="floating-tool-close" onClick={() => setShowMetronome(false)} aria-label="Close metronome"><X size={14} /></button>
-              </div>
-              <VisualMetronome tempo={song.tempo} timeSignature={song.timeSignature} className="song-view-metronome" />
-            </div>
-          )}
-          {user && showNotes && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><PenLine size={13} /> Notes</span>
-                <button className="floating-tool-close" onClick={() => handleToggleNotes(false)} aria-label="Close notes"><X size={14} /></button>
-              </div>
-              <div className="song-notes-panel">
-                <label
-                  className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
-                  title="Enable touch drawing"
-                >
-                  <input
-                    type="checkbox"
-                    checked={drawEnabled}
-                    onChange={(e) => handleToggleDraw(e.target.checked)}
-                  />
-                  Draw
-                </label>
-                {drawEnabled && (
-                  <>
-                    <button className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0} title="Undo last stroke">Undo</button>
-                    <button className="notes-toolbar-btn notes-toolbar-btn--danger" onClick={handleClearNotes} disabled={handNotes.myStrokes.length === 0} title="Clear my notes">Clear</button>
-                  </>
-                )}
-                {handNotes.authors.length > 0 && (
-                  <div className="notes-author-filters">
-                    {handNotes.authors.length > 1 && (
-                      <button className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`} onClick={handNotes.showAll} title="Show all users' notes">All</button>
-                    )}
-                    {handNotes.authors.map((author) => (
-                      <button
-                        key={author.uid}
-                        className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
-                        onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
-                        title={`Toggle notes by ${author.name}`}
-                      >
-                        {author.avatar ? <span className="notes-author-chip-avatar">{author.avatar}</span> : <span className="notes-author-chip-initials">{author.name.slice(0, 1).toUpperCase()}</span>}
-                        {author.uid === user.id ? 'Me' : author.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {handNotes.saveState === 'saving' && <span className="notes-save-status notes-save-status--saving">Saving…</span>}
-                {handNotes.saveState === 'saved' && <span className="notes-save-status notes-save-status--saved">Saved</span>}
-                {handNotes.saveState === 'error' && <span className="notes-save-status notes-save-status--error">Failed to save</span>}
-              </div>
-            </div>
-          )}
-          {media && showMediaPlayer && song.playbackUrl && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><Play size={13} /> Playback</span>
-                <button className="floating-tool-close" onClick={() => setShowMediaPlayer(false)} aria-label="Close playback"><X size={14} /></button>
-              </div>
-              <SongMediaPlayer mediaUrl={song.playbackUrl} autoPlay={false} onAutoPlayHandled={() => {}} />
-            </div>
-          )}
-          {user && showRecorder && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><Mic size={13} /> Recorder</span>
-                <button className="floating-tool-close" onClick={() => setShowRecorder(false)} aria-label="Close recorder"><X size={14} /></button>
-              </div>
-              <SongRecorder song={song} user={user} bandId={bandId} />
-            </div>
-          )}
-          {showChordFinder && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><Search size={13} /> Chord finder</span>
-                <button className="floating-tool-close" onClick={() => setShowChordFinder(false)} aria-label="Close chord finder"><X size={14} /></button>
-              </div>
-              <ChordFinder instrument={chordInstrument} />
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

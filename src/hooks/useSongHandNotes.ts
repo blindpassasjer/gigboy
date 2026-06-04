@@ -24,8 +24,9 @@ export function useSongHandNotes(params: {
   songId: string;
   user: User | null;
   enabled: boolean;
+  isOwner?: boolean;
 }) {
-  const { ownerId, bandId, songId, user, enabled } = params;
+  const { ownerId, bandId, songId, user, enabled, isOwner = false } = params;
   const userId = user?.id ?? null;
   const scope = useMemo<SongHandNotesScope | null>(() => {
     if (bandId) return { type: 'band', bandId };
@@ -156,7 +157,7 @@ export function useSongHandNotes(params: {
       authorAvatar: user.avatar,
       updatedAt: new Date().toISOString(),
       viewport,
-      coordinateSystem: 'v2',
+      coordinateSystem: 'v3',
       strokes: normalizedStrokes,
     };
 
@@ -205,6 +206,20 @@ export function useSongHandNotes(params: {
     }
   }, [notes, scope, songId, userId]);
 
+  const deleteNotesByAuthor = useCallback(async (authorUid: string) => {
+    if (!db || !scope || !isOwner || authorUid === userId) return;
+
+    const previousNotes = notes;
+    setNotes((prev) => prev.filter((entry) => entry.authorUid !== authorUid));
+
+    try {
+      await deleteSongHandNote({ db, scope, songId, authorUid });
+    } catch (error) {
+      console.error('Failed to delete notes by author.', error);
+      setNotes(previousNotes);
+    }
+  }, [notes, scope, songId, isOwner, userId]);
+
   const showAll = useCallback(() => {
     hasManualVisibilitySelectionRef.current = true;
     setVisibleAuthorIds(authors.map((author) => author.uid));
@@ -230,6 +245,7 @@ export function useSongHandNotes(params: {
     myStrokes: myNote?.strokes ?? [],
     saveMyNotes,
     clearMyNotes,
+    deleteNotesByAuthor,
     showAll,
     toggleVisibleAuthor,
   };

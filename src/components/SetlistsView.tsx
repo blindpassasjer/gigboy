@@ -1,6 +1,6 @@
 import { Fragment, useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { GripVertical, Trash2, Music, Plus, Search, X, PenLine, Play, FileText, ListMusic } from 'lucide-react';
+import { Trash2, Music, Plus, Search, X, PenLine, Play, FileText, ListMusic } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Song, SongList } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
@@ -16,7 +16,6 @@ interface Props {
   songNotes?: Record<string, string>;
   allSongs: Song[];
   availableSongLists?: SongList[];
-  onMoveSong: (songId: string, beforeSongId: string | null) => void;
   onRemoveSong: (songId: string) => void;
   onAddSong: (songId: string) => void | Promise<void>;
   onUpdateSongNote?: (songId: string, note: string) => void | Promise<void>;
@@ -38,8 +37,6 @@ interface Props {
   autoStartRenameToken?: string | number | null;
 }
 
-const SONG_DRAG_MIME = 'application/x-gigboy-song-id';
-const SONG_DRAG_FALLBACK_MIME = 'text/x-gigboy-song-id';
 function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -53,7 +50,6 @@ export default function SetlistsView({
   songNotes,
   allSongs,
   availableSongLists = [],
-  onMoveSong,
   onRemoveSong,
   onAddSong,
   onUpdateSongNote,
@@ -76,8 +72,6 @@ export default function SetlistsView({
     : (!currentSetlist?.ownerId || currentSetlist.accessRole === 'owner');
   const effectiveConcertRoute = concertRoute
     ?? (bandId ? `/bands/${bandId}/setlists/${setlistId}/concert` : '/bands');
-  const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
-  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(setlistName);
   const [showSongPicker, setShowSongPicker] = useState(false);
@@ -285,104 +279,6 @@ export default function SetlistsView({
     setIsRenaming(false);
   };
 
-  const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
-    setDraggingSongId(song.id);
-    setDropTargetIndex(null);
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData(SONG_DRAG_MIME, song.id);
-    event.dataTransfer.setData(SONG_DRAG_FALLBACK_MIME, song.id);
-    event.dataTransfer.setData('text/plain', song.title);
-  };
-
-  const handleSongDragEnd = () => {
-    setDraggingSongId(null);
-    setDropTargetIndex(null);
-  };
-
-  const isSongDrop = (event: React.DragEvent<HTMLElement>) => (
-    event.dataTransfer.types.includes(SONG_DRAG_MIME)
-      || event.dataTransfer.types.includes(SONG_DRAG_FALLBACK_MIME)
-  );
-
-  const handleDropSlotDragOver = (index: number, event: React.DragEvent<HTMLElement>) => {
-    if (!isSongDrop(event)) return;
-
-    const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
-    if (!sourceSongId) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    event.dataTransfer.dropEffect = 'move';
-    setDropTargetIndex((current) => (current === index ? current : index));
-  };
-
-  const handleDropSlotDrop = (index: number, event: React.DragEvent<HTMLElement>) => {
-    if (!isSongDrop(event)) {
-      return;
-    }
-
-    const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
-    if (!sourceSongId) {
-      handleSongDragEnd();
-      return;
-    }
-
-    const sourceIndex = songs.findIndex((song) => song.id === sourceSongId);
-    if (sourceIndex < 0) {
-      handleSongDragEnd();
-      return;
-    }
-
-    const adjustedIndex = sourceIndex < index ? index - 1 : index;
-    if (adjustedIndex === sourceIndex) {
-      handleSongDragEnd();
-      return;
-    }
-
-    const beforeSongId = songs[adjustedIndex]?.id ?? null;
-
-    event.preventDefault();
-    event.stopPropagation();
-    onMoveSong(sourceSongId, beforeSongId);
-    handleSongDragEnd();
-  };
-
-  const handleDropSlotDragLeave = (index: number) => {
-    setDropTargetIndex((current) => (current === index ? null : current));
-  };
-
-  const handleListDragLeave = (event: React.DragEvent<HTMLElement>) => {
-    if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
-      return;
-    }
-    setDropTargetIndex(null);
-  };
-
-  const handleSongCardDragOver = (songIndex: number, event: React.DragEvent<HTMLElement>) => {
-    if (!isSongDrop(event)) return;
-
-    const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
-    if (!sourceSongId) return;
-
-    const sourceIndex = songs.findIndex((song) => song.id === sourceSongId);
-    if (sourceIndex < 0) return;
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    const insertIndex = event.clientY < rect.top + rect.height / 2 ? songIndex : songIndex + 1;
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    setDropTargetIndex((current) => (current === insertIndex ? current : insertIndex));
-  };
-
-  const handleSongCardDrop = (songIndex: number, event: React.DragEvent<HTMLElement>) => {
-    if (!isSongDrop(event)) return;
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    const insertIndex = event.clientY < rect.top + rect.height / 2 ? songIndex : songIndex + 1;
-    handleDropSlotDrop(insertIndex, event);
-  };
-
   return (
     <div className="setlist-view">
       <div className="list-sticky-header">
@@ -548,42 +444,15 @@ export default function SetlistsView({
           <p>No songs in this setlist yet.</p>
         </div>
       ) : (
-        <ul
-          className={`setlist-songs${draggingSongId ? ' is-dragging' : ''}`}
-          onDragLeave={handleListDragLeave}
-        >
+        <ul className="setlist-songs">
           {songs.map((song, index) => {
             const note = (songNotes?.[song.id] ?? '').trim();
             const isEditingNote = editingSongNoteId === song.id;
 
             return (
             <Fragment key={song.id}>
-              <li
-                className={`setlist-drop-slot${dropTargetIndex === index ? ' active' : ''}`}
-                onDragOver={(event) => handleDropSlotDragOver(index, event)}
-                onDrop={(event) => handleDropSlotDrop(index, event)}
-                onDragLeave={() => handleDropSlotDragLeave(index)}
-                aria-hidden="true"
-              />
-              <li
-                className={`setlist-song-item${draggingSongId === song.id ? ' dragging' : ''}`}
-              >
-                <div
-                  className="setlist-song-card"
-                  onDragOver={(event) => handleSongCardDragOver(index, event)}
-                  onDrop={(event) => handleSongCardDrop(index, event)}
-                >
-                  <button
-                    type="button"
-                    className={`setlist-drag-handle${draggingSongId === song.id ? ' dragging' : ''}`}
-                    draggable
-                    onDragStart={(event) => handleSongDragStart(song, event)}
-                    onDragEnd={handleSongDragEnd}
-                    aria-label={`Drag ${song.title}`}
-                  >
-                    <GripVertical size={16} />
-                  </button>
-
+              <li className="setlist-song-item">
+                <div className="setlist-song-card">
                   <div className="setlist-song-position">{index + 1}</div>
 
                   <Link
@@ -673,15 +542,6 @@ export default function SetlistsView({
             </Fragment>
             );
           })}
-          {songs.length > 0 && (
-            <li
-              className={`setlist-drop-slot setlist-drop-slot-end${dropTargetIndex === songs.length ? ' active' : ''}`}
-              onDragOver={(event) => handleDropSlotDragOver(songs.length, event)}
-              onDrop={(event) => handleDropSlotDrop(songs.length, event)}
-              onDragLeave={() => handleDropSlotDragLeave(songs.length)}
-              aria-hidden="true"
-            />
-          )}
         </ul>
       )}
 

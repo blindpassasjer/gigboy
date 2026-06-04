@@ -1782,6 +1782,41 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .55rem;
 }
 
+.song-toolbar-tools-grid--floating {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  pointer-events: none;
+  width: auto;
+}
+
+.song-toolbar-tools-grid--floating .song-toolbar-tool-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .7rem .85rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .18);
+  pointer-events: all;
+  min-width: 220px;
+  max-width: 360px;
+  grid-column: unset;
+}
+
+.concert-mode .song-toolbar-tools-grid--floating {
+  bottom: 5rem;
+}
+
+.song-toolbar-tool-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .5rem;
+}
+
 .song-toolbar-tool-card {
   display: flex;
   flex-direction: column;
@@ -3083,6 +3118,34 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: center;
   font-size: .72em;
   font-weight: 700;
+}
+
+.notes-author-chip-group {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.notes-author-chip-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-left: .2rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+
+.notes-author-chip-delete:hover {
+  background: var(--danger, #e74c3c);
+  color: #fff;
 }
 
 /* ─── Section containers ─────────────────────────────────────────────────────── */
@@ -5745,14 +5808,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin: 0;
 }
 
-.setlist-songs.is-dragging {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--chord-bg) 38%, transparent) 0%,
-    transparent 35%,
-    transparent 65%,
-    color-mix(in srgb, var(--chord-bg) 34%, transparent) 100%
-  );
+.setlist-songs.is-reordering .setlist-song-card {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
 }
 
 .setlist-drop-slot {
@@ -5849,27 +5906,35 @@ input, select, textarea { font: inherit; color: var(--text); }
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
-.setlist-drag-handle {
+.setlist-reorder-btns {
   flex-shrink: 0;
-  padding: .25rem;
-  color: var(--song-item-muted);
-  opacity: 0.45;
-  border: 1px dashed transparent;
-  border-radius: 7px;
-  transition: opacity .12s, color .12s, border-color .12s, background .12s;
-  cursor: grab;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.setlist-reorder-btn {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 1.625rem;
+  padding: .15rem;
+  color: var(--song-item-accent);
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background .12s, color .12s, opacity .12s;
+  touch-action: manipulation;
 }
-.setlist-drag-handle:active { cursor: grabbing; }
-.setlist-drag-handle.dragging {
-  opacity: 1;
-  color: var(--song-item-accent);
-  border-color: color-mix(in srgb, var(--song-item-accent) 40%, var(--song-item-border));
-  background: color-mix(in srgb, var(--song-item-chip-bg) 72%, transparent);
+
+.setlist-reorder-btn:hover:not(:disabled) {
+  background: var(--song-item-chip-bg);
 }
-.setlist-song-card:hover .setlist-drag-handle { opacity: 0.8; }
+
+.setlist-reorder-btn:disabled {
+  opacity: .25;
+  cursor: default;
+}
 
 .setlist-song-position {
   flex-shrink: 0;

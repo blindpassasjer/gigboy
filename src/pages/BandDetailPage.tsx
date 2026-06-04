@@ -37,20 +37,17 @@ export default function BandDetailPage() {
     refreshBandTrash,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
-    moveBandSong,
     renameBandSongList,
     updateBandSongListIcon,
     deleteBandSongList,
     addSongToBandSongList,
     removeSongFromBandSongList,
-    moveSongInBandSongList,
     renameBandSetlist,
     updateBandSetlistIcon,
     setBandSetlistPublicShare,
     deleteBandSetlist,
     addSongToBandSetlist,
     removeSongFromBandSetlist,
-    moveSongInBandSetlist,
     updateSongNoteInBandSetlist,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
@@ -272,13 +269,6 @@ export default function BandDetailPage() {
     }
   };
 
-  const handleMoveSong = async (songId: string, beforeSongId: string | null) => {
-    const error = await moveBandSong(band.id, songId, beforeSongId);
-    if (error) {
-      toast.error(error);
-    }
-  };
-
   const handleRenameBand = async (name: string) => {
     const error = await renameBand(band.id, name);
     if (error) {
@@ -380,12 +370,6 @@ export default function BandDetailPage() {
             }
           }}
           onDeleteSong={handleDeleteSong}
-          onMoveSong={async (songId, beforeSongId) => {
-            const error = await moveSongInBandSongList(band.id, activeBandSongList.id, songId, beforeSongId);
-            if (error) {
-              toast.error(error);
-            }
-          }}
           onRenameList={canEditBand ? async (name) => {
             const error = await renameBandSongList(band.id, activeBandSongList.id, name);
             if (error) {
@@ -459,12 +443,6 @@ export default function BandDetailPage() {
           } : undefined}
           onAddSong={async (songId) => {
             const error = await addSongToBandSetlist(band.id, activeBandSetlist.id, songId);
-            if (error) {
-              toast.error(error);
-            }
-          }}
-          onMoveSong={async (songId, beforeSongId) => {
-            const error = await moveSongInBandSetlist(band.id, activeBandSetlist.id, songId, beforeSongId);
             if (error) {
               toast.error(error);
             }
@@ -697,7 +675,6 @@ export default function BandDetailPage() {
           </>
         )}
         onDeleteSong={handleDeleteSong}
-        onMoveSong={handleMoveSong}
         bandId={band.id}
       />
     </section>

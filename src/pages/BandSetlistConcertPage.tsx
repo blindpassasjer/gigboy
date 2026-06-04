@@ -498,23 +498,29 @@ export default function BandSetlistConcertPage() {
             </div>
 
             {(showTuner || showMetronome || (user && showNotes) || (media && showMediaPlayer && currentSong.playbackUrl)) && (
-              <div className="song-toolbar-tools-grid concert-toolbar-tools-grid">
+              <div className={`song-toolbar-tools-grid concert-toolbar-tools-grid${!showTopbar ? ' song-toolbar-tools-grid--floating' : ''}`}>
                 {showTuner && (
                   <div className="song-toolbar-tool-card">
-                    <span className="song-toolbar-tool-card-title">
-                      <AudioLines size={13} />
-                      Tuner
-                    </span>
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">
+                        <AudioLines size={13} />
+                        Tuner
+                      </span>
+                      <button className="floating-tool-close" onClick={() => setShowTuner(false)} aria-label="Close tuner"><X size={14} /></button>
+                    </div>
                     <VisualTuner className="song-view-tuner" />
                   </div>
                 )}
 
                 {showMetronome && (
                   <div className="song-toolbar-tool-card">
-                    <span className="song-toolbar-tool-card-title">
-                      <Metronome size={13} />
-                      Metronome
-                    </span>
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">
+                        <Metronome size={13} />
+                        Metronome
+                      </span>
+                      <button className="floating-tool-close" onClick={() => setShowMetronome(false)} aria-label="Close metronome"><X size={14} /></button>
+                    </div>
                     <VisualMetronome
                       tempo={currentSong.tempo}
                       timeSignature={currentSong.timeSignature}
@@ -525,7 +531,10 @@ export default function BandSetlistConcertPage() {
 
                 {user && showNotes && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--notes">
-                    <span className="song-toolbar-tool-card-title">Handwritten notes</span>
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">Handwritten notes</span>
+                      <button className="floating-tool-close" onClick={() => handleToggleNotes(false)} aria-label="Close notes"><X size={14} /></button>
+                    </div>
                     <div className="song-notes-panel">
                       <label
                         className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
@@ -606,7 +615,10 @@ export default function BandSetlistConcertPage() {
 
                 {media && showMediaPlayer && currentSong.playbackUrl && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--media">
-                    <span className="song-toolbar-tool-card-title">Playback</span>
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">Playback</span>
+                      <button className="floating-tool-close" onClick={() => setShowMediaPlayer(false)} aria-label="Close playback"><X size={14} /></button>
+                    </div>
                     <SongMediaPlayer
                       mediaUrl={currentSong.playbackUrl}
                       autoPlay={autoPlayMediaOnOpen}
@@ -736,81 +748,6 @@ export default function BandSetlistConcertPage() {
         />
       )}
 
-      {!showTopbar && (showTuner || showMetronome || (user && showNotes) || (media && showMediaPlayer && currentSong.playbackUrl)) && (
-        <div className="floating-tools">
-          {showTuner && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><AudioLines size={13} /> Tuner</span>
-                <button className="floating-tool-close" onClick={() => setShowTuner(false)} aria-label="Close tuner"><X size={14} /></button>
-              </div>
-              <VisualTuner className="song-view-tuner" />
-            </div>
-          )}
-          {showMetronome && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><Metronome size={13} /> Metronome</span>
-                <button className="floating-tool-close" onClick={() => setShowMetronome(false)} aria-label="Close metronome"><X size={14} /></button>
-              </div>
-              <VisualMetronome tempo={currentSong.tempo} timeSignature={currentSong.timeSignature} className="song-view-metronome" />
-            </div>
-          )}
-          {user && showNotes && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><PenLine size={13} /> Notes</span>
-                <button className="floating-tool-close" onClick={() => handleToggleNotes(false)} aria-label="Close notes"><X size={14} /></button>
-              </div>
-              <div className="song-notes-panel">
-                <label
-                  className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
-                  title="Enable touch drawing"
-                >
-                  <input type="checkbox" checked={drawEnabled} onChange={(e) => handleToggleDraw(e.target.checked)} />
-                  Draw
-                </label>
-                {drawEnabled && (
-                  <>
-                    <button className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0} title="Undo last stroke">Undo</button>
-                    <button className="notes-toolbar-btn notes-toolbar-btn--danger" onClick={() => { void handleClearNotes(); }} disabled={handNotes.myStrokes.length === 0} title="Clear my notes">Clear</button>
-                  </>
-                )}
-                {handNotes.saveState === 'saving' && <span className="notes-save-status notes-save-status--saving">Saving...</span>}
-                {handNotes.saveState === 'saved' && <span className="notes-save-status notes-save-status--saved">Saved</span>}
-                {handNotes.saveState === 'error' && <span className="notes-save-status notes-save-status--error">Failed to save</span>}
-                {handNotes.authors.length > 0 && (
-                  <div className="notes-author-filters">
-                    {handNotes.authors.length > 1 && (
-                      <button className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`} onClick={handNotes.showAll} title="Show all users' notes">All</button>
-                    )}
-                    {handNotes.authors.map((author) => (
-                      <button
-                        key={author.uid}
-                        className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
-                        onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
-                        title={`Toggle notes by ${author.name}`}
-                      >
-                        {author.avatar ? <span className="notes-author-chip-avatar">{author.avatar}</span> : <span className="notes-author-chip-initials">{author.name.slice(0, 1).toUpperCase()}</span>}
-                        {author.uid === user.id ? 'Me' : author.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          {media && showMediaPlayer && currentSong.playbackUrl && (
-            <div className="floating-tool-card">
-              <div className="floating-tool-card-header">
-                <span><Play size={13} /> Playback</span>
-                <button className="floating-tool-close" onClick={() => setShowMediaPlayer(false)} aria-label="Close playback"><X size={14} /></button>
-              </div>
-              <SongMediaPlayer mediaUrl={currentSong.playbackUrl} autoPlay={false} onAutoPlayHandled={() => {}} />
-            </div>
-          )}
-        </div>
-      )}
     </section>
   );
 }

@@ -325,10 +325,13 @@ export interface SongHandNoteDocument {
   };
   /**
    * Coordinate system used for stroke points.
-   * Absent / 'v1': legacy — y is normalised by viewport height (no aspect-ratio guarantee).
-   * 'v2': both x and y are normalised by viewport width — aspect ratio is preserved.
+   * Absent / 'v1': legacy — y is normalised by viewport height.
+   * 'v2': both x and y are normalised by viewport width — aspect ratio is preserved but
+   *        notes drift when viewed on a screen with a different width.
+   * 'v3': x normalised by viewport width, y normalised by viewport height — notes stay
+   *        at the correct fractional position in the content on any screen size.
    */
-  coordinateSystem?: 'v2';
+  coordinateSystem?: 'v2' | 'v3';
   strokes: HandNoteStroke[];
 }
 

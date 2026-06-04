@@ -6,7 +6,6 @@ import {
   Music,
   LayoutGrid,
   Rows3,
-  GripVertical,
   ArrowUpDown,
   Plus,
   X,
@@ -23,7 +22,6 @@ import { parseChordPro } from '../utils/chordParser';
 import { ICON_OPTIONS } from '../lib/iconOptions';
 
 type SortBy =
-  | 'custom'
   | 'name-asc'
   | 'name-desc'
   | 'artist-asc'
@@ -32,27 +30,20 @@ type SortBy =
   | 'date-asc'
   | 'date-desc';
 
-const SORT_OPTIONS_WITH_CUSTOM: SortBy[] = ['custom', 'name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language', 'date-asc', 'date-desc'];
-const SORT_OPTIONS_NO_CUSTOM: SortBy[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language', 'date-asc', 'date-desc'];
+const SORT_OPTIONS: SortBy[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language', 'date-asc', 'date-desc'];
 
-function getInitialSortBy(canUseCustomOrder: boolean): SortBy {
-  const fallback: SortBy = canUseCustomOrder ? 'custom' : 'name-asc';
-
+function getInitialSortBy(): SortBy {
   if (typeof window === 'undefined') {
-    return fallback;
+    return 'name-asc';
   }
 
   const stored = window.localStorage.getItem('gigboy-sort-by');
   if (!stored) {
-    return fallback;
+    return 'name-asc';
   }
 
-  const allowed = canUseCustomOrder ? SORT_OPTIONS_WITH_CUSTOM : SORT_OPTIONS_NO_CUSTOM;
-  return allowed.includes(stored as SortBy) ? (stored as SortBy) : fallback;
+  return SORT_OPTIONS.includes(stored as SortBy) ? (stored as SortBy) : 'name-asc';
 }
-
-const SONG_DRAG_MIME = 'application/x-gigboy-song-id';
-const SONG_DRAG_FALLBACK_MIME = 'text/x-gigboy-song-id';
 
 function getSongPreview(song: Song): string {
   const lyricLines = parseChordPro(song.chordpro)
@@ -85,7 +76,6 @@ interface Props {
   deleteListLabel?: string;
   listIcon?: string;
   allSongs?: Song[];
-  onMoveSong?: (songId: string, beforeSongId: string | null) => void;
   onDeleteSong: (song: Song) => void | Promise<void>;
   canDeleteSong?: (song: Song) => boolean;
   onRenameList?: (name: string) => void | Promise<void>;
@@ -110,7 +100,6 @@ export default function SongList({
   deleteListLabel,
   listIcon,
   allSongs,
-  onMoveSong,
   onDeleteSong,
   canDeleteSong,
   onRenameList,
@@ -127,7 +116,7 @@ export default function SongList({
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
     () => (localStorage.getItem('gigboy-view-mode') === 'cards' ? 'cards' : 'list')
   );
-  const [sortBy, setSortBy] = useState<SortBy>(() => getInitialSortBy(Boolean(onMoveSong)));
+  const [sortBy, setSortBy] = useState<SortBy>(() => getInitialSortBy());
 
   function handleSetViewMode(mode: 'list' | 'cards') {
     localStorage.setItem('gigboy-view-mode', mode);
@@ -138,9 +127,6 @@ export default function SongList({
     localStorage.setItem('gigboy-sort-by', sort);
     setSortBy(sort);
   }
-  const [draggingSongId, setDraggingSongId] = useState<string | null>(null);
-  const [dropTargetSongId, setDropTargetSongId] = useState<string | null>(null);
-  const [dropAtEnd, setDropAtEnd] = useState(false);
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
   const [showListAppearanceEditor, setShowListAppearanceEditor] = useState(false);
@@ -156,8 +142,6 @@ export default function SongList({
   const renameInputRef = useRef<HTMLInputElement>(null);
   const iconPickerRef = useRef<HTMLDivElement | null>(null);
   const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const songNodeRefs = useRef<Map<string, HTMLElement>>(new Map());
-  const canDragReorder = Boolean(onMoveSong);
   const songPageStateBase = listName
     ? { backTo: pathname, backLabel: listName, bandId: bandId ?? undefined }
     : undefined;
@@ -197,8 +181,6 @@ export default function SongList({
         languageName(s.language).toLowerCase().includes(q);
       return matchesQuery;
     });
-
-    if (sortBy === 'custom') return base;
 
     const sorted = [...base];
     if (sortBy === 'name-asc') {
@@ -327,175 +309,6 @@ export default function SongList({
 
     setRenameValue(listName);
     setIsRenaming(false);
-  };
-
-  const handleSongDragStart = (song: Song, event: React.DragEvent<HTMLElement>) => {
-    if (!canDragReorder) {
-      return;
-    }
-
-    setDraggingSongId(song.id);
-    setDropTargetSongId(null);
-    setDropAtEnd(false);
-    event.dataTransfer.effectAllowed = onMoveSong ? 'copyMove' : 'copy';
-    event.dataTransfer.setData(SONG_DRAG_MIME, song.id);
-    event.dataTransfer.setData(SONG_DRAG_FALLBACK_MIME, song.id);
-    event.dataTransfer.setData('text/plain', song.title);
-  };
-
-  const handleSongDragEnd = () => {
-    setDraggingSongId(null);
-    setDropTargetSongId(null);
-    setDropAtEnd(false);
-  };
-
-  const handleSongDragOver = (songId: string, event: React.DragEvent<HTMLElement>) => {
-    if (!onMoveSong || !canDragReorder || !event.dataTransfer.types.includes(SONG_DRAG_MIME)) {
-      return;
-    }
-
-    const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
-    if (!sourceSongId || sourceSongId === songId) {
-      return;
-    }
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    setDropTargetSongId((current) => (current === songId ? current : songId));
-    setDropAtEnd((current) => (current ? false : current));
-  };
-
-  const handleSongDrop = (beforeSongId: string, event: React.DragEvent<HTMLElement>) => {
-    if (!onMoveSong) {
-      return;
-    }
-
-    const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
-    if (!sourceSongId || sourceSongId === beforeSongId) {
-      handleSongDragEnd();
-      return;
-    }
-
-    event.preventDefault();
-    onMoveSong(sourceSongId, beforeSongId);
-    handleSongDragEnd();
-  };
-
-  const handleListEndDragOver = (event: React.DragEvent<HTMLElement>) => {
-    if (!onMoveSong || !canDragReorder || !event.dataTransfer.types.includes(SONG_DRAG_MIME)) {
-      return;
-    }
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    setDropTargetSongId((current) => (current === null ? current : null));
-    setDropAtEnd((current) => (current ? current : true));
-  };
-
-  const handleListEndDrop = (event: React.DragEvent<HTMLElement>) => {
-    if (!onMoveSong) {
-      return;
-    }
-
-    const sourceSongId = event.dataTransfer.getData(SONG_DRAG_MIME) || draggingSongId;
-    if (!sourceSongId) {
-      handleSongDragEnd();
-      return;
-    }
-
-    event.preventDefault();
-    onMoveSong(sourceSongId, null);
-    handleSongDragEnd();
-  };
-
-  const setSongNodeRef = (songId: string, node: HTMLElement | null) => {
-    if (node) {
-      songNodeRefs.current.set(songId, node);
-      return;
-    }
-
-    songNodeRefs.current.delete(songId);
-  };
-
-  const resolveTouchDropTarget = (touchY: number) => {
-    const entries = filtered
-      .map((song) => {
-        const node = songNodeRefs.current.get(song.id);
-        if (!node) return null;
-        return {
-          id: song.id,
-          midpoint: node.getBoundingClientRect().top + (node.getBoundingClientRect().height / 2),
-        };
-      })
-      .filter((entry): entry is { id: string; midpoint: number } => Boolean(entry));
-
-    for (const entry of entries) {
-      if (touchY <= entry.midpoint) {
-        return {
-          beforeSongId: entry.id,
-          highlightSongId: entry.id,
-          atEnd: false,
-        };
-      }
-    }
-
-    return {
-      beforeSongId: null,
-      highlightSongId: null,
-      atEnd: true,
-    };
-  };
-
-  const updateTouchDropPreview = (touchY: number) => {
-    const nextTarget = resolveTouchDropTarget(touchY);
-    setDropTargetSongId(nextTarget.highlightSongId);
-    setDropAtEnd(nextTarget.atEnd);
-  };
-
-  const handleSongTouchStart = (song: Song, event: React.TouchEvent<HTMLButtonElement>) => {
-    if (!onMoveSong || event.touches.length !== 1) {
-      return;
-    }
-
-    event.preventDefault();
-    setDraggingSongId(song.id);
-    updateTouchDropPreview(event.touches[0].clientY);
-  };
-
-  const handleSongTouchMove = (event: React.TouchEvent<HTMLButtonElement>) => {
-    if (!onMoveSong || !draggingSongId || event.touches.length !== 1) {
-      return;
-    }
-
-    event.preventDefault();
-    updateTouchDropPreview(event.touches[0].clientY);
-  };
-
-  const handleSongTouchEnd = (event: React.TouchEvent<HTMLButtonElement>) => {
-    if (!onMoveSong || !draggingSongId) {
-      handleSongDragEnd();
-      return;
-    }
-
-    const touch = event.changedTouches[0];
-    const nextTarget = touch ? resolveTouchDropTarget(touch.clientY) : null;
-    const beforeSongId = nextTarget
-      ? nextTarget.beforeSongId
-      : dropAtEnd
-        ? null
-        : dropTargetSongId;
-
-    if (beforeSongId && beforeSongId === draggingSongId) {
-      handleSongDragEnd();
-      return;
-    }
-
-    onMoveSong(draggingSongId, beforeSongId ?? null);
-    handleSongDragEnd();
-  };
-
-  const handleSongTouchCancel = () => {
-    handleSongDragEnd();
   };
 
   return (
@@ -675,7 +488,6 @@ export default function SongList({
             className="lang-select sort-select"
             aria-label="Sort songs"
           >
-            {onMoveSong && <option value="custom">Custom order</option>}
             <option value="name-asc">Song name A → Z</option>
             <option value="name-desc">Song name Z → A</option>
             <option value="artist-asc">Artist A → Z</option>
@@ -695,7 +507,7 @@ export default function SongList({
             <p>No songs found.</p>
           </div>
         ) : viewMode === 'cards' ? (
-          <div className="song-card-grid" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
+          <div className="song-card-grid">
             {filtered.map((song) => {
               const songPageState = songPageStateBase
                 ? { ...songPageStateBase }
@@ -704,27 +516,8 @@ export default function SongList({
               return (
               <article
                 key={song.id}
-                className={`song-preview-card${dropTargetSongId === song.id ? ' drop-before' : ''}${draggingSongId === song.id ? ' is-dragging' : ''}`}
-                ref={(node) => setSongNodeRef(song.id, node)}
-                onDragOver={(event) => handleSongDragOver(song.id, event)}
-                onDrop={(event) => handleSongDrop(song.id, event)}
+                className="song-preview-card"
               >
-                {sortBy === 'custom' && onMoveSong && canDragReorder && (
-                <button
-                  type="button"
-                  className="song-drag-handle"
-                  draggable
-                  onDragStart={(event) => handleSongDragStart(song, event)}
-                  onDragEnd={handleSongDragEnd}
-                  onTouchStart={(event) => handleSongTouchStart(song, event)}
-                  onTouchMove={handleSongTouchMove}
-                  onTouchEnd={handleSongTouchEnd}
-                  onTouchCancel={handleSongTouchCancel}
-                  aria-label={`Drag ${song.title}`}
-                >
-                  <GripVertical size={16} />
-                </button>
-                )}
                 <Link to={`/songs/${song.id}`} state={songPageState} className="song-preview-card-link">
                   <div className="song-preview-card-main">
                     <span className="song-card-title">{song.title}</span>
@@ -774,10 +567,9 @@ export default function SongList({
               </article>
               );
             })}
-            {filtered.length > 0 && <div className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
           </div>
         ) : (
-          <ul className="song-list" onDragOver={handleListEndDragOver} onDrop={handleListEndDrop}>
+          <ul className="song-list">
             {filtered.map((song) => {
               const songPageState = songPageStateBase
                 ? { ...songPageStateBase }
@@ -786,30 +578,8 @@ export default function SongList({
               return (
               <li
                 key={song.id}
-                className={dropTargetSongId === song.id ? 'drop-before' : ''}
-                ref={(node) => setSongNodeRef(song.id, node)}
               >
-                <div
-                  className={`song-card${draggingSongId === song.id ? ' is-dragging' : ''}`}
-                  onDragOver={(event) => handleSongDragOver(song.id, event)}
-                  onDrop={(event) => handleSongDrop(song.id, event)}
-                >
-                  {sortBy === 'custom' && onMoveSong && canDragReorder && (
-                  <button
-                    type="button"
-                    className="song-drag-handle"
-                    draggable
-                    onDragStart={(event) => handleSongDragStart(song, event)}
-                    onDragEnd={handleSongDragEnd}
-                    onTouchStart={(event) => handleSongTouchStart(song, event)}
-                    onTouchMove={handleSongTouchMove}
-                    onTouchEnd={handleSongTouchEnd}
-                    onTouchCancel={handleSongTouchCancel}
-                    aria-label={`Drag ${song.title}`}
-                  >
-                    <GripVertical size={16} />
-                  </button>
-                  )}
+                <div className="song-card">
                   <Link to={`/songs/${song.id}`} state={songPageState} className="song-card-link">
                     <div className="song-card-main">
                       <span className="song-card-title">{song.title}</span>
@@ -859,7 +629,6 @@ export default function SongList({
               </li>
               );
             })}
-            {filtered.length > 0 && <li className={`song-reorder-dropzone${dropAtEnd ? ' active' : ''}`} aria-hidden="true" />}
           </ul>
         )}
       </div>
