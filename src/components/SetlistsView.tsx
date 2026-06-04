@@ -1,6 +1,6 @@
 import { Fragment, useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Trash2, Music, Plus, Search, X, PenLine, Play, FileText, ListMusic } from 'lucide-react';
+import { ArrowUpDown, ChevronUp, ChevronDown, Trash2, Music, Plus, Search, X, PenLine, Play, FileText, ListMusic } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Song, SongList } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
@@ -16,6 +16,7 @@ interface Props {
   songNotes?: Record<string, string>;
   allSongs: Song[];
   availableSongLists?: SongList[];
+  onMoveSong: (songId: string, beforeSongId: string | null) => void;
   onRemoveSong: (songId: string) => void;
   onAddSong: (songId: string) => void | Promise<void>;
   onUpdateSongNote?: (songId: string, note: string) => void | Promise<void>;
@@ -50,6 +51,7 @@ export default function SetlistsView({
   songNotes,
   allSongs,
   availableSongLists = [],
+  onMoveSong,
   onRemoveSong,
   onAddSong,
   onUpdateSongNote,
@@ -72,6 +74,7 @@ export default function SetlistsView({
     : (!currentSetlist?.ownerId || currentSetlist.accessRole === 'owner');
   const effectiveConcertRoute = concertRoute
     ?? (bandId ? `/bands/${bandId}/setlists/${setlistId}/concert` : '/bands');
+  const [reorderMode, setReorderMode] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(setlistName);
   const [showSongPicker, setShowSongPicker] = useState(false);
@@ -279,6 +282,16 @@ export default function SetlistsView({
     setIsRenaming(false);
   };
 
+  const moveSongUp = useCallback((index: number) => {
+    if (index === 0) return;
+    onMoveSong(songs[index].id, songs[index - 1].id);
+  }, [songs, onMoveSong]);
+
+  const moveSongDown = useCallback((index: number) => {
+    if (index === songs.length - 1) return;
+    onMoveSong(songs[index].id, songs[index + 2]?.id ?? null);
+  }, [songs, onMoveSong]);
+
   return (
     <div className="setlist-view">
       <div className="list-sticky-header">
@@ -423,6 +436,17 @@ export default function SetlistsView({
             >
               <Plus size={14} />
             </button>
+            {songs.length > 1 && (
+              <button
+                className={`setlist-action-btn${reorderMode ? ' setlist-action-btn--accent' : ' setlist-action-btn--secondary'}`}
+                onClick={() => setReorderMode((v) => !v)}
+                title={reorderMode ? 'Done reordering' : 'Reorder songs'}
+                aria-label={reorderMode ? 'Done reordering' : 'Reorder songs'}
+                aria-pressed={reorderMode}
+              >
+                <ArrowUpDown size={14} />
+              </button>
+            )}
             {canDeleteSetlist ? (
               <button
                 className="setlist-action-btn setlist-action-btn--secondary"
@@ -444,7 +468,7 @@ export default function SetlistsView({
           <p>No songs in this setlist yet.</p>
         </div>
       ) : (
-        <ul className="setlist-songs">
+        <ul className={`setlist-songs${reorderMode ? ' is-reordering' : ''}`}>
           {songs.map((song, index) => {
             const note = (songNotes?.[song.id] ?? '').trim();
             const isEditingNote = editingSongNoteId === song.id;
@@ -453,6 +477,28 @@ export default function SetlistsView({
             <Fragment key={song.id}>
               <li className="setlist-song-item">
                 <div className="setlist-song-card">
+                  {reorderMode && (
+                    <div className="setlist-reorder-btns">
+                      <button
+                        type="button"
+                        className="setlist-reorder-btn"
+                        onClick={() => moveSongUp(index)}
+                        disabled={index === 0}
+                        aria-label={`Move ${song.title} up`}
+                      >
+                        <ChevronUp size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className="setlist-reorder-btn"
+                        onClick={() => moveSongDown(index)}
+                        disabled={index === songs.length - 1}
+                        aria-label={`Move ${song.title} down`}
+                      >
+                        <ChevronDown size={16} />
+                      </button>
+                    </div>
+                  )}
                   <div className="setlist-song-position">{index + 1}</div>
 
                   <Link

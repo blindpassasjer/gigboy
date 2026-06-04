@@ -47,6 +47,7 @@ export default function BandDetailPage() {
     setBandSetlistPublicShare,
     deleteBandSetlist,
     addSongToBandSetlist,
+    moveSongInBandSetlist,
     removeSongFromBandSetlist,
     updateSongNoteInBandSetlist,
     restoreBandTrashItem,
@@ -441,6 +442,13 @@ export default function BandDetailPage() {
               toast.error(error);
             }
           } : undefined}
+          onMoveSong={async (songId, beforeSongId) => {
+            if (!canEditBand) return;
+            const error = await moveSongInBandSetlist(band.id, activeBandSetlist.id, songId, beforeSongId);
+            if (error) {
+              toast.error(error);
+            }
+          }}
           onAddSong={async (songId) => {
             const error = await addSongToBandSetlist(band.id, activeBandSetlist.id, songId);
             if (error) {
