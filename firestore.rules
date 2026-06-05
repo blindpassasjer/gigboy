@@ -296,9 +296,10 @@ service cloud.firestore {
             && authorUid == request.auth.uid
             && resource.data.authorUid == request.auth.uid
             && request.resource.data.authorUid == resource.data.authorUid;
-          allow delete: if isBandMember(bandId)
+          allow delete: if (isBandMember(bandId)
             && authorUid == request.auth.uid
-            && resource.data.authorUid == request.auth.uid;
+            && resource.data.authorUid == request.auth.uid)
+            || bandDocument(bandId).data.ownerId == request.auth.uid;
         }
 
         match /recordings/{recordingId} {

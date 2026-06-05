@@ -155,6 +155,14 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     await handNotes.clearMyNotes();
   }, [handNotes]);
 
+  const handleDeleteNotesForAuthor = useCallback(async (authorUid: string, authorName: string) => {
+    const confirmed = await showConfirmToast(`Delete ${authorName}'s handwritten notes on this song?`, {
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
+    await handNotes.deleteNotesByAuthor(authorUid);
+  }, [handNotes]);
+
   const handleToggleNotes = useCallback((next: boolean) => {
     setShowNotes(next);
     if (!next) {
@@ -675,7 +683,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                               {isBandOwner && author.uid !== user.id && (
                                 <button
                                   className="notes-author-chip-delete"
-                                  onClick={() => handNotes.deleteNotesByAuthor(author.uid)}
+                                  onClick={() => handleDeleteNotesForAuthor(author.uid, author.name)}
                                   title={`Delete notes by ${author.name}`}
                                   aria-label={`Delete notes by ${author.name}`}
                                 >
