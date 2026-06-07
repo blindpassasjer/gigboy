@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBeforeUnload, useNavigate, useBlocker } from 'react-router-dom';
 import { flushSync } from 'react-dom';
-import { ChevronDown, FileUp, Save, Wand2 } from 'lucide-react';
+import { ChevronDown, FileUp, Redo2, Save, Undo2, Wand2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
@@ -129,6 +129,10 @@ export default function AddSongForm({
   }), [initialSong, initialSongListId]);
 
   const [lastSavedValues, setLastSavedValues] = useState<SongFormValues>(initialValues);
+  const historyRef = useRef<SongFormValues[]>([initialValues]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const skipHistoryRef = useRef(false);
+  const historyDebounceRef = useRef<number | null>(null);
 
   const formValues = useMemo<SongFormValues>(() => ({
     title,
@@ -161,6 +165,8 @@ export default function AddSongForm({
   useEffect(() => {
     setLastSavedValues(initialValues);
     setSaveState('idle');
+    historyRef.current = [initialValues];
+    setHistoryIndex(0);
   }, [initialValues]);
 
   const isDirty = useMemo(() => {
@@ -329,6 +335,69 @@ export default function AddSongForm({
     setParseStatus(null);
     setDetectedSource(null);
   }
+
+  function applyValues(values: SongFormValues) {
+    skipHistoryRef.current = true;
+    setTitle(values.title);
+    setArtist(values.artist);
+    setAuthor(values.author);
+    setPlaybackUrl(values.playbackUrl);
+    setLanguage(values.language);
+    setTags(values.tags);
+    setKey(values.key);
+    setCapo(values.capo);
+    setTempo(values.tempo);
+    setTimeSignature(values.timeSignature);
+    setChordpro(values.chordpro);
+    setSongListId(values.songListId);
+  }
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < historyRef.current.length - 1;
+
+  function handleUndo() {
+    if (!canUndo) return;
+    const newIndex = historyIndex - 1;
+    applyValues(historyRef.current[newIndex]);
+    setHistoryIndex(newIndex);
+  }
+
+  function handleRedo() {
+    if (!canRedo) return;
+    const newIndex = historyIndex + 1;
+    applyValues(historyRef.current[newIndex]);
+    setHistoryIndex(newIndex);
+  }
+
+  useEffect(() => {
+    if (mode !== 'edit') return;
+
+    if (skipHistoryRef.current) {
+      skipHistoryRef.current = false;
+      return;
+    }
+
+    if (historyDebounceRef.current) {
+      window.clearTimeout(historyDebounceRef.current);
+    }
+
+    historyDebounceRef.current = window.setTimeout(() => {
+      setHistoryIndex(prev => {
+        const currentValues = historyRef.current[prev];
+        if (JSON.stringify(formValues) === JSON.stringify(currentValues)) return prev;
+        const newStack = historyRef.current.slice(0, prev + 1).concat(formValues).slice(-50);
+        historyRef.current = newStack;
+        return newStack.length - 1;
+      });
+    }, 500);
+
+    return () => {
+      if (historyDebounceRef.current) {
+        window.clearTimeout(historyDebounceRef.current);
+        historyDebounceRef.current = null;
+      }
+    };
+  }, [mode, formValues]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -551,25 +620,47 @@ export default function AddSongForm({
                 </button>
               )}
               {mode === 'edit' && (
-                <span
-                  className={`notes-save-status ${
-                    saveState === 'saving'
-                      ? 'notes-save-status--saving'
+                <>
+                  <button
+                    type="button"
+                    className="preview-toggle"
+                    onClick={handleUndo}
+                    disabled={!canUndo}
+                    title="Undo"
+                    aria-label="Undo"
+                  >
+                    <Undo2 size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="preview-toggle"
+                    onClick={handleRedo}
+                    disabled={!canRedo}
+                    title="Redo"
+                    aria-label="Redo"
+                  >
+                    <Redo2 size={14} />
+                  </button>
+                  <span
+                    className={`notes-save-status ${
+                      saveState === 'saving'
+                        ? 'notes-save-status--saving'
+                        : saveState === 'saved'
+                          ? 'notes-save-status--saved'
+                          : saveState === 'error'
+                            ? 'notes-save-status--error'
+                            : ''
+                    }`}
+                  >
+                    {saveState === 'saving'
+                      ? 'Saving…'
                       : saveState === 'saved'
-                        ? 'notes-save-status--saved'
+                        ? 'Saved'
                         : saveState === 'error'
-                          ? 'notes-save-status--error'
-                          : ''
-                  }`}
-                >
-                  {saveState === 'saving'
-                    ? 'Saving…'
-                    : saveState === 'saved'
-                      ? 'Saved'
-                      : saveState === 'error'
-                        ? 'Could not autosave'
-                        : 'Autosave on'}
-                </span>
+                          ? 'Could not autosave'
+                          : 'Autosave on'}
+                  </span>
+                </>
               )}
             </div>
           </div>
