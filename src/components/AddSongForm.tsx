@@ -619,7 +619,7 @@ export default function AddSongForm({
                   <Save size={14} /> Save Song
                 </button>
               )}
-              {mode === 'edit' && (
+              {mode === 'edit' && !preview && (
                 <>
                   <button
                     type="button"
