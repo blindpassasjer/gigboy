@@ -84,6 +84,16 @@ service cloud.firestore {
         );
     }
 
+    // Validates the fields a client is allowed to write on a handNotes document.
+    // Strokes (drawing) and textNotes (keyboard annotations) are both permitted.
+    function isValidHandNoteWrite(data) {
+      return data.authorUid is string
+        && data.updatedAt is string
+        && data.viewport is map
+        && data.strokes is list
+        && (!('textNotes' in data) || data.textNotes is list);
+    }
+
     function bandMembershipMetadataUnchanged() {
       return request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.memberIds == resource.data.memberIds
@@ -157,11 +167,13 @@ service cloud.firestore {
           allow read: if userSongReadableByCurrentUser(userId, songId);
           allow create: if userSongReadableByCurrentUser(userId, songId)
             && authorUid == request.auth.uid
-            && request.resource.data.authorUid == request.auth.uid;
+            && request.resource.data.authorUid == request.auth.uid
+            && isValidHandNoteWrite(request.resource.data);
           allow update: if userSongReadableByCurrentUser(userId, songId)
             && authorUid == request.auth.uid
             && resource.data.authorUid == request.auth.uid
-            && request.resource.data.authorUid == resource.data.authorUid;
+            && request.resource.data.authorUid == resource.data.authorUid
+            && isValidHandNoteWrite(request.resource.data);
           allow delete: if userSongReadableByCurrentUser(userId, songId)
             && authorUid == request.auth.uid
             && resource.data.authorUid == request.auth.uid;
@@ -291,11 +303,13 @@ service cloud.firestore {
           allow read: if isBandMember(bandId);
           allow create: if isBandMember(bandId)
             && authorUid == request.auth.uid
-            && request.resource.data.authorUid == request.auth.uid;
+            && request.resource.data.authorUid == request.auth.uid
+            && isValidHandNoteWrite(request.resource.data);
           allow update: if isBandMember(bandId)
             && authorUid == request.auth.uid
             && resource.data.authorUid == request.auth.uid
-            && request.resource.data.authorUid == resource.data.authorUid;
+            && request.resource.data.authorUid == resource.data.authorUid
+            && isValidHandNoteWrite(request.resource.data);
           allow delete: if (isBandMember(bandId)
             && authorUid == request.auth.uid
             && resource.data.authorUid == request.auth.uid)

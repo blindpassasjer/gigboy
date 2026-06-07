@@ -3098,11 +3098,23 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-text-notes-overlay--active .song-text-bubble--mine {
   pointer-events: all;
+  cursor: grab;
+}
+
+.song-text-notes-overlay--active .song-text-bubble--mine.song-text-bubble--editing {
   cursor: default;
 }
 
 .song-text-bubble--editing {
   box-shadow: 0 2px 12px color-mix(in srgb, var(--bubble-color, var(--accent)) 35%, transparent);
+}
+
+.song-text-bubble--dragging {
+  cursor: grabbing !important;
+  opacity: .85;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--bubble-color, var(--accent)) 40%, transparent);
+  z-index: 2;
+  user-select: none;
 }
 
 .song-text-bubble-content {
