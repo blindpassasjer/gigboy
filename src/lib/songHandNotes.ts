@@ -6,7 +6,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import type { HandNoteStroke, SongHandNoteDocument } from '../types';
+import type { HandNoteStroke, SongHandNoteDocument, TextNote } from '../types';
 
 const SONGS_COLLECTION = 'songs';
 const HAND_NOTES_COLLECTION = 'handNotes';
@@ -70,6 +70,18 @@ function normalizeStroke(raw: unknown, isV2 = false): HandNoteStroke | null {
   };
 }
 
+function normalizeTextNote(raw: unknown): TextNote | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+  const id = typeof data.id === 'string' ? data.id : crypto.randomUUID();
+  const x = typeof data.x === 'number' && Number.isFinite(data.x) ? clamp01(data.x) : null;
+  const y = typeof data.y === 'number' && Number.isFinite(data.y) ? clamp01(data.y) : null;
+  const text = typeof data.text === 'string' ? data.text.trim() : '';
+  const createdAt = typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString();
+  if (x === null || y === null || !text) return null;
+  return { id, x, y, text, createdAt };
+}
+
 function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocument {
   const data = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
 
@@ -110,7 +122,9 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
     ? data.strokes.map((s) => normalizeStroke(s, isV2)).filter((stroke): stroke is HandNoteStroke => Boolean(stroke))
     : [];
 
-  const text = typeof data.text === 'string' && data.text.trim() ? data.text : undefined;
+  const rawTextNotes = Array.isArray(data.textNotes)
+    ? data.textNotes.map(normalizeTextNote).filter((tn): tn is TextNote => Boolean(tn))
+    : undefined;
 
   return {
     authorUid,
@@ -120,7 +134,7 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
     viewport,
     coordinateSystem,
     strokes,
-    text,
+    textNotes: rawTextNotes?.length ? rawTextNotes : undefined,
   };
 }
 

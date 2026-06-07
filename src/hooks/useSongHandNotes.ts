@@ -12,6 +12,7 @@ import type {
   HandNoteStroke,
   SongHandNoteAuthor,
   SongHandNoteDocument,
+  TextNote,
 } from '../types';
 
 function displayNameForUser(user: User) {
@@ -141,11 +142,11 @@ export function useSongHandNotes(params: {
     return notes.find((note) => note.authorUid === userId) ?? null;
   }, [notes, userId]);
 
-  // Keep a ref so saveMyNotes can read the latest text without being a dependency.
-  const myNoteTextRef = useRef<string | undefined>(undefined);
+  // Keep a ref so saveMyNotes can read the latest textNotes without being a dependency.
+  const myNoteTextNotesRef = useRef<TextNote[] | undefined>(undefined);
   useEffect(() => {
-    myNoteTextRef.current = myNote?.text;
-  }, [myNote?.text]);
+    myNoteTextNotesRef.current = myNote?.textNotes;
+  }, [myNote?.textNotes]);
 
   const saveMyNotes = useCallback(async (strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
     if (!db || !scope || !userId || !user) return;
@@ -165,7 +166,7 @@ export function useSongHandNotes(params: {
       viewport,
       coordinateSystem: 'v3',
       strokes: normalizedStrokes,
-      text: myNoteTextRef.current,
+      textNotes: myNoteTextNotesRef.current,
     };
 
     setVisibleAuthorIds((prev) => {
@@ -193,7 +194,7 @@ export function useSongHandNotes(params: {
     }
   }, [scope, songId, user, userId]);
 
-  const saveMyText = useCallback(async (text: string) => {
+  const saveMyTextNotes = useCallback(async (textNotes: TextNote[]) => {
     if (!db || !scope || !userId || !user) return;
 
     const userColor = getUserNoteColor(userId);
@@ -210,7 +211,7 @@ export function useSongHandNotes(params: {
       viewport: myNote?.viewport ?? { width: 1, height: 1 },
       coordinateSystem: 'v3',
       strokes: normalizedStrokes,
-      text: text.trim() || undefined,
+      textNotes: textNotes.length ? textNotes : undefined,
     };
 
     setVisibleAuthorIds((prev) => {
@@ -232,7 +233,7 @@ export function useSongHandNotes(params: {
         setSaveState((current) => (current === 'saved' ? 'idle' : current));
       }, 1500);
     } catch (error) {
-      console.error('Failed to save song text note.', error);
+      console.error('Failed to save song text notes.', error);
       setSaveState('error');
     }
   }, [myNote, scope, songId, user, userId]);
@@ -294,9 +295,9 @@ export function useSongHandNotes(params: {
     visibleAuthorIds,
     saveState,
     myStrokes: myNote?.strokes ?? [],
-    myText: myNote?.text ?? '',
+    myTextNotes: myNote?.textNotes ?? [],
     saveMyNotes,
-    saveMyText,
+    saveMyTextNotes,
     clearMyNotes,
     deleteNotesByAuthor,
     showAll,

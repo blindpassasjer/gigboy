@@ -3066,57 +3066,92 @@ input, select, textarea { font: inherit; color: var(--text); }
 .notes-save-status--saved { color: #27ae60; }
 .notes-save-status--error { color: var(--danger); }
 
-.notes-text-input {
-  width: 100%;
-  min-height: 4.5rem;
-  padding: .45rem .6rem;
-  font-size: .85rem;
-  line-height: 1.55;
-  font-family: inherit;
-  border: 1.5px solid var(--border);
+.song-text-notes-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  pointer-events: none;
+}
+
+.song-text-notes-overlay--active {
+  pointer-events: all;
+  cursor: crosshair;
+}
+
+.song-text-bubble {
+  position: absolute;
+  transform: translateX(-50%);
+  max-width: 220px;
+  min-width: 80px;
+  border: 1.5px solid var(--bubble-color, var(--accent));
   border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
-  resize: vertical;
-  transition: border-color .15s, color .15s;
+  background: color-mix(in srgb, var(--bubble-color, var(--accent)) 10%, var(--surface));
+  color: var(--bubble-color, var(--accent));
+  font-size: .84rem;
+  line-height: 1.5;
+  pointer-events: none;
 }
 
-.notes-text-input:focus {
-  outline: none;
-  border-color: var(--notes-text-color, var(--accent));
-  color: var(--notes-text-color, var(--text));
+.song-text-bubble--mine {
+  pointer-events: none;
 }
 
-.notes-text-input::placeholder {
-  color: var(--muted);
-  opacity: .7;
+.song-text-notes-overlay--active .song-text-bubble--mine {
+  pointer-events: all;
+  cursor: default;
 }
 
-.song-text-notes-section {
-  display: flex;
-  flex-direction: column;
-  gap: .4rem;
-  padding: .6rem .75rem;
-  margin-bottom: .2rem;
+.song-text-bubble--editing {
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--bubble-color, var(--accent)) 35%, transparent);
 }
 
-.song-text-note {
-  padding: .4rem .7rem;
-  border-left: 3px solid currentColor;
-  border-radius: 0 6px 6px 0;
-  background: color-mix(in srgb, currentColor 7%, var(--surface));
-  font-size: .88rem;
-  line-height: 1.55;
+.song-text-bubble-content {
+  padding: .35rem .55rem;
   white-space: pre-wrap;
   word-break: break-word;
+  cursor: text;
 }
 
-.song-text-note-author {
+.song-text-bubble-input {
   display: block;
-  font-size: .75rem;
-  font-weight: 600;
-  opacity: .75;
-  margin-bottom: .18rem;
+  width: 100%;
+  min-width: 130px;
+  min-height: 3.2rem;
+  padding: .35rem .55rem;
+  border: none;
+  background: transparent;
+  color: var(--bubble-color, var(--accent));
+  font-size: .84rem;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: both;
+  outline: none;
+}
+
+.song-text-bubble-input::placeholder {
+  color: var(--bubble-color, var(--accent));
+  opacity: .5;
+}
+
+.song-text-bubble-delete {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--bubble-color, var(--accent));
+  background: var(--surface);
+  color: var(--bubble-color, var(--accent));
+  opacity: .7;
+  transition: opacity .12s;
+}
+
+.song-text-bubble-delete:hover {
+  opacity: 1;
 }
 
 .notes-author-filters {

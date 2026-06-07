@@ -22,7 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
-import type { HandNoteStroke, Song } from '../types';
+import type { HandNoteStroke, Song, TextNote } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
@@ -40,6 +40,7 @@ import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import { getUserNoteColor } from '../lib/userColors';
 import SongHandNotesOverlay from './SongHandNotesOverlay';
+import SongTextNotesOverlay from './SongTextNotesOverlay';
 import SongMediaPlayer from './SongMediaPlayer';
 import SongRecorder from './SongRecorder';
 import ChordFinder from './ChordFinder';
@@ -102,9 +103,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   // Hand notes state
   const [showNotes, setShowNotes] = useState(false);
   const [drawEnabled, setDrawEnabled] = useState(false);
+  const [typeEnabled, setTypeEnabled] = useState(false);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
-  const [typedText, setTypedText] = useState('');
-  const textSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showMetronome, setShowMetronome] = useState(false);
   const [showTuner, setShowTuner] = useState(false);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
@@ -169,37 +169,25 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setShowNotes(next);
     if (!next) {
       setDrawEnabled(false);
+      setTypeEnabled(false);
     }
   }, []);
 
   const handleToggleDraw = useCallback((next: boolean) => {
     setDrawEnabled(next);
-    if (next && !showNotes) {
-      setShowNotes(true);
-    }
-    if (next) {
-      toast('Use two fingers to scroll while drawing', { icon: '✌️' });
-    }
+    if (next) setTypeEnabled(false);
+    if (next && !showNotes) setShowNotes(true);
+    if (next) toast('Use two fingers to scroll while drawing', { icon: '✌️' });
   }, [showNotes]);
 
-  // Sync typed text from loaded note (initial load / remote update)
-  useEffect(() => {
-    setTypedText(handNotes.myText);
-  }, [handNotes.myText]);
+  const handleToggleType = useCallback((next: boolean) => {
+    setTypeEnabled(next);
+    if (next) setDrawEnabled(false);
+    if (next && !showNotes) setShowNotes(true);
+  }, [showNotes]);
 
-  // Cleanup debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (textSaveTimeoutRef.current) clearTimeout(textSaveTimeoutRef.current);
-    };
-  }, []);
-
-  const handleTextChange = useCallback((text: string) => {
-    setTypedText(text);
-    if (textSaveTimeoutRef.current) clearTimeout(textSaveTimeoutRef.current);
-    textSaveTimeoutRef.current = setTimeout(() => {
-      void handNotes.saveMyText(text);
-    }, 600);
+  const handleTextNotesChange = useCallback((textNotes: TextNote[]) => {
+    void handNotes.saveMyTextNotes(textNotes);
   }, [handNotes]);
 
   useEffect(() => {
@@ -235,12 +223,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setAutoPlayMediaOnOpen(false);
     setShowNotes(false);
     setDrawEnabled(false);
+    setTypeEnabled(false);
     setShowChordFinder(false);
-    setTypedText('');
-    if (textSaveTimeoutRef.current) {
-      clearTimeout(textSaveTimeoutRef.current);
-      textSaveTimeoutRef.current = null;
-    }
   }, [song.id]);
 
   useEffect(() => {
@@ -643,7 +627,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 {user && showNotes && (
                   <div className="song-toolbar-tool-card song-toolbar-tool-card--notes">
                     <div className="song-toolbar-tool-card-header">
-                      <span className="song-toolbar-tool-card-title">Handwritten notes</span>
+                      <span className="song-toolbar-tool-card-title">Notes</span>
                       <button className="floating-tool-close" onClick={() => handleToggleNotes(false)} aria-label="Close notes"><X size={14} /></button>
                     </div>
                     <div className="song-notes-panel">
@@ -657,6 +641,18 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                           onChange={(e) => handleToggleDraw(e.target.checked)}
                         />
                         Draw
+                      </label>
+
+                      <label
+                        className={`toggle-label toggle-label--draw song-notes-draw-toggle${typeEnabled ? ' toggle-label--draw-active' : ''}`}
+                        title="Enable keyboard typing on the song"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={typeEnabled}
+                          onChange={(e) => handleToggleType(e.target.checked)}
+                        />
+                        Type
                       </label>
 
                       {drawEnabled && (
@@ -721,17 +717,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                           ))}
                         </div>
                       )}
-
-                      <textarea
-                        className="notes-text-input"
-                        placeholder="Type a note…"
-                        value={typedText}
-                        onChange={(e) => handleTextChange(e.target.value)}
-                        style={{
-                          '--notes-text-color': getUserNoteColor(user.id),
-                        } as CSSProperties}
-                        rows={3}
-                      />
 
                       {handNotes.saveState === 'saving' && (
                         <span className="notes-save-status notes-save-status--saving">Saving…</span>
@@ -881,40 +866,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
       <div className="song-view-body">
         <div className="song-notes-stage">
-          {showNotes && (() => {
-            const userNoteColor = getUserNoteColor(user?.id ?? null);
-            const userText = typedText || handNotes.visibleNotes.find((n) => n.authorUid === user?.id)?.text;
-            const otherNotes = handNotes.visibleNotes.filter((n) => n.authorUid !== user?.id && n.text);
-            const hasAnyText = Boolean(userText) || otherNotes.length > 0;
-            if (!hasAnyText) return null;
-            return (
-              <div className="song-text-notes-section">
-                {userText && (
-                  <div
-                    className="song-text-note"
-                    style={{ color: userNoteColor, borderColor: userNoteColor } as CSSProperties}
-                  >
-                    {userText}
-                  </div>
-                )}
-                {otherNotes.map((note) => {
-                  const color = getUserNoteColor(note.authorUid);
-                  return (
-                    <div
-                      key={note.authorUid}
-                      className="song-text-note"
-                      style={{ color, borderColor: color } as CSSProperties}
-                    >
-                      {note.authorName && (
-                        <span className="song-text-note-author">{note.authorName}</span>
-                      )}
-                      {note.text}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
           <ChordDisplay
             chordpro={song.chordpro}
             transpose={transpose}
@@ -922,7 +873,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             notation={chordNotation}
             timeSignature={song.timeSignature}
             instrument={chordInstrument}
-            onChordClick={showChords && !drawEnabled ? handleChordClick : undefined}
+            onChordClick={showChords && !drawEnabled && !typeEnabled ? handleChordClick : undefined}
           />
           <SongHandNotesOverlay
             visible={showNotes}
@@ -932,6 +883,17 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             strokeColor={getUserNoteColor(user?.id ?? null)}
             onMyStrokesChange={handleStrokesChange}
           />
+          {user && (
+            <SongTextNotesOverlay
+              visible={showNotes}
+              typeEnabled={typeEnabled}
+              notes={handNotes.visibleNotes}
+              myTextNotes={handNotes.myTextNotes}
+              myAuthorUid={user.id}
+              noteColor={getUserNoteColor(user.id)}
+              onMyTextNotesChange={handleTextNotesChange}
+            />
+          )}
         </div>
       </div>
 

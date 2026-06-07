@@ -333,8 +333,18 @@ export interface SongHandNoteDocument {
    */
   coordinateSystem?: 'v2' | 'v3';
   strokes: HandNoteStroke[];
-  /** Optional typed/keyboard text note from this author. */
-  text?: string;
+  /** Positioned keyboard-typed text annotations placed on the song canvas. */
+  textNotes?: TextNote[];
+}
+
+export interface TextNote {
+  id: string;
+  /** Normalized x position (0–1) relative to canvas width. */
+  x: number;
+  /** Normalized y position (0–1) relative to canvas height. */
+  y: number;
+  text: string;
+  createdAt: string;
 }
 
 export interface SongHandNoteAuthor {
