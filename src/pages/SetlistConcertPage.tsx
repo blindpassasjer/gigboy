@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -10,8 +10,6 @@ import {
   Maximize2,
   Metronome,
   Minimize2,
-  Pause,
-  Play,
   RotateCcw,
   SlidersHorizontal,
   X,
@@ -48,6 +46,10 @@ export default function SetlistConcertPage() {
   );
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentPageInSong, setCurrentPageInSong] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [currentPageCount, setCurrentPageCount] = useState(1);
+  const [songPageCounts, setSongPageCounts] = useState<Record<number, number>>({});
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
   const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
@@ -57,16 +59,16 @@ export default function SetlistConcertPage() {
   const [showSongNavigator, setShowSongNavigator] = useState(true);
   const [showTuner, setShowTuner] = useState(false);
   const [showMetronome, setShowMetronome] = useState(false);
-  const [teleprompterActive, setTeleprompterActive] = useState(false);
-  const [teleprompterSpeed, setTeleprompterSpeed] = useState(28);
   const [isFullscreen, setIsFullscreen] = useState(() => {
     if (typeof document === 'undefined') return false;
     return Boolean(document.fullscreenElement);
   });
-  const songScrollRef = useRef<HTMLDivElement>(null);
+
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
-  const teleprompterFrameRef = useRef<number | null>(null);
-  const teleprompterLastTickRef = useRef<number | null>(null);
+  // When navigating backward, remember which page to land on for the target song
+  const targetPageRef = useRef(0);
 
   useEffect(() => {
     setCurrentIndex((current) => {
@@ -75,58 +77,38 @@ export default function SetlistConcertPage() {
     });
   }, [setlistSongs.length]);
 
+  // Reset page when song changes
   useEffect(() => {
-    setTeleprompterActive(false);
-    teleprompterLastTickRef.current = null;
-    if (songScrollRef.current) {
-      songScrollRef.current.scrollTop = 0;
-    }
+    setCurrentPageInSong(targetPageRef.current);
+    targetPageRef.current = 0;
     setActiveChord(null);
   }, [currentIndex]);
 
+  // Cache page count whenever it updates
   useEffect(() => {
-    if (!teleprompterActive) {
-      teleprompterLastTickRef.current = null;
-      if (teleprompterFrameRef.current !== null) {
-        window.cancelAnimationFrame(teleprompterFrameRef.current);
-        teleprompterFrameRef.current = null;
-      }
-      return;
-    }
+    setSongPageCounts((prev) => ({ ...prev, [currentIndex]: currentPageCount }));
+  }, [currentIndex, currentPageCount]);
 
-    const tick = (timestamp: number) => {
-      const scrollElement = songScrollRef.current;
-      if (!scrollElement) {
-        setTeleprompterActive(false);
-        return;
-      }
-
-      if (teleprompterLastTickRef.current === null) {
-        teleprompterLastTickRef.current = timestamp;
-      }
-
-      const deltaSeconds = (timestamp - teleprompterLastTickRef.current) / 1000;
-      teleprompterLastTickRef.current = timestamp;
-      scrollElement.scrollTop += teleprompterSpeed * deltaSeconds;
-
-      const maxScrollTop = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight);
-      if (scrollElement.scrollTop >= maxScrollTop - 1) {
-        setTeleprompterActive(false);
-        return;
-      }
-
-      teleprompterFrameRef.current = window.requestAnimationFrame(tick);
+  // Measure viewport height and content page count
+  useLayoutEffect(() => {
+    const measure = () => {
+      const viewport = viewportRef.current;
+      const content = contentRef.current;
+      if (!viewport || !content) return;
+      const vh = viewport.clientHeight;
+      if (vh <= 0) return;
+      setViewportHeight(vh);
+      setCurrentPageCount(Math.max(1, Math.ceil(content.scrollHeight / vh)));
     };
 
-    teleprompterFrameRef.current = window.requestAnimationFrame(tick);
-
-    return () => {
-      if (teleprompterFrameRef.current !== null) {
-        window.cancelAnimationFrame(teleprompterFrameRef.current);
-        teleprompterFrameRef.current = null;
-      }
-    };
-  }, [teleprompterActive, teleprompterSpeed, currentIndex]);
+    const observer = new ResizeObserver(measure);
+    if (viewportRef.current) observer.observe(viewportRef.current);
+    if (contentRef.current) observer.observe(contentRef.current);
+    measure();
+    return () => observer.disconnect();
+    // Re-run when song or display settings change (affects content height)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, showChords, transpose, chordNotation, showTopbar]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -156,7 +138,6 @@ export default function SetlistConcertPage() {
   }, []);
 
   const handleStopConcert = useCallback(async () => {
-    setTeleprompterActive(false);
     if (typeof document !== 'undefined' && document.fullscreenElement) {
       try {
         await document.exitFullscreen();
@@ -168,16 +149,29 @@ export default function SetlistConcertPage() {
   }, [navigate]);
 
   const goToSong = useCallback((index: number) => {
+    targetPageRef.current = 0;
     setCurrentIndex(Math.min(Math.max(index, 0), setlistSongs.length - 1));
   }, [setlistSongs.length]);
 
-  const goToPrevious = useCallback(() => {
-    setCurrentIndex((current) => Math.max(current - 1, 0));
-  }, []);
+  const goToNextPage = useCallback(() => {
+    if (currentPageInSong < currentPageCount - 1) {
+      setCurrentPageInSong((p) => p + 1);
+    } else if (currentIndex < setlistSongs.length - 1) {
+      targetPageRef.current = 0;
+      setCurrentIndex((i) => i + 1);
+    }
+  }, [currentPageInSong, currentPageCount, currentIndex, setlistSongs.length]);
 
-  const goToNext = useCallback(() => {
-    setCurrentIndex((current) => Math.min(current + 1, setlistSongs.length - 1));
-  }, [setlistSongs.length]);
+  const goToPrevPage = useCallback(() => {
+    if (currentPageInSong > 0) {
+      setCurrentPageInSong((p) => p - 1);
+    } else if (currentIndex > 0) {
+      const prevIndex = currentIndex - 1;
+      const prevPageCount = songPageCounts[prevIndex] ?? 1;
+      targetPageRef.current = prevPageCount - 1;
+      setCurrentIndex(prevIndex);
+    }
+  }, [currentPageInSong, currentIndex, songPageCounts]);
 
   const onSwipeStart = useCallback((e: React.PointerEvent) => {
     swipeRef.current = { x: e.clientX, y: e.clientY };
@@ -189,9 +183,9 @@ export default function SetlistConcertPage() {
     const dy = e.clientY - swipeRef.current.y;
     swipeRef.current = null;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    if (dx < 0) goToNext();
-    else goToPrevious();
-  }, [goToNext, goToPrevious]);
+    if (dx < 0) goToNextPage();
+    else goToPrevPage();
+  }, [goToNextPage, goToPrevPage]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -207,12 +201,12 @@ export default function SetlistConcertPage() {
 
       if (event.key === 'ArrowRight') {
         event.preventDefault();
-        goToNext();
+        goToNextPage();
       }
 
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
-        goToPrevious();
+        goToPrevPage();
       }
 
       if (event.key === 'ArrowUp') {
@@ -229,26 +223,11 @@ export default function SetlistConcertPage() {
         event.preventDefault();
         setShowSongNavigator((value) => !value);
       }
-
-      if (event.code === 'Space') {
-        event.preventDefault();
-        setTeleprompterActive((value) => !value);
-      }
-
-      if (event.key === '[') {
-        event.preventDefault();
-        setTeleprompterSpeed((value) => Math.max(6, value - 4));
-      }
-
-      if (event.key === ']') {
-        event.preventDefault();
-        setTeleprompterSpeed((value) => Math.min(120, value + 4));
-      }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [goToNext, goToPrevious]);
+  }, [goToNextPage, goToPrevPage]);
 
   if (!setlist) {
     return (
@@ -278,8 +257,8 @@ export default function SetlistConcertPage() {
     );
   }
 
-  const canGoPrevious = currentIndex > 0;
-  const canGoNext = currentIndex < setlistSongs.length - 1;
+  const canGoPrev = currentIndex > 0 || currentPageInSong > 0;
+  const canGoNext = currentPageInSong < currentPageCount - 1 || currentIndex < setlistSongs.length - 1;
 
   return (
     <section className="concert-mode">
@@ -318,7 +297,10 @@ export default function SetlistConcertPage() {
           <h1>{setlist.name}</h1>
           <p>
             Song {currentIndex + 1} of {setlistSongs.length}
-            <span className="concert-shortcut-hint">Use left/right arrows for next song</span>
+            {currentPageCount > 1 && (
+              <span>· Page {currentPageInSong + 1} of {currentPageCount}</span>
+            )}
+            <span className="concert-shortcut-hint">Use left/right arrows to turn pages</span>
           </p>
         </div>
 
@@ -433,46 +415,6 @@ export default function SetlistConcertPage() {
           >
             <Metronome size={14} /> Metronome
           </button>
-
-          <div className="concert-teleprompter" aria-label="Auto scroll controls">
-            <button
-              type="button"
-              className="concert-chip-btn concert-chip-btn--compact"
-              onClick={() => setTeleprompterSpeed((value) => Math.max(6, value - 4))}
-              aria-label="Reduce scroll speed"
-            >
-              -
-            </button>
-            <button
-              type="button"
-              className="concert-chip-btn"
-              onClick={() => setTeleprompterActive((value) => !value)}
-              aria-label={teleprompterActive ? 'Pause auto scroll' : 'Start auto scroll'}
-            >
-              {teleprompterActive ? <Pause size={14} /> : <Play size={14} />}
-              {teleprompterActive ? 'Pause scroll' : 'Start scroll'}
-            </button>
-            <button
-              type="button"
-              className="concert-chip-btn concert-chip-btn--compact"
-              onClick={() => setTeleprompterSpeed((value) => Math.min(120, value + 4))}
-              aria-label="Increase scroll speed"
-            >
-              +
-            </button>
-            <button
-              type="button"
-              className="concert-chip-btn"
-              onClick={() => {
-                setTeleprompterActive(false);
-                if (songScrollRef.current) songScrollRef.current.scrollTop = 0;
-              }}
-              aria-label="Reset scroll"
-            >
-              <RotateCcw size={14} /> Reset scroll
-            </button>
-            <span className="concert-teleprompter-speed">{teleprompterSpeed}px/s</span>
-          </div>
         </div>
 
         {(showTuner || showMetronome) && (
@@ -519,26 +461,46 @@ export default function SetlistConcertPage() {
             </div>
           </div>
 
-          <div className="concert-scroll-region" ref={songScrollRef}>
-            <ChordDisplay
-              chordpro={currentSong.chordpro}
-              transpose={transpose}
-              showChords={showChords}
-              notation={chordNotation}
-              bpm={currentSong.tempo}
-              timeSignature={currentSong.timeSignature}
-              instrument={chordInstrument}
-              onChordClick={showChords
-                ? (chord, rect) => {
-                  setActiveChord((previous) =>
-                    previous?.chord === chord && previous.rect.top === rect.top
-                      ? null
-                      : { chord, rect }
-                  );
-                }
-                : undefined}
-            />
+          <div className="concert-page-viewport" ref={viewportRef}>
+            <div
+              className="concert-page-content"
+              ref={contentRef}
+              style={{ transform: viewportHeight > 0 ? `translateY(${-currentPageInSong * viewportHeight}px)` : undefined }}
+            >
+              <ChordDisplay
+                chordpro={currentSong.chordpro}
+                transpose={transpose}
+                showChords={showChords}
+                notation={chordNotation}
+                bpm={currentSong.tempo}
+                timeSignature={currentSong.timeSignature}
+                instrument={chordInstrument}
+                onChordClick={showChords
+                  ? (chord, rect) => {
+                    setActiveChord((previous) =>
+                      previous?.chord === chord && previous.rect.top === rect.top
+                        ? null
+                        : { chord, rect }
+                    );
+                  }
+                  : undefined}
+              />
+            </div>
           </div>
+
+          {currentPageCount > 1 && (
+            <div className="concert-page-indicator" aria-label={`Page ${currentPageInSong + 1} of ${currentPageCount}`}>
+              {Array.from({ length: currentPageCount }, (_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`concert-page-dot${i === currentPageInSong ? ' concert-page-dot--active' : ''}`}
+                  onClick={() => setCurrentPageInSong(i)}
+                  aria-label={`Go to page ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </article>
 
         {showSongNavigator && (
@@ -579,18 +541,18 @@ export default function SetlistConcertPage() {
         <button
           type="button"
           className="concert-nav-btn"
-          onClick={goToPrevious}
-          disabled={!canGoPrevious}
-          aria-label="Previous song"
+          onClick={goToPrevPage}
+          disabled={!canGoPrev}
+          aria-label="Previous page"
         >
           <ChevronLeft size={18} /> Previous
         </button>
         <button
           type="button"
           className="concert-nav-btn concert-nav-btn--primary"
-          onClick={goToNext}
+          onClick={goToNextPage}
           disabled={!canGoNext}
-          aria-label="Next song"
+          aria-label="Next page"
         >
           Next <ChevronRight size={18} />
         </button>

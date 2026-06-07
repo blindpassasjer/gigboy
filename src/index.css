@@ -608,6 +608,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .main-content--concert {
   padding-top: 0;
+  overflow: hidden;
 }
 
 .main-content--concert > :first-child {
@@ -3064,6 +3065,59 @@ input, select, textarea { font: inherit; color: var(--text); }
 .notes-save-status--saving { color: var(--muted); }
 .notes-save-status--saved { color: #27ae60; }
 .notes-save-status--error { color: var(--danger); }
+
+.notes-text-input {
+  width: 100%;
+  min-height: 4.5rem;
+  padding: .45rem .6rem;
+  font-size: .85rem;
+  line-height: 1.55;
+  font-family: inherit;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  resize: vertical;
+  transition: border-color .15s, color .15s;
+}
+
+.notes-text-input:focus {
+  outline: none;
+  border-color: var(--notes-text-color, var(--accent));
+  color: var(--notes-text-color, var(--text));
+}
+
+.notes-text-input::placeholder {
+  color: var(--muted);
+  opacity: .7;
+}
+
+.song-text-notes-section {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  padding: .6rem .75rem;
+  margin-bottom: .2rem;
+}
+
+.song-text-note {
+  padding: .4rem .7rem;
+  border-left: 3px solid currentColor;
+  border-radius: 0 6px 6px 0;
+  background: color-mix(in srgb, currentColor 7%, var(--surface));
+  font-size: .88rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.song-text-note-author {
+  display: block;
+  font-size: .75rem;
+  font-weight: 600;
+  opacity: .75;
+  margin-bottom: .18rem;
+}
 
 .notes-author-filters {
   display: flex;
@@ -6310,7 +6364,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  min-height: calc(100vh - 140px);
+  height: 100%;
 }
 
 .concert-topbar-toggle-row {
@@ -6579,19 +6633,47 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex: 1;
 }
 
-.concert-scroll-region {
+.concert-page-viewport {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+  overflow: hidden;
+  position: relative;
 }
 
-.concert-scroll-region > * {
+.concert-page-content {
   width: 100%;
+  transition: transform 0.28s ease;
+  will-change: transform;
+}
+
+.concert-page-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .35rem;
+  padding: .5rem .75rem .6rem;
+  border-top: 1px solid var(--border);
+}
+
+.concert-page-dot {
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: var(--border);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.concert-page-dot:hover {
+  background: var(--muted);
+}
+
+.concert-page-dot--active {
+  background: var(--accent);
+  transform: scale(1.3);
 }
 
 .concert-song-navigator {
@@ -6977,6 +7059,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .main-content--concert {
     padding-top: 0;
+    overflow: hidden;
   }
 
   .song-list-sticky,

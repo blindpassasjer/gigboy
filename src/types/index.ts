@@ -333,6 +333,8 @@ export interface SongHandNoteDocument {
    */
   coordinateSystem?: 'v2' | 'v3';
   strokes: HandNoteStroke[];
+  /** Optional typed/keyboard text note from this author. */
+  text?: string;
 }
 
 export interface SongHandNoteAuthor {

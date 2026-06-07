@@ -103,6 +103,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const [showNotes, setShowNotes] = useState(false);
   const [drawEnabled, setDrawEnabled] = useState(false);
   const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
+  const [typedText, setTypedText] = useState('');
+  const textSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showMetronome, setShowMetronome] = useState(false);
   const [showTuner, setShowTuner] = useState(false);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
@@ -180,6 +182,26 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     }
   }, [showNotes]);
 
+  // Sync typed text from loaded note (initial load / remote update)
+  useEffect(() => {
+    setTypedText(handNotes.myText);
+  }, [handNotes.myText]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (textSaveTimeoutRef.current) clearTimeout(textSaveTimeoutRef.current);
+    };
+  }, []);
+
+  const handleTextChange = useCallback((text: string) => {
+    setTypedText(text);
+    if (textSaveTimeoutRef.current) clearTimeout(textSaveTimeoutRef.current);
+    textSaveTimeoutRef.current = setTimeout(() => {
+      void handNotes.saveMyText(text);
+    }, 600);
+  }, [handNotes]);
+
   useEffect(() => {
     if (!listMenuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -214,6 +236,11 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setShowNotes(false);
     setDrawEnabled(false);
     setShowChordFinder(false);
+    setTypedText('');
+    if (textSaveTimeoutRef.current) {
+      clearTimeout(textSaveTimeoutRef.current);
+      textSaveTimeoutRef.current = null;
+    }
   }, [song.id]);
 
   useEffect(() => {
@@ -695,6 +722,17 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                         </div>
                       )}
 
+                      <textarea
+                        className="notes-text-input"
+                        placeholder="Type a note…"
+                        value={typedText}
+                        onChange={(e) => handleTextChange(e.target.value)}
+                        style={{
+                          '--notes-text-color': getUserNoteColor(user.id),
+                        } as CSSProperties}
+                        rows={3}
+                      />
+
                       {handNotes.saveState === 'saving' && (
                         <span className="notes-save-status notes-save-status--saving">Saving…</span>
                       )}
@@ -843,6 +881,40 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
       <div className="song-view-body">
         <div className="song-notes-stage">
+          {showNotes && (() => {
+            const userNoteColor = getUserNoteColor(user?.id ?? null);
+            const userText = typedText || handNotes.visibleNotes.find((n) => n.authorUid === user?.id)?.text;
+            const otherNotes = handNotes.visibleNotes.filter((n) => n.authorUid !== user?.id && n.text);
+            const hasAnyText = Boolean(userText) || otherNotes.length > 0;
+            if (!hasAnyText) return null;
+            return (
+              <div className="song-text-notes-section">
+                {userText && (
+                  <div
+                    className="song-text-note"
+                    style={{ color: userNoteColor, borderColor: userNoteColor } as CSSProperties}
+                  >
+                    {userText}
+                  </div>
+                )}
+                {otherNotes.map((note) => {
+                  const color = getUserNoteColor(note.authorUid);
+                  return (
+                    <div
+                      key={note.authorUid}
+                      className="song-text-note"
+                      style={{ color, borderColor: color } as CSSProperties}
+                    >
+                      {note.authorName && (
+                        <span className="song-text-note-author">{note.authorName}</span>
+                      )}
+                      {note.text}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           <ChordDisplay
             chordpro={song.chordpro}
             transpose={transpose}

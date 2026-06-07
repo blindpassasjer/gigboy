@@ -470,7 +470,8 @@ async function firestoreRequest(
   env: Record<string, string | undefined>,
   method: string,
   segments: string[],
-  body?: Record<string, unknown>
+  body?: Record<string, unknown>,
+  updateMaskFields?: string[]
 ) {
   const config = getFirebaseConfig(env);
   if (!config) {
@@ -478,7 +479,13 @@ async function firestoreRequest(
   }
 
   const accessToken = await getAccessToken(env);
-  const endpoint = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/${documentPath(segments)}`;
+  let endpoint = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/${documentPath(segments)}`;
+
+  if (method === 'PATCH' && updateMaskFields && updateMaskFields.length > 0) {
+    const params = new URLSearchParams();
+    updateMaskFields.forEach((field) => params.append('updateMask.fieldPaths', field));
+    endpoint += `?${params.toString()}`;
+  }
 
   const response = await fetch(endpoint, {
     method,
@@ -570,7 +577,7 @@ export async function setFirestoreDocument(
       .map(([key, value]) => [key, toFirestoreValue(value)])
   );
 
-  await firestoreRequest(env, 'PATCH', segments, { fields });
+  await firestoreRequest(env, 'PATCH', segments, { fields }, Object.keys(fields));
 }
 
 export async function deleteFirestoreDocument(

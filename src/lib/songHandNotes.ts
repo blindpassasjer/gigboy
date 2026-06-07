@@ -110,6 +110,8 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
     ? data.strokes.map((s) => normalizeStroke(s, isV2)).filter((stroke): stroke is HandNoteStroke => Boolean(stroke))
     : [];
 
+  const text = typeof data.text === 'string' && data.text.trim() ? data.text : undefined;
+
   return {
     authorUid,
     authorName,
@@ -118,6 +120,7 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
     viewport,
     coordinateSystem,
     strokes,
+    text,
   };
 }
 
