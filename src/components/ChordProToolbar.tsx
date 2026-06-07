@@ -48,13 +48,30 @@ function insertSection(
   onChange: (v: string) => void,
 ) {
   const start = textarea.selectionStart;
-  const before = value.slice(0, start);
-  const needsNewline = before.length > 0 && !before.endsWith('\n');
-  const prefix = needsNewline ? '\n' : '';
-  const block = `${prefix}{start_of_${sectionName}}\n\n{end_of_${sectionName}}\n`;
-  // Place cursor on the blank line between start and end
-  const cursorOffset = prefix.length + `{start_of_${sectionName}}\n`.length;
-  insertAtCursor(textarea, block, value, onChange, cursorOffset);
+  const end = textarea.selectionEnd;
+  const selectedText = value.slice(start, end);
+
+  if (selectedText) {
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const prefix = before.length > 0 && !before.endsWith('\n') ? '\n' : '';
+    const body = selectedText.endsWith('\n') ? selectedText : `${selectedText}\n`;
+    const block = `${prefix}{start_of_${sectionName}}\n${body}{end_of_${sectionName}}\n`;
+    onChange(before + block + after);
+    const newPos = start + block.length;
+    requestAnimationFrame(() => {
+      textarea.focus({ preventScroll: true });
+      textarea.setSelectionRange(newPos, newPos);
+    });
+  } else {
+    const before = value.slice(0, start);
+    const needsNewline = before.length > 0 && !before.endsWith('\n');
+    const prefix = needsNewline ? '\n' : '';
+    const block = `${prefix}{start_of_${sectionName}}\n\n{end_of_${sectionName}}\n`;
+    // Place cursor on the blank line between start and end
+    const cursorOffset = prefix.length + `{start_of_${sectionName}}\n`.length;
+    insertAtCursor(textarea, block, value, onChange, cursorOffset);
+  }
 }
 
 export default function ChordProToolbar({ textareaRef, value, onChange, tempo }: Props) {
