@@ -77,8 +77,12 @@ export default function ProfilePage() {
   const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
   const ownedBands = useMemo(() => bands.filter((band) => band.ownerId === user?.id), [bands, user?.id]);
   const paidOwnedBands = useMemo(
-    () => ownedBands.filter((band) => isBandBillingActive(band.billingPlan, band.billingSubscriptionStatus)),
-    [ownedBands],
+    () => ownedBands.filter((band) => {
+      if (!user) return isBandBillingActive(band.billingPlan, band.billingSubscriptionStatus);
+      const { plan } = getEffectiveBandPlan(band, user.plan, user.subscriptionStatus, user.planOverride);
+      return plan === 'pro' || plan === 'crew';
+    }),
+    [ownedBands, user],
   );
   const renewalDate = formatPeriodEnd(
     paidOwnedBands

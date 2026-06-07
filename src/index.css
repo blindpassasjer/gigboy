@@ -3749,6 +3749,65 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 
+.form-metadata-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.form-metadata-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: .6rem .85rem;
+  background: color-mix(in srgb, var(--border) 30%, transparent);
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: .85rem;
+  font-weight: 600;
+  text-align: left;
+  gap: .5rem;
+}
+
+.form-metadata-toggle:hover {
+  background: color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.form-metadata-toggle-label {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  min-width: 0;
+}
+
+.form-metadata-summary {
+  font-weight: 400;
+  font-size: .8rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-metadata-chevron {
+  flex-shrink: 0;
+  transition: transform .2s ease;
+  color: var(--muted);
+}
+
+.form-metadata-chevron--open {
+  transform: rotate(180deg);
+}
+
+.form-metadata-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem .85rem;
+}
+
 .paste-import-warnings {
   border: 1px solid var(--border);
   border-radius: 6px;

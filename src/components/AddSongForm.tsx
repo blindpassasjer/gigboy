@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBeforeUnload, useNavigate, useBlocker } from 'react-router-dom';
 import { flushSync } from 'react-dom';
-import { FileUp, Save, Wand2 } from 'lucide-react';
+import { ChevronDown, FileUp, Save, Wand2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
@@ -89,6 +89,7 @@ export default function AddSongForm({
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [songListId, setSongListId] = useState(initialSongListId ?? '');
   const [isImportingFile, setIsImportingFile] = useState(false);
+  const [metadataOpen, setMetadataOpen] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const autosaveTimerRef = useRef<number | null>(null);
@@ -433,72 +434,95 @@ export default function AddSongForm({
           </ul>
         )}
 
-        <div className="form-row">
-          <div className="form-field">
-            <label>Title *</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Song title" />
-          </div>
-          <div className="form-field">
-            <label>Artist</label>
-            <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist / band" />
-          </div>
-          <div className="form-field">
-            <label>Author</label>
-            <input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Songwriter" />
-          </div>
-        </div>
+        <div className="form-metadata-section">
+          <button
+            type="button"
+            className="form-metadata-toggle"
+            onClick={() => setMetadataOpen((v) => !v)}
+            aria-expanded={metadataOpen}
+          >
+            <span className="form-metadata-toggle-label">
+              Metadata
+              {!metadataOpen && (title || artist || key || tempo) && (
+                <span className="form-metadata-summary">
+                  {[title, artist, key && `Key: ${key}`, tempo && `${tempo} BPM`].filter(Boolean).join(' · ')}
+                </span>
+              )}
+            </span>
+            <ChevronDown size={16} className={`form-metadata-chevron${metadataOpen ? ' form-metadata-chevron--open' : ''}`} />
+          </button>
 
-        <div className="form-row">
-          <div className="form-field">
-            <label>Language</label>
-            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-              {Object.entries(LANGUAGE_NAMES).map(([code, name]) => (
-                <option key={code} value={code}>{name}</option>
-              ))}
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div className="form-field">
-            <label>Key</label>
-            <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="e.g. G" maxLength={4} />
-          </div>
-          <div className="form-field">
-            <label>Capo</label>
-            <input type="number" value={capo} onChange={(e) => setCapo(e.target.value)} min={0} max={12} placeholder="0" />
-          </div>
-          <div className="form-field">
-            <label>BPM</label>
-            <input type="number" value={tempo} onChange={(e) => setTempo(e.target.value)} min={20} max={300} placeholder="120" />
-          </div>
-          <div className="form-field">
-            <label>Time Signature</label>
-            <input value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} placeholder="4/4" maxLength={7} />
-          </div>
-        </div>
+          {metadataOpen && (
+            <div className="form-metadata-body">
+              <div className="form-row">
+                <div className="form-field">
+                  <label>Title *</label>
+                  <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Song title" />
+                </div>
+                <div className="form-field">
+                  <label>Artist</label>
+                  <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist / band" />
+                </div>
+                <div className="form-field">
+                  <label>Author</label>
+                  <input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Songwriter" />
+                </div>
+              </div>
 
-        <div className="form-field">
-          <label>Playback Link (YouTube or Spotify)</label>
-          <input
-            value={playbackUrl}
-            onChange={(e) => setPlaybackUrl(e.target.value)}
-            placeholder="https://youtube.com/watch?v=... or https://open.spotify.com/track/..."
-          />
-          <p className="form-hint">This adds an inline mini player button to the song toolbar.</p>
-        </div>
+              <div className="form-row">
+                <div className="form-field">
+                  <label>Language</label>
+                  <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                    {Object.entries(LANGUAGE_NAMES).map(([code, name]) => (
+                      <option key={code} value={code}>{name}</option>
+                    ))}
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="form-field">
+                  <label>Key</label>
+                  <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="e.g. G" maxLength={4} />
+                </div>
+                <div className="form-field">
+                  <label>Capo</label>
+                  <input type="number" value={capo} onChange={(e) => setCapo(e.target.value)} min={0} max={12} placeholder="0" />
+                </div>
+                <div className="form-field">
+                  <label>BPM</label>
+                  <input type="number" value={tempo} onChange={(e) => setTempo(e.target.value)} min={20} max={300} placeholder="120" />
+                </div>
+                <div className="form-field">
+                  <label>Time Signature</label>
+                  <input value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} placeholder="4/4" maxLength={7} />
+                </div>
+              </div>
 
-        <div className="form-field">
-          <label>Tags (comma separated)</label>
-          <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="worship, hymn, folk…" />
-        </div>
+              <div className="form-field">
+                <label>Playback Link (YouTube or Spotify)</label>
+                <input
+                  value={playbackUrl}
+                  onChange={(e) => setPlaybackUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=... or https://open.spotify.com/track/..."
+                />
+                <p className="form-hint">This adds an inline mini player button to the song toolbar.</p>
+              </div>
 
-        <div className="form-field">
-          <label>Save to song list</label>
-          <select value={songListId} onChange={(e) => setSongListId(e.target.value)}>
-            <option value="">Do not add to a list</option>
-            {songListOptions?.map((option) => (
-              <option key={option.id} value={option.id}>{option.label}</option>
-            ))}
-          </select>
+              <div className="form-field">
+                <label>Tags (comma separated)</label>
+                <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="worship, hymn, folk…" />
+              </div>
+
+              <div className="form-field">
+                <label>Save to song list</label>
+                <select value={songListId} onChange={(e) => setSongListId(e.target.value)}>
+                  <option value="">Do not add to a list</option>
+                  {songListOptions?.map((option) => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="form-field form-field--full">
