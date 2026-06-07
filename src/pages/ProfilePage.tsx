@@ -34,6 +34,24 @@ function isBandBillingActive(plan: string | null | undefined, status: string | n
   return status == null;
 }
 
+const BAND_PLAN_ORDER: Record<string, number> = { free: 0, pro: 1, crew: 2 };
+
+function getEffectiveBandPlan(
+  band: { billingPlan?: 'free' | 'pro' | 'crew'; billingSubscriptionStatus?: string | null },
+  userPlan: 'free' | 'pro' | 'crew',
+  userStatus: string | null,
+  planOverride: boolean,
+): { plan: 'free' | 'pro' | 'crew'; fromBand: boolean } {
+  const bandPlan = band.billingPlan === 'pro' || band.billingPlan === 'crew' ? band.billingPlan : 'free';
+  const bandStatus = band.billingSubscriptionStatus ?? null;
+  const bandPlanActive = bandPlan === 'free' || bandStatus === 'active' || bandStatus === 'trialing' || bandStatus == null;
+  const userActive = planOverride || userPlan === 'free' || userStatus === 'active' || userStatus === 'trialing';
+  const effectivePlan = (BAND_PLAN_ORDER[bandPlan] >= BAND_PLAN_ORDER[userPlan] && bandPlanActive) ? bandPlan : userPlan;
+  const fromBand = effectivePlan !== 'free' && effectivePlan === bandPlan;
+  const isActive = effectivePlan === 'free' || (fromBand ? bandPlanActive : userActive);
+  return { plan: isActive ? effectivePlan : 'free', fromBand };
+}
+
 export default function ProfilePage() {
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, deleteAccount, logout } = useAuth();
   const { bands } = useBands();
@@ -360,11 +378,19 @@ export default function ProfilePage() {
                   <div className="profile-band-subscription-copy">
                     <strong>{band.name}</strong>
                     <span>
-                      {band.billingPlan === 'crew'
-                        ? `Crew · ${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)} · ${band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0))} members`
-                        : band.billingPlan === 'pro'
-                          ? `Pro · ${formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)}`
-                          : 'No active PRO or CREW subscription for this band'}
+                      {(() => {
+                        const { plan: effectivePlan, fromBand } = getEffectiveBandPlan(
+                          band, user.plan, user.subscriptionStatus, user.planOverride,
+                        );
+                        const status = fromBand
+                          ? formatSubscriptionStatus(band.billingSubscriptionStatus ?? null, false)
+                          : 'Managed through your account';
+                        return effectivePlan === 'crew'
+                          ? `Crew · ${status} · ${band.billingMemberLimit ?? (5 + (band.billingExtraMembers ?? 0))} members`
+                          : effectivePlan === 'pro'
+                            ? `Pro · ${status}`
+                            : 'No active PRO or CREW subscription for this band';
+                      })()}
                     </span>
                     {band.billingCurrentPeriodEnd ? (
                       <span>Renews {formatPeriodEnd(band.billingCurrentPeriodEnd) ?? '—'}</span>
