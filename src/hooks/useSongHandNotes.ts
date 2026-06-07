@@ -161,12 +161,12 @@ export function useSongHandNotes(params: {
     const nextNote: SongHandNoteDocument = {
       authorUid: userId,
       authorName: displayNameForUser(user),
-      authorAvatar: user.avatar,
+      ...(user.avatar != null ? { authorAvatar: user.avatar } : {}),
       updatedAt: new Date().toISOString(),
       viewport,
       coordinateSystem: 'v3',
       strokes: normalizedStrokes,
-      textNotes: myNoteTextNotesRef.current,
+      ...(myNoteTextNotesRef.current?.length ? { textNotes: myNoteTextNotesRef.current } : {}),
     };
 
     setVisibleAuthorIds((prev) => {
@@ -206,12 +206,12 @@ export function useSongHandNotes(params: {
     const nextNote: SongHandNoteDocument = {
       authorUid: userId,
       authorName: displayNameForUser(user),
-      authorAvatar: user.avatar,
+      ...(user.avatar != null ? { authorAvatar: user.avatar } : {}),
       updatedAt: new Date().toISOString(),
       viewport: myNote?.viewport ?? { width: 1, height: 1 },
       coordinateSystem: 'v3',
       strokes: normalizedStrokes,
-      textNotes: textNotes.length ? textNotes : undefined,
+      ...(textNotes.length ? { textNotes } : {}),
     };
 
     setVisibleAuthorIds((prev) => {

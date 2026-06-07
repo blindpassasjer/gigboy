@@ -46,6 +46,10 @@ export default function SongTextNotesOverlay({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingEditText, setPendingEditText] = useState('');
 
+  // Prevents the stage click that fires immediately after a textarea blur from
+  // opening a new bubble (blur fires before click in the same event sequence).
+  const suppressNextClickRef = useRef(false);
+
   // Drag state
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragPosition, setDragPosition] = useState<DragPosition | null>(null);
@@ -77,6 +81,10 @@ export default function SongTextNotesOverlay({
   // ── Stage click: create a new bubble at the clicked position ──────────────
   const handleStageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!typeEnabled) return;
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
+      return;
+    }
     if ((e.target as HTMLElement).closest('.song-text-bubble')) return;
     const rect = getStageRect();
     if (!rect) return;
@@ -90,6 +98,7 @@ export default function SongTextNotesOverlay({
 
   // ── Commit / discard the new bubble being typed ───────────────────────────
   const commitPendingNew = useCallback(() => {
+    suppressNextClickRef.current = true;
     const text = pendingNewText.trim();
     if (text && pendingNew) {
       onMyTextNotesChange([...myTextNotes, {
@@ -107,6 +116,7 @@ export default function SongTextNotesOverlay({
   // ── Commit / discard an in-place edit ────────────────────────────────────
   const commitEdit = useCallback(() => {
     if (!editingId) return;
+    suppressNextClickRef.current = true;
     const text = pendingEditText.trim();
     onMyTextNotesChange(
       text
