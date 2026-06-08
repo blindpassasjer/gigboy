@@ -7,7 +7,8 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { db, storage } from '../lib/firebase';
-import { createPressKitShare } from '../lib/pressKitApi';
+import { createPressKitShare, getActivePressKitShare } from '../lib/pressKitApi';
+import type { ActivePressKitShare } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
 import { ICON_OPTIONS } from '../lib/iconOptions';
 import { createTrashPayload, createTrashTimestamps, TRASH_COLLECTION } from '../lib/trash';
@@ -446,6 +447,12 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   // ── Share / Download ──────────────────────────────────────────────────────
   const [busyShare, setBusyShare] = useState(false);
+  const [activeShare, setActiveShare] = useState<ActivePressKitShare | null>(null);
+
+  useEffect(() => {
+    if (!userId || !userEmail) return;
+    void getActivePressKitShare(userId, userEmail, bandId).then(setActiveShare);
+  }, [bandId, userId, userEmail]);
 
   // ── Video URLs ───────────────────────────────────────────────────────────
   const [videoUrls, setVideoUrls] = useState<string[]>(kit.videoUrls ?? []);
@@ -549,9 +556,10 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         images: attachedImages.map(({ title, url }) => ({ title, url })),
         videoUrls: selectedVideoUrls.map((u) => u.trim()).filter(Boolean),
       });
+      setActiveShare({ token: result.token, publicUrl: result.publicUrl, expiresAt: result.expiresAt, createdAt: new Date().toISOString() });
       await navigator.clipboard.writeText(result.publicUrl);
       const expiryDate = result.expiresAt ? new Date(result.expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : null;
-      toast.success(expiryDate ? `Public link copied — expires ${expiryDate}.` : 'Public link copied to clipboard.');
+      toast.success(expiryDate ? `New public link copied — expires ${expiryDate}.` : 'Public link copied to clipboard.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to create share link.');
     } finally {
@@ -684,15 +692,40 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
               <p className="setlist-subtitle">Write copy, attach images, and share your public press kit.</p>
             </div>
             <div className="resource-header-actions">
-              <button
-                type="button"
-                className="setlist-action-btn setlist-action-btn--accent"
-                onClick={() => void handleShare()}
-                disabled={busyShare}
-                title="Copy public share link"
-              >
-                <Link2 size={14} />
-              </button>
+              {activeShare ? (
+                <div className="press-kit-share-status">
+                  <span className="press-kit-share-expiry">
+                    Link expires {new Date(activeShare.expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </span>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--accent"
+                    onClick={() => { void navigator.clipboard.writeText(activeShare.publicUrl).then(() => toast.success('Link copied.')); }}
+                    title="Copy active share link"
+                  >
+                    <Link2 size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                    onClick={() => void handleShare()}
+                    disabled={busyShare}
+                    title="Generate a new share link"
+                  >
+                    {busyShare ? 'Renewing...' : 'Renew link'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="setlist-action-btn setlist-action-btn--accent"
+                  onClick={() => void handleShare()}
+                  disabled={busyShare}
+                  title="Create and copy public share link"
+                >
+                  <Link2 size={14} /> {busyShare ? 'Creating...' : 'Share'}
+                </button>
+              )}
               <button
                 type="button"
                 className="setlist-action-btn setlist-action-btn--secondary"

@@ -72,6 +72,32 @@ export interface PublicPressKitPayload {
   videoUrls: string[];
 }
 
+export interface ActivePressKitShare {
+  token: string;
+  publicUrl: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export async function getActivePressKitShare(userId: string, userEmail: string, bandId: string): Promise<ActivePressKitShare | null> {
+  const response = await fetch(`/api/press-kit/active-share?bandId=${encodeURIComponent(bandId)}`, {
+    headers: await buildHeaders({ userId, userEmail }),
+  });
+
+  const payload = await response.json().catch(() => ({} as Record<string, unknown>));
+  if (!response.ok) return null;
+
+  const share = payload.share as Record<string, unknown> | null;
+  if (!share) return null;
+
+  return {
+    token: typeof share.token === 'string' ? share.token : '',
+    publicUrl: typeof share.publicUrl === 'string' ? share.publicUrl : '',
+    expiresAt: typeof share.expiresAt === 'string' ? share.expiresAt : '',
+    createdAt: typeof share.createdAt === 'string' ? share.createdAt : '',
+  };
+}
+
 export async function fetchPublicPressKit(token: string): Promise<PublicPressKitPayload> {
   const response = await fetch(`/api/public/press-kit/${encodeURIComponent(token)}`);
   const payload = await response.json().catch(() => ({} as Record<string, unknown>));

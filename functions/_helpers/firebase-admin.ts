@@ -652,6 +652,56 @@ export async function countFirestoreDocumentsByField(
   return results.filter((entry) => Boolean(entry.document)).length;
 }
 
+export async function queryFirestoreDocumentsByField(
+  env: Record<string, string | undefined>,
+  collectionId: string,
+  fieldPath: string,
+  fieldValue: string
+): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
+  const config = getFirebaseConfig(env);
+  if (!config) throw new Error('Firebase credentials not configured');
+
+  const accessToken = await getAccessToken(env);
+  const endpoint = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents:runQuery`;
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath },
+            op: 'EQUAL',
+            value: { stringValue: fieldValue },
+          },
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Firestore runQuery failed: ${details}`);
+  }
+
+  const results = await response.json() as Array<Record<string, unknown>>;
+  return results
+    .filter((entry) => Boolean(entry.document))
+    .map((entry) => {
+      const doc = entry.document as Record<string, unknown>;
+      const name = typeof doc.name === 'string' ? doc.name : '';
+      const id = decodeURIComponent(name.split('/').pop() ?? '');
+      const fields = doc.fields as Record<string, Record<string, unknown>> | undefined;
+      return { id, data: fromFirestoreFields(fields) };
+    })
+    .filter((entry) => Boolean(entry.id));
+}
+
 export async function deleteFirebaseStorageObject(
   env: Record<string, string | undefined>,
   objectPath: string,
