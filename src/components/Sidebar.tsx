@@ -111,7 +111,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const bandPlan = useBandPlan(activeBand);
   const storageQuotaBytes = bandPlan.storageQuotaBytes;
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
+  const [storagePopupOpen, setStoragePopupOpen] = useState(false);
   const bandSwitcherRef = useRef<HTMLDivElement>(null);
+  const storagePopupRef = useRef<HTMLDivElement>(null);
   const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes, activeBandId);
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
   const storageLabel = storageUsage.loading
@@ -139,6 +141,18 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [bandSwitcherOpen]);
+
+  // Close storage popup on outside click
+  useEffect(() => {
+    if (!storagePopupOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (storagePopupRef.current && !storagePopupRef.current.contains(e.target as Node)) {
+        setStoragePopupOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [storagePopupOpen]);
 
   useEffect(() => {
     if (!stateBandId) return;
@@ -446,15 +460,19 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       </div>
 
       {user ? (
-        <div className="sidebar-storage">
-          <div
-            className="topbar-storage"
+        <div className="sidebar-storage" ref={storagePopupRef}>
+          <button
+            type="button"
+            className="topbar-storage sidebar-storage-btn"
             title={storageUsage.loading
               ? 'Loading recording storage usage'
-              : `${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
+              : `${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)} — click for breakdown`}
             aria-label={storageUsage.loading
               ? 'Loading storage usage'
-              : `Storage usage ${storagePercent} percent, ${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}`}
+              : `Storage usage ${storagePercent} percent, ${formatStorageBytes(storageUsage.usedBytes)} used of ${formatStorageBytes(storageUsage.quotaBytes)}. Click for breakdown.`}
+            aria-expanded={storagePopupOpen}
+            aria-haspopup="dialog"
+            onClick={() => setStoragePopupOpen((o) => !o)}
           >
             <div className="topbar-storage-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={storagePercent}>
               <span
@@ -469,7 +487,38 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 {storageLabel}
               </span>
             </div>
-          </div>
+          </button>
+
+          {storagePopupOpen && !storageUsage.loading && (
+            <div className="sidebar-storage-popup" role="dialog" aria-label="Storage breakdown">
+              <div className="sidebar-storage-popup-title">Storage breakdown</div>
+              <div className="sidebar-storage-popup-row">
+                <span className="sidebar-storage-popup-label">Recordings</span>
+                <span className="sidebar-storage-popup-value">{formatStorageBytes(storageUsage.recordingBytes)}</span>
+              </div>
+              <div className="sidebar-storage-popup-bar">
+                <span
+                  className="sidebar-storage-popup-bar-fill"
+                  style={{ width: `${storageUsage.quotaBytes > 0 ? Math.min(100, (storageUsage.recordingBytes / storageUsage.quotaBytes) * 100) : 0}%` }}
+                />
+              </div>
+              <div className="sidebar-storage-popup-row">
+                <span className="sidebar-storage-popup-label">Images</span>
+                <span className="sidebar-storage-popup-value">{formatStorageBytes(storageUsage.imageBytes)}</span>
+              </div>
+              <div className="sidebar-storage-popup-bar">
+                <span
+                  className="sidebar-storage-popup-bar-fill sidebar-storage-popup-bar-fill--images"
+                  style={{ width: `${storageUsage.quotaBytes > 0 ? Math.min(100, (storageUsage.imageBytes / storageUsage.quotaBytes) * 100) : 0}%` }}
+                />
+              </div>
+              <div className="sidebar-storage-popup-divider" />
+              <div className="sidebar-storage-popup-row sidebar-storage-popup-row--total">
+                <span className="sidebar-storage-popup-label">Total</span>
+                <span className="sidebar-storage-popup-value">{formatStorageBytes(storageUsage.usedBytes)} / {formatStorageBytes(storageUsage.quotaBytes)}</span>
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
 

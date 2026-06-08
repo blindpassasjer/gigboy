@@ -5666,6 +5666,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-storage {
+  position: relative;
   padding: 0 .75rem .4rem;
 }
 
@@ -5676,10 +5677,107 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .26rem .4rem;
 }
 
+.sidebar-storage-btn {
+  display: flex;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-storage-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
 .sidebar-storage .topbar-storage-meter {
   min-width: 0;
   width: 100%;
   height: 1.08rem;
+}
+
+.sidebar-storage-popup {
+  position: absolute;
+  left: .75rem;
+  right: .75rem;
+  top: calc(100% - .4rem);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.14);
+  z-index: 500;
+  padding: .7rem .85rem;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.sidebar-storage-popup-title {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .15rem;
+}
+
+.sidebar-storage-popup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.sidebar-storage-popup-row--total {
+  margin-top: .1rem;
+}
+
+.sidebar-storage-popup-label {
+  font-size: .8rem;
+  color: var(--text);
+}
+
+.sidebar-storage-popup-row--total .sidebar-storage-popup-label {
+  font-weight: 600;
+}
+
+.sidebar-storage-popup-value {
+  font-size: .8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sidebar-storage-popup-row--total .sidebar-storage-popup-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sidebar-storage-popup-bar {
+  height: .32rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 45%, var(--bg));
+  overflow: hidden;
+}
+
+.sidebar-storage-popup-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1f9d55, var(--accent));
+  transition: width .2s ease;
+}
+
+.sidebar-storage-popup-bar-fill--images {
+  background: linear-gradient(90deg, #4a90d9, #6c5ce7);
+}
+
+.sidebar-storage-popup-divider {
+  height: 1px;
+  background: var(--border);
+  margin: .1rem 0;
 }
 
 .sidebar-mode-switcher {

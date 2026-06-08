@@ -8,6 +8,8 @@ const DEFAULT_STORAGE_QUOTA_BYTES = PLAN_LIMITS.free.storageQuotaBytes;
 
 interface UsageState {
   usedBytes: number;
+  recordingBytes: number;
+  imageBytes: number;
   quotaBytes: number;
   loading: boolean;
 }
@@ -61,6 +63,8 @@ function resolveBandQuotaBytes(bandData: Record<string, unknown> | undefined): n
 export function useStorageUsage(userId: string | null | undefined, planQuotaBytes?: number, bandId?: string | null) {
   const [state, setState] = useState<UsageState>({
     usedBytes: 0,
+    recordingBytes: 0,
+    imageBytes: 0,
     quotaBytes: planQuotaBytes ?? DEFAULT_STORAGE_QUOTA_BYTES,
     loading: false,
   });
@@ -69,6 +73,8 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
     if (!db || !userId) {
       setState({
         usedBytes: 0,
+        recordingBytes: 0,
+        imageBytes: 0,
         quotaBytes: planQuotaBytes ?? DEFAULT_STORAGE_QUOTA_BYTES,
         loading: false,
       });
@@ -292,6 +298,8 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
         setState({
           usedBytes,
+          recordingBytes,
+          imageBytes: pressKitBytes,
           quotaBytes,
           loading: false,
         });
@@ -399,4 +407,5 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
       remainingBytes: Math.max(0, state.quotaBytes - state.usedBytes),
     };
   }, [state]);
+
 }
