@@ -18,8 +18,8 @@
   --accent:     #1a6fc4;
   --accent-h:   #155aa0;
   --accent-contrast: #ffffff;
-  --bands-hue:  #c33232;
-  --bands-hue-soft: #fbeaea;
+  --bands-hue:  #1565c0;
+  --bands-hue-soft: #dde9f8;
   --bands-hue-contrast: #ffffff;
   --danger:     #c0392b;
   --notes-draw: #27ae60;
@@ -51,9 +51,9 @@
   --accent:     #6aadff;
   --accent-h:   #89bfff;
   --accent-contrast: #0d1f36;
-  --bands-hue:  #ff7d7d;
-  --bands-hue-soft: #3a2020;
-  --bands-hue-contrast: #2a1010;
+  --bands-hue:  #4fa3e0;
+  --bands-hue-soft: #152640;
+  --bands-hue-contrast: #ffffff;
   --danger:     #e05c4e;
   --notes-draw: #5be39a;
   --chord:      #6aadff;

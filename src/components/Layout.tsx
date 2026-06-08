@@ -24,14 +24,6 @@ interface Props {
   children: ReactNode;
 }
 
-function hashBandHue(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
-  }
-  const positiveHash = Math.abs(hash);
-  return positiveHash % 360;
-}
 
 export default function Layout({ children }: Props) {
   const navigate = useNavigate();
@@ -75,7 +67,6 @@ export default function Layout({ children }: Props) {
     ? persistedBandId
     : null;
   const themedBandId = routeBandId ?? stateBandId ?? fallbackBandId;
-  const themedBand = themedBandId ? bands.find((entry) => entry.id === themedBandId) ?? null : null;
   const bandSection = routeBandId ? (routeSegments[2] ?? 'library') : null;
   const bandSongListId = routeBandId && bandSection === 'songlists' ? (routeSegments[3] ?? null) : null;
   const activeBand = routeBandId ? bands.find((entry) => entry.id === routeBandId) ?? null : null;
@@ -473,26 +464,16 @@ export default function Layout({ children }: Props) {
       return;
     }
 
-    const hue = hashBandHue(themedBandId);
-    const fallbackHue = dark
-      ? `hsl(${hue} 78% 70%)`
-      : `hsl(${hue} 64% 46%)`;
-    const softHue = dark
-      ? `hsl(${hue} 40% 20%)`
-      : `hsl(${hue} 76% 94%)`;
     const contrast = dark ? '#1b1512' : '#ffffff';
+    const bandColor = '#1565c0';
 
-    const bandColor = themedBand?.color?.trim();
-
-    rootStyle.setProperty('--bands-hue', bandColor || fallbackHue);
+    rootStyle.setProperty('--bands-hue', bandColor);
     rootStyle.setProperty(
       '--bands-hue-soft',
-      bandColor
-        ? `color-mix(in srgb, ${bandColor} ${dark ? '26%' : '16%'}, ${dark ? '#0f0f10' : '#ffffff'})`
-        : softHue
+      `color-mix(in srgb, ${bandColor} ${dark ? '26%' : '16%'}, ${dark ? '#0f0f10' : '#ffffff'})`
     );
     rootStyle.setProperty('--bands-hue-contrast', contrast);
-  }, [dark, themedBand?.color, themedBandId]);
+  }, [dark, themedBandId]);
 
   useEffect(() => {
     if (!invitesOpen) return;

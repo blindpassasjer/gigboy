@@ -23,12 +23,8 @@ export const onRequestGet: PagesFunction<Record<string, string | undefined>, nev
 
   const shares = await queryFirestoreDocumentsByField(ctx.env, 'pressKitShares', 'bandId', bandId);
 
-  const now = Date.now();
   const active = shares
-    .filter((s) => {
-      const expiresAt = typeof s.data.expiresAt === 'string' ? Date.parse(s.data.expiresAt) : 0;
-      return expiresAt > now;
-    })
+    .filter((s) => s.data.status === 'active')
     .sort((a, b) => {
       const aCreated = typeof a.data.createdAt === 'string' ? Date.parse(a.data.createdAt) : 0;
       const bCreated = typeof b.data.createdAt === 'string' ? Date.parse(b.data.createdAt) : 0;
@@ -44,7 +40,6 @@ export const onRequestGet: PagesFunction<Record<string, string | undefined>, nev
     share: {
       token: active.id,
       publicUrl,
-      expiresAt: active.data.expiresAt,
       createdAt: active.data.createdAt,
     },
   });

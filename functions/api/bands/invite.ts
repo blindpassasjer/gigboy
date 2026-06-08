@@ -84,7 +84,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
     const { memberLimit, isBandEligible } = await resolveOwnerBandMemberLimit(ctx.env, ownerId, bandId);
     if (!isBandEligible) {
-      return Response.json({ error: 'Adding members requires an active Band subscription.' }, { status: 403 });
+      return Response.json({ error: 'Adding members requires an active Crew subscription.' }, { status: 403 });
     }
 
     if (memberIds.length >= memberLimit) {

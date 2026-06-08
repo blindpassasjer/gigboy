@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ClipboardList, Link2, PenLine, Trash2 } from 'lucide-react';
+import { ClipboardList, Link2, Link2Off, PenLine, Trash2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { InputList, Stageplot } from '../types';
 import StageplotEditor from './StageplotEditor';
@@ -188,6 +188,12 @@ export default function BandTechRiderPanel({
     }
   };
 
+  const handleDisableRiderPublicLink = async (riderId: string) => {
+    const error = await setBandInputListPublicShare(bandId, riderId, false);
+    if (error) { toast.error(error); return; }
+    toast.success('Public link disabled.');
+  };
+
   return (
     <section className="bands-page bands-page--library">
       <div className="setlist-shell">
@@ -285,14 +291,35 @@ export default function BandTechRiderPanel({
             </div>
             <div className="resource-header-actions">
               {activeRider ? (
-                <button
-                  type="button"
-                  className="setlist-action-btn setlist-action-btn--accent"
-                  onClick={() => void handleCopyRiderPublicLink(activeRider.id, activeRider.publicShareEnabled)}
-                  title={activeRider.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
-                >
-                  <Link2 size={14} />
-                </button>
+                activeRider.publicShareEnabled ? (
+                  <>
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--accent"
+                      onClick={() => void handleCopyRiderPublicLink(activeRider.id, true)}
+                      title="Copy public link"
+                    >
+                      <Link2 size={14} /> Copy link
+                    </button>
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      onClick={() => void handleDisableRiderPublicLink(activeRider.id)}
+                      title="Disable public link"
+                    >
+                      <Link2Off size={14} /> Disable link
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="setlist-action-btn setlist-action-btn--accent"
+                    onClick={() => void handleCopyRiderPublicLink(activeRider.id, false)}
+                    title="Create & copy public link"
+                  >
+                    <Link2 size={14} /> Share
+                  </button>
+                )
               ) : null}
               {canEdit && activeRider ? (
                 <button

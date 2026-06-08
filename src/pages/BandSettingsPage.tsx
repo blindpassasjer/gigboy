@@ -10,21 +10,6 @@ import BandManagementPanel from '../components/BandManagementPanel';
 import { useBandPlan } from '../hooks/usePlan';
 import { db } from '../lib/firebase';
 
-const BAND_COLOR_OPTIONS = [
-  '#c33232',
-  '#d35400',
-  '#a66e00',
-  '#2e7d32',
-  '#00897b',
-  '#0288d1',
-  '#1565c0',
-  '#5e35b1',
-  '#ad1457',
-  '#6d4c41',
-  '#455a64',
-  '#37474f',
-] as const;
-
 const LOGO_CARD_MIN_WIDTH_PX = 130;
 const LOGO_GRID_GAP_PX = 10;
 const LOGO_GRID_ROWS_PER_PAGE = 4;
@@ -59,12 +44,6 @@ interface LogoAsset {
   createdAt?: string;
 }
 
-function normalizeEmojiIcon(value: string): string | undefined {
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  return [...trimmed].slice(0, 2).join('');
-}
-
 function formatPeriodEnd(value: number | null | undefined) {
   if (!value) return null;
   const normalized = value > 1_000_000_000_000 ? value : value * 1000;
@@ -91,7 +70,6 @@ export default function BandSettingsPage() {
     loading,
     renameBand,
     updateBandDescription,
-    updateBandLibraryAppearance,
     updateBandLogo,
     deleteBand,
   } = useBands();
@@ -100,10 +78,6 @@ export default function BandSettingsPage() {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [icon, setIcon] = useState('🎵');
-  const [color, setColor] = useState('#c33232');
-  const [useAutoColor, setUseAutoColor] = useState(true);
-  const [busyAppearance, setBusyAppearance] = useState(false);
   const [logo, setLogo] = useState<string | undefined>();
   const [logoAssets, setLogoAssets] = useState<LogoAsset[]>([]);
   const [loadingLogoAssets, setLoadingLogoAssets] = useState(false);
@@ -122,9 +96,6 @@ export default function BandSettingsPage() {
     if (!band) return;
     setName(band.name);
     setDescription(band.description ?? '');
-    setIcon(band.icon ?? '🎵');
-    setColor(band.color ?? '#c33232');
-    setUseAutoColor(!band.color);
     setLogo(band.logo);
   // Intentionally depends only on band.id — resets form when switching bands,
   // not on every property change (which would overwrite the user's in-progress edits).
@@ -317,32 +288,6 @@ export default function BandSettingsPage() {
     );
   }
 
-  const applyAppearance = async (nextIcon: string, nextColor: string | undefined) => {
-    if (!canEditBand || busyAppearance) return;
-
-    setBusyAppearance(true);
-    const appearanceError = await updateBandLibraryAppearance(band.id, {
-      icon: normalizeEmojiIcon(nextIcon),
-      color: nextColor,
-    });
-    setBusyAppearance(false);
-
-    if (appearanceError) {
-      toast.error(appearanceError);
-    }
-  };
-
-  const handleColorSelect = async (nextColor: string) => {
-    setColor(nextColor);
-    setUseAutoColor(false);
-    await applyAppearance(icon, nextColor);
-  };
-
-  const handleAutoColor = async () => {
-    setUseAutoColor(true);
-    await applyAppearance(icon, undefined);
-  };
-
   const handleLogoSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Please choose an image file.');
@@ -491,51 +436,7 @@ export default function BandSettingsPage() {
               Appearance
             </h2>
 
-            <div className="bands-appearance-grid">
-              <section className="bands-logo-color-group">
-                <p className="bands-logo-section-title">Theme color</p>
-                <div className="color-swatch-grid" role="listbox" aria-label="Band color options">
-                  {BAND_COLOR_OPTIONS.map((colorHex) => {
-                    const selected = !useAutoColor && color.toLowerCase() === colorHex.toLowerCase();
-                    return (
-                      <button
-                        key={colorHex}
-                        type="button"
-                        className={`color-swatch-btn${selected ? ' active' : ''}`}
-                        style={{ backgroundColor: colorHex }}
-                        onClick={() => { void handleColorSelect(colorHex); }}
-                        aria-label={`Choose color ${colorHex}`}
-                        aria-pressed={selected}
-                        disabled={!canEditBand || busyAppearance}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="bands-color-controls">
-                  <div className="share-menu-field bands-color-custom-field">
-                    <span>Custom</span>
-                    <input
-                      type="color"
-                      value={color}
-                      onChange={(e) => { void handleColorSelect(e.target.value); }}
-                      aria-label="Custom band color"
-                      disabled={!canEditBand || busyAppearance}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className={`setlist-action-btn setlist-action-btn--secondary${useAutoColor ? ' setlist-action-btn--active' : ''}`}
-                    onClick={() => { void handleAutoColor(); }}
-                    disabled={!canEditBand || busyAppearance}
-                  >
-                    Auto color
-                  </button>
-                  <p className="bands-inline-note">Color updates immediately.</p>
-                </div>
-              </section>
-
-              {/* ── Band Logo ── */}
-              <div className="bands-logo-section">
+            <div className="bands-logo-section">
                 <section className="bands-logo-upload-area">
                   <header className="press-kit-section-header">
                     <p className="press-kit-section-title">Band Logo</p>
@@ -658,7 +559,6 @@ export default function BandSettingsPage() {
               )}
             </section>
             </div>
-          </div>
 
         </section>
         </div>

@@ -14,7 +14,7 @@ interface CreateShareInput {
 }
 
 
-export async function createPressKitShare(input: CreateShareInput): Promise<{ token: string; publicUrl: string; expiresAt: string }> {
+export async function createPressKitShare(input: CreateShareInput): Promise<{ token: string; publicUrl: string }> {
   const response = await fetch('/api/press-kit/create-share', {
     method: 'POST',
     headers: await buildHeaders({ userId: input.userId, userEmail: input.userEmail }),
@@ -38,7 +38,6 @@ export async function createPressKitShare(input: CreateShareInput): Promise<{ to
   return {
     token: typeof payload.token === 'string' ? payload.token : '',
     publicUrl: typeof payload.publicUrl === 'string' ? payload.publicUrl : '',
-    expiresAt: typeof payload.expiresAt === 'string' ? payload.expiresAt : '',
   };
 }
 
@@ -75,7 +74,6 @@ export interface PublicPressKitPayload {
 export interface ActivePressKitShare {
   token: string;
   publicUrl: string;
-  expiresAt: string;
   createdAt: string;
 }
 
@@ -93,9 +91,22 @@ export async function getActivePressKitShare(userId: string, userEmail: string, 
   return {
     token: typeof share.token === 'string' ? share.token : '',
     publicUrl: typeof share.publicUrl === 'string' ? share.publicUrl : '',
-    expiresAt: typeof share.expiresAt === 'string' ? share.expiresAt : '',
     createdAt: typeof share.createdAt === 'string' ? share.createdAt : '',
   };
+}
+
+export async function disablePressKitShare(userId: string, userEmail: string, bandId: string, token: string): Promise<void> {
+  const response = await fetch('/api/press-kit/disable-share', {
+    method: 'POST',
+    headers: await buildHeaders({ userId, userEmail }),
+    body: JSON.stringify({ bandId, token }),
+  });
+
+  const payload = await response.json().catch(() => ({} as Record<string, unknown>));
+  if (!response.ok) {
+    const errorMessage = typeof payload.error === 'string' ? payload.error : 'Request failed.';
+    throw new Error(errorMessage);
+  }
 }
 
 export async function fetchPublicPressKit(token: string): Promise<PublicPressKitPayload> {
