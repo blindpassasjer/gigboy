@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CreditCard, LogOut, Sparkles, Trash2, Users } from 'lucide-react';
+import { CreditCard, LogOut, Sparkles, Trash2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -299,19 +299,14 @@ export default function ProfilePage() {
             <span className="profile-account-kicker">Account</span>
             <h1>{displayName}</h1>
             <p>@{user.username ?? 'setup'} · {user.email}</p>
-            <div className="profile-account-badges">
-              <span className="profile-account-badge profile-account-badge--bands">
-                <Users size={14} /> {bands.length} band{bands.length === 1 ? '' : 's'}
-              </span>
-              <button
-                type="button"
-                className="profile-account-chip-btn"
-                disabled={busyLogout}
-                onClick={() => { void onLogout(); }}
-              >
-                <LogOut size={14} /> {busyLogout ? 'Signing out…' : 'Log out'}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              disabled={busyLogout}
+              onClick={() => { void onLogout(); }}
+            >
+              <LogOut size={16} /> {busyLogout ? 'Signing out…' : 'Log out'}
+            </button>
           </div>
         </div>
       </header>
