@@ -104,7 +104,7 @@ function getPostLoginDestination(): { path: string; state?: { bandId: string } }
     // Ignore localStorage failures and fall back to profile.
   }
 
-  return { path: '/profile' };
+  return { path: '/' };
 }
 
 function LoginHero() {
@@ -332,7 +332,7 @@ export default function LoginPage() {
       setError(err);
       setBusy(false);
     } else {
-      navigate('/profile');
+      navigate('/');
     }
   }
 

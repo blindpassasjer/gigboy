@@ -90,13 +90,23 @@ function RootRedirect() {
     return <div className="app-status">Loading Gigboy…</div>;
   }
 
+  let targetBandId: string | null = null;
+
   try {
     const lastBandId = window.localStorage.getItem('gigboy-active-band-id')?.trim();
     if (lastBandId && bands.some((band) => band.id === lastBandId)) {
-      return <Navigate to={`/bands/${lastBandId}/library`} replace state={{ bandId: lastBandId }} />;
+      targetBandId = lastBandId;
     }
   } catch {
-    // Ignore localStorage failures and fall back to profile.
+    // Ignore localStorage failures.
+  }
+
+  if (!targetBandId && bands.length > 0) {
+    targetBandId = bands[0].id;
+  }
+
+  if (targetBandId) {
+    return <Navigate to={`/bands/${targetBandId}/library`} replace state={{ bandId: targetBandId }} />;
   }
 
   return <Navigate to="/profile" replace />;

@@ -8580,6 +8580,56 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .75rem;
 }
 
+.checkout-result-card--success {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background:
+    radial-gradient(ellipse at top, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 65%),
+    var(--surface);
+}
+
+.checkout-result-icon {
+  font-size: 2.8rem;
+  line-height: 1;
+}
+
+.checkout-result-card--success h1 {
+  color: var(--accent);
+}
+
+.checkout-result-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.checkout-result-confetti-piece {
+  position: absolute;
+  top: -10%;
+  opacity: 0;
+  font-size: 1.4rem;
+  animation: confetti-fall linear infinite;
+  user-select: none;
+}
+
+.checkout-result-confetti-piece--1  { left:  5%; font-size: 1.2rem; animation-duration: 7s;  animation-delay: 0s; }
+.checkout-result-confetti-piece--2  { left: 14%; font-size: 1.7rem; animation-duration: 9s;  animation-delay: -2s; }
+.checkout-result-confetti-piece--3  { left: 24%; font-size: 1.1rem; animation-duration: 8s;  animation-delay: -5s; }
+.checkout-result-confetti-piece--4  { left: 35%; font-size: 1.8rem; animation-duration: 11s; animation-delay: -1s; }
+.checkout-result-confetti-piece--5  { left: 47%; font-size: 1.3rem; animation-duration: 7.5s; animation-delay: -4s; }
+.checkout-result-confetti-piece--6  { left: 60%; font-size: 1.6rem; animation-duration: 10s; animation-delay: -3s; }
+.checkout-result-confetti-piece--7  { left: 72%; font-size: 1.2rem; animation-duration: 8.5s; animation-delay: -6s; }
+.checkout-result-confetti-piece--8  { left: 85%; font-size: 1.5rem; animation-duration: 9.5s; animation-delay: -1.5s; }
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg);   opacity: 0; }
+  5%   { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(420px) rotate(360deg); opacity: 0; }
+}
+
 .pricing-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -9885,7 +9935,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .profile-account-hero,
 .profile-invites-header,
 .pricing-hero,
-.checkout-result-card,
+.checkout-result-card:not(.checkout-result-card--success),
 .public-setlist-header,
 .public-share-header {
   border: 1px solid var(--border);
