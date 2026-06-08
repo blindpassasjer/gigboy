@@ -597,13 +597,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userId: currentUser.uid,
         userEmail: currentUser.email ?? '',
       });
-      await deleteUser(currentUser);
+      await signOut(auth!);
       return null;
     } catch (err: unknown) {
-      const code = getAuthErrorCode(err);
-      if (code === 'auth/requires-recent-login') {
-        return 'Please sign in again, then retry deleting your account.';
-      }
       return err instanceof Error ? err.message : 'Failed to delete account.';
     }
   }, [getAuthErrorCode]);

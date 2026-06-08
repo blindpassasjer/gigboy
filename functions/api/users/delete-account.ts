@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import {
+  deleteFirebaseAuthUser,
   deleteFirebaseStorageObject,
   deleteFirebaseStoragePrefix,
   deleteFirestoreDocument,
@@ -7,6 +8,7 @@ import {
   listFirestoreDocuments,
   setFirestoreDocument,
 } from '../../_helpers/firebase-admin';
+import { getStripeClient } from '../../_helpers/stripe';
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -199,6 +201,16 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     const userProfile = await getFirestoreDocument(ctx.env, ['users', userId]);
     const usernameLower = typeof userProfile?.usernameLower === 'string' ? userProfile.usernameLower : null;
 
+    const stripeCustomerId = typeof userProfile?.stripeCustomerId === 'string' && userProfile.stripeCustomerId.trim()
+      ? userProfile.stripeCustomerId.trim()
+      : null;
+
+    if (stripeCustomerId && ctx.env.STRIPE_SECRET_KEY) {
+      const stripe = getStripeClient(ctx.env.STRIPE_SECRET_KEY);
+      const subscriptions = await stripe.subscriptions.list({ customer: stripeCustomerId, limit: 20 });
+      await Promise.all(subscriptions.data.map((sub) => stripe.subscriptions.cancel(sub.id)));
+    }
+
     const allBands = await listFirestoreDocuments(ctx.env, ['bands']);
     const ownedBands = allBands.filter((entry) => entry.data.ownerId === userId);
     const memberBands = allBands.filter((entry) => {
@@ -312,6 +324,8 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     if (usernameLower) {
       await deleteFirestoreDocument(ctx.env, ['usernames', usernameLower]);
     }
+
+    await deleteFirebaseAuthUser(ctx.env, userId);
 
     return Response.json({
       ok: true,

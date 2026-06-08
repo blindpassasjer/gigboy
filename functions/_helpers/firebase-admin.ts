@@ -26,6 +26,7 @@ let tokenCache: FirebaseTokenCache | null = null;
 const FIREBASE_ACCESS_SCOPES = [
   'https://www.googleapis.com/auth/datastore',
   'https://www.googleapis.com/auth/devstorage.full_control',
+  'https://www.googleapis.com/auth/firebase',
 ].join(' ');
 
 function stripWrappingQuotes(value: string) {
@@ -728,6 +729,33 @@ export async function deleteFirebaseStorageObject(
   }
 
   throw lastError ?? new Error('No valid Firebase Storage bucket found for object deletion.');
+}
+
+export async function deleteFirebaseAuthUser(
+  env: Record<string, string | undefined>,
+  uid: string,
+): Promise<void> {
+  const config = getFirebaseConfig(env);
+  if (!config) throw new Error('Firebase credentials not configured');
+
+  const accessToken = await getAccessToken(env);
+  const endpoint = `https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(config.projectId)}/accounts:delete`;
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ localId: uid }),
+  });
+
+  if (response.status === 404) return;
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Firebase Auth user deletion failed: ${details}`);
+  }
 }
 
 export async function deleteFirebaseStoragePrefix(
