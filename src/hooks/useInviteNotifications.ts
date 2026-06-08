@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import {
+  dismissAcceptedInviteIds,
   emitInviteNotificationsChanged,
+  getDismissedAcceptedInviteIds,
   getSeenAcceptedInviteIds,
   loadInviteNotificationsSnapshot,
   markAcceptedInviteIdsSeen,
@@ -16,20 +18,23 @@ interface InviteNotificationsState {
   unseenAcceptedOutgoing: AcceptedInviteNotification[];
   refresh: () => Promise<void>;
   markAcceptedAsSeen: (notifications: AcceptedInviteNotification[]) => void;
+  clearAcceptedNotifications: () => void;
 }
 
 export function useInviteNotifications(): InviteNotificationsState {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [pendingIncomingCount, setPendingIncomingCount] = useState(0);
-  const [acceptedOutgoing, setAcceptedOutgoing] = useState<AcceptedInviteNotification[]>([]);
+  const [allAcceptedOutgoing, setAllAcceptedOutgoing] = useState<AcceptedInviteNotification[]>([]);
   const [seenAcceptedIds, setSeenAcceptedIds] = useState<Set<string>>(new Set());
+  const [dismissedAcceptedIds, setDismissedAcceptedIds] = useState<Set<string>>(new Set());
 
   const refresh = useCallback(async () => {
     if (!db || !user?.id) {
       setPendingIncomingCount(0);
-      setAcceptedOutgoing([]);
+      setAllAcceptedOutgoing([]);
       setSeenAcceptedIds(new Set());
+      setDismissedAcceptedIds(new Set());
       setLoading(false);
       return;
     }
@@ -38,8 +43,9 @@ export function useInviteNotifications(): InviteNotificationsState {
     try {
       const snapshot = await loadInviteNotificationsSnapshot(db, user.id, user.email ?? '');
       setPendingIncomingCount(snapshot.pendingIncomingCount);
-      setAcceptedOutgoing(snapshot.acceptedOutgoing);
+      setAllAcceptedOutgoing(snapshot.acceptedOutgoing);
       setSeenAcceptedIds(getSeenAcceptedInviteIds(user.id));
+      setDismissedAcceptedIds(getDismissedAcceptedInviteIds(user.id));
     } finally {
       setLoading(false);
     }
@@ -72,6 +78,11 @@ export function useInviteNotifications(): InviteNotificationsState {
     };
   }, [refresh]);
 
+  const acceptedOutgoing = useMemo(
+    () => allAcceptedOutgoing.filter((notification) => !dismissedAcceptedIds.has(notification.id)),
+    [allAcceptedOutgoing, dismissedAcceptedIds]
+  );
+
   const unseenAcceptedOutgoing = useMemo(
     () => acceptedOutgoing.filter((notification) => !seenAcceptedIds.has(notification.id)),
     [acceptedOutgoing, seenAcceptedIds]
@@ -91,6 +102,21 @@ export function useInviteNotifications(): InviteNotificationsState {
     emitInviteNotificationsChanged();
   }, [user?.id]);
 
+  const clearAcceptedNotifications = useCallback(() => {
+    if (!user?.id || allAcceptedOutgoing.length === 0) {
+      return;
+    }
+
+    const ids = allAcceptedOutgoing.map((notification) => notification.id);
+    dismissAcceptedInviteIds(user.id, ids);
+    setDismissedAcceptedIds((current) => {
+      const next = new Set(current);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+    emitInviteNotificationsChanged();
+  }, [user?.id, allAcceptedOutgoing]);
+
   return {
     loading,
     pendingIncomingCount,
@@ -98,5 +124,6 @@ export function useInviteNotifications(): InviteNotificationsState {
     unseenAcceptedOutgoing,
     refresh,
     markAcceptedAsSeen,
+    clearAcceptedNotifications,
   };
 }

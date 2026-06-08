@@ -51,6 +51,7 @@ export default function Layout({ children }: Props) {
     unseenAcceptedOutgoing,
     refresh: refreshInviteNotifications,
     markAcceptedAsSeen,
+    clearAcceptedNotifications,
   } = useInviteNotifications();
   const isConcertRoute = pathname.endsWith('/concert')
     && pathname.startsWith('/bands/');
@@ -733,7 +734,16 @@ export default function Layout({ children }: Props) {
 
                       {acceptedOutgoing.length > 0 ? (
                         <section className="topbar-invites-group" aria-label="Recent invite responses">
-                          <h3>Recent responses</h3>
+                          <div className="topbar-invites-group-header">
+                            <h3>Recent responses</h3>
+                            <button
+                              type="button"
+                              className="topbar-invites-clear-btn"
+                              onClick={clearAcceptedNotifications}
+                            >
+                              Clear
+                            </button>
+                          </div>
                           <ul className="topbar-invites-list">
                             {acceptedOutgoing.slice(0, 4).map((notification) => (
                               <li key={notification.id} className="topbar-invite-item topbar-invite-item--accepted">

@@ -147,6 +147,45 @@ export function markAcceptedInviteIdsSeen(userId: string, ids: string[]) {
   }
 }
 
+function getDismissedAcceptedInviteKey(userId: string) {
+  return `gigboy-dismissed-accepted-invites:${userId}`;
+}
+
+export function getDismissedAcceptedInviteIds(userId: string) {
+  if (typeof window === 'undefined') {
+    return new Set<string>();
+  }
+
+  try {
+    const raw = window.localStorage.getItem(getDismissedAcceptedInviteKey(userId));
+    if (!raw) {
+      return new Set<string>();
+    }
+    const ids = JSON.parse(raw);
+    if (!Array.isArray(ids)) {
+      return new Set<string>();
+    }
+    return new Set(ids.filter((value): value is string => typeof value === 'string'));
+  } catch {
+    return new Set<string>();
+  }
+}
+
+export function dismissAcceptedInviteIds(userId: string, ids: string[]) {
+  if (typeof window === 'undefined' || ids.length === 0) {
+    return;
+  }
+
+  const dismissedIds = getDismissedAcceptedInviteIds(userId);
+  ids.forEach((id) => dismissedIds.add(id));
+
+  try {
+    window.localStorage.setItem(getDismissedAcceptedInviteKey(userId), JSON.stringify([...dismissedIds]));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 export function emitInviteNotificationsChanged() {
   if (typeof window === 'undefined') {
     return;
