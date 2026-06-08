@@ -47,6 +47,34 @@ function isPlanActive(plan: PlanTier, subscriptionStatus: SubscriptionStatus, pl
   return subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
 }
 
+/**
+ * Returns true if the band (or its owner's personal plan) has an active Pro or Crew subscription,
+ * which is required for features like technical riders and press kits.
+ * Mirrors the "higher plan wins" logic used in the frontend's bandCanUse().
+ */
+export async function resolveBandHasProOrCrew(
+  env: Record<string, string | undefined>,
+  ownerId: string,
+  bandId: string
+): Promise<boolean> {
+  const bandDoc = await getFirestoreDocument(env, ['bands', bandId]);
+  const bandPlan = toPlanTier(bandDoc?.billingPlan);
+  const bandStatus = toSubscriptionStatus(bandDoc?.billingSubscriptionStatus);
+  const bandActive = isPlanActive(bandPlan, bandStatus, false);
+
+  if ((bandPlan === 'pro' || bandPlan === 'crew') && bandActive) {
+    return true;
+  }
+
+  const ownerProfile = await getFirestoreDocument(env, ['users', ownerId]);
+  const plan = toPlanTier(ownerProfile?.plan);
+  const subscriptionStatus = toSubscriptionStatus(ownerProfile?.subscriptionStatus);
+  const planOverride = ownerProfile?.planOverride === true;
+  const active = isPlanActive(plan, subscriptionStatus, planOverride);
+
+  return (plan === 'pro' || plan === 'crew') && active;
+}
+
 export async function resolveOwnerBandMemberLimit(
   env: Record<string, string | undefined>,
   ownerId: string,

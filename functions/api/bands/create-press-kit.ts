@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { resolveBandHasProOrCrew } from '../../_helpers/band-limits';
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -41,13 +42,10 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       return Response.json({ error: 'You do not have permission to create press kits for this band.' }, { status: 403 });
     }
 
-    // Determine band plan
-    const bandPlan = band.billingPlan === 'pro' || band.billingPlan === 'crew' ? band.billingPlan : 'free';
-    const bandSubscriptionStatus = band.billingSubscriptionStatus;
-    const isBandPlanActive = bandPlan === 'free' || bandSubscriptionStatus === 'active' || bandSubscriptionStatus === 'trialing';
-
-    // Press kits require Pro or Crew plan
-    if (bandPlan === 'free' || !isBandPlanActive) {
+    // Press kits require Pro or Crew plan (band-level or owner's personal plan)
+    const ownerId = typeof band.ownerId === 'string' ? band.ownerId : '';
+    const hasProOrCrew = ownerId ? await resolveBandHasProOrCrew(ctx.env, ownerId, bandId) : false;
+    if (!hasProOrCrew) {
       return Response.json(
         { error: 'Press kits require a Pro or Crew plan. Upgrade to create press kits for this band.' },
         { status: 403 }
