@@ -70,33 +70,27 @@ export async function resolveOwnerBandMemberLimit(
     };
   }
 
-  // Pro band: all features but no member invites
-  if (bandPlan === 'pro' && bandActive) {
-    return {
-      memberLimit: 1,
-      isBandEligible: false,
-      extraMembers: 0,
-    };
-  }
-
+  // Band is on Pro (or free/unset). Check if the owner has a crew plan that elevates eligibility.
+  // A Pro band-level subscription doesn't include member invites, but the owner's personal
+  // crew subscription should still grant that capability (higher plan wins).
   const ownerProfile = await getFirestoreDocument(env, ['users', ownerId]);
   const plan = toPlanTier(ownerProfile?.plan);
   const subscriptionStatus = toSubscriptionStatus(ownerProfile?.subscriptionStatus);
   const planOverride = ownerProfile?.planOverride === true;
   const active = isPlanActive(plan, subscriptionStatus, planOverride);
 
-  if (plan !== 'crew' || !active) {
+  if (plan === 'crew' && active) {
+    const extraMembers = toSafeExtraMembers(ownerProfile?.bandExtraMembers);
     return {
-      memberLimit: 1,
-      isBandEligible: false,
-      extraMembers: 0,
+      memberLimit: 5 + extraMembers,
+      isBandEligible: true,
+      extraMembers,
     };
   }
 
-  const extraMembers = toSafeExtraMembers(ownerProfile?.bandExtraMembers);
   return {
-    memberLimit: 5 + extraMembers,
-    isBandEligible: true,
-    extraMembers,
+    memberLimit: 1,
+    isBandEligible: false,
+    extraMembers: 0,
   };
 }
