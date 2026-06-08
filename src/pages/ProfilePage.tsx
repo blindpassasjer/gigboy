@@ -4,7 +4,6 @@ import { CreditCard, LogOut, Sparkles, Trash2, Users } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
-import { usePlan } from '../hooks/usePlan';
 import UserAvatar from '../components/UserAvatar';
 import { AVATAR_OPTIONS } from '../lib/avatars';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
@@ -55,7 +54,6 @@ function getEffectiveBandPlan(
 export default function ProfilePage() {
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, deleteAccount, logout } = useAuth();
   const { bands } = useBands();
-  const { planLabel } = usePlan();
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
@@ -302,9 +300,6 @@ export default function ProfilePage() {
             <h1>{displayName}</h1>
             <p>@{user.username ?? 'setup'} · {user.email}</p>
             <div className="profile-account-badges">
-              <span className="profile-account-badge profile-account-badge--plan">
-                <Sparkles size={14} /> {planLabel} account
-              </span>
               <span className="profile-account-badge profile-account-badge--bands">
                 <Users size={14} /> {bands.length} band{bands.length === 1 ? '' : 's'}
               </span>
