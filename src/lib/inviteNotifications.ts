@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { BandInvite, CollaborationInvite } from '../types';
 import { loadPendingBandInvites } from './bandInvites';
@@ -6,6 +6,8 @@ import { loadPendingInvites } from './collaboration';
 
 const COLLABORATION_INVITES_COLLECTION = 'collaborationInvites';
 const BAND_INVITES_COLLECTION = 'bandInvites';
+const PREFERENCES_COLLECTION = 'preferences';
+const INVITE_NOTIFICATIONS_PREF_DOC = 'inviteNotifications';
 
 export interface AcceptedInviteNotification {
   id: string;
@@ -108,6 +110,8 @@ export async function loadInviteNotificationsSnapshot(db: Firestore, userId: str
   } satisfies InviteNotificationsSnapshot;
 }
 
+// --- Seen IDs (localStorage only — just drives the badge count) ---
+
 function getSeenAcceptedInviteKey(userId: string) {
   return `gigboy-seen-accepted-invites:${userId}`;
 }
@@ -147,11 +151,13 @@ export function markAcceptedInviteIdsSeen(userId: string, ids: string[]) {
   }
 }
 
+// --- Dismissed IDs (Firestore as source of truth, localStorage as cache) ---
+
 function getDismissedAcceptedInviteKey(userId: string) {
   return `gigboy-dismissed-accepted-invites:${userId}`;
 }
 
-export function getDismissedAcceptedInviteIds(userId: string) {
+function getDismissedAcceptedInviteIdsFromCache(userId: string): Set<string> {
   if (typeof window === 'undefined') {
     return new Set<string>();
   }
@@ -171,19 +177,51 @@ export function getDismissedAcceptedInviteIds(userId: string) {
   }
 }
 
-export function dismissAcceptedInviteIds(userId: string, ids: string[]) {
-  if (typeof window === 'undefined' || ids.length === 0) {
+function saveDismissedAcceptedInviteIdsToCache(userId: string, ids: Set<string>) {
+  if (typeof window === 'undefined') {
     return;
   }
 
-  const dismissedIds = getDismissedAcceptedInviteIds(userId);
-  ids.forEach((id) => dismissedIds.add(id));
-
   try {
-    window.localStorage.setItem(getDismissedAcceptedInviteKey(userId), JSON.stringify([...dismissedIds]));
+    window.localStorage.setItem(getDismissedAcceptedInviteKey(userId), JSON.stringify([...ids]));
   } catch {
     // Ignore storage failures.
   }
+}
+
+function inviteNotificationsPrefDocRef(db: Firestore, userId: string) {
+  return doc(db, 'users', userId, PREFERENCES_COLLECTION, INVITE_NOTIFICATIONS_PREF_DOC);
+}
+
+export async function loadDismissedAcceptedInviteIds(db: Firestore, userId: string): Promise<Set<string>> {
+  try {
+    const snap = await getDoc(inviteNotificationsPrefDocRef(db, userId));
+    const data = snap.data() as Record<string, unknown> | undefined;
+    const ids = Array.isArray(data?.dismissedAcceptedInviteIds)
+      ? (data.dismissedAcceptedInviteIds as unknown[]).filter((v): v is string => typeof v === 'string')
+      : [];
+    const result = new Set(ids);
+    // Keep localStorage in sync so next load is fast even before Firestore responds.
+    saveDismissedAcceptedInviteIdsToCache(userId, result);
+    return result;
+  } catch {
+    // Fall back to local cache on network errors.
+    return getDismissedAcceptedInviteIdsFromCache(userId);
+  }
+}
+
+export async function saveDismissedAcceptedInviteIds(db: Firestore, userId: string, ids: Set<string>): Promise<void> {
+  saveDismissedAcceptedInviteIdsToCache(userId, ids);
+  await setDoc(
+    inviteNotificationsPrefDocRef(db, userId),
+    { dismissedAcceptedInviteIds: [...ids] },
+    { merge: true }
+  );
+}
+
+// Exported for optimistic local reads before the first Firestore response.
+export function getDismissedAcceptedInviteIds(userId: string): Set<string> {
+  return getDismissedAcceptedInviteIdsFromCache(userId);
 }
 
 export function emitInviteNotificationsChanged() {

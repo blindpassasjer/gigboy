@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import {
-  dismissAcceptedInviteIds,
   emitInviteNotificationsChanged,
   getDismissedAcceptedInviteIds,
   getSeenAcceptedInviteIds,
+  loadDismissedAcceptedInviteIds,
   loadInviteNotificationsSnapshot,
   markAcceptedInviteIdsSeen,
+  saveDismissedAcceptedInviteIds,
 } from '../lib/inviteNotifications';
 import type { AcceptedInviteNotification } from '../lib/inviteNotifications';
 
@@ -27,7 +28,10 @@ export function useInviteNotifications(): InviteNotificationsState {
   const [pendingIncomingCount, setPendingIncomingCount] = useState(0);
   const [allAcceptedOutgoing, setAllAcceptedOutgoing] = useState<AcceptedInviteNotification[]>([]);
   const [seenAcceptedIds, setSeenAcceptedIds] = useState<Set<string>>(new Set());
-  const [dismissedAcceptedIds, setDismissedAcceptedIds] = useState<Set<string>>(new Set());
+  // Seed from localStorage so the UI is correct before the first Firestore round-trip.
+  const [dismissedAcceptedIds, setDismissedAcceptedIds] = useState<Set<string>>(
+    () => (user?.id ? getDismissedAcceptedInviteIds(user.id) : new Set<string>())
+  );
 
   const refresh = useCallback(async () => {
     if (!db || !user?.id) {
@@ -41,11 +45,14 @@ export function useInviteNotifications(): InviteNotificationsState {
 
     setLoading(true);
     try {
-      const snapshot = await loadInviteNotificationsSnapshot(db, user.id, user.email ?? '');
+      const [snapshot, dismissedIds] = await Promise.all([
+        loadInviteNotificationsSnapshot(db, user.id, user.email ?? ''),
+        loadDismissedAcceptedInviteIds(db, user.id),
+      ]);
       setPendingIncomingCount(snapshot.pendingIncomingCount);
       setAllAcceptedOutgoing(snapshot.acceptedOutgoing);
       setSeenAcceptedIds(getSeenAcceptedInviteIds(user.id));
-      setDismissedAcceptedIds(getDismissedAcceptedInviteIds(user.id));
+      setDismissedAcceptedIds(dismissedIds);
     } finally {
       setLoading(false);
     }
@@ -103,19 +110,20 @@ export function useInviteNotifications(): InviteNotificationsState {
   }, [user?.id]);
 
   const clearAcceptedNotifications = useCallback(() => {
-    if (!user?.id || allAcceptedOutgoing.length === 0) {
+    if (!db || !user?.id || allAcceptedOutgoing.length === 0) {
       return;
     }
 
-    const ids = allAcceptedOutgoing.map((notification) => notification.id);
-    dismissAcceptedInviteIds(user.id, ids);
-    setDismissedAcceptedIds((current) => {
-      const next = new Set(current);
-      ids.forEach((id) => next.add(id));
-      return next;
-    });
+    const nextDismissed = new Set(dismissedAcceptedIds);
+    allAcceptedOutgoing.forEach((notification) => nextDismissed.add(notification.id));
+
+    // Optimistic update.
+    setDismissedAcceptedIds(nextDismissed);
     emitInviteNotificationsChanged();
-  }, [user?.id, allAcceptedOutgoing]);
+
+    // Persist to Firestore (also updates localStorage cache inside).
+    void saveDismissedAcceptedInviteIds(db, user.id, nextDismissed);
+  }, [user?.id, allAcceptedOutgoing, dismissedAcceptedIds]);
 
   return {
     loading,
