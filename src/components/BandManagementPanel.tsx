@@ -32,6 +32,7 @@ export default function BandManagementPanel({
   const [busyInvite, setBusyInvite] = useState(false);
   const [busyInviteLink, setBusyInviteLink] = useState(false);
   const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
+  const [lastInviteLinkExpiresAt, setLastInviteLinkExpiresAt] = useState<string | null>(null);
 
   const handleInvite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -77,6 +78,7 @@ export default function BandManagementPanel({
       });
 
       setLastInviteLink(result.inviteUrl);
+      setLastInviteLinkExpiresAt(result.expiresAt ?? null);
       try {
         await navigator.clipboard.writeText(result.inviteUrl);
         toast.success('Invite link copied to clipboard.');
@@ -137,6 +139,11 @@ export default function BandManagementPanel({
         <label className="share-menu-field" style={{ marginTop: '0.75rem' }}>
           <span>Latest invite link</span>
           <input type="text" value={lastInviteLink} readOnly />
+          {lastInviteLinkExpiresAt ? (
+            <span style={{ fontSize: '0.8em', color: 'var(--color-text-muted, #888)', marginTop: '0.25rem' }}>
+              Expires {new Date(lastInviteLinkExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          ) : null}
         </label>
       ) : null}
 

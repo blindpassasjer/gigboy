@@ -550,7 +550,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         videoUrls: selectedVideoUrls.map((u) => u.trim()).filter(Boolean),
       });
       await navigator.clipboard.writeText(result.publicUrl);
-      toast.success('Public link copied to clipboard.');
+      const expiryDate = result.expiresAt ? new Date(result.expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : null;
+      toast.success(expiryDate ? `Public link copied — expires ${expiryDate}.` : 'Public link copied to clipboard.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to create share link.');
     } finally {

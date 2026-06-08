@@ -202,5 +202,5 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const url = new URL(ctx.request.url);
   const publicUrl = `${url.origin}/public/press-kit/${token}`;
 
-  return Response.json({ ok: true, token, publicUrl });
+  return Response.json({ ok: true, token, publicUrl, expiresAt });
 };

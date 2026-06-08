@@ -14,7 +14,7 @@ interface CreateShareInput {
 }
 
 
-export async function createPressKitShare(input: CreateShareInput): Promise<{ token: string; publicUrl: string }> {
+export async function createPressKitShare(input: CreateShareInput): Promise<{ token: string; publicUrl: string; expiresAt: string }> {
   const response = await fetch('/api/press-kit/create-share', {
     method: 'POST',
     headers: await buildHeaders({ userId: input.userId, userEmail: input.userEmail }),
@@ -38,6 +38,7 @@ export async function createPressKitShare(input: CreateShareInput): Promise<{ to
   return {
     token: typeof payload.token === 'string' ? payload.token : '',
     publicUrl: typeof payload.publicUrl === 'string' ? payload.publicUrl : '',
+    expiresAt: typeof payload.expiresAt === 'string' ? payload.expiresAt : '',
   };
 }
 
