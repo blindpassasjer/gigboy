@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BadgeCheck, CreditCard, LogOut, Sparkles, Trash2, Users } from 'lucide-react';
+import { CreditCard, LogOut, Sparkles, Trash2, Users } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -304,9 +304,6 @@ export default function ProfilePage() {
             <div className="profile-account-badges">
               <span className="profile-account-badge profile-account-badge--plan">
                 <Sparkles size={14} /> {planLabel} account
-              </span>
-              <span className={`profile-account-badge ${paidOwnedBands.length > 0 ? 'profile-account-badge--billing' : 'profile-account-badge--billing-empty'}`}>
-                <BadgeCheck size={14} /> {paidOwnedBands.length > 0 ? `${paidOwnedBands.length} paid band${paidOwnedBands.length === 1 ? '' : 's'}` : 'No paid bands'}
               </span>
               <span className="profile-account-badge profile-account-badge--bands">
                 <Users size={14} /> {bands.length} band{bands.length === 1 ? '' : 's'}
