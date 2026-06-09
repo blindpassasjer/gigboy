@@ -802,5 +802,6 @@ export async function deleteFirebaseStoragePrefix(
     }
   }
 
-  throw lastError ?? new Error('No valid Firebase Storage bucket found for prefix deletion.');
+  if (lastError) throw lastError;
+  return { deletedCount: 0, bucketName: '' };
 }

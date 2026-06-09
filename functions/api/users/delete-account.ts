@@ -325,7 +325,11 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       await deleteFirestoreDocument(ctx.env, ['usernames', usernameLower]);
     }
 
-    await deleteFirebaseAuthUser(ctx.env, userId);
+    try {
+      await deleteFirebaseAuthUser(ctx.env, userId);
+    } catch (authErr) {
+      console.error('Failed to delete Firebase Auth user (non-fatal):', authErr);
+    }
 
     return Response.json({
       ok: true,
