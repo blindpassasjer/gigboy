@@ -27,7 +27,7 @@ function getSynthPool(Tone: ToneModule): any[] {
   if (!synthPool) {
     synthPool = Array.from({ length: POOL_SIZE }, () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const s = new (Tone.PluckSynth as any)({ attackNoise: 1, dampening: 3800, resonance: 0.97 }).toDestination();
+      const s = new (Tone.PluckSynth as any)({ attackNoise: 0.3, dampening: 2000, resonance: 0.985 }).toDestination();
       s.volume.value = -6;
       return s;
     });

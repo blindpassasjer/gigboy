@@ -283,7 +283,7 @@ service cloud.firestore {
     match /bands/{bandId} {
       allow read: if isSignedIn() && (
         resource.data.ownerId == request.auth.uid
-        || (resource.data.memberIds is list && resource.data.memberIds.hasAny([request.auth.uid]))
+        || resource.data.memberIds.hasAny([request.auth.uid])
       );
       allow create: if isSignedIn()
         && request.resource.data.ownerId == request.auth.uid
