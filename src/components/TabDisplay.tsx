@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Pencil, Play, Repeat, Square } from 'lucide-react';
-import { playTab, stopPlayback } from '../lib/midiPlayer';
+import { playTab, stopPlayback, preloadSampler } from '../lib/midiPlayer';
 import { buildBeatGuide } from '../utils/tabParser';
 
 interface Props {
@@ -57,6 +57,8 @@ export default function TabDisplay({
   showPlayback = true,
   onEdit,
 }: Props) {
+  useEffect(() => { void preloadSampler(); }, []);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

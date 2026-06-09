@@ -1,6 +1,6 @@
 /**
  * Tab playback using real acoustic guitar samples via Tone.Sampler.
- * Samples: https://github.com/nbrosowsky/tonejs-instruments (MIT)
+ * Samples: https://github.com/nbrosowsky/tonejs-instruments (MIT), self-hosted in /guitar-acoustic/
  */
 import { parseTabLines } from '../utils/tabParser';
 
@@ -10,8 +10,7 @@ let toneModulePromise: Promise<ToneModule> | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let samplerPromise: Promise<any> | null = null;
 
-const BASE_URL =
-  'https://nbrosowsky.github.io/tonejs-instruments/samples/guitar-acoustic/';
+const BASE_URL = '/guitar-acoustic/';
 
 // Spread of samples covering the full guitar range (E2–D5)
 // Keys use Tone.js note format (# for sharps); filenames use "s" suffix (e.g. As2.mp3)
@@ -50,6 +49,12 @@ function getSampler(Tone: ToneModule): Promise<any> {
     });
   }
   return samplerPromise;
+}
+
+/** Kick off sampler loading in the background without playing anything. */
+export async function preloadSampler(): Promise<void> {
+  const Tone = await getTone();
+  await getSampler(Tone);
 }
 
 /**
