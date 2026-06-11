@@ -57,14 +57,11 @@ export default function AddSongPage() {
     : undefined;
 
   async function handleAdd(song: Song): Promise<string | null> {
-    const error = await addSong(song);
-    if (error) return error;
-
     if (activeBandId) {
       return addSongToBandLibrary(activeBandId, song);
     }
 
-    return null;
+    return addSong(song);
   }
 
   function handleSongListChange(songListId: string, songId: string) {
