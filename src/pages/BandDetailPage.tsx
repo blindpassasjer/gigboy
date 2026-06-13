@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
-import { Link2, Settings, Upload } from 'lucide-react';
+import { FolderInput, Link2, Plus, Search, Settings, Upload, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
@@ -107,7 +107,23 @@ export default function BandDetailPage() {
     : null;
   const importInputRef = useRef<HTMLInputElement>(null);
   const [isImportingSongs, setIsImportingSongs] = useState(false);
+  const [showBandPicker, setShowBandPicker] = useState(false);
+  const [bandPickerQuery, setBandPickerQuery] = useState('');
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
+  const bandSongIds = useMemo(() => new Set(bandSongs.map((s) => s.id)), [bandSongs]);
+  const availableForImport = useMemo(() => {
+    const base = allBandsSongs
+      .filter((s) => !bandSongIds.has(s.id))
+      .sort((a, b) => a.title.localeCompare(b.title));
+    const q = bandPickerQuery.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter(
+      (s) =>
+        s.title.toLowerCase().includes(q) ||
+        (s.artist ?? '').toLowerCase().includes(q) ||
+        (s.tags ?? []).some((t) => t.toLowerCase().includes(q))
+    );
+  }, [allBandsSongs, bandSongIds, bandPickerQuery]);
 
   useEffect(() => {
     if (!id || !band) return;
@@ -631,6 +647,11 @@ export default function BandDetailPage() {
     );
   }
 
+  const closeBandPicker = () => {
+    setShowBandPicker(false);
+    setBandPickerQuery('');
+  };
+
   return (
     <section className="bands-page bands-page--library">
       <input
@@ -650,9 +671,6 @@ export default function BandDetailPage() {
         listIcon={band.icon}
         headerMeta={`${band.memberIds.length} member${band.memberIds.length === 1 ? '' : 's'} in this band.`}
         headerVariant="bands"
-        allSongs={allBandsSongs}
-        pickerSourceNote="Showing songs from your other band libraries."
-        onAddSong={canEditBand ? handleAddSong : undefined}
         onRenameList={canEditBand ? (name) => void handleRenameBand(name) : undefined}
         onUpdateListAppearance={canEditBand ? async ({ icon }) => {
           const error = await updateBandLibraryIcon(band.id, icon);
@@ -660,6 +678,17 @@ export default function BandDetailPage() {
         } : undefined}
         headerActions={(
           <>
+            {canEditBand && allBandsSongs.length > 0 && (
+              <button
+                type="button"
+                className="setlist-action-btn setlist-action-btn--secondary"
+                onClick={() => setShowBandPicker(true)}
+                title="Add song from another band library"
+                aria-label="Add song from another band library"
+              >
+                <FolderInput size={14} />
+              </button>
+            )}
             {canEditBand && (
               <button
                 type="button"
@@ -685,6 +714,55 @@ export default function BandDetailPage() {
         onDeleteSong={handleDeleteSong}
         bandId={band.id}
       />
+
+      {showBandPicker && (
+        <div className="song-picker-overlay" role="dialog" aria-modal="true" aria-label="Add song from another band library">
+          <div className="song-picker-panel">
+            <div className="song-picker-header">
+              <h2>Add song from another band</h2>
+              <button className="song-picker-close" onClick={closeBandPicker} aria-label="Close">
+                <X size={16} />
+              </button>
+            </div>
+            <p className="song-picker-source-note">Showing songs from your other band libraries.</p>
+            <div className="song-picker-search-wrap">
+              <Search size={15} className="song-picker-search-icon" />
+              <input
+                type="text"
+                className="song-picker-search"
+                value={bandPickerQuery}
+                onChange={(e) => setBandPickerQuery(e.target.value)}
+                placeholder="Search by title, artist, or tag"
+                autoFocus
+              />
+            </div>
+            <div className="song-picker-results" role="list">
+              {availableForImport.length === 0 ? (
+                <p className="song-picker-empty">No songs available to add.</p>
+              ) : (
+                availableForImport.map((song) => (
+                  <div key={song.id} className="song-picker-item" role="listitem">
+                    <div className="song-picker-item-main">
+                      <span className="song-picker-song-title">{song.title}</span>
+                      {song.artist && <span className="song-picker-song-artist">{song.artist}</span>}
+                    </div>
+                    <button
+                      className="song-picker-add-btn"
+                      onClick={() => void handleAddSong(song.id)}
+                      title={`Add ${song.title}`}
+                    >
+                      <Plus size={14} /> Add
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="song-picker-footer">
+              <button className="setlist-action-btn" onClick={closeBandPicker}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
