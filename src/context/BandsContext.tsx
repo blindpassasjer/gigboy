@@ -1722,12 +1722,26 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return 'You do not have permission to edit this band library.';
     }
 
-    // Enforce free-tier band library song limit
+    // Enforce band library song limit using the effective plan (higher of band or owner's personal plan wins)
     const currentBandSongs = bandSongsByBandId[bandId] ?? [];
-    const billingPlan = band.billingPlan === 'pro' || band.billingPlan === 'crew' ? band.billingPlan : 'free';
-    const limit = PLAN_LIMITS[billingPlan].songLimit;
+    const bandBillingPlan = band.billingPlan === 'pro' || band.billingPlan === 'crew' ? band.billingPlan : 'free';
+    const bandPlanActive = bandBillingPlan === 'free'
+      || band.billingSubscriptionStatus === 'active'
+      || band.billingSubscriptionStatus === 'trialing'
+      || band.billingSubscriptionStatus == null;
+    const userPlan = user?.plan === 'pro' || user?.plan === 'crew' ? user.plan : 'free';
+    const userPlanActive = user?.planOverride === true
+      || userPlan === 'free'
+      || user?.subscriptionStatus === 'active'
+      || user?.subscriptionStatus === 'trialing';
+    const planOrder: Record<string, number> = { free: 0, pro: 1, crew: 2 };
+    const effectivePlan = (planOrder[bandBillingPlan] ?? 0) >= (planOrder[userPlan] ?? 0) && bandPlanActive
+      ? bandBillingPlan
+      : userPlan;
+    const effectiveActive = effectivePlan === bandBillingPlan ? bandPlanActive : userPlanActive;
+    const limit = effectiveActive ? PLAN_LIMITS[effectivePlan].songLimit : PLAN_LIMITS.free.songLimit;
     if (limit !== null && currentBandSongs.length >= limit) {
-      return `This band has reached the ${limit}-song limit for ${billingPlan === 'free' ? 'Free' : billingPlan === 'pro' ? 'Pro' : 'Crew'} plan. Upgrade the band to add more songs.`;
+      return `This band has reached the ${limit}-song limit for the ${effectivePlan === 'free' ? 'Free' : effectivePlan === 'pro' ? 'Pro' : 'Crew'} plan. Upgrade to add more songs.`;
     }
 
     const songId = song.id || crypto.randomUUID();
@@ -1755,7 +1769,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       return error instanceof Error ? error.message : 'Failed to add song to band library.';
     }
-  }, [bandSongsByBandId, bands, refreshBandSongs, userId]);
+  }, [bandSongsByBandId, bands, refreshBandSongs, userId, user]);
 
   const updateBandSong = useCallback(async (bandId: string, song: Song) => {
     if (!db || !userId) {
