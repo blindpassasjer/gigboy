@@ -13,7 +13,7 @@ interface Props {
   bpm?: number;
   timeSignature?: string;
   instrument?: DiagramInstrument;
-  onChordClick?: (chord: string, rect: DOMRect) => void;
+  onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement) => void;
 }
 
 export default function ChordDisplay({
@@ -63,7 +63,7 @@ interface LineRendererProps {
   notation: ChordNotation;
   bpm?: number;
   timeSignature?: string;
-  onChordClick?: (chord: string, rect: DOMRect) => void;
+  onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement) => void;
 }
 
 function LineRenderer({
@@ -144,9 +144,8 @@ function LineRenderer({
                   <button
                     className="chord-name-btn"
                     onClick={(e) => {
-                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      // Always pass Anglo chord to diagram lookup
-                      onChordClick(transposeChord(seg.chord, transpose), rect);
+                      const el = e.currentTarget as HTMLElement;
+                      onChordClick(transposeChord(seg.chord, transpose), el.getBoundingClientRect(), el);
                     }}
                   >
                     {convertChordNotation(transposeChord(seg.chord, transpose), notation)}

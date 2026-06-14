@@ -57,6 +57,7 @@ interface Props {
 interface ActiveChord {
   chord: string;
   rect: DOMRect;
+  element: HTMLElement;
 }
 
 type SongPageState = {
@@ -231,11 +232,19 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setTranspose(song.preferredTranspose ?? 0);
   }, [song.id, song.preferredTranspose]);
 
-  const handleChordClick = useCallback((chord: string, rect: DOMRect) => {
+  const handleChordClick = useCallback((chord: string, rect: DOMRect, element: HTMLElement) => {
     setActiveChord(prev =>
-      prev?.chord === chord && prev.rect.top === rect.top ? null : { chord, rect }
+      prev?.chord === chord && prev.element === element ? null : { chord, rect, element }
     );
   }, []);
+
+  useEffect(() => {
+    if (!activeChord) return;
+    const el = activeChord.element;
+    const update = () => setActiveChord(prev => prev ? { ...prev, rect: el.getBoundingClientRect() } : null);
+    window.addEventListener('scroll', update, { passive: true, capture: true });
+    return () => window.removeEventListener('scroll', update, { capture: true });
+  }, [activeChord?.element]);
 
   async function handleRename() {
     const nextTitle = await showPromptToast('Rename song', {
