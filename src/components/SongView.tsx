@@ -10,6 +10,7 @@ import {
   SlidersHorizontal,
   Check,
   Plus,
+  FileDown,
   FileUp,
   SquarePen,
   PenLine,
@@ -363,6 +364,27 @@ export default function SongView({ song, accentColor, bandId }: Props) {
         updateFromFileInputRef.current.value = '';
       }
     }
+  }
+
+  function handleExport() {
+    const lines: string[] = [];
+    if (song.title) lines.push(`{title: ${song.title}}`);
+    if (song.artist) lines.push(`{artist: ${song.artist}}`);
+    if (song.author) lines.push(`{author: ${song.author}}`);
+    if (song.key) lines.push(`{key: ${song.key}}`);
+    if (typeof song.capo === 'number') lines.push(`{capo: ${song.capo}}`);
+    if (typeof song.tempo === 'number') lines.push(`{tempo: ${song.tempo}}`);
+    if (song.timeSignature) lines.push(`{time: ${song.timeSignature}}`);
+    lines.push('');
+    lines.push(song.chordpro);
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const slug = song.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'song';
+    a.href = url;
+    a.download = `${slug}.chordpro`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   const headerStyle = accentColor
@@ -836,6 +858,16 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               >
                 <FileUp size={14} />
                 <span className="song-action-label">{updatingFromFile ? 'Updating…' : 'Update from file'}</span>
+              </button>
+
+              <button
+                className="song-action-btn song-action-btn--labeled"
+                onClick={handleExport}
+                title={`Download ${song.title} as ChordPro file`}
+                aria-label={`Download ${song.title} as ChordPro file`}
+              >
+                <FileDown size={14} />
+                <span className="song-action-label">Download</span>
               </button>
               <input
                 ref={updateFromFileInputRef}

@@ -5,7 +5,6 @@ export type ProFeature =
   | 'technicalRiders'
   | 'pressKits'
   | 'shareableLinks'
-  | 'bluetoothPedal'
   | 'recordings'
   | 'metronome'
   | 'multiUserNotes';
@@ -46,7 +45,6 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
     technicalRiders: false,
     pressKits: false,
     shareableLinks: false,
-    bluetoothPedal: false,
     recordings: false,
     metronome: false,
     multiUserNotes: false,
@@ -56,7 +54,6 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
     technicalRiders: true,
     pressKits: true,
     shareableLinks: true,
-    bluetoothPedal: true,
     recordings: true,
     metronome: true,
     multiUserNotes: true,
@@ -66,7 +63,6 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
     technicalRiders: true,
     pressKits: true,
     shareableLinks: true,
-    bluetoothPedal: true,
     recordings: true,
     metronome: true,
     multiUserNotes: true,

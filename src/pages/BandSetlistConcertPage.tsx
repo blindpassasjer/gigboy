@@ -113,6 +113,7 @@ export default function BandSetlistConcertPage() {
     songId: activeSong?.id ?? '',
     user,
     enabled: Boolean(user && activeSong?.id),
+    defaultToCurrentUser: true,
   });
 
   const backRoute = bandId && setlistId
@@ -327,6 +328,7 @@ export default function BandSetlistConcertPage() {
   const canGoNext = currentPageInSong < currentPageCount - 1 || currentIndex < setlistSongs.length - 1;
   const media = currentSong.playbackUrl ? parseSongMedia(currentSong.playbackUrl) : null;
   const isTransposePinned = currentSong.preferredTranspose === transpose;
+  const currentSongNote = setlist.songNotes?.[currentSong.id]?.trim() ?? '';
 
   return (
     <section className="concert-mode">
@@ -697,6 +699,9 @@ export default function BandSetlistConcertPage() {
               )}
               {currentSong.timeSignature && <span className="meta-pill">{currentSong.timeSignature}</span>}
             </div>
+            {currentSongNote && (
+              <p className="concert-song-note">{currentSongNote}</p>
+            )}
           </div>
 
           <div className="concert-page-viewport" ref={viewportRef}>

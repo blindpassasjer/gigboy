@@ -26,8 +26,10 @@ export function useSongHandNotes(params: {
   user: User | null;
   enabled: boolean;
   isOwner?: boolean;
+  /** When true, only the current user's notes are visible by default (others can be toggled on) */
+  defaultToCurrentUser?: boolean;
 }) {
-  const { ownerId, bandId, songId, user, enabled, isOwner = false } = params;
+  const { ownerId, bandId, songId, user, enabled, isOwner = false, defaultToCurrentUser = false } = params;
   const userId = user?.id ?? null;
   const scope = useMemo<SongHandNotesScope | null>(() => {
     if (bandId) return { type: 'band', bandId };
@@ -86,7 +88,7 @@ export function useSongHandNotes(params: {
     const authorIds = Array.from(new Set(notes.map((note) => note.authorUid).filter(Boolean)));
 
     if (!hasManualVisibilitySelectionRef.current) {
-      setVisibleAuthorIds(authorIds);
+      setVisibleAuthorIds(defaultToCurrentUser && userId ? [userId] : authorIds);
       return;
     }
 
@@ -125,7 +127,7 @@ export function useSongHandNotes(params: {
       };
     };
 
-    if (!hasManualVisibilitySelectionRef.current) {
+    if (visibleAuthorIds.length === 0 && !defaultToCurrentUser) {
       return notes.map(colorizeByAuthor);
     }
 

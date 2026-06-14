@@ -6790,6 +6790,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: .45rem;
 }
 
+.concert-song-note {
+  margin: .4rem 0 0;
+  padding: .35rem .65rem;
+  background: color-mix(in srgb, var(--accent, #6366f1) 10%, transparent);
+  border-left: 3px solid var(--accent, #6366f1);
+  border-radius: 0 6px 6px 0;
+  font-size: .9rem;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
 .concert-song-surface .chord-display {
   border: none;
   border-radius: 0 0 12px 12px;

@@ -60,6 +60,7 @@ const PALETTE_CATEGORIES: PaletteCategory[] = [
       { kind: 'pa', label: 'PA', color: '#059669' },
       { kind: 'subs', label: 'Subs', color: '#1e40af' },
       { kind: 'iem', label: 'IEM', color: '#7c3aed' },
+      { kind: 'amp', label: 'Amp', color: '#6b7280' },
       { kind: 'guitar-amp', label: 'Guitar Amp', color: '#14b8a6' },
       { kind: 'bass-amp', label: 'Bass Amp', color: '#06b6d4' },
       { kind: 'keyboard-amp', label: 'Keyboard Amp', color: '#8b5cf6' },

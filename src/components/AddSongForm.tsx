@@ -348,6 +348,14 @@ export default function AddSongForm({
     setChordpro(value);
     setParseStatus(null);
     setDetectedSource(null);
+
+    if (!key.trim()) {
+      const match = value.match(/\{\s*key\s*:\s*([^}]+)\s*\}/i);
+      if (match) {
+        const extracted = match[1].trim();
+        if (extracted) setKey(extracted);
+      }
+    }
   }
 
   function applyValues(values: SongFormValues) {
