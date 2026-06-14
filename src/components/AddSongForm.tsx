@@ -126,7 +126,21 @@ export default function AddSongForm({
     timeSignature: initialSong?.timeSignature ?? '',
     chordpro: initialSong?.chordpro ?? '',
     songListId: initialSongListId ?? '',
-  }), [initialSong, initialSongListId]);
+  }), [
+    initialSong?.title,
+    initialSong?.artist,
+    initialSong?.author,
+    initialSong?.playbackUrl,
+    initialSong?.language,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    initialSong?.tags?.join(','),
+    initialSong?.key,
+    initialSong?.capo,
+    initialSong?.tempo,
+    initialSong?.timeSignature,
+    initialSong?.chordpro,
+    initialSongListId,
+  ]);
 
   const [lastSavedValues, setLastSavedValues] = useState<SongFormValues>(initialValues);
   const historyRef = useRef<SongFormValues[]>([initialValues]);
