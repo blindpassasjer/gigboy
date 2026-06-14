@@ -1,4 +1,4 @@
-import { useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Music2, Repeat2, GitBranch, ArrowRight, Guitar } from 'lucide-react';
 import TabSequencerModal from './TabSequencerModal';
 
@@ -77,9 +77,45 @@ function insertSection(
 export default function ChordProToolbar({ textareaRef, value, onChange, tempo }: Props) {
   const [chordInput, setChordInput] = useState('');
   const [showTabSequencer, setShowTabSequencer] = useState(false);
+  const [hasSelection, setHasSelection] = useState(false);
 
   // Capture the cursor position when the modal opens so we insert at the right spot
   const pendingCursorRef = useRef(0);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    function updateSelection() {
+      setHasSelection(!!textarea && textarea.selectionStart !== textarea.selectionEnd);
+    }
+    textarea.addEventListener('select', updateSelection);
+    textarea.addEventListener('mouseup', updateSelection);
+    textarea.addEventListener('keyup', updateSelection);
+    return () => {
+      textarea.removeEventListener('select', updateSelection);
+      textarea.removeEventListener('mouseup', updateSelection);
+      textarea.removeEventListener('keyup', updateSelection);
+    };
+  }, [textareaRef]);
+
+  function handleWrapAsChord() {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) return;
+    const selected = value.slice(start, end);
+    const wrapped = selected.split(' ').map((word) => word ? `[${word}]` : '').join(' ');
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    onChange(before + wrapped + after);
+    const newPos = start + wrapped.length;
+    requestAnimationFrame(() => {
+      textarea.focus({ preventScroll: true });
+      textarea.setSelectionRange(newPos, newPos);
+    });
+    setHasSelection(false);
+  }
 
   function handleSectionClick(name: string) {
     if (!textareaRef.current) return;
@@ -190,6 +226,15 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo }:
           title="Insert chord at cursor"
         >
           Insert
+        </button>
+        <button
+          type="button"
+          className="toolbar-btn toolbar-btn--chord"
+          onClick={handleWrapAsChord}
+          disabled={!hasSelection}
+          title="Wrap selected text as chord(s)"
+        >
+          Wrap selection
         </button>
       </div>
     </div>
