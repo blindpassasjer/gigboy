@@ -435,6 +435,7 @@ export default function BandDetailPage() {
     return (
       <section className="bands-page bands-page--library">
         <SetlistsView
+          headerVariant="bands"
           setlistId={activeBandSetlist.id}
           setlistName={activeBandSetlist.name}
           songs={setlistSongs}

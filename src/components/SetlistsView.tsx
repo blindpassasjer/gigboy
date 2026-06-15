@@ -36,6 +36,8 @@ interface Props {
   /** Band ID — when set, song links will carry it as navigation state so SongPage can find band songs */
   bandId?: string;
   autoStartRenameToken?: string | number | null;
+  /** Controls the header CSS variant. Use 'bands' inside the bands UI to match the songlist header style. */
+  headerVariant?: 'default' | 'bands';
 }
 
 function normalizeEmojiIcon(value: string): string | undefined {
@@ -64,6 +66,7 @@ export default function SetlistsView({
   onUpdateIconOverride,
   bandId,
   autoStartRenameToken = null,
+  headerVariant = 'default',
 }: Props) {
   const { renameSetlist, updateSetlistIcon, deleteSetlist, setlists } = useSetlists();
   const { pathname } = useLocation();
@@ -295,7 +298,7 @@ export default function SetlistsView({
   return (
     <div className="setlist-view">
       <div className="list-sticky-header">
-        <div className="page-section-header resource-header">
+        <div className={`${headerVariant === 'bands' ? 'bands-header' : 'page-section-header'} resource-header`}>
           <div className="setlist-title-block">
             {isRenaming ? (
               <input
