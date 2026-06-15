@@ -52,7 +52,6 @@ export default function BandDetailPage() {
     updateSongNoteInBandSetlist,
     restoreBandTrashItem,
     deleteBandTrashItemPermanently,
-    updateBandLibraryIcon,
     bandPressKitsByBandId,
     refreshBandPressKits,
     renameBandPressKit,
@@ -668,14 +667,9 @@ export default function BandDetailPage() {
         songs={bandSongs}
         listName={band.name}
         listEntityLabel="band"
-        listIcon={band.icon}
         headerMeta={`${band.memberIds.length} member${band.memberIds.length === 1 ? '' : 's'} in this band.`}
         headerVariant="bands"
         onRenameList={canEditBand ? (name) => void handleRenameBand(name) : undefined}
-        onUpdateListAppearance={canEditBand ? async ({ icon }) => {
-          const error = await updateBandLibraryIcon(band.id, icon);
-          if (error) toast.error(error);
-        } : undefined}
         headerActions={(
           <>
             {canEditBand && allBandsSongs.length > 0 && (
