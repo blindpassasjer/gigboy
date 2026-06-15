@@ -9,10 +9,17 @@ import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
 import { useBandPlan } from '../hooks/usePlan';
 import { db } from '../lib/firebase';
+import { ICON_OPTIONS } from '../lib/iconOptions';
 
 const LOGO_CARD_MIN_WIDTH_PX = 130;
 const LOGO_GRID_GAP_PX = 10;
 const LOGO_GRID_ROWS_PER_PAGE = 4;
+
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
+}
 
 function inferImageExtension(url: string, mimeType: string): string {
   const normalizedMime = mimeType.split(';')[0].trim().toLowerCase();
@@ -70,6 +77,7 @@ export default function BandSettingsPage() {
     loading,
     renameBand,
     updateBandDescription,
+    updateBandLibraryAppearance,
     updateBandLogo,
     deleteBand,
   } = useBands();
@@ -78,6 +86,8 @@ export default function BandSettingsPage() {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [icon, setIcon] = useState('🎵');
+  const [busyAppearance, setBusyAppearance] = useState(false);
   const [logo, setLogo] = useState<string | undefined>();
   const [logoAssets, setLogoAssets] = useState<LogoAsset[]>([]);
   const [loadingLogoAssets, setLoadingLogoAssets] = useState(false);
@@ -96,6 +106,7 @@ export default function BandSettingsPage() {
     if (!band) return;
     setName(band.name);
     setDescription(band.description ?? '');
+    setIcon(band.icon ?? '🎵');
     setLogo(band.logo);
   // Intentionally depends only on band.id — resets form when switching bands,
   // not on every property change (which would overwrite the user's in-progress edits).
@@ -288,6 +299,15 @@ export default function BandSettingsPage() {
     );
   }
 
+  const handleIconChange = async (nextIcon: string) => {
+    setIcon(nextIcon);
+    if (!canEditBand || busyAppearance) return;
+    setBusyAppearance(true);
+    const error = await updateBandLibraryAppearance(band.id, { icon: normalizeEmojiIcon(nextIcon) });
+    setBusyAppearance(false);
+    if (error) toast.error(error);
+  };
+
   const handleLogoSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Please choose an image file.');
@@ -413,6 +433,19 @@ export default function BandSettingsPage() {
               maxLength={80}
               disabled={!canEditBand}
             />
+          </div>
+
+          <div className="share-menu-field">
+            <span>Icon</span>
+            <select
+              value={icon}
+              onChange={(e) => { void handleIconChange(e.target.value); }}
+              disabled={!canEditBand || busyAppearance}
+            >
+              {ICON_OPTIONS.map((emoji) => (
+                <option key={emoji} value={emoji}>{emoji}</option>
+              ))}
+            </select>
           </div>
 
           <div className="share-menu-field">
