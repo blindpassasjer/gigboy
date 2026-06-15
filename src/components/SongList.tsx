@@ -132,7 +132,7 @@ export default function SongList({
   const [showListAppearanceEditor, setShowListAppearanceEditor] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(listName ?? '');
-  const [listIconDraft, setListIconDraft] = useState(listIcon ?? '🎵');
+  const [listIconDraft, setListIconDraft] = useState(listIcon ?? '');
 
   useEffect(() => {
     if (!isRenaming) {
@@ -215,7 +215,7 @@ export default function SongList({
   );
 
   useEffect(() => {
-    setListIconDraft(listIcon ?? '🎵');
+    setListIconDraft(listIcon ?? '');
   }, [listIcon]);
 
   useEffect(() => {
@@ -352,7 +352,9 @@ export default function SongList({
                         title={`Change ${listEntityLabel} icon`}
                         aria-label={`Change ${listEntityLabel} icon`}
                       >
-                        <span className="resource-title-icon" aria-hidden="true">{listIcon ?? '🎵'}</span>
+                        {listIcon
+                          ? <span className="resource-title-icon" aria-hidden="true">{listIcon}</span>
+                          : <Folder size={16} aria-hidden="true" />}
                       </button>
                       {showListAppearanceEditor && (
                         <div className="icon-picker-popover" role="dialog" aria-label={`Choose ${listEntityLabel} icon`}>
@@ -361,7 +363,7 @@ export default function SongList({
                               type="button"
                               className={`emoji-choice-btn${!listIcon ? ' active' : ''}`}
                               onClick={() => {
-                                setListIconDraft('🎵');
+                                setListIconDraft('');
                                 void onUpdateListAppearance({ icon: undefined });
                                 setShowListAppearanceEditor(false);
                               }}

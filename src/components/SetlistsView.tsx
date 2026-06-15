@@ -81,7 +81,7 @@ export default function SetlistsView({
   const [pickerQuery, setPickerQuery] = useState('');
   const [addingSongListId, setAddingSongListId] = useState<string | null>(null);
   const [showIconEditor, setShowIconEditor] = useState(false);
-  const [iconDraft, setIconDraft] = useState(effectiveIcon ?? '🎵');
+  const [iconDraft, setIconDraft] = useState(effectiveIcon ?? '');
   const [editingSongNoteId, setEditingSongNoteId] = useState<string | null>(null);
   const [songNoteDraft, setSongNoteDraft] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +94,7 @@ export default function SetlistsView({
   }, [setlistName]);
 
   useEffect(() => {
-    setIconDraft(effectiveIcon ?? '🎵');
+    setIconDraft(effectiveIcon ?? '');
   }, [effectiveIcon]);
 
   useEffect(() => {
@@ -327,7 +327,9 @@ export default function SetlistsView({
                       title="Change setlist icon"
                       aria-label="Change setlist icon"
                     >
-                      <span className="resource-title-icon" aria-hidden="true">{effectiveIcon ?? '🎵'}</span>
+                      {effectiveIcon
+                        ? <span className="resource-title-icon" aria-hidden="true">{effectiveIcon}</span>
+                        : <ListMusic size={16} aria-hidden="true" />}
                     </button>
                     {showIconEditor && (
                       <div className="icon-picker-popover" role="dialog" aria-label="Choose setlist icon">
@@ -341,7 +343,7 @@ export default function SetlistsView({
                               } else {
                                 updateSetlistIcon(setlistId, undefined);
                               }
-                              setIconDraft('🎵');
+                              setIconDraft('');
                               setShowIconEditor(false);
                             }}
                             aria-label="Choose default icon"
@@ -383,7 +385,7 @@ export default function SetlistsView({
                             } else {
                               updateSetlistIcon(setlistId, undefined);
                             }
-                            setIconDraft('🎵');
+                            setIconDraft('');
                             setShowIconEditor(false);
                           }}
                         >
