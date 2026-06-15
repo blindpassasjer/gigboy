@@ -1699,6 +1699,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--song-item-bg);
   border: 1px solid var(--song-item-border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: 1.25rem;
   display: flex;
   flex-wrap: wrap;
@@ -8401,6 +8402,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 18px;
   border: 1px solid var(--border);
   background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .pricing-hero > * {
@@ -9419,6 +9421,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--surface);
   border: 1px solid var(--bands-border);
   border-radius: 14px;
+  box-shadow: var(--shadow);
   padding: .9rem 1rem;
 }
 
