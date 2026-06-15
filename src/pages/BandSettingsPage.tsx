@@ -87,7 +87,11 @@ export default function BandSettingsPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('🎵');
+  const [iconDraft, setIconDraft] = useState('🎵');
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const [busyAppearance, setBusyAppearance] = useState(false);
+  const iconPickerRef = useRef<HTMLDivElement | null>(null);
+  const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [logo, setLogo] = useState<string | undefined>();
   const [logoAssets, setLogoAssets] = useState<LogoAsset[]>([]);
   const [loadingLogoAssets, setLoadingLogoAssets] = useState(false);
@@ -107,6 +111,7 @@ export default function BandSettingsPage() {
     setName(band.name);
     setDescription(band.description ?? '');
     setIcon(band.icon ?? '🎵');
+    setIconDraft(band.icon ?? '🎵');
     setLogo(band.logo);
   // Intentionally depends only on band.id — resets form when switching bands,
   // not on every property change (which would overwrite the user's in-progress edits).
@@ -254,6 +259,25 @@ export default function BandSettingsPage() {
     };
   }, [logoPreview]);
 
+  useEffect(() => {
+    if (!showIconPicker) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (iconPickerRef.current?.contains(target)) return;
+      if (iconTriggerRef.current?.contains(target)) return;
+      setShowIconPicker(false);
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowIconPicker(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showIconPicker]);
+
   const handleLogoDownload = async (asset: LogoAsset) => {
     setDownloadingLogoId(asset.id);
     try {
@@ -299,11 +323,13 @@ export default function BandSettingsPage() {
     );
   }
 
-  const handleIconChange = async (nextIcon: string) => {
-    setIcon(nextIcon);
+  const handleIconSelect = async (nextIcon: string | undefined) => {
+    setIconDraft(nextIcon ?? '🎵');
+    setIcon(nextIcon ?? '🎵');
+    setShowIconPicker(false);
     if (!canEditBand || busyAppearance) return;
     setBusyAppearance(true);
-    const error = await updateBandLibraryAppearance(band.id, { icon: normalizeEmojiIcon(nextIcon) });
+    const error = await updateBandLibraryAppearance(band.id, { icon: nextIcon ? normalizeEmojiIcon(nextIcon) : undefined });
     setBusyAppearance(false);
     if (error) toast.error(error);
   };
@@ -425,27 +451,61 @@ export default function BandSettingsPage() {
 
           <div className="share-menu-field">
             <span>Band name</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Band name"
-              maxLength={80}
-              disabled={!canEditBand}
-            />
-          </div>
-
-          <div className="share-menu-field">
-            <span>Icon</span>
-            <select
-              value={icon}
-              onChange={(e) => { void handleIconChange(e.target.value); }}
-              disabled={!canEditBand || busyAppearance}
-            >
-              {ICON_OPTIONS.map((emoji) => (
-                <option key={emoji} value={emoji}>{emoji}</option>
-              ))}
-            </select>
+            <div className="song-list-title-row">
+              {canEditBand && (
+                <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                  <button
+                    ref={iconTriggerRef}
+                    type="button"
+                    className={`icon-picker-trigger${showIconPicker ? ' is-open' : ''}`}
+                    aria-haspopup="dialog"
+                    aria-expanded={showIconPicker}
+                    onClick={(e) => { e.stopPropagation(); setShowIconPicker((v) => !v); }}
+                    title="Change band icon"
+                    aria-label="Change band icon"
+                    disabled={busyAppearance}
+                  >
+                    <span className="resource-title-icon" aria-hidden="true">{icon}</span>
+                  </button>
+                  {showIconPicker && (
+                    <div className="icon-picker-popover" role="dialog" aria-label="Choose band icon">
+                      <div className="emoji-choice-grid" role="radiogroup" aria-label="Band icon options">
+                        {ICON_OPTIONS.map((emoji) => {
+                          const selected = iconDraft === emoji;
+                          return (
+                            <button
+                              key={emoji}
+                              type="button"
+                              className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                              onClick={() => { void handleIconSelect(emoji); }}
+                              aria-label={`Choose icon ${emoji}`}
+                              aria-pressed={selected}
+                            >
+                              {emoji}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        className="icon-picker-reset-btn"
+                        onClick={() => { void handleIconSelect(undefined); }}
+                      >
+                        Reset to default
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Band name"
+                maxLength={80}
+                disabled={!canEditBand}
+              />
+            </div>
           </div>
 
           <div className="share-menu-field">
