@@ -5974,9 +5974,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
   border-radius: 14px;
   padding: .95rem 1rem;
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 16%, transparent), transparent 34%),
-    linear-gradient(160deg, color-mix(in srgb, var(--surface) 88%, white), var(--surface));
+  background: var(--surface);
   box-shadow: var(--shadow);
 }
 
@@ -7991,9 +7989,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: 1.2rem 1.25rem;
   border-radius: 18px;
   border: 1px solid var(--border);
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 14%, transparent), transparent 28%),
-    linear-gradient(135deg, color-mix(in srgb, var(--surface) 92%, #fff), var(--surface));
+  background: var(--surface);
 }
 
 .profile-account-hero-main {
@@ -8404,9 +8400,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: 1.35rem;
   border-radius: 18px;
   border: 1px solid var(--border);
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 16%, transparent), transparent 24%),
-    linear-gradient(160deg, color-mix(in srgb, var(--surface) 88%, white), var(--surface));
+  background: var(--surface);
 }
 
 .pricing-hero > * {
@@ -8915,8 +8909,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: .95rem 1rem;
-  background:
-    linear-gradient(160deg, color-mix(in srgb, var(--surface) 90%, white), var(--surface));
+  background: var(--surface);
 }
 
 .profile-invites-header h1 {
@@ -9010,8 +9003,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--bands-border);
   border-radius: 14px;
   padding: .95rem 1rem;
-  background:
-    linear-gradient(160deg, color-mix(in srgb, var(--bands-soft-bg) 70%, var(--surface)), var(--surface));
+  background: var(--surface);
 }
 
 .bands-header:not(.bands-header--detail) h1,
@@ -10071,9 +10063,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: .95rem 1rem;
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 14%, transparent), transparent 30%),
-    linear-gradient(160deg, color-mix(in srgb, var(--surface) 90%, white), var(--surface));
+  background: var(--surface);
   box-shadow: var(--shadow);
 }
 

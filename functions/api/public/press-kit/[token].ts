@@ -15,17 +15,28 @@ export const onRequestGet: PagesFunction<Record<string, string | undefined>> = a
   const bandId = typeof share.bandId === 'string' ? share.bandId : '';
   const kitId = typeof share.kitId === 'string' ? share.kitId : '';
 
-  // Legacy shares used a snapshot — serve that directly.
+  // Legacy shares used a snapshot. Read band info live but keep content from snapshot.
   if (!kitId) {
     const snapshot =
       typeof share.snapshot === 'object' && share.snapshot !== null
         ? (share.snapshot as Record<string, unknown>)
         : {};
 
+    const bandDoc = await getFirestoreDocument(ctx.env, ['bands', bandId]);
+    const bandName = typeof bandDoc?.name === 'string' ? bandDoc.name : (typeof share.bandName === 'string' ? share.bandName : 'Band');
+    const rawLogo = typeof bandDoc?.logo === 'string' ? bandDoc.logo.trim() : '';
+    let bandLogo: string | undefined;
+    if (rawLogo) {
+      try {
+        const parsed = new URL(rawLogo);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') bandLogo = rawLogo;
+      } catch { /* ignore */ }
+    }
+
     return Response.json({
       bandId,
-      bandName: typeof share.bandName === 'string' ? share.bandName : 'Band',
-      bandLogo: typeof share.bandLogo === 'string' ? share.bandLogo : undefined,
+      bandName,
+      bandLogo,
       pressKitIcon: typeof share.pressKitIcon === 'string' ? share.pressKitIcon : undefined,
       createdAt: typeof share.createdAt === 'string' ? share.createdAt : undefined,
       stageplots: Array.isArray(snapshot.stageplots) ? snapshot.stageplots : [],
