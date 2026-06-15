@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, CreditCard, Trash2, X, ArrowDownToLine } from 'lucide-react';
+import { ArrowLeft, CreditCard, Trash2, X, ArrowDownToLine, Users } from 'lucide-react';
+import { ICON_OPTIONS } from '../lib/iconOptions';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { collection, deleteField, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import toast from '../utils/anchoredToast';
@@ -61,6 +62,12 @@ function formatSubscriptionStatus(status: string | null | undefined) {
   return status.replace('_', ' ');
 }
 
+function normalizeEmojiIcon(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return [...trimmed].slice(0, 2).join('');
+}
+
 export default function BandSettingsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -71,6 +78,7 @@ export default function BandSettingsPage() {
     renameBand,
     updateBandDescription,
     updateBandLogo,
+    updateBandLibraryIcon,
     deleteBand,
   } = useBands();
 
@@ -90,6 +98,9 @@ export default function BandSettingsPage() {
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [iconDraft, setIconDraft] = useState('');
+  const iconPickerRef = useRef<HTMLDivElement>(null);
   const logoGridRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -97,6 +108,7 @@ export default function BandSettingsPage() {
     setName(band.name);
     setDescription(band.description ?? '');
     setLogo(band.logo);
+    setIconDraft(band.icon ?? '');
   // Intentionally depends only on band.id — resets form when switching bands,
   // not on every property change (which would overwrite the user's in-progress edits).
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,6 +159,17 @@ export default function BandSettingsPage() {
       window.clearTimeout(timer);
     };
   }, [band, canEditBand, name, description, renameBand, updateBandDescription]);
+
+  useEffect(() => {
+    if (!showIconPicker) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (iconPickerRef.current && !iconPickerRef.current.contains(e.target as Node)) {
+        setShowIconPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showIconPicker]);
 
   useEffect(() => {
     if (!bandId || !db) return;
@@ -402,6 +425,80 @@ export default function BandSettingsPage() {
           <h2 className="bands-section-heading">
             Profile
           </h2>
+
+          {canEditBand && (
+            <div className="share-menu-field">
+              <span>Band icon</span>
+              <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                <button
+                  type="button"
+                  className={`icon-picker-trigger${showIconPicker ? ' is-open' : ''}`}
+                  aria-haspopup="dialog"
+                  aria-expanded={showIconPicker}
+                  onClick={() => setShowIconPicker((v) => !v)}
+                  title="Change band icon"
+                  aria-label="Change band icon"
+                >
+                  {iconDraft
+                    ? <span className="resource-title-icon" aria-hidden="true">{iconDraft}</span>
+                    : <Users size={16} aria-hidden="true" />}
+                </button>
+                {showIconPicker && (
+                  <div className="icon-picker-popover" role="dialog" aria-label="Choose band icon">
+                    <div className="emoji-choice-grid" role="radiogroup" aria-label="Band icon options">
+                      <button
+                        type="button"
+                        className={`emoji-choice-btn${!iconDraft ? ' active' : ''}`}
+                        onClick={async () => {
+                          setIconDraft('');
+                          const error = await updateBandLibraryIcon(band.id, undefined);
+                          if (error) toast.error(error);
+                          setShowIconPicker(false);
+                        }}
+                        aria-label="Choose default icon"
+                        aria-pressed={!iconDraft}
+                      >
+                        <Users size={16} />
+                      </button>
+                      {ICON_OPTIONS.map((emoji) => {
+                        const selected = iconDraft === emoji;
+                        return (
+                          <button
+                            key={emoji}
+                            type="button"
+                            className={`emoji-choice-btn${selected ? ' active' : ''}`}
+                            onClick={async () => {
+                              const normalized = normalizeEmojiIcon(emoji);
+                              setIconDraft(normalized ?? '');
+                              const error = await updateBandLibraryIcon(band.id, normalized);
+                              if (error) toast.error(error);
+                              setShowIconPicker(false);
+                            }}
+                            aria-label={`Choose icon ${emoji}`}
+                            aria-pressed={selected}
+                          >
+                            {emoji}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      className="icon-picker-reset-btn"
+                      onClick={async () => {
+                        setIconDraft('');
+                        const error = await updateBandLibraryIcon(band.id, undefined);
+                        if (error) toast.error(error);
+                        setShowIconPicker(false);
+                      }}
+                    >
+                      Reset to default
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="share-menu-field">
             <span>Band name</span>

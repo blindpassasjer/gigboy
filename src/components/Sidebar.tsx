@@ -628,7 +628,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     className="sidebar-list-item-btn"
                     onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/library`); onNavigate?.(); }}
                   >
-                    <SidebarItemIcon icon={band.icon} fallback={<ListMusic size={14} />} />
+                    <SidebarItemIcon fallback={<ListMusic size={14} />} />
                     <span className="sidebar-list-name">Library</span>
                     {(bandSongsByBandId[band.id]?.length ?? 0) > 0 && (
                       <span className="sidebar-list-count">{bandSongsByBandId[band.id]?.length ?? 0}</span>
