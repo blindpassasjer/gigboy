@@ -5,12 +5,9 @@ interface CreateShareInput {
   userId: string;
   userEmail: string;
   bandId: string;
-  pressKitIcon?: string;
+  kitId: string;
   selectedStageplotIds: string[];
   selectedRiderIds: string[];
-  texts: PressKitTextItem[];
-  images: PressKitImageItem[];
-  videoUrls: string[];
 }
 
 
@@ -20,12 +17,9 @@ export async function createPressKitShare(input: CreateShareInput): Promise<{ to
     headers: await buildHeaders({ userId: input.userId, userEmail: input.userEmail }),
     body: JSON.stringify({
       bandId: input.bandId,
-      pressKitIcon: input.pressKitIcon,
+      kitId: input.kitId,
       selectedStageplotIds: input.selectedStageplotIds,
       selectedRiderIds: input.selectedRiderIds,
-      texts: input.texts,
-      images: input.images,
-      videoUrls: input.videoUrls,
     }),
   });
 

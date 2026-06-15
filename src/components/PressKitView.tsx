@@ -544,17 +544,13 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     if (!userId || !userEmail) { toast.error('You must be signed in to share.'); return; }
     setBusyShare(true);
     try {
-      const richText = editor?.getHTML() ?? kit.richText ?? '';
       const result = await createPressKitShare({
         userId,
         userEmail,
         bandId,
-        pressKitIcon: kit.icon,
+        kitId: kit.id,
         selectedStageplotIds: [],
         selectedRiderIds: [],
-        texts: richText ? [{ title: kit.name, body: richText }] : [],
-        images: attachedImages.map(({ title, url }) => ({ title, url })),
-        videoUrls: selectedVideoUrls.map((u) => u.trim()).filter(Boolean),
       });
       setActiveShare({ token: result.token, publicUrl: result.publicUrl, createdAt: new Date().toISOString() });
       await navigator.clipboard.writeText(result.publicUrl);
