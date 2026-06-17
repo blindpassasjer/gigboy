@@ -861,7 +861,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               </button>
 
               <button
-                className="song-action-btn song-action-btn--labeled"
+                className="song-action-btn song-action-btn--labeled song-action-btn--download"
                 onClick={handleExport}
                 title={`Download ${song.title} as ChordPro file`}
                 aria-label={`Download ${song.title} as ChordPro file`}

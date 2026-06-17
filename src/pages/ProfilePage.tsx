@@ -84,7 +84,11 @@ export default function ProfilePage() {
   );
   const renewalDate = formatPeriodEnd(
     paidOwnedBands
-      .map((band) => band.billingCurrentPeriodEnd ?? null)
+      .map((band) => {
+        if (!user) return band.billingCurrentPeriodEnd ?? null;
+        const { fromBand } = getEffectiveBandPlan(band, user.plan, user.subscriptionStatus, user.planOverride);
+        return fromBand ? (band.billingCurrentPeriodEnd ?? null) : (user.currentPeriodEnd ?? null);
+      })
       .filter((value): value is number => typeof value === 'number')
       .sort((left, right) => left - right)[0] ?? null,
   );

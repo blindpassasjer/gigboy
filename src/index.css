@@ -1635,6 +1635,16 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: transparent;
 }
 
+.song-view .song-action-btn--download {
+  border-color: transparent;
+  background: transparent;
+}
+
+.song-view .song-action-btn--download:hover {
+  border-color: transparent;
+  background: transparent;
+}
+
 @media (min-width: 901px) and (max-width: 1200px) {
   :root {
     --sidebar-width: 240px;
