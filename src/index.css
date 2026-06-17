@@ -8080,83 +8080,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
 }
 
-.profile-account-badges,
-.profile-feature-chips,
 .profile-subscription-actions,
 .profile-danger-actions {
   display: flex;
   flex-wrap: wrap;
   gap: .6rem;
-}
-
-.profile-account-badges .profile-account-chip-btn {
-  margin-left: auto;
-}
-
-.profile-account-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  padding: .42rem .72rem;
-  border-radius: 999px;
-  font-size: .82rem;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 82%, white);
-  color: var(--muted);
-}
-
-.profile-account-badge--plan {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-}
-
-.profile-account-badge--billing {
-  color: color-mix(in srgb, #15803d 82%, var(--text));
-  border-color: color-mix(in srgb, #16a34a 28%, var(--border));
-  background: color-mix(in srgb, #16a34a 12%, var(--surface));
-}
-
-.profile-account-badge--billing-empty {
-  color: color-mix(in srgb, #b45309 82%, var(--text));
-  border-color: color-mix(in srgb, #d97706 26%, var(--border));
-  background: color-mix(in srgb, #d97706 11%, var(--surface));
-}
-
-.profile-account-badge--bands {
-  color: color-mix(in srgb, #1d4ed8 82%, var(--text));
-  border-color: color-mix(in srgb, #2563eb 28%, var(--border));
-  background: color-mix(in srgb, #2563eb 10%, var(--surface));
-}
-
-.profile-account-chip-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  padding: .42rem .72rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, #b91c1c 28%, var(--border));
-  background: color-mix(in srgb, #b91c1c 10%, var(--surface));
-  color: color-mix(in srgb, #b91c1c 80%, var(--text));
-  font-size: .82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .16s ease, border-color .16s ease, transform .08s ease;
-}
-
-.profile-account-chip-btn:hover,
-.profile-account-chip-btn:focus-visible {
-  border-color: color-mix(in srgb, #b91c1c 40%, var(--border));
-  background: color-mix(in srgb, #b91c1c 15%, var(--surface));
-}
-
-.profile-account-chip-btn:active {
-  transform: translateY(1px);
-}
-
-.profile-account-chip-btn:disabled {
-  opacity: .65;
-  cursor: not-allowed;
 }
 
 .profile-account-grid {
@@ -8265,19 +8193,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: .78rem;
 }
 
-.profile-feature-chips span {
-  padding: .42rem .7rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: .8rem;
-}
-
-.profile-feature-chips span.is-enabled {
-  color: var(--text);
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-}
 
 .profile-band-subscriptions {
   display: flex;

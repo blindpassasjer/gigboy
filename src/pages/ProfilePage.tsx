@@ -24,7 +24,7 @@ function formatPeriodEnd(value: number | null) {
 function formatSubscriptionStatus(status: string | null, complimentary: boolean) {
   if (complimentary) return 'Complimentary';
   if (!status) return 'Not subscribed';
-  return status.replace('_', ' ');
+  return status.replace(/_/g, ' ');
 }
 
 function isBandBillingActive(plan: string | null | undefined, status: string | null | undefined) {
@@ -312,11 +312,66 @@ export default function ProfilePage() {
       </header>
 
       <div className="profile-account-grid">
+        <section className="profile-settings-card profile-settings-card--wide">
+          <div className="profile-section-heading">
+            <div>
+              <h2>Account information</h2>
+              <p className="profile-settings-muted">Keep your public profile and login details current.</p>
+            </div>
+          </div>
+          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onFullNameSubmit}>
+            <label className="form-field">
+              <span>Full name</span>
+              <input
+                type="text"
+                value={fullName}
+                autoComplete="name"
+                onChange={(event) => setFullName(event.target.value)}
+                required
+                maxLength={80}
+              />
+            </label>
+            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyFullName}>
+              {busyFullName ? 'Saving…' : 'Save'}
+            </button>
+          </form>
+          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onUsernameSubmit}>
+            <label className="form-field">
+              <span>Username</span>
+              <input
+                type="text"
+                value={username}
+                autoComplete="username"
+                onChange={(event) => setUsername(event.target.value)}
+                required
+              />
+            </label>
+            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyUsername}>
+              {busyUsername ? 'Saving…' : 'Save'}
+            </button>
+          </form>
+          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onEmailSubmit}>
+            <label className="form-field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={email}
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </label>
+            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyEmail}>
+              {busyEmail ? 'Saving…' : 'Save'}
+            </button>
+          </form>
+        </section>
+
         <section className="profile-settings-card profile-account-summary-card">
           <div className="profile-section-heading">
             <div>
               <h2>Billing</h2>
-              <p className="profile-settings-muted">This Stripe customer belongs to your account, but paid libraries are billed per owned band workspace.</p>
+              <p className="profile-settings-muted">This Stripe customer belongs to your account, but paid plans are billed per owned band workspace.</p>
             </div>
           </div>
           <div className="profile-subscription-overview">
@@ -407,63 +462,7 @@ export default function ProfilePage() {
           ) : null}
         </section>
 
-        <section className="profile-settings-card">
-          <div className="profile-section-heading">
-            <div>
-              <h2>Account information</h2>
-              <p className="profile-settings-muted">Keep your public profile and login details current.</p>
-            </div>
-          </div>
-          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onFullNameSubmit}>
-            <label className="form-field">
-              <span>Full name</span>
-              <input
-                type="text"
-                value={fullName}
-                autoComplete="name"
-                onChange={(event) => setFullName(event.target.value)}
-                required
-                maxLength={80}
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyFullName}>
-              {busyFullName ? 'Saving…' : 'Save'}
-            </button>
-          </form>
-          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onUsernameSubmit}>
-            <label className="form-field">
-              <span>Username</span>
-              <input
-                type="text"
-                value={username}
-                autoComplete="username"
-                onChange={(event) => setUsername(event.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyUsername}>
-              {busyUsername ? 'Saving…' : 'Save'}
-            </button>
-          </form>
-          <form className="profile-settings-form profile-settings-form--inline" onSubmit={onEmailSubmit}>
-            <label className="form-field">
-              <span>Email</span>
-              <input
-                type="email"
-                value={email}
-                autoComplete="email"
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" className="setlist-action-btn profile-settings-save-btn" disabled={busyEmail}>
-              {busyEmail ? 'Saving…' : 'Save'}
-            </button>
-          </form>
-
-        </section>
-
-        <section className="profile-settings-card profile-danger-card">
+        <section className="profile-settings-card profile-settings-card--wide profile-danger-card">
           <div className="profile-section-heading">
             <div>
               <h2>Danger zone</h2>
