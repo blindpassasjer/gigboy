@@ -136,6 +136,7 @@ export default function ConcertModeView({
   const contentRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
   const targetPageRef = useRef(0);
+  const contentScrollHeightRef = useRef(0);
 
   const isMultiSong = songs.length > 1;
   const activeSong = songs[currentIndex] ?? null;
@@ -180,16 +181,20 @@ export default function ConcertModeView({
       if (!viewport || !content) return;
       const vh = viewport.clientHeight;
       if (vh <= 0) return;
-      // Temporarily zero the transform so measurements reflect natural positions
+      // Temporarily zero transform and clip-path so measurements reflect natural positions
       const prevTransition = content.style.transition;
       const prevTransform = content.style.transform;
+      const prevClipPath = content.style.clipPath;
       content.style.transition = 'none';
       content.style.transform = 'translateY(0px)';
+      content.style.clipPath = '';
 
+      contentScrollHeightRef.current = content.scrollHeight;
       const offsets = computePageOffsets(content, vh);
 
       content.style.transition = prevTransition;
       content.style.transform = prevTransform;
+      content.style.clipPath = prevClipPath;
 
       setPageOffsets(offsets);
       setCurrentPageInSong((p) => Math.min(p, offsets.length - 1));
@@ -743,7 +748,15 @@ export default function ConcertModeView({
             <div
               className="concert-page-content"
               ref={contentRef}
-              style={{ transform: `translateY(${-(pageOffsets[currentPageInSong] ?? 0)}px)` }}
+              style={(() => {
+                const offsetY = pageOffsets[currentPageInSong] ?? 0;
+                const nextOffsetY = pageOffsets[currentPageInSong + 1] ?? contentScrollHeightRef.current;
+                const bottomClip = Math.max(0, contentScrollHeightRef.current - nextOffsetY);
+                return {
+                  transform: `translateY(${-offsetY}px)`,
+                  clipPath: bottomClip > 0 ? `inset(0 0 ${bottomClip}px 0)` : undefined,
+                };
+              })()}
             >
               <div className="song-notes-stage">
                 <ChordDisplay

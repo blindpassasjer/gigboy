@@ -290,6 +290,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await deleteUser(credential.user).catch(() => undefined);
         throw profileError;
       }
+      // Optimistically set username so the race between onAuthStateChanged and the
+      // Firestore write doesn't briefly show UsernameSetupPage after registration.
+      setUser((current) => (current ? { ...current, username } : current));
       return null;
     } catch (err: unknown) {
       return err instanceof Error ? err.message : 'Registration failed';

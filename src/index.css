@@ -26,7 +26,9 @@
   --chord:      #1a6fc4;
   --chord-bg:   #e6f0fb;
   --sidebar-accent: var(--text);
+  --sidebar-hover-bg: #f0ede9;
   --sidebar-hover-bg: color-mix(in srgb, var(--surface) 45%, var(--bg));
+  --sidebar-active-bg: #ebe7e3;
   --sidebar-active-bg: color-mix(in srgb, var(--surface) 20%, var(--bg));
   --radius:     10px;
   --radius-sm:  6px;
@@ -59,7 +61,9 @@
   --chord:      #6aadff;
   --chord-bg:   #1a2e45;
   --sidebar-accent: var(--text);
+  --sidebar-hover-bg: #2e2c29;
   --sidebar-hover-bg: color-mix(in srgb, var(--surface) 42%, var(--bg));
+  --sidebar-active-bg: #2a2825;
   --sidebar-active-bg: color-mix(in srgb, var(--surface) 28%, var(--bg));
   --shadow:     0 1px 3px rgba(0,0,0,.24), 0 2px 8px rgba(0,0,0,.2);
   --shadow-md:  0 4px 16px rgba(0,0,0,.32), 0 1px 4px rgba(0,0,0,.24);
@@ -95,6 +99,7 @@ body {
   [role="button"],
   [tabindex]:not([tabindex="-1"])
 ):focus-visible {
+  outline: 3px solid var(--accent);
   outline: 3px solid color-mix(in srgb, var(--accent) 38%, transparent);
   outline-offset: 2px;
 }
@@ -159,6 +164,11 @@ textarea {
     width: 44px;
     height: 44px;
   }
+
+  /* Prevent iOS Safari auto-zoom on input focus (triggers when font-size < 16px) */
+  input, select, textarea {
+    font-size: 1rem;
+  }
 }
 
 a { color: var(--accent); text-decoration: none; }
@@ -173,7 +183,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .app-body {
@@ -192,9 +202,11 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .topbar {
+  background: var(--surface);
   background: color-mix(in srgb, var(--surface) 85%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   padding: var(--safe-top) calc(1.5rem + var(--safe-right)) 0 calc(1.5rem + var(--safe-left));
   display: flex;
@@ -4582,6 +4594,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   opacity: .2;
   transform: perspective(600px) rotateX(44deg) scale(1.35) translateY(16%);
   animation: login-grid-drift 22s linear infinite;
+  will-change: transform;
 }
 
 .login-shell {
