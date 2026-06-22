@@ -1998,6 +1998,18 @@ input, select, textarea { font: inherit; color: var(--text); }
 .transpose-btn:hover { background: var(--chord-bg); }
 .transpose-btn--reset { color: var(--muted); opacity: .7; }
 .transpose-btn--reset:hover { color: var(--danger); background: #fde8e8; opacity: 1; }
+.transpose-btn--pin {
+  margin-left: .2rem;
+  padding-left: .5rem;
+  border-left: 1px solid var(--border);
+  gap: .3rem;
+  font-size: .78rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.transpose-btn--pin:hover { color: var(--accent); background: var(--chord-bg); }
+.transpose-btn--pin-active { color: var(--accent) !important; opacity: 1; }
+.transpose-btn--pin-active:hover { background: var(--chord-bg); }
 .transpose-label { font-size: .82rem; color: var(--muted); min-width: 72px; text-align: center; }
 
 .toggle-label {

@@ -5,6 +5,7 @@ import {
   ChevronUp,
   ChevronDown,
   RotateCcw,
+  Pin,
   ListPlus,
   Wrench,
   SlidersHorizontal,
@@ -475,10 +476,11 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 <button
                   onClick={() => { void handlePinTranspose(); }}
                   aria-label="Pin current transpose"
-                  className={`transpose-btn transpose-btn--pin song-toolbar-tool-btn song-toolbar-setting-btn${isTransposePinned ? ' transpose-btn--pin-active' : ''}`}
+                  className={`transpose-btn transpose-btn--pin${isTransposePinned ? ' transpose-btn--pin-active' : ''}`}
                   title={isTransposePinned ? 'This transposition is already pinned' : 'Pin this transposition for this song'}
                 >
-                  {isTransposePinned ? 'Pinned' : 'Pin'}
+                  <Pin size={12} />
+                  {isTransposePinned ? 'Saved' : 'Save key'}
                 </button>
               </div>
 
