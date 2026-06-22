@@ -72,9 +72,9 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const location = useLocation();
   const pageState = location.state as SongPageState | null;
   const [transpose, setTranspose] = useState(0);
-  const [showChords, setShowChords] = useState(true);
-  const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
-  const [chordNotation, setChordNotation] = useState<ChordNotation>('anglo');
+  const showChords = true;
+  const chordInstrument: DiagramInstrument = 'guitar';
+  const chordNotation: ChordNotation = 'anglo';
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const [updatingFromFile, setUpdatingFromFile] = useState(false);
@@ -318,6 +318,18 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     );
   }
 
+  async function handleUpdateCapo(newCapo: number) {
+    const nextSong: Song = {
+      ...song,
+      capo: newCapo,
+      updatedAt: new Date().toISOString(),
+    };
+    const err = bandId
+      ? await updateBandSong(bandId, nextSong)
+      : await updateSong(nextSong);
+    if (err) toast.error(`Could not update capo: ${err}`);
+  }
+
   async function handleUpdateFromFile(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
@@ -470,67 +482,25 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 </button>
               </div>
 
-              {song.capo !== undefined && song.capo > 0 && (
-                <span className="capo-badge">Capo {song.capo}</span>
-              )}
-
-              <div className="instrument-toggle song-toolbar-controls-group">
+              <div className="transpose-control song-toolbar-controls-group">
                 <button
-                  type="button"
-                  className={`instrument-toggle-btn${showChords ? ' instrument-toggle-btn--active' : ''}`}
-                  onClick={() => {
-                    setShowChords((prev) => {
-                      const next = !prev;
-                      if (!next) setActiveChord(null);
-                      return next;
-                    });
-                  }}
-                  aria-label={showChords ? 'Hide chords' : 'Show chords'}
-                  title={showChords ? 'Hide chords' : 'Show chords'}
+                  className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
+                  onClick={() => { void handleUpdateCapo(Math.max(0, (song.capo ?? 0) - 1)); }}
+                  aria-label="Decrease capo"
                 >
-                  Chords
+                  −
+                </button>
+                <span className="transpose-label song-toolbar-tool-btn song-toolbar-setting-label">
+                  {(song.capo ?? 0) === 0 ? 'No capo' : `Capo ${song.capo}`}
+                </span>
+                <button
+                  className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
+                  onClick={() => { void handleUpdateCapo(Math.min(12, (song.capo ?? 0) + 1)); }}
+                  aria-label="Increase capo"
+                >
+                  +
                 </button>
               </div>
-
-              {showChords && (
-                <>
-                  <div className="instrument-toggle">
-                    <button
-                      className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
-                      onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
-                    >
-                      Guitar
-                    </button>
-                    <button
-                      className={`instrument-toggle-btn${chordInstrument === 'ukulele' ? ' instrument-toggle-btn--active' : ''}`}
-                      onClick={() => { setChordInstrument('ukulele'); setActiveChord(null); }}
-                    >
-                      Ukulele
-                    </button>
-                    <button
-                      className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
-                      onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
-                    >
-                      Piano
-                    </button>
-                  </div>
-
-                  <div className="instrument-toggle">
-                    <button
-                      className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
-                      onClick={() => setChordNotation('anglo')}
-                    >
-                      C D E
-                    </button>
-                    <button
-                      className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
-                      onClick={() => setChordNotation('spanish')}
-                    >
-                      Do Re Mi
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
 
 

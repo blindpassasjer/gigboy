@@ -52,7 +52,6 @@ type SongFormValues = {
   language: string;
   tags: string;
   key: string;
-  capo: string;
   tempo: string;
   timeSignature: string;
   chordpro: string;
@@ -77,8 +76,7 @@ export default function AddSongForm({
   const [language, setLanguage] = useState(initialSong?.language ?? 'en');
   const [tags, setTags] = useState((initialSong?.tags ?? []).join(', '));
   const [key, setKey] = useState(initialSong?.key ?? '');
-  const [capo, setCapo] = useState(initialSong?.capo !== undefined ? String(initialSong.capo) : '');
-  const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(initialSong.tempo) : '');
+const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(initialSong.tempo) : '');
   const [timeSignature, setTimeSignature] = useState(initialSong?.timeSignature ?? '');
   const [chordpro, setChordpro] = useState(initialSong?.chordpro ?? '');
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
@@ -121,7 +119,6 @@ export default function AddSongForm({
     language: initialSong?.language ?? 'en',
     tags: (initialSong?.tags ?? []).join(', '),
     key: initialSong?.key ?? '',
-    capo: initialSong?.capo !== undefined ? String(initialSong.capo) : '',
     tempo: initialSong?.tempo !== undefined ? String(initialSong.tempo) : '',
     timeSignature: initialSong?.timeSignature ?? '',
     chordpro: initialSong?.chordpro ?? '',
@@ -135,7 +132,6 @@ export default function AddSongForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     initialSong?.tags?.join(','),
     initialSong?.key,
-    initialSong?.capo,
     initialSong?.tempo,
     initialSong?.timeSignature,
     initialSong?.chordpro,
@@ -156,7 +152,6 @@ export default function AddSongForm({
     language,
     tags,
     key,
-    capo,
     tempo,
     timeSignature,
     chordpro,
@@ -169,7 +164,6 @@ export default function AddSongForm({
     language,
     tags,
     key,
-    capo,
     tempo,
     timeSignature,
     chordpro,
@@ -191,7 +185,6 @@ export default function AddSongForm({
       || formValues.language !== lastSavedValues.language
       || formValues.tags !== lastSavedValues.tags
       || formValues.key !== lastSavedValues.key
-      || formValues.capo !== lastSavedValues.capo
       || formValues.tempo !== lastSavedValues.tempo
       || formValues.timeSignature !== lastSavedValues.timeSignature
       || formValues.chordpro !== lastSavedValues.chordpro
@@ -256,7 +249,6 @@ export default function AddSongForm({
       language: values.language,
       tags: values.tags.split(',').map((t) => t.trim()).filter(Boolean),
       key: values.key.trim() || undefined,
-      capo: values.capo ? parseInt(values.capo, 10) : undefined,
       tempo: values.tempo ? parseInt(values.tempo, 10) : undefined,
       timeSignature: values.timeSignature.trim() || undefined,
       chordpro: values.chordpro.trim(),
@@ -271,7 +263,6 @@ export default function AddSongForm({
     if (parsed.artist) setArtist(parsed.artist);
     if (parsed.author) setAuthor(parsed.author);
     if (parsed.key) setKey(parsed.key);
-    if (typeof parsed.capo === 'number') setCapo(String(parsed.capo));
     if (typeof parsed.tempo === 'number') setTempo(String(parsed.tempo));
     setChordpro(parsed.chordpro);
     setParseWarnings(parsed.warnings);
@@ -298,7 +289,6 @@ export default function AddSongForm({
       }
       setTags((imported.tags ?? []).join(', '));
       setKey(imported.key ?? '');
-      setCapo(typeof imported.capo === 'number' ? String(imported.capo) : '');
       setTempo(typeof imported.tempo === 'number' ? String(imported.tempo) : '');
       setTimeSignature(imported.timeSignature ?? '');
       setChordpro(imported.chordpro);
@@ -367,7 +357,6 @@ export default function AddSongForm({
     setLanguage(values.language);
     setTags(values.tags);
     setKey(values.key);
-    setCapo(values.capo);
     setTempo(values.tempo);
     setTimeSignature(values.timeSignature);
     setChordpro(values.chordpro);
@@ -573,10 +562,6 @@ export default function AddSongForm({
                 <div className="form-field">
                   <label>Key</label>
                   <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="e.g. G" maxLength={4} />
-                </div>
-                <div className="form-field">
-                  <label>Capo</label>
-                  <input type="number" value={capo} onChange={(e) => setCapo(e.target.value)} min={0} max={12} placeholder="0" />
                 </div>
                 <div className="form-field">
                   <label>BPM</label>
