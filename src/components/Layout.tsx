@@ -46,7 +46,7 @@ export default function Layout({ children }: Props) {
     clearAcceptedNotifications,
   } = useInviteNotifications();
   const isConcertRoute = pathname.endsWith('/concert')
-    && pathname.startsWith('/bands/');
+    && (pathname.startsWith('/bands/') || pathname.startsWith('/songs/'));
   const stateBandId = (() => {
     if (!state || typeof state !== 'object') return null;
     const candidate = (state as { bandId?: unknown }).bandId;

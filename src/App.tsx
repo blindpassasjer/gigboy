@@ -20,6 +20,7 @@ const BandDetailPage = lazy(() => import('./pages/BandDetailPage'));
 const BandSettingsPage = lazy(() => import('./pages/BandSettingsPage'));
 const BandMembersPage = lazy(() => import('./pages/BandMembersPage'));
 const SongPage = lazy(() => import('./pages/SongPage'));
+const SongConcertPage = lazy(() => import('./pages/SongConcertPage'));
 const EditSongPage = lazy(() => import('./pages/EditSongPage'));
 const ProfileInvitesPage = lazy(() => import('./pages/ProfileInvitesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
@@ -133,6 +134,7 @@ function AuthenticatedApp() {
                     <Route path="/bands" element={<RootRedirect />} />
                     <Route path="/songs/new" element={<AddSongPage />} />
                     <Route path="/songs/:id" element={<SongPage />} />
+                    <Route path="/songs/:id/concert" element={<SongConcertPage />} />
                     <Route path="/songs/:id/edit" element={<EditSongPage />} />
                     <Route path="/bands/:bandId/setlists/:setlistId/concert" element={<BandSetlistConcertPage />} />
                     <Route path="/bands/:id/settings" element={<BandSettingsPage />} />

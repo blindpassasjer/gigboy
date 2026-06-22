@@ -21,6 +21,7 @@ import {
   Metronome,
   Search,
   X,
+  MonitorPlay,
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { HandNoteStroke, Song, TextNote } from '../types';
@@ -408,6 +409,14 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               aria-label={`Rename ${song.title}`}
             >
               <PenLine size={14} />
+            </button>
+            <button
+              className="song-action-btn song-action-btn--concert"
+              onClick={() => navigate(`/songs/${song.id}/concert`, { state: { backTo: location.pathname, bandId } })}
+              title="Open in concert mode"
+              aria-label="Open in concert mode"
+            >
+              <MonitorPlay size={14} />
             </button>
           </div>
           {song.artist && <p className="song-view-artist">{song.artist}</p>}
