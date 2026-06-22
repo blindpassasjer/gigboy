@@ -538,6 +538,17 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             <div className="song-toolbar-row song-toolbar-row--tool-switches">
               <button
                 type="button"
+                className="song-toolbar-tool-btn song-toolbar-tool-btn--concert"
+                onClick={() => navigate(`/songs/${song.id}/concert`, { state: { backTo: location.pathname, bandId } })}
+                title="Open in concert mode"
+                aria-label="Open in concert mode"
+              >
+                <Play size={14} />
+                Concert
+              </button>
+
+              <button
+                type="button"
                 className={`song-toolbar-tool-btn${showTuner ? ' song-toolbar-tool-btn--active' : ''}`}
                 onClick={() => setShowTuner((prev) => !prev)}
                 title={showTuner ? 'Hide tuner' : 'Show tuner'}
@@ -620,17 +631,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               >
                 <Search size={14} />
                 Chord finder
-              </button>
-
-              <button
-                type="button"
-                className="song-toolbar-tool-btn song-toolbar-tool-btn--concert"
-                onClick={() => navigate(`/songs/${song.id}/concert`, { state: { backTo: location.pathname, bandId } })}
-                title="Open in concert mode"
-                aria-label="Open in concert mode"
-              >
-                <Play size={14} />
-                Concert
               </button>
             </div>
 
