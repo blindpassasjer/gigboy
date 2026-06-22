@@ -1998,18 +1998,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .transpose-btn:hover { background: var(--chord-bg); }
 .transpose-btn--reset { color: var(--muted); opacity: .7; }
 .transpose-btn--reset:hover { color: var(--danger); background: #fde8e8; opacity: 1; }
-.transpose-btn--pin {
-  margin-left: .2rem;
-  padding-left: .5rem;
-  border-left: 1px solid var(--border);
-  gap: .3rem;
-  font-size: .78rem;
-  font-weight: 500;
-  color: var(--muted);
-}
-.transpose-btn--pin:hover { color: var(--accent); background: var(--chord-bg); }
-.transpose-btn--pin-active { color: var(--accent) !important; opacity: 1; }
-.transpose-btn--pin-active:hover { background: var(--chord-bg); }
 .transpose-label { font-size: .82rem; color: var(--muted); min-width: 72px; text-align: center; }
 
 .toggle-label {
@@ -2377,12 +2365,23 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-view-header .song-toolbar-row--controls .transpose-control {
-  border: 0;
-  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--song-header-accent) 14%, var(--song-item-bg));
+  padding: .12rem;
+  overflow: hidden;
+  gap: .12rem;
+}
+.song-view-header .song-toolbar-row--controls .transpose-btn {
+  border-radius: 999px;
   background: transparent;
-  padding: 0;
-  overflow: visible;
-  gap: .45rem;
+  border-color: transparent;
+}
+.song-view-header .song-toolbar-row--controls .transpose-btn--pin {
+  margin-left: .15rem;
+  padding-left: .55rem;
+  border-left: 1px solid color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
+  border-radius: 0;
 }
 
 .song-view-header .song-toolbar-row--controls .instrument-toggle {
@@ -2436,12 +2435,23 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .concert-tool-row .transpose-control {
-  border: 0;
-  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--song-header-accent) 14%, var(--song-item-bg));
+  padding: .12rem;
+  overflow: hidden;
+  gap: .12rem;
+}
+.concert-tool-row .transpose-btn {
+  border-radius: 999px;
   background: transparent;
-  padding: 0;
-  overflow: visible;
-  gap: .35rem;
+  border-color: transparent;
+}
+.concert-tool-row .transpose-btn--pin {
+  margin-left: .15rem;
+  padding-left: .55rem;
+  border-left: 1px solid color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
+  border-radius: 0;
 }
 
 .concert-tool-row .instrument-toggle {
