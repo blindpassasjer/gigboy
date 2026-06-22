@@ -114,14 +114,14 @@ function RootRedirect() {
 }
 
 function AuthenticatedApp() {
-  const { user, loading, authEnabled } = useAuth();
+  const { user, loading, authEnabled, isDeletingAccount } = useAuth();
 
   if (loading) {
     return <div className="app-status">Loading Gigboy…</div>;
   }
 
   if (authEnabled && !user) return <LoginPage />;
-  if (authEnabled && user && !user.username && !user.isAnonymous) return <UsernameSetupPage />;
+  if (authEnabled && user && !user.username && !user.isAnonymous && !isDeletingAccount) return <UsernameSetupPage />;
 
   return (
     <SongsProvider>

@@ -69,6 +69,7 @@ interface AuthContextValue {
   updateFullName: (fullName: string) => Promise<string | null>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
   deleteAccount: () => Promise<string | null>;
+  isDeletingAccount: boolean;
   logout: () => Promise<void>;
   /** Start an anonymous demo session with pre-seeded songs and Band plan. */
   loginAsDemo: () => Promise<string | null>;
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(firebaseEnabled);
   const [pendingLinkEmail, setPendingLinkEmail] = useState<string | null>(null);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const pendingCredentialRef = useRef<OAuthCredential | null>(null);
 
   const clearPendingLink = useCallback(() => {
@@ -596,6 +598,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const currentUser = auth.currentUser;
 
     try {
+      setIsDeletingAccount(true);
       await deleteAccountOnServer({
         userId: currentUser.uid,
         userEmail: currentUser.email ?? '',
@@ -603,6 +606,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signOut(auth!);
       return null;
     } catch (err: unknown) {
+      setIsDeletingAccount(false);
       return err instanceof Error ? err.message : 'Failed to delete account.';
     }
   }, [getAuthErrorCode]);
@@ -713,6 +717,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateFullName: updateFullNameValue,
         updatePassword: updatePasswordValue,
         deleteAccount: deleteAccountValue,
+        isDeletingAccount,
         logout,
         loginAsDemo,
         upgradeDemo,
