@@ -1986,7 +1986,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .transpose-btn:hover { background: var(--chord-bg); }
 .transpose-btn--reset { color: var(--muted); opacity: .7; }
 .transpose-btn--reset:hover { color: var(--danger); background: #fde8e8; opacity: 1; }
-.transpose-label { font-size: .82rem; color: var(--muted); min-width: 125px; text-align: center; }
+.transpose-label { font-size: .82rem; color: var(--muted); min-width: 72px; text-align: center; }
 
 .toggle-label {
   display: flex;
@@ -2399,7 +2399,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-view-header .song-toolbar-row--controls .song-toolbar-setting-label {
   cursor: default;
-  min-width: 9.25rem;
+  min-width: 5rem;
   justify-content: center;
   pointer-events: none;
 }

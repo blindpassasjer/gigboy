@@ -73,7 +73,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const pageState = location.state as SongPageState | null;
   const [transpose, setTranspose] = useState(0);
   const showChords = true;
-  const chordInstrument: DiagramInstrument = 'guitar';
+  const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
   const chordNotation: ChordNotation = 'anglo';
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [listMenuOpen, setListMenuOpen] = useState(false);
@@ -499,6 +499,27 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   aria-label="Increase capo"
                 >
                   +
+                </button>
+              </div>
+
+              <div className="instrument-toggle song-toolbar-controls-group">
+                <button
+                  className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
+                >
+                  Guitar
+                </button>
+                <button
+                  className={`instrument-toggle-btn${chordInstrument === 'ukulele' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => { setChordInstrument('ukulele'); setActiveChord(null); }}
+                >
+                  Ukulele
+                </button>
+                <button
+                  className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
+                >
+                  Piano
                 </button>
               </div>
             </div>
