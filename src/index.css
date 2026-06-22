@@ -1091,6 +1091,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
   background: color-mix(in srgb, var(--surface) 96%, #fff);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.14);
   box-shadow: 0 12px 32px color-mix(in srgb, #000 14%, transparent);
   display: flex;
   flex-direction: column;
@@ -1567,7 +1568,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-list-page .song-action-btn--import:hover {
+  border-color: rgba(15,107,102,0.34);
   border-color: color-mix(in srgb, #0f6b66 34%, transparent);
+  background: rgba(15,107,102,0.10);
   background: color-mix(in srgb, #0f6b66 10%, transparent);
 }
 
@@ -1576,7 +1579,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-list-page .song-action-btn--edit:hover {
+  border-color: rgba(31,94,168,0.32);
   border-color: color-mix(in srgb, #1f5ea8 32%, transparent);
+  background: rgba(31,94,168,0.10);
   background: color-mix(in srgb, #1f5ea8 10%, transparent);
 }
 
@@ -1585,7 +1590,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-list-page .song-action-btn--remove:hover {
+  border-color: rgba(141,77,19,0.34);
   border-color: color-mix(in srgb, #8d4d13 34%, transparent);
+  background: rgba(141,77,19,0.10);
   background: color-mix(in srgb, #8d4d13 10%, transparent);
 }
 
@@ -2396,10 +2403,15 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .song-toolbar-row--controls .transpose-btn,
 .song-view-header .song-toolbar-row--controls .instrument-toggle-btn {
   padding: .35rem .7rem;
+  min-height: 2.5rem;
 }
 
 .song-view-header .song-toolbar-row--controls .instrument-toggle-btn,
 .concert-tool-row .instrument-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
   border-radius: 999px;
   background: transparent;
   color: color-mix(in srgb, var(--song-header-accent) 56%, var(--song-item-text));
@@ -2417,6 +2429,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .concert-tool-row .instrument-toggle-btn--active:hover {
   background: color-mix(in srgb, var(--song-header-accent) 84%, black);
   color: var(--song-item-accent-contrast, var(--accent-contrast));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 16%, transparent);
 }
 
@@ -2429,8 +2442,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-view-header .song-toolbar-row--controls .transpose-btn--reset,
 .song-view-header .song-toolbar-row--controls .transpose-btn--reset:hover {
+  color: rgb(249,237,237);
   color: color-mix(in srgb, #fff 92%, #b91c1c);
   border-color: color-mix(in srgb, #b91c1c 45%, var(--song-item-border));
+  background: rgb(135,25,25);
   background: color-mix(in srgb, #b91c1c 70%, #111);
 }
 
@@ -2729,6 +2744,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 999px;
   background:
     linear-gradient(to right,
+      rgba(192,57,43,0.42) 0%,
+      rgba(203,141,46,0.40) 36%,
+      rgba(31,139,76,0.60) 50%,
+      rgba(203,141,46,0.40) 64%,
+      rgba(192,57,43,0.42) 100%
+    );
+  background:
+    linear-gradient(to right,
       color-mix(in srgb, var(--danger) 42%, transparent) 0%,
       color-mix(in srgb, #cb8d2e 40%, transparent) 36%,
       color-mix(in srgb, #1f8b4c 60%, transparent) 50%,
@@ -2739,6 +2762,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .visual-tuner-gauge.is-in-tune {
+  box-shadow: inset 0 0 0 1px rgba(31,139,76,0.45);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, #1f8b4c 45%, transparent);
 }
 
@@ -8150,6 +8174,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
   background: color-mix(in srgb, var(--surface) 94%, #fff);
+  box-shadow: 0 16px 38px rgba(0,0,0,0.16);
   box-shadow: 0 16px 38px color-mix(in srgb, #000 16%, transparent);
 }
 
