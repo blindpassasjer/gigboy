@@ -21,7 +21,6 @@ import {
   Metronome,
   Search,
   X,
-  MonitorPlay,
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { HandNoteStroke, Song, TextNote } from '../types';
@@ -410,14 +409,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             >
               <PenLine size={14} />
             </button>
-            <button
-              className="song-action-btn song-action-btn--concert"
-              onClick={() => navigate(`/songs/${song.id}/concert`, { state: { backTo: location.pathname, bandId } })}
-              title="Open in concert mode"
-              aria-label="Open in concert mode"
-            >
-              <MonitorPlay size={14} />
-            </button>
           </div>
           {song.artist && <p className="song-view-artist">{song.artist}</p>}
           {song.author && <p className="song-view-author">{song.author}</p>}
@@ -629,6 +620,17 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               >
                 <Search size={14} />
                 Chord finder
+              </button>
+
+              <button
+                type="button"
+                className="song-toolbar-tool-btn song-toolbar-tool-btn--concert"
+                onClick={() => navigate(`/songs/${song.id}/concert`, { state: { backTo: location.pathname, bandId } })}
+                title="Open in concert mode"
+                aria-label="Open in concert mode"
+              >
+                <Play size={14} />
+                Concert
               </button>
             </div>
 
