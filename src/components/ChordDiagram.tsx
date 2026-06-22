@@ -2,8 +2,9 @@ import { useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { GUITAR_CHORDS } from '../data/guitarChords';
+import { UKULELE_CHORDS } from '../data/ukuleleChords';
 
-export type DiagramInstrument = 'guitar' | 'piano';
+export type DiagramInstrument = 'guitar' | 'piano' | 'ukulele';
 
 interface Props {
   chord: string;
@@ -320,6 +321,88 @@ export function GuitarDiagram({ frets }: { frets: number[] }) {
   );
 }
 
+// ─── Ukulele diagram ──────────────────────────────────────────────────────────
+
+const UKE_NUM_STRINGS = 4;
+const UKE_GRID_W = (UKE_NUM_STRINGS - 1) * STR_GAP;
+const UKE_SVG_W = GML + UKE_GRID_W + GMR;
+const UKE_STRING_LABELS = ['G', 'C', 'E', 'A'];
+
+export function UkuleleDiagram({ frets }: { frets: number[] }) {
+  const played = frets.filter(f => f > 0);
+  const minFret = played.length ? Math.min(...played) : 0;
+  const maxFret = played.length ? Math.max(...played) : 4;
+
+  const startFret = minFret === 3 ? 3 : 1;
+  const showNut = startFret === 1;
+  const window = Math.max(FRETS_SHOWN, maxFret - startFret + 2);
+  const svgH = GMT + window * FRET_H + 20;
+
+  const dotCy = (f: number) => GMT + (f - startFret + 0.5) * FRET_H;
+
+  return (
+    <svg width={UKE_SVG_W} height={svgH} viewBox={`0 0 ${UKE_SVG_W} ${svgH}`} style={{ display: 'block' }}>
+      {Array.from({ length: window + 1 }, (_, i) => (
+        <line
+          key={i}
+          x1={GML} y1={GMT + i * FRET_H}
+          x2={GML + UKE_GRID_W} y2={GMT + i * FRET_H}
+          stroke="#333"
+          strokeWidth={i === 0 && showNut ? 4 : 1}
+        />
+      ))}
+      {Array.from({ length: UKE_NUM_STRINGS }, (_, i) => (
+        <line
+          key={i}
+          x1={GML + i * STR_GAP} y1={GMT}
+          x2={GML + i * STR_GAP} y2={GMT + window * FRET_H}
+          stroke="#555" strokeWidth={1}
+        />
+      ))}
+      {!showNut && (
+        <text
+          x={GML - 4} y={GMT + FRET_H * 0.5}
+          textAnchor="end" dominantBaseline="middle"
+          fontSize={10} fill="#666" fontFamily="sans-serif"
+        >
+          {startFret}fr
+        </text>
+      )}
+      {frets.map((fret, i) => {
+        const cx = GML + i * STR_GAP;
+        if (fret === -1) {
+          return (
+            <text
+              key={i} x={cx} y={GMT - 10}
+              textAnchor="middle" dominantBaseline="middle"
+              fontSize={13} fill="#c0392b" fontWeight="bold" fontFamily="sans-serif"
+            >
+              ✕
+            </text>
+          );
+        }
+        if (fret === 0) {
+          return (
+            <circle key={i} cx={cx} cy={GMT - 10} r={5}
+              fill="none" stroke="#555" strokeWidth={1.5} />
+          );
+        }
+        if (fret < startFret || fret >= startFret + window) return null;
+        return <circle key={i} cx={cx} cy={dotCy(fret)} r={9} fill="#5c4fa6" />;
+      })}
+      {UKE_STRING_LABELS.map((label, i) => (
+        <text
+          key={i}
+          x={GML + i * STR_GAP} y={GMT + window * FRET_H + 14}
+          textAnchor="middle" fontSize={10} fill="#888" fontFamily="sans-serif"
+        >
+          {label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
 // ─── Piano diagram ────────────────────────────────────────────────────────────
 
 // White key pitch classes per octave: C D E F G A B
@@ -427,6 +510,7 @@ export default function ChordDiagram({ chord, instrument, anchorRect, onClose }:
 
   const normalized = normalizeForLookup(chord);
   const guitarFrets = GUITAR_CHORDS[normalized];
+  const ukuleleFrets = UKULELE_CHORDS[normalized];
   const chordModel = useMemo(() => parseChordModel(chord), [chord]);
   const triadIntervals = useMemo(() => chordModel?.triadIntervals ?? [], [chordModel]);
   const inversionSteps = Math.max(1, triadIntervals.length);
@@ -464,6 +548,10 @@ export default function ChordDiagram({ chord, instrument, anchorRect, onClose }:
         guitarFrets
           ? <GuitarDiagram frets={guitarFrets} />
           : <p className="chord-diagram-unavailable">No diagram for {chord}</p>
+      ) : instrument === 'ukulele' ? (
+        ukuleleFrets
+          ? <UkuleleDiagram frets={ukuleleFrets} />
+          : <p className="chord-diagram-unavailable">No ukulele diagram for {chord}</p>
       ) : (
         chordModel && triadIntervals.length > 0 ? (
           <>

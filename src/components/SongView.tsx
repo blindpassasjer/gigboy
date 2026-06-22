@@ -470,6 +470,10 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 </button>
               </div>
 
+              {song.capo !== undefined && song.capo > 0 && (
+                <span className="capo-badge">Capo {song.capo}</span>
+              )}
+
               <div className="instrument-toggle song-toolbar-controls-group">
                 <button
                   type="button"
@@ -498,6 +502,12 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                       Guitar
                     </button>
                     <button
+                      className={`instrument-toggle-btn${chordInstrument === 'ukulele' ? ' instrument-toggle-btn--active' : ''}`}
+                      onClick={() => { setChordInstrument('ukulele'); setActiveChord(null); }}
+                    >
+                      Ukulele
+                    </button>
+                    <button
                       className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
                       onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
                     >
@@ -523,11 +533,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               )}
             </div>
 
-            <div className="song-toolbar-row song-toolbar-row--meta">
-              {song.capo !== undefined && song.capo > 0 && (
-                <span className="capo-badge">Capo {song.capo}</span>
-              )}
-            </div>
+
           </section>
 
           <section className="song-toolbar-section song-toolbar-section--tools">
@@ -806,7 +812,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                       </span>
                       <button className="floating-tool-close" onClick={() => setShowChordFinder(false)} aria-label="Close chord finder"><X size={14} /></button>
                     </div>
-                    <ChordFinder instrument={chordInstrument} />
+                    <ChordFinder />
                   </div>
                 )}
               </div>

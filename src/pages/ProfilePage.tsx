@@ -261,6 +261,19 @@ export default function ProfilePage() {
 
   return (
     <section className="profile-settings-page profile-settings-page--account">
+      {bands.length === 0 && (
+        <div className="profile-welcome-card">
+          <h2>Welcome to Gigboy</h2>
+          <p>
+            Gigboy is your digital songbook for musicians. Add songs in ChordPro format,
+            organize them into setlists, and use concert mode on stage.
+          </p>
+          <p>
+            Tap the <strong>+</strong> in the sidebar to create your first workspace —
+            works for solo musicians and full bands.
+          </p>
+        </div>
+      )}
       <header className="profile-account-hero">
         <div className="profile-account-hero-main">
           <div className="profile-avatar-picker" ref={avatarPickerRef}>

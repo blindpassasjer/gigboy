@@ -406,6 +406,12 @@ export default function ConcertModeView({
                         Guitar
                       </button>
                       <button
+                        className={`instrument-toggle-btn${chordInstrument === 'ukulele' ? ' instrument-toggle-btn--active' : ''}`}
+                        onClick={() => { setChordInstrument('ukulele'); setActiveChord(null); }}
+                      >
+                        Ukulele
+                      </button>
+                      <button
                         className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
                         onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
                       >

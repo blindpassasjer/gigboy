@@ -504,10 +504,30 @@ export default function SongList({
 
       <div className="song-list-results">
         {filtered.length === 0 ? (
-          <div className="empty-state">
-            <Music size={48} />
-            <p>No songs found.</p>
-          </div>
+          songs.length === 0 && !query.trim() ? (
+            <div className="empty-state">
+              <Music size={48} />
+              <p>No songs yet.</p>
+              <p className="empty-state-hint">
+                Songs use ChordPro format — write chords inline like{' '}
+                <span className="chordpro-example">[G]Amazing [C]grace</span>.
+              </p>
+              {bandId && (
+                <Link
+                  to="/songs/new"
+                  state={{ addSongScope: { kind: 'band', bandId } }}
+                  className="setlist-action-btn"
+                >
+                  Add your first song
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <Music size={48} />
+              <p>No songs found.</p>
+            </div>
+          )
         ) : viewMode === 'cards' ? (
           <div className="song-card-grid">
             {filtered.map((song) => {

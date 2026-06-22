@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Pencil, Play, Repeat, Square } from 'lucide-react';
 import { playTab, stopPlayback, preloadSampler } from '../lib/midiPlayer';
-import { buildBeatGuide } from '../utils/tabParser';
 
 interface Props {
   tabLines: string[];
@@ -18,36 +17,6 @@ function extractLinePrefix(line: string): { prefix: string; content: string } {
   return { prefix: match[0], content: line.slice(match[0].length).replace(/\|$/, '') };
 }
 
-/**
- * Returns the character position where each step starts within the tab content strings.
- * Steps with a fret ≥ 10 on any string are 2 chars wide; all others are 1 char wide.
- * Bar-separator columns (where every string has |) are skipped so they don't shift
- * beat-guide markers — the tab display keeps | visible but guides ignore them.
- */
-function getStepCharPositions(contents: string[]): number[] {
-  if (contents.length === 0) return [];
-  const maxLen = Math.max(...contents.map(s => s.length));
-  const padded = contents.map(s => s.padEnd(maxLen, '-'));
-  const positions: number[] = [];
-  let col = 0;
-  while (col < maxLen) {
-    // Skip bar-separator columns
-    if (padded.every(s => s[col] === '|')) {
-      col++;
-      continue;
-    }
-    positions.push(col);
-    let advance = 1;
-    for (const s of padded) {
-      if (col + 1 < maxLen && /\d/.test(s[col]) && /\d/.test(s[col + 1])) {
-        advance = 2;
-        break;
-      }
-    }
-    col += advance;
-  }
-  return positions;
-}
 
 export default function TabDisplay({
   tabLines,
@@ -108,17 +77,11 @@ export default function TabDisplay({
   const split = tabLines.map(extractLinePrefix);
   const contents = split.map(({ content }) => content);
   const maxContentLength = contents.reduce((max, c) => Math.max(max, c.length), 0);
-  const firstPrefix = split[0]?.prefix ?? '';
-  const guide = buildBeatGuide(maxContentLength, timeSignature, getStepCharPositions(contents));
   const displayLines = split.map(({ prefix, content }) => `${prefix}${content.padEnd(maxContentLength, '-')}`);
 
   return (
     <div className="tab-block">
       <pre className="tab-content">
-        <span className="tab-guide-line">
-          {firstPrefix ? <><span className="tab-guide-emoji">🎵</span>{firstPrefix.slice(1)}</> : null}{guide}
-        </span>
-        {'\n'}
         {displayLines.join('\n')}
       </pre>
       {showPlayback && (
