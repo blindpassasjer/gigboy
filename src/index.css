@@ -7248,6 +7248,19 @@ input, select, textarea { font: inherit; color: var(--text); }
     overflow: hidden;
   }
 
+  /* Concert mode needs a fixed-height shell on mobile so the page viewport
+     can resolve its height for correct pagination calculations. */
+  .app-shell:has(.main-content--concert) {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app-body:has(.main-content--concert) {
+    height: calc(100vh - var(--topbar-height) - var(--safe-top));
+    height: calc(100dvh - var(--topbar-height) - var(--safe-top));
+  }
+
   .song-list-sticky,
   .list-sticky-header {
     --song-list-sticky-top-cover: 1.25rem;
