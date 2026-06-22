@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { stripStringLabel, parseTabLines, extractTabBlocks, fretToMidi } from './tabParser';
+import { stripStringLabel, parseTabLines, extractTabBlocks, fretToMidi, transposeTabLines } from './tabParser';
 
 describe('stripStringLabel', () => {
   it('removes leading string label and pipe', () => {
@@ -122,6 +122,34 @@ describe('parseTabLines', () => {
   it('returns empty array for empty input', () => {
     expect(parseTabLines([])).toEqual([]);
     expect(parseTabLines(['', '  ', ''])).toEqual([]);
+  });
+});
+
+describe('transposeTabLines', () => {
+  it('returns lines unchanged when semitones is 0', () => {
+    const lines = ['e|--0--2--|', 'B|--------|'];
+    expect(transposeTabLines(lines, 0)).toBe(lines);
+  });
+
+  it('shifts fret numbers up by semitones', () => {
+    expect(transposeTabLines(['e|--0--2--|'], 2)).toEqual(['e|--2--4--|']);
+  });
+
+  it('shifts fret numbers down by semitones', () => {
+    expect(transposeTabLines(['e|--5--7--|'], -3)).toEqual(['e|--2--4--|']);
+  });
+
+  it('clamps transposed frets at 0', () => {
+    expect(transposeTabLines(['e|--0--2--|'], -3)).toEqual(['e|--0--0--|']);
+  });
+
+  it('handles two-digit frets', () => {
+    expect(transposeTabLines(['e|--12--|'], 2)).toEqual(['e|--14--|']);
+  });
+
+  it('preserves string labels and dashes', () => {
+    const lines = ['e|--0--|', 'B|--1--|', 'G|-----|'];
+    expect(transposeTabLines(lines, 2)).toEqual(['e|--2--|', 'B|--3--|', 'G|-----|']);
   });
 });
 

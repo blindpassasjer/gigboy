@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Pencil, Play, Repeat, Square } from 'lucide-react';
 import { playTab, stopPlayback, preloadSampler } from '../lib/midiPlayer';
+import { transposeTabLines } from '../utils/tabParser';
 
 interface Props {
   tabLines: string[];
@@ -22,7 +23,7 @@ export default function TabDisplay({
   tabLines,
   transpose = 0,
   bpm = 120,
-  timeSignature,
+  timeSignature: _timeSignature,
   showPlayback = true,
   onEdit,
 }: Props) {
@@ -74,7 +75,8 @@ export default function TabDisplay({
     isLoopingRef.current = next;
   }
 
-  const split = tabLines.map(extractLinePrefix);
+  const displayTabLines = transposeTabLines(tabLines, transpose);
+  const split = displayTabLines.map(extractLinePrefix);
   const contents = split.map(({ content }) => content);
   const maxContentLength = contents.reduce((max, c) => Math.max(max, c.length), 0);
   const displayLines = split.map(({ prefix, content }) => `${prefix}${content.padEnd(maxContentLength, '-')}`);

@@ -179,6 +179,18 @@ export function parseTabLines(tabLines: string[]): TabNoteEvent[] {
 }
 
 /**
+ * Transpose the fret numbers in tab lines by the given number of semitones.
+ * Non-numeric characters (dashes, bars, string labels) are preserved unchanged.
+ * Fret values are clamped at 0 to avoid negative fret numbers.
+ */
+export function transposeTabLines(tabLines: string[], semitones: number): string[] {
+  if (semitones === 0) return tabLines;
+  return tabLines.map(line =>
+    line.replace(/\d+/g, (match) => String(Math.max(0, parseInt(match, 10) + semitones))),
+  );
+}
+
+/**
  * Extract all {start_of_tab}...{end_of_tab} blocks from a ChordPro string.
  * Returns an array of blocks, each block being an array of raw lines.
  */
