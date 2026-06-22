@@ -35,6 +35,59 @@ interface ActiveChord {
   rect: DOMRect;
 }
 
+function computePageOffsets(contentEl: HTMLElement, viewportHeight: number): number[] {
+  const contentRect = contentEl.getBoundingClientRect();
+  const contentTop = contentRect.top;
+
+  const offsets: number[] = [0];
+  let pageStartY = 0;
+
+  const relTop = (el: Element) => el.getBoundingClientRect().top - contentTop;
+  const relBottom = (el: Element) => el.getBoundingClientRect().bottom - contentTop;
+
+  const processAtom = (el: Element) => {
+    const elTop = relTop(el);
+    const elBottom = relBottom(el);
+    if (elBottom - pageStartY > viewportHeight && elTop > pageStartY) {
+      pageStartY = elTop;
+      offsets.push(pageStartY);
+    }
+  };
+
+  const processSection = (section: HTMLElement) => {
+    const secTop = relTop(section);
+    const secBottom = relBottom(section);
+    const secHeight = secBottom - secTop;
+
+    if (secBottom - pageStartY <= viewportHeight) return; // whole section fits
+
+    if (secHeight <= viewportHeight && secTop > pageStartY) {
+      // Keep the whole section together on a new page
+      pageStartY = secTop;
+      offsets.push(pageStartY);
+      return;
+    }
+
+    // Section is taller than one page — split line by line
+    for (const child of Array.from(section.children)) {
+      processAtom(child);
+    }
+  };
+
+  const chordDisplay = contentEl.querySelector('.chord-display');
+  if (!chordDisplay) return offsets;
+
+  for (const child of Array.from(chordDisplay.children) as HTMLElement[]) {
+    if (child.classList.contains('chord-section')) {
+      processSection(child);
+    } else {
+      processAtom(child);
+    }
+  }
+
+  return offsets;
+}
+
 interface Props {
   songs: Song[];
   /** Displayed in the topbar header. Pass setlist name for setlist mode, or empty string to omit. */
@@ -61,8 +114,8 @@ export default function ConcertModeView({
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPageInSong, setCurrentPageInSong] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(0);
-  const [currentPageCount, setCurrentPageCount] = useState(1);
+  const [pageOffsets, setPageOffsets] = useState<number[]>([0]);
+  const currentPageCount = pageOffsets.length;
   const [songPageCounts, setSongPageCounts] = useState<Record<number, number>>({});
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
@@ -127,8 +180,19 @@ export default function ConcertModeView({
       if (!viewport || !content) return;
       const vh = viewport.clientHeight;
       if (vh <= 0) return;
-      setViewportHeight(vh);
-      setCurrentPageCount(Math.max(1, Math.ceil(content.scrollHeight / vh)));
+      // Temporarily zero the transform so measurements reflect natural positions
+      const prevTransition = content.style.transition;
+      const prevTransform = content.style.transform;
+      content.style.transition = 'none';
+      content.style.transform = 'translateY(0px)';
+
+      const offsets = computePageOffsets(content, vh);
+
+      content.style.transition = prevTransition;
+      content.style.transform = prevTransform;
+
+      setPageOffsets(offsets);
+      setCurrentPageInSong((p) => Math.min(p, offsets.length - 1));
     };
 
     const observer = new ResizeObserver(measure);
@@ -221,6 +285,17 @@ export default function ConcertModeView({
     if (dx < 0) goToNextPage();
     else goToPrevPage();
   }, [goToNextPage, goToPrevPage]);
+
+  const handleSurfaceTap = useCallback((e: React.MouseEvent) => {
+    if (drawEnabled) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, input, label, select, [role="button"]')) return;
+    if (activeChord) {
+      setActiveChord(null);
+      return;
+    }
+    goToNextPage();
+  }, [drawEnabled, activeChord, goToNextPage]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -646,6 +721,7 @@ export default function ConcertModeView({
           className="concert-song-surface"
           onPointerDown={onSwipeStart}
           onPointerUp={onSwipeEnd}
+          onClick={handleSurfaceTap}
         >
           <div className="concert-song-header">
             <h2>{currentSong.title}</h2>
@@ -667,7 +743,7 @@ export default function ConcertModeView({
             <div
               className="concert-page-content"
               ref={contentRef}
-              style={{ transform: viewportHeight > 0 ? `translateY(${-currentPageInSong * viewportHeight}px)` : undefined }}
+              style={{ transform: `translateY(${-(pageOffsets[currentPageInSong] ?? 0)}px)` }}
             >
               <div className="song-notes-stage">
                 <ChordDisplay
