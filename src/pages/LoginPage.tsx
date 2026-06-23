@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardList, Piano, Activity, Sparkles, type LucideIcon } from 'lucide-react';
+import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardList, Piano, Activity, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
@@ -249,7 +249,6 @@ export default function LoginPage() {
     register,
     loginWithGoogle,
     loginWithGithub,
-    loginAsDemo,
     pendingLinkEmail,
     linkWithPassword,
     cancelPendingLink,
@@ -324,18 +323,6 @@ export default function LoginPage() {
     setBusy(false);
   }
 
-  async function handleDemoLogin() {
-    setBusy(true);
-    setError('');
-    const err = await loginAsDemo();
-    if (err) {
-      setError(err);
-      setBusy(false);
-    } else {
-      navigate('/');
-    }
-  }
-
   if (pendingLinkEmail) {
     return (
       <div className="login-screen">
@@ -386,23 +373,6 @@ export default function LoginPage() {
         <LoginHero />
         <div className="login-card">
           <h1 className="login-title">{mode === 'register' ? 'Create account' : 'Sign in'}</h1>
-
-          <div className="login-demo-cta">
-            <button
-              type="button"
-              className="btn-secondary login-demo-btn-primary"
-              onClick={() => { void handleDemoLogin(); }}
-              disabled={busy}
-            >
-              <Sparkles size={16} aria-hidden="true" />
-              Try demo — no account needed
-            </button>
-            <p className="login-demo-cta-text">Test all features risk-free, no signup required</p>
-          </div>
-
-          <div className="login-divider" role="separator" aria-label="or sign in">
-            <span>or sign in</span>
-          </div>
 
           <div className="auth-mode-switch" role="tablist" aria-label="Authentication mode">
             <button
