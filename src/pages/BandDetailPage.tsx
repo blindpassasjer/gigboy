@@ -623,6 +623,7 @@ export default function BandDetailPage() {
 
     return (
       <TrashView
+        headerVariant="bands"
         title={`${band.name} Trash`}
         emptyMessage="Trash is empty."
         items={trashItems}

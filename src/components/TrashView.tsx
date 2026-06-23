@@ -18,6 +18,7 @@ interface Props {
   onRestore?: (trashId: string) => Promise<string | null>;
   onDeletePermanently?: (trashId: string) => Promise<string | null>;
   onEmptyTrash?: () => Promise<string | null>;
+  headerVariant?: 'default' | 'bands';
 }
 
 function formatDate(iso: string) {
@@ -44,6 +45,7 @@ export default function TrashView({
   onRestore,
   onDeletePermanently,
   onEmptyTrash,
+  headerVariant = 'default',
 }: Props) {
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
@@ -113,7 +115,7 @@ export default function TrashView({
 
   return (
     <section className="bands-page bands-page--library trash-page">
-      <div className="page-section-header resource-header">
+      <div className={`${headerVariant === 'bands' ? 'bands-header' : 'page-section-header'} resource-header`}>
         <div className="setlist-title-block">
           <h1 className="resource-title">{title}</h1>
           <p className="song-list-summary">Deleted items are automatically removed after 30 days.</p>
