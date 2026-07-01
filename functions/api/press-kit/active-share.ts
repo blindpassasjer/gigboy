@@ -13,15 +13,16 @@ export const onRequestGet: PagesFunction<Record<string, string | undefined>, nev
   const bandId = url.searchParams.get('bandId');
   if (!bandId) return Response.json({ error: 'bandId is required.' }, { status: 400 });
 
-  const band = await getFirestoreDocument(ctx.env, ['bands', bandId]);
+  const [band, shares] = await Promise.all([
+    getFirestoreDocument(ctx.env, ['bands', bandId]),
+    queryFirestoreDocumentsByField(ctx.env, 'pressKitShares', 'bandId', bandId),
+  ]);
   if (!band) return Response.json({ error: 'Band not found.' }, { status: 404 });
 
   const ownerId = typeof band.ownerId === 'string' ? band.ownerId : '';
   const memberRoles = (band.memberRoles ?? {}) as Record<string, string>;
   const canView = ownerId === userId || memberRoles[userId] !== undefined;
   if (!canView) return Response.json({ error: 'Forbidden.' }, { status: 403 });
-
-  const shares = await queryFirestoreDocumentsByField(ctx.env, 'pressKitShares', 'bandId', bandId);
 
   const active = shares
     .filter((s) => s.data.status === 'active')

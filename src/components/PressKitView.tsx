@@ -708,7 +708,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
             </div>
             <div className="resource-header-actions">
               {activeShare ? (
-                <div className="press-kit-share-status">
+                <>
                   <button
                     type="button"
                     className="setlist-action-btn setlist-action-btn--accent"
@@ -726,7 +726,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                   >
                     <Link2Off size={14} /> {busyDisable ? 'Disabling...' : 'Disable link'}
                   </button>
-                </div>
+                </>
               ) : (
                 <button
                   type="button"

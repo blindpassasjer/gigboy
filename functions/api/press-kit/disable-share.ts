@@ -20,7 +20,10 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'token and bandId are required.' }, { status: 400 });
   }
 
-  const band = await getFirestoreDocument(ctx.env, ['bands', bandId]);
+  const [band, share] = await Promise.all([
+    getFirestoreDocument(ctx.env, ['bands', bandId]),
+    getFirestoreDocument(ctx.env, ['pressKitShares', token]),
+  ]);
   if (!band) return Response.json({ error: 'Band not found.' }, { status: 404 });
 
   const ownerId = typeof band.ownerId === 'string' ? band.ownerId : '';
@@ -30,7 +33,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Only band editors can disable a press kit share.' }, { status: 403 });
   }
 
-  const share = await getFirestoreDocument(ctx.env, ['pressKitShares', token]);
   if (!share || share.bandId !== bandId) {
     return Response.json({ error: 'Share not found.' }, { status: 404 });
   }
