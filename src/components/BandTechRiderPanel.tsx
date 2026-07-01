@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ClipboardList, Link2, Link2Off, PenLine, Trash2 } from 'lucide-react';
+import { ClipboardList, Download, Link2, Link2Off, PenLine, Trash2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { InputList, Stageplot } from '../types';
 import StageplotEditor from './StageplotEditor';
@@ -8,6 +8,7 @@ import { useBands } from '../context/BandsContext';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { ICON_OPTIONS } from '../lib/iconOptions';
+import { generatePressKitZip } from '../lib/pressKitZip';
 
 interface Props {
   bandId: string;
@@ -24,6 +25,10 @@ function normalizeEmojiIcon(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   return [...trimmed].slice(0, 2).join('');
+}
+
+function slugifyFileName(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'technical-rider';
 }
 
 export default function BandTechRiderPanel({
@@ -188,6 +193,49 @@ export default function BandTechRiderPanel({
     }
   };
 
+  const [busyDownload, setBusyDownload] = useState(false);
+
+  const handleDownloadRider = async () => {
+    if (!activeRider) return;
+    setBusyDownload(true);
+    try {
+      const blob = await generatePressKitZip({
+        bandName,
+        stageplots: [{
+          id: activeRider.id,
+          name: activeRider.name,
+          icon: activeRider.icon,
+          items: activeRider.items ?? [],
+          stageShape: activeRider.stageShape,
+          stageSize: activeRider.stageSize,
+          updatedAt: activeRider.updatedAt,
+        }],
+        riders: [{
+          id: activeRider.id,
+          name: activeRider.name,
+          icon: activeRider.icon,
+          lines: activeRider.lines,
+          preferredEquipment: activeRider.preferredEquipment,
+          inventoryEquipment: activeRider.inventoryEquipment,
+          updatedAt: activeRider.updatedAt,
+        }],
+        texts: [],
+        images: [],
+        generatedAt: new Date().toISOString(),
+      });
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = `${slugifyFileName(activeRider.name)}-technical-rider.zip`;
+      anchor.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error('Failed to generate ZIP.');
+    } finally {
+      setBusyDownload(false);
+    }
+  };
+
   const handleDisableRiderPublicLink = async (riderId: string) => {
     const error = await setBandInputListPublicShare(bandId, riderId, false);
     if (error) { toast.error(error); return; }
@@ -320,6 +368,17 @@ export default function BandTechRiderPanel({
                     <Link2 size={14} /> Share
                   </button>
                 )
+              ) : null}
+              {activeRider ? (
+                <button
+                  type="button"
+                  className="setlist-action-btn setlist-action-btn--secondary"
+                  onClick={() => void handleDownloadRider()}
+                  disabled={busyDownload}
+                  title="Download ZIP"
+                >
+                  <Download size={14} />
+                </button>
               ) : null}
               {canEdit && activeRider ? (
                 <button
