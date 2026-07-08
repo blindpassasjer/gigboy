@@ -440,8 +440,8 @@ export default function BandSettingsPage() {
                   aria-label="Change band icon"
                 >
                   {iconDraft
-                    ? <span className="resource-title-icon" aria-hidden="true">{iconDraft}</span>
-                    : <Users size={16} aria-hidden="true" />}
+                    ? <span className="user-avatar user-avatar--lg" aria-hidden="true">{iconDraft}</span>
+                    : <span className="user-avatar user-avatar--lg" aria-hidden="true"><Users size={28} /></span>}
                 </button>
                 {showIconPicker && (
                   <div className="icon-picker-popover" role="dialog" aria-label="Choose band icon">
