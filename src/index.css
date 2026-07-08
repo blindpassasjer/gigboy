@@ -8141,14 +8141,16 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .profile-avatar-trigger .user-avatar {
-  transition: border-color .15s ease, background .15s ease, transform .08s ease;
+  background: none;
+  border: none;
+  font-size: 2.6rem;
+  transition: transform .08s ease, opacity .15s ease;
 }
 
 .profile-avatar-trigger:hover .user-avatar,
 .profile-avatar-trigger:focus-visible .user-avatar,
 .profile-avatar-trigger.is-open .user-avatar {
-  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  opacity: .8;
 }
 
 .profile-avatar-trigger:active .user-avatar {
