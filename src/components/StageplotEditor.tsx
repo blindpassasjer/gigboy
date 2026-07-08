@@ -5,7 +5,7 @@ import type { HandNoteStroke, SongHandNoteDocument, Stageplot, StageplotItem } f
 import SongHandNotesOverlay from './SongHandNotesOverlay';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { stageplotIconForKind } from '../lib/stageplotIcons';
-import { ICON_OPTIONS } from '../lib/iconOptions';
+import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
 import { clamp01 } from '../lib/songHandNotes';
 
 interface StageplotEditorProps {
@@ -622,7 +622,7 @@ export default function StageplotEditor({
                               >
                                 <Map size={16} />
                               </button>
-                              {ICON_OPTIONS.map((emoji) => {
+                              {TECH_RIDER_ICON_OPTIONS.map((emoji) => {
                                 const selected = iconDraft === emoji;
                                 return (
                                   <button

@@ -7,7 +7,7 @@ import InputListEditor from './InputListEditor';
 import { useBands } from '../context/BandsContext';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 import { showConfirmToast } from '../utils/toastDialogs';
-import { ICON_OPTIONS } from '../lib/iconOptions';
+import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
 import { generatePressKitZip } from '../lib/pressKitZip';
 
 interface Props {
@@ -293,7 +293,7 @@ export default function BandTechRiderPanel({
                               >
                                 <ClipboardList size={16} />
                               </button>
-                              {ICON_OPTIONS.map((emoji) => {
+                              {TECH_RIDER_ICON_OPTIONS.map((emoji) => {
                                 const selected = iconDraft === emoji;
                                 return (
                                   <button

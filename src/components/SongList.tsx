@@ -19,7 +19,7 @@ import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
-import { ICON_OPTIONS } from '../lib/iconOptions';
+import { SONGLIST_ICON_OPTIONS } from '../lib/iconOptions';
 
 type SortBy =
   | 'name-asc'
@@ -372,7 +372,7 @@ export default function SongList({
                             >
                               <Folder size={16} />
                             </button>
-                            {ICON_OPTIONS.map((emoji) => {
+                            {SONGLIST_ICON_OPTIONS.map((emoji) => {
                               const selected = listIconDraft === emoji;
                               return (
                                 <button

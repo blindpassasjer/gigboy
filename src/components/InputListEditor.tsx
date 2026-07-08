@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link2, Plus, Trash2, PenLine, ClipboardList } from 'lucide-react';
 import type { RiderEquipmentItem, InputList, InputListLine } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
-import { ICON_OPTIONS } from '../lib/iconOptions';
+import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
 
 interface Props {
   rider: InputList;
@@ -245,7 +245,7 @@ export default function InputListEditor({
                               >
                                 <ClipboardList size={16} />
                               </button>
-                              {ICON_OPTIONS.map((emoji) => {
+                              {TECH_RIDER_ICON_OPTIONS.map((emoji) => {
                                 const selected = iconDraft === emoji;
                                 return (
                                   <button

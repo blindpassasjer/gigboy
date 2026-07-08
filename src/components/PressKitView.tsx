@@ -10,7 +10,7 @@ import { db, storage } from '../lib/firebase';
 import { createPressKitShare, disablePressKitShare, getActivePressKitShare } from '../lib/pressKitApi';
 import type { ActivePressKitShare } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
-import { ICON_OPTIONS } from '../lib/iconOptions';
+import { PRESSKIT_ICON_OPTIONS } from '../lib/iconOptions';
 import { createTrashPayload, createTrashTimestamps, TRASH_COLLECTION } from '../lib/trash';
 import { createWebpThumbnail } from '../utils/imageThumbnail';
 import type { PressKit } from '../types';
@@ -667,7 +667,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                               >
                                 <Newspaper size={16} />
                               </button>
-                              {ICON_OPTIONS.map((emoji) => {
+                              {PRESSKIT_ICON_OPTIONS.map((emoji) => {
                                 const selected = iconDraft === emoji;
                                 return (
                                   <button

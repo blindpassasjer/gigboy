@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, CreditCard, Trash2, X, ArrowDownToLine, Users } from 'lucide-react';
-import { ICON_OPTIONS } from '../lib/iconOptions';
+import { AVATAR_ICON_OPTIONS } from '../lib/iconOptions';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { collection, deleteField, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import toast from '../utils/anchoredToast';
@@ -460,7 +460,7 @@ export default function BandSettingsPage() {
                       >
                         <Users size={16} />
                       </button>
-                      {ICON_OPTIONS.map((emoji) => {
+                      {AVATAR_ICON_OPTIONS.map((emoji) => {
                         const selected = iconDraft === emoji;
                         return (
                           <button

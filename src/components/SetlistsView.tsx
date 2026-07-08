@@ -7,7 +7,7 @@ import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
 import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
-import { ICON_OPTIONS } from '../lib/iconOptions';
+import { SETLIST_ICON_OPTIONS } from '../lib/iconOptions';
 
 interface Props {
   setlistId: string;
@@ -354,7 +354,7 @@ export default function SetlistsView({
                           >
                             <ListMusic size={16} />
                           </button>
-                          {ICON_OPTIONS.map((emoji) => {
+                          {SETLIST_ICON_OPTIONS.map((emoji) => {
                             const selected = iconDraft === emoji;
                             return (
                               <button
