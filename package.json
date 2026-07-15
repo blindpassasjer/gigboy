@@ -20,6 +20,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
     "@radix-ui/themes": "^3.3.0",
     "@tiptap/pm": "^3.22.5",
     "@tiptap/react": "^3.22.5",
@@ -38,6 +40,7 @@
     "tone": "^15.1.22"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.2",
     "@cloudflare/workers-types": "^4.20260425.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
@@ -51,7 +54,7 @@
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.26",
     "jsdom": "^25.0.1",
-"sharp": "^0.34.5",
+    "sharp": "^0.34.5",
     "stripe": "^22.1.0",
     "typescript": "^5.0.2",
     "vite": "^7.3.3",
