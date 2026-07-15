@@ -103,6 +103,7 @@ export default function Layout({ children }: Props) {
   });
   const { dark, toggle: toggleDark } = useDarkModeContext();
   const mainContentRef = useRef<HTMLElement>(null);
+  const scrollPositions = useRef<Map<string, number>>(new Map());
   const swipeRef = useRef<{ x: number; y: number; fromEdge: boolean } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(() => {
     if (typeof document === 'undefined') return false;
@@ -130,8 +131,19 @@ export default function Layout({ children }: Props) {
   const hasAnyInviteContent = hasAnyPendingInvites || acceptedOutgoing.length > 0;
 
   useEffect(() => {
+    const mainEl = mainContentRef.current;
+    if (!mainEl) return;
+
+    const handleScroll = () => {
+      scrollPositions.current.set(pathname, mainEl.scrollTop);
+    };
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => mainEl.removeEventListener('scroll', handleScroll);
+  }, [pathname]);
+
+  useEffect(() => {
     if (!mainContentRef.current) return;
-    mainContentRef.current.scrollTop = 0;
+    mainContentRef.current.scrollTop = scrollPositions.current.get(pathname) ?? 0;
     toast.dismiss();
   }, [pathname]);
 
