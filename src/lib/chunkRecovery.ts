@@ -25,6 +25,34 @@ export function isDynamicImportFailure(error: unknown): boolean {
   return CHUNK_FAILURE_PATTERNS.some((pattern) => message.includes(pattern))
 }
 
+function withTimeout(promise: Promise<unknown>, ms: number): Promise<unknown> {
+  return Promise.race([promise, new Promise((resolve) => setTimeout(resolve, ms))])
+}
+
+async function clearStaleServiceWorkerState(): Promise<void> {
+  const tasks: Promise<unknown>[] = []
+
+  if ('serviceWorker' in navigator) {
+    tasks.push(
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+        .catch(() => undefined)
+    )
+  }
+
+  if ('caches' in window) {
+    tasks.push(
+      caches
+        .keys()
+        .then((names) => Promise.all(names.map((name) => caches.delete(name))))
+        .catch(() => undefined)
+    )
+  }
+
+  await withTimeout(Promise.all(tasks), 1500)
+}
+
 export function recoverFromDynamicImportFailure(): boolean {
   try {
     if (window.sessionStorage.getItem(RELOAD_GUARD_KEY) === '1') {
@@ -34,7 +62,11 @@ export function recoverFromDynamicImportFailure(): boolean {
     window.sessionStorage.setItem(RELOAD_GUARD_KEY, '1')
     const url = new URL(window.location.href)
     url.searchParams.set('chunk-reload', Date.now().toString())
-    window.location.replace(url.toString())
+
+    void clearStaleServiceWorkerState().finally(() => {
+      window.location.replace(url.toString())
+    })
+
     return true
   } catch {
     return false
