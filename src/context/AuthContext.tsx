@@ -22,6 +22,7 @@ import {
 } from 'firebase/auth';
 import type { FirebaseError } from 'firebase/app';
 import { doc, onSnapshot } from 'firebase/firestore';
+import toast from '../utils/anchoredToast';
 import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { changeUsername, claimUsername, loadUserProfile, updateProfileFields } from '../lib/userProfiles';
@@ -266,7 +267,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Optimistically set username so the race between onAuthStateChanged and the
       // Firestore write doesn't briefly show UsernameSetupPage after registration.
       setUser((current) => (current ? { ...current, username } : current));
-      await sendEmailVerification(credential.user, verificationActionCodeSettings()).catch(() => undefined);
+      await sendEmailVerification(credential.user, verificationActionCodeSettings()).catch((verificationError) => {
+        console.error('Failed to send verification email on signup.', verificationError);
+        toast.error('Account created, but the verification email could not be sent. Use "Resend" to try again.');
+      });
       return null;
     } catch (err: unknown) {
       return err instanceof Error ? err.message : 'Registration failed';

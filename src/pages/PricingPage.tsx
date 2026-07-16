@@ -9,6 +9,7 @@ import {
   Mic2,
   Music,
   NotebookPen,
+  Plus,
   Share2,
   Sparkles,
   Users,
@@ -327,20 +328,33 @@ export default function PricingPage() {
           <div className="pricing-hero-actions-controls">
             {(ownedBands.length > 0 || selectedBandId === 'new') ? (
               <div className="pricing-hero-band-select">
-                <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
-                  <span>Band workspace</span>
-                  <select
-                    value={selectedBandId}
-                    onChange={(event) => setSelectedBandId(event.target.value)}
+                <span className="pricing-band-chips-label">Band workspace</span>
+                <div className="pricing-band-chips" role="tablist" aria-label="Band workspace">
+                  {ownedBands.map((band) => (
+                    <button
+                      key={band.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selectedBandId === band.id}
+                      className={`pricing-band-chip${selectedBandId === band.id ? ' active' : ''}`}
+                      onClick={() => setSelectedBandId(band.id)}
+                    >
+                      {band.name}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={selectedBandId === 'new'}
+                    className={`pricing-band-chip pricing-band-chip--new${selectedBandId === 'new' ? ' active' : ''}`}
+                    onClick={() => setSelectedBandId('new')}
                   >
-                    {ownedBands.map((band) => (
-                      <option key={band.id} value={band.id}>{band.name}</option>
-                    ))}
-                    <option value="new">Create a new band</option>
-                  </select>
-                </label>
+                    <Plus size={14} />
+                    New band
+                  </button>
+                </div>
                 {selectedBandId === 'new' ? (
-                  <label className="share-menu-field" style={{ marginBottom: '0.65rem' }}>
+                  <label className="share-menu-field" style={{ marginTop: '.65rem', marginBottom: '0.65rem' }}>
                     <span>Band name</span>
                     <input
                       type="text"
@@ -371,6 +385,14 @@ export default function PricingPage() {
       </div>
     </div>
       </header>
+
+      {(ownedBands.length > 0 || selectedBandId === 'new') ? (
+        <p className="pricing-context-label">
+          {selectedBandId === 'new'
+            ? <>Creating <strong>{newBandName.trim() || 'new band'}</strong> as a paid workspace</>
+            : <>Upgrading <strong>{selectedBand?.name ?? 'this band'}</strong> — currently on {selectedBandPlanState.planLabel}</>}
+        </p>
+      ) : null}
 
       <div className="pricing-card-grid">
         {PLAN_CARDS.map((card) => {

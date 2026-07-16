@@ -8749,6 +8749,57 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 }
 
+.pricing-band-chips-label {
+  font-size: .82rem;
+  color: var(--muted);
+}
+
+.pricing-band-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .35rem;
+}
+
+.pricing-band-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 999px;
+  padding: .5rem .95rem;
+  font-size: .9rem;
+  cursor: pointer;
+}
+
+.pricing-band-chip.active {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: color-mix(in srgb, var(--fg) 92%, var(--accent));
+  font-weight: 600;
+}
+
+.pricing-band-chip--new {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.pricing-band-chip--new.active {
+  border-style: solid;
+}
+
+.pricing-context-label {
+  margin: 0 0 1rem;
+  font-size: .92rem;
+  color: var(--muted);
+}
+
+.pricing-context-label strong {
+  color: var(--text);
+}
+
 .pricing-card-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
