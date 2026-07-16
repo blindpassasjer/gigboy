@@ -78,8 +78,8 @@ const PLAN_CARDS: PlanCard[] = [
     tier: 'pro',
     icon: Sparkles,
     blurb: 'Everything a power user needs for rehearsals, setlists, recordings, and sharing.',
-    monthlyPrice: '5 USD',
-    annualPrice: '50 USD',
+    monthlyPrice: '4 USD',
+    annualPrice: '40 USD',
     featureBullets: [
       { icon: Users, label: '1 band workspace' },
       { icon: Music, label: 'Unlimited songs' },
@@ -102,8 +102,8 @@ const PLAN_CARDS: PlanCard[] = [
     tier: 'crew',
     icon: Users,
     blurb: 'A shared workspace for a band owner with member access and room to grow.',
-    monthlyPrice: '15 USD',
-    annualPrice: '150 USD',
+    monthlyPrice: '10 USD',
+    annualPrice: '100 USD',
     featureBullets: [
       { icon: Users, label: '1 shared band workspace' },
       { icon: Music, label: 'Unlimited songs' },

@@ -523,7 +523,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 return;
               }
               if (ownedBandCount >= 1) {
-                navigate('/pricing', { state: { source: 'sidebar-new-band' } });
+                navigate('/pricing', { state: { source: 'sidebar-new-band', bandId: activeBandId } });
               } else {
                 setAddingBand(true);
                 setDraftName('');
