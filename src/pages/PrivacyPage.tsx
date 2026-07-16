@@ -5,14 +5,7 @@ export default function PrivacyPage() {
     <section className="legal-page">
       <Link to="/" className="back-link">← Back</Link>
       <h1>Privacy Policy</h1>
-      <p className="legal-updated">Last updated: draft, not yet reviewed by counsel</p>
-
-      <div className="legal-draft-notice">
-        This is a starting template, not finished legal copy. Confirm the list of
-        subprocessors below matches what's actually configured for this deployment,
-        fill in the bracketed placeholders, and have this reviewed (GDPR applies if
-        you have users in the EU/EEA) before treating it as binding.
-      </div>
+      <p className="legal-updated">Last updated: July 16, 2026</p>
 
       <p>
         This Privacy Policy explains what data GIGBOY ("we", "us") collects when you
@@ -65,7 +58,7 @@ export default function PrivacyPage() {
         You can delete your account at any time, which permanently removes your
         profile and any bands you own. If you're in the EU/EEA/UK, you also have the
         right to access, correct, or request erasure of your personal data, and to
-        object to or restrict certain processing — contact us at [support email] to
+        object to or restrict certain processing — contact us at sebastian@manriquez.no to
         exercise these rights beyond what's self-service in the app.
       </p>
 
@@ -85,7 +78,7 @@ export default function PrivacyPage() {
       <p>We may update this policy from time to time; material changes will be noted here.</p>
 
       <h2>9. Contact</h2>
-      <p>Questions about this policy or your data: [support email].</p>
+      <p>Questions about this policy or your data: sebastian@manriquez.no.</p>
     </section>
   );
 }

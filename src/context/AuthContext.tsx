@@ -73,6 +73,10 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function verificationActionCodeSettings() {
+  return { url: `${window.location.origin}/profile` };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(firebaseEnabled);
@@ -262,7 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Optimistically set username so the race between onAuthStateChanged and the
       // Firestore write doesn't briefly show UsernameSetupPage after registration.
       setUser((current) => (current ? { ...current, username } : current));
-      await sendEmailVerification(credential.user).catch(() => undefined);
+      await sendEmailVerification(credential.user, verificationActionCodeSettings()).catch(() => undefined);
       return null;
     } catch (err: unknown) {
       return err instanceof Error ? err.message : 'Registration failed';
@@ -272,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resendVerificationEmail = useCallback(async (): Promise<string | null> => {
     if (!auth?.currentUser) return 'Not signed in.';
     try {
-      await sendEmailVerification(auth.currentUser);
+      await sendEmailVerification(auth.currentUser, verificationActionCodeSettings());
       return null;
     } catch (err: unknown) {
       return err instanceof Error ? err.message : 'Failed to send verification email.';

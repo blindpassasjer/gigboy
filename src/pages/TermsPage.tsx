@@ -5,17 +5,11 @@ export default function TermsPage() {
     <section className="legal-page">
       <Link to="/" className="back-link">← Back</Link>
       <h1>Terms of Service</h1>
-      <p className="legal-updated">Last updated: draft, not yet reviewed by counsel</p>
-
-      <div className="legal-draft-notice">
-        This is a starting template, not finished legal copy. Replace the bracketed
-        placeholders, confirm the copyright section with your own legal judgment, and
-        have a lawyer review this before treating it as binding.
-      </div>
+      <p className="legal-updated">Last updated: July 16, 2026</p>
 
       <p>
         These Terms of Service ("Terms") govern your use of GIGBOY (the "Service"),
-        operated by [Legal entity name / your name] ("we", "us"). By creating an
+        operated by Sebastian Manriquez ("we", "us"). By creating an
         account or using the Service, you agree to these Terms.
       </p>
 
@@ -90,12 +84,12 @@ export default function TermsPage() {
 
       <h2>9. Governing law</h2>
       <p>
-        These Terms are governed by the laws of [Norway / your jurisdiction], without
+        These Terms are governed by the laws of Norway, without
         regard to conflict-of-law principles.
       </p>
 
       <h2>10. Contact</h2>
-      <p>Questions about these Terms: [support email].</p>
+      <p>Questions about these Terms: sebastian@manriquez.no.</p>
     </section>
   );
 }
