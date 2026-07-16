@@ -53,6 +53,15 @@ async function clearStaleServiceWorkerState(): Promise<void> {
   await withTimeout(Promise.all(tasks), 1500)
 }
 
+function reloadWithClearedState(): void {
+  const url = new URL(window.location.href)
+  url.searchParams.set('chunk-reload', Date.now().toString())
+
+  void clearStaleServiceWorkerState().finally(() => {
+    window.location.replace(url.toString())
+  })
+}
+
 export function recoverFromDynamicImportFailure(): boolean {
   try {
     if (window.sessionStorage.getItem(RELOAD_GUARD_KEY) === '1') {
@@ -60,15 +69,26 @@ export function recoverFromDynamicImportFailure(): boolean {
     }
 
     window.sessionStorage.setItem(RELOAD_GUARD_KEY, '1')
-    const url = new URL(window.location.href)
-    url.searchParams.set('chunk-reload', Date.now().toString())
-
-    void clearStaleServiceWorkerState().finally(() => {
-      window.location.replace(url.toString())
-    })
-
+    reloadWithClearedState()
     return true
   } catch {
     return false
+  }
+}
+
+/**
+ * Same cleanup as recoverFromDynamicImportFailure, but ignores the
+ * one-shot guard. Used for the user-initiated "Reload app" button, which
+ * would otherwise silently degrade to a plain reload once the automatic
+ * recovery has already fired once this tab session (still stale SW/caches
+ * if that first attempt didn't fully land, e.g. its 1.5s timeout elapsed
+ * before unregister/cache-delete finished).
+ */
+export function forceReloadAfterChunkFailure(): void {
+  try {
+    window.sessionStorage.setItem(RELOAD_GUARD_KEY, '1')
+    reloadWithClearedState()
+  } catch {
+    window.location.reload()
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus } from 'lucide-react';
+import { Copy, Share2, UserPlus } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -26,6 +26,8 @@ export default function BandManagementPanel({
 }: BandManagementPanelProps) {
   const { user } = useAuth();
   const { removeMember } = useBands();
+
+  const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
   const [busyInviteLink, setBusyInviteLink] = useState(false);
@@ -76,6 +78,30 @@ export default function BandManagementPanel({
     }
   };
 
+  const handleCopyInviteLink = async () => {
+    if (!lastInviteLink) return;
+    try {
+      await navigator.clipboard.writeText(lastInviteLink);
+      toast.success('Invite link copied to clipboard.');
+    } catch {
+      toast.error('Could not copy the link. Select and copy it manually.');
+    }
+  };
+
+  const handleShareInviteLink = async () => {
+    if (!lastInviteLink) return;
+    try {
+      await navigator.share({
+        title: `Join ${band.name} on Gigboy`,
+        text: `You're invited to join ${band.name} on Gigboy.`,
+        url: lastInviteLink,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      toast.error('Could not open sharing options.');
+    }
+  };
+
   const handleLeaveBand = async () => {
     if (!onLeaveCurrentUser) return;
 
@@ -108,7 +134,29 @@ export default function BandManagementPanel({
       {lastInviteLink ? (
         <label className="share-menu-field" style={{ marginTop: '0.75rem' }}>
           <span>Invite link (share with as many bandmates as you like)</span>
-          <input type="text" value={lastInviteLink} readOnly />
+          <div className="share-menu-input-wrap">
+            <input type="text" value={lastInviteLink} readOnly />
+            <button
+              type="button"
+              className="share-menu-input-action"
+              onClick={() => void handleCopyInviteLink()}
+              title="Copy invite link"
+              aria-label="Copy invite link"
+            >
+              <Copy size={15} />
+            </button>
+            {canNativeShare ? (
+              <button
+                type="button"
+                className="share-menu-input-action"
+                onClick={() => void handleShareInviteLink()}
+                title="Share invite link"
+                aria-label="Share invite link"
+              >
+                <Share2 size={15} />
+              </button>
+            ) : null}
+          </div>
           {lastInviteLinkExpiresAt ? (
             <span style={{ fontSize: '0.8em', color: 'var(--color-text-muted, #888)', marginTop: '0.25rem' }}>
               Expires {new Date(lastInviteLinkExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}

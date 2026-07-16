@@ -8131,6 +8131,23 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: transparent;
 }
 
+.share-menu-input-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 6px;
+  color: var(--muted);
+  transition: background .15s, color .15s;
+}
+
+.share-menu-input-action:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
 .share-menu-field select {
   border: 1px solid var(--border);
   border-radius: 7px;

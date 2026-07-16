@@ -9,7 +9,7 @@ import { SongListsProvider } from './context/SongListsContext';
 import { SetlistsProvider } from './context/SetlistsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { BandsProvider } from './context/BandsContext';
-import { isDynamicImportFailure, recoverFromDynamicImportFailure } from './lib/chunkRecovery';
+import { isDynamicImportFailure, recoverFromDynamicImportFailure, forceReloadAfterChunkFailure } from './lib/chunkRecovery';
 
 const Layout = lazy(() => import('./components/Layout'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -55,7 +55,9 @@ function RouterErrorFallback() {
   }, [chunkFailure]);
 
   const handleReload = () => {
-    if (!recoverFromDynamicImportFailure()) {
+    if (chunkFailure) {
+      forceReloadAfterChunkFailure();
+    } else {
       window.location.reload();
     }
   };
