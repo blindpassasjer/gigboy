@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import type { Location } from 'react-router-dom';
 import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardList, Piano, Activity, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
@@ -87,7 +88,13 @@ function GitHubIcon() {
   );
 }
 
-function getPostLoginDestination(): { path: string; state?: { bandId: string } } {
+function getPostLoginDestination(location: Location): { path: string; state?: unknown } {
+  // If the user landed here via a specific deep link (e.g. a band invite link) while
+  // signed out, send them back there after auth instead of the generic default landing spot.
+  if (location.pathname && location.pathname !== '/' && location.pathname !== '/bands') {
+    return { path: `${location.pathname}${location.search}`, state: location.state };
+  }
+
   if (typeof window === 'undefined') {
     return { path: '/profile' };
   }
@@ -274,6 +281,7 @@ export default function LoginPage() {
     cancelPendingLink,
   } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -311,7 +319,7 @@ export default function LoginPage() {
       setError(err);
       setBusy(false);
     } else {
-      const destination = getPostLoginDestination();
+      const destination = getPostLoginDestination(location);
       navigate(destination.path, destination.state ? { state: destination.state } : undefined);
     }
   }
@@ -324,7 +332,7 @@ export default function LoginPage() {
       setError(err);
       setBusy(false);
     } else if (!pendingLinkEmail) {
-      const destination = getPostLoginDestination();
+      const destination = getPostLoginDestination(location);
       navigate(destination.path, destination.state ? { state: destination.state } : undefined);
     }
     setBusy(false);
