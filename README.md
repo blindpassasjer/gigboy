@@ -1,18 +1,23 @@
 # GIGBOY
 
-A personal web-based songbook that stores songs in **ChordPro** format. Supports multiple languages, setlists, transposing, and in-browser audio recording. Runs as a static SPA with optional Firebase authentication and Cloudflare Workers or Pages hosting.
+A web-based songbook and gig-prep tool for musicians and bands, built on **ChordPro**. Runs as an installable PWA with optional Firebase authentication, Cloudflare Pages hosting, and Stripe billing for paid plans.
 
 ## Features
 
 - **ChordPro rendering** — chords displayed inline above lyrics using `[G]Amazing [C]grace` notation
 - **Transpose** — shift all chords up or down by semitone in real time
-- **Setlists** — create and manage ordered setlists from your song library
+- **Bands** — shared song libraries, songlists, and setlists with per-member roles and invites
+- **Setlists & songlists** — ordered setlists for gigs, plus freeform songlists for organizing your library
+- **Press kits, technical riders, stage plots** — shareable via public links, generated per band
+- **In-app rehearsal tools** — browser-based audio recorder, visual metronome, visual tuner, and hand-drawn notes overlaid on the song sheet
 - **Multi-language** — songs in English, Norwegian, Spanish, Portuguese, French, Italian, German, and more
-- **Audio recording** — record directly in the browser; recordings are saved to `localStorage`
-- **Add & edit songs** — live ChordPro preview while writing; songs persist in `localStorage` when Firebase is not configured
+- **Add & edit songs** — live ChordPro preview while writing
 - **Search & filter** — full-text search by title/artist/tag, filter by language
+- **Data export** — download your whole songbook (personal + every band you belong to) as plain ChordPro files from account settings, no lock-in
 - **Dark mode** — automatic system preference detection with manual toggle
-- **Auth-optional** — Firebase auth can be enabled via environment variables; omitting them gives a fully local, login-free experience
+- **Offline-capable PWA** — installable, works offline via a service worker; see [chunkRecovery.ts](src/lib/chunkRecovery.ts) for how it recovers from stale-deploy cache issues
+- **Auth-optional locally** — Firebase auth can be enabled via environment variables; omitting them gives a fully local, login-free experience for local development
+- **Free / Pro / Crew plans** — see [/pricing](src/pages/PricingPage.tsx); Stripe handles billing and the customer portal handles cancellation
 
 ## Tech stack
 
@@ -147,18 +152,30 @@ This migration:
 
 ```
 src/
-  components/     UI components (Layout, SongList, SongView, ChordDisplay, …)
-  context/        SongsContext — song list state + localStorage sync
-  data/           Built-in songs (songs.ts)
-  hooks/          useAudioRecorder
-  pages/          HomePage, SongPage, AddSongPage
-  types/          Song, Recording, ParsedLine types
-  utils/          chordParser, storage, languages
+  components/     UI components (Layout, Sidebar, SongList, SongView, ChordDisplay, PressKitView, …)
+  context/        SongsContext, SongListsContext, SetlistsContext, BandsContext, AuthContext
+  hooks/          usePlan, useBandPlan, useAudioRecorder, useStorageUsage, …
+  pages/          SongPage, AddSongPage, BandDetailPage, PricingPage, ProfilePage, TermsPage, PrivacyPage, …
+  lib/            planLimits (plan gating), songbookExport (ChordPro export), billingApi, chunkRecovery, …
+  types/          Song, Setlist, SongList, Band, User types
+  utils/          chordParser, languages
+functions/        Cloudflare Pages Functions (auth, bands, Stripe webhooks, PDF/press-kit generation)
 ```
 
-## Contributing
+## Legal pages
 
-Songs live in [src/data/songs.ts](src/data/songs.ts). To add a built-in song, append a `Song` object and open a PR. Keep the ChordPro text accurate and include `language`, `tags`, and optionally `key`/`capo`.
+Draft Terms of Service and Privacy Policy live at [src/pages/TermsPage.tsx](src/pages/TermsPage.tsx) and [src/pages/PrivacyPage.tsx](src/pages/PrivacyPage.tsx) (routes `/terms` and `/privacy`). They're templates with bracketed placeholders — fill those in and get them reviewed before relying on them, especially the copyright section (users store song lyrics/chords, which are often copyrighted material) and GDPR compliance if you have EU/EEA users.
+
+## Before going public
+
+- [ ] Fill in and legally review `/terms` and `/privacy`
+- [ ] Set `VITE_SENTRY_DSN` (see `.env.example`) to enable production error monitoring via [Sentry](https://sentry.io) — unset by default, so no-op until you add a DSN
+- [ ] Rotate any credentials embedded in local git remotes/config before adding collaborators or CI
+- [ ] Test the offline/PWA experience end-to-end (load, go offline, reopen) before promoting it to gigging musicians
+
+## Plan limits
+
+Free/Pro/Crew feature gating and song/setlist/storage caps live in [src/lib/planLimits.ts](src/lib/planLimits.ts) — check there before assuming a feature is (or isn't) behind a paywall.
 
 ## License
 

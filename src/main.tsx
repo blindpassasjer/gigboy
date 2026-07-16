@@ -5,8 +5,10 @@ import '@radix-ui/themes/styles.css'
 import './index.css'
 import { migrateLocalStorageKeys } from './lib/migrateLocalStorage.ts'
 import { isDynamicImportFailure, recoverFromDynamicImportFailure } from './lib/chunkRecovery.ts'
+import { initErrorMonitoring } from './lib/errorMonitoring.ts'
 
 migrateLocalStorageKeys()
+initErrorMonitoring()
 
 function installChunkRecoveryHandlers() {
   window.addEventListener('error', (event) => {

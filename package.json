@@ -23,6 +23,7 @@
     "@capacitor/android": "^8.4.2",
     "@capacitor/core": "^8.4.2",
     "@radix-ui/themes": "^3.3.0",
+    "@sentry/react": "^10.65.0",
     "@tiptap/pm": "^3.22.5",
     "@tiptap/react": "^3.22.5",
     "@tiptap/starter-kit": "^3.22.5",

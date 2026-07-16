@@ -310,6 +310,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       clearGlobalSelection();
       navigate(`/bands/${bandId}/setlists/${result.setlistId}`);
       onNavigate?.();
+    } else if (result.error) {
+      toast.error(result.error);
     }
   };
 

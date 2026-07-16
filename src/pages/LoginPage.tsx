@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardList, Piano, Activity, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
@@ -359,7 +359,13 @@ export default function LoginPage() {
                 Cancel
               </button>
             </form>
-            <footer className="footer">From Norway {'<3'} with chords</footer>
+            <footer className="footer">
+              From Norway {'<3'} with chords
+              <span className="footer-links">
+                <Link to="/terms">Terms</Link>
+                <Link to="/privacy">Privacy</Link>
+              </span>
+            </footer>
           </div>
         </div>
       </div>
@@ -475,7 +481,13 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <footer className="footer">From Norway {'<3'} with chords</footer>
+          <footer className="footer">
+            From Norway {'<3'} with chords
+            <span className="footer-links">
+              <Link to="/terms">Terms</Link>
+              <Link to="/privacy">Privacy</Link>
+            </span>
+          </footer>
         </div>
       </div>
     </div>

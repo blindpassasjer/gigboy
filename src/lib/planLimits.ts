@@ -11,6 +11,7 @@ export type ProFeature =
 
 interface PlanLimits {
   songLimit: number | null;
+  setlistLimit: number | null;
   storageQuotaBytes: number;
   memberLimit: number;
 }
@@ -24,16 +25,19 @@ export const PLAN_LABELS: Record<PlanTier, string> = {
 export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   free: {
     songLimit: 12,
+    setlistLimit: 2,
     storageQuotaBytes: 100 * 1024 * 1024,
     memberLimit: 1,
   },
   pro: {
     songLimit: null,
+    setlistLimit: null,
     storageQuotaBytes: 1024 * 1024 * 1024,
     memberLimit: 1,
   },
   crew: {
     songLimit: null,
+    setlistLimit: null,
     storageQuotaBytes: 5 * 1024 * 1024 * 1024,
     memberLimit: 5,
   },
@@ -41,7 +45,7 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
 
 export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> = {
   free: {
-    setlists: false,
+    setlists: true,
     technicalRiders: false,
     pressKits: false,
     shareableLinks: false,

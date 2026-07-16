@@ -1,13 +1,17 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CreditCard, LogOut, Sparkles, Trash2 } from 'lucide-react';
+import { CreditCard, Download, LogOut, Sparkles, Trash2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
+import { useSongs } from '../context/SongsContext';
+import { useSongLists } from '../context/SongListsContext';
+import { useSetlists } from '../context/SetlistsContext';
 import UserAvatar from '../components/UserAvatar';
 import { AVATAR_OPTIONS } from '../lib/avatars';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 import { createPortalSession } from '../lib/billingApi';
+import { buildSongbookExportZip, triggerSongbookExportDownload } from '../lib/songbookExport';
 
 function formatPeriodEnd(value: number | null) {
   if (!value) return null;
@@ -53,7 +57,11 @@ function getEffectiveBandPlan(
 
 export default function ProfilePage() {
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, deleteAccount, logout } = useAuth();
-  const { bands } = useBands();
+  const { bands, bandSongsByBandId, bandSongListsByBandId, bandSetlistsByBandId } = useBands();
+  const { songs } = useSongs();
+  const { songLists } = useSongLists();
+  const { setlists } = useSetlists();
+  const [busyExport, setBusyExport] = useState(false);
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
@@ -256,6 +264,27 @@ export default function ProfilePage() {
       toast.error(message);
     } finally {
       setBusyBilling(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    setBusyExport(true);
+    try {
+      const blob = await buildSongbookExportZip({
+        songs,
+        songLists,
+        setlists,
+        bands,
+        bandSongsByBandId,
+        bandSongListsByBandId,
+        bandSetlistsByBandId,
+      });
+      triggerSongbookExportDownload(blob);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to export your data.';
+      toast.error(message);
+    } finally {
+      setBusyExport(false);
     }
   };
 
@@ -477,6 +506,23 @@ export default function ProfilePage() {
               You own {ownedBands.length} bands. They can all live on one Stripe bill while still being managed per band.
             </p>
           ) : null}
+        </section>
+
+        <section className="profile-settings-card">
+          <div className="profile-section-heading">
+            <div>
+              <h2>Export your data</h2>
+              <p className="profile-settings-muted">Download your whole songbook — personal songs plus every band you belong to — as plain ChordPro files. Yours to keep, no matter what.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="setlist-action-btn"
+            disabled={busyExport}
+            onClick={() => { void handleExportData(); }}
+          >
+            <Download size={16} /> {busyExport ? 'Preparing export…' : 'Export as ZIP'}
+          </button>
         </section>
 
         <section className="profile-settings-card profile-settings-card--wide profile-danger-card">

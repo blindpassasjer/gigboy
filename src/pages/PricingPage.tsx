@@ -445,6 +445,9 @@ export default function PricingPage() {
         })}
       </div>
 
+      <p className="footer-links" style={{ display: 'block', marginTop: '1.5rem', textAlign: 'center' }}>
+        By subscribing you agree to our <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.
+      </p>
     </section>
   );
 }

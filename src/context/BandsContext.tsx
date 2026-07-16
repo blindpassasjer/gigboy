@@ -58,7 +58,7 @@ import {
 import { useAuth } from './AuthContext';
 import { moveIdBefore } from '../utils/arrayUtils';
 import { createWebpThumbnail } from '../utils/imageThumbnail';
-import { PLAN_LIMITS } from '../lib/planLimits';
+import { bandCanUse, PLAN_LIMITS } from '../lib/planLimits';
 
 const BANDS_COLLECTION = 'bands';
 const BAND_SONGS_COLLECTION = 'songs';
@@ -2291,9 +2291,34 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return { setlistId: null, error: 'Setlist name is required.' };
     }
 
-    const setlistId = crypto.randomUUID();
+    if (!bandCanUse(band, 'setlists', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
+      return { setlistId: null, error: 'Setlists require a Pro or Crew plan for this band.' };
+    }
+
     const now = new Date().toISOString();
     const currentSetlists = bandSetlistsByBandId[bandId] ?? [];
+
+    const bandBillingPlan = band.billingPlan === 'pro' || band.billingPlan === 'crew' ? band.billingPlan : 'free';
+    const bandPlanActive = bandBillingPlan === 'free'
+      || band.billingSubscriptionStatus === 'active'
+      || band.billingSubscriptionStatus === 'trialing'
+      || band.billingSubscriptionStatus == null;
+    const userPlan = user?.plan === 'pro' || user?.plan === 'crew' ? user.plan : 'free';
+    const userPlanActive = user?.planOverride === true
+      || userPlan === 'free'
+      || user?.subscriptionStatus === 'active'
+      || user?.subscriptionStatus === 'trialing';
+    const planOrder: Record<string, number> = { free: 0, pro: 1, crew: 2 };
+    const effectivePlan = (planOrder[bandBillingPlan] ?? 0) >= (planOrder[userPlan] ?? 0) && bandPlanActive
+      ? bandBillingPlan
+      : userPlan;
+    const effectiveActive = effectivePlan === bandBillingPlan ? bandPlanActive : userPlanActive;
+    const setlistLimit = effectiveActive ? PLAN_LIMITS[effectivePlan].setlistLimit : PLAN_LIMITS.free.setlistLimit;
+    if (setlistLimit !== null && currentSetlists.length >= setlistLimit) {
+      return { setlistId: null, error: `This band has reached the ${setlistLimit}-setlist limit for the Free plan. Upgrade to Pro or Crew for unlimited setlists.` };
+    }
+
+    const setlistId = crypto.randomUUID();
     const nextSetlist: Setlist = {
       id: setlistId,
       name: trimmedName,

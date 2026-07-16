@@ -745,6 +745,60 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-top: 1px solid var(--border);
 }
 
+.footer-links {
+  display: inline-flex;
+  gap: .6rem;
+  margin-left: .6rem;
+}
+
+.footer-links a {
+  color: var(--muted);
+  text-decoration: underline;
+}
+
+/* ─── Legal pages ───────────────────────────────────────────────────────────── */
+.legal-page {
+  width: min(760px, calc(100% - 2rem));
+  margin: 2rem auto 3rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.legal-page h1 {
+  margin-bottom: .25rem;
+}
+
+.legal-page .legal-updated {
+  color: var(--muted);
+  font-size: .85rem;
+  margin-bottom: 1.5rem;
+}
+
+.legal-page h2 {
+  margin-top: 2rem;
+  margin-bottom: .5rem;
+  font-size: 1.1rem;
+}
+
+.legal-page p,
+.legal-page li {
+  color: var(--text);
+}
+
+.legal-page ul {
+  padding-left: 1.25rem;
+}
+
+.legal-page .legal-draft-notice {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: .85rem 1rem;
+  color: var(--muted);
+  font-size: .85rem;
+  margin-bottom: 1.5rem;
+}
+
 /* ─── Back link ─────────────────────────────────────────────────────────────── */
 .back-link {
   display: inline-flex;
