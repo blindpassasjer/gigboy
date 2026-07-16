@@ -198,6 +198,17 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   }
 
   try {
+    try {
+      await deleteFirebaseAuthUser(ctx.env, userId);
+    } catch (authErr) {
+      console.error('Failed to delete Firebase Auth user:', authErr);
+      return Response.json({
+        error: authErr instanceof Error
+          ? `Failed to delete Firebase Auth account: ${authErr.message}`
+          : 'Failed to delete Firebase Auth account.',
+      }, { status: 500 });
+    }
+
     const userProfile = await getFirestoreDocument(ctx.env, ['users', userId]);
     const usernameLower = typeof userProfile?.usernameLower === 'string' ? userProfile.usernameLower : null;
 
@@ -323,12 +334,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     await deleteFirestoreDocument(ctx.env, ['users', userId]);
     if (usernameLower) {
       await deleteFirestoreDocument(ctx.env, ['usernames', usernameLower]);
-    }
-
-    try {
-      await deleteFirebaseAuthUser(ctx.env, userId);
-    } catch (authErr) {
-      console.error('Failed to delete Firebase Auth user (non-fatal):', authErr);
     }
 
     return Response.json({
