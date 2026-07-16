@@ -8845,6 +8845,22 @@ input, select, textarea { font: inherit; color: var(--text); }
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, var(--surface)), var(--surface));
 }
 
+.pricing-card--locked .pricing-card-header,
+.pricing-card--locked .pricing-card-price,
+.pricing-card--locked .pricing-feature-list {
+  filter: blur(3px);
+  opacity: .5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.pricing-card-lock-note {
+  margin: -.4rem 0 0;
+  font-size: .82rem;
+  color: var(--muted);
+  text-align: center;
+}
+
 .pricing-card-header {
   display: flex;
   gap: .75rem;

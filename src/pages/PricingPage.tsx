@@ -403,6 +403,7 @@ export default function PricingPage() {
           const displayPrice = billingCycle === 'annual' && card.annualPrice ? card.annualPrice : card.monthlyPrice;
           const priceSuffix = card.tier === 'free' ? '' : billingCycle === 'annual' ? '/year' : '/month';
           const ctaLabel = getCtaLabel(card, selectedBandPlan, isCurrentPlan, creatingNewBand);
+          const freeTierLocked = card.tier === 'free' && creatingNewBand && ownedBands.length > 0;
 
           return (
             <section
@@ -411,6 +412,7 @@ export default function PricingPage() {
                 'pricing-card',
                 card.tier === 'crew' ? 'pricing-card--band' : '',
                 isCurrentPlan ? 'pricing-card--active' : '',
+                freeTierLocked ? 'pricing-card--locked' : '',
               ].filter(Boolean).join(' ')}
             >
               <div className="pricing-card-header">
@@ -448,7 +450,16 @@ export default function PricingPage() {
                     />
                   </label>
               ) : null}
-              {card.tier === 'free' ? (
+              {freeTierLocked ? (
+                <>
+                  <button type="button" className="setlist-action-btn setlist-action-btn--secondary pricing-card-btn" disabled>
+                    Unavailable
+                  </button>
+                  <p className="pricing-card-lock-note">
+                    You already have a band workspace, so new ones need Pro or Crew.
+                  </p>
+                </>
+              ) : card.tier === 'free' ? (
                 <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-card-btn">
                   {ctaLabel}
                 </Link>
