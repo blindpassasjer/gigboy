@@ -21,7 +21,7 @@ const VENDOR_CHUNK_RULES: Array<{ chunk: string; packages: string[] }> = [
   },
   {
     chunk: 'vendor-audio',
-    packages: ['tone', 'midi-writer-js'],
+    packages: ['tone'],
   },
   {
     chunk: 'vendor-utils',
