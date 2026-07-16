@@ -422,5 +422,10 @@ service cloud.firestore {
       allow delete: if isSignedIn() && resource.data.inviterId == request.auth.uid;
     }
 
+    match /feedback/{feedbackId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+
   }
 }

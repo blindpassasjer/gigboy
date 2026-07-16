@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, Music, Folder, ListMusic, ClipboardList, Newspaper } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Mail, MessageSquare, Music, Folder, ListMusic, ClipboardList, Newspaper } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -15,6 +15,7 @@ import { declineBandInvite, loadPendingBandInvites } from '../lib/bandInvites';
 import { acceptBandInviteOnServer } from '../lib/bandsApi';
 import { acceptInviteOnServer } from '../lib/shareApi';
 import { emitInviteNotificationsChanged } from '../lib/inviteNotifications';
+import { submitFeedback } from '../lib/feedback';
 import toast from '../utils/anchoredToast';
 import type { BandInvite, CollaborationInvite } from '../types';
 import UserAvatar from './UserAvatar';
@@ -129,6 +130,11 @@ export default function Layout({ children }: Props) {
   const invitesPopoverRef = useRef<HTMLDivElement>(null);
   const hasAnyPendingInvites = pendingInvites.length > 0 || pendingBandInvites.length > 0;
   const hasAnyInviteContent = hasAnyPendingInvites || acceptedOutgoing.length > 0;
+
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const feedbackPopoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mainEl = mainContentRef.current;
@@ -519,6 +525,51 @@ export default function Layout({ children }: Props) {
     };
   }, [invitesOpen]);
 
+  useEffect(() => {
+    if (!feedbackOpen) return;
+
+    const handleWindowClick = (event: MouseEvent) => {
+      if (!feedbackPopoverRef.current) return;
+      if (feedbackPopoverRef.current.contains(event.target as Node)) return;
+      setFeedbackOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setFeedbackOpen(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handleWindowClick);
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.removeEventListener('mousedown', handleWindowClick);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [feedbackOpen]);
+
+  const handleSubmitFeedback = async () => {
+    if (!db || !user?.id || !feedbackMessage.trim() || feedbackSubmitting) return;
+    setFeedbackSubmitting(true);
+    try {
+      await submitFeedback(db, {
+        userId: user.id,
+        email: user.email ?? null,
+        message: feedbackMessage,
+        page: pathname,
+      });
+      toast.success('Thanks for the feedback!');
+      setFeedbackMessage('');
+      setFeedbackOpen(false);
+    } catch (error) {
+      console.error('Failed to submit feedback', error);
+      toast.error('Could not send feedback. Please try again.');
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  };
+
   const handleAcceptInvite = async (invite: CollaborationInvite) => {
     if (!user?.id || !user.email) return;
 
@@ -618,6 +669,47 @@ export default function Layout({ children }: Props) {
           <BrandMark size={35} scale={1} />
         </Link>
         <nav className="topbar-nav">
+          <div className="topbar-feedback" ref={feedbackPopoverRef}>
+            <button
+              type="button"
+              onClick={() => setFeedbackOpen((current) => !current)}
+              className={['topbar-feedback-trigger', feedbackOpen ? 'active' : ''].filter(Boolean).join(' ')}
+              title="Send feedback"
+              aria-label="Send feedback"
+              aria-expanded={feedbackOpen}
+              aria-haspopup="dialog"
+              aria-controls="topbar-feedback-popover"
+            >
+              <MessageSquare size={16} />
+              <span className="topbar-link-label">Feedback</span>
+            </button>
+
+            {feedbackOpen ? (
+              <div id="topbar-feedback-popover" className="topbar-feedback-popover" role="dialog" aria-label="Send feedback">
+                <div className="topbar-feedback-popover-header">
+                  <h2>Feedback</h2>
+                </div>
+                <div className="topbar-feedback-popover-content">
+                  <textarea
+                    className="topbar-feedback-textarea"
+                    value={feedbackMessage}
+                    onChange={(e) => setFeedbackMessage(e.target.value)}
+                    placeholder="What's on your mind? Bugs, ideas, anything."
+                    rows={4}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    className="setlist-action-btn"
+                    disabled={!feedbackMessage.trim() || feedbackSubmitting}
+                    onClick={() => void handleSubmitFeedback()}
+                  >
+                    {feedbackSubmitting ? 'Sending...' : 'Send'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
           <div className="topbar-invites" ref={invitesPopoverRef}>
             <button
               type="button"
