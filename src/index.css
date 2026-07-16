@@ -4834,6 +4834,32 @@ input, select, textarea { font: inherit; color: var(--text); }
   opacity: .75;
 }
 
+.login-founder {
+  margin-top: .5rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.login-founder-photo {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  box-shadow: var(--shadow-md);
+}
+
+.login-founder-copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
 .login-card {
   background: color-mix(in srgb, var(--surface) 96%, #ffffff);
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
