@@ -525,7 +525,7 @@ export default function ProfilePage() {
           </button>
         </section>
 
-        <section className="profile-settings-card profile-settings-card--wide profile-danger-card">
+        <section className="profile-settings-card profile-danger-card">
           <div className="profile-section-heading">
             <div>
               <h2>Danger zone</h2>
