@@ -107,7 +107,7 @@ export default function BandManagementPanel({
       </div>
       {lastInviteLink ? (
         <label className="share-menu-field" style={{ marginTop: '0.75rem' }}>
-          <span>Latest invite link</span>
+          <span>Invite link (share with as many bandmates as you like)</span>
           <input type="text" value={lastInviteLink} readOnly />
           {lastInviteLinkExpiresAt ? (
             <span style={{ fontSize: '0.8em', color: 'var(--color-text-muted, #888)', marginTop: '0.25rem' }}>

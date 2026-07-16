@@ -6,12 +6,11 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import { declineInvite, loadPendingInvites } from '../lib/collaboration';
-import { declineBandInvite, loadPendingBandInvites } from '../lib/bandInvites';
 import { acceptBandInviteOnServer } from '../lib/bandsApi';
 import { acceptInviteOnServer } from '../lib/shareApi';
 import { emitInviteNotificationsChanged } from '../lib/inviteNotifications';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
-import type { BandInvite, CollaborationInvite } from '../types';
+import type { CollaborationInvite } from '../types';
 
 export default function ProfileInvitesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,7 +18,6 @@ export default function ProfileInvitesPage() {
   const { bands, refreshBands } = useBands();
   const [loading, setLoading] = useState(true);
   const [invites, setInvites] = useState<CollaborationInvite[]>([]);
-  const [bandInvites, setBandInvites] = useState<BandInvite[]>([]);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
   const [profilesByUserId, setProfilesByUserId] = useState<Record<string, {
     fullName?: string;
@@ -33,37 +31,16 @@ export default function ProfileInvitesPage() {
   const refreshInvites = useCallback(async () => {
     if (!db || !user?.id) {
       setInvites([]);
-      setBandInvites([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      const [pendingInvitesResult, pendingBandInvitesResult] = await Promise.allSettled([
-        loadPendingInvites(db, user.id, user.email ?? ''),
-        loadPendingBandInvites(db, user.id, user.email ?? ''),
-      ]);
-
-      if (pendingInvitesResult.status === 'fulfilled') {
-        setInvites(pendingInvitesResult.value);
-      } else {
-        console.error('Failed to load collaboration invites.', pendingInvitesResult.reason);
-        setInvites([]);
-      }
-
-      if (pendingBandInvitesResult.status === 'fulfilled') {
-        setBandInvites(pendingBandInvitesResult.value);
-      } else {
-        console.error('Failed to load band invites.', pendingBandInvitesResult.reason);
-        setBandInvites([]);
-      }
-
-      if (pendingInvitesResult.status === 'rejected' && pendingBandInvitesResult.status === 'rejected') {
-        toast.error('Failed to load invites.');
-      }
+      setInvites(await loadPendingInvites(db, user.id, user.email ?? ''));
     } catch (error) {
-      console.error('Failed to load invites.', error);
+      console.error('Failed to load collaboration invites.', error);
+      setInvites([]);
       toast.error('Failed to load invites.');
     } finally {
       setLoading(false);
@@ -234,46 +211,7 @@ export default function ProfileInvitesPage() {
     }
   };
 
-  const onAcceptBandInvite = async (invite: BandInvite) => {
-    if (!user?.id || !user.email) return;
-
-    setBusyInviteId(invite.id);
-    try {
-      await acceptBandInviteOnServer({
-        userId: user.id,
-        userEmail: user.email,
-        inviteId: invite.id,
-      });
-      setBandInvites((prev) => prev.filter((entry) => entry.id !== invite.id));
-      await refreshBands();
-      emitInviteNotificationsChanged();
-      toast.success('Band invite accepted.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to accept band invite.';
-      toast.error(message);
-    } finally {
-      setBusyInviteId(null);
-    }
-  };
-
-  const onDeclineBandInvite = async (inviteId: string) => {
-    if (!db || !user?.id) return;
-
-    setBusyInviteId(inviteId);
-    try {
-      await declineBandInvite(db, inviteId, user.id);
-      setBandInvites((prev) => prev.filter((entry) => entry.id !== inviteId));
-      emitInviteNotificationsChanged();
-      toast.success('Band invite declined.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to decline band invite.';
-      toast.error(message);
-    } finally {
-      setBusyInviteId(null);
-    }
-  };
-
-  const hasAnyInvites = invites.length > 0 || bandInvites.length > 0;
+  const hasAnyInvites = invites.length > 0;
   const hasAnyContent = acceptedConfirmations.length > 0 || hasAnyInvites;
 
   const mutualBandNamesByUserId = bands.reduce<Record<string, string[]>>((acc, band) => {
@@ -350,43 +288,6 @@ export default function ProfileInvitesPage() {
                           className="setlist-action-btn setlist-action-btn--secondary"
                           disabled={busy}
                           onClick={() => onDecline(invite.id)}
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ) : null}
-
-          {bandInvites.length > 0 ? (
-            <section className="profile-invites-section">
-              <h2>Band invitations</h2>
-              <ul className="profile-invites-list">
-                {bandInvites.map((invite) => {
-                  const busy = busyInviteId === invite.id;
-                  return (
-                    <li key={invite.id} className="profile-invite-card">
-                      <div className="profile-invite-main">
-                        <strong>{invite.bandName}</strong>
-                        <span>{invite.inviterEmail} invited you as {invite.role === 'editor' ? 'member' : invite.role}</span>
-                      </div>
-                      <div className="profile-invite-actions">
-                        <button
-                          type="button"
-                          className="setlist-action-btn"
-                          disabled={busy}
-                          onClick={() => onAcceptBandInvite(invite)}
-                        >
-                          {busy ? 'Working…' : 'Accept'}
-                        </button>
-                        <button
-                          type="button"
-                          className="setlist-action-btn setlist-action-btn--secondary"
-                          disabled={busy}
-                          onClick={() => onDeclineBandInvite(invite.id)}
                         >
                           Decline
                         </button>

@@ -65,23 +65,6 @@ export interface Band {
   updatedAt?: string;
 }
 
-export interface BandInvite {
-  id: string;
-  bandId: string;
-  bandName: string;
-  inviterId: string;
-  inviterEmail: string;
-  recipientUsername?: string;
-  recipientUsernameLower?: string;
-  recipientEmail: string;
-  recipientEmailLower: string;
-  recipientUid?: string;
-  role: CollaborationPermission;
-  status: 'pending' | 'accepted' | 'declined' | 'revoked';
-  createdAt: string;
-  respondedAt?: string;
-}
-
 export interface SongList extends CollaborationMetadata {
   id: string;
   name: string;

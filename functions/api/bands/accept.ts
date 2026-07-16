@@ -25,14 +25,14 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'inviteId is required.' }, { status: 400 });
   }
 
-  const invitePath = ['bandInvites', inviteId];
-  const invite = await getFirestoreDocument(ctx.env, invitePath);
+  const invite = await getFirestoreDocument(ctx.env, ['bandInvites', inviteId]);
   if (!invite) {
     return Response.json({ error: 'Invite not found.' }, { status: 404 });
   }
 
-  if (invite.status !== 'pending') {
-    return Response.json({ error: 'Invite is no longer pending.' }, { status: 409 });
+  // Invite links are reusable by anyone who has the link until they expire or are revoked.
+  if (invite.status === 'revoked') {
+    return Response.json({ error: 'Invite link has been revoked.' }, { status: 409 });
   }
 
   const expiresAt = typeof invite.expiresAt === 'string' ? invite.expiresAt : null;
@@ -41,15 +41,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     if (!Number.isNaN(expiresAtMs) && expiresAtMs < Date.now()) {
       return Response.json({ error: 'Invite link has expired.' }, { status: 410 });
     }
-  }
-
-  const inviteRecipientUid = typeof invite.recipientUid === 'string' ? invite.recipientUid : null;
-  const inviteRecipientEmail = typeof invite.recipientEmailLower === 'string' ? invite.recipientEmailLower : null;
-  const linkInvite = invite.linkInvite === true;
-  const emailMatch = inviteRecipientEmail !== null && inviteRecipientEmail !== '' && userEmail !== '' && inviteRecipientEmail === userEmail;
-  const canAccept = linkInvite || inviteRecipientUid === userId || emailMatch;
-  if (!canAccept) {
-    return Response.json({ error: 'Invite does not belong to this user.' }, { status: 403 });
   }
 
   const bandId = typeof invite.bandId === 'string' ? invite.bandId : null;
@@ -138,13 +129,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     memberFullNames,
     memberAvatars,
     updatedAt: now,
-  });
-
-  await setFirestoreDocument(ctx.env, invitePath, {
-    ...invite,
-    recipientUid: userId,
-    status: 'accepted',
-    respondedAt: now,
   });
 
   return Response.json({ ok: true, bandId });
