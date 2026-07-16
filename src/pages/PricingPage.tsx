@@ -302,11 +302,16 @@ export default function PricingPage() {
           <span className="pricing-note pricing-note--8">♬</span>
           <span className="pricing-grid" />
         </div>
-        <span className="pricing-kicker">Pricing</span>
-        <h1>Pay per band workspace</h1>
-        <p>
-          Every account gets one free band. Upgrade individual bands to Pro (all features for one member) or Crew (all features + up to 5 members).
-        </p>
+        <Link to="/profile" className="pricing-hero-nav-link">
+          &larr; Back to account
+        </Link>
+        <div className="pricing-hero-intro">
+          <span className="pricing-kicker">Pricing</span>
+          <h1>Pay per band workspace</h1>
+          <p>
+            Every account gets one free band. Upgrade individual bands to Pro (all features for one member) or Crew (all features + up to 5 members).
+          </p>
+        </div>
         {redirectedFromSidebarNewBand ? (
           <div className="pricing-source-banner" role="status">
             {requestedBandName
@@ -321,69 +326,64 @@ export default function PricingPage() {
               : 'Subscribe below to create a new band workspace.'}
           </div>
         ) : null}
-        <div className="pricing-hero-actions">
-          <Link to="/profile" className="setlist-action-btn setlist-action-btn--secondary pricing-hero-back-link">
-            Back to account
-          </Link>
-          <div className="pricing-hero-actions-controls">
-            {(ownedBands.length > 0 || selectedBandId === 'new') ? (
-              <div className="pricing-hero-band-select">
-                <span className="pricing-band-chips-label">Band workspace</span>
-                <div className="pricing-band-chips" role="tablist" aria-label="Band workspace">
-                  {ownedBands.map((band) => (
-                    <button
-                      key={band.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={selectedBandId === band.id}
-                      className={`pricing-band-chip${selectedBandId === band.id ? ' active' : ''}`}
-                      onClick={() => setSelectedBandId(band.id)}
-                    >
-                      {band.name}
-                    </button>
-                  ))}
+        <div className="pricing-hero-controls">
+          <div className="pricing-cycle-toggle" role="tablist" aria-label="Billing cycle">
+            <button
+              type="button"
+              className={billingCycle === 'monthly' ? 'active' : ''}
+              onClick={() => setBillingCycle('monthly')}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              className={billingCycle === 'annual' ? 'active' : ''}
+              onClick={() => setBillingCycle('annual')}
+            >
+              Annual
+            </button>
+          </div>
+          {(ownedBands.length > 0 || selectedBandId === 'new') ? (
+            <div className="pricing-hero-band-select">
+              <span className="pricing-band-chips-label">Band workspace</span>
+              <div className="pricing-band-chips" role="tablist" aria-label="Band workspace">
+                {ownedBands.map((band) => (
                   <button
+                    key={band.id}
                     type="button"
                     role="tab"
-                    aria-selected={selectedBandId === 'new'}
-                    className={`pricing-band-chip pricing-band-chip--new${selectedBandId === 'new' ? ' active' : ''}`}
-                    onClick={() => setSelectedBandId('new')}
+                    aria-selected={selectedBandId === band.id}
+                    className={`pricing-band-chip${selectedBandId === band.id ? ' active' : ''}`}
+                    onClick={() => setSelectedBandId(band.id)}
                   >
-                    <Plus size={14} />
-                    New band
+                    {band.name}
                   </button>
-                </div>
-                {selectedBandId === 'new' ? (
-                  <label className="share-menu-field" style={{ marginTop: '.65rem', marginBottom: '0.65rem' }}>
-                    <span>Band name</span>
-                    <input
-                      type="text"
-                      value={newBandName}
-                      onChange={(event) => setNewBandName(event.target.value)}
-                      placeholder="Enter band name"
-                    />
-                  </label>
-                ) : null}
+                ))}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={selectedBandId === 'new'}
+                  className={`pricing-band-chip pricing-band-chip--new${selectedBandId === 'new' ? ' active' : ''}`}
+                  onClick={() => setSelectedBandId('new')}
+                >
+                  <Plus size={14} />
+                  New band
+                </button>
               </div>
-            ) : null}
-            <div className="pricing-cycle-toggle" role="tablist" aria-label="Billing cycle">
-          <button
-            type="button"
-            className={billingCycle === 'monthly' ? 'active' : ''}
-            onClick={() => setBillingCycle('monthly')}
-          >
-            Monthly
-          </button>
-          <button
-            type="button"
-            className={billingCycle === 'annual' ? 'active' : ''}
-            onClick={() => setBillingCycle('annual')}
-          >
-            Annual
-          </button>
+              {selectedBandId === 'new' ? (
+                <label className="share-menu-field" style={{ marginTop: '.65rem', marginBottom: '0.65rem' }}>
+                  <span>Band name</span>
+                  <input
+                    type="text"
+                    value={newBandName}
+                    onChange={(event) => setNewBandName(event.target.value)}
+                    placeholder="Enter band name"
+                  />
+                </label>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      </div>
-    </div>
       </header>
 
       {(ownedBands.length > 0 || selectedBandId === 'new') ? (
