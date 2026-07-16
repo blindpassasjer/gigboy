@@ -9,6 +9,7 @@ import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
 import type { RecordingsScope, SongRecording } from '../lib/songRecordings';
 import { showConfirmToast } from '../utils/toastDialogs';
+import { markReloadUnsafe } from '../lib/reloadGuard';
 
 const WAVEFORM_SAMPLES = 100;
 
@@ -400,6 +401,14 @@ export default function SongRecorder({ song, user, bandId }: Props) {
       setError(uploadError);
     }
   }, [uploadError]);
+
+  // Recording/preview state lives only in memory (MediaRecorder blob, not yet
+  // saved) — a background app reload would silently drop it with no warning,
+  // unlike form edits which get a beforeunload prompt.
+  useEffect(() => {
+    if (recState === 'idle') return;
+    return markReloadUnsafe();
+  }, [recState]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);

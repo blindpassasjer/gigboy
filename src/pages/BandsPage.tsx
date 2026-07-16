@@ -121,6 +121,7 @@ export default function BandsPage() {
           {bands.map((band) => {
             const isOwner = band.ownerId === user?.id;
             const role = isOwner ? 'owner' : band.memberRoles[user?.id ?? ''] ?? 'viewer';
+            const roleLabel = role === 'editor' ? 'member' : role;
 
             return (
               <li key={band.id} className="bands-card">
@@ -134,7 +135,7 @@ export default function BandsPage() {
                   </div>
                 </Link>
                 <div className="bands-card-meta">
-                  <span className="bands-role-badge">{role}</span>
+                  <span className="bands-role-badge">{roleLabel}</span>
                   <span className="bands-members-pill"><Users size={14} /> {band.memberIds.length}</span>
                   {isOwner ? (
                     <button

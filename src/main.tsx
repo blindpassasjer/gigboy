@@ -6,6 +6,7 @@ import './index.css'
 import { migrateLocalStorageKeys } from './lib/migrateLocalStorage.ts'
 import { isDynamicImportFailure, recoverFromDynamicImportFailure } from './lib/chunkRecovery.ts'
 import { initErrorMonitoring } from './lib/errorMonitoring.ts'
+import { reloadWhenSafe } from './lib/reloadGuard.ts'
 
 migrateLocalStorageKeys()
 initErrorMonitoring()
@@ -31,12 +32,23 @@ installChunkRecoveryHandlers()
 async function setupPwa() {
   if (!import.meta.env.PROD) return
 
+  // registerType is 'autoUpdate', so a new SW can take control of this tab
+  // silently in the background (no onNeedRefresh prompt) while it's still
+  // running old JS. cleanupOutdatedCaches then removes the old chunk files,
+  // so any later lazy import of a not-yet-loaded route 404s. Reload as soon
+  // as a new SW takes control so the tab never lingers on stale JS.
+  if ('serviceWorker' in navigator) {
+    let reloadedForNewController = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloadedForNewController) return
+      reloadedForNewController = true
+      reloadWhenSafe(() => window.location.reload())
+    })
+  }
+
   const { registerSW } = await import('virtual:pwa-register')
-  const updateSW = registerSW({
+  registerSW({
     immediate: true,
-    onNeedRefresh() {
-      void updateSW(true)
-    },
     onOfflineReady() {
       console.info('GIGBOY is ready to work offline.')
     },

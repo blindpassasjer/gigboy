@@ -169,6 +169,7 @@ export default function BandManagementPanel({
       <ul className="bands-members-list">
         {band.memberIds.map((memberId) => {
           const role = band.ownerId === memberId ? 'owner' : band.memberRoles[memberId] ?? 'viewer';
+          const roleLabel = role === 'editor' ? 'member' : role;
           const username = band.memberUsernames[memberId] ?? null;
           const email = band.memberEmails[memberId] ?? 'No email saved';
           const avatar = band.memberAvatars[memberId] ?? null;
@@ -181,7 +182,7 @@ export default function BandManagementPanel({
               <div className="bands-member-copy">
                 <strong>{username ?? email}</strong>
                 <span>{username ? email : ''}</span>
-                <span>{role}</span>
+                <span>{roleLabel}</span>
               </div>
               <div className="bands-member-actions">
                 {canRemove ? (
