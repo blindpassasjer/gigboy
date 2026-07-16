@@ -28,7 +28,6 @@ import {
   changeBandMemberRoleOnServer,
   createBandOnServer,
   deleteBandOnServer,
-  inviteBandMemberOnServer,
   repairBandMembershipOnServer,
   removeBandMemberOnServer,
   createBandRiderOnServer,
@@ -418,7 +417,6 @@ interface BandsContextValue {
   deleteBand: (bandId: string) => Promise<string | null>;
   renameBand: (bandId: string, name: string) => Promise<string | null>;
   updateBandDescription: (bandId: string, description: string) => Promise<string | null>;
-  inviteMember: (bandId: string, recipientUsername: string, role: CollaborationPermission) => Promise<string | null>;
   changeMemberRole: (bandId: string, memberId: string, role: CollaborationPermission) => Promise<string | null>;
   removeMember: (bandId: string, memberId: string) => Promise<string | null>;
   leaveBand: (bandId: string) => Promise<string | null>;
@@ -1617,30 +1615,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return error instanceof Error ? error.message : 'Failed to upload band logo.';
     }
   }, [bandPressKitsByBandId, bands, userId]);
-
-  const inviteMember = useCallback(async (bandId: string, recipientUsername: string, role: CollaborationPermission) => {
-    if (!userId) {
-      return 'Bands require a signed-in account.';
-    }
-
-    const band = bands.find((entry) => entry.id === bandId);
-    if (!band) {
-      return 'Band not found.';
-    }
-
-    try {
-      await inviteBandMemberOnServer({
-        userId,
-        userEmail,
-        bandId,
-        recipientUsername,
-        role,
-      });
-      return null;
-    } catch (error) {
-      return error instanceof Error ? error.message : 'Failed to invite band member.';
-    }
-  }, [bands, userEmail, userId]);
 
   const changeMemberRole = useCallback(async (bandId: string, memberId: string, role: CollaborationPermission) => {
     if (!userId) {
@@ -3594,7 +3568,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     createBand,
     deleteBand,
     renameBand,
-    inviteMember,
     updateBandDescription,
     changeMemberRole,
     removeMember,
@@ -3663,7 +3636,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     deleteBandSongList,
     deleteBandTrashItemPermanently,
     deleteBand,
-    inviteMember,
     leaveBand,
     loading,
     moveSongInBandSetlist,

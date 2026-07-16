@@ -25,29 +25,12 @@ export default function BandManagementPanel({
   onLeaveSuccess,
 }: BandManagementPanelProps) {
   const { user } = useAuth();
-  const { inviteMember, removeMember } = useBands();
+  const { removeMember } = useBands();
 
-  const [inviteUsername, setInviteUsername] = useState('');
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
-  const [busyInvite, setBusyInvite] = useState(false);
   const [busyInviteLink, setBusyInviteLink] = useState(false);
   const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
   const [lastInviteLinkExpiresAt, setLastInviteLinkExpiresAt] = useState<string | null>(null);
-
-  const handleInvite = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setBusyInvite(true);
-    const error = await inviteMember(band.id, inviteUsername, 'editor');
-    setBusyInvite(false);
-
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
-    setInviteUsername('');
-    toast.success('Band invite sent.');
-  };
 
   const handleRemoveMember = async (memberId: string) => {
     setBusyMemberId(memberId);
@@ -112,29 +95,16 @@ export default function BandManagementPanel({
   return (
     <section className="bands-panel">
       <h3>Band management</h3>
-      <form className="bands-invite-form" onSubmit={handleInvite}>
-        <label className="share-menu-field">
-          <span>Invite by username</span>
-          <input
-            type="text"
-            value={inviteUsername}
-            onChange={(event) => setInviteUsername(event.target.value)}
-            placeholder="bandmate"
-            disabled={!canEditBand}
-          />
-        </label>
-        <button type="submit" className="setlist-action-btn" disabled={!canEditBand || busyInvite}>
-          <UserPlus size={15} /> {busyInvite ? 'Sending...' : 'Send invite'}
-        </button>
+      <div className="bands-invite-form">
         <button
           type="button"
-          className="setlist-action-btn setlist-action-btn--secondary"
+          className="setlist-action-btn"
           disabled={!canEditBand || busyInviteLink}
           onClick={() => { void handleCreateInviteLink(); }}
         >
-          {busyInviteLink ? 'Creating link...' : 'Create invite link'}
+          <UserPlus size={15} /> {busyInviteLink ? 'Creating link...' : 'Create invite link'}
         </button>
-      </form>
+      </div>
       {lastInviteLink ? (
         <label className="share-menu-field" style={{ marginTop: '0.75rem' }}>
           <span>Latest invite link</span>

@@ -37,19 +37,6 @@ export async function createBandOnServer(params: {
   });
 }
 
-export async function inviteBandMemberOnServer(params: {
-  userId: string;
-  userEmail: string;
-  bandId: string;
-  recipientUsername: string;
-  role: CollaborationPermission;
-}) {
-  return postJson<{ inviteId: string }>('/api/bands/invite', params, {
-    userId: params.userId,
-    userEmail: params.userEmail,
-  });
-}
-
 export async function createBandInviteLinkOnServer(params: {
   userId: string;
   userEmail: string;
