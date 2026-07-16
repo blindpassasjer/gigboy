@@ -12,10 +12,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isEmailVerified() {
-      return request.auth.token.email_verified == true;
-    }
-
     // Prevent clients from writing elevated plan/billing fields on create.
     function subscriptionFieldsNotElevated() {
       let incoming = request.resource.data;
@@ -122,7 +118,6 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isOwner(userId)
-        && isEmailVerified()
         && subscriptionFieldsNotElevated();
       allow update: if isOwner(userId)
         && (
@@ -143,7 +138,7 @@ service cloud.firestore {
 
       match /songLists/{songListId} {
         allow read: if isOwner(userId) || isCollaboratorOnResource();
-        allow create: if isOwner(userId) && isEmailVerified();
+        allow create: if isOwner(userId);
         allow update: if isOwner(userId)
           || (isEditorOnResource() && collaborationMetadataUnchanged());
         allow delete: if isOwner(userId);
@@ -151,7 +146,7 @@ service cloud.firestore {
 
       match /setlists/{setlistId} {
         allow read: if isOwner(userId) || isCollaboratorOnResource();
-        allow create: if isOwner(userId) && isEmailVerified();
+        allow create: if isOwner(userId);
         allow update: if isOwner(userId)
           || (isEditorOnResource() && collaborationMetadataUnchanged());
         allow delete: if isOwner(userId);
@@ -159,7 +154,7 @@ service cloud.firestore {
 
       match /songs/{songId} {
         allow read: if isOwner(userId) || isCollaboratorOnResource();
-        allow create: if isOwner(userId) && isEmailVerified();
+        allow create: if isOwner(userId);
         allow update: if isOwner(userId)
           || (isEditorOnResource() && collaborationMetadataUnchanged());
         allow delete: if isOwner(userId);
@@ -286,7 +281,6 @@ service cloud.firestore {
         || resource.data.memberIds.hasAny([request.auth.uid])
       );
       allow create: if isSignedIn()
-        && isEmailVerified()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.memberIds is list
         && request.resource.data.memberIds.hasAny([request.auth.uid]);

@@ -12,7 +12,6 @@ import { BandsProvider } from './context/BandsContext';
 import { isDynamicImportFailure, recoverFromDynamicImportFailure } from './lib/chunkRecovery';
 
 const Layout = lazy(() => import('./components/Layout'));
-const VerifyEmailBanner = lazy(() => import('./components/VerifyEmailBanner'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const UsernameSetupPage = lazy(() => import('./pages/UsernameSetupPage'));
 const AddSongPage = lazy(() => import('./pages/AddSongPage'));
@@ -132,7 +131,6 @@ function AuthenticatedApp() {
         <SetlistsProvider>
             <BandsProvider>
                 <Layout>
-                  <VerifyEmailBanner />
                   <Routes>
                     <Route path="/" element={<RootRedirect />} />
                     <Route path="/bands" element={<RootRedirect />} />
