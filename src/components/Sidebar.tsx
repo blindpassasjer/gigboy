@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Newspaper, Plus, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Newspaper, Plus, Sparkles, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
@@ -515,8 +515,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           <button
             type="button"
             className="sidebar-icon-btn"
-            title="New band"
-            aria-label="Create new band"
+            title={ownedBandCount >= 1 ? 'Upgrade to add another band' : 'New band'}
+            aria-label={ownedBandCount >= 1 ? 'Upgrade to add another band' : 'Create new band'}
             onClick={() => {
               if (addingBand) {
                 setAddingBand(false);
@@ -530,7 +530,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               }
             }}
           >
-            <Plus size={15} />
+            {ownedBandCount >= 1 ? <Sparkles size={15} /> : <Plus size={15} />}
           </button>
         )}
       </div>
