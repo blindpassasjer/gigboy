@@ -12,6 +12,7 @@ import {
   linkWithCredential,
   onAuthStateChanged,
   reauthenticateWithCredential,
+  sendEmailVerification,
   updateEmail,
   updatePassword,
   signInWithPopup,
@@ -31,6 +32,7 @@ import type { PlanTier, SubscriptionStatus } from '../types';
 export interface User {
   id: string;
   email: string;
+  emailVerified: boolean;
   username: string | null;
   avatar: string | null;
   fullName: string | null;
@@ -51,6 +53,8 @@ interface AuthContextValue {
   authError: string | null;
   login: (email: string, password: string) => Promise<string | null>;
   register: (email: string, password: string, username: string) => Promise<string | null>;
+  resendVerificationEmail: () => Promise<string | null>;
+  refreshEmailVerification: () => Promise<void>;
   loginWithGoogle: () => Promise<string | null>;
   loginWithGithub: () => Promise<string | null>;
   pendingLinkEmail: string | null;
@@ -124,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser({
           id: firebaseUser.uid,
           email: firebaseUser.email ?? '',
+          emailVerified: firebaseUser.emailVerified,
           username: null,
           avatar: null,
           fullName: null,
@@ -149,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser({
             id: firebaseUser.uid,
             email: firebaseUser.email ?? '',
+            emailVerified: firebaseUser.emailVerified,
             username: profile?.username ?? null,
             avatar: profile?.avatar ?? null,
             fullName: profile?.fullName ?? null,
@@ -168,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser({
             id: firebaseUser.uid,
             email: firebaseUser.email ?? '',
+            emailVerified: firebaseUser.emailVerified,
             username: null,
             avatar: null,
             fullName: null,
@@ -255,9 +262,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Optimistically set username so the race between onAuthStateChanged and the
       // Firestore write doesn't briefly show UsernameSetupPage after registration.
       setUser((current) => (current ? { ...current, username } : current));
+      await sendEmailVerification(credential.user).catch(() => undefined);
       return null;
     } catch (err: unknown) {
       return err instanceof Error ? err.message : 'Registration failed';
+    }
+  }, []);
+
+  const resendVerificationEmail = useCallback(async (): Promise<string | null> => {
+    if (!auth?.currentUser) return 'Not signed in.';
+    try {
+      await sendEmailVerification(auth.currentUser);
+      return null;
+    } catch (err: unknown) {
+      return err instanceof Error ? err.message : 'Failed to send verification email.';
+    }
+  }, []);
+
+  const refreshEmailVerification = useCallback(async (): Promise<void> => {
+    if (!auth?.currentUser) return;
+    await auth.currentUser.reload().catch(() => undefined);
+    const refreshed = auth.currentUser;
+    if (refreshed) {
+      setUser((current) => (current ? { ...current, emailVerified: refreshed.emailVerified } : current));
     }
   }, []);
 
@@ -585,6 +612,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authError: firebaseConfigError,
         login,
         register,
+        resendVerificationEmail,
+        refreshEmailVerification,
         loginWithGoogle,
         loginWithGithub,
         pendingLinkEmail,

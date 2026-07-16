@@ -1,8 +1,11 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Anonymous sign-in is not offered by the app; reject it outright so a client
+    // calling the Firebase Auth SDK directly can't mint throwaway demo accounts.
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
     function isOwner(userId) {
@@ -34,7 +37,8 @@ service firebase.storage {
 
     // User-scoped song recordings
     match /users/{userId}/songs/{songId}/recordings/{fileName} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && request.auth.token.email_verified == true;
     }
 
     // Band-scoped song recordings

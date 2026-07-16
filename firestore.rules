@@ -1,18 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Anonymous sign-in is not offered by the app; reject it outright so a client
+    // calling the Firebase Auth SDK directly can't mint throwaway demo accounts.
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
     function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Anonymous (demo) users have a real uid but no email or persistent profile.
-    function isAnonymousUser() {
-      return request.auth != null
-        && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
     }
 
     // Prevent clients from writing elevated plan/billing fields on create.
@@ -121,7 +122,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isOwner(userId)
-        && !isAnonymousUser()
+        && isEmailVerified()
         && subscriptionFieldsNotElevated();
       allow update: if isOwner(userId)
         && (
@@ -142,7 +143,7 @@ service cloud.firestore {
 
       match /songLists/{songListId} {
         allow read: if isOwner(userId) || isCollaboratorOnResource();
-        allow create: if isOwner(userId);
+        allow create: if isOwner(userId) && isEmailVerified();
         allow update: if isOwner(userId)
           || (isEditorOnResource() && collaborationMetadataUnchanged());
         allow delete: if isOwner(userId);
@@ -150,7 +151,7 @@ service cloud.firestore {
 
       match /setlists/{setlistId} {
         allow read: if isOwner(userId) || isCollaboratorOnResource();
-        allow create: if isOwner(userId);
+        allow create: if isOwner(userId) && isEmailVerified();
         allow update: if isOwner(userId)
           || (isEditorOnResource() && collaborationMetadataUnchanged());
         allow delete: if isOwner(userId);
@@ -158,7 +159,7 @@ service cloud.firestore {
 
       match /songs/{songId} {
         allow read: if isOwner(userId) || isCollaboratorOnResource();
-        allow create: if isOwner(userId);
+        allow create: if isOwner(userId) && isEmailVerified();
         allow update: if isOwner(userId)
           || (isEditorOnResource() && collaborationMetadataUnchanged());
         allow delete: if isOwner(userId);
@@ -223,7 +224,6 @@ service cloud.firestore {
     match /usernames/{usernameLower} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
-        && !isAnonymousUser()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.usernameLower == usernameLower
         && !exists(/databases/$(database)/documents/usernames/$(usernameLower));
@@ -286,6 +286,7 @@ service cloud.firestore {
         || resource.data.memberIds.hasAny([request.auth.uid])
       );
       allow create: if isSignedIn()
+        && isEmailVerified()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.memberIds is list
         && request.resource.data.memberIds.hasAny([request.auth.uid]);
