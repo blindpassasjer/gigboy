@@ -25,7 +25,7 @@ export const PLAN_LABELS: Record<PlanTier, string> = {
 export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   free: {
     songLimit: 12,
-    setlistLimit: 2,
+    setlistLimit: 1,
     storageQuotaBytes: 100 * 1024 * 1024,
     memberLimit: 1,
   },
