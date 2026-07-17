@@ -6091,6 +6091,33 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
 }
 
+.sidebar-band-tier-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: .05rem .4rem;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.sidebar-band-tier-badge--free {
+  background: color-mix(in srgb, var(--muted) 16%, var(--surface));
+  color: var(--muted);
+}
+
+.sidebar-band-tier-badge--pro {
+  background: color-mix(in srgb, var(--bands-hue) 20%, var(--surface));
+  color: var(--bands-hue);
+}
+
+.sidebar-band-tier-badge--crew {
+  background: color-mix(in srgb, gold 30%, var(--surface));
+  color: color-mix(in srgb, gold 55%, var(--fg));
+}
+
 .sidebar-band-switcher-chevron {
   flex-shrink: 0;
   opacity: .6;

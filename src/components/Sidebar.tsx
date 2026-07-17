@@ -6,7 +6,7 @@ import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { useBandPlan } from '../hooks/usePlan';
-import { bandCanUse } from '../lib/planLimits';
+import { bandCanUse, PLAN_LABELS } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
@@ -477,6 +477,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             <span className="sidebar-band-switcher-name">
               {effectiveActiveBand?.name ?? ''}
             </span>
+            {effectiveActiveBand && (
+              <span className={`sidebar-band-tier-badge sidebar-band-tier-badge--${effectiveActiveBand.billingPlan ?? 'free'}`}>
+                {PLAN_LABELS[effectiveActiveBand.billingPlan ?? 'free']}
+              </span>
+            )}
           </>
           <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
         </button>
