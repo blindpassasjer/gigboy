@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Newspaper, Plus, Sparkles, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, Crown, Folder, ListMusic, Newspaper, Plus, Sparkles, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { useBandPlan } from '../hooks/usePlan';
-import { bandCanUse, PLAN_LABELS } from '../lib/planLimits';
+import { bandCanUse } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
@@ -107,8 +107,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (typeof window === 'undefined') return null;
     try { return window.localStorage.getItem('gigboy-active-band-id'); } catch { return null; }
   });
-  const activeBand = bands.find(b => b.id === activeBandId) || null;
-  const bandPlan = useBandPlan(activeBand);
+  const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
+  const bandPlan = useBandPlan(effectiveActiveBand);
   const storageQuotaBytes = bandPlan.storageQuotaBytes;
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const [storagePopupOpen, setStoragePopupOpen] = useState(false);
@@ -445,8 +445,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     hasType(types, SONG_DRAG_MIME) || hasType(types, SONG_DRAG_FALLBACK_MIME)
   );
 
-  const effectiveActiveBand = visibleBands.find((band) => band.id === activeBandId) ?? visibleBands[0] ?? null;
-
   return (
     <div className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}`}>
     <aside id="app-sidebar" className={`sidebar${mobile ? ' sidebar--mobile' : ''}${open ? ' sidebar--open' : ''}`}>
@@ -460,6 +458,13 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           )}
         </div>
       </div>
+
+      {effectiveActiveBand && !bandPlan.isFree && (
+        <span className={`sidebar-band-tier-badge sidebar-band-tier-badge--${bandPlan.plan}`}>
+          <Crown size={11} />
+          {bandPlan.planLabel}
+        </span>
+      )}
 
       <div className="sidebar-mode-switcher" ref={bandSwitcherRef}>
         <div className="sidebar-band-switcher">
@@ -564,12 +569,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               </span>
             </div>
           </button>
-
-          {effectiveActiveBand && (
-            <span className={`sidebar-band-tier-badge sidebar-band-tier-badge--${effectiveActiveBand.billingPlan ?? 'free'}`}>
-              {PLAN_LABELS[effectiveActiveBand.billingPlan ?? 'free']}
-            </span>
-          )}
 
           {storagePopupOpen && !storageUsage.loading && (
             <div className="sidebar-storage-popup" role="dialog" aria-label="Storage breakdown">

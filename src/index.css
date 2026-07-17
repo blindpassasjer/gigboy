@@ -6094,18 +6094,14 @@ input, select, textarea { font: inherit; color: var(--text); }
 .sidebar-band-tier-badge {
   display: inline-flex;
   align-items: center;
-  margin: .35rem 0 0;
-  padding: .05rem .4rem;
+  gap: .25rem;
+  margin: 0 .75rem .4rem;
+  padding: .1rem .45rem;
   border-radius: 999px;
   font-size: .68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .02em;
-}
-
-.sidebar-band-tier-badge--free {
-  background: color-mix(in srgb, var(--muted) 16%, var(--surface));
-  color: var(--muted);
 }
 
 .sidebar-band-tier-badge--pro {
