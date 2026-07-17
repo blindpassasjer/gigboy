@@ -143,17 +143,8 @@ function LoginHero() {
           className="login-founder-photo"
         />
         <p className="login-founder-copy">
-          I&apos;ve been a musician since I was 12 &mdash; guitar, bass, and drums, whatever the band
-          needed. Over the years that turned into several tours across Europe, playing venues large
-          and small, dealing firsthand with the logistics, chaos, and gear headaches that come with
-          life on the road.
-          <br />
-          <br />
-          Through all of it, one thing stayed constant: I always wished there was a tool built by
-          someone who actually understood what musicians and touring bands need &mdash; not another
-          generic app trying to fit music into a box it wasn&apos;t made for. That frustration is
-          exactly why I built GIGBOY. It&apos;s the tool I wish I&apos;d had for the last 20+ years
-          of playing shows &mdash; made by a musician, for musicians.
+          After 20+ years touring Europe as a musician, I built the tool I always wished existed
+          &mdash; made by a musician, for musicians.
         </p>
       </div>
     </aside>
