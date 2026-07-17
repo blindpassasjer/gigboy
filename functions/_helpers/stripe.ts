@@ -68,7 +68,7 @@ export async function updateUserPlan(
 /**
  * Derives a PlanTier from a Stripe price ID using wrangler env vars.
  * Env vars: STRIPE_PRO_MONTHLY_PRICE_ID, STRIPE_PRO_ANNUAL_PRICE_ID,
- *           STRIPE_BAND_MONTHLY_PRICE_ID, STRIPE_BAND_ANNUAL_PRICE_ID
+ *           STRIPE_CREW_MONTHLY_PRICE_ID, STRIPE_CREW_ANNUAL_PRICE_ID
  */
 export function planTierFromPriceId(
   priceId: string,
@@ -79,8 +79,8 @@ export function planTierFromPriceId(
     env.STRIPE_PRO_ANNUAL_PRICE_ID,
   ].filter(Boolean);
   const bandPrices = [
-    env.STRIPE_BAND_MONTHLY_PRICE_ID,
-    env.STRIPE_BAND_ANNUAL_PRICE_ID,
+    env.STRIPE_CREW_MONTHLY_PRICE_ID,
+    env.STRIPE_CREW_ANNUAL_PRICE_ID,
   ].filter(Boolean);
 
   if (proPrices.includes(priceId)) return 'pro';
@@ -108,13 +108,13 @@ export function planAndExtraMembersFromSubscription(
   ].filter((entry): entry is string => Boolean(entry)));
 
   const bandPrices = new Set([
-    env.STRIPE_BAND_MONTHLY_PRICE_ID,
-    env.STRIPE_BAND_ANNUAL_PRICE_ID,
+    env.STRIPE_CREW_MONTHLY_PRICE_ID,
+    env.STRIPE_CREW_ANNUAL_PRICE_ID,
   ].filter((entry): entry is string => Boolean(entry)));
 
   const bandExtraMemberPrices = new Set([
-    env.STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID,
-    env.STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID,
+    env.STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID,
+    env.STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID,
   ].filter((entry): entry is string => Boolean(entry)));
 
   let plan: PlanTier = 'free';

@@ -78,8 +78,8 @@ const PLAN_CARDS: PlanCard[] = [
     tier: 'pro',
     icon: Sparkles,
     blurb: 'Everything a power user needs for rehearsals, setlists, recordings, and sharing.',
-    monthlyPrice: '4 USD',
-    annualPrice: '40 USD',
+    monthlyPrice: '2.99 USD',
+    annualPrice: '29.99 USD',
     featureBullets: [
       { icon: Users, label: '1 band workspace' },
       { icon: Music, label: 'Unlimited songs' },
@@ -102,8 +102,8 @@ const PLAN_CARDS: PlanCard[] = [
     tier: 'crew',
     icon: Users,
     blurb: 'A shared workspace for a band owner with member access and room to grow.',
-    monthlyPrice: '10 USD',
-    annualPrice: '100 USD',
+    monthlyPrice: '9.99 USD',
+    annualPrice: '99.99 USD',
     featureBullets: [
       { icon: Users, label: '1 shared band workspace' },
       { icon: Music, label: 'Unlimited songs' },
@@ -117,11 +117,11 @@ const PLAN_CARDS: PlanCard[] = [
       { icon: Mic2, label: 'Metronome' },
       { icon: Sparkles, label: 'Multi-user notes' },
       { icon: Users, label: 'Up to 5 members' },
-      { icon: Users, label: 'Extra members: 2 USD/month or 20 USD/year each' },
+      { icon: Users, label: 'Extra members: 1.99 USD/month or 19.99 USD/year each' },
     ],
     ctaLabel: 'Upgrade to Crew',
-    envKeyMonthly: 'VITE_STRIPE_BAND_MONTHLY_PRICE_ID',
-    envKeyAnnual: 'VITE_STRIPE_BAND_ANNUAL_PRICE_ID',
+    envKeyMonthly: 'VITE_STRIPE_CREW_MONTHLY_PRICE_ID',
+    envKeyAnnual: 'VITE_STRIPE_CREW_ANNUAL_PRICE_ID',
   },
 ];
 
@@ -245,8 +245,8 @@ export default function PricingPage() {
     const extraMemberPriceId = isBandPlan
       ? (
         billingCycle === 'annual'
-          ? (import.meta.env.VITE_STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID as string | undefined)
-          : (import.meta.env.VITE_STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID as string | undefined)
+          ? (import.meta.env.VITE_STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID as string | undefined)
+          : (import.meta.env.VITE_STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID as string | undefined)
       )?.trim() || (billingCycle === 'annual'
         ? STRIPE_PRICE_IDS.extraMember.annual
         : STRIPE_PRICE_IDS.extraMember.monthly)

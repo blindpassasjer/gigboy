@@ -16,10 +16,10 @@ interface Env {
   STRIPE_WEBHOOK_SECRET?: string;
   STRIPE_PRO_MONTHLY_PRICE_ID?: string;
   STRIPE_PRO_ANNUAL_PRICE_ID?: string;
-  STRIPE_BAND_MONTHLY_PRICE_ID?: string;
-  STRIPE_BAND_ANNUAL_PRICE_ID?: string;
-  STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID?: string;
-  STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID?: string;
+  STRIPE_CREW_MONTHLY_PRICE_ID?: string;
+  STRIPE_CREW_ANNUAL_PRICE_ID?: string;
+  STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID?: string;
+  STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID?: string;
 }
 
 /** Extract Firebase UID from subscription or customer metadata. */
@@ -37,12 +37,12 @@ function getUid(
 }
 
 function isBandBasePriceId(priceId: string, env: Env): boolean {
-  return priceId === env.STRIPE_BAND_MONTHLY_PRICE_ID || priceId === env.STRIPE_BAND_ANNUAL_PRICE_ID;
+  return priceId === env.STRIPE_CREW_MONTHLY_PRICE_ID || priceId === env.STRIPE_CREW_ANNUAL_PRICE_ID;
 }
 
 function isBandExtraPriceId(priceId: string, env: Env): boolean {
-  return priceId === env.STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID
-    || priceId === env.STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID;
+  return priceId === env.STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID
+    || priceId === env.STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID;
 }
 
 function extractBandIdsFromSubscription(sub: Stripe.Subscription, env: Env): string[] {

@@ -13,10 +13,10 @@ interface Env {
   STRIPE_SECRET_KEY?: string;
   STRIPE_PRO_MONTHLY_PRICE_ID?: string;
   STRIPE_PRO_ANNUAL_PRICE_ID?: string;
-  STRIPE_BAND_MONTHLY_PRICE_ID?: string;
-  STRIPE_BAND_ANNUAL_PRICE_ID?: string;
-  STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID?: string;
-  STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID?: string;
+  STRIPE_CREW_MONTHLY_PRICE_ID?: string;
+  STRIPE_CREW_ANNUAL_PRICE_ID?: string;
+  STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID?: string;
+  STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID?: string;
 }
 
 interface Data extends Record<string, unknown> {
@@ -126,8 +126,8 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
     const profilePlan = profile?.plan === 'crew' || profile?.plan === 'pro' ? profile.plan : 'free';
 
     const allowedExtraMemberPrices = new Set([
-      ctx.env.STRIPE_BAND_MONTHLY_EXTRA_MEMBER_PRICE_ID,
-      ctx.env.STRIPE_BAND_ANNUAL_EXTRA_MEMBER_PRICE_ID,
+      ctx.env.STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID,
+      ctx.env.STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID,
     ].filter((entry): entry is string => Boolean(entry)));
 
     const hasExtraMemberItem = requestedExtraMemberCount > 0;
