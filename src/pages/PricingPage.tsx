@@ -42,21 +42,6 @@ interface PlanCard {
   envKeyAnnual?: string;
 }
 
-const STRIPE_PRICE_IDS = {
-  pro: {
-    monthly: 'price_1TTcMZQ9ZHGjaIIRVQd0Kkqr',
-    annual: 'price_1TTd6uQ9ZHGjaIIRvkQ1SHbe',
-  },
-  crew: {
-    monthly: 'price_1TTcSVQ9ZHGjaIIRqMNvXTgI',
-    annual: 'price_1TTd2aQ9ZHGjaIIRIbNu0NKp',
-  },
-  extraMember: {
-    monthly: 'price_1TTdUEQ9ZHGjaIIRFEPOnaH0',
-    annual: 'price_1TTdV0Q9ZHGjaIIRdt4HC9IQ',
-  },
-} as const;
-
 const PLAN_CARDS: PlanCard[] = [
   {
     tier: 'free',
@@ -127,14 +112,10 @@ const PLAN_CARDS: PlanCard[] = [
 
 function resolvePriceId(card: PlanCard, cycle: BillingCycle) {
   const key = cycle === 'annual' ? card.envKeyAnnual : card.envKeyMonthly;
-  const fallbackPriceId = cycle === 'annual'
-    ? STRIPE_PRICE_IDS[card.tier as 'pro' | 'crew']?.annual
-    : STRIPE_PRICE_IDS[card.tier as 'pro' | 'crew']?.monthly;
-
-  if (!key) return fallbackPriceId ?? null;
+  if (!key) return null;
 
   const envPriceId = (import.meta.env[key] as string | undefined)?.trim();
-  return envPriceId || fallbackPriceId || null;
+  return envPriceId || null;
 }
 
 const PLAN_ORDER: Record<PlanTier, number> = {
@@ -247,9 +228,7 @@ export default function PricingPage() {
         billingCycle === 'annual'
           ? (import.meta.env.VITE_STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID as string | undefined)
           : (import.meta.env.VITE_STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID as string | undefined)
-      )?.trim() || (billingCycle === 'annual'
-        ? STRIPE_PRICE_IDS.extraMember.annual
-        : STRIPE_PRICE_IDS.extraMember.monthly)
+      )?.trim() || null
       : null;
 
     if (normalizedExtraMembers > 0 && !extraMemberPriceId) {
@@ -306,6 +285,7 @@ export default function PricingPage() {
           &larr; Back to account
         </Link>
         <div className="pricing-hero-intro">
+          <img src="/gig-icon.svg" alt="Gigboy" className="pricing-hero-logo" />
           <span className="pricing-kicker">Pricing</span>
           <h1>Pay per band workspace</h1>
           <p>
