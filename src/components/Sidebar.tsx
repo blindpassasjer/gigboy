@@ -477,11 +477,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             <span className="sidebar-band-switcher-name">
               {effectiveActiveBand?.name ?? ''}
             </span>
-            {effectiveActiveBand && (
-              <span className={`sidebar-band-tier-badge sidebar-band-tier-badge--${effectiveActiveBand.billingPlan ?? 'free'}`}>
-                {PLAN_LABELS[effectiveActiveBand.billingPlan ?? 'free']}
-              </span>
-            )}
           </>
           <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
         </button>
@@ -569,6 +564,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               </span>
             </div>
           </button>
+
+          {effectiveActiveBand && (
+            <span className={`sidebar-band-tier-badge sidebar-band-tier-badge--${effectiveActiveBand.billingPlan ?? 'free'}`}>
+              {PLAN_LABELS[effectiveActiveBand.billingPlan ?? 'free']}
+            </span>
+          )}
 
           {storagePopupOpen && !storageUsage.loading && (
             <div className="sidebar-storage-popup" role="dialog" aria-label="Storage breakdown">

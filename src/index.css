@@ -6092,9 +6092,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-band-tier-badge {
-  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
+  margin: .35rem 0 0;
   padding: .05rem .4rem;
   border-radius: 999px;
   font-size: .68rem;
