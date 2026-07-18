@@ -9336,6 +9336,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: flex-end;
 }
 
+.bands-delete-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.bands-delete-confirm-actions {
+  display: flex;
+  gap: .6rem;
+}
+
 .bands-list,
 .bands-members-list,
 .bands-library-list {
