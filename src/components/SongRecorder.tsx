@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Play, Pause, Trash2, Save, X, Pencil, Check } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, Trash2, Save, X, Pencil, Check, Upload } from 'lucide-react';
 import { useSongRecordings } from '../hooks/useSongRecordings';
 import { usePlan, useBandPlan } from '../hooks/usePlan';
 import { useBands } from '../context/BandsContext';
@@ -419,6 +419,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
   const previewAudioRef = useRef<HTMLAudioElement>(null);
   const previewUrlRef = useRef<string | null>(null);
   previewUrlRef.current = previewUrl;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -525,6 +526,46 @@ export default function SongRecorder({ song, user, bandId }: Props) {
     mediaRecorderRef.current = null;
   }
 
+  function triggerFileUpload() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setError(null);
+    if (!file.type.startsWith('audio/')) {
+      setError('Please select an audio file');
+      return;
+    }
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const audioContext = new AudioContext();
+      let audioBuffer: AudioBuffer;
+      try {
+        audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      } finally {
+        void audioContext.close();
+      }
+
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setPreviewBlob(file);
+      setPreviewDurationMs(audioBuffer.duration * 1000);
+      setPreviewWaveformBars(computeWaveformPeaks(audioBuffer.getChannelData(0)));
+      setPreviewName(file.name.replace(/\.[^./]+$/, ''));
+      setPreviewProgress(0);
+      setIsPreviewPlaying(false);
+      setRecState('preview');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Couldn't read audio file: ${msg}`);
+    }
+  }
+
   function discardPreview() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
@@ -585,9 +626,22 @@ export default function SongRecorder({ song, user, bandId }: Props) {
       <div className="recorder-controls">
         {recState === 'idle' && (
           canUse('recordings') ? (
-            <button className="rec-btn rec-btn--start" onClick={startRecording}>
-              <Mic size={14} /> Start recording
-            </button>
+            <div className="recorder-idle-actions">
+              <button className="rec-btn rec-btn--start" onClick={startRecording}>
+                <Mic size={14} /> Start recording
+              </button>
+              <button className="rec-btn rec-btn--upload" onClick={triggerFileUpload}>
+                <Upload size={14} /> Upload file
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*"
+                onChange={(e) => { void handleFileSelected(e); }}
+                style={{ display: 'none' }}
+                aria-label="Upload audio file"
+              />
+            </div>
           ) : (
             <UpgradePrompt feature="recordings" label="Recording songs" />
           )

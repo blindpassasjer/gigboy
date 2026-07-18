@@ -4016,6 +4016,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 .rec-btn--reset:hover { color: var(--text); }
 .rec-btn--toggle { background: var(--chord-bg); color: var(--accent); border-color: var(--chord-bg); }
 .rec-btn--toggle:hover { background: var(--accent); color: #fff; }
+.rec-btn--upload { background: var(--bg); color: var(--muted); border-color: var(--border); }
+.rec-btn--upload:hover { color: var(--text); border-color: var(--accent); }
+
+.recorder-idle-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 
 .btn-primary,
 .setlist-action-btn,
