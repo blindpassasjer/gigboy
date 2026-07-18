@@ -39,7 +39,7 @@ export interface PressKitPayload {
   generatedAt?: string;
 }
 
-function sanitizeFileName(value: string): string {
+export function sanitizeFileName(value: string): string {
   return value
     .trim()
     .toLowerCase()
@@ -48,7 +48,7 @@ function sanitizeFileName(value: string): string {
     .replace(/^-|-$/g, '') || 'item';
 }
 
-function extensionFromUrl(url: string): string {
+export function extensionFromUrl(url: string): string {
   try {
     const parsed = new URL(url);
     const pathname = parsed.pathname.toLowerCase();
@@ -63,7 +63,7 @@ function extensionFromUrl(url: string): string {
   return 'bin';
 }
 
-function riderAsText(rider: PressKitRiderItem): string {
+export function riderAsText(rider: PressKitRiderItem): string {
   const lines = rider.lines.map((line) => {
     const name = (line.name ?? '').trim();
     const description = (line.description ?? '').trim();

@@ -19,7 +19,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     const inviterEmail = typeof ctx.data.userEmail === 'string' ? ctx.data.userEmail : '';
     const body = await ctx.request.json<{
       bandId?: string;
-      role?: 'viewer' | 'editor';
     }>().catch((err) => {
       console.error('Failed to parse request body:', err);
       return null;
@@ -27,7 +26,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     if (!body) return Response.json({ error: 'Invalid request body.' }, { status: 400 });
 
     const bandId = body.bandId?.trim() ?? '';
-    const role = body.role === 'editor' ? 'editor' : 'viewer';
 
     if (!bandId) {
       return Response.json({ error: 'bandId is required.' }, { status: 400 });
@@ -85,7 +83,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       recipientUsernameLower: '',
       recipientEmail: '',
       recipientEmailLower: '',
-      role,
+      role: 'editor',
       status: 'pending',
       linkInvite: true,
       createdAt,

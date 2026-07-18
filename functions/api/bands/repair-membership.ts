@@ -70,7 +70,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     if (!shouldAssociate) return;
 
     const nextMemberIds = memberIds.includes(userId) ? memberIds : [...memberIds, userId];
-    const nextMemberRoles = (memberRoles[userId] === 'editor' || memberRoles[userId] === 'viewer')
+    const nextMemberRoles = memberRoles[userId] === 'editor'
       ? memberRoles
       : { ...memberRoles, [userId]: 'editor' };
     const nextMemberEmails = userEmail && memberEmails[userId] !== userEmail

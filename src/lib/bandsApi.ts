@@ -1,4 +1,3 @@
-import type { CollaborationPermission } from '../types';
 import { type ApiHeaders, buildHeaders } from './apiClient';
 
 async function postJson<T>(path: string, body: Record<string, unknown>, headers: ApiHeaders): Promise<T> {
@@ -41,7 +40,6 @@ export async function createBandInviteLinkOnServer(params: {
   userId: string;
   userEmail: string;
   bandId: string;
-  role: CollaborationPermission;
 }) {
   return postJson<{ inviteId: string; inviteUrl: string; expiresAt: string }>('/api/bands/invite-link', params, {
     userId: params.userId,
@@ -67,19 +65,6 @@ export async function removeBandMemberOnServer(params: {
   memberId: string;
 }) {
   await postJson('/api/bands/remove-member', { bandId: params.bandId, memberId: params.memberId }, {
-    userId: params.userId,
-    userEmail: params.userEmail,
-  });
-}
-
-export async function changeBandMemberRoleOnServer(params: {
-  userId: string;
-  userEmail: string;
-  bandId: string;
-  memberId: string;
-  role: CollaborationPermission;
-}) {
-  await postJson('/api/bands/change-role', { bandId: params.bandId, memberId: params.memberId, role: params.role }, {
     userId: params.userId,
     userEmail: params.userEmail,
   });

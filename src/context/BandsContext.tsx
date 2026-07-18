@@ -25,7 +25,6 @@ import type {
 import { db, storage, firebaseEnabled } from '../lib/firebase';
 import {
   cleanupLegacyBandMigrationDataOnServer,
-  changeBandMemberRoleOnServer,
   createBandOnServer,
   deleteBandOnServer,
   repairBandMembershipOnServer,
@@ -417,7 +416,6 @@ interface BandsContextValue {
   deleteBand: (bandId: string) => Promise<string | null>;
   renameBand: (bandId: string, name: string) => Promise<string | null>;
   updateBandDescription: (bandId: string, description: string) => Promise<string | null>;
-  changeMemberRole: (bandId: string, memberId: string, role: CollaborationPermission) => Promise<string | null>;
   removeMember: (bandId: string, memberId: string) => Promise<string | null>;
   leaveBand: (bandId: string) => Promise<string | null>;
   refreshBandSongs: (bandId: string) => Promise<void>;
@@ -1606,27 +1604,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return error instanceof Error ? error.message : 'Failed to upload band logo.';
     }
   }, [bandPressKitsByBandId, bands, userId]);
-
-  const changeMemberRole = useCallback(async (bandId: string, memberId: string, role: CollaborationPermission) => {
-    if (!userId) {
-      return 'Bands require a signed-in account.';
-    }
-
-    try {
-      await changeBandMemberRoleOnServer({ userId, userEmail, bandId, memberId, role });
-      setBands((prev) => prev.map((band) => {
-        if (band.id !== bandId) return band;
-        return {
-          ...band,
-          memberRoles: { ...band.memberRoles, [memberId]: role },
-          updatedAt: new Date().toISOString(),
-        };
-      }));
-      return null;
-    } catch (error) {
-      return error instanceof Error ? error.message : 'Failed to change member role.';
-    }
-  }, [userEmail, userId]);
 
   const removeMember = useCallback(async (bandId: string, memberId: string) => {
     if (!userId) {
@@ -3560,7 +3537,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     deleteBand,
     renameBand,
     updateBandDescription,
-    changeMemberRole,
     removeMember,
     leaveBand,
     refreshBandSongs,
@@ -3618,7 +3594,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     bandSongsByBandId,
     bandTrashByBandId,
     bands,
-    changeMemberRole,
     refreshBands,
     createBand,
     deleteBandSetlist,

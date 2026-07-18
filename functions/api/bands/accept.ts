@@ -86,7 +86,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const memberRoles = typeof band.memberRoles === 'object' && band.memberRoles !== null
     ? { ...(band.memberRoles as Record<string, unknown>) }
     : {};
-  memberRoles[userId] = invite.role === 'editor' ? 'editor' : 'viewer';
+  memberRoles[userId] = 'editor';
 
   const memberEmails = typeof band.memberEmails === 'object' && band.memberEmails !== null
     ? { ...(band.memberEmails as Record<string, unknown>) }

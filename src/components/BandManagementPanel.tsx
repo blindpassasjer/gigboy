@@ -59,7 +59,6 @@ export default function BandManagementPanel({
         userId: user.id,
         userEmail: user.email,
         bandId: band.id,
-        role: 'editor',
       });
 
       setLastInviteLink(result.inviteUrl);
@@ -168,8 +167,7 @@ export default function BandManagementPanel({
       <h3 style={{ marginTop: '1rem' }}>Members</h3>
       <ul className="bands-members-list">
         {band.memberIds.map((memberId) => {
-          const role = band.ownerId === memberId ? 'owner' : band.memberRoles[memberId] ?? 'viewer';
-          const roleLabel = role === 'editor' ? 'member' : role;
+          const roleLabel = band.ownerId === memberId ? 'owner' : 'member';
           const username = band.memberUsernames[memberId] ?? null;
           const email = band.memberEmails[memberId] ?? 'No email saved';
           const avatar = band.memberAvatars[memberId] ?? null;

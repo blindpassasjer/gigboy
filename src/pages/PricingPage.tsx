@@ -292,13 +292,14 @@ export default function PricingPage() {
           &larr; Back to account
         </Link>
         <div className="pricing-hero-intro">
-          <BrandMark size={28} />
           <span className="pricing-kicker">Pricing</span>
+          <BrandMark size={44} />
           <h1>Pay per band workspace</h1>
           <p>
             Every account gets one free band. Upgrade individual bands to Pro (all features for one member) or Crew (all features + up to 5 members).
           </p>
         </div>
+        <div className="pricing-hero-divider" aria-hidden="true" />
         {redirectedFromSidebarNewBand ? (
           <div className="pricing-source-banner" role="status">
             {requestedBandName

@@ -8594,11 +8594,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 1.75rem 1.35rem 1.5rem;
-  border-radius: 18px;
+  gap: 1.5rem;
+  padding: 3.25rem 1.5rem 2.5rem;
+  border-radius: 24px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background:
+    radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    var(--surface);
   box-shadow: var(--shadow);
   text-align: center;
 }
@@ -8663,8 +8665,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .5rem;
+  gap: .65rem;
   max-width: 46rem;
+}
+
+.pricing-hero-intro h1 {
+  margin-top: .35rem;
 }
 
 .pricing-hero-controls {
@@ -8703,10 +8709,23 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .pricing-kicker {
-  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  color: color-mix(in srgb, var(--fg) 85%, var(--accent));
   text-transform: uppercase;
-  letter-spacing: .08em;
-  font-size: .75rem;
+  letter-spacing: .12em;
+  font-size: .7rem;
+  font-weight: 700;
+  padding: .3rem .75rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.pricing-hero-divider {
+  width: min(100%, 22rem);
+  height: 1px;
+  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--accent) 45%, var(--border)), transparent);
 }
 
 .pricing-hero h1,
@@ -8761,11 +8780,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   .pricing-hero {
     align-items: stretch;
     text-align: left;
+    padding: 2rem 1.1rem 1.75rem;
+    border-radius: 18px;
   }
 
   .pricing-hero-intro {
     align-items: flex-start;
     max-width: none;
+  }
+
+  .pricing-hero-intro .brand-name {
+    align-self: center;
   }
 
   .pricing-hero-controls {
@@ -10325,7 +10350,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .bands-header:not(.bands-header--detail),
 .profile-account-hero,
 .profile-invites-header,
-.pricing-hero,
 .checkout-result-card:not(.checkout-result-card--success),
 .public-setlist-header,
 .public-share-header {
@@ -10348,7 +10372,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   .profile-account-hero,
   .profile-invites-header,
   .bands-header:not(.bands-header--detail),
-  .pricing-hero,
   .checkout-result-card {
     padding: .95rem .9rem;
     border-radius: 14px;

@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { collection, getDocs } from 'firebase/firestore';
 import { CreditCard, Download, LogOut, Sparkles, Trash2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +12,9 @@ import UserAvatar from '../components/UserAvatar';
 import { AVATAR_OPTIONS } from '../lib/avatars';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 import { createPortalSession } from '../lib/billingApi';
-import { buildSongbookExportZip, triggerSongbookExportDownload } from '../lib/songbookExport';
+import { db, storage } from '../lib/firebase';
+import { loadSongRecordings, type SongRecording } from '../lib/songRecordings';
+import { buildSongbookExportZip, triggerSongbookExportDownload, type PressKitImageAsset } from '../lib/songbookExport';
 
 function formatPeriodEnd(value: number | null) {
   if (!value) return null;
@@ -57,7 +60,14 @@ function getEffectiveBandPlan(
 
 export default function ProfilePage() {
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, deleteAccount, logout } = useAuth();
-  const { bands, bandSongsByBandId, bandSongListsByBandId, bandSetlistsByBandId } = useBands();
+  const {
+    bands,
+    bandSongsByBandId,
+    bandSongListsByBandId,
+    bandSetlistsByBandId,
+    bandInputListsByBandId,
+    bandPressKitsByBandId,
+  } = useBands();
   const { songs } = useSongs();
   const { songLists } = useSongLists();
   const { setlists } = useSetlists();
@@ -270,6 +280,52 @@ export default function ProfilePage() {
   const handleExportData = async () => {
     setBusyExport(true);
     try {
+      const personalRecordingsBySongId: Record<string, SongRecording[]> = {};
+      if (db) {
+        await Promise.all(songs.map(async (song) => {
+          try {
+            personalRecordingsBySongId[song.id] = await loadSongRecordings(db!, storage, { type: 'user', ownerId: user.id }, song.id);
+          } catch {
+            personalRecordingsBySongId[song.id] = [];
+          }
+        }));
+      }
+
+      const bandRecordingsBySongId: Record<string, Record<string, SongRecording[]>> = {};
+      const bandPressKitImagesByBandId: Record<string, PressKitImageAsset[]> = {};
+      await Promise.all(bands.map(async (band) => {
+        const bandSongs = bandSongsByBandId[band.id] ?? [];
+        const recordingsBySongId: Record<string, SongRecording[]> = {};
+        if (db) {
+          await Promise.all(bandSongs.map(async (song) => {
+            try {
+              recordingsBySongId[song.id] = await loadSongRecordings(db!, storage, { type: 'band', bandId: band.id }, song.id);
+            } catch {
+              recordingsBySongId[song.id] = [];
+            }
+          }));
+        }
+        bandRecordingsBySongId[band.id] = recordingsBySongId;
+
+        if (db) {
+          try {
+            const snapshot = await getDocs(collection(db, 'bands', band.id, 'pressKitImages'));
+            bandPressKitImagesByBandId[band.id] = snapshot.docs
+              .map((entry) => {
+                const data = entry.data() as Record<string, unknown>;
+                return {
+                  id: entry.id,
+                  title: typeof data.title === 'string' ? data.title : 'Image',
+                  url: typeof data.url === 'string' ? data.url : '',
+                };
+              })
+              .filter((image) => image.url.length > 0);
+          } catch {
+            bandPressKitImagesByBandId[band.id] = [];
+          }
+        }
+      }));
+
       const blob = await buildSongbookExportZip({
         songs,
         songLists,
@@ -278,6 +334,11 @@ export default function ProfilePage() {
         bandSongsByBandId,
         bandSongListsByBandId,
         bandSetlistsByBandId,
+        bandInputListsByBandId,
+        bandPressKitsByBandId,
+        bandPressKitImagesByBandId,
+        personalRecordingsBySongId,
+        bandRecordingsBySongId,
       });
       triggerSongbookExportDownload(blob);
     } catch (error) {
