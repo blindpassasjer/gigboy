@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Crown, Folder, ListMusic, Music, Newspaper, Plus, Sparkles, Star, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, Crown, Folder, ListMusic, Music, Newspaper, Plus, Sparkles, Star, Trash2, X, ChevronsUpDown } from 'lucide-react';
 import type { PlanTier } from '../types';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
-import { useBandPlan } from '../hooks/usePlan';
+import { useBandPlan, computeBandPlan } from '../hooks/usePlan';
 import { bandCanUse } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
@@ -493,26 +493,29 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 {loading ? 'Loading bands...' : 'No bands yet'}
               </div>
             )}
-            {visibleBands.map((band) => (
-              <button
-                type="button"
-                key={band.id}
-                className={`sidebar-band-switcher-option${band.id === activeBandId ? ' active' : ''}`}
-                role="option"
-                aria-selected={band.id === activeBandId}
-                onClick={() => {
-                  clearGlobalSelection();
-                  setActiveBandId(band.id);
-                  if (typeof window !== 'undefined') window.localStorage.setItem('gigboy-active-band-id', band.id);
-                  setBandSwitcherOpen(false);
-                  navigate(`/bands/${band.id}/library`);
-                  onNavigate?.();
-                }}
-              >
-                <SidebarItemIcon icon={band.icon} fallback={<Users size={13} />} />
-                <span className="sidebar-band-switcher-option-name">{band.name}</span>
-              </button>
-            ))}
+            {visibleBands.map((band) => {
+              const optionPlan = computeBandPlan(band, user);
+              return (
+                <button
+                  type="button"
+                  key={band.id}
+                  className={`sidebar-band-switcher-option${band.id === activeBandId ? ' active' : ''}`}
+                  role="option"
+                  aria-selected={band.id === activeBandId}
+                  onClick={() => {
+                    clearGlobalSelection();
+                    setActiveBandId(band.id);
+                    if (typeof window !== 'undefined') window.localStorage.setItem('gigboy-active-band-id', band.id);
+                    setBandSwitcherOpen(false);
+                    navigate(`/bands/${band.id}/library`);
+                    onNavigate?.();
+                  }}
+                >
+                  <SidebarItemIcon fallback={PLAN_TIER_ICON[optionPlan.plan]} title={optionPlan.planLabel} />
+                  <span className="sidebar-band-switcher-option-name">{band.name}</span>
+                </button>
+              );
+            })}
           </div>
         )}
         </div>
