@@ -618,6 +618,16 @@ export default function BandDetailPage() {
         };
       }
 
+      if (entry.itemType === 'attachment') {
+        return {
+          itemType: 'attachment' as const,
+          trashId: entry.trashId,
+          name: entry.attachment.name,
+          deletedAt: entry.deletedAt,
+          purgeAt: entry.purgeAt,
+        };
+      }
+
       return null;
     }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 

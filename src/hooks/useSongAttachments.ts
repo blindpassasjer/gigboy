@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { db, storage } from '../lib/firebase';
 import {
-  deleteSongAttachment,
+  moveSongAttachmentToTrash,
   loadSongAttachments,
   uploadSongAttachment,
   type AttachmentsScope,
@@ -74,13 +74,13 @@ export function useSongAttachments({ scope, songId }: Params) {
   );
 
   const deleteAttachment = useCallback(
-    async (attachment: SongAttachment) => {
-      if (!db || !storage) return;
+    async (attachment: SongAttachment, songTitle: string) => {
+      if (!db) return;
       try {
-        await deleteSongAttachment(db, storage, scope, songId, attachment);
+        await moveSongAttachmentToTrash(db, scope, songId, songTitle, attachment);
         setAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
       } catch (err) {
-        console.error('Failed to delete attachment', err);
+        console.error('Failed to move attachment to trash', err);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

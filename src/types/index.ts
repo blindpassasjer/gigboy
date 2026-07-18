@@ -165,7 +165,7 @@ export interface InputList extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'technicalRider' | 'pressKit' | 'pressKitImage' | 'bandLogo';
+export type TrashItemType = 'song' | 'songlist' | 'setlist' | 'technicalRider' | 'pressKit' | 'pressKitImage' | 'bandLogo' | 'attachment';
 
 export interface PressKit {
   id: string;
@@ -227,6 +227,26 @@ export interface TrashedPressKitImage extends TrashMetadata {
     createdBy?: string;
   };
   linkedPressKitIds?: string[];
+}
+
+export interface TrashedAttachment extends TrashMetadata {
+  itemType: 'attachment';
+  songId: string;
+  songTitle: string;
+  attachment: {
+    id: string;
+    name: string;
+    storagePath: string;
+    downloadUrl: string;
+    sizeBytes: number;
+    mimeType: string;
+    createdAt: string;
+    uploader?: {
+      userId: string;
+      displayName: string;
+      avatar: string | null;
+    };
+  };
 }
 
 export interface TrashedBandLogo extends TrashMetadata {

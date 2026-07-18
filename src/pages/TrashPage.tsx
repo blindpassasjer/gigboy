@@ -3,11 +3,17 @@ import TrashView from '../components/TrashView';
 import { useSongLists } from '../context/SongListsContext';
 import { useSongs } from '../context/SongsContext';
 import { useSetlists } from '../context/SetlistsContext';
+import { useAuth } from '../context/AuthContext';
+import { useAttachmentsTrash } from '../hooks/useAttachmentsTrash';
+import type { AttachmentsScope } from '../lib/songAttachments';
 
 export default function TrashPage() {
+  const { user } = useAuth();
   const { trashedSongs, restoreSongFromTrash, deleteSongPermanently } = useSongs();
   const { trashedSongLists, restoreSongListFromTrash, deleteSongListPermanently } = useSongLists();
   const { trashedSetlists, restoreSetlistFromTrash, deleteSetlistPermanently } = useSetlists();
+  const attachmentsScope: AttachmentsScope | null = user ? { type: 'user', ownerId: user.id } : null;
+  const { trashedAttachments, restoreAttachmentFromTrash, deleteAttachmentPermanently } = useAttachmentsTrash(attachmentsScope);
 
   const items = useMemo(() => [
     ...trashedSongs.map((entry) => ({
@@ -31,21 +37,30 @@ export default function TrashPage() {
       deletedAt: entry.deletedAt,
       purgeAt: entry.purgeAt,
     })),
-  ], [trashedSetlists, trashedSongLists, trashedSongs]);
+    ...trashedAttachments.map((entry) => ({
+      trashId: entry.trashId,
+      itemType: 'attachment' as const,
+      name: entry.attachment.name,
+      deletedAt: entry.deletedAt,
+      purgeAt: entry.purgeAt,
+    })),
+  ], [trashedAttachments, trashedSetlists, trashedSongLists, trashedSongs]);
 
   const itemTypeByTrashId = useMemo(() => {
-    const map = new Map<string, 'song' | 'songlist' | 'setlist'>();
+    const map = new Map<string, 'song' | 'songlist' | 'setlist' | 'attachment'>();
     trashedSongs.forEach((entry) => map.set(entry.trashId, 'song'));
     trashedSongLists.forEach((entry) => map.set(entry.trashId, 'songlist'));
     trashedSetlists.forEach((entry) => map.set(entry.trashId, 'setlist'));
+    trashedAttachments.forEach((entry) => map.set(entry.trashId, 'attachment'));
     return map;
-  }, [trashedSetlists, trashedSongLists, trashedSongs]);
+  }, [trashedAttachments, trashedSetlists, trashedSongLists, trashedSongs]);
 
   const handleRestore = async (trashId: string) => {
     const type = itemTypeByTrashId.get(trashId);
     if (!type) return 'Trash item not found.';
     if (type === 'song') return restoreSongFromTrash(trashId);
     if (type === 'songlist') return restoreSongListFromTrash(trashId);
+    if (type === 'attachment') return restoreAttachmentFromTrash(trashId);
     return restoreSetlistFromTrash(trashId);
   };
 
@@ -54,6 +69,7 @@ export default function TrashPage() {
     if (!type) return 'Trash item not found.';
     if (type === 'song') return deleteSongPermanently(trashId);
     if (type === 'songlist') return deleteSongListPermanently(trashId);
+    if (type === 'attachment') return deleteAttachmentPermanently(trashId);
     return deleteSetlistPermanently(trashId);
   };
 

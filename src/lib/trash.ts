@@ -192,6 +192,69 @@ export function parsePressKitImageTrashRecord(
   };
 }
 
+export function parseAttachmentTrashRecord(
+  id: string,
+  raw: Record<string, unknown>
+): TrashRecord<{
+  songId: string;
+  songTitle: string;
+  attachment: {
+    id: string;
+    name: string;
+    storagePath: string;
+    downloadUrl: string;
+    sizeBytes: number;
+    mimeType: string;
+    createdAt: string;
+    uploader?: {
+      userId: string;
+      displayName: string;
+      avatar: string | null;
+    };
+  };
+}> | null {
+  if (raw.itemType !== 'attachment') return null;
+  if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
+  if (!raw.data || typeof raw.data !== 'object') return null;
+
+  const data = raw.data as Record<string, unknown>;
+  if (typeof data.songId !== 'string') return null;
+
+  const attachmentRaw = data.attachment;
+  if (!attachmentRaw || typeof attachmentRaw !== 'object') return null;
+  const attachment = attachmentRaw as Record<string, unknown>;
+  if (typeof attachment.id !== 'string' || typeof attachment.name !== 'string' || typeof attachment.storagePath !== 'string') return null;
+
+  const rawUploader = attachment.uploader as Record<string, unknown> | undefined;
+
+  return {
+    id,
+    itemType: 'attachment',
+    deletedAt: raw.deletedAt,
+    purgeAt: raw.purgeAt,
+    data: {
+      songId: data.songId,
+      songTitle: typeof data.songTitle === 'string' ? data.songTitle : 'Untitled song',
+      attachment: {
+        id: attachment.id,
+        name: attachment.name,
+        storagePath: attachment.storagePath,
+        downloadUrl: typeof attachment.downloadUrl === 'string' ? attachment.downloadUrl : '',
+        sizeBytes: typeof attachment.sizeBytes === 'number' ? attachment.sizeBytes : 0,
+        mimeType: typeof attachment.mimeType === 'string' ? attachment.mimeType : 'application/pdf',
+        createdAt: typeof attachment.createdAt === 'string' ? attachment.createdAt : new Date().toISOString(),
+        uploader: rawUploader && typeof rawUploader.userId === 'string'
+          ? {
+              userId: rawUploader.userId,
+              displayName: typeof rawUploader.displayName === 'string' ? rawUploader.displayName : 'Unknown',
+              avatar: typeof rawUploader.avatar === 'string' ? rawUploader.avatar : null,
+            }
+          : undefined,
+      },
+    },
+  };
+}
+
 export function parseBandLogoTrashRecord(
   id: string,
   raw: Record<string, unknown>

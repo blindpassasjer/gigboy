@@ -16,6 +16,14 @@ import {
   uploadBytes,
   type FirebaseStorage,
 } from 'firebase/storage';
+import {
+  compareTrashByDeletedAtDesc,
+  createTrashPayload,
+  createTrashTimestamps,
+  isTrashExpired,
+  parseAttachmentTrashRecord,
+  TRASH_COLLECTION,
+} from './trash';
 
 export const ATTACHMENT_MAX_SIZE_BYTES = 20 * 1024 * 1024;
 export const ATTACHMENT_ACCEPTED_MIME_TYPE = 'application/pdf';
@@ -60,6 +68,29 @@ function storageBasePath(scope: AttachmentsScope, songId: string) {
     return `bands/${scope.bandId}/songs/${songId}/attachments`;
   }
   return `users/${scope.ownerId}/songs/${songId}/attachments`;
+}
+
+function trashCollectionRef(db: Firestore, scope: AttachmentsScope) {
+  if (scope.type === 'band') {
+    return collection(db, 'bands', scope.bandId, TRASH_COLLECTION);
+  }
+  return collection(db, 'users', scope.ownerId, TRASH_COLLECTION);
+}
+
+function trashDocRef(db: Firestore, scope: AttachmentsScope, trashId: string) {
+  if (scope.type === 'band') {
+    return doc(db, 'bands', scope.bandId, TRASH_COLLECTION, trashId);
+  }
+  return doc(db, 'users', scope.ownerId, TRASH_COLLECTION, trashId);
+}
+
+export interface TrashedSongAttachment {
+  trashId: string;
+  deletedAt: string;
+  purgeAt: string;
+  songId: string;
+  songTitle: string;
+  attachment: SongAttachment;
 }
 
 function readStringField(data: Record<string, unknown>, keys: string[]): string {
@@ -155,22 +186,97 @@ export async function uploadSongAttachment(
   return attachment;
 }
 
-export async function deleteSongAttachment(
+export async function moveSongAttachmentToTrash(
+  db: Firestore,
+  scope: AttachmentsScope,
+  songId: string,
+  songTitle: string,
+  attachment: SongAttachment,
+): Promise<TrashedSongAttachment> {
+  const trashId = crypto.randomUUID();
+  const { deletedAt, purgeAt } = createTrashTimestamps();
+
+  await Promise.all([
+    setDoc(
+      trashDocRef(db, scope, trashId),
+      createTrashPayload('attachment', deletedAt, purgeAt, { songId, songTitle, attachment }),
+    ),
+    deleteDoc(attachmentDocRef(db, scope, songId, attachment.id)),
+  ]);
+
+  return { trashId, deletedAt, purgeAt, songId, songTitle, attachment };
+}
+
+export async function restoreSongAttachmentFromTrash(
+  db: Firestore,
+  scope: AttachmentsScope,
+  trashed: TrashedSongAttachment,
+): Promise<void> {
+  await Promise.all([
+    setDoc(attachmentDocRef(db, scope, trashed.songId, trashed.attachment.id), trashed.attachment),
+    deleteDoc(trashDocRef(db, scope, trashed.trashId)),
+  ]);
+}
+
+export async function deleteSongAttachmentPermanently(
   db: Firestore,
   storage: FirebaseStorage,
   scope: AttachmentsScope,
-  songId: string,
-  attachment: SongAttachment,
+  trashed: TrashedSongAttachment,
 ): Promise<void> {
-  if (attachment.storagePath) {
+  if (trashed.attachment.storagePath) {
     try {
-      await deleteObject(ref(storage, attachment.storagePath));
+      await deleteObject(ref(storage, trashed.attachment.storagePath));
     } catch {
-      // File may already be gone; continue to remove Firestore doc
+      // File may already be gone; continue to remove Firestore docs
     }
   }
-  const docRef = attachmentDocRef(db, scope, songId, attachment.id);
-  await deleteDoc(docRef);
+
+  await Promise.all([
+    deleteDoc(attachmentDocRef(db, scope, trashed.songId, trashed.attachment.id)).catch(() => undefined),
+    deleteDoc(trashDocRef(db, scope, trashed.trashId)),
+  ]);
+}
+
+export async function loadTrashedSongAttachments(
+  db: Firestore,
+  storage: FirebaseStorage | null,
+  scope: AttachmentsScope,
+): Promise<TrashedSongAttachment[]> {
+  const snapshot = await getDocs(trashCollectionRef(db, scope));
+  const now = Date.now();
+
+  const parsed = snapshot.docs
+    .map((entry) => parseAttachmentTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+  const expired = parsed.filter((entry) => isTrashExpired(entry.purgeAt, now));
+  const active = parsed.filter((entry) => !isTrashExpired(entry.purgeAt, now));
+
+  if (expired.length > 0) {
+    void Promise.all(
+      expired.map((entry) => {
+        const storagePath = entry.data.attachment.storagePath;
+        const storageDelete = storagePath && storage
+          ? deleteObject(ref(storage, storagePath)).catch(() => undefined)
+          : Promise.resolve();
+        return Promise.all([storageDelete, deleteDoc(trashDocRef(db, scope, entry.id))]);
+      })
+    ).catch((error) => {
+      console.warn('Failed to purge expired attachment trash items.', error);
+    });
+  }
+
+  return active
+    .map((entry) => ({
+      trashId: entry.id,
+      deletedAt: entry.deletedAt,
+      purgeAt: entry.purgeAt,
+      songId: entry.data.songId,
+      songTitle: entry.data.songTitle,
+      attachment: entry.data.attachment,
+    }))
+    .sort(compareTrashByDeletedAtDesc);
 }
 
 export async function renameSongAttachment(

@@ -31,6 +31,7 @@ interface AttachmentRowProps {
   onRename: (a: SongAttachment, newName: string) => void;
 }
 
+
 function AttachmentRow({ attachment, currentUserId, isBandContext, onDelete, onRename }: AttachmentRowProps) {
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
@@ -54,7 +55,7 @@ function AttachmentRow({ attachment, currentUserId, isBandContext, onDelete, onR
   }
 
   async function confirmDelete() {
-    const confirmed = await showConfirmToast(`Delete "${attachment.name}"? This cannot be undone.`, {
+    const confirmed = await showConfirmToast(`Move "${attachment.name}" to trash?`, {
       confirmLabel: 'Delete',
       cancelLabel: 'Cancel',
     });
@@ -166,7 +167,7 @@ export default function SongAttachments({ song, user, bandId }: Props) {
     scope,
     songId: song.id,
   });
-  const { bands } = useBands();
+  const { bands, refreshBandTrash } = useBands();
   const activeBand = bandId ? (bands.find((b) => b.id === bandId) ?? null) : null;
   const userPlanState = usePlan();
   const bandPlanState = useBandPlan(activeBand);
@@ -244,7 +245,11 @@ export default function SongAttachments({ song, user, bandId }: Props) {
                 attachment={attachment}
                 currentUserId={user.id}
                 isBandContext={isBandContext}
-                onDelete={deleteAttachment}
+                onDelete={(a) => {
+                  void deleteAttachment(a, song.title).then(() => {
+                    if (bandId) void refreshBandTrash(bandId);
+                  });
+                }}
                 onRename={renameAttachment}
               />
             ))}

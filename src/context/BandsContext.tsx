@@ -21,6 +21,7 @@ import type {
   TrashedPressKit,
   TrashedPressKitImage,
   TrashedBandLogo,
+  TrashedAttachment,
 } from '../types';
 import { db, storage, firebaseEnabled } from '../lib/firebase';
 import {
@@ -44,6 +45,7 @@ import {
   parsePressKitTrashRecord,
   parsePressKitImageTrashRecord,
   parseBandLogoTrashRecord,
+  parseAttachmentTrashRecord,
   TRASH_COLLECTION,
 } from '../lib/trash';
 import {
@@ -399,7 +401,8 @@ type BandTrashItem =
   | (TrashedInputList & { bandId: string })
   | (TrashedPressKit & { bandId: string })
   | (TrashedPressKitImage & { bandId: string })
-  | (TrashedBandLogo & { bandId: string });
+  | (TrashedBandLogo & { bandId: string })
+  | (TrashedAttachment & { bandId: string });
 
 interface BandsContextValue {
   bands: Band[];
@@ -1064,6 +1067,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const parsedBandLogos = snapshot.docs
       .map((entry) => parseBandLogoTrashRecord(entry.id, entry.data() as Record<string, unknown>))
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+    const parsedAttachments = snapshot.docs
+      .map((entry) => parseAttachmentTrashRecord(entry.id, entry.data() as Record<string, unknown>))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
     const items: BandTrashItem[] = [
       ...parsedSongs.map((entry) => ({
@@ -1124,6 +1130,16 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         image: entry.data.image,
         linkedPressKitIds: entry.data.linkedPressKitIds,
       })),
+      ...parsedAttachments.map((entry) => ({
+        bandId,
+        trashId: entry.id,
+        itemType: 'attachment' as const,
+        deletedAt: entry.deletedAt,
+        purgeAt: entry.purgeAt,
+        songId: entry.data.songId,
+        songTitle: entry.data.songTitle,
+        attachment: entry.data.attachment,
+      })),
     ];
 
     const expiredItems = items.filter((entry) => isTrashExpired(entry.purgeAt, now));
@@ -1131,7 +1147,15 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     if (expiredItems.length > 0) {
       void Promise.all(
-        expiredItems.map((entry) => deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, entry.trashId)))
+        expiredItems.map((entry) => {
+          const storageDelete = entry.itemType === 'attachment' && entry.attachment.storagePath && storage
+            ? deleteObject(ref(storage, entry.attachment.storagePath)).catch(() => undefined)
+            : Promise.resolve();
+          return Promise.all([
+            storageDelete,
+            deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, entry.trashId)),
+          ]);
+        })
       ).catch((error) => {
         console.warn('Failed to purge expired band trash items.', error);
       });
@@ -3338,6 +3362,25 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    if (target.itemType === 'attachment') {
+      try {
+        await Promise.all([
+          setDoc(
+            doc(firestore, BANDS_COLLECTION, bandId, 'songs', target.songId, 'attachments', target.attachment.id),
+            target.attachment,
+          ),
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, TRASH_COLLECTION, trashId)),
+        ]);
+        return null;
+      } catch (error) {
+        setBandTrashByBandId((prev) => ({
+          ...prev,
+          [bandId]: [target, ...(prev[bandId] ?? [])].sort(compareTrashByDeletedAtDesc),
+        }));
+        return error instanceof Error ? error.message : 'Failed to restore attachment.';
+      }
+    }
+
     if (target.itemType === 'bandLogo') {
       const previousBands = bands;
       const previousPressKits = bandPressKitsByBandId[bandId] ?? [];
@@ -3508,6 +3551,15 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         await Promise.all([
           ...storageDeletes,
           deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, 'pressKitImages', target.image.id)).catch(() => undefined),
+        ]);
+      }
+
+      if (target.itemType === 'attachment' && storage) {
+        await Promise.all([
+          target.attachment.storagePath
+            ? deleteObject(ref(storage, target.attachment.storagePath)).catch(() => undefined)
+            : Promise.resolve(),
+          deleteDoc(doc(firestore, BANDS_COLLECTION, bandId, 'songs', target.songId, 'attachments', target.attachment.id)).catch(() => undefined),
         ]);
       }
 
