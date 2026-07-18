@@ -6084,7 +6084,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-band-switcher-name {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6094,11 +6094,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 .sidebar-band-tier-badge {
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
-  margin: 0 .75rem .4rem;
-  padding: .1rem .45rem;
+  flex-shrink: 0;
+  padding: .1rem .4rem;
   border-radius: 999px;
-  font-size: .68rem;
+  font-size: .62rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .02em;

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Crown, Folder, ListMusic, Newspaper, Plus, Sparkles, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Newspaper, Plus, Sparkles, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
@@ -459,13 +459,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         </div>
       </div>
 
-      {!bandPlan.isFree && (
-        <span className={`sidebar-band-tier-badge sidebar-band-tier-badge--${bandPlan.plan}`}>
-          <Crown size={11} />
-          {bandPlan.planLabel}
-        </span>
-      )}
-
       <div className="sidebar-mode-switcher" ref={bandSwitcherRef}>
         <div className="sidebar-band-switcher">
         <button
@@ -482,6 +475,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
             <span className="sidebar-band-switcher-name">
               {effectiveActiveBand?.name ?? ''}
             </span>
+            {!bandPlan.isFree && (
+              <span
+                className={`sidebar-band-tier-badge sidebar-band-tier-badge--${bandPlan.plan}`}
+                title={bandPlan.planLabel}
+              >
+                {bandPlan.planLabel}
+              </span>
+            )}
           </>
           <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />
         </button>
