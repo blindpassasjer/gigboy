@@ -596,6 +596,16 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   style={{ width: `${storageUsage.quotaBytes > 0 ? Math.min(100, (storageUsage.imageBytes / storageUsage.quotaBytes) * 100) : 0}%` }}
                 />
               </div>
+              <div className="sidebar-storage-popup-row">
+                <span className="sidebar-storage-popup-label">Attachments</span>
+                <span className="sidebar-storage-popup-value">{formatStorageBytes(storageUsage.attachmentBytes)}</span>
+              </div>
+              <div className="sidebar-storage-popup-bar">
+                <span
+                  className="sidebar-storage-popup-bar-fill sidebar-storage-popup-bar-fill--attachments"
+                  style={{ width: `${storageUsage.quotaBytes > 0 ? Math.min(100, (storageUsage.attachmentBytes / storageUsage.quotaBytes) * 100) : 0}%` }}
+                />
+              </div>
               <div className="sidebar-storage-popup-divider" />
               <div className="sidebar-storage-popup-row sidebar-storage-popup-row--total">
                 <span className="sidebar-storage-popup-label">Total</span>

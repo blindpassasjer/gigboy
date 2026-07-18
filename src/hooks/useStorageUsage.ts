@@ -10,6 +10,7 @@ interface UsageState {
   usedBytes: number;
   recordingBytes: number;
   imageBytes: number;
+  attachmentBytes: number;
   quotaBytes: number;
   loading: boolean;
 }
@@ -65,6 +66,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
     usedBytes: 0,
     recordingBytes: 0,
     imageBytes: 0,
+    attachmentBytes: 0,
     quotaBytes: planQuotaBytes ?? DEFAULT_STORAGE_QUOTA_BYTES,
     loading: false,
   });
@@ -75,6 +77,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         usedBytes: 0,
         recordingBytes: 0,
         imageBytes: 0,
+        attachmentBytes: 0,
         quotaBytes: planQuotaBytes ?? DEFAULT_STORAGE_QUOTA_BYTES,
         loading: false,
       });
@@ -134,6 +137,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
         let recordingBytes = 0;
         let pressKitBytes = 0;
+        let attachmentBytes = 0;
 
         if (currentBandId) {
           // ── Band-scoped: only count assets belonging to this band ──────────
@@ -206,6 +210,21 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
             allRecordingDocs.map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
           );
           recordingBytes = recSizes.reduce((sum, v) => sum + v, 0);
+
+          // Attachments within this band's songs
+          const attachmentSnapshots = await Promise.allSettled(
+            songIds.map((songId) =>
+              getDocs(collection(firestore, 'bands', currentBandId, 'songs', songId, 'attachments')),
+            ),
+          );
+          if (cancelled) return;
+          const allAttachmentDocs = attachmentSnapshots.flatMap((r) =>
+            r.status === 'fulfilled' ? r.value.docs : [],
+          );
+          const attachmentSizes = await Promise.all(
+            allAttachmentDocs.map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
+          );
+          attachmentBytes = attachmentSizes.reduce((sum, v) => sum + v, 0);
         } else {
           // ── Cross-band: aggregate across all bands the user belongs to ─────
           const userSnapshotResult = await Promise.allSettled([
@@ -219,11 +238,13 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
           const [
             recordingsSnapshotResult,
+            attachmentsSnapshotResult,
             ownPressKitImagesSnapshotResult,
             memberBandsSnapshotResult,
             ownerBandsSnapshotResult,
           ] = await Promise.allSettled([
             getDocs(query(collectionGroup(firestore, 'recordings'), where('recorder.userId', '==', currentUserId))),
+            getDocs(query(collectionGroup(firestore, 'attachments'), where('uploader.userId', '==', currentUserId))),
             getDocs(query(collectionGroup(firestore, 'pressKitImages'), where('createdBy', '==', currentUserId))),
             getDocs(query(collection(firestore, 'bands'), where('memberIds', 'array-contains', currentUserId))),
             getDocs(query(collection(firestore, 'bands'), where('ownerId', '==', currentUserId))),
@@ -232,6 +253,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           if (cancelled) return;
 
           const recordingsSnapshot = recordingsSnapshotResult.status === 'fulfilled' ? recordingsSnapshotResult.value : null;
+          const attachmentsSnapshot = attachmentsSnapshotResult.status === 'fulfilled' ? attachmentsSnapshotResult.value : null;
           const ownPressKitImagesSnapshot = ownPressKitImagesSnapshotResult.status === 'fulfilled' ? ownPressKitImagesSnapshotResult.value : null;
           const memberBandsSnapshot = memberBandsSnapshotResult.status === 'fulfilled' ? memberBandsSnapshotResult.value : null;
           const ownerBandsSnapshot = ownerBandsSnapshotResult.status === 'fulfilled' ? ownerBandsSnapshotResult.value : null;
@@ -240,6 +262,11 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
             (recordingsSnapshot?.docs ?? []).map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
           );
           recordingBytes = recordingSizes.reduce((sum, value) => sum + value, 0);
+
+          const attachmentSizes = await Promise.all(
+            (attachmentsSnapshot?.docs ?? []).map((snap) => readDocSizeWithStorageFallback(snap.data() as Record<string, unknown>)),
+          );
+          attachmentBytes = attachmentSizes.reduce((sum, value) => sum + value, 0);
 
           const allBandIds = new Set<string>();
           (memberBandsSnapshot?.docs ?? []).forEach((snap) => allBandIds.add(snap.id));
@@ -294,12 +321,13 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
           }
         }
 
-        const usedBytes = recordingBytes + pressKitBytes;
+        const usedBytes = recordingBytes + pressKitBytes + attachmentBytes;
 
         setState({
           usedBytes,
           recordingBytes,
           imageBytes: pressKitBytes,
+          attachmentBytes,
           quotaBytes,
           loading: false,
         });
@@ -339,6 +367,10 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
         collectionGroup(firestore, 'recordings'),
         where('recorder.userId', '==', currentUserId),
       );
+      const attachmentsQuery = query(
+        collectionGroup(firestore, 'attachments'),
+        where('uploader.userId', '==', currentUserId),
+      );
       const ownPressKitImagesQuery = query(
         collectionGroup(firestore, 'pressKitImages'),
         where('createdBy', '==', currentUserId),
@@ -375,6 +407,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
 
       cleanups.push(
         onSnapshot(recordingsQuery, () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); }),
+        onSnapshot(attachmentsQuery, () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); }),
         onSnapshot(ownPressKitImagesQuery, () => requestReload(), (err: unknown) => { console.error('Firestore listener error in useStorageUsage:', err); }),
         onSnapshot(
           memberBandsQuery,

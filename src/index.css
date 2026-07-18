@@ -3801,6 +3801,72 @@ input, select, textarea { font: inherit; color: var(--text); }
   grid-column: 1 / -1;
 }
 
+/* Attachments tool card — full width */
+.song-toolbar-tool-card--attachments {
+  grid-column: 1 / -1;
+}
+
+/* ─── Attachments ───────────────────────────────────────────────────────────── */
+.song-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  width: 100%;
+}
+.attachments-controls {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+.attachments-file-input {
+  display: none;
+}
+.attachments-hint {
+  color: var(--muted);
+  font-size: .8rem;
+  margin: 0;
+}
+.attachments-section {
+  padding: 1rem;
+}
+.attachments-list {
+  gap: .5rem;
+}
+.attachment-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .6rem .75rem;
+}
+.attachment-row-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 75%, var(--accent));
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.attachment-rename-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex: 1;
+  min-width: 0;
+}
+.attachment-row-name {
+  color: var(--text);
+  text-decoration: none;
+}
+.attachment-row-name:hover {
+  text-decoration: underline;
+}
+
 /* Chord finder tool card */
 .song-toolbar-tool-card--chord-finder {
   min-width: 0;
@@ -6037,6 +6103,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .sidebar-storage-popup-bar-fill--images {
   background: linear-gradient(90deg, #4a90d9, #6c5ce7);
+}
+
+.sidebar-storage-popup-bar-fill--attachments {
+  background: linear-gradient(90deg, #d97706, #e0a12e);
 }
 
 .sidebar-storage-popup-divider {

@@ -46,6 +46,17 @@ service firebase.storage {
       allow read, write: if isBandMember(bandId);
     }
 
+    // User-scoped song attachments (PDFs)
+    match /users/{userId}/songs/{songId}/attachments/{fileName} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && request.auth.token.email_verified == true;
+    }
+
+    // Band-scoped song attachments (PDFs)
+    match /bands/{bandId}/songs/{songId}/attachments/{fileName} {
+      allow read, write: if isBandMember(bandId);
+    }
+
     // Band-scoped press kit image assets
     match /bands/{bandId}/presskit/images/{fileName} {
       allow read: if isBandMember(bandId);

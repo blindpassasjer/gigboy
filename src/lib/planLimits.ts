@@ -7,7 +7,8 @@ export type ProFeature =
   | 'shareableLinks'
   | 'recordings'
   | 'metronome'
-  | 'multiUserNotes';
+  | 'multiUserNotes'
+  | 'attachments';
 
 interface PlanLimits {
   songLimit: number | null;
@@ -52,6 +53,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
     recordings: false,
     metronome: false,
     multiUserNotes: false,
+    attachments: false,
   },
   pro: {
     setlists: true,
@@ -61,6 +63,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
     recordings: true,
     metronome: true,
     multiUserNotes: true,
+    attachments: true,
   },
   crew: {
     setlists: true,
@@ -70,6 +73,7 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
     recordings: true,
     metronome: true,
     multiUserNotes: true,
+    attachments: true,
   },
 };
 

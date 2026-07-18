@@ -17,6 +17,7 @@ import {
   Trash2,
   Play,
   Mic,
+  Paperclip,
   AudioLines,
   Metronome,
   Search,
@@ -44,6 +45,7 @@ import SongHandNotesOverlay from './SongHandNotesOverlay';
 import SongTextNotesOverlay from './SongTextNotesOverlay';
 import SongMediaPlayer from './SongMediaPlayer';
 import SongRecorder from './SongRecorder';
+import SongAttachments from './SongAttachments';
 import ChordFinder from './ChordFinder';
 import { parseSongMedia } from '../utils/songMedia';
 import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
@@ -111,6 +113,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const [showTuner, setShowTuner] = useState(false);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
   const [showRecorder, setShowRecorder] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
   const [showChordFinder, setShowChordFinder] = useState(false);
   const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
   const media = song.playbackUrl ? parseSongMedia(song.playbackUrl) : null;
@@ -619,6 +622,19 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 </button>
               )}
 
+              {user && (
+                <button
+                  type="button"
+                  className={`song-toolbar-tool-btn${showAttachments ? ' song-toolbar-tool-btn--active' : ''}`}
+                  onClick={() => setShowAttachments((prev) => !prev)}
+                  title={showAttachments ? 'Hide attachments' : 'Show attachments'}
+                  aria-label={showAttachments ? 'Hide attachments' : 'Show attachments'}
+                >
+                  <Paperclip size={14} />
+                  Attachments
+                </button>
+              )}
+
               <button
                 type="button"
                 className={`song-toolbar-tool-btn${showChordFinder ? ' song-toolbar-tool-btn--active' : ''}`}
@@ -631,7 +647,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               </button>
             </div>
 
-            {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes) || (user && showRecorder) || showChordFinder) && (
+            {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes) || (user && showRecorder) || (user && showAttachments) || showChordFinder) && (
               <div className={`song-toolbar-tools-grid${!toolbarVisible ? ' song-toolbar-tools-grid--floating' : ''}`}>
                 {showTuner && (
                   <div className="song-toolbar-tool-card">
@@ -791,6 +807,16 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                       <button className="floating-tool-close" onClick={() => setShowRecorder(false)} aria-label="Close recorder"><X size={14} /></button>
                     </div>
                     <SongRecorder song={song} user={user} bandId={bandId} />
+                  </div>
+                )}
+
+                {user && showAttachments && (
+                  <div className="song-toolbar-tool-card song-toolbar-tool-card--attachments">
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">Attachments</span>
+                      <button className="floating-tool-close" onClick={() => setShowAttachments(false)} aria-label="Close attachments"><X size={14} /></button>
+                    </div>
+                    <SongAttachments song={song} user={user} bandId={bandId} />
                   </div>
                 )}
 

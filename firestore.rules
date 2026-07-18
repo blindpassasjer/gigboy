@@ -323,6 +323,19 @@ service cloud.firestore {
           allow delete: if isBandMember(bandId)
             && resource.data.recorder.userId == request.auth.uid;
         }
+
+        match /attachments/{attachmentId} {
+          allow read: if isBandMember(bandId);
+          // Field-only rule for collection group queries (get() not allowed in that context)
+          allow read: if request.auth != null && resource.data.uploader.userId == request.auth.uid;
+          allow create: if isBandMember(bandId)
+            && request.resource.data.uploader.userId == request.auth.uid;
+          allow update: if isBandMember(bandId)
+            && resource.data.uploader.userId == request.auth.uid
+            && request.resource.data.uploader.userId == resource.data.uploader.userId;
+          allow delete: if isBandMember(bandId)
+            && resource.data.uploader.userId == request.auth.uid;
+        }
       }
 
       match /songLists/{songListId} {
