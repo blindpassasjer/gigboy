@@ -17,6 +17,21 @@ function rank(name: string, q: string): number {
   return next === '#' || next === 'b' ? 2 : 1;
 }
 
+const CHORD_TOKEN_RE = /\[([^\]\s]+)\]/g;
+
+/** Chords already used in a song's ChordPro text, most-frequent first, for one-tap re-entry. */
+export function extractRecentChords(value: string, limit = 8): string[] {
+  const counts = new Map<string, number>();
+  for (const match of value.matchAll(CHORD_TOKEN_RE)) {
+    const chord = match[1];
+    counts.set(chord, (counts.get(chord) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([chord]) => chord)
+    .slice(0, limit);
+}
+
 export function suggestChordNames(query: string, limit = 8): string[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];

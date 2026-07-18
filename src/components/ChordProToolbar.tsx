@@ -1,32 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useMemo, useRef, useState, type RefObject } from 'react';
 import { Music2, Repeat2, GitBranch, ArrowRight, Guitar, Search } from 'lucide-react';
 import TabSequencerModal from './TabSequencerModal';
 import ChordFinderModal from './ChordFinderModal';
 import { suggestChordNames } from '../utils/chordNames';
-import { diatonicChords } from '../utils/musicTheory';
 
 interface Props {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   value: string;
   onChange: (value: string) => void;
   tempo?: number;
-  /** Song key, e.g. "G" or "Am" — used to surface likely diatonic chords. */
-  songKey?: string;
-}
-
-const CHORD_TOKEN_RE = /\[([^\]\s]+)\]/g;
-
-/** Chords already used in this song, most-frequent first, for one-tap re-entry. */
-function extractRecentChords(value: string, limit = 8): string[] {
-  const counts = new Map<string, number>();
-  for (const match of value.matchAll(CHORD_TOKEN_RE)) {
-    const chord = match[1];
-    counts.set(chord, (counts.get(chord) ?? 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .map(([chord]) => chord)
-    .slice(0, limit);
 }
 
 type Section = { label: string; name: string; icon: React.ReactNode; color: string };
@@ -94,54 +76,16 @@ function insertSection(
   }
 }
 
-export default function ChordProToolbar({ textareaRef, value, onChange, tempo, songKey }: Props) {
+export default function ChordProToolbar({ textareaRef, value, onChange, tempo }: Props) {
   const [chordInput, setChordInput] = useState('');
   const [showTabSequencer, setShowTabSequencer] = useState(false);
   const [showChordFinder, setShowChordFinder] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [hasSelection, setHasSelection] = useState(false);
 
   // Capture the cursor position when the modal opens so we insert at the right spot
   const pendingCursorRef = useRef(0);
 
   const suggestions = useMemo(() => suggestChordNames(chordInput), [chordInput]);
-  const recentChords = useMemo(() => extractRecentChords(value), [value]);
-  const keyChords = useMemo(() => (songKey ? diatonicChords(songKey) : []), [songKey]);
-
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    function updateSelection() {
-      setHasSelection(!!textarea && textarea.selectionStart !== textarea.selectionEnd);
-    }
-    textarea.addEventListener('select', updateSelection);
-    textarea.addEventListener('mouseup', updateSelection);
-    textarea.addEventListener('keyup', updateSelection);
-    return () => {
-      textarea.removeEventListener('select', updateSelection);
-      textarea.removeEventListener('mouseup', updateSelection);
-      textarea.removeEventListener('keyup', updateSelection);
-    };
-  }, [textareaRef]);
-
-  function handleWrapAsChord() {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    if (start === end) return;
-    const selected = value.slice(start, end);
-    const wrapped = selected.split(' ').map((word) => word ? `[${word}]` : '').join(' ');
-    const before = value.slice(0, start);
-    const after = value.slice(end);
-    onChange(before + wrapped + after);
-    const newPos = start + wrapped.length;
-    requestAnimationFrame(() => {
-      textarea.focus({ preventScroll: true });
-      textarea.setSelectionRange(newPos, newPos);
-    });
-    setHasSelection(false);
-  }
 
   function handleSectionClick(name: string) {
     if (!textareaRef.current) return;
@@ -194,24 +138,6 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo, s
     setShowChordFinder(false);
   }
 
-  const quickChordRow = (label: string, chords: string[]) =>
-    chords.length > 0 && (
-      <div className="toolbar-group toolbar-group--quickchips">
-        <span className="toolbar-label">{label}</span>
-        {chords.map((chord) => (
-          <button
-            key={chord}
-            type="button"
-            className="toolbar-chip"
-            onClick={() => handleChordInsert(chord)}
-            title={`Insert [${chord}] at cursor`}
-          >
-            {chord}
-          </button>
-        ))}
-      </div>
-    );
-
   return (
     <>
     {showTabSequencer && (
@@ -227,46 +153,7 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo, s
         onClose={() => setShowChordFinder(false)}
       />
     )}
-    {(keyChords.length > 0 || recentChords.length > 0) && (
-      <div className="chordpro-quickchips-bar">
-        {quickChordRow(songKey ? `Key of ${songKey}` : 'Key', keyChords)}
-        {quickChordRow('Recent', recentChords)}
-      </div>
-    )}
     <div className="chordpro-toolbar">
-      <div className="toolbar-group">
-        <span className="toolbar-label">Section</span>
-        {SECTIONS.map((s) => (
-          <button
-            key={s.name}
-            type="button"
-            className={`toolbar-btn toolbar-btn--section ${s.color}`}
-            onClick={() => handleSectionClick(s.name)}
-            title={`Insert ${s.label} block`}
-          >
-            {s.icon}
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="toolbar-divider" />
-
-      <div className="toolbar-group">
-        <span className="toolbar-label">Tab</span>
-        <button
-          type="button"
-          className="toolbar-btn toolbar-btn--section section-tab"
-          onClick={handleInsertTab}
-          title="Insert guitar tab block"
-        >
-          <Guitar size={13} />
-          Insert Tab
-        </button>
-      </div>
-
-      <div className="toolbar-divider" />
-
       <div className="toolbar-group toolbar-group--chord">
         <span className="toolbar-label">Chord</span>
         <div className="toolbar-chord-input-outer">
@@ -313,21 +200,45 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo, s
         </button>
         <button
           type="button"
-          className="toolbar-btn toolbar-btn--chord"
-          onClick={handleWrapAsChord}
-          disabled={!hasSelection}
-          title="Wrap selected text as chord(s)"
-        >
-          Wrap selection
-        </button>
-        <button
-          type="button"
           className="toolbar-btn toolbar-btn--chord toolbar-btn--icon"
           onClick={() => setShowChordFinder(true)}
           title="Find a chord by fretboard, ukulele, or piano"
           aria-label="Find a chord"
         >
           <Search size={13} />
+        </button>
+      </div>
+
+      <div className="toolbar-divider" />
+
+      <div className="toolbar-group">
+        <span className="toolbar-label">Section</span>
+        {SECTIONS.map((s) => (
+          <button
+            key={s.name}
+            type="button"
+            className={`toolbar-btn toolbar-btn--section ${s.color}`}
+            onClick={() => handleSectionClick(s.name)}
+            title={`Insert ${s.label} block`}
+          >
+            {s.icon}
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="toolbar-divider" />
+
+      <div className="toolbar-group">
+        <span className="toolbar-label">Tab</span>
+        <button
+          type="button"
+          className="toolbar-btn toolbar-btn--section section-tab"
+          onClick={handleInsertTab}
+          title="Insert guitar tab block"
+        >
+          <Guitar size={13} />
+          Insert Tab
         </button>
       </div>
     </div>

@@ -4288,8 +4288,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-wrap: wrap;
 }
 
-.toolbar-group--chord { margin-left: auto; }
-
 .toolbar-label {
   font-size: .72rem;
   font-weight: 700;
@@ -4370,9 +4368,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   text-align: center;
 }
 
-.chordpro-toolbar + textarea,
+.chordpro-toolbar + .chord-caret-picker-wrap textarea,
 .chordpro-toolbar + .chordpro-preview {
   border-radius: 0 0 6px 6px;
+}
+
+.chord-caret-picker-wrap {
+  position: relative;
 }
 
 .toolbar-btn--icon { padding: .25rem .45rem; }
@@ -4414,44 +4416,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .toolbar-chord-suggestions button:focus-visible {
   background: var(--chord-bg);
   color: var(--accent);
-}
-
-/* ─── Quick chord chips (key + recently used) ─────────────────────────────── */
-.chordpro-quickchips-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem 1.25rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  padding: .4rem .75rem;
-}
-
-.chordpro-quickchips-bar + .chordpro-toolbar {
-  border-radius: 0;
-  border-top: 1px dashed var(--border);
-}
-
-.toolbar-group--quickchips { gap: .3rem; }
-
-.toolbar-chip {
-  font-family: var(--font-mono);
-  font-size: .78rem;
-  font-weight: 600;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: .1rem .45rem;
-  cursor: pointer;
-  transition: background .15s, color .15s, border-color .15s;
-}
-
-.toolbar-chip:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
 }
 
 /* ─── Chord Finder Modal ──────────────────────────────────────────────────── */
@@ -11693,4 +11657,166 @@ input, select, textarea { font: inherit; color: var(--text); }
   pointer-events: none;
   float: left;
   height: 0;
+}
+
+/* ─── Chord Caret Picker (floating "insert chord here" button + popover) ──── */
+.chord-caret-overlay {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.chord-caret-button {
+  position: relative;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.15));
+  transition: background .15s, color .15s;
+}
+.chord-caret-button:hover { background: var(--accent); color: #fff; }
+
+.chord-caret-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  pointer-events: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  padding: .5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.chord-caret-popover--up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.chord-caret-popover-search {
+  display: flex;
+  align-items: center;
+  gap: .1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: .2rem .4rem;
+}
+.chord-caret-popover-search:focus-within { border-color: var(--accent); }
+
+.chord-caret-popover-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: .85rem;
+  color: var(--text);
+  padding: .15rem .2rem;
+}
+
+.chord-caret-popover-finder-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.chord-caret-popover-finder-btn:hover { color: var(--accent); background: var(--chord-bg); }
+
+.chord-caret-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.chord-caret-popover-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chord-caret-popover-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: .3rem .5rem;
+  font-family: var(--font-mono);
+  font-size: .85rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.chord-caret-popover-list button:hover,
+.chord-caret-popover-list button:focus-visible {
+  background: var(--chord-bg);
+  color: var(--accent);
+}
+
+.chord-caret-popover-row {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+
+.chord-caret-popover-row-label {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+}
+
+.chord-caret-popover-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+}
+
+.chord-caret-popover-chips button {
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: .12rem .5rem;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.chord-caret-popover-chips button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.chord-caret-popover-empty {
+  font-size: .82rem;
+  color: var(--muted);
+  padding: .2rem .3rem;
 }
