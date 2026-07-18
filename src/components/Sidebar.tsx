@@ -472,16 +472,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         >
           <>
             <SidebarItemIcon icon={effectiveActiveBand?.icon} fallback={<Users size={13} />} />
-            <span className="sidebar-band-switcher-name">
+            <span className="sidebar-band-switcher-name" title={effectiveActiveBand?.name ?? undefined}>
               {effectiveActiveBand?.name ?? ''}
             </span>
             {!bandPlan.isFree && (
               <span
                 className={`sidebar-band-tier-badge sidebar-band-tier-badge--${bandPlan.plan}`}
                 title={bandPlan.planLabel}
-              >
-                {bandPlan.planLabel}
-              </span>
+              />
             )}
           </>
           <ChevronsUpDown size={12} className="sidebar-band-switcher-chevron" />

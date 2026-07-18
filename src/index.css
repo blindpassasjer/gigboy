@@ -6092,25 +6092,18 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar-band-tier-badge {
-  display: inline-flex;
-  align-items: center;
   flex-shrink: 0;
-  padding: .1rem .4rem;
-  border-radius: 999px;
-  font-size: .62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .02em;
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
 }
 
 .sidebar-band-tier-badge--pro {
-  background: color-mix(in srgb, var(--bands-hue) 20%, var(--surface));
-  color: var(--bands-hue);
+  background: var(--bands-hue);
 }
 
 .sidebar-band-tier-badge--crew {
-  background: color-mix(in srgb, gold 30%, var(--surface));
-  color: color-mix(in srgb, gold 55%, var(--fg));
+  background: gold;
 }
 
 .sidebar-band-switcher-chevron {
