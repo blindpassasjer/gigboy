@@ -471,7 +471,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           aria-expanded={bandSwitcherOpen}
         >
           <>
-            <SidebarItemIcon icon={effectiveActiveBand?.icon} fallback={<Users size={13} />} />
+            <SidebarItemIcon icon={PLAN_TIER_EMOJI[bandPlan.plan]} fallback={<Users size={13} />} title={bandPlan.planLabel} />
             <span className="sidebar-band-switcher-name" title={effectiveActiveBand?.name ?? undefined}>
               {effectiveActiveBand?.name ?? ''}
             </span>
@@ -628,7 +628,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     className="sidebar-list-item-btn"
                     onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/library`); onNavigate?.(); }}
                   >
-                    <SidebarItemIcon icon={PLAN_TIER_EMOJI[bandPlan.plan]} fallback={<ListMusic size={14} />} title={bandPlan.planLabel} />
+                    <SidebarItemIcon fallback={<ListMusic size={14} />} />
                     <span className="sidebar-list-name">Library</span>
                     {(bandSongsByBandId[band.id]?.length ?? 0) > 0 && (
                       <span className="sidebar-list-count">{bandSongsByBandId[band.id]?.length ?? 0}</span>
