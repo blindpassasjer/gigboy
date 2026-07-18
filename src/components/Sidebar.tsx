@@ -6,7 +6,7 @@ import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { useBandPlan } from '../hooks/usePlan';
-import { bandCanUse } from '../lib/planLimits';
+import { bandCanUse, PLAN_LABELS } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
@@ -109,6 +109,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   });
   const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
   const bandPlan = useBandPlan(effectiveActiveBand);
+  const effectiveActiveBandOwnPlan = effectiveActiveBand?.billingPlan === 'crew'
+    ? 'crew'
+    : effectiveActiveBand?.billingPlan === 'pro'
+      ? 'pro'
+      : 'free';
   const storageQuotaBytes = bandPlan.storageQuotaBytes;
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const [storagePopupOpen, setStoragePopupOpen] = useState(false);
@@ -459,10 +464,10 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         </div>
       </div>
 
-      {effectiveActiveBand && !bandPlan.isFree && (
-        <span className={`sidebar-band-tier-badge sidebar-band-tier-badge--${bandPlan.plan}`}>
+      {effectiveActiveBandOwnPlan !== 'free' && (
+        <span className={`sidebar-band-tier-badge sidebar-band-tier-badge--${effectiveActiveBandOwnPlan}`}>
           <Crown size={11} />
-          {bandPlan.planLabel}
+          {PLAN_LABELS[effectiveActiveBandOwnPlan]}
         </span>
       )}
 
