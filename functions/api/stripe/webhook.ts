@@ -163,6 +163,8 @@ export const onRequestPost: PagesFunction<Env, never, Record<string, unknown>> =
               id: checkoutBandId,
               name: pendingBandName,
               ownerId: uid,
+              memberIds: [uid],
+              memberRoles: { [uid]: 'editor' },
               createdAt: Math.floor(Date.now() / 1000),
             });
           }
