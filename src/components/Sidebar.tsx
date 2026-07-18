@@ -6,7 +6,7 @@ import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { useBandPlan } from '../hooks/usePlan';
-import { bandCanUse } from '../lib/planLimits';
+import { bandCanUse, PLAN_TIER_EMOJI } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
@@ -42,10 +42,10 @@ interface Props {
   onClose?: () => void;
 }
 
-function SidebarItemIcon({ icon, fallback }: { icon?: string; fallback: ReactNode }) {
+function SidebarItemIcon({ icon, fallback, title }: { icon?: string; fallback: ReactNode; title?: string }) {
   const normalizedIcon = typeof icon === 'string' ? icon.trim() : '';
   if (normalizedIcon.length > 0) {
-    return <span className="sidebar-list-icon" aria-hidden="true">{normalizedIcon}</span>;
+    return <span className="sidebar-list-icon" aria-hidden="true" title={title}>{normalizedIcon}</span>;
   }
   return <span className="sidebar-list-icon" aria-hidden="true">{fallback}</span>;
 }
@@ -471,12 +471,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           aria-expanded={bandSwitcherOpen}
         >
           <>
-            <span className="sidebar-band-switcher-icon-wrap" title={!bandPlan.isFree ? bandPlan.planLabel : undefined}>
-              <SidebarItemIcon icon={effectiveActiveBand?.icon} fallback={<Users size={13} />} />
-              {!bandPlan.isFree && (
-                <span className={`sidebar-band-tier-badge sidebar-band-tier-badge--${bandPlan.plan}`} />
-              )}
-            </span>
+            <SidebarItemIcon icon={effectiveActiveBand?.icon} fallback={<Users size={13} />} />
             <span className="sidebar-band-switcher-name" title={effectiveActiveBand?.name ?? undefined}>
               {effectiveActiveBand?.name ?? ''}
             </span>
@@ -633,7 +628,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     className="sidebar-list-item-btn"
                     onClick={() => { clearGlobalSelection(); navigate(`/bands/${band.id}/library`); onNavigate?.(); }}
                   >
-                    <SidebarItemIcon fallback={<ListMusic size={14} />} />
+                    <SidebarItemIcon icon={PLAN_TIER_EMOJI[bandPlan.plan]} fallback={<ListMusic size={14} />} title={bandPlan.planLabel} />
                     <span className="sidebar-list-name">Library</span>
                     {(bandSongsByBandId[band.id]?.length ?? 0) > 0 && (
                       <span className="sidebar-list-count">{bandSongsByBandId[band.id]?.length ?? 0}</span>

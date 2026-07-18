@@ -6091,30 +6091,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
 }
 
-.sidebar-band-switcher-icon-wrap {
-  position: relative;
-  display: inline-flex;
-  flex-shrink: 0;
-}
-
-.sidebar-band-tier-badge {
-  position: absolute;
-  right: -.15rem;
-  bottom: -.15rem;
-  width: .4rem;
-  height: .4rem;
-  border-radius: 50%;
-  border: 1.5px solid var(--surface);
-}
-
-.sidebar-band-tier-badge--pro {
-  background: var(--bands-hue);
-}
-
-.sidebar-band-tier-badge--crew {
-  background: gold;
-}
-
 .sidebar-band-switcher-chevron {
   flex-shrink: 0;
   opacity: .6;

@@ -22,6 +22,12 @@ export const PLAN_LABELS: Record<PlanTier, string> = {
   crew: 'Crew',
 };
 
+export const PLAN_TIER_EMOJI: Record<PlanTier, string> = {
+  free: '🎵',
+  pro: '⭐',
+  crew: '👑',
+};
+
 export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   free: {
     songLimit: 12,

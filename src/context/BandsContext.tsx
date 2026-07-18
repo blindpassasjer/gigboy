@@ -434,7 +434,6 @@ interface BandsContextValue {
   renameBandSongList: (bandId: string, songListId: string, name: string) => Promise<string | null>;
   updateBandSongListIcon: (bandId: string, songListId: string, icon?: string) => Promise<string | null>;
   updateBandLibraryAppearance: (bandId: string, appearance: { icon?: string; color?: string }) => Promise<string | null>;
-  updateBandLibraryIcon: (bandId: string, icon?: string) => Promise<string | null>;
   updateBandLogo: (bandId: string, file: File | null) => Promise<string | null>;
   deleteBandSongList: (bandId: string, songListId: string) => Promise<string | null>;
   addSongToBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
@@ -1430,14 +1429,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return error instanceof Error ? error.message : 'Failed to update band appearance.';
     }
   }, [bands, userId]);
-
-  const updateBandLibraryIcon = useCallback(async (bandId: string, icon?: string) => {
-    const band = bands.find((entry) => entry.id === bandId);
-    return updateBandLibraryAppearance(bandId, {
-      icon,
-      color: band?.color,
-    });
-  }, [bands, updateBandLibraryAppearance]);
 
   const updateBandLogo = useCallback(async (bandId: string, file: File | null) => {
     if (!db || !storage || !userId) {
@@ -3582,7 +3573,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateBandSong,
     removeSongFromBandLibrary,
     updateBandLibraryAppearance,
-    updateBandLibraryIcon,
     updateBandLogo,
     moveBandSong,
     addBandSongList,
@@ -3660,7 +3650,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     removeSongFromBandLibrary,
     restoreBandTrashItem,
     updateBandLibraryAppearance,
-    updateBandLibraryIcon,
     updateBandSetlistIcon,
     setBandInputListPublicShare,
     setBandSetlistPublicShare,
