@@ -4375,6 +4375,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .chord-caret-picker-wrap {
   position: relative;
+  display: block;
+}
+
+.chord-caret-picker-wrap textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .toolbar-btn--icon { padding: .25rem .45rem; }
