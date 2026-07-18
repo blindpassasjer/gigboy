@@ -8669,6 +8669,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   max-width: 46rem;
 }
 
+.pricing-hero-intro .brand-name {
+  transform-origin: center;
+}
+
 .pricing-hero-intro h1 {
   margin-top: .35rem;
 }
