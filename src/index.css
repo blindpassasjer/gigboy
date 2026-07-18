@@ -4375,6 +4375,149 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-radius: 0 0 6px 6px;
 }
 
+.toolbar-btn--icon { padding: .25rem .45rem; }
+
+.toolbar-chord-input-outer { position: relative; }
+
+.toolbar-chord-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  list-style: none;
+  margin: 0;
+  padding: .25rem;
+  min-width: 6rem;
+  max-height: 12rem;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-lg);
+}
+
+.toolbar-chord-suggestions button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: .3rem .5rem;
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.toolbar-chord-suggestions button:hover,
+.toolbar-chord-suggestions button:focus-visible {
+  background: var(--chord-bg);
+  color: var(--accent);
+}
+
+/* ─── Quick chord chips (key + recently used) ─────────────────────────────── */
+.chordpro-quickchips-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1.25rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: .4rem .75rem;
+}
+
+.chordpro-quickchips-bar + .chordpro-toolbar {
+  border-radius: 0;
+  border-top: 1px dashed var(--border);
+}
+
+.toolbar-group--quickchips { gap: .3rem; }
+
+.toolbar-chip {
+  font-family: var(--font-mono);
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: .1rem .45rem;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.toolbar-chip:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ─── Chord Finder Modal ──────────────────────────────────────────────────── */
+.chord-finder-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.chord-finder-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: min(96vw, 420px);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.chord-finder-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.chord-finder-modal-title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.chord-finder-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.chord-finder-modal-close:hover { color: var(--text); border-color: var(--border); background: var(--bg); }
+
+.chord-finder-modal-body { padding: 1rem; }
+
+.chord-finder-match--selectable {
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.chord-finder-match--selectable:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 /* ─── Tab Sequencer Modal ─────────────────────────────────────────────────────── */
 .tab-seq-overlay {
   position: fixed;

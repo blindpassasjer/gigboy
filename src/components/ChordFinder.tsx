@@ -423,7 +423,12 @@ function InteractivePiano({ activePCs, onToggle }: PianoProps) {
 const DEFAULT_GUITAR_STRINGS = [0, 0, 0, 0, 0, 0];
 const DEFAULT_UKE_STRINGS = [0, 0, 0, 0];
 
-export default function ChordFinder() {
+interface ChordFinderProps {
+  /** When provided, matched chord names become clickable and call back instead of just displaying. */
+  onSelectChord?: (name: string) => void;
+}
+
+export default function ChordFinder({ onSelectChord }: ChordFinderProps = {}) {
   const [instrument, setInstrument] = useState<DiagramInstrument>('guitar');
   const [guitarStrings, setGuitarStrings] = useState<number[]>([...DEFAULT_GUITAR_STRINGS]);
   const [ukeStrings, setUkeStrings] = useState<number[]>([...DEFAULT_UKE_STRINGS]);
@@ -578,14 +583,24 @@ export default function ChordFinder() {
       <div className="chord-finder-result-row">
         {matches.length > 0 ? (
           <div className="chord-finder-matches">
-            {matches.map((name, i) => (
-              <span
-                key={name}
-                className={`chord-finder-match${i === 0 ? ' chord-finder-match--primary' : ''}`}
-              >
-                {name}
-              </span>
-            ))}
+            {matches.map((name, i) => {
+              const className = `chord-finder-match${i === 0 ? ' chord-finder-match--primary' : ''}`;
+              return onSelectChord ? (
+                <button
+                  key={name}
+                  type="button"
+                  className={`${className} chord-finder-match--selectable`}
+                  onClick={() => onSelectChord(name)}
+                  title={`Use ${name}`}
+                >
+                  {name}
+                </button>
+              ) : (
+                <span key={name} className={className}>
+                  {name}
+                </span>
+              );
+            })}
           </div>
         ) : hasInput ? (
           <span className="chord-finder-no-match">No chord identified</span>

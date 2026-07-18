@@ -1,12 +1,32 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import { Music2, Repeat2, GitBranch, ArrowRight, Guitar } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { Music2, Repeat2, GitBranch, ArrowRight, Guitar, Search } from 'lucide-react';
 import TabSequencerModal from './TabSequencerModal';
+import ChordFinderModal from './ChordFinderModal';
+import { suggestChordNames } from '../utils/chordNames';
+import { diatonicChords } from '../utils/musicTheory';
 
 interface Props {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   value: string;
   onChange: (value: string) => void;
   tempo?: number;
+  /** Song key, e.g. "G" or "Am" — used to surface likely diatonic chords. */
+  songKey?: string;
+}
+
+const CHORD_TOKEN_RE = /\[([^\]\s]+)\]/g;
+
+/** Chords already used in this song, most-frequent first, for one-tap re-entry. */
+function extractRecentChords(value: string, limit = 8): string[] {
+  const counts = new Map<string, number>();
+  for (const match of value.matchAll(CHORD_TOKEN_RE)) {
+    const chord = match[1];
+    counts.set(chord, (counts.get(chord) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([chord]) => chord)
+    .slice(0, limit);
 }
 
 type Section = { label: string; name: string; icon: React.ReactNode; color: string };
@@ -74,13 +94,19 @@ function insertSection(
   }
 }
 
-export default function ChordProToolbar({ textareaRef, value, onChange, tempo }: Props) {
+export default function ChordProToolbar({ textareaRef, value, onChange, tempo, songKey }: Props) {
   const [chordInput, setChordInput] = useState('');
   const [showTabSequencer, setShowTabSequencer] = useState(false);
+  const [showChordFinder, setShowChordFinder] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [hasSelection, setHasSelection] = useState(false);
 
   // Capture the cursor position when the modal opens so we insert at the right spot
   const pendingCursorRef = useRef(0);
+
+  const suggestions = useMemo(() => suggestChordNames(chordInput), [chordInput]);
+  const recentChords = useMemo(() => extractRecentChords(value), [value]);
+  const keyChords = useMemo(() => (songKey ? diatonicChords(songKey) : []), [songKey]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -146,19 +172,45 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo }:
     });
   }
 
-  function handleChordInsert() {
-    const chord = chordInput.trim();
+  function handleChordInsert(chordOverride?: string) {
+    const chord = (chordOverride ?? chordInput).trim();
     if (!chord || !textareaRef.current) return;
     insertAtCursor(textareaRef.current, `[${chord}]`, value, onChange);
     setChordInput('');
+    setShowSuggestions(false);
   }
 
   function handleChordKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleChordInsert();
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
     }
   }
+
+  function handleChordFinderSelect(chordName: string) {
+    handleChordInsert(chordName);
+    setShowChordFinder(false);
+  }
+
+  const quickChordRow = (label: string, chords: string[]) =>
+    chords.length > 0 && (
+      <div className="toolbar-group toolbar-group--quickchips">
+        <span className="toolbar-label">{label}</span>
+        {chords.map((chord) => (
+          <button
+            key={chord}
+            type="button"
+            className="toolbar-chip"
+            onClick={() => handleChordInsert(chord)}
+            title={`Insert [${chord}] at cursor`}
+          >
+            {chord}
+          </button>
+        ))}
+      </div>
+    );
 
   return (
     <>
@@ -168,6 +220,18 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo }:
         onClose={() => setShowTabSequencer(false)}
         tempo={tempo}
       />
+    )}
+    {showChordFinder && (
+      <ChordFinderModal
+        onSelect={handleChordFinderSelect}
+        onClose={() => setShowChordFinder(false)}
+      />
+    )}
+    {(keyChords.length > 0 || recentChords.length > 0) && (
+      <div className="chordpro-quickchips-bar">
+        {quickChordRow(songKey ? `Key of ${songKey}` : 'Key', keyChords)}
+        {quickChordRow('Recent', recentChords)}
+      </div>
     )}
     <div className="chordpro-toolbar">
       <div className="toolbar-group">
@@ -205,23 +269,43 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo }:
 
       <div className="toolbar-group toolbar-group--chord">
         <span className="toolbar-label">Chord</span>
-        <div className="toolbar-chord-input-wrap">
-          <span className="toolbar-chord-bracket">[</span>
-          <input
-            className="toolbar-chord-input"
-            value={chordInput}
-            onChange={(e) => setChordInput(e.target.value)}
-            onKeyDown={handleChordKeyDown}
-            placeholder="Am"
-            maxLength={6}
-            aria-label="Chord name"
-          />
-          <span className="toolbar-chord-bracket">]</span>
+        <div className="toolbar-chord-input-outer">
+          <div className="toolbar-chord-input-wrap">
+            <span className="toolbar-chord-bracket">[</span>
+            <input
+              className="toolbar-chord-input"
+              value={chordInput}
+              onChange={(e) => { setChordInput(e.target.value); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+              onKeyDown={handleChordKeyDown}
+              placeholder="Am"
+              maxLength={6}
+              aria-label="Chord name"
+              autoComplete="off"
+            />
+            <span className="toolbar-chord-bracket">]</span>
+          </div>
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="toolbar-chord-suggestions" role="listbox">
+              {suggestions.map((name) => (
+                <li key={name}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleChordInsert(name)}
+                  >
+                    {name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <button
           type="button"
           className="toolbar-btn toolbar-btn--chord"
-          onClick={handleChordInsert}
+          onClick={() => handleChordInsert()}
           disabled={!chordInput.trim()}
           title="Insert chord at cursor"
         >
@@ -235,6 +319,15 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo }:
           title="Wrap selected text as chord(s)"
         >
           Wrap selection
+        </button>
+        <button
+          type="button"
+          className="toolbar-btn toolbar-btn--chord toolbar-btn--icon"
+          onClick={() => setShowChordFinder(true)}
+          title="Find a chord by fretboard, ukulele, or piano"
+          aria-label="Find a chord"
+        >
+          <Search size={13} />
         </button>
       </div>
     </div>
