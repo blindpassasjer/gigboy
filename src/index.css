@@ -8702,11 +8702,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   line-height: 1.45;
 }
 
-.pricing-hero-logo {
-  width: 3rem;
-  height: 3rem;
-}
-
 .pricing-kicker {
   color: var(--muted);
   text-transform: uppercase;

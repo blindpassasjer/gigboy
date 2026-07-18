@@ -15,6 +15,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import BrandMark from '../components/BrandMark';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalBands } from '../context/BandsContext';
@@ -291,7 +292,7 @@ export default function PricingPage() {
           &larr; Back to account
         </Link>
         <div className="pricing-hero-intro">
-          <img src="/gig-icon.svg" alt="Gigboy" className="pricing-hero-logo" />
+          <BrandMark size={28} />
           <span className="pricing-kicker">Pricing</span>
           <h1>Pay per band workspace</h1>
           <p>
