@@ -14,7 +14,7 @@ import {
   Sparkles,
   Users,
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalBands } from '../context/BandsContext';
@@ -153,6 +153,7 @@ export default function PricingPage() {
   const bandsContext = useOptionalBands();
   const bands = bandsContext?.bands ?? [];
   const location = useLocation();
+  const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [busyTier, setBusyTier] = useState<PlanTier | null>(null);
   const [extraMemberCount, setExtraMemberCount] = useState(0);
@@ -258,7 +259,12 @@ export default function PricingPage() {
           }
           : {}),
       });
-      window.location.href = result.url;
+      if ('url' in result) {
+        window.location.href = result.url;
+      } else {
+        toast.success('Plan updated!');
+        navigate('/checkout-result?status=success');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to start checkout.';
       toast.error(message);

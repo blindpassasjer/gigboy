@@ -86,12 +86,13 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
     return Response.json({ error: 'bandId is required for Pro and Crew subscriptions.' }, { status: 400 });
   }
 
+  let existingBand: Record<string, unknown> | null = null;
   if ((requestedPlan === 'crew' || requestedPlan === 'pro') && !isNewBandRequest) {
-    const band = await getFirestoreDocument(ctx.env, ['bands', bandIdToUse]);
-    if (!band) {
+    existingBand = await getFirestoreDocument(ctx.env, ['bands', bandIdToUse]);
+    if (!existingBand) {
       return Response.json({ error: 'Band not found.' }, { status: 404 });
     }
-    if (band.ownerId !== userId) {
+    if (existingBand.ownerId !== userId) {
       return Response.json({ error: 'Only the band owner can manage this subscription.' }, { status: 403 });
     }
   }
@@ -137,6 +138,52 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
 
     if (body.extraMemberPriceId && !allowedExtraMemberPrices.has(body.extraMemberPriceId)) {
       return Response.json({ error: 'Extra member add-on is not configured for this environment.' }, { status: 400 });
+    }
+
+    // If this band already has a live Stripe subscription, change its plan in place instead
+    // of starting a second, independent subscription (which would race with the old one's
+    // renewal webhooks and randomly clobber the band's billing snapshot in Firestore).
+    const existingSubscriptionId = typeof existingBand?.stripeSubscriptionId === 'string'
+      ? existingBand.stripeSubscriptionId
+      : null;
+    const existingBandItemId = typeof existingBand?.stripeBandItemId === 'string'
+      ? existingBand.stripeBandItemId
+      : null;
+    const existingStatus = typeof existingBand?.billingSubscriptionStatus === 'string'
+      ? existingBand.billingSubscriptionStatus
+      : null;
+    const hasLiveSubscription = Boolean(
+      existingSubscriptionId
+      && existingBandItemId
+      && (existingStatus === 'active' || existingStatus === 'trialing' || existingStatus === 'past_due')
+    );
+
+    if (hasLiveSubscription && existingSubscriptionId && existingBandItemId) {
+      const items: Stripe.SubscriptionUpdateParams.Item[] = [
+        { id: existingBandItemId, price: body.priceId },
+      ];
+
+      const existingExtraItemId = typeof existingBand?.stripeExtraMembersItemId === 'string'
+        ? existingBand.stripeExtraMembersItemId
+        : null;
+      const wantsExtraItem = requestedPlan === 'crew' && hasExtraMemberItem && Boolean(body.extraMemberPriceId);
+
+      if (wantsExtraItem && body.extraMemberPriceId) {
+        items.push(
+          existingExtraItemId
+            ? { id: existingExtraItemId, price: body.extraMemberPriceId, quantity: requestedExtraMemberCount }
+            : { price: body.extraMemberPriceId, quantity: requestedExtraMemberCount, metadata: { bandId: bandIdToUse, itemType: 'band_extra_members' } }
+        );
+      } else if (existingExtraItemId) {
+        items.push({ id: existingExtraItemId, deleted: true });
+      }
+
+      await stripe.subscriptions.update(existingSubscriptionId, {
+        items,
+        proration_behavior: 'create_prorations',
+      });
+
+      return Response.json({ updated: true });
     }
 
     let customerId = typeof profile?.stripeCustomerId === 'string' ? profile.stripeCustomerId : null;
