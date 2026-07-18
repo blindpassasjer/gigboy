@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Newspaper, Plus, Sparkles, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, Crown, Folder, ListMusic, Music, Newspaper, Plus, Sparkles, Star, Trash2, Users, X, ChevronsUpDown } from 'lucide-react';
+import type { PlanTier } from '../types';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { useBandPlan } from '../hooks/usePlan';
-import { bandCanUse, PLAN_TIER_EMOJI } from '../lib/planLimits';
+import { bandCanUse } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
@@ -47,8 +48,14 @@ function SidebarItemIcon({ icon, fallback, title }: { icon?: string; fallback: R
   if (normalizedIcon.length > 0) {
     return <span className="sidebar-list-icon" aria-hidden="true" title={title}>{normalizedIcon}</span>;
   }
-  return <span className="sidebar-list-icon" aria-hidden="true">{fallback}</span>;
+  return <span className="sidebar-list-icon" aria-hidden="true" title={title}>{fallback}</span>;
 }
+
+const PLAN_TIER_ICON: Record<PlanTier, ReactNode> = {
+  free: <Music size={13} />,
+  pro: <Star size={13} />,
+  crew: <Crown size={13} />,
+};
 
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const navigate = useNavigate();
@@ -471,7 +478,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           aria-expanded={bandSwitcherOpen}
         >
           <>
-            <SidebarItemIcon icon={PLAN_TIER_EMOJI[bandPlan.plan]} fallback={<Users size={13} />} title={bandPlan.planLabel} />
+            <SidebarItemIcon fallback={PLAN_TIER_ICON[bandPlan.plan]} title={bandPlan.planLabel} />
             <span className="sidebar-band-switcher-name" title={effectiveActiveBand?.name ?? undefined}>
               {effectiveActiveBand?.name ?? ''}
             </span>
