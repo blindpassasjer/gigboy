@@ -6091,11 +6091,20 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
 }
 
-.sidebar-band-tier-badge {
+.sidebar-band-switcher-icon-wrap {
+  position: relative;
+  display: inline-flex;
   flex-shrink: 0;
-  width: .5rem;
-  height: .5rem;
+}
+
+.sidebar-band-tier-badge {
+  position: absolute;
+  right: -.15rem;
+  bottom: -.15rem;
+  width: .4rem;
+  height: .4rem;
   border-radius: 50%;
+  border: 1.5px solid var(--surface);
 }
 
 .sidebar-band-tier-badge--pro {
