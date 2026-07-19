@@ -5,6 +5,7 @@ import ChordSearchPanel from './ChordSearchPanel';
 import { extractRecentChords } from '../utils/chordNames';
 import { diatonicChords } from '../utils/musicTheory';
 import { getCaretCoordinates } from '../utils/caretPosition';
+import { insertChordAtSelection } from '../utils/chordInsertion';
 
 interface Props {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -189,18 +190,7 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   function commitChord(chordName: string) {
     const textarea = textareaRef.current;
     if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const tag = `[${chordName}]`;
-    const before = value.slice(0, start);
-    const marked = value.slice(start, end);
-    const after = value.slice(end);
-    onChange(before + tag + marked + after);
-    const newPos = start + tag.length + marked.length;
-    requestAnimationFrame(() => {
-      textarea.focus({ preventScroll: true });
-      textarea.setSelectionRange(newPos, newPos);
-    });
+    insertChordAtSelection(textarea, chordName, value, onChange);
     closeAll();
   }
 

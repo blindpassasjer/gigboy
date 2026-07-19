@@ -5,6 +5,7 @@ import ChordFinderModal from './ChordFinderModal';
 import ChordSearchPanel from './ChordSearchPanel';
 import { extractRecentChords } from '../utils/chordNames';
 import { diatonicChords } from '../utils/musicTheory';
+import { insertChordAtSelection } from '../utils/chordInsertion';
 
 interface Props {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -141,7 +142,7 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo, s
 
   function handleChordInsert(chordName: string) {
     if (!textareaRef.current) return;
-    insertAtCursor(textareaRef.current, `[${chordName}]`, value, onChange);
+    insertChordAtSelection(textareaRef.current, chordName, value, onChange);
     setShowChordPopover(false);
     setShowChordFinder(false);
   }
