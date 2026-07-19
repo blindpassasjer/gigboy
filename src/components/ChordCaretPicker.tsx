@@ -46,8 +46,6 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
 
   useEffect(() => {
     phaseRef.current = phase;
-    // eslint-disable-next-line no-console
-    console.log('[chord-caret debug] phase ->', phase);
   }, [phase]);
 
   useEffect(() => {
@@ -58,14 +56,8 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   const keyChords = useMemo(() => (songKey ? diatonicChords(songKey) : []), [songKey]);
 
   function reposition(nextPhase?: Phase) {
-    // eslint-disable-next-line no-console
-    console.log('[chord-caret debug] reposition() called with nextPhase =', nextPhase);
     const textarea = textareaRef.current;
-    if (!textarea) {
-      // eslint-disable-next-line no-console
-      console.log('[chord-caret debug] reposition() bailed: textareaRef.current is null');
-      return;
-    }
+    if (!textarea) return;
     const caret = getCaretCoordinates(textarea, textarea.selectionEnd);
     const textareaRect = textarea.getBoundingClientRect();
     const computed = window.getComputedStyle(textarea);
@@ -161,15 +153,11 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   useEffect(() => {
     if (phase !== 'popover') return;
     function handleOutside(e: MouseEvent) {
-      // eslint-disable-next-line no-console
-      console.log('[chord-caret debug] handleOutside fired, target =', e.target);
       // The chord-finder modal renders outside overlayRef (it's a fixed, full-screen
       // overlay) and handles its own dismissal — don't let clicks inside it bubble
       // into closing the popover underneath.
       if (showFinderRef.current) return;
       if (overlayRef.current?.contains(e.target as Node)) return;
-      // eslint-disable-next-line no-console
-      console.log('[chord-caret debug] handleOutside closing popover (target not inside overlay)');
       closeAll();
     }
     document.addEventListener('mousedown', handleOutside);
@@ -184,9 +172,16 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   }
 
   function handleButtonMouseDown(e: React.MouseEvent) {
-    // eslint-disable-next-line no-console
-    console.log('[chord-caret debug] handleButtonMouseDown fired');
     e.preventDefault();
+    // Opening the popover here is synchronous, which unmounts this very
+    // button (and its child <svg> icon — the event's target) immediately.
+    // The same native mousedown event then keeps bubbling to document's
+    // native outside-click listener, whose containment check reports the
+    // (now-detached) target as "outside" and closes the popover it just
+    // opened. React's synthetic stopPropagation() only stops other React
+    // handlers, not that native document listener — use the native event's
+    // stopPropagation so this one gesture can't be seen by both.
+    e.nativeEvent.stopPropagation();
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     reposition('popover');
   }
