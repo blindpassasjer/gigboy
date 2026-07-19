@@ -8,8 +8,13 @@
 // position of a marker span at the end of that text. This is the standard
 // approach used by libraries like textarea-caret-position.
 
+// 'width' is deliberately excluded here and set separately from layout
+// geometry (see below) — getComputedStyle().width returns the content-box
+// width regardless of box-sizing, so copying it straight onto a
+// box-sizing:border-box mirror double-subtracts the padding/border and
+// makes the mirror wrap text narrower than the real textarea.
 const MIRROR_PROPERTIES: (keyof CSSStyleDeclaration)[] = [
-  'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
+  'boxSizing', 'overflowX', 'overflowY',
   'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderStyle',
   'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
   'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize', 'fontFamily',
@@ -44,6 +49,12 @@ export function getCaretCoordinates(textarea: HTMLTextAreaElement, position: num
       (style as any)[prop] = value;
     }
   }
+
+  // clientWidth excludes border and any scrollbar (the actual space text
+  // wraps within); add the border back since the mirror is box-sizing:border-box.
+  const borderLeft = parseFloat(computed.borderLeftWidth) || 0;
+  const borderRight = parseFloat(computed.borderRightWidth) || 0;
+  style.width = `${textarea.clientWidth + borderLeft + borderRight}px`;
 
   div.textContent = textarea.value.substring(0, position);
 
