@@ -46,6 +46,8 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
 
   useEffect(() => {
     phaseRef.current = phase;
+    // eslint-disable-next-line no-console
+    console.log('[chord-caret debug] phase ->', phase);
   }, [phase]);
 
   useEffect(() => {
@@ -56,8 +58,14 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   const keyChords = useMemo(() => (songKey ? diatonicChords(songKey) : []), [songKey]);
 
   function reposition(nextPhase?: Phase) {
+    // eslint-disable-next-line no-console
+    console.log('[chord-caret debug] reposition() called with nextPhase =', nextPhase);
     const textarea = textareaRef.current;
-    if (!textarea) return;
+    if (!textarea) {
+      // eslint-disable-next-line no-console
+      console.log('[chord-caret debug] reposition() bailed: textareaRef.current is null');
+      return;
+    }
     const caret = getCaretCoordinates(textarea, textarea.selectionEnd);
     const textareaRect = textarea.getBoundingClientRect();
     const computed = window.getComputedStyle(textarea);
@@ -153,11 +161,15 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   useEffect(() => {
     if (phase !== 'popover') return;
     function handleOutside(e: MouseEvent) {
+      // eslint-disable-next-line no-console
+      console.log('[chord-caret debug] handleOutside fired, target =', e.target);
       // The chord-finder modal renders outside overlayRef (it's a fixed, full-screen
       // overlay) and handles its own dismissal — don't let clicks inside it bubble
       // into closing the popover underneath.
       if (showFinderRef.current) return;
       if (overlayRef.current?.contains(e.target as Node)) return;
+      // eslint-disable-next-line no-console
+      console.log('[chord-caret debug] handleOutside closing popover (target not inside overlay)');
       closeAll();
     }
     document.addEventListener('mousedown', handleOutside);
@@ -172,6 +184,8 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   }
 
   function handleButtonMouseDown(e: React.MouseEvent) {
+    // eslint-disable-next-line no-console
+    console.log('[chord-caret debug] handleButtonMouseDown fired');
     e.preventDefault();
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     reposition('popover');
