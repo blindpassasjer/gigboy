@@ -4315,9 +4315,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 .toolbar-btn--section { background: var(--chord-bg); border-color: var(--border); color: var(--accent); }
 .toolbar-btn--section:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-.toolbar-btn--chord { background: var(--accent); color: #fff; padding: .25rem .7rem; }
-.toolbar-btn--chord:hover { background: var(--accent-h); }
-.toolbar-btn--chord:disabled { opacity: .4; cursor: default; }
+.toolbar-btn--chord { background: var(--chord-bg); border-color: var(--border); color: var(--accent); padding: .25rem .7rem; }
+.toolbar-btn--chord:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 .section-intro      { border-color: #f5d8b2; background: #fff5e8; color: #aa5b14; }
 .section-intro:hover      { background: #aa5b14; border-color: #aa5b14; color: #fff; }
