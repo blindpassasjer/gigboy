@@ -4312,7 +4312,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
 }
 
-.toolbar-btn--section { background: var(--chord-bg); border-color: #d8d2f0; color: var(--accent); }
+.toolbar-btn--section { background: var(--chord-bg); border-color: var(--border); color: var(--accent); }
 .toolbar-btn--section:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 .toolbar-btn--chord { background: var(--accent); color: #fff; padding: .25rem .7rem; }
@@ -4321,6 +4321,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .section-intro      { border-color: #f5d8b2; background: #fff5e8; color: #aa5b14; }
 .section-intro:hover      { background: #aa5b14; border-color: #aa5b14; color: #fff; }
+.section-verse      { border-color: #bfe8e0; background: #eaf7f5; color: #1a7a6a; }
+.section-verse:hover      { background: #1a7a6a; border-color: #1a7a6a; color: #fff; }
 .section-chorus     { border-color: #c8ecd4; background: #edfaf2; color: #2e7d52; }
 .section-chorus:hover     { background: #2e7d52; border-color: #2e7d52; color: #fff; }
 .section-bridge     { border-color: #f8d9c0; background: #fef3ea; color: #b35a1a; }
@@ -4335,6 +4337,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 .section-outro:hover      { background: #b34763; border-color: #b34763; color: #fff; }
 .section-tab        { border-color: #c5dff0; background: #eaf4fb; color: #1a5f8a; }
 .section-tab:hover        { background: #1a5f8a; border-color: #1a5f8a; color: #fff; }
+
+/* Resting-state section colors above are light pastels by design for light
+   mode; swap in muted dark equivalents so they don't glare against a dark
+   background. Hover states stay the same solid saturated color + white text
+   in both themes, since that combination already reads fine on either. */
+[data-theme="dark"] .section-intro      { border-color: #6b4a22; background: #3a2a16; color: #e8b978; }
+[data-theme="dark"] .section-verse      { border-color: #275c50; background: #14302c; color: #6adfc7; }
+[data-theme="dark"] .section-chorus     { border-color: #2f5940; background: #1c2f22; color: #7ad9a0; }
+[data-theme="dark"] .section-bridge     { border-color: #6b4626; background: #3a2818; color: #f0a868; }
+[data-theme="dark"] .section-prechorus  { border-color: #2a4a6b; background: #16283a; color: #7ec2f0; }
+[data-theme="dark"] .section-interlude  { border-color: #453a6b; background: #241f3a; color: #b7a8f5; }
+[data-theme="dark"] .section-solo       { border-color: #63501f; background: #362c14; color: #f0cf6a; }
+[data-theme="dark"] .section-outro      { border-color: #6b3245; background: #3a1e26; color: #f28aa8; }
+[data-theme="dark"] .section-tab        { border-color: #2a5566; background: #16303a; color: #7ed4f0; }
 
 .toolbar-chord-bracket {
   color: var(--accent);
@@ -11614,8 +11630,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 /* ─── Chord Caret Picker (floating "insert chord here" button + popover) ──── */
 .chord-caret-overlay {
-  position: absolute;
-  z-index: 30;
+  /* Fixed (not absolute) + viewport coordinates from JS: .main-content
+     scrolls with overflow-y:auto, which would clip an absolutely-positioned
+     overlay nested this deep to its visible bounds. Fixed positioning
+     escapes that clipping entirely. */
+  position: fixed;
+  z-index: 1000;
   pointer-events: none;
 }
 

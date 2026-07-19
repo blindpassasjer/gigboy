@@ -32,7 +32,6 @@ const TYPING_REPOSITION_DEBOUNCE_MS = 200;
  * to a separate toolbar.
  */
 export default function ChordCaretPicker({ textareaRef, value, onChange, songKey, children }: Props) {
-  const wrapRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -58,15 +57,22 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
 
   function reposition(nextPhase?: Phase) {
     const textarea = textareaRef.current;
-    const wrap = wrapRef.current;
-    if (!textarea || !wrap) return;
+    if (!textarea) return;
     const caret = getCaretCoordinates(textarea, textarea.selectionEnd);
-    const wrapRect = wrap.getBoundingClientRect();
     const textareaRect = textarea.getBoundingClientRect();
-    const top = textareaRect.top - wrapRect.top + caret.top;
-    const left = textareaRect.left - wrapRect.left + caret.left;
+    const computed = window.getComputedStyle(textarea);
+    // getCaretCoordinates measures from the textarea's padding edge (inside
+    // its border); getBoundingClientRect gives the outer border edge — add
+    // the border back so the two line up. These are viewport coordinates —
+    // the overlay is position:fixed (see index.css) specifically so it isn't
+    // clipped by .main-content's overflow-y:auto scroll container, which an
+    // absolutely-positioned overlay nested this deep would otherwise be.
+    const borderTop = parseFloat(computed.borderTopWidth) || 0;
+    const borderLeft = parseFloat(computed.borderLeftWidth) || 0;
+    const top = textareaRect.top + borderTop + caret.top;
+    const left = textareaRect.left + borderLeft + caret.left;
     setAnchor({ top, left, height: caret.height });
-    setFlipUp(window.innerHeight - textareaRect.top - caret.top < POPOVER_HEIGHT_ESTIMATE);
+    setFlipUp(window.innerHeight - top < POPOVER_HEIGHT_ESTIMATE);
     if (nextPhase) setPhase(nextPhase);
   }
 
@@ -120,7 +126,14 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
     textarea.addEventListener('select', handleTypingActivity);
     textarea.addEventListener('focus', handleFocus);
     textarea.addEventListener('blur', handleBlur);
+    // Internal scrolling of the textarea itself.
     textarea.addEventListener('scroll', handleScroll);
+    // The overlay is position:fixed and computed from viewport coordinates,
+    // so scrolling the page (e.g. .main-content, which doesn't bubble a
+    // 'scroll' event — capture phase is what catches it here) must also
+    // trigger a reposition, or the button/popover would visually detach
+    // from the caret as the page scrolls underneath it.
+    window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
     return () => {
       textarea.removeEventListener('click', handleImmediateActivity);
@@ -129,6 +142,7 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
       textarea.removeEventListener('focus', handleFocus);
       textarea.removeEventListener('blur', handleBlur);
       textarea.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
       if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
       clearTypingTimeout();
@@ -182,7 +196,7 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   }
 
   return (
-    <div className="chord-caret-picker-wrap" ref={wrapRef}>
+    <div className="chord-caret-picker-wrap">
       {children}
       {phase !== 'hidden' && (
         <div
