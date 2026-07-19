@@ -28,6 +28,10 @@ export default function ChordSearchPanel({ keyChords, keyLabel, recentChords, on
       if (suggestions[0]) onSelect(suggestions[0]);
     } else if (e.key === 'Escape') {
       e.preventDefault();
+      // Stop the native event too — AddSongForm has its own window-level Escape
+      // handler that navigates away from the edit page, and this Escape should
+      // only close the popover, not exit editing.
+      e.nativeEvent.stopPropagation();
       onEscape();
     }
   }

@@ -10,10 +10,15 @@ interface Props {
 export default function ChordFinderModal({ onSelect, onClose }: Props) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key !== 'Escape') return;
+      // Capture phase + stopPropagation so this fires before (and pre-empts)
+      // AddSongForm's own window-level Escape handler, which navigates away
+      // from the edit page — this Escape should just close the modal.
+      e.stopPropagation();
+      onClose();
     }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [onClose]);
 
   return (

@@ -18,6 +18,12 @@ type Phase = 'hidden' | 'button' | 'popover';
 
 const POPOVER_HEIGHT_ESTIMATE = 280;
 const POPOVER_WIDTH = 240;
+// While actively typing, the caret fires 'keyup'/'select' on every keystroke —
+// repositioning on each one makes the button jitter and dodge the pointer
+// right as you try to click it. Debounce those so it only settles once
+// typing pauses; 'click' and 'focus' are discrete, deliberate actions and
+// stay immediate.
+const TYPING_REPOSITION_DEBOUNCE_MS = 200;
 
 /**
  * Wraps the ChordPro lyrics textarea and overlays a floating "+" button that
@@ -29,6 +35,7 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   const wrapRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [phase, setPhase] = useState<Phase>('hidden');
   const phaseRef = useRef<Phase>('hidden');
@@ -67,13 +74,31 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    function handleActivity() {
+    function clearTypingTimeout() {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+    }
+
+    function handleImmediateActivity() {
+      clearTypingTimeout();
       if (document.activeElement !== textarea) return;
       if (phaseRef.current === 'popover') return;
       reposition('button');
     }
 
+    function handleTypingActivity() {
+      clearTypingTimeout();
+      typingTimeoutRef.current = setTimeout(() => {
+        if (document.activeElement !== textarea) return;
+        if (phaseRef.current === 'popover') return;
+        reposition('button');
+      }, TYPING_REPOSITION_DEBOUNCE_MS);
+    }
+
     function handleBlur() {
+      clearTypingTimeout();
       blurTimeoutRef.current = setTimeout(() => {
         if (overlayRef.current?.contains(document.activeElement)) return;
         setPhase('hidden');
@@ -82,29 +107,31 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
 
     function handleFocus() {
       if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
-      handleActivity();
+      handleImmediateActivity();
     }
 
     function handleScroll() {
+      clearTypingTimeout();
       if (phaseRef.current !== 'hidden') reposition();
     }
 
-    textarea.addEventListener('click', handleActivity);
-    textarea.addEventListener('keyup', handleActivity);
-    textarea.addEventListener('select', handleActivity);
+    textarea.addEventListener('click', handleImmediateActivity);
+    textarea.addEventListener('keyup', handleTypingActivity);
+    textarea.addEventListener('select', handleTypingActivity);
     textarea.addEventListener('focus', handleFocus);
     textarea.addEventListener('blur', handleBlur);
     textarea.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', handleScroll);
     return () => {
-      textarea.removeEventListener('click', handleActivity);
-      textarea.removeEventListener('keyup', handleActivity);
-      textarea.removeEventListener('select', handleActivity);
+      textarea.removeEventListener('click', handleImmediateActivity);
+      textarea.removeEventListener('keyup', handleTypingActivity);
+      textarea.removeEventListener('select', handleTypingActivity);
       textarea.removeEventListener('focus', handleFocus);
       textarea.removeEventListener('blur', handleBlur);
       textarea.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
       if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+      clearTypingTimeout();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textareaRef]);
@@ -125,12 +152,14 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   }, [phase]);
 
   function closeAll() {
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     setPhase('hidden');
     setShowFinder(false);
   }
 
   function handleButtonMouseDown(e: React.MouseEvent) {
     e.preventDefault();
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     reposition('popover');
   }
 
