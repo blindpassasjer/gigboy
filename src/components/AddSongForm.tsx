@@ -687,6 +687,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
               value={chordpro}
               onChange={handleChordproChange}
               tempo={tempo ? parseInt(tempo, 10) : undefined}
+              songKey={key || undefined}
             />
           )}
           {preview ? (

@@ -4336,36 +4336,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 .section-tab        { border-color: #c5dff0; background: #eaf4fb; color: #1a5f8a; }
 .section-tab:hover        { background: #1a5f8a; border-color: #1a5f8a; color: #fff; }
 
-.toolbar-chord-input-wrap {
-  display: flex;
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: .1rem .35rem;
-  gap: .1rem;
-  transition: border-color .15s;
-}
-.toolbar-chord-input-wrap:focus-within { border-color: var(--accent); }
-
 .toolbar-chord-bracket {
   color: var(--accent);
   font-family: var(--font-mono);
   font-size: .88rem;
   font-weight: 700;
   line-height: 1;
-}
-
-.toolbar-chord-input {
-  width: 3.2rem;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-family: var(--font-mono);
-  font-size: .88rem;
-  color: var(--text);
-  padding: .15rem .1rem;
-  text-align: center;
 }
 
 .chordpro-toolbar + .chord-caret-picker-wrap textarea,
@@ -4384,45 +4360,15 @@ input, select, textarea { font: inherit; color: var(--text); }
   box-sizing: border-box;
 }
 
-.toolbar-btn--icon { padding: .25rem .45rem; }
+.toolbar-btn--chord { display: inline-flex; align-items: center; gap: .3rem; }
 
-.toolbar-chord-input-outer { position: relative; }
+.toolbar-chord-btn-wrap { position: relative; display: inline-flex; }
 
-.toolbar-chord-suggestions {
+.toolbar-chord-popover-anchor {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   z-index: 20;
-  list-style: none;
-  margin: 0;
-  padding: .25rem;
-  min-width: 6rem;
-  max-height: 12rem;
-  overflow-y: auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: var(--shadow-lg);
-}
-
-.toolbar-chord-suggestions button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  padding: .3rem .5rem;
-  font-family: var(--font-mono);
-  font-size: .82rem;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.toolbar-chord-suggestions button:hover,
-.toolbar-chord-suggestions button:focus-visible {
-  background: var(--chord-bg);
-  color: var(--accent);
 }
 
 /* ─── Chord Finder Modal ──────────────────────────────────────────────────── */
@@ -11691,11 +11637,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 .chord-caret-button:hover { background: var(--accent); color: #fff; }
 
-.chord-caret-popover {
+.chord-caret-popover-anchor {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
   pointer-events: auto;
+}
+
+.chord-caret-popover-anchor--up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.chord-search-panel {
+  width: 240px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -11704,11 +11659,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-direction: column;
   gap: .5rem;
-}
-
-.chord-caret-popover--up {
-  top: auto;
-  bottom: calc(100% + 6px);
 }
 
 .chord-caret-popover-search {

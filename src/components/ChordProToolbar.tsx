@@ -1,14 +1,18 @@
-import { useMemo, useRef, useState, type RefObject } from 'react';
-import { Music2, Repeat2, GitBranch, ArrowRight, Guitar, Search } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { Music2, Repeat2, GitBranch, ArrowRight, Guitar } from 'lucide-react';
 import TabSequencerModal from './TabSequencerModal';
 import ChordFinderModal from './ChordFinderModal';
-import { suggestChordNames } from '../utils/chordNames';
+import ChordSearchPanel from './ChordSearchPanel';
+import { extractRecentChords } from '../utils/chordNames';
+import { diatonicChords } from '../utils/musicTheory';
 
 interface Props {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   value: string;
   onChange: (value: string) => void;
   tempo?: number;
+  /** Song key, e.g. "G" or "Am" — used to surface likely diatonic chords. */
+  songKey?: string;
 }
 
 type Section = { label: string; name: string; icon: React.ReactNode; color: string };
@@ -76,16 +80,35 @@ function insertSection(
   }
 }
 
-export default function ChordProToolbar({ textareaRef, value, onChange, tempo }: Props) {
-  const [chordInput, setChordInput] = useState('');
+export default function ChordProToolbar({ textareaRef, value, onChange, tempo, songKey }: Props) {
   const [showTabSequencer, setShowTabSequencer] = useState(false);
   const [showChordFinder, setShowChordFinder] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showChordPopover, setShowChordPopover] = useState(false);
+  const chordWrapRef = useRef<HTMLDivElement>(null);
+  const showChordFinderRef = useRef(false);
 
   // Capture the cursor position when the modal opens so we insert at the right spot
   const pendingCursorRef = useRef(0);
 
-  const suggestions = useMemo(() => suggestChordNames(chordInput), [chordInput]);
+  const recentChords = useMemo(() => extractRecentChords(value), [value]);
+  const keyChords = useMemo(() => (songKey ? diatonicChords(songKey) : []), [songKey]);
+
+  useEffect(() => {
+    showChordFinderRef.current = showChordFinder;
+  }, [showChordFinder]);
+
+  useEffect(() => {
+    if (!showChordPopover) return;
+    function handleOutside(e: MouseEvent) {
+      // The chord-finder modal renders outside chordWrapRef (it's a fixed,
+      // full-screen overlay) and handles its own dismissal.
+      if (showChordFinderRef.current) return;
+      if (chordWrapRef.current?.contains(e.target as Node)) return;
+      setShowChordPopover(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [showChordPopover]);
 
   function handleSectionClick(name: string) {
     if (!textareaRef.current) return;
@@ -116,25 +139,10 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo }:
     });
   }
 
-  function handleChordInsert(chordOverride?: string) {
-    const chord = (chordOverride ?? chordInput).trim();
-    if (!chord || !textareaRef.current) return;
-    insertAtCursor(textareaRef.current, `[${chord}]`, value, onChange);
-    setChordInput('');
-    setShowSuggestions(false);
-  }
-
-  function handleChordKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleChordInsert();
-    } else if (e.key === 'Escape') {
-      setShowSuggestions(false);
-    }
-  }
-
-  function handleChordFinderSelect(chordName: string) {
-    handleChordInsert(chordName);
+  function handleChordInsert(chordName: string) {
+    if (!textareaRef.current) return;
+    insertAtCursor(textareaRef.current, `[${chordName}]`, value, onChange);
+    setShowChordPopover(false);
     setShowChordFinder(false);
   }
 
@@ -149,64 +157,35 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo }:
     )}
     {showChordFinder && (
       <ChordFinderModal
-        onSelect={handleChordFinderSelect}
+        onSelect={handleChordInsert}
         onClose={() => setShowChordFinder(false)}
       />
     )}
     <div className="chordpro-toolbar">
-      <div className="toolbar-group toolbar-group--chord">
-        <span className="toolbar-label">Chord</span>
-        <div className="toolbar-chord-input-outer">
-          <div className="toolbar-chord-input-wrap">
-            <span className="toolbar-chord-bracket">[</span>
-            <input
-              className="toolbar-chord-input"
-              value={chordInput}
-              onChange={(e) => { setChordInput(e.target.value); setShowSuggestions(true); }}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
-              onKeyDown={handleChordKeyDown}
-              placeholder="Am"
-              maxLength={6}
-              aria-label="Chord name"
-              autoComplete="off"
-            />
-            <span className="toolbar-chord-bracket">]</span>
-          </div>
-          {showSuggestions && suggestions.length > 0 && (
-            <ul className="toolbar-chord-suggestions" role="listbox">
-              {suggestions.map((name) => (
-                <li key={name}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleChordInsert(name)}
-                  >
-                    {name}
-                  </button>
-                </li>
-              ))}
-            </ul>
+      <div className="toolbar-group">
+        <div className="toolbar-chord-btn-wrap" ref={chordWrapRef}>
+          <button
+            type="button"
+            className="toolbar-btn toolbar-btn--chord"
+            onClick={() => setShowChordPopover((v) => !v)}
+            title="Insert a chord"
+          >
+            <Music2 size={13} />
+            Chord
+          </button>
+          {showChordPopover && (
+            <div className="toolbar-chord-popover-anchor">
+              <ChordSearchPanel
+                keyChords={keyChords}
+                keyLabel={songKey ? `Key of ${songKey}` : 'Key'}
+                recentChords={recentChords}
+                onSelect={handleChordInsert}
+                onRequestFinder={() => setShowChordFinder(true)}
+                onEscape={() => setShowChordPopover(false)}
+              />
+            </div>
           )}
         </div>
-        <button
-          type="button"
-          className="toolbar-btn toolbar-btn--chord"
-          onClick={() => handleChordInsert()}
-          disabled={!chordInput.trim()}
-          title="Insert chord at cursor"
-        >
-          Insert
-        </button>
-        <button
-          type="button"
-          className="toolbar-btn toolbar-btn--chord toolbar-btn--icon"
-          onClick={() => setShowChordFinder(true)}
-          title="Find a chord by fretboard, ukulele, or piano"
-          aria-label="Find a chord"
-        >
-          <Search size={13} />
-        </button>
       </div>
 
       <div className="toolbar-divider" />

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import ChordFinderModal from './ChordFinderModal';
-import { suggestChordNames, extractRecentChords } from '../utils/chordNames';
+import ChordSearchPanel from './ChordSearchPanel';
+import { extractRecentChords } from '../utils/chordNames';
 import { diatonicChords } from '../utils/musicTheory';
 import { getCaretCoordinates } from '../utils/caretPosition';
 
@@ -32,7 +33,6 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
   const [phase, setPhase] = useState<Phase>('hidden');
   const phaseRef = useRef<Phase>('hidden');
   const [anchor, setAnchor] = useState({ top: 0, left: 0, height: 0 });
-  const [query, setQuery] = useState('');
   const [showFinder, setShowFinder] = useState(false);
   const [flipUp, setFlipUp] = useState(false);
 
@@ -46,7 +46,6 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
     showFinderRef.current = showFinder;
   }, [showFinder]);
 
-  const suggestions = useMemo(() => suggestChordNames(query), [query]);
   const recentChords = useMemo(() => extractRecentChords(value), [value]);
   const keyChords = useMemo(() => (songKey ? diatonicChords(songKey) : []), [songKey]);
 
@@ -127,7 +126,6 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
 
   function closeAll() {
     setPhase('hidden');
-    setQuery('');
     setShowFinder(false);
   }
 
@@ -154,36 +152,6 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
     closeAll();
   }
 
-  function handleSearchKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (suggestions[0]) commitChord(suggestions[0]);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      closeAll();
-      textareaRef.current?.focus({ preventScroll: true });
-    }
-  }
-
-  const chipRow = (label: string, chords: string[]) =>
-    chords.length > 0 && (
-      <div className="chord-caret-popover-row">
-        <span className="chord-caret-popover-row-label">{label}</span>
-        <div className="chord-caret-popover-chips">
-          {chords.map((chord) => (
-            <button
-              key={chord}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => commitChord(chord)}
-            >
-              {chord}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-
   return (
     <div className="chord-caret-picker-wrap" ref={wrapRef}>
       {children}
@@ -207,57 +175,20 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
           )}
           {phase === 'popover' && (
             <div
-              className={`chord-caret-popover${flipUp ? ' chord-caret-popover--up' : ''}`}
+              className={`chord-caret-popover-anchor${flipUp ? ' chord-caret-popover-anchor--up' : ''}`}
               style={{ width: POPOVER_WIDTH }}
             >
-              <div className="chord-caret-popover-search">
-                <span className="toolbar-chord-bracket">[</span>
-                <input
-                  autoFocus
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  placeholder="Search chords"
-                  aria-label="Search chords"
-                  autoComplete="off"
-                />
-                <span className="toolbar-chord-bracket">]</span>
-                <button
-                  type="button"
-                  className="chord-caret-popover-finder-btn"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setShowFinder(true)}
-                  title="Find a chord by fretboard, ukulele, or piano"
-                  aria-label="Find a chord"
-                >
-                  <Search size={13} />
-                </button>
-              </div>
-              <div className="chord-caret-popover-body">
-                {query.trim() ? (
-                  suggestions.length > 0 ? (
-                    <ul className="chord-caret-popover-list">
-                      {suggestions.map((name) => (
-                        <li key={name}>
-                          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => commitChord(name)}>
-                            {name}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="chord-caret-popover-empty">No matches</p>
-                  )
-                ) : (
-                  <>
-                    {chipRow(songKey ? `Key of ${songKey}` : 'Key', keyChords)}
-                    {chipRow('Recent', recentChords)}
-                    {keyChords.length === 0 && recentChords.length === 0 && (
-                      <p className="chord-caret-popover-empty">Type to search, e.g. &ldquo;Am&rdquo;</p>
-                    )}
-                  </>
-                )}
-              </div>
+              <ChordSearchPanel
+                keyChords={keyChords}
+                keyLabel={songKey ? `Key of ${songKey}` : 'Key'}
+                recentChords={recentChords}
+                onSelect={commitChord}
+                onRequestFinder={() => setShowFinder(true)}
+                onEscape={() => {
+                  closeAll();
+                  textareaRef.current?.focus({ preventScroll: true });
+                }}
+              />
             </div>
           )}
         </div>
