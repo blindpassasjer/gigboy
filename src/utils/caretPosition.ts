@@ -59,8 +59,13 @@ export function getCaretCoordinates(textarea: HTMLTextAreaElement, position: num
   div.textContent = textarea.value.substring(0, position);
 
   const span = document.createElement('span');
-  // A non-empty marker ensures the span has real dimensions even at line end.
-  span.textContent = textarea.value.substring(position) || '.';
+  // Only the single character right after the caret — using the rest of the
+  // value here would let the marker wrap across the remaining lines of text,
+  // inflating offsetHeight to cover all of them instead of just the caret's
+  // own line. A non-empty marker ensures the span has real dimensions even
+  // at line end.
+  const nextChar = textarea.value[position];
+  span.textContent = nextChar && nextChar !== '\n' ? nextChar : '.';
   div.appendChild(span);
 
   const coordinates: CaretCoordinates = {
