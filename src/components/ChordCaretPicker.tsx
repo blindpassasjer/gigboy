@@ -19,6 +19,8 @@ type Phase = 'hidden' | 'button' | 'popover';
 
 const POPOVER_HEIGHT_ESTIMATE = 280;
 const POPOVER_WIDTH = 240;
+// Must match .chord-caret-button's width/height in index.css.
+const CARET_BUTTON_SIZE = 22;
 // While actively typing, the caret fires 'keyup'/'select' on every keystroke —
 // repositioning on each one makes the button jitter and dodge the pointer
 // right as you try to click it. Debounce those so it only settles once
@@ -210,7 +212,7 @@ export default function ChordCaretPicker({ textareaRef, value, onChange, songKey
               onMouseDown={handleButtonMouseDown}
               title="Insert a chord here"
               aria-label="Insert a chord here"
-              style={{ top: -anchor.height / 2 }}
+              style={{ top: anchor.height / 2 - CARET_BUTTON_SIZE / 2 }}
             >
               <Plus size={13} />
             </button>
