@@ -4265,7 +4265,33 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .75rem;
   min-height: 280px;
   background: var(--bg);
-  overflow-x: auto;
+  overflow-x: hidden;
+}
+
+.chordpro-preview .chord-display {
+  overflow-x: hidden;
+}
+
+.chordpro-preview .chord-line {
+  flex-wrap: wrap;
+  white-space: normal;
+  align-items: flex-start;
+  row-gap: .2rem;
+}
+
+.chordpro-preview .chord-segment {
+  white-space: pre-wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chordpro-preview .lyric-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.chordpro-preview .chord-name-btn {
+  white-space: normal;
 }
 
 /* ─── ChordPro Toolbar ───────────────────────────────────────────────────────── */
@@ -7199,6 +7225,29 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: 1.06rem;
   line-height: 1.55;
   flex: 1;
+  overflow-x: hidden;
+}
+
+.concert-song-surface .chord-line {
+  flex-wrap: wrap;
+  white-space: normal;
+  align-items: flex-start;
+  row-gap: .2rem;
+}
+
+.concert-song-surface .chord-segment {
+  white-space: pre-wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.concert-song-surface .lyric-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.concert-song-surface .chord-name-btn {
+  white-space: normal;
 }
 
 .concert-page-viewport {
@@ -7937,28 +7986,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   .concert-song-surface .chord-display {
     padding: 1rem .85rem;
     font-size: .95rem;
-  }
-
-  .concert-song-surface .chord-line {
-    flex-wrap: wrap;
-    white-space: normal;
-    align-items: flex-start;
-    row-gap: .2rem;
-  }
-
-  .concert-song-surface .chord-segment {
-    white-space: pre-wrap;
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  .concert-song-surface .lyric-text {
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-
-  .concert-song-surface .chord-name-btn {
-    white-space: normal;
   }
 
   .concert-nav-footer {
