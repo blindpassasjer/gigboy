@@ -6,7 +6,6 @@ import toast from '../utils/anchoredToast';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordProToolbar from './ChordProToolbar';
-import ChordCaretPicker from './ChordCaretPicker';
 import TabDisplay from './TabDisplay';
 import TabSequencerModal from './TabSequencerModal';
 import { LANGUAGE_NAMES } from '../utils/languages';
@@ -700,22 +699,15 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
             </div>
           ) : (
             <>
-              <ChordCaretPicker
-                textareaRef={textareaRef}
+              <textarea
+                ref={textareaRef}
                 value={chordpro}
-                onChange={handleChordproChange}
-                songKey={key || undefined}
-              >
-                <textarea
-                  ref={textareaRef}
-                  value={chordpro}
-                  onChange={(e) => handleChordproChange(e.target.value)}
-                  onPaste={handleChordproPaste}
-                  placeholder={PLACEHOLDER}
-                  rows={16}
-                  spellCheck={false}
-                />
-              </ChordCaretPicker>
+                onChange={(e) => handleChordproChange(e.target.value)}
+                onPaste={handleChordproPaste}
+                placeholder={PLACEHOLDER}
+                rows={16}
+                spellCheck={false}
+              />
               {tabBlocks.length > 0 && (
                 <div className="tab-editor-guides">
                   <p className="form-hint tab-guide-hint">

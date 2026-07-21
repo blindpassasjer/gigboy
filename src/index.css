@@ -4423,17 +4423,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   line-height: 1;
 }
 
-.chordpro-toolbar + .chord-caret-picker-wrap textarea,
+.chordpro-toolbar + textarea,
 .chordpro-toolbar + .chordpro-preview {
   border-radius: 0 0 6px 6px;
 }
 
-.chord-caret-picker-wrap {
-  position: relative;
-  display: block;
-}
-
-.chord-caret-picker-wrap textarea {
+.add-song-form textarea {
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -11707,47 +11702,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   pointer-events: none;
   float: left;
   height: 0;
-}
-
-/* ─── Chord Caret Picker (floating "insert chord here" button + popover) ──── */
-.chord-caret-overlay {
-  /* Fixed (not absolute) + viewport coordinates from JS: .main-content
-     scrolls with overflow-y:auto, which would clip an absolutely-positioned
-     overlay nested this deep to its visible bounds. Fixed positioning
-     escapes that clipping entirely. */
-  position: fixed;
-  z-index: 1000;
-  pointer-events: none;
-}
-
-.chord-caret-button {
-  position: relative;
-  pointer-events: auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid var(--accent);
-  background: var(--surface);
-  color: var(--accent);
-  cursor: pointer;
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.15));
-  transition: background .15s, color .15s;
-}
-.chord-caret-button:hover { background: var(--accent); color: #fff; }
-
-.chord-caret-popover-anchor {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  pointer-events: auto;
-}
-
-.chord-caret-popover-anchor--up {
-  top: auto;
-  bottom: calc(100% + 6px);
 }
 
 .chord-search-panel {
