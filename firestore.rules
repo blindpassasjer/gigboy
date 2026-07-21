@@ -83,10 +83,11 @@ service cloud.firestore {
 
     // Validates the fields a client is allowed to write on a handNotes document.
     // Strokes (drawing) and textNotes (keyboard annotations) are both permitted.
+    // Points/positions are anchored to a lyric line (lineId/fx/fy) rather than a
+    // viewport snapshot, so no viewport field is expected here.
     function isValidHandNoteWrite(data) {
       return data.authorUid is string
         && data.updatedAt is string
-        && data.viewport is map
         && data.strokes is list
         && (!('textNotes' in data) || data.textNotes is list);
     }

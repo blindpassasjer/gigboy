@@ -331,8 +331,6 @@ export interface SongHandNoteDocument {
    * Absent / 'v1': legacy — y is normalised by viewport height.
    * 'v2': both x and y are normalised by viewport width — aspect ratio is preserved but
    *        notes drift when viewed on a screen with a different width.
-   * 'v3': x normalised by viewport width, y normalised by viewport height — notes stay
-   *        at the correct fractional position in the content on any screen size.
    */
   coordinateSystem?: 'v2' | 'v3';
   strokes: HandNoteStroke[];
@@ -348,6 +346,50 @@ export interface TextNote {
   y: number;
   text: string;
   createdAt: string;
+}
+
+/**
+ * A position anchored to a specific rendered lyric line, so it stays put across reflow —
+ * used for notes drawn on song lyrics (see `LyricNoteDocument`), unlike the stage-plot
+ * drawing layers above which use a fixed-canvas x/y fraction (`HandNoteStroke`/`TextNote`).
+ */
+export interface LineAnchor {
+  /** Matches ParsedLine.lineId of the chord-lyric/empty line this point is pinned to. */
+  lineId: number;
+  /**
+   * Position relative to that line's own rendered box, as a multiple of its width/height.
+   * Deliberately NOT clamped to [0,1] — free-hand notes (loops, arrows, margin scribbles)
+   * routinely extend outside the line's own text box, and the line→page mapping is linear,
+   * so an unclamped offset still reproduces the exact drawn position after reflow. Clamping
+   * this would squash any stroke that isn't drawn precisely on top of the line's text.
+   */
+  fx: number;
+  fy: number;
+}
+
+export interface LyricNoteStroke {
+  id: string;
+  color: string;
+  /** Stroke width in CSS pixels. */
+  width: number;
+  points: LineAnchor[];
+  createdAt: string;
+}
+
+export interface LyricTextNote extends LineAnchor {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface LyricNoteDocument {
+  authorUid: string;
+  authorName?: string | null;
+  authorAvatar?: string | null;
+  updatedAt: string;
+  strokes: LyricNoteStroke[];
+  /** Positioned keyboard-typed text annotations placed on the song lyrics canvas. */
+  textNotes?: LyricTextNote[];
 }
 
 export interface SongHandNoteAuthor {
@@ -369,6 +411,11 @@ export interface ParsedLine {
   sectionType?: string;
   /** Content lines nested inside a section block (only present when type === 'section') */
   sectionLines?: ParsedLine[];
+  /**
+   * Stable per-render index assigned only to positionable lines (chord-lyric/empty),
+   * used as the anchor target for hand-drawn/text notes. Set by ChordDisplay, not the parser.
+   */
+  lineId?: number;
 }
 
 export interface ChordSegment {

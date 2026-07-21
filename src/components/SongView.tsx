@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -24,7 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
-import type { HandNoteStroke, Song, TextNote } from '../types';
+import type { LyricNoteStroke, Song, LyricTextNote } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
@@ -41,7 +41,8 @@ import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import { getUserNoteColor } from '../lib/userColors';
-import SongHandNotesOverlay from './SongHandNotesOverlay';
+import { extractPinnedLineIds } from '../lib/lineAnchor';
+import LyricHandNotesOverlay from './LyricHandNotesOverlay';
 import SongTextNotesOverlay from './SongTextNotesOverlay';
 import SongMediaPlayer from './SongMediaPlayer';
 import SongRecorder from './SongRecorder';
@@ -108,7 +109,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const [showNotes, setShowNotes] = useState(false);
   const [drawEnabled, setDrawEnabled] = useState(false);
   const [typeEnabled, setTypeEnabled] = useState(false);
-  const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
   const [showMetronome, setShowMetronome] = useState(false);
   const [showTuner, setShowTuner] = useState(false);
   const [showMediaPlayer, setShowMediaPlayer] = useState(false);
@@ -137,28 +137,16 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     isOwner: isBandOwner,
   });
 
-  const handleStrokesChange = useCallback((strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
-    setUndoStack((prev) => [...prev, handNotes.myStrokes]);
-    handNotes.saveMyNotes(strokes, viewport);
-  }, [handNotes]);
+  const pinnedLineIds = useMemo(
+    () => extractPinnedLineIds(handNotes.visibleNotes),
+    [handNotes.visibleNotes],
+  );
 
-  const handleUndoStroke = useCallback(() => {
-    setUndoStack((prev) => {
-      if (prev.length === 0) return prev;
-      const before = prev[prev.length - 1];
-      const next = prev.slice(0, prev.length - 1);
-      const canvas = document.querySelector('.song-hand-notes-overlay') as HTMLDivElement | null;
-      const rect = canvas?.getBoundingClientRect();
-      handNotes.saveMyNotes(before ?? [], {
-        width: rect?.width ?? window.innerWidth,
-        height: rect?.height ?? window.innerHeight,
-      });
-      return next;
-    });
+  const handleStrokesChange = useCallback((strokes: LyricNoteStroke[]) => {
+    handNotes.saveMyNotes(strokes);
   }, [handNotes]);
 
   const handleClearNotes = useCallback(async () => {
-    setUndoStack([]);
     await handNotes.clearMyNotes();
   }, [handNotes]);
 
@@ -191,7 +179,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     if (next && !showNotes) setShowNotes(true);
   }, [showNotes]);
 
-  const handleTextNotesChange = useCallback((textNotes: TextNote[]) => {
+  const handleTextNotesChange = useCallback((textNotes: LyricTextNote[]) => {
     void handNotes.saveMyTextNotes(textNotes);
   }, [handNotes]);
 
@@ -711,24 +699,14 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                       </label>
 
                       {drawEnabled && (
-                        <>
-                          <button
-                            className="notes-toolbar-btn"
-                            onClick={handleUndoStroke}
-                            disabled={undoStack.length === 0}
-                            title="Undo last stroke"
-                          >
-                            Undo
-                          </button>
-                          <button
-                            className="notes-toolbar-btn notes-toolbar-btn--danger"
-                            onClick={handleClearNotes}
-                            disabled={handNotes.myStrokes.length === 0}
-                            title="Clear my notes"
-                          >
-                            Clear
-                          </button>
-                        </>
+                        <button
+                          className="notes-toolbar-btn notes-toolbar-btn--danger"
+                          onClick={handleClearNotes}
+                          disabled={handNotes.myStrokes.length === 0}
+                          title="Clear my notes"
+                        >
+                          Clear
+                        </button>
                       )}
 
                       {handNotes.authors.length > 0 && (
@@ -949,8 +927,9 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             timeSignature={song.timeSignature}
             instrument={chordInstrument}
             onChordClick={showChords && !drawEnabled && !typeEnabled ? handleChordClick : undefined}
+            pinnedLineIds={pinnedLineIds}
           />
-          <SongHandNotesOverlay
+          <LyricHandNotesOverlay
             visible={showNotes}
             drawEnabled={drawEnabled}
             notes={handNotes.visibleNotes}

@@ -6,7 +6,7 @@ import SongHandNotesOverlay from './SongHandNotesOverlay';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { stageplotIconForKind } from '../lib/stageplotIcons';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
-import { clamp01 } from '../lib/songHandNotes';
+import { clamp01 } from '../lib/lineAnchor';
 
 interface StageplotEditorProps {
   stageplot: Stageplot;

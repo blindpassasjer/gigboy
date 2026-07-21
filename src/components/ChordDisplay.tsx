@@ -14,6 +14,12 @@ interface Props {
   timeSignature?: string;
   instrument?: DiagramInstrument;
   onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement) => void;
+  /**
+   * Ids of lines that have a note anchored somewhere on them. These lines are kept from
+   * wrapping (and scroll horizontally instead) so a hand-drawn note anchored across several
+   * words on the line stays a single straight shape instead of bending across two rows.
+   */
+  pinnedLineIds?: Set<number>;
 }
 
 export default function ChordDisplay({
@@ -24,8 +30,9 @@ export default function ChordDisplay({
   bpm,
   timeSignature,
   onChordClick,
+  pinnedLineIds,
 }: Props) {
-  const lines = useMemo(() => parseChordPro(chordpro), [chordpro]);
+  const lines = useMemo(() => assignLineIds(parseChordPro(chordpro)), [chordpro]);
 
   return (
     <div className="chord-display">
@@ -39,10 +46,32 @@ export default function ChordDisplay({
           bpm={bpm}
           timeSignature={timeSignature}
           onChordClick={onChordClick}
+          pinnedLineIds={pinnedLineIds}
         />
       ))}
     </div>
   );
+}
+
+/**
+ * Assigns a stable, sequential `lineId` to every positionable line (chord-lyric/empty),
+ * in render order including lines nested inside sections. Hand-drawn/text notes anchor
+ * to this id so they stay pinned to their lyric line when the layout reflows.
+ */
+function assignLineIds(lines: ParsedLine[]): ParsedLine[] {
+  let counter = 0;
+  const assign = (list: ParsedLine[]): ParsedLine[] =>
+    list.map((line) => {
+      const positioned: ParsedLine = { ...line };
+      if (line.type === 'chord-lyric' || line.type === 'empty') {
+        positioned.lineId = counter++;
+      }
+      if (line.sectionLines) {
+        positioned.sectionLines = assign(line.sectionLines);
+      }
+      return positioned;
+    });
+  return assign(lines);
 }
 
 const SECTION_LABELS: Record<string, string> = {
@@ -64,6 +93,7 @@ interface LineRendererProps {
   bpm?: number;
   timeSignature?: string;
   onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement) => void;
+  pinnedLineIds?: Set<number>;
 }
 
 function LineRenderer({
@@ -74,8 +104,11 @@ function LineRenderer({
   bpm,
   timeSignature,
   onChordClick,
+  pinnedLineIds,
 }: LineRendererProps) {
-  if (line.type === 'empty') return <div className="chord-line chord-line--empty" />;
+  if (line.type === 'empty') {
+    return <div className="chord-line chord-line--empty" data-line-id={line.lineId} />;
+  }
 
   if (line.type === 'comment') return null;
 
@@ -105,6 +138,7 @@ function LineRenderer({
             bpm={bpm}
             timeSignature={timeSignature}
             onChordClick={onChordClick}
+            pinnedLineIds={pinnedLineIds}
           />
         ))}
       </div>
@@ -132,9 +166,13 @@ function LineRenderer({
   const segments = line.segments ?? [];
   const hasChords = showChords && lineHasChords(line);
   const isChordOnly = hasChords && segments.every(seg => !seg.lyric.trim());
+  const isPinned = line.lineId !== undefined && pinnedLineIds?.has(line.lineId);
 
   return (
-    <div className={`chord-line ${hasChords ? 'chord-line--has-chords' : ''} ${isChordOnly ? 'chord-line--chord-only' : ''}`}>
+    <div
+      className={`chord-line ${hasChords ? 'chord-line--has-chords' : ''} ${isChordOnly ? 'chord-line--chord-only' : ''} ${isPinned ? 'chord-line--pinned' : ''}`}
+      data-line-id={line.lineId}
+    >
       {segments.map((seg, idx) => (
         <span key={idx} className="chord-segment">
           {showChords && (

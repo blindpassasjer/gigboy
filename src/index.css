@@ -3174,6 +3174,27 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: normal;
 }
 
+/*
+ * A line with a note anchored across several of its words is kept from wrapping so the
+ * note stays a single straight shape — it scrolls horizontally on its own instead.
+ */
+.song-view-body .chord-line.chord-line--pinned {
+  flex-wrap: nowrap;
+  white-space: pre;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.song-view-body .chord-line.chord-line--pinned .chord-segment {
+  white-space: pre;
+  flex: none;
+}
+
+.song-view-body .chord-line.chord-line--pinned .lyric-text {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
 .song-title-directive {
   font-size: 1.3rem;
   font-weight: 700;
@@ -3221,6 +3242,23 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .song-view .chord-name-btn {
     white-space: normal;
+  }
+
+  .song-view .chord-line.chord-line--pinned {
+    flex-wrap: nowrap;
+    white-space: pre;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .song-view .chord-line.chord-line--pinned .chord-segment {
+    white-space: pre;
+    flex: none;
+  }
+
+  .song-view .chord-line.chord-line--pinned .lyric-text {
+    overflow-wrap: normal;
+    word-break: normal;
   }
 }
 
@@ -7248,6 +7286,23 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .concert-song-surface .chord-name-btn {
   white-space: normal;
+}
+
+.concert-song-surface .chord-line.chord-line--pinned {
+  flex-wrap: nowrap;
+  white-space: pre;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.concert-song-surface .chord-line.chord-line--pinned .chord-segment {
+  white-space: pre;
+  flex: none;
+}
+
+.concert-song-surface .chord-line.chord-line--pinned .lyric-text {
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .concert-page-viewport {

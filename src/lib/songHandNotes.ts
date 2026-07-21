@@ -6,7 +6,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import type { HandNoteStroke, SongHandNoteDocument, TextNote } from '../types';
+import type { LyricNoteStroke, LineAnchor, LyricNoteDocument, LyricTextNote } from '../types';
 
 const SONGS_COLLECTION = 'songs';
 const HAND_NOTES_COLLECTION = 'handNotes';
@@ -34,14 +34,18 @@ function songHandNotesDocRef(
   return doc(db, 'users', scope.ownerId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION, authorUid);
 }
 
-export function clamp01(value: number) {
-  if (!Number.isFinite(value)) return 0;
-  if (value < 0) return 0;
-  if (value > 1) return 1;
-  return value;
+function normalizeLineAnchor(raw: unknown): LineAnchor | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+  const lineId = typeof data.lineId === 'number' && Number.isFinite(data.lineId) ? data.lineId : null;
+  // fx/fy are deliberately not clamped — see LineAnchor's doc comment.
+  const fx = typeof data.fx === 'number' && Number.isFinite(data.fx) ? data.fx : null;
+  const fy = typeof data.fy === 'number' && Number.isFinite(data.fy) ? data.fy : null;
+  if (lineId === null || fx === null || fy === null) return null;
+  return { lineId, fx, fy };
 }
 
-function normalizeStroke(raw: unknown, isV2 = false): HandNoteStroke | null {
+function normalizeStroke(raw: unknown): LyricNoteStroke | null {
   if (!raw || typeof raw !== 'object') return null;
   const data = raw as Record<string, unknown>;
 
@@ -52,14 +56,10 @@ function normalizeStroke(raw: unknown, isV2 = false): HandNoteStroke | null {
 
   if (!Array.isArray(data.points)) return null;
   const points = data.points
-    .filter((entry): entry is number => typeof entry === 'number' && Number.isFinite(entry))
-    .map((v, i) => {
-      // v2: Y values (odd indices) are width-relative and may exceed 1 — only clamp X and ensure Y >= 0.
-      if (isV2 && i % 2 === 1) return Math.max(0, v);
-      return clamp01(v);
-    });
+    .map(normalizeLineAnchor)
+    .filter((p): p is LineAnchor => p !== null);
 
-  if (points.length < 4 || points.length % 2 !== 0) return null;
+  if (points.length < 2) return null;
 
   return {
     id,
@@ -70,19 +70,18 @@ function normalizeStroke(raw: unknown, isV2 = false): HandNoteStroke | null {
   };
 }
 
-function normalizeTextNote(raw: unknown): TextNote | null {
+function normalizeTextNote(raw: unknown): LyricTextNote | null {
   if (!raw || typeof raw !== 'object') return null;
   const data = raw as Record<string, unknown>;
   const id = typeof data.id === 'string' ? data.id : crypto.randomUUID();
-  const x = typeof data.x === 'number' && Number.isFinite(data.x) ? clamp01(data.x) : null;
-  const y = typeof data.y === 'number' && Number.isFinite(data.y) ? clamp01(data.y) : null;
+  const anchor = normalizeLineAnchor(raw);
   const text = typeof data.text === 'string' ? data.text.trim() : '';
   const createdAt = typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString();
-  if (x === null || y === null || !text) return null;
-  return { id, x, y, text, createdAt };
+  if (!anchor || !text) return null;
+  return { id, ...anchor, text, createdAt };
 }
 
-function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocument {
+function normalizeNoteDocument(docId: string, raw: unknown): LyricNoteDocument {
   const data = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
 
   const authorUid = typeof data.authorUid === 'string'
@@ -104,26 +103,12 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
       : null;
   const updatedAt = typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString();
 
-  const viewportData = data.viewport && typeof data.viewport === 'object'
-    ? (data.viewport as Record<string, unknown>)
-    : {};
-
-  const viewport = {
-    width: typeof viewportData.width === 'number' && viewportData.width > 0 ? viewportData.width : 1,
-    height: typeof viewportData.height === 'number' && viewportData.height > 0 ? viewportData.height : 1,
-  };
-
-  const coordinateSystem = data.coordinateSystem === 'v3' ? 'v3' as const
-    : data.coordinateSystem === 'v2' ? 'v2' as const
-    : undefined;
-  const isV2 = coordinateSystem === 'v2';
-
   const strokes = Array.isArray(data.strokes)
-    ? data.strokes.map((s) => normalizeStroke(s, isV2)).filter((stroke): stroke is HandNoteStroke => Boolean(stroke))
+    ? data.strokes.map(normalizeStroke).filter((stroke): stroke is LyricNoteStroke => Boolean(stroke))
     : [];
 
   const rawTextNotes = Array.isArray(data.textNotes)
-    ? data.textNotes.map(normalizeTextNote).filter((tn): tn is TextNote => Boolean(tn))
+    ? data.textNotes.map(normalizeTextNote).filter((tn): tn is LyricTextNote => Boolean(tn))
     : undefined;
 
   return {
@@ -131,8 +116,6 @@ function normalizeNoteDocument(docId: string, raw: unknown): SongHandNoteDocumen
     authorName,
     authorAvatar,
     updatedAt,
-    viewport,
-    coordinateSystem,
     strokes,
     textNotes: rawTextNotes?.length ? rawTextNotes : undefined,
   };
@@ -142,7 +125,7 @@ export function subscribeToSongHandNotes(
   db: Firestore,
   scope: SongHandNotesScope,
   songId: string,
-  onUpdate: (notes: SongHandNoteDocument[]) => void,
+  onUpdate: (notes: LyricNoteDocument[]) => void,
   onError?: (error: Error) => void
 ): () => void {
   const collectionRef = songHandNotesCollectionRef(db, scope, songId);
@@ -166,7 +149,7 @@ export async function saveSongHandNote(params: {
   db: Firestore;
   scope: SongHandNotesScope;
   songId: string;
-  note: SongHandNoteDocument;
+  note: LyricNoteDocument;
 }) {
   const { db, scope, songId, note } = params;
   const { authorUid } = note;

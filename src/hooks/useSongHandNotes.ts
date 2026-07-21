@@ -9,10 +9,10 @@ import {
 } from '../lib/songHandNotes';
 import { getUserNoteColor } from '../lib/userColors';
 import type {
-  HandNoteStroke,
+  LyricNoteStroke,
   SongHandNoteAuthor,
-  SongHandNoteDocument,
-  TextNote,
+  LyricNoteDocument,
+  LyricTextNote,
 } from '../types';
 
 function displayNameForUser(user: User) {
@@ -38,7 +38,7 @@ export function useSongHandNotes(params: {
   }, [bandId, ownerId]);
 
   const [loading, setLoading] = useState(false);
-  const [notes, setNotes] = useState<SongHandNoteDocument[]>([]);
+  const [notes, setNotes] = useState<LyricNoteDocument[]>([]);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [visibleAuthorIds, setVisibleAuthorIds] = useState<string[]>([]);
   const hasManualVisibilitySelectionRef = useRef(false);
@@ -115,7 +115,7 @@ export function useSongHandNotes(params: {
   }, [notes, user, userId]);
 
   const visibleNotes = useMemo(() => {
-    const colorizeByAuthor = (note: SongHandNoteDocument): SongHandNoteDocument => {
+    const colorizeByAuthor = (note: LyricNoteDocument): LyricNoteDocument => {
       const authorColor = getUserNoteColor(note.authorUid);
       return {
         ...note,
@@ -145,12 +145,12 @@ export function useSongHandNotes(params: {
   }, [notes, userId]);
 
   // Keep a ref so saveMyNotes can read the latest textNotes without being a dependency.
-  const myNoteTextNotesRef = useRef<TextNote[] | undefined>(undefined);
+  const myNoteTextNotesRef = useRef<LyricTextNote[] | undefined>(undefined);
   useEffect(() => {
     myNoteTextNotesRef.current = myNote?.textNotes;
   }, [myNote?.textNotes]);
 
-  const saveMyNotes = useCallback(async (strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
+  const saveMyNotes = useCallback(async (strokes: LyricNoteStroke[]) => {
     if (!db || !scope || !userId || !user) return;
 
     // Normalize all strokes to user's assigned color
@@ -160,13 +160,11 @@ export function useSongHandNotes(params: {
       color: userColor,
     }));
 
-    const nextNote: SongHandNoteDocument = {
+    const nextNote: LyricNoteDocument = {
       authorUid: userId,
       authorName: displayNameForUser(user),
       ...(user.avatar != null ? { authorAvatar: user.avatar } : {}),
       updatedAt: new Date().toISOString(),
-      viewport,
-      coordinateSystem: 'v3',
       strokes: normalizedStrokes,
       ...(myNoteTextNotesRef.current?.length ? { textNotes: myNoteTextNotesRef.current } : {}),
     };
@@ -196,7 +194,7 @@ export function useSongHandNotes(params: {
     }
   }, [scope, songId, user, userId]);
 
-  const saveMyTextNotes = useCallback(async (textNotes: TextNote[]) => {
+  const saveMyTextNotes = useCallback(async (textNotes: LyricTextNote[]) => {
     if (!db || !scope || !userId || !user) return;
 
     const userColor = getUserNoteColor(userId);
@@ -205,13 +203,11 @@ export function useSongHandNotes(params: {
       color: userColor,
     }));
 
-    const nextNote: SongHandNoteDocument = {
+    const nextNote: LyricNoteDocument = {
       authorUid: userId,
       authorName: displayNameForUser(user),
       ...(user.avatar != null ? { authorAvatar: user.avatar } : {}),
       updatedAt: new Date().toISOString(),
-      viewport: myNote?.viewport ?? { width: 1, height: 1 },
-      coordinateSystem: 'v3',
       strokes: normalizedStrokes,
       ...(textNotes.length ? { textNotes } : {}),
     };

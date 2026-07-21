@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { clamp01 } from '../lib/lineAnchor';
-import type { HandNoteStroke, SongHandNoteDocument } from '../types';
+import { anchorFromClientPoint, findContentStage, pointFromAnchor, resolveLineRects } from '../lib/lineAnchor';
+import type { LyricNoteStroke, LineAnchor, LyricNoteDocument } from '../types';
 
 interface Props {
   visible: boolean;
   drawEnabled: boolean;
-  notes: SongHandNoteDocument[];
-  myStrokes: HandNoteStroke[];
+  notes: LyricNoteDocument[];
+  myStrokes: LyricNoteStroke[];
   strokeColor?: string;
   strokeWidth?: number;
-  onMyStrokesChange: (strokes: HandNoteStroke[], viewport: { width: number; height: number }) => void;
+  onMyStrokesChange: (strokes: LyricNoteStroke[]) => void;
 }
 
 interface ActiveStrokeState {
   id: string;
   color: string;
   width: number;
-  points: number[];
+  points: LineAnchor[];
   createdAt: string;
 }
 
@@ -26,69 +26,29 @@ interface TwoFingerScrollState {
   el: HTMLElement;
 }
 
-/** Stroke paired with the rendering context needed for cross-device scaling. */
-interface StrokeForRendering {
-  stroke: HandNoteStroke | ActiveStrokeState;
-  /** Width of the canvas when this stroke was saved. Used to scale strokeWidth proportionally. */
-  savedViewportWidth: number;
-  /** Height of the canvas when this stroke was saved. Used to convert v1 y-coords. */
-  savedViewportHeight: number;
-  /**
-   * v3: x is width-relative, y is height-relative (both ∈ [0,1]).
-   * v2: both x and y are width-relative (y can exceed 1).
-   * v1 / undefined: legacy — y is height-relative via saved aspect ratio.
-   */
-  coordinateSystem: 'v1' | 'v2' | 'v3';
-}
-
 /**
- * Draw a single stroke onto `ctx`.
- *
- * @param currentWidth  CSS-pixel width of the canvas being drawn onto.
- * @param currentHeight CSS-pixel height of the canvas being drawn onto.
- * @param savedViewportWidth  Width at which the stroke was originally recorded.
- *   Used to scale strokeWidth so it looks proportionally the same on any screen.
- * @param coordinateSystem  How x/y points are stored:
- *   v3 — x is width-relative, y is height-relative (both ∈ [0,1]).
- *   v2 — both x and y are width-relative (y can exceed 1).
- *   v1 — legacy: y is height-relative via saved aspect ratio.
+ * Draws a single stroke onto `ctx`, resolving each point's line anchor to a pixel position
+ * against the current (freshly measured) line rects — this is what keeps the stroke pinned
+ * to its lyric line across reflow/resize instead of drifting with raw stage coordinates.
  */
 function drawStroke(
   ctx: CanvasRenderingContext2D,
-  { stroke, savedViewportWidth, savedViewportHeight, coordinateSystem }: StrokeForRendering,
-  currentWidth: number,
-  currentHeight: number,
+  stroke: LyricNoteStroke | ActiveStrokeState,
+  lineRects: Map<number, DOMRect>,
 ) {
-  if (stroke.points.length < 2) return;
+  const pts = stroke.points
+    .map((p) => pointFromAnchor(lineRects, p))
+    .filter((p): p is { x: number; y: number } => p !== null);
 
-  // Notes without valid viewport data (savedViewportWidth <= 1) must not be
-  // scaled — treating them as "drawn on a 1px canvas" would produce enormous
-  // strokes.  Use widthScale = 1 so the raw stroke.width is rendered as-is.
-  const hasValidViewport = savedViewportWidth > 1;
-  const widthScale = hasValidViewport ? currentWidth / savedViewportWidth : 1;
-  const lineWidth = Math.max(stroke.width * widthScale, 0.5);
+  if (pts.length === 0) return;
 
-  // Coordinate helpers:
-  //   v3: x = nx * W,  y = ny * H  — notes stay at the correct fractional position in content.
-  //   v2: x = nx * W,  y = ny * W  — aspect-ratio preserved but drifts on different-width screens.
-  //   v1 with viewport: convert y via saved aspect ratio.
-  //   v1 legacy (no valid viewport): fall back to mapping y onto canvas height.
-  const rx = (nx: number) => nx * currentWidth;
-  const ry = (ny: number) => {
-    if (coordinateSystem === 'v3') return ny * currentHeight;
-    if (coordinateSystem === 'v2') return ny * currentWidth;
-    if (hasValidViewport) return (ny * savedViewportHeight / savedViewportWidth) * currentWidth;
-    return ny * currentHeight;
-  };
+  const lineWidth = Math.max(stroke.width, 0.5);
 
-  // Show a visible dot as soon as the pointer touches down.
-  if (stroke.points.length < 4) {
-    const x = rx(stroke.points[0]);
-    const y = ry(stroke.points[1]);
+  if (pts.length === 1) {
     const radius = Math.max(lineWidth * 0.8, 1.6);
     ctx.beginPath();
     ctx.fillStyle = stroke.color;
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.arc(pts[0].x, pts[0].y, radius, 0, Math.PI * 2);
     ctx.fill();
     return;
   }
@@ -103,16 +63,16 @@ function drawStroke(
   ctx.shadowBlur = Math.max(lineWidth * 0.75, 1);
 
   // Quadratic bezier through midpoints for smooth handwriting curves.
-  ctx.moveTo(rx(stroke.points[0]), ry(stroke.points[1]));
-  for (let i = 2; i < stroke.points.length - 2; i += 2) {
-    const cpX = rx(stroke.points[i]);
-    const cpY = ry(stroke.points[i + 1]);
-    const midX = (cpX + rx(stroke.points[i + 2])) / 2;
-    const midY = (cpY + ry(stroke.points[i + 3])) / 2;
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const cpX = pts[i].x;
+    const cpY = pts[i].y;
+    const midX = (cpX + pts[i + 1].x) / 2;
+    const midY = (cpY + pts[i + 1].y) / 2;
     ctx.quadraticCurveTo(cpX, cpY, midX, midY);
   }
-  const n = stroke.points.length;
-  ctx.lineTo(rx(stroke.points[n - 2]), ry(stroke.points[n - 1]));
+  const last = pts[pts.length - 1];
+  ctx.lineTo(last.x, last.y);
 
   ctx.stroke();
   ctx.shadowBlur = 0;
@@ -128,7 +88,7 @@ function findScrollContainer(el: HTMLElement): HTMLElement {
   return (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
 }
 
-export default function SongHandNotesOverlay({
+export default function LyricHandNotesOverlay({
   visible,
   drawEnabled,
   notes,
@@ -140,15 +100,15 @@ export default function SongHandNotesOverlay({
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pointerIdRef = useRef<number | null>(null);
-  const myStrokesRef = useRef<HandNoteStroke[]>(myStrokes);
+  const myStrokesRef = useRef<LyricNoteStroke[]>(myStrokes);
   const activeStrokeRef = useRef<ActiveStrokeState | null>(null);
+  const lastActivePointRef = useRef<{ x: number; y: number } | null>(null);
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const twoFingerScrollRef = useRef<TwoFingerScrollState | null>(null);
   const rafRef = useRef<number | null>(null);
-  const allStrokesForRenderingRef = useRef<StrokeForRendering[]>([]);
 
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
-  const offscreenStrokesRef = useRef<StrokeForRendering[]>([]);
+  const offscreenStrokesRef = useRef<LyricNoteStroke[]>([]);
   const offscreenViewportRef = useRef({ width: 0, height: 0 });
 
   const [viewport, setViewport] = useState({ width: 1, height: 1 });
@@ -156,7 +116,7 @@ export default function SongHandNotesOverlay({
   const [revision, setRevision] = useState(0);
 
   // Observe the overlay element itself (stageRef) so the measured viewport
-  // always matches the element used for pointer-event coordinate normalisation.
+  // always matches the element used for canvas sizing.
   const syncViewportFromStage = useCallback(() => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -165,8 +125,6 @@ export default function SongHandNotesOverlay({
     const width = Math.max(Math.round(rect.width), 1);
     const height = Math.max(Math.round(rect.height), 1);
 
-    // Update ref immediately so rAF drawing in the same event-loop tick uses correct dimensions,
-    // even before React re-renders with the new viewport state.
     viewportRef.current = { width, height };
 
     setViewport((current) => {
@@ -179,21 +137,10 @@ export default function SongHandNotesOverlay({
     myStrokesRef.current = myStrokes;
   }, [myStrokes]);
 
-  /** All visible strokes wrapped with their rendering context. */
-  const allStrokesForRendering = useMemo<StrokeForRendering[]>(() => {
-    return notes.flatMap((note) =>
-      note.strokes.map((stroke) => ({
-        stroke,
-        savedViewportWidth: note.viewport.width,
-        savedViewportHeight: note.viewport.height,
-        coordinateSystem: (note.coordinateSystem ?? 'v1') as 'v1' | 'v2' | 'v3',
-      }))
-    );
-  }, [notes]);
-
-  useEffect(() => {
-    allStrokesForRenderingRef.current = allStrokesForRendering;
-  }, [allStrokesForRendering]);
+  const allStrokes = useMemo<LyricNoteStroke[]>(
+    () => notes.flatMap((note) => note.strokes),
+    [notes],
+  );
 
   useEffect(() => {
     syncViewportFromStage();
@@ -245,6 +192,8 @@ export default function SongHandNotesOverlay({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const contentStage = findContentStage(stageRef.current);
+    if (!contentStage) return;
 
     const dpr = window.devicePixelRatio || 1;
     const { width, height } = viewport;
@@ -257,13 +206,14 @@ export default function SongHandNotesOverlay({
     canvas.style.height = `${height}px`;
 
     // Rebuild the offscreen cache only when strokes or viewport actually changed,
-    // not when only `revision` changed (e.g. active stroke start/end).
+    // not when only `revision` changed (e.g. active stroke start/end) — but always
+    // rebuild on viewport change since line rects (and therefore stroke positions) shift.
     if (
-      offscreenStrokesRef.current !== allStrokesForRendering ||
+      offscreenStrokesRef.current !== allStrokes ||
       offscreenViewportRef.current.width !== width ||
       offscreenViewportRef.current.height !== height
     ) {
-      offscreenStrokesRef.current = allStrokesForRendering;
+      offscreenStrokesRef.current = allStrokes;
       offscreenViewportRef.current = { width, height };
 
       let off = offscreenRef.current;
@@ -275,10 +225,11 @@ export default function SongHandNotesOverlay({
       }
       const offCtx = off.getContext('2d');
       if (offCtx) {
+        const lineRects = resolveLineRects(contentStage);
         offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         offCtx.clearRect(0, 0, width, height);
-        for (const strokeCtx of allStrokesForRendering) {
-          drawStroke(offCtx, strokeCtx, width, height);
+        for (const stroke of allStrokes) {
+          drawStroke(offCtx, stroke, lineRects);
         }
       }
     }
@@ -299,39 +250,27 @@ export default function SongHandNotesOverlay({
     }
 
     if (activeStrokeRef.current) {
-      drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, coordinateSystem: 'v3' as const }, width, height);
+      const lineRects = resolveLineRects(contentStage);
+      drawStroke(ctx, activeStrokeRef.current, lineRects);
     }
-  }, [allStrokesForRendering, viewport, revision]);
+  }, [allStrokes, viewport, revision]);
 
-  /**
-   * Normalise a pointer position into the v3 coordinate space:
-   * x = clientX_relative / rect.width  ∈ [0, 1]
-   * y = clientY_relative / rect.height ∈ [0, 1]
-   *
-   * Dividing y by HEIGHT ensures notes appear at the same fractional position in the
-   * song content on any screen size, fixing cross-device and orientation-change drift.
-   */
-  const pointFromPointerEvent = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const stage = stageRef.current;
-    if (!stage) return null;
-
-    const rect = stage.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) return null;
-
-    const x = clamp01((event.clientX - rect.left) / rect.width);
-    const y = clamp01((event.clientY - rect.top) / rect.height);
-    return { x, y };
+  const anchorFromPointerEvent = useCallback((event: React.PointerEvent<HTMLDivElement>): LineAnchor | null => {
+    const contentStage = findContentStage(stageRef.current);
+    if (!contentStage) return null;
+    return anchorFromClientPoint(contentStage, event.clientX, event.clientY);
   }, []);
 
   const finishStroke = useCallback(() => {
     const active = activeStrokeRef.current;
     activeStrokeRef.current = null;
     pointerIdRef.current = null;
+    lastActivePointRef.current = null;
     setRevision((prev) => prev + 1);
 
-    if (!active || active.points.length < 4) return;
+    if (!active || active.points.length < 2) return;
 
-    const finalizedStroke: HandNoteStroke = {
+    const finalizedStroke: LyricNoteStroke = {
       id: active.id,
       color: active.color,
       width: active.width,
@@ -339,8 +278,8 @@ export default function SongHandNotesOverlay({
       createdAt: active.createdAt,
     };
 
-    onMyStrokesChange([...myStrokesRef.current, finalizedStroke], viewport);
-  }, [onMyStrokesChange, viewport]);
+    onMyStrokesChange([...myStrokesRef.current, finalizedStroke]);
+  }, [onMyStrokesChange]);
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!drawEnabled) return;
@@ -352,6 +291,7 @@ export default function SongHandNotesOverlay({
       if (activeStrokeRef.current) {
         activeStrokeRef.current = null;
         pointerIdRef.current = null;
+        lastActivePointRef.current = null;
         setRevision((prev) => prev + 1);
       }
       if (!twoFingerScrollRef.current && stageRef.current) {
@@ -369,8 +309,8 @@ export default function SongHandNotesOverlay({
     // Ensure first stroke frame renders with real stage size instead of fallback 1x1.
     syncViewportFromStage();
 
-    const point = pointFromPointerEvent(event);
-    if (!point) return;
+    const anchor = anchorFromPointerEvent(event);
+    if (!anchor) return;
 
     event.preventDefault();
     pointerIdRef.current = event.pointerId;
@@ -380,12 +320,13 @@ export default function SongHandNotesOverlay({
       id: crypto.randomUUID(),
       color: strokeColor,
       width: strokeWidth,
-      points: [point.x, point.y],
+      points: [anchor],
       createdAt: new Date().toISOString(),
     };
+    lastActivePointRef.current = { x: event.clientX, y: event.clientY };
 
     setRevision((prev) => prev + 1);
-  }, [drawEnabled, pointFromPointerEvent, strokeColor, strokeWidth, syncViewportFromStage]);
+  }, [drawEnabled, anchorFromPointerEvent, strokeColor, strokeWidth, syncViewportFromStage]);
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!drawEnabled) return;
@@ -409,10 +350,8 @@ export default function SongHandNotesOverlay({
     const active = activeStrokeRef.current;
     if (!active) return;
 
-    const stage = stageRef.current;
-    if (!stage) return;
-    const rect = stage.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) return;
+    const contentStage = findContentStage(stageRef.current);
+    if (!contentStage) return;
 
     // Coalesced events capture all touch samples batched between frames
     const raw = event.nativeEvent.getCoalescedEvents?.() ?? [];
@@ -420,18 +359,18 @@ export default function SongHandNotesOverlay({
 
     let added = false;
     for (const ce of events) {
-      // v3: x divided by width, y divided by height.
-      const px = clamp01((ce.clientX - rect.left) / rect.width);
-      const py = clamp01((ce.clientY - rect.top) / rect.height);
+      const last = lastActivePointRef.current;
+      if (last) {
+        const dx = ce.clientX - last.x;
+        const dy = ce.clientY - last.y;
+        if (dx * dx + dy * dy < 4) continue; // require ~2px of movement in screen space
+      }
 
-      const total = active.points.length;
-      const lastX = active.points[total - 2];
-      const lastY = active.points[total - 1];
-      const dx = px - lastX;
-      const dy = py - lastY;
-      if (dx * dx + dy * dy < 0.0025 * 0.0025) continue;
+      const anchor = anchorFromClientPoint(contentStage, ce.clientX, ce.clientY);
+      if (!anchor) continue;
 
-      active.points.push(px, py);
+      active.points.push(anchor);
+      lastActivePointRef.current = { x: ce.clientX, y: ce.clientY };
       added = true;
     }
 
@@ -444,7 +383,8 @@ export default function SongHandNotesOverlay({
       rafRef.current = null;
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
-      if (!canvas || !ctx) return;
+      const stage = findContentStage(stageRef.current);
+      if (!canvas || !ctx || !stage) return;
 
       const { width, height } = viewportRef.current;
       const dpr = window.devicePixelRatio || 1;
@@ -456,7 +396,8 @@ export default function SongHandNotesOverlay({
       if (off) ctx.drawImage(off, 0, 0, width, height);
 
       if (activeStrokeRef.current) {
-        drawStroke(ctx, { stroke: activeStrokeRef.current, savedViewportWidth: width, savedViewportHeight: height, coordinateSystem: 'v3' as const }, width, height);
+        const lineRects = resolveLineRects(stage);
+        drawStroke(ctx, activeStrokeRef.current, lineRects);
       }
     });
   }, [drawEnabled]);
@@ -473,19 +414,14 @@ export default function SongHandNotesOverlay({
     if (pointerIdRef.current !== event.pointerId) return;
 
     const active = activeStrokeRef.current;
-    const point = pointFromPointerEvent(event);
-    if (active && point) {
-      const total = active.points.length;
-      const lastX = active.points[total - 2];
-      const lastY = active.points[total - 1];
-      if (lastX !== point.x || lastY !== point.y) {
-        active.points.push(point.x, point.y);
-      }
+    const anchor = anchorFromPointerEvent(event);
+    if (active && anchor) {
+      active.points.push(anchor);
     }
 
     event.preventDefault();
     finishStroke();
-  }, [drawEnabled, finishStroke, pointFromPointerEvent]);
+  }, [drawEnabled, finishStroke, anchorFromPointerEvent]);
 
   const handlePointerCancel = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     activePointersRef.current.delete(event.pointerId);
@@ -498,6 +434,7 @@ export default function SongHandNotesOverlay({
     // Discard: system interrupted the gesture, not the user's intention to commit
     activeStrokeRef.current = null;
     pointerIdRef.current = null;
+    lastActivePointRef.current = null;
     setRevision((prev) => prev + 1);
   }, []);
 
