@@ -26,17 +26,10 @@ export function findContentStage(overlayEl: HTMLElement | null): HTMLElement | n
 }
 
 /**
- * Resolves a viewport point to a line-relative anchor by finding the positionable line whose
- * vertical range contains the point (falling back to the nearest line by vertical distance).
- * The resulting fx/fy are NOT clamped — a free-hand point can land outside the line's own
- * box (above/below/beside its text) and still be reproduced exactly on reflow, since the
- * line→page mapping is a simple linear scale from the line's rect.
+ * Finds the positionable line element whose vertical range contains `clientY`, falling back
+ * to the nearest line by vertical distance to its center.
  */
-export function anchorFromClientPoint(
-  stage: HTMLElement,
-  clientX: number,
-  clientY: number,
-): LineAnchor | null {
+export function lineElementAtClientY(stage: HTMLElement, clientY: number): HTMLElement | null {
   const lineEls = Array.from(stage.querySelectorAll<HTMLElement>('[data-line-id]'));
   if (lineEls.length === 0) return null;
 
@@ -44,11 +37,7 @@ export function anchorFromClientPoint(
   let bestDist = Infinity;
   for (const el of lineEls) {
     const r = el.getBoundingClientRect();
-    if (clientY >= r.top && clientY <= r.bottom) {
-      best = el;
-      bestDist = 0;
-      break;
-    }
+    if (clientY >= r.top && clientY <= r.bottom) return el;
     const centerY = (r.top + r.bottom) / 2;
     const dist = Math.abs(clientY - centerY);
     if (dist < bestDist) {
@@ -56,6 +45,36 @@ export function anchorFromClientPoint(
       best = el;
     }
   }
+  return best;
+}
+
+/** Line id (if any) at `clientY`. Used to pin a line to single-row layout before it's touched. */
+export function lineIdAtClientY(stage: HTMLElement, clientY: number): number | null {
+  const el = lineElementAtClientY(stage, clientY);
+  if (!el) return null;
+  const id = Number(el.dataset.lineId);
+  return Number.isFinite(id) ? id : null;
+}
+
+/**
+ * Resolves a viewport point to a line-relative anchor by finding the positionable line whose
+ * vertical range contains the point (falling back to the nearest line by vertical distance).
+ * The resulting fx/fy are NOT clamped — a free-hand point can land outside the line's own
+ * box (above/below/beside its text) and still be reproduced exactly on reflow, since the
+ * line→page mapping is a simple linear scale from the line's rect.
+ *
+ * Callers should pin the target line (see `lineIdAtClientY` + the `pinnedLineIds` prop on
+ * `ChordDisplay`) to single-row layout *before* calling this, so the rect measured here
+ * matches the rect the note will be replayed against later — otherwise a line that only
+ * wraps into multiple rows while unpinned (mobile-narrow screens) captures fx/fy relative to
+ * a box shape that no longer exists once the note is saved and the line becomes pinned.
+ */
+export function anchorFromClientPoint(
+  stage: HTMLElement,
+  clientX: number,
+  clientY: number,
+): LineAnchor | null {
+  const best = lineElementAtClientY(stage, clientY);
   if (!best) return null;
 
   const lineId = Number(best.dataset.lineId);

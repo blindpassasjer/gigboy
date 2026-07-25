@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -207,10 +208,20 @@ export default function ConcertModeView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, showChords, transpose, chordNotation, showTopbar]);
 
-  const pinnedLineIds = useMemo(
-    () => extractPinnedLineIds(handNotes.visibleNotes),
-    [handNotes.visibleNotes],
-  );
+  // Line currently being drawn on, pinned to single-row layout for the duration of the
+  // gesture so the anchor is captured against the same geometry it'll be replayed against
+  // (see anchorFromClientPoint's doc comment in lib/lineAnchor.ts).
+  const [drawingLineId, setDrawingLineId] = useState<number | null>(null);
+
+  const pinnedLineIds = useMemo(() => {
+    const ids = extractPinnedLineIds(handNotes.visibleNotes);
+    if (drawingLineId != null) ids.add(drawingLineId);
+    return ids;
+  }, [handNotes.visibleNotes, drawingLineId]);
+
+  const handleActiveLineChange = useCallback((lineId: number | null) => {
+    flushSync(() => setDrawingLineId(lineId));
+  }, []);
 
   const handleStrokesChange = useCallback((strokes: LyricNoteStroke[]) => {
     handNotes.saveMyNotes(strokes);
@@ -762,6 +773,7 @@ export default function ConcertModeView({
                   myStrokes={handNotes.myStrokes}
                   strokeColor={getUserNoteColor(user?.id ?? null)}
                   onMyStrokesChange={handleStrokesChange}
+                  onActiveLineChange={handleActiveLineChange}
                 />
               </div>
             </div>

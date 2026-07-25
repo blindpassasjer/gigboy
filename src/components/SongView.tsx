@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import type { CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -141,10 +142,21 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     isOwner: isBandOwner,
   });
 
-  const pinnedLineIds = useMemo(
-    () => extractPinnedLineIds(handNotes.visibleNotes),
-    [handNotes.visibleNotes],
-  );
+  // Line currently being drawn on, pinned to single-row layout for the duration of the
+  // gesture so the anchor is captured against the same geometry it'll be replayed against
+  // (mobile-narrow screens otherwise wrap the line while it's still unpinned — see
+  // anchorFromClientPoint's doc comment in lib/lineAnchor.ts).
+  const [drawingLineId, setDrawingLineId] = useState<number | null>(null);
+
+  const pinnedLineIds = useMemo(() => {
+    const ids = extractPinnedLineIds(handNotes.visibleNotes);
+    if (drawingLineId != null) ids.add(drawingLineId);
+    return ids;
+  }, [handNotes.visibleNotes, drawingLineId]);
+
+  const handleActiveLineChange = useCallback((lineId: number | null) => {
+    flushSync(() => setDrawingLineId(lineId));
+  }, []);
 
   const hasNotes = handNotes.notes.some((note) => note.strokes.length > 0 || (note.textNotes?.length ?? 0) > 0);
 
@@ -957,6 +969,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             myStrokes={handNotes.myStrokes}
             strokeColor={getUserNoteColor(user?.id ?? null)}
             onMyStrokesChange={handleStrokesChange}
+            onActiveLineChange={handleActiveLineChange}
           />
           {user && (
             <SongTextNotesOverlay

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { anchorFromClientPoint, findContentStage, pointFromAnchor, resolveLineRects } from '../lib/lineAnchor';
+import { anchorFromClientPoint, findContentStage, lineIdAtClientY, pointFromAnchor, resolveLineRects } from '../lib/lineAnchor';
 import type { LyricNoteStroke, LineAnchor, LyricNoteDocument } from '../types';
 
 interface Props {
@@ -10,6 +10,12 @@ interface Props {
   strokeColor?: string;
   strokeWidth?: number;
   onMyStrokesChange: (strokes: LyricNoteStroke[]) => void;
+  /**
+   * Called with the line id as soon as a stroke starts on it (and with `null` once the
+   * stroke ends), so the parent can pin that line to single-row layout for the gesture's
+   * duration — see the doc comment on `anchorFromClientPoint`.
+   */
+  onActiveLineChange?: (lineId: number | null) => void;
 }
 
 interface ActiveStrokeState {
@@ -96,6 +102,7 @@ export default function LyricHandNotesOverlay({
   strokeColor = '#22c55e',
   strokeWidth = 2.5,
   onMyStrokesChange,
+  onActiveLineChange,
 }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -268,7 +275,10 @@ export default function LyricHandNotesOverlay({
     lastActivePointRef.current = null;
     setRevision((prev) => prev + 1);
 
-    if (!active || active.points.length < 2) return;
+    if (!active || active.points.length < 2) {
+      onActiveLineChange?.(null);
+      return;
+    }
 
     const finalizedStroke: LyricNoteStroke = {
       id: active.id,
@@ -279,7 +289,8 @@ export default function LyricHandNotesOverlay({
     };
 
     onMyStrokesChange([...myStrokesRef.current, finalizedStroke]);
-  }, [onMyStrokesChange]);
+    onActiveLineChange?.(null);
+  }, [onMyStrokesChange, onActiveLineChange]);
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!drawEnabled) return;
@@ -293,6 +304,7 @@ export default function LyricHandNotesOverlay({
         pointerIdRef.current = null;
         lastActivePointRef.current = null;
         setRevision((prev) => prev + 1);
+        onActiveLineChange?.(null);
       }
       if (!twoFingerScrollRef.current && stageRef.current) {
         const points = [...activePointersRef.current.values()];
@@ -308,6 +320,16 @@ export default function LyricHandNotesOverlay({
 
     // Ensure first stroke frame renders with real stage size instead of fallback 1x1.
     syncViewportFromStage();
+
+    // Pin the touched line to single-row layout *before* measuring its rect, so the anchor
+    // captured below matches the geometry the note will be replayed against later (see
+    // anchorFromClientPoint's doc comment). onActiveLineChange is expected to flush this
+    // synchronously so the DOM has already reflowed by the time we call anchorFromPointerEvent.
+    const contentStage = findContentStage(stageRef.current);
+    if (contentStage) {
+      const lineId = lineIdAtClientY(contentStage, event.clientY);
+      if (lineId !== null) onActiveLineChange?.(lineId);
+    }
 
     const anchor = anchorFromPointerEvent(event);
     if (!anchor) return;
@@ -326,7 +348,7 @@ export default function LyricHandNotesOverlay({
     lastActivePointRef.current = { x: event.clientX, y: event.clientY };
 
     setRevision((prev) => prev + 1);
-  }, [drawEnabled, anchorFromPointerEvent, strokeColor, strokeWidth, syncViewportFromStage]);
+  }, [drawEnabled, anchorFromPointerEvent, onActiveLineChange, strokeColor, strokeWidth, syncViewportFromStage]);
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!drawEnabled) return;
@@ -436,7 +458,8 @@ export default function LyricHandNotesOverlay({
     pointerIdRef.current = null;
     lastActivePointRef.current = null;
     setRevision((prev) => prev + 1);
-  }, []);
+    onActiveLineChange?.(null);
+  }, [onActiveLineChange]);
 
   useEffect(() => {
     return () => {
