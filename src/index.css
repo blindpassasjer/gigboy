@@ -2363,6 +2363,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .song-toolbar-tool-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2378,6 +2379,21 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
   background: var(--surface);
   transition: background .15s, color .15s, border-color .15s;
+}
+
+.song-toolbar-tool-btn--has-content::after {
+  content: '';
+  position: absolute;
+  top: .3rem;
+  right: .3rem;
+  width: .4rem;
+  height: .4rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.song-toolbar-tool-btn--active.song-toolbar-tool-btn--has-content::after {
+  background: var(--accent-contrast);
 }
 
 .song-toolbar-tool-btn:hover {
@@ -3754,6 +3770,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 .waveform-progress__bar {
   flex: 1;
+  min-width: 1.5px;
   min-height: 12%;
   align-self: center;
   border-radius: 999px;

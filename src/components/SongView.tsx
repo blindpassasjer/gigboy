@@ -38,6 +38,10 @@ import { useSongs } from '../context/SongsContext';
 import { useAuth } from '../context/AuthContext';
 import { usePlan, useBandPlan } from '../hooks/usePlan';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
+import { useSongRecordings } from '../hooks/useSongRecordings';
+import { useSongAttachments } from '../hooks/useSongAttachments';
+import type { RecordingsScope } from '../lib/songRecordings';
+import type { AttachmentsScope } from '../lib/songAttachments';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import { getUserNoteColor } from '../lib/userColors';
@@ -141,6 +145,23 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     () => extractPinnedLineIds(handNotes.visibleNotes),
     [handNotes.visibleNotes],
   );
+
+  const hasNotes = handNotes.notes.some((note) => note.strokes.length > 0 || (note.textNotes?.length ?? 0) > 0);
+
+  const recordingsAttachmentsScope: RecordingsScope & AttachmentsScope = bandId
+    ? { type: 'band', bandId }
+    : { type: 'user', ownerId: song.ownerId ?? user?.id ?? '' };
+
+  const { recordings } = useSongRecordings({
+    scope: recordingsAttachmentsScope,
+    songId: user ? song.id : '',
+  });
+  const { attachments } = useSongAttachments({
+    scope: recordingsAttachmentsScope,
+    songId: user ? song.id : '',
+  });
+  const hasRecordings = recordings.length > 0;
+  const hasAttachments = attachments.length > 0;
 
   const handleStrokesChange = useCallback((strokes: LyricNoteStroke[]) => {
     handNotes.saveMyNotes(strokes);
@@ -566,7 +587,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               {user && (
                 <button
                   type="button"
-                  className={`song-toolbar-tool-btn${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
+                  className={`song-toolbar-tool-btn${showNotes ? ' song-toolbar-tool-btn--active' : ''}${hasNotes ? ' song-toolbar-tool-btn--has-content' : ''}`}
                   onClick={() => handleToggleNotes(!showNotes)}
                   title={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
                   aria-label={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
@@ -600,7 +621,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               {user && (
                 <button
                   type="button"
-                  className={`song-toolbar-tool-btn${showRecorder ? ' song-toolbar-tool-btn--active' : ''}`}
+                  className={`song-toolbar-tool-btn${showRecorder ? ' song-toolbar-tool-btn--active' : ''}${hasRecordings ? ' song-toolbar-tool-btn--has-content' : ''}`}
                   onClick={() => setShowRecorder((prev) => !prev)}
                   title={showRecorder ? 'Hide recorder' : 'Show recorder'}
                   aria-label={showRecorder ? 'Hide recorder' : 'Show recorder'}
@@ -613,7 +634,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               {user && (
                 <button
                   type="button"
-                  className={`song-toolbar-tool-btn${showAttachments ? ' song-toolbar-tool-btn--active' : ''}`}
+                  className={`song-toolbar-tool-btn${showAttachments ? ' song-toolbar-tool-btn--active' : ''}${hasAttachments ? ' song-toolbar-tool-btn--has-content' : ''}`}
                   onClick={() => setShowAttachments((prev) => !prev)}
                   title={showAttachments ? 'Hide attachments' : 'Show attachments'}
                   aria-label={showAttachments ? 'Hide attachments' : 'Show attachments'}

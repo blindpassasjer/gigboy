@@ -103,9 +103,30 @@ async function computeWaveformPeaksFromBlob(blob: Blob, samples = WAVEFORM_SAMPL
   }
 }
 
+// Minimum pixel span (bar + gap) a bar needs to stay visible instead of
+// collapsing to sub-pixel width — the floating recorder card is narrow
+// (max-width 360px) so 100 fixed bars can shrink to nothing there.
+const MIN_BAR_SPAN_PX = 4;
+
+function downsampleBars(bars: number[], count: number): number[] {
+  if (count >= bars.length) return bars;
+  const blockSize = bars.length / count;
+  return Array.from({ length: count }, (_, index) => {
+    const start = Math.floor(index * blockSize);
+    const end = Math.max(start + 1, Math.floor((index + 1) * blockSize));
+    let peak = 0;
+    for (let cursor = start; cursor < end; cursor += 1) {
+      if (bars[cursor] > peak) peak = bars[cursor];
+    }
+    return peak;
+  });
+}
+
 function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, waveformBars }: WaveformProgressProps) {
   const [bars, setBars] = useState<number[] | null>(null);
   const [hoverRatio, setHoverRatio] = useState<number | null>(null);
+  const [visibleBarCount, setVisibleBarCount] = useState(WAVEFORM_SAMPLES);
+  const barsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,7 +166,23 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
     };
   }, [audioUrl, waveformBars]);
 
-  const renderedBars = bars ?? Array.from({ length: WAVEFORM_SAMPLES }, () => 0.24);
+  useEffect(() => {
+    const el = barsContainerRef.current;
+    if (!el) return;
+
+    function updateVisibleCount(width: number) {
+      const fitted = Math.floor(width / MIN_BAR_SPAN_PX);
+      setVisibleBarCount(Math.max(16, Math.min(WAVEFORM_SAMPLES, fitted)));
+    }
+
+    updateVisibleCount(el.offsetWidth);
+    const observer = new ResizeObserver(([entry]) => updateVisibleCount(entry.contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const fullBars = bars ?? Array.from({ length: WAVEFORM_SAMPLES }, () => 0.24);
+  const renderedBars = downsampleBars(fullBars, visibleBarCount);
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -164,7 +201,7 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
       aria-valuemax={100}
       aria-valuenow={Math.round(progress * 100)}
     >
-      <div className="waveform-progress__bars" aria-hidden="true">
+      <div className="waveform-progress__bars" aria-hidden="true" ref={barsContainerRef}>
         {renderedBars.map((height, index) => {
           const barRatio = (index + 1) / renderedBars.length;
           const isPlayed = barRatio <= progress;
