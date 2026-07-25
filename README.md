@@ -10,6 +10,7 @@ A web-based songbook and gig-prep tool for musicians and bands, built on **Chord
 - **Setlists & songlists** — ordered setlists for gigs, plus freeform songlists for organizing your library
 - **Press kits, technical riders, stage plots** — shareable via public links, generated per band
 - **In-app rehearsal tools** — browser-based audio recorder, visual metronome, visual tuner, and hand-drawn notes overlaid on the song sheet
+- **Attachments** — attach PDFs (up to 20 MB) to a song, e.g. scanned sheet music or lyric sheets; Pro/Crew only, see [src/lib/songAttachments.ts](src/lib/songAttachments.ts)
 - **Multi-language** — songs in English, Norwegian, Spanish, Portuguese, French, Italian, German, and more
 - **Add & edit songs** — live ChordPro preview while writing
 - **Search & filter** — full-text search by title/artist/tag, filter by language
@@ -176,6 +177,14 @@ Draft Terms of Service and Privacy Policy live at [src/pages/TermsPage.tsx](src/
 ## Plan limits
 
 Free/Pro/Crew feature gating and song/setlist/storage caps live in [src/lib/planLimits.ts](src/lib/planLimits.ts) — check there before assuming a feature is (or isn't) behind a paywall.
+
+## Codebase knowledge graph
+
+`graphify-out/graph.json` is a generated knowledge graph of this codebase (symbols/functions/components as nodes, relationships as edges), used by AI coding assistants to navigate the project faster than blind file search. Regenerate it after code changes with:
+
+```bash
+graphify update .
+```
 
 ## License
 
