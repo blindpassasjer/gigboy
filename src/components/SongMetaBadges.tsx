@@ -14,7 +14,7 @@ export default function SongMetaBadges({ song, counts }: Props) {
   if (!hasAny) return null;
 
   return (
-    <div className="song-card-badges">
+    <>
       {song.key && (
         <span className="song-meta-badge" title={`Key: ${song.key}`}>
           <KeyRound size={11} /> {song.key}
@@ -40,6 +40,6 @@ export default function SongMetaBadges({ song, counts }: Props) {
           <Mic size={11} /> {counts.recordings}
         </span>
       )}
-    </div>
+    </>
   );
 }

@@ -883,20 +883,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: .75rem;
 }
 
-.song-card-badges {
-  display: flex;
-  align-items: center;
-  gap: .35rem;
-  flex-wrap: wrap;
-  margin-top: .3rem;
-}
 .song-meta-badge {
   display: inline-flex;
   align-items: center;
   gap: .2rem;
   border-radius: 100px;
-  background: var(--border);
-  color: var(--muted);
+  background: var(--chord-bg);
+  color: var(--accent);
   font-size: .72rem;
   font-weight: 600;
   padding: .1rem .45rem;
@@ -1392,7 +1385,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-card .lang-badge,
 .song-preview-card .lang-badge,
-.song-view-header .lang-badge {
+.song-view-header .lang-badge,
+.song-card .song-meta-badge,
+.song-preview-card .song-meta-badge {
   background: var(--song-item-chip-bg);
   color: var(--song-item-chip-text);
 }

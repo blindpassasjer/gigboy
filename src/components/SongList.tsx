@@ -559,8 +559,8 @@ export default function SongList({
                         {tag}
                       </span>
                     ))}
+                    <SongMetaBadges song={song} counts={songBadgeCounts[song.id]} />
                   </div>
-                  <SongMetaBadges song={song} counts={songBadgeCounts[song.id]} />
                 </Link>
                 <div className="song-actions song-actions--stacked">
                   <Link
@@ -621,8 +621,8 @@ export default function SongList({
                           {tag}
                         </span>
                       ))}
+                      <SongMetaBadges song={song} counts={songBadgeCounts[song.id]} />
                     </div>
-                    <SongMetaBadges song={song} counts={songBadgeCounts[song.id]} />
                   </Link>
                   <div className="song-actions">
                     <Link
