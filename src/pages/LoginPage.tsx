@@ -503,6 +503,7 @@ export default function LoginPage() {
           <footer className="footer">
             From Norway {'<3'} with chords
             <span className="footer-links">
+              <Link to="/showcase">See it in action</Link>
               <Link to="/terms">Terms</Link>
               <Link to="/privacy">Privacy</Link>
             </span>
