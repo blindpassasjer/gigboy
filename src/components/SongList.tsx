@@ -17,9 +17,12 @@ import {
 } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
+import SongMetaBadges from './SongMetaBadges';
 import { languageName } from '../utils/languages';
 import { parseChordPro } from '../utils/chordParser';
 import { SONGLIST_ICON_OPTIONS } from '../lib/iconOptions';
+import { useSongListBadges } from '../hooks/useSongListBadges';
+import { useAuth } from '../context/AuthContext';
 
 type SortBy =
   | 'name-asc'
@@ -112,6 +115,7 @@ export default function SongList({
   autoStartRenameToken = null,
 }: Props) {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
     () => (localStorage.getItem('gigboy-view-mode') === 'cards' ? 'cards' : 'list')
@@ -213,6 +217,8 @@ export default function SongList({
     () => Object.fromEntries(filtered.map((song) => [song.id, getSongPreview(song)])),
     [filtered]
   );
+
+  const songBadgeCounts = useSongListBadges(filtered, bandId, user?.id);
 
   useEffect(() => {
     setListIconDraft(listIcon ?? '');
@@ -554,6 +560,7 @@ export default function SongList({
                       </span>
                     ))}
                   </div>
+                  <SongMetaBadges song={song} counts={songBadgeCounts[song.id]} />
                 </Link>
                 <div className="song-actions song-actions--stacked">
                   <Link
@@ -615,6 +622,7 @@ export default function SongList({
                         </span>
                       ))}
                     </div>
+                    <SongMetaBadges song={song} counts={songBadgeCounts[song.id]} />
                   </Link>
                   <div className="song-actions">
                     <Link

@@ -883,6 +883,25 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: .75rem;
 }
 
+.song-card-badges {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  flex-wrap: wrap;
+  margin-top: .3rem;
+}
+.song-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  border-radius: 100px;
+  background: var(--border);
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 600;
+  padding: .1rem .45rem;
+}
+
 /* ─── Song List ─────────────────────────────────────────────────────────────── */
 .song-list-page {
   display: flex;
