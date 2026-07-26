@@ -5,9 +5,12 @@ import type { ReactNode } from 'react';
 import type { Song, SongList } from '../types';
 import { useSetlists } from '../context/SetlistsContext';
 import LanguageBadge from './LanguageBadge';
+import SongMetaBadges from './SongMetaBadges';
 import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { SETLIST_ICON_OPTIONS } from '../lib/iconOptions';
+import { useSongListBadges } from '../hooks/useSongListBadges';
+import { useAuth } from '../context/AuthContext';
 
 interface Props {
   setlistId: string;
@@ -70,6 +73,8 @@ export default function SetlistsView({
 }: Props) {
   const { renameSetlist, updateSetlistIcon, deleteSetlist, setlists } = useSetlists();
   const { pathname } = useLocation();
+  const { user } = useAuth();
+  const songBadgeCounts = useSongListBadges(songs, bandId, user?.id);
   const currentSetlist = setlists.find((l) => l.id === setlistId);
   const effectiveIcon = setlistIconOverride !== undefined ? setlistIconOverride : currentSetlist?.icon;
   const canDeleteSetlist = canDeleteOverride !== undefined
@@ -523,6 +528,7 @@ export default function SetlistsView({
                           {tag}
                         </span>
                       ))}
+                      <SongMetaBadges song={song} counts={songBadgeCounts[song.id]} />
                     </div>
                   </Link>
 

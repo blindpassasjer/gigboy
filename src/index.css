@@ -6776,7 +6776,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .setlist-song-meta .lang-badge,
-.setlist-song-meta .tag {
+.setlist-song-meta .tag,
+.setlist-song-meta .song-meta-badge {
   background: color-mix(in srgb, var(--song-item-accent) 16%, var(--song-item-bg));
   color: color-mix(in srgb, var(--song-item-accent) 78%, var(--song-item-text));
   border: 1px solid color-mix(in srgb, var(--song-item-accent) 24%, transparent);
