@@ -522,7 +522,7 @@ export default function SetlistsView({
                       {note ? <span className="setlist-song-note-preview">Note: {note}</span> : null}
                     </div>
                     <div className="setlist-song-meta">
-                      <LanguageBadge code={song.language} size="sm" />
+                      <LanguageBadge code={song.language} size="sm" flagOnly />
                       {song.tags?.map((tag) => (
                         <span key={tag} className="tag">
                           {tag}
