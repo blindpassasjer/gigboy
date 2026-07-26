@@ -9,7 +9,7 @@ import {
   Globe2,
   Guitar,
   ListMusic,
-  Map,
+  Map as MapIcon,
   Mic2,
   Minus,
   Moon,
@@ -39,7 +39,17 @@ I [C]once was [G]lost, but [Em]now am [D]found
 Was [G]blind, but [C]now I [G]see
 {end_of_chorus}`;
 
-/** Reveals a section with a fade/slide-up transition once it scrolls into view. */
+const SECTIONS = [
+  { id: 'chordpro', kicker: 'Songbook' },
+  { id: 'setlists', kicker: 'Setlists' },
+  { id: 'bands', kicker: 'Collaboration' },
+  { id: 'gig-docs', kicker: 'Show up prepared' },
+  { id: 'rehearsal', kicker: 'Rehearsal tools' },
+  { id: 'more', kicker: 'And more' },
+] as const;
+const SECTION_IDS = SECTIONS.map((s) => s.id);
+
+/** Reveals a section with a staggered fade/slide-up transition once it scrolls into view. */
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   const [visible, setVisible] = useState(false);
@@ -61,6 +71,94 @@ function useReveal<T extends HTMLElement>() {
   }, []);
 
   return { ref, visible };
+}
+
+/** Tracks which showcase section is most in-view, for the side progress rail. */
+function useActiveSection(ids: readonly string[]) {
+  const [active, setActive] = useState<string>(ids[0]);
+
+  useEffect(() => {
+    const elements = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (!elements.length) return;
+
+    const ratios = new Map<string, number>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          ratios.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0);
+        }
+        let bestId = '';
+        let bestRatio = 0;
+        for (const [id, ratio] of ratios) {
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            bestId = id;
+          }
+        }
+        if (bestRatio > 0) setActive(bestId);
+      },
+      { threshold: [0.25, 0.5, 0.75] },
+    );
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [ids]);
+
+  return active;
+}
+
+/** Fixed bar across the top that fills as the page is scrolled. */
+function ScrollProgressBar() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    let raf = 0;
+    function measure() {
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - doc.clientHeight;
+      setProgress(scrollable > 0 ? Math.min(1, Math.max(0, doc.scrollTop / scrollable)) : 0);
+    }
+    function onScroll() {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    }
+    measure();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  return (
+    <div className="showcase-progress-track" aria-hidden="true">
+      <span className="showcase-progress-fill" style={{ transform: `scaleX(${progress})` }} />
+    </div>
+  );
+}
+
+/** Vertical rail of dots for jumping between sections, highlighting the one in view. */
+function ShowcaseRail() {
+  const active = useActiveSection(SECTION_IDS);
+
+  return (
+    <nav className="showcase-rail" aria-label="Showcase sections">
+      {SECTIONS.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          className={`showcase-rail-dot${active === s.id ? ' is-active' : ''}`}
+          onClick={() => {
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            document.getElementById(s.id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+          }}
+          aria-label={`Jump to ${s.kicker}`}
+          title={s.kicker}
+        />
+      ))}
+    </nav>
+  );
 }
 
 function ShowcaseSection({
@@ -130,7 +228,7 @@ function SetlistDemo() {
         <span className="showcase-card-label">Saturday &mdash; The Loft</span>
         <ListMusic size={16} />
       </div>
-      <ol className="showcase-setlist">
+      <ol className="showcase-setlist showcase-stagger-list">
         {items.map((item, i) => (
           <li key={item.title}>
             <span className="showcase-setlist-num">{i + 1}</span>
@@ -155,7 +253,7 @@ function BandDemo() {
         <span className="showcase-card-label">The Fixtures</span>
         <Users size={16} />
       </div>
-      <ul className="showcase-band-members">
+      <ul className="showcase-band-members showcase-stagger-list">
         {members.map((m) => (
           <li key={m.name}>
             <span className="showcase-avatar" aria-hidden="true">{m.name.charAt(0)}</span>
@@ -172,10 +270,10 @@ function GigDocsDemo() {
   const docs = [
     { icon: Newspaper, label: 'Press kit', desc: 'Bio, photos & links' },
     { icon: FileText, label: 'Tech rider', desc: 'Inputs & backline' },
-    { icon: Map, label: 'Stage plot', desc: 'Positions & monitors' },
+    { icon: MapIcon, label: 'Stage plot', desc: 'Positions & monitors' },
   ];
   return (
-    <div className="showcase-doc-grid">
+    <div className="showcase-doc-grid showcase-stagger-list">
       {docs.map(({ icon: Icon, label, desc }) => (
         <div className="showcase-card showcase-doc-card" key={label}>
           <Icon size={20} className="showcase-doc-icon" aria-hidden="true" />
@@ -208,7 +306,7 @@ function MoreFeaturesDemo() {
   const { dark, toggle } = useDarkModeContext();
   const langs = ['en', 'no', 'es', 'pt', 'fr'];
   return (
-    <div className="showcase-more-grid">
+    <div className="showcase-more-grid showcase-stagger-list">
       <div className="showcase-card showcase-more-card">
         <Paperclip size={18} aria-hidden="true" />
         <h3>Attachments</h3>
@@ -250,6 +348,8 @@ export default function ShowcasePage() {
 
   return (
     <div className="showcase-page">
+      <ScrollProgressBar />
+      <ShowcaseRail />
       <header className={`showcase-hero${heroReveal.visible ? ' is-visible' : ''}`} ref={heroReveal.ref}>
         <div className="showcase-hero-bg" aria-hidden="true">
           <span className="showcase-note showcase-note--1">&#9835;</span>
