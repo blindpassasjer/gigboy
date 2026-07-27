@@ -15,6 +15,8 @@ import { createTrashPayload, createTrashTimestamps, TRASH_COLLECTION } from '../
 import { createWebpThumbnail } from '../utils/imageThumbnail';
 import type { PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
+import { useAuth } from '../context/AuthContext';
+import { bandCanUse } from '../lib/planLimits';
 import { parsePressKitMedia } from '../utils/pressKitMedia';
 
 interface PressKitImageAsset {
@@ -79,7 +81,8 @@ function normalizeEmojiIcon(value: string): string | undefined {
 }
 
 export default function PressKitView({ bandId, bandName, kit, canEdit, userId, userEmail, onDelete, onRename, onUpdateIcon }: Props) {
-  const { deleteBandPressKit, refreshBandPressKits, refreshBandTrash, updateBandLogo } = useBands();
+  const { bands, deleteBandPressKit, refreshBandPressKits, refreshBandTrash, updateBandLogo } = useBands();
+  const { user } = useAuth();
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(kit.name);
@@ -542,6 +545,11 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   const handleShare = async () => {
     if (!userId || !userEmail) { toast.error('You must be signed in to share.'); return; }
+    const band = bands.find((entry) => entry.id === bandId) ?? null;
+    if (!bandCanUse(band, 'shareableLinks', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
+      toast.error('Shareable public links require a Pro or Crew plan for this band.');
+      return;
+    }
     setBusyShare(true);
     try {
       const result = await createPressKitShare({

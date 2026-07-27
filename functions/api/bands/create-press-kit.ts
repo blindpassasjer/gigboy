@@ -1,6 +1,8 @@
 /// <reference types="@cloudflare/workers-types" />
-import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { getFirestoreDocument, setFirestoreDocument, listFirestoreDocuments } from '../../_helpers/firebase-admin';
 import { resolveBandHasProOrCrew } from '../../_helpers/band-limits';
+
+const FREE_PRESS_KIT_LIMIT = 1;
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -42,14 +44,17 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       return Response.json({ error: 'You do not have permission to create press kits for this band.' }, { status: 403 });
     }
 
-    // Press kits require Pro or Crew plan (band-level or owner's personal plan)
+    // Free plan bands get one press kit; Pro/Crew get unlimited.
     const ownerId = typeof band.ownerId === 'string' ? band.ownerId : '';
     const hasProOrCrew = ownerId ? await resolveBandHasProOrCrew(ctx.env, ownerId, bandId) : false;
     if (!hasProOrCrew) {
-      return Response.json(
-        { error: 'Press kits require a Pro or Crew plan. Upgrade to create press kits for this band.' },
-        { status: 403 }
-      );
+      const existingKits = await listFirestoreDocuments(ctx.env, ['bands', bandId, 'pressKits']);
+      if (existingKits.length >= FREE_PRESS_KIT_LIMIT) {
+        return Response.json(
+          { error: `This band has reached the ${FREE_PRESS_KIT_LIMIT}-press-kit limit for the Free plan. Upgrade to Pro or Crew for unlimited press kits.` },
+          { status: 403 }
+        );
+      }
     }
 
     // Create the press kit

@@ -1,6 +1,8 @@
 /// <reference types="@cloudflare/workers-types" />
-import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { getFirestoreDocument, setFirestoreDocument, listFirestoreDocuments } from '../../_helpers/firebase-admin';
 import { resolveBandHasProOrCrew } from '../../_helpers/band-limits';
+
+const FREE_RIDER_LIMIT = 1;
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -42,14 +44,17 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       return Response.json({ error: 'You do not have permission to create technical riders for this band.' }, { status: 403 });
     }
 
-    // Technical riders require Pro or Crew plan (band-level or owner's personal plan)
+    // Free plan bands get one technical rider; Pro/Crew get unlimited.
     const ownerId = typeof band.ownerId === 'string' ? band.ownerId : '';
     const hasProOrCrew = ownerId ? await resolveBandHasProOrCrew(ctx.env, ownerId, bandId) : false;
     if (!hasProOrCrew) {
-      return Response.json(
-        { error: 'Technical riders require a Pro or Crew plan. Upgrade to create technical riders for this band.' },
-        { status: 403 }
-      );
+      const existingRiders = await listFirestoreDocuments(ctx.env, ['bands', bandId, 'technicalRiders']);
+      if (existingRiders.length >= FREE_RIDER_LIMIT) {
+        return Response.json(
+          { error: `This band has reached the ${FREE_RIDER_LIMIT}-technical-rider limit for the Free plan. Upgrade to Pro or Crew for unlimited technical riders.` },
+          { status: 403 }
+        );
+      }
     }
 
     // Create the technical rider

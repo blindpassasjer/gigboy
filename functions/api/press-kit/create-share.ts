@@ -1,6 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import { generateToken } from '../../_helpers/auth';
 import { getFirestoreDocument, setFirestoreDocument } from '../../_helpers/firebase-admin';
+import { resolveBandHasProOrCrew } from '../../_helpers/band-limits';
 
 interface Data extends Record<string, unknown> {
   userId?: string;
@@ -60,6 +61,14 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const kitDoc = await getFirestoreDocument(ctx.env, ['bands', bandId, 'pressKits', kitId]);
   if (!kitDoc) {
     return Response.json({ error: 'Press kit not found.' }, { status: 404 });
+  }
+
+  const hasProOrCrew = await resolveBandHasProOrCrew(ctx.env, ownerId, bandId);
+  if (!hasProOrCrew) {
+    return Response.json(
+      { error: 'Shareable public links require a Pro or Crew plan for this band.' },
+      { status: 403 }
+    );
   }
 
   const selectedStageplotIds = asStringArray(body.selectedStageplotIds, 100);

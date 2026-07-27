@@ -58,7 +58,7 @@ import {
 import { useAuth } from './AuthContext';
 import { moveIdBefore } from '../utils/arrayUtils';
 import { createWebpThumbnail } from '../utils/imageThumbnail';
-import { bandCanUse, PLAN_LIMITS } from '../lib/planLimits';
+import { bandCanUse, resolveResourceLimit, PLAN_LIMITS } from '../lib/planLimits';
 
 const BANDS_COLLECTION = 'bands';
 const BAND_SONGS_COLLECTION = 'songs';
@@ -908,6 +908,19 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const addBandPressKit = useCallback(async (bandId: string, name: string): Promise<{ kitId: string | null; error: string | null }> => {
     if (!userId || !user?.email) return { kitId: null, error: 'Not signed in.' };
 
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return { kitId: null, error: 'Band not found.' };
+
+    if (!bandCanUse(band, 'pressKits', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
+      return { kitId: null, error: 'Press kits require a Pro or Crew plan for this band.' };
+    }
+
+    const currentPressKits = bandPressKitsByBandId[bandId] ?? [];
+    const pressKitLimit = resolveResourceLimit(band, 'pressKitLimit', user?.plan, user?.subscriptionStatus, user?.planOverride);
+    if (pressKitLimit !== null && currentPressKits.length >= pressKitLimit) {
+      return { kitId: null, error: `This band has reached the ${pressKitLimit}-press-kit limit for the Free plan. Upgrade to Pro or Crew for unlimited press kits.` };
+    }
+
     const trimmed = name.trim();
     if (!trimmed) return { kitId: null, error: 'Press kit name is required.' };
 
@@ -936,7 +949,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       return { kitId: null, error: error instanceof Error ? error.message : 'Failed to create press kit.' };
     }
-  }, [userId, user?.email]);
+  }, [bands, bandPressKitsByBandId, userId, user?.email, user?.plan, user?.subscriptionStatus, user?.planOverride]);
 
   const deleteBandPressKit = useCallback(async (bandId: string, kitId: string): Promise<string | null> => {
     if (!db || !userId) return 'Not signed in.';
@@ -2269,22 +2282,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const now = new Date().toISOString();
     const currentSetlists = bandSetlistsByBandId[bandId] ?? [];
 
-    const bandBillingPlan = band.billingPlan === 'pro' || band.billingPlan === 'crew' ? band.billingPlan : 'free';
-    const bandPlanActive = bandBillingPlan === 'free'
-      || band.billingSubscriptionStatus === 'active'
-      || band.billingSubscriptionStatus === 'trialing'
-      || band.billingSubscriptionStatus == null;
-    const userPlan = user?.plan === 'pro' || user?.plan === 'crew' ? user.plan : 'free';
-    const userPlanActive = user?.planOverride === true
-      || userPlan === 'free'
-      || user?.subscriptionStatus === 'active'
-      || user?.subscriptionStatus === 'trialing';
-    const planOrder: Record<string, number> = { free: 0, pro: 1, crew: 2 };
-    const effectivePlan = (planOrder[bandBillingPlan] ?? 0) >= (planOrder[userPlan] ?? 0) && bandPlanActive
-      ? bandBillingPlan
-      : userPlan;
-    const effectiveActive = effectivePlan === bandBillingPlan ? bandPlanActive : userPlanActive;
-    const setlistLimit = effectiveActive ? PLAN_LIMITS[effectivePlan].setlistLimit : PLAN_LIMITS.free.setlistLimit;
+    const setlistLimit = resolveResourceLimit(band, 'setlistLimit', user?.plan, user?.subscriptionStatus, user?.planOverride);
     if (setlistLimit !== null && currentSetlists.length >= setlistLimit) {
       return { setlistId: null, error: `This band has reached the ${setlistLimit}-setlist limit for the Free plan. Upgrade to Pro or Crew for unlimited setlists.` };
     }
@@ -2412,6 +2410,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const targetSetlist = previousSetlists.find((setlist) => setlist.id === setlistId);
     if (!targetSetlist) return 'Setlist not found.';
 
+    if (enabled && !bandCanUse(band, 'shareableLinks', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
+      return 'Shareable public links require a Pro or Crew plan for this band.';
+    }
+
     const bandSongs = bandSongsByBandId[bandId] ?? [];
     const publicSongs = enabled ? buildPublicSongs(targetSetlist.songIds, bandSongs) : undefined;
 
@@ -2451,7 +2453,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }));
       return error instanceof Error ? error.message : 'Failed to update setlist sharing.';
     }
-  }, [bandSetlistsByBandId, bandSongsByBandId, bands, userId]);
+  }, [bandSetlistsByBandId, bandSongsByBandId, bands, userId, user?.plan, user?.subscriptionStatus, user?.planOverride]);
 
   const deleteBandSetlist = useCallback(async (bandId: string, setlistId: string) => {
     if (!db || !userId) {
@@ -2787,6 +2789,16 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const isMember = band.memberIds.includes(userId);
     if (!isMember) return { riderId: null, error: 'You do not have permission to edit this band.' };
 
+    if (!bandCanUse(band, 'technicalRiders', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
+      return { riderId: null, error: 'Technical riders require a Pro or Crew plan for this band.' };
+    }
+
+    const currentRiders = bandInputListsByBandId[bandId] ?? [];
+    const riderLimit = resolveResourceLimit(band, 'riderLimit', user?.plan, user?.subscriptionStatus, user?.planOverride);
+    if (riderLimit !== null && currentRiders.length >= riderLimit) {
+      return { riderId: null, error: `This band has reached the ${riderLimit}-technical-rider limit for the Free plan. Upgrade to Pro or Crew for unlimited technical riders.` };
+    }
+
     const trimmed = name.trim();
     if (!trimmed) return { riderId: null, error: 'Rider name is required.' };
 
@@ -2820,7 +2832,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       return { riderId: null, error: error instanceof Error ? error.message : 'Failed to create technical rider.' };
     }
-  }, [bands, userId, user?.email]);
+  }, [bands, bandInputListsByBandId, userId, user?.email, user?.plan, user?.subscriptionStatus, user?.planOverride]);
 
   const renameBandInputList = useCallback(async (bandId: string, riderId: string, name: string) => {
     if (!db || !userId) {
@@ -2910,6 +2922,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const isMember = band.memberIds.includes(userId);
     if (!isMember) return 'You do not have permission to edit this band.';
 
+    if (enabled && !bandCanUse(band, 'shareableLinks', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
+      return 'Shareable public links require a Pro or Crew plan for this band.';
+    }
+
     const previousRiders = bandInputListsByBandId[bandId] ?? [];
     const now = new Date().toISOString();
     const nextRiders = previousRiders.map((rider) => (
@@ -2937,7 +2953,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       }));
       return error instanceof Error ? error.message : 'Failed to update input list sharing.';
     }
-  }, [bandInputListsByBandId, bands, userId]);
+  }, [bandInputListsByBandId, bands, userId, user?.plan, user?.subscriptionStatus, user?.planOverride]);
 
   const updateBandInputListContent = useCallback(async (params: {
     bandId: string;
