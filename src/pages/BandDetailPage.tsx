@@ -226,11 +226,9 @@ export default function BandDetailPage() {
     }
 
     setIsImportingSongs(true);
-    let importedCount = 0;
-    const failedFiles: string[] = [];
 
-    for (const file of Array.from(files)) {
-      try {
+    const results = await Promise.allSettled(
+      Array.from(files).map(async (file) => {
         const imported = await parseImportedSongFile(file);
         const now = new Date().toISOString();
         const song: Song = {
@@ -259,12 +257,18 @@ export default function BandDetailPage() {
         if (linkError) {
           throw new Error(linkError);
         }
+      })
+    );
 
+    let importedCount = 0;
+    const failedFiles: string[] = [];
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
         importedCount += 1;
-      } catch {
-        failedFiles.push(file.name);
+      } else {
+        failedFiles.push(files[index].name);
       }
-    }
+    });
 
     if (importedCount > 0 && failedFiles.length === 0) {
       toast.success(`Imported ${importedCount} song${importedCount === 1 ? '' : 's'} to ${band.name}.`);

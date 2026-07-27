@@ -75,7 +75,9 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       deletedBandDocs += await deleteBandCollectionWithNested(ctx.env, band.id);
     }
 
-    const deletedUserDocs = await deleteUserLegacyCollections(ctx.env, userId);
+    const deletedUserDocs = legacyBands.length > 0
+      ? await deleteUserLegacyCollections(ctx.env, userId)
+      : 0;
 
     return Response.json({
       ok: true,

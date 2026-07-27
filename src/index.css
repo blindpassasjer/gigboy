@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Barlow+Condensed:wght@300;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Barlow+Condensed:wght@300;900&family=Righteous&family=Poppins:wght@400;500;600;700;800&display=swap');
 
 /* ─── Reset & tokens ────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -12445,3 +12445,428 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
   padding: .2rem .3rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Showcase 2.0 — Kinetic Brutalism (self-contained, scoped under .sc2-page)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.sc2-page {
+  --sc2-bg: #0F0F23;
+  --sc2-primary: #1E1B4B;
+  --sc2-secondary: #4338CA;
+  --sc2-accent: #22C55E;
+  --sc2-fg: #F8FAFC;
+  --sc2-muted: #A5A3C4;
+  --sc2-surface: #16162E;
+  --sc2-border: #312E81;
+  --sc2-radius: 0px;
+
+  background: var(--sc2-bg);
+  color: var(--sc2-fg);
+  font-family: 'Poppins', system-ui, sans-serif;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.sc2-page h1,
+.sc2-page h2,
+.sc2-page h3 {
+  font-family: 'Righteous', 'Poppins', system-ui, sans-serif;
+  text-transform: uppercase;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.sc2-page a { color: inherit; text-decoration: none; }
+.sc2-page button { font-family: inherit; cursor: pointer; }
+
+/* ─── Nav / hero ────────────────────────────────────────────────── */
+
+.sc2-hero {
+  padding: 1.5rem 5vw 4.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.sc2-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0 3rem;
+}
+
+.sc2-nav-back {
+  font-family: 'Righteous', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+}
+
+.sc2-nav-badge {
+  border: 2px solid var(--sc2-accent);
+  color: var(--sc2-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 0.35rem 0.7rem;
+}
+
+.sc2-hero-title {
+  font-size: clamp(2.8rem, 9vw, 6.5rem);
+  color: var(--sc2-fg);
+  margin: 0 0 1.5rem;
+}
+
+.sc2-hero-title-hl {
+  color: var(--sc2-accent);
+  -webkit-text-stroke: 2px var(--sc2-accent);
+}
+
+.sc2-hero-copy {
+  max-width: 42ch;
+  font-size: 1.15rem;
+  color: var(--sc2-muted);
+  margin-bottom: 2.25rem;
+}
+
+.sc2-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sc2-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.85rem 1.75rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 2px solid var(--sc2-fg);
+  border-radius: var(--sc2-radius);
+  transition: transform 150ms ease, background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  box-shadow: 4px 4px 0 var(--sc2-accent);
+}
+
+.sc2-btn:hover,
+.sc2-btn:focus-visible {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--sc2-accent);
+}
+
+.sc2-btn--primary {
+  background: var(--sc2-accent);
+  color: #04170a;
+  border-color: var(--sc2-accent);
+  box-shadow: 4px 4px 0 var(--sc2-fg);
+}
+.sc2-btn--primary:hover,
+.sc2-btn--primary:focus-visible {
+  box-shadow: 2px 2px 0 var(--sc2-fg);
+}
+
+.sc2-btn--ghost {
+  background: transparent;
+  color: var(--sc2-fg);
+}
+
+/* ─── Marquee ───────────────────────────────────────────────────── */
+
+.sc2-marquee {
+  border-top: 2px solid var(--sc2-border);
+  border-bottom: 2px solid var(--sc2-border);
+  background: var(--sc2-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 0.9rem 0;
+}
+
+.sc2-marquee-track {
+  display: inline-flex;
+  gap: 0.75rem;
+  animation: sc2-scroll 22s linear infinite;
+}
+
+@keyframes sc2-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.sc2-marquee-item {
+  font-family: 'Righteous', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  color: var(--sc2-fg);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sc2-marquee-dot { color: var(--sc2-accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sc2-marquee-track { animation: none; }
+}
+
+/* ─── Bento grid ────────────────────────────────────────────────── */
+
+.sc2-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 5vw;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.sc2-card {
+  border: 2px solid var(--sc2-border);
+  background: var(--sc2-surface);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.sc2-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 6px 6px 0 var(--sc2-secondary);
+}
+
+.sc2-card--wide { grid-column: span 2; }
+
+@media (max-width: 860px) {
+  .sc2-grid { grid-template-columns: 1fr; }
+  .sc2-card--wide { grid-column: span 1; }
+}
+
+.sc2-card--accent { border-color: var(--sc2-accent); }
+.sc2-card--accent2 { border-color: var(--sc2-secondary); background: #1a1740; }
+.sc2-card--dark { background: var(--sc2-primary); }
+
+.sc2-card h3 {
+  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+  color: var(--sc2-fg);
+}
+
+.sc2-card p {
+  color: var(--sc2-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.sc2-card p code {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--sc2-accent);
+  padding: 0.1rem 0.3rem;
+  font-size: 0.85em;
+}
+
+.sc2-card-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--sc2-accent);
+}
+
+.sc2-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sc2-card-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--sc2-muted);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--sc2-border);
+}
+
+/* Chord demo card */
+
+.sc2-transpose {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 2px solid var(--sc2-fg);
+  padding: 0.25rem 0.6rem;
+}
+
+.sc2-transpose button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--sc2-fg);
+}
+
+.sc2-transpose button:hover { color: var(--sc2-accent); }
+
+.sc2-transpose span {
+  min-width: 1.6em;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+
+.sc2-chord-demo {
+  background: var(--sc2-bg);
+  border: 2px solid var(--sc2-border);
+  padding: 1.25rem;
+  overflow-x: auto;
+  color: var(--sc2-fg);
+}
+
+/* Setlist card */
+
+.sc2-setlist { list-style: none; display: flex; flex-direction: column; }
+
+.sc2-setlist li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--sc2-border);
+}
+
+.sc2-setlist-num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--sc2-accent);
+  font-weight: 700;
+}
+
+.sc2-setlist-title { flex: 1; font-weight: 600; }
+.sc2-setlist-duration { color: var(--sc2-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+
+/* Band card */
+
+.sc2-band-members { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; }
+
+.sc2-band-members li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sc2-avatar {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sc2-accent);
+  color: #04170a;
+  font-weight: 700;
+  border: 2px solid var(--sc2-fg);
+}
+
+.sc2-band-name { flex: 1; font-weight: 600; }
+.sc2-band-role {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sc2-muted);
+  border: 1px solid var(--sc2-border);
+  padding: 0.15rem 0.5rem;
+}
+
+/* Gig docs card */
+
+.sc2-doc-row { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+.sc2-doc-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 2px solid var(--sc2-secondary);
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Rehearsal card */
+
+.sc2-rehearsal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--sc2-bg);
+  border: 2px solid var(--sc2-border);
+  padding: 1.25rem;
+}
+
+.sc2-rehearsal-extra {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--sc2-muted);
+}
+
+.sc2-rehearsal-extra span { display: flex; align-items: center; gap: 0.4rem; }
+
+/* More card */
+
+.sc2-more-list { list-style: none; display: flex; flex-direction: column; gap: 0.9rem; }
+
+.sc2-more-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--sc2-muted);
+  font-size: 0.92rem;
+  flex-wrap: wrap;
+}
+
+.sc2-lang-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--sc2-muted);
+}
+
+/* ─── Closing CTA ───────────────────────────────────────────────── */
+
+.sc2-cta {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 5rem 5vw 6rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.sc2-cta h2 {
+  font-size: clamp(1.9rem, 5vw, 3.2rem);
+}
+
+.sc2-cta p {
+  color: var(--sc2-muted);
+  max-width: 46ch;
+}
+
+.sc2-footer-links {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--sc2-muted);
+}
+
+.sc2-footer-links a:hover { color: var(--sc2-accent); }
+
+/* Keep child components (chord chart, metronome, language badges) legible on dark bg */
+.sc2-page .chord-display,
+.sc2-page .chord-line { color: var(--sc2-fg); }

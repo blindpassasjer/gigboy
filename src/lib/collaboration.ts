@@ -1,6 +1,8 @@
 import {
   collection,
+  collectionGroup,
   doc,
+  documentId,
   getDoc,
   getDocs,
   query,
@@ -225,20 +227,33 @@ export async function loadAcceptedSharedResources<T>(params: {
       }
     });
 
-  const resources = await Promise.allSettled(
-    [...invitesByResource.values()].map(async (invite) => {
-      const resourceSnapshot = await getDoc(
-        getSharedResourceRef(db, invite.ownerId, invite.resourceType, invite.resourceId)
-      );
+  const invites = [...invitesByResource.values()];
+  const resourceCollectionName = getResourceCollection(resourceType);
+  const IN_QUERY_CHUNK_SIZE = 30;
 
-      if (!resourceSnapshot.exists()) {
-        return null;
-      }
+  const dataByPath = new Map<string, Record<string, unknown>>();
 
-      return mapResource(invite, resourceSnapshot.id, resourceSnapshot.data() as Record<string, unknown>);
-    })
-  );
+  for (let i = 0; i < invites.length; i += IN_QUERY_CHUNK_SIZE) {
+    const chunk = invites.slice(i, i + IN_QUERY_CHUNK_SIZE);
+    const paths = chunk.map(
+      (invite) => getSharedResourceRef(db, invite.ownerId, invite.resourceType, invite.resourceId).path
+    );
 
-  return resources
-    .flatMap((result) => (result.status === 'fulfilled' && result.value ? [result.value] : []));
+    const snapshot = await getDocs(
+      query(collectionGroup(db, resourceCollectionName), where(documentId(), 'in', paths))
+    );
+
+    snapshot.docs.forEach((docSnap) => {
+      dataByPath.set(docSnap.ref.path, docSnap.data() as Record<string, unknown>);
+    });
+  }
+
+  return invites.flatMap((invite) => {
+    const resourceRef = getSharedResourceRef(db, invite.ownerId, invite.resourceType, invite.resourceId);
+    const data = dataByPath.get(resourceRef.path);
+    if (!data) return [];
+
+    const mapped = mapResource(invite, resourceRef.id, data);
+    return mapped ? [mapped] : [];
+  });
 }

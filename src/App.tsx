@@ -26,6 +26,7 @@ const ProfileInvitesPage = lazy(() => import('./pages/ProfileInvitesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const ShowcasePage = lazy(() => import('./pages/ShowcasePage'));
+const Showcase2Page = lazy(() => import('./pages/Showcase2Page'));
 const CheckoutResultPage = lazy(() => import('./pages/CheckoutResultPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
@@ -175,6 +176,7 @@ const router = createBrowserRouter([
   { path: '/public/press-kit/:token', element: <PublicBandPressKitPage />, errorElement: routerErrorElement },
   { path: '/pricing', element: <PricingRoute />, errorElement: routerErrorElement },
   { path: '/showcase', element: <ShowcasePage />, errorElement: routerErrorElement },
+  { path: '/showcase2', element: <Showcase2Page />, errorElement: routerErrorElement },
   { path: '/checkout-result', element: <CheckoutResultPage />, errorElement: routerErrorElement },
   { path: '/terms', element: <TermsPage />, errorElement: routerErrorElement },
   { path: '/privacy', element: <PrivacyPage />, errorElement: routerErrorElement },

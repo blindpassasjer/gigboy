@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { arrayUnion, collection, deleteDoc, deleteField, doc, getDoc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, deleteDoc, deleteField, doc, getDoc, getDocs, onSnapshot, query, runTransaction, setDoc, where } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import type {
   Band,
@@ -2139,7 +2139,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), {
-        songIds: nextSongList.songIds,
+        songIds: arrayUnion(songId),
       }, { merge: true });
       return null;
     } catch (error) {
@@ -2181,7 +2181,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), {
-        songIds: nextSongList.songIds,
+        songIds: arrayRemove(songId),
       }, { merge: true });
       return null;
     } catch (error) {
@@ -2223,10 +2223,15 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       [bandId]: nextSongLists,
     }));
 
+    const songListRef = doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId);
+
     try {
-      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SONGLISTS_COLLECTION, songListId), {
-        songIds: nextSongIds,
-      }, { merge: true });
+      await runTransaction(db, async (transaction) => {
+        const latestSnap = await transaction.get(songListRef);
+        const latestSongIds = (latestSnap.data()?.songIds as string[] | undefined) ?? [];
+        const latestNextSongIds = moveIdBefore(latestSongIds, songId, beforeSongId);
+        transaction.set(songListRef, { songIds: latestNextSongIds }, { merge: true });
+      });
       return null;
     } catch (error) {
       setBandSongListsByBandId((prev) => ({
@@ -2621,8 +2626,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       const updatePayload: Record<string, unknown> = {
-        songIds: nextSetlist.songIds,
-        songNotes: nextSetlist.songNotes ?? null,
+        songIds: arrayRemove(songId),
+        [`songNotes.${songId}`]: deleteField(),
         updatedAt: now,
       };
       if (targetSetlist.publicShareEnabled) {
@@ -2676,15 +2681,23 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       [bandId]: nextSetlists,
     }));
 
+    const setlistRef = doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId);
+
     try {
-      const updatePayload: Record<string, unknown> = {
-        songIds: nextSongIds,
-        updatedAt: now,
-      };
-      if (targetSetlist.publicShareEnabled) {
-        updatePayload.publicSongs = nextSetlist.publicSongs ?? null;
-      }
-      await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_SETLISTS_COLLECTION, setlistId), updatePayload, { merge: true });
+      await runTransaction(db, async (transaction) => {
+        const latestSnap = await transaction.get(setlistRef);
+        const latestSongIds = (latestSnap.data()?.songIds as string[] | undefined) ?? [];
+        const latestNextSongIds = moveIdBefore(latestSongIds, songId, beforeSongId);
+
+        const updatePayload: Record<string, unknown> = {
+          songIds: latestNextSongIds,
+          updatedAt: now,
+        };
+        if (targetSetlist.publicShareEnabled) {
+          updatePayload.publicSongs = buildPublicSongs(latestNextSongIds, bandSongs);
+        }
+        transaction.set(setlistRef, updatePayload, { merge: true });
+      });
       return null;
     } catch (error) {
       setBandSetlistsByBandId((prev) => ({
