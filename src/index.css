@@ -9436,7 +9436,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .avatar-choice {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 999px;
+  aspect-ratio: 1 / 1;
   background: var(--bg);
   color: var(--text);
   min-height: 2.4rem;
