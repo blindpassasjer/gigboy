@@ -4,6 +4,7 @@ import { checkRateLimit } from '../_helpers/rateLimiter';
 
 interface Env {
   FIREBASE_PROJECT_ID?: string;
+  RATE_LIMITER: DurableObjectNamespace;
 }
 
 interface Data extends Record<string, unknown> {
@@ -25,17 +26,18 @@ const RATE_LIMIT_RULES: Array<{
   { test: (p) => p.startsWith('/api/public/press-kit/'), limit: 60, windowMs: 60_000 },
 ];
 
+// Applies to any /api/* path that didn't match a rule above, so nothing is
+// left unlimited by omission.
+const DEFAULT_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
+
 export const onRequest: PagesFunction<Env, never, Data> = async (ctx) => {
   const path = new URL(ctx.request.url).pathname;
 
   const ip = ctx.request.headers.get('CF-Connecting-IP') ?? 'unknown';
-  for (const rule of RATE_LIMIT_RULES) {
-    if (rule.test(path)) {
-      if (!checkRateLimit(`${ip}:${path}`, rule.limit, rule.windowMs)) {
-        return new Response('Too Many Requests', { status: 429 });
-      }
-      break;
-    }
+  const rule = RATE_LIMIT_RULES.find((r) => r.test(path)) ?? DEFAULT_RATE_LIMIT;
+  const allowed = await checkRateLimit(ctx.env.RATE_LIMITER, `${ip}:${path}`, rule.limit, rule.windowMs);
+  if (!allowed) {
+    return new Response('Too Many Requests', { status: 429 });
   }
 
   if (
