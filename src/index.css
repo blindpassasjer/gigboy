@@ -1779,6 +1779,40 @@ input, select, textarea { font: inherit; color: var(--text); }
   line-height: 1.5;
 }
 
+.profile-welcome-card-form {
+  display: flex;
+  gap: .6rem;
+  margin-top: .4rem;
+}
+
+.profile-welcome-card-form input {
+  flex: 1;
+  min-width: 0;
+  padding: .55rem .75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: .9rem;
+}
+
+.profile-welcome-card-form button {
+  padding: .55rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: .9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.profile-welcome-card-form button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
 /* ─── Song View ─────────────────────────────────────────────────────────────── */
 .song-view { display: flex; flex-direction: column; gap: 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
 
@@ -6534,6 +6568,15 @@ input, select, textarea { font: inherit; color: var(--text); }
 .setlist-action-btn--ghost:hover {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.profile-logout-btn {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.profile-logout-btn:hover {
+  color: var(--accent-h, var(--accent));
 }
 
 .setlist-action-btn--accent {

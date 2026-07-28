@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { collection, getDocs } from 'firebase/firestore';
 import { CreditCard, Download, LogOut, Sparkles, Trash2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
@@ -62,12 +62,16 @@ export default function ProfilePage() {
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, deleteAccount, logout } = useAuth();
   const {
     bands,
+    createBand,
     bandSongsByBandId,
     bandSongListsByBandId,
     bandSetlistsByBandId,
     bandInputListsByBandId,
     bandPressKitsByBandId,
   } = useBands();
+  const navigate = useNavigate();
+  const [newBandName, setNewBandName] = useState('');
+  const [busyCreateBand, setBusyCreateBand] = useState(false);
   const { songs } = useSongs();
   const { songLists } = useSongLists();
   const { setlists } = useSetlists();
@@ -349,6 +353,23 @@ export default function ProfilePage() {
     }
   };
 
+  const handleCreateFirstBand = async (e: FormEvent) => {
+    e.preventDefault();
+    const name = newBandName.trim();
+    if (!name || busyCreateBand) return;
+    setBusyCreateBand(true);
+    const result = await createBand(name, undefined, undefined);
+    setBusyCreateBand(false);
+    if (result.bandId) {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('gigboy-active-band-id', result.bandId);
+      }
+      navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
+    } else if (result.error) {
+      toast.error(result.error);
+    }
+  };
+
   return (
     <section className="profile-settings-page profile-settings-page--account">
       {bands.length === 0 && (
@@ -358,10 +379,20 @@ export default function ProfilePage() {
             Gigboy is your digital songbook for musicians. Add songs in ChordPro format,
             organize them into setlists, and use concert mode on stage.
           </p>
-          <p>
-            Tap the <strong>+</strong> in the sidebar to create your first workspace —
-            works for solo musicians and full bands.
-          </p>
+          <p>Create your first workspace — works for solo musicians and full bands.</p>
+          <form className="profile-welcome-card-form" onSubmit={handleCreateFirstBand}>
+            <input
+              type="text"
+              value={newBandName}
+              onChange={(e) => setNewBandName(e.target.value)}
+              placeholder="Band or artist name..."
+              aria-label="Band or artist name"
+              disabled={busyCreateBand}
+            />
+            <button type="submit" disabled={busyCreateBand || !newBandName.trim()}>
+              {busyCreateBand ? 'Creating…' : 'Create workspace'}
+            </button>
+          </form>
         </div>
       )}
       <header className="profile-account-hero">
@@ -408,7 +439,7 @@ export default function ProfilePage() {
             <p>@{user.username ?? 'setup'} · {user.email}</p>
             <button
               type="button"
-              className="setlist-action-btn setlist-action-btn--secondary"
+              className="setlist-action-btn setlist-action-btn--ghost profile-logout-btn"
               disabled={busyLogout}
               onClick={() => { void onLogout(); }}
             >
