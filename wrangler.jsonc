@@ -2,17 +2,17 @@
   "name": "gigboy",
   "compatibility_date": "2026-04-25",
   "pages_build_output_dir": "./dist",
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "RATE_LIMITER",
-        "class_name": "RateLimiterDO",
-        "script_name": "gigboy-rate-limiter"
-      }
-    ]
-  },
   "env": {
     "production": {
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "RATE_LIMITER",
+            "class_name": "RateLimiterDO",
+            "script_name": "gigboy-rate-limiter"
+          }
+        ]
+      },
       "vars": {
         "FIREBASE_PROJECT_ID": "songbook-bebd5",
         // Secrets managed via Cloudflare dashboard / wrangler pages secret put:

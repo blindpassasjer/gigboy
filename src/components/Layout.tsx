@@ -129,7 +129,7 @@ export default function Layout({ children }: Props) {
       return;
     }
 
-    if (kind === 'pressKit' && !activeBandPlanState.canUse('technicalRiders')) {
+    if (kind === 'pressKit' && !activeBandPlanState.canUse('pressKits')) {
       toast.error('Press kits require a Pro or Crew plan for this band.');
       return;
     }
@@ -164,7 +164,7 @@ export default function Layout({ children }: Props) {
     if (kind === 'setlist') {
       const result = await addBandSetlist(routeBandId, defaults.setlist);
       if (result.error) {
-        toast.error(result.error);
+        toast.error(result.error, { duration: 8000 });
         return;
       }
       if (result.setlistId) {
@@ -184,7 +184,7 @@ export default function Layout({ children }: Props) {
     if (kind === 'pressKit') {
       const result = await addBandPressKit(routeBandId, defaults.pressKit);
       if (result.error) {
-        toast.error(result.error);
+        toast.error(result.error, { duration: 8000 });
         return;
       }
       if (result.kitId) {
@@ -195,7 +195,7 @@ export default function Layout({ children }: Props) {
 
     const result = await addBandInputList(routeBandId, defaults.rider);
     if (result.error) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: 8000 });
       return;
     }
     if (result.riderId) {

@@ -318,7 +318,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       navigate(`/bands/${bandId}/setlists/${result.setlistId}`);
       onNavigate?.();
     } else if (result.error) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: 8000 });
     }
   };
 
@@ -329,7 +329,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (!name) return;
 
     const result = await addBandPressKit(bandId, name);
-    if (result.error) { toast.error(result.error); return; }
+    if (result.error) { toast.error(result.error, { duration: 8000 }); return; }
     setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== bandId));
     if (result.kitId) {
       clearGlobalSelection();
@@ -346,7 +346,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
     const result = await addBandInputList(bandId, name);
     if (result.error) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: 8000 });
       return;
     }
     if (result.riderId) {
