@@ -557,7 +557,6 @@ export default function Layout({ children }: Props) {
               aria-current={pathname === '/profile' ? 'page' : undefined}
             >
               <UserAvatar avatar={user.avatar} label={user.username ?? user.email} size="sm" />
-              <span className="topbar-link-label">Profile</span>
             </Link>
           )}
         </nav>

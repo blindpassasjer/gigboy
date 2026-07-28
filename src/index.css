@@ -666,6 +666,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: 1.35rem;
 }
 
+.topbar-profile-link .user-avatar {
+  background: none;
+  border: none;
+  width: auto;
+  height: auto;
+  font-size: 1.35rem;
+}
+
 .main-content {
   flex: 1;
   min-height: 0;
