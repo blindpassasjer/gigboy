@@ -18,11 +18,6 @@ export interface TabNoteEvent {
   notes: number[];
 }
 
-export interface TimeSignatureInfo {
-  beatsPerBar: number;
-  beatUnit: number;
-}
-
 /**
  * Convert a string index + fret number to a MIDI note.
  * stringIndex 0 = high-e (MIDI 64), 5 = low-E (MIDI 40).
@@ -40,61 +35,6 @@ export function fretToMidi(stringIndex: number, fret: number): number {
  */
 export function stripStringLabel(line: string): string {
   return line.replace(/^[eEbBgGdDaA]\s*[|:]\s*/, '').replace(/\|/g, '');
-}
-
-/** Parse a time signature like "4/4" or "6/8". Falls back to 4/4. */
-export function parseTimeSignature(timeSignature?: string): TimeSignatureInfo {
-  if (!timeSignature) return { beatsPerBar: 4, beatUnit: 4 };
-  const match = timeSignature.trim().match(/^(\d{1,2})\s*\/\s*(\d{1,2})$/);
-  if (!match) return { beatsPerBar: 4, beatUnit: 4 };
-
-  const beatsPerBar = parseInt(match[1], 10);
-  const beatUnit = parseInt(match[2], 10);
-  if (beatsPerBar <= 0) return { beatsPerBar: 4, beatUnit: 4 };
-
-  // Keep denominator in a useful practical range for bar guides.
-  if (![1, 2, 4, 8, 16].includes(beatUnit)) return { beatsPerBar: 4, beatUnit: 4 };
-  return { beatsPerBar, beatUnit };
-}
-
-/**
- * Build a character-level beat guide line aligned to tab columns.
- * Columns are treated as 16th-note resolution.
- *
- * @param length           Total character length of the guide string.
- * @param timeSignature    Optional "N/N" time signature string.
- * @param stepCharPositions  Optional array mapping step index → character position.
- *   When provided, beat markers are placed at the actual character positions of each
- *   step rather than assuming every step is 1 character wide. This is necessary when
- *   two-digit frets (≥ 10) make some steps 2 characters wide.
- */
-export function buildBeatGuide(length: number, timeSignature?: string, stepCharPositions?: number[]): string {
-  if (length <= 0) return '';
-  const { beatsPerBar, beatUnit } = parseTimeSignature(timeSignature);
-  const columnsPerBeat = Math.max(1, Math.round(16 / beatUnit));
-  const columnsPerBar = Math.max(1, beatsPerBar * columnsPerBeat);
-
-  const chars = new Array<string>(length).fill('-');
-
-  const placeMarker = (stepIdx: number, charPos: number) => {
-    if (charPos >= length) return;
-    if (stepIdx % columnsPerBar === 0) {
-      chars[charPos] = '|';
-    } else if (stepIdx % columnsPerBeat === 0) {
-      const beatIdx = Math.floor((stepIdx % columnsPerBar) / columnsPerBeat) + 1;
-      chars[charPos] = String(beatIdx % 10);
-    }
-  };
-
-  if (stepCharPositions && stepCharPositions.length > 0) {
-    stepCharPositions.forEach((charPos, stepIdx) => placeMarker(stepIdx, charPos));
-  } else {
-    for (let col = 0; col < length; col++) {
-      placeMarker(col, col);
-    }
-  }
-
-  return chars.join('');
 }
 
 /**

@@ -1,7 +1,7 @@
 import type { Setlist, Song, SongList, InputList, PressKit, TrashItemType } from '../types';
 
 export const TRASH_COLLECTION = 'trashItems';
-export const TRASH_RETENTION_DAYS = 30;
+const TRASH_RETENTION_DAYS = 30;
 
 export interface TrashRecord<T> {
   id: string;

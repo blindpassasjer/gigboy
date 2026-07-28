@@ -99,7 +99,7 @@ const PLAN_ORDER: Record<PlanTier, number> = { free: 0, pro: 1, crew: 2 };
  * Resolves the plan a band should be evaluated against: the higher of the band's own
  * billing plan and the acting user's plan, provided whichever one wins is actually active.
  */
-export function resolveEffectivePlan(
+function resolveEffectivePlan(
   band: Band,
   userPlan: PlanTier = 'free',
   userSubscriptionStatus: string | null = null

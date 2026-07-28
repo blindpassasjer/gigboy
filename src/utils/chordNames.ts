@@ -3,7 +3,7 @@ import { UKULELE_CHORDS } from '../data/ukuleleChords';
 
 // Union of every chord name we have a diagram for, used to power typeahead
 // suggestions in the ChordPro editor toolbar.
-export const ALL_CHORD_NAMES: string[] = Array.from(
+const ALL_CHORD_NAMES: string[] = Array.from(
   new Set([...Object.keys(GUITAR_CHORDS), ...Object.keys(UKULELE_CHORDS)]),
 ).sort((a, b) => a.localeCompare(b));
 

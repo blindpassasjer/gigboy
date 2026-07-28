@@ -1,6 +1,6 @@
 type BandPublicResourceType = 'setlists' | 'stageplots' | 'riders';
 
-export function slugifyPublicSegment(value: string): string {
+function slugifyPublicSegment(value: string): string {
   const normalized = value
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')

@@ -234,7 +234,7 @@ const GRID_W = (NUM_STRINGS - 1) * STR_GAP;
 const SVG_W = GML + GRID_W + GMR;
 const STRING_LABELS = ['E', 'A', 'D', 'G', 'B', 'e'];
 
-export function GuitarDiagram({ frets }: { frets: number[] }) {
+function GuitarDiagram({ frets }: { frets: number[] }) {
   const played = frets.filter(f => f > 0);
   const minFret = played.length ? Math.min(...played) : 0;
   const maxFret = played.length ? Math.max(...played) : 4;
@@ -328,7 +328,7 @@ const UKE_GRID_W = (UKE_NUM_STRINGS - 1) * STR_GAP;
 const UKE_SVG_W = GML + UKE_GRID_W + GMR;
 const UKE_STRING_LABELS = ['G', 'C', 'E', 'A'];
 
-export function UkuleleDiagram({ frets }: { frets: number[] }) {
+function UkuleleDiagram({ frets }: { frets: number[] }) {
   const played = frets.filter(f => f > 0);
   const minFret = played.length ? Math.min(...played) : 0;
   const maxFret = played.length ? Math.max(...played) : 4;
@@ -416,7 +416,7 @@ const BLACK_PCS: { pc: number; wOff: number }[] = [
   { pc: 10, wOff: 6 }, // A#
 ];
 
-export function PianoDiagram({ activeNotes }: { activeNotes: Set<number> }) {
+function PianoDiagram({ activeNotes }: { activeNotes: Set<number> }) {
   const OCTAVES = 3;
   const MIDI_START = 48; // C3
   const WKW = 20;  // white key width

@@ -3,7 +3,7 @@ import type { ParsedLine, ChordSegment } from '../types';
 const DIRECTIVE_RE = /^\{([^:}]+)(?::([^}]*))?\}$/;
 
 /** Parse a single ChordPro line into a structured representation. */
-export function parseLine(raw: string): ParsedLine {
+function parseLine(raw: string): ParsedLine {
   const trimmed = raw.trim();
 
   if (trimmed === '') return { type: 'empty', raw };

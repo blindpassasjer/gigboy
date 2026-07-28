@@ -151,7 +151,7 @@ interface SongListsContextValue {
 
 const SongListsContext = createContext<SongListsContextValue | null>(null);
 
-export const SONGLISTS_CATEGORY_ID = 'songlists-default';
+const SONGLISTS_CATEGORY_ID = 'songlists-default';
 
 export function SongListsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();

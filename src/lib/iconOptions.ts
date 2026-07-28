@@ -1,10 +1,3 @@
-// Band/artist identity — instruments, energy, stage presence.
-export const AVATAR_ICON_OPTIONS = [
-  '🎵', '🎶', '🎤', '🎸', '🎹', '🥁', '🎷', '🎺', '🪕', '🎻',
-  '🪘', '🪇', '🎧', '🎼', '🕺', '💃', '🤘', '👏', '🙌', '⭐',
-  '✨', '🔥', '⚡', '🌟', '💥', '🪩', '🎭', '🎪',
-] as const;
-
 // Song catalog and playback lists.
 export const SONGLIST_ICON_OPTIONS = [
   '🎵', '🎶', '🎼', '🎤', '🎧', '🎸', '🎹', '🥁', '🎷', '🎺',

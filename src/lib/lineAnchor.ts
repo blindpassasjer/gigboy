@@ -29,7 +29,7 @@ export function findContentStage(overlayEl: HTMLElement | null): HTMLElement | n
  * Finds the positionable line element whose vertical range contains `clientY`, falling back
  * to the nearest line by vertical distance to its center.
  */
-export function lineElementAtClientY(stage: HTMLElement, clientY: number): HTMLElement | null {
+function lineElementAtClientY(stage: HTMLElement, clientY: number): HTMLElement | null {
   const lineEls = Array.from(stage.querySelectorAll<HTMLElement>('[data-line-id]'));
   if (lineEls.length === 0) return null;
 
