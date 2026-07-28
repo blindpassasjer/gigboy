@@ -1767,9 +1767,33 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-bottom: .5rem;
 }
 
+.profile-welcome-card--highlight {
+  position: relative;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: linear-gradient(155deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--surface) 65%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent), 0 8px 24px -12px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.profile-welcome-card-icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  margin-bottom: .1rem;
+}
+
 .profile-welcome-card h2 {
   font-size: var(--section-title-size, 1rem);
   margin: 0;
+}
+
+.profile-welcome-card--highlight h2 {
+  font-size: 1.2rem;
 }
 
 .profile-welcome-card p {
@@ -1777,6 +1801,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
   margin: 0;
   line-height: 1.5;
+}
+
+.profile-welcome-card-cta {
+  color: var(--text) !important;
+  font-weight: 600;
+  font-size: .95rem !important;
 }
 
 .profile-welcome-card-form {
@@ -1788,24 +1818,36 @@ input, select, textarea { font: inherit; color: var(--text); }
 .profile-welcome-card-form input {
   flex: 1;
   min-width: 0;
-  padding: .55rem .75rem;
+  padding: .7rem .9rem;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 35%, var(--border));
   background: var(--bg);
   color: var(--text);
-  font-size: .9rem;
+  font-size: .95rem;
+}
+
+.profile-welcome-card-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .profile-welcome-card-form button {
-  padding: .55rem 1rem;
+  padding: .7rem 1.25rem;
   border-radius: 8px;
   border: none;
   background: var(--accent);
   color: var(--accent-contrast);
-  font-size: .9rem;
-  font-weight: 600;
+  font-size: .95rem;
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
+  transition: transform .1s ease, box-shadow .15s ease;
+}
+
+.profile-welcome-card-form button:not(:disabled):hover {
+  box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--accent) 60%, transparent);
+  transform: translateY(-1px);
 }
 
 .profile-welcome-card-form button:disabled {

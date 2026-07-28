@@ -507,7 +507,9 @@ async function firestoreRequest(
     throw new Error(`Firestore request failed (${method} ${segments.join('/')}): ${details}`);
   }
 
-  return response.json() as Promise<Record<string, unknown>>;
+  const text = await response.text();
+  if (!text) return {};
+  return JSON.parse(text) as Record<string, unknown>;
 }
 
 export function initializeFirebaseAdmin(env: Record<string, string | undefined>) {

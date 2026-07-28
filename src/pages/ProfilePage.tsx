@@ -373,13 +373,18 @@ export default function ProfilePage() {
   return (
     <section className="profile-settings-page profile-settings-page--account">
       {bands.length === 0 && (
-        <div className="profile-welcome-card">
-          <h2>Welcome to Gigboy</h2>
+        <div className="profile-welcome-card profile-welcome-card--highlight">
+          <div className="profile-welcome-card-icon">
+            <Sparkles size={22} />
+          </div>
+          <h2>Welcome to Gigboy!</h2>
           <p>
             Gigboy is your digital songbook for musicians. Add songs in ChordPro format,
             organize them into setlists, and use concert mode on stage.
           </p>
-          <p>Create your first workspace — works for solo musicians and full bands.</p>
+          <p className="profile-welcome-card-cta">
+            👉 Start by naming your first workspace — solo artist or full band, either works.
+          </p>
           <form className="profile-welcome-card-form" onSubmit={handleCreateFirstBand}>
             <input
               type="text"
@@ -388,6 +393,7 @@ export default function ProfilePage() {
               placeholder="Band or artist name..."
               aria-label="Band or artist name"
               disabled={busyCreateBand}
+              autoFocus
             />
             <button type="submit" disabled={busyCreateBand || !newBandName.trim()}>
               {busyCreateBand ? 'Creating…' : 'Create workspace'}
