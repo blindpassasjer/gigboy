@@ -117,7 +117,7 @@ service cloud.firestore {
 
     // User-scoped songbook data
     match /users/{userId} {
-      allow read: if isSignedIn();
+      allow read: if isOwner(userId);
       allow create: if isOwner(userId)
         && subscriptionFieldsNotElevated();
       allow update: if isOwner(userId)
