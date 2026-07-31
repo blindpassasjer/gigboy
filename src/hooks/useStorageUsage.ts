@@ -3,6 +3,7 @@ import { collection, collectionGroup, doc, getDoc, getDocs, onSnapshot, query, w
 import { getMetadata, ref } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
 import { PLAN_LIMITS } from '../lib/planLimits';
+import { getBandOwnerQuotaOnServer } from '../lib/bandsApi';
 
 const DEFAULT_STORAGE_QUOTA_BYTES = PLAN_LIMITS.free.storageQuotaBytes;
 
@@ -157,7 +158,7 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
             quotaBytes = quotaFromBand;
           } else {
             const ownerId = toSafeNonEmptyString(bandData?.ownerId);
-            if (ownerId) {
+            if (ownerId === currentUserId) {
               const ownerSnapshotResult = await Promise.allSettled([
                 getDoc(doc(firestore, 'users', ownerId)),
               ]);
@@ -167,6 +168,17 @@ export function useStorageUsage(userId: string | null | undefined, planQuotaByte
                 : null;
               const ownerData = ownerSnapshot?.data() as Record<string, unknown> | undefined;
               quotaBytes = resolveUserQuotaBytes(ownerData);
+            } else if (ownerId) {
+              // Non-owner band members can't read the owner's user profile directly
+              // (firestore.rules restricts /users/{id} reads to the owner), so the
+              // resolved quota is fetched via a server endpoint instead.
+              const quotaResult = await Promise.allSettled([
+                getBandOwnerQuotaOnServer({ userId: currentUserId, userEmail: '', bandId: currentBandId }),
+              ]);
+              if (cancelled) return;
+              if (quotaResult[0].status === 'fulfilled') {
+                quotaBytes = quotaResult[0].value.quotaBytes;
+              }
             }
           }
 

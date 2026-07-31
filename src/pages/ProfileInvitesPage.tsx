@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
 import { useSearchParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { db } from '../lib/firebase';
@@ -19,11 +18,6 @@ export default function ProfileInvitesPage() {
   const [loading, setLoading] = useState(true);
   const [invites, setInvites] = useState<CollaborationInvite[]>([]);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
-  const [profilesByUserId, setProfilesByUserId] = useState<Record<string, {
-    fullName?: string;
-    username?: string;
-    email?: string;
-  }>>({});
   const processedBandInviteIdRef = useRef<string | null>(null);
   const [acceptedConfirmations, setAcceptedConfirmations] = useState(() => [] as ReturnType<typeof useInviteNotifications>['unseenAcceptedOutgoing']);
   const { unseenAcceptedOutgoing, markAcceptedAsSeen } = useInviteNotifications();
@@ -112,66 +106,6 @@ export default function ProfileInvitesPage() {
       active = false;
     };
   }, [refreshBands, refreshInvites, searchParams, setSearchParams, user?.email, user?.id]);
-
-  useEffect(() => {
-    if (!db || !user?.id) {
-      setProfilesByUserId({});
-      return;
-    }
-
-    const firestore = db;
-
-    const targetUserIds = new Set<string>();
-    bands.forEach((band) => {
-      band.memberIds.forEach((memberId) => {
-        if (memberId !== user.id) {
-          targetUserIds.add(memberId);
-        }
-      });
-    });
-
-    invites.forEach((invite) => {
-      if (invite.ownerId && invite.ownerId !== user.id) {
-        targetUserIds.add(invite.ownerId);
-      }
-    });
-
-    if (targetUserIds.size === 0) {
-      setProfilesByUserId({});
-      return;
-    }
-
-    let active = true;
-    void Promise.allSettled(
-      [...targetUserIds].map(async (targetUserId) => {
-        const snapshot = await getDoc(doc(firestore, 'users', targetUserId));
-        const data = snapshot.data() as Record<string, unknown> | undefined;
-        return {
-          userId: targetUserId,
-          fullName: typeof data?.fullName === 'string' ? data.fullName : undefined,
-          username: typeof data?.username === 'string' ? data.username : undefined,
-          email: typeof data?.email === 'string' ? data.email : undefined,
-        };
-      })
-    ).then((results) => {
-      if (!active) return;
-
-      const next: Record<string, { fullName?: string; username?: string; email?: string }> = {};
-      results.forEach((result) => {
-        if (result.status !== 'fulfilled') return;
-        next[result.value.userId] = {
-          fullName: result.value.fullName,
-          username: result.value.username,
-          email: result.value.email,
-        };
-      });
-      setProfilesByUserId(next);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [bands, invites, user?.id]);
 
   const onAccept = async (invite: CollaborationInvite) => {
     if (!user?.id || !user.email) return;
@@ -268,7 +202,7 @@ export default function ProfileInvitesPage() {
                       <div className="profile-invite-main">
                         <strong>{invite.resourceName}</strong>
                         <span>
-                          {invite.ownerFullName || profilesByUserId[invite.ownerId]?.fullName || invite.ownerEmail} shared a {invite.resourceType} with {invite.permission} access
+                          {invite.ownerFullName || invite.ownerEmail} shared a {invite.resourceType} with {invite.permission} access
                         </span>
                         {invite.ownerId && mutualBandNamesByUserId[invite.ownerId]?.length ? (
                           <span>Shared bands: {mutualBandNamesByUserId[invite.ownerId].join(', ')}</span>

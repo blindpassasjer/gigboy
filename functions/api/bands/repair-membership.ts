@@ -22,8 +22,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   }
 
   const userEmail = typeof ctx.data.userEmail === 'string' ? ctx.data.userEmail : '';
-  const body = await ctx.request.json<{ username?: string; claimOwnership?: boolean }>().catch(() => ({}));
-  const requestedUsername = body.username?.trim().toLowerCase() ?? '';
+  const body = await ctx.request.json<{ claimOwnership?: boolean }>().catch(() => ({}));
   const adminUids = (ctx.env.ADMIN_UIDS ?? '').split(',').map((u) => u.trim()).filter(Boolean);
   const claimOwnership = body.claimOwnership === true && adminUids.includes(userId);
 
@@ -31,7 +30,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const profileUsername = typeof profile?.username === 'string' ? profile.username.trim().toLowerCase() : '';
   const profileFullName = typeof profile?.fullName === 'string' ? profile.fullName : '';
   const profileAvatar = typeof profile?.avatar === 'string' ? profile.avatar : '';
-  const usernameCandidates = new Set([profileUsername, requestedUsername].filter((entry) => entry.length > 0));
+  const usernameCandidates = new Set([profileUsername].filter((entry) => entry.length > 0));
 
   const allBands = await listFirestoreDocuments(ctx.env, ['bands']);
   let repairedCount = 0;

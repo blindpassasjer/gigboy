@@ -504,7 +504,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     void repairBandMembershipOnServer({
       userId,
       userEmail,
-      username: userUsername,
       claimOwnership: true,
     }).then((result) => {
       setMigrationMarker(SERVER_REPAIR_MARKER, userId);

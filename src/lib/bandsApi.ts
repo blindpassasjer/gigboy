@@ -36,6 +36,17 @@ export async function createBandOnServer(params: {
   });
 }
 
+export async function getBandOwnerQuotaOnServer(params: {
+  userId: string;
+  userEmail: string;
+  bandId: string;
+}) {
+  return postJson<{ quotaBytes: number }>('/api/bands/owner-quota', { bandId: params.bandId }, {
+    userId: params.userId,
+    userEmail: params.userEmail,
+  });
+}
+
 export async function createBandInviteLinkOnServer(params: {
   userId: string;
   userEmail: string;
@@ -84,7 +95,6 @@ export async function deleteBandOnServer(params: {
 export async function repairBandMembershipOnServer(params: {
   userId: string;
   userEmail: string;
-  username?: string;
   claimOwnership?: boolean;
 }) {
   return postJson<{
@@ -96,7 +106,7 @@ export async function repairBandMembershipOnServer(params: {
     claimedBandIds: string[];
   }>(
     '/api/bands/repair-membership',
-    { username: params.username, claimOwnership: params.claimOwnership === true },
+    { claimOwnership: params.claimOwnership === true },
     {
       userId: params.userId,
       userEmail: params.userEmail,
