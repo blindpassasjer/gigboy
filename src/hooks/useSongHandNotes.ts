@@ -127,11 +127,10 @@ export function useSongHandNotes(params: {
       };
     };
 
-    if (visibleAuthorIds.length === 0 && !defaultToCurrentUser) {
+    if (visibleAuthorIds.length === 0) {
+      if (defaultToCurrentUser || hasManualVisibilitySelectionRef.current) return [];
       return notes.map(colorizeByAuthor);
     }
-
-    if (visibleAuthorIds.length === 0) return [];
 
     const visible = new Set(visibleAuthorIds);
     return notes

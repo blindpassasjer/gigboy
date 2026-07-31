@@ -470,6 +470,23 @@ export default function LyricHandNotesOverlay({
     };
   }, []);
 
+  // Discard any in-progress gesture when draw mode is turned off (e.g. switching
+  // to Type) — otherwise pointerIdRef/activeStrokeRef stay stuck on the interrupted
+  // stroke and swallow the first touch the next time Draw is re-enabled.
+  useEffect(() => {
+    if (drawEnabled) return;
+    activePointersRef.current.clear();
+    twoFingerScrollRef.current = null;
+    const hadActiveStroke = activeStrokeRef.current !== null;
+    activeStrokeRef.current = null;
+    pointerIdRef.current = null;
+    lastActivePointRef.current = null;
+    if (hadActiveStroke) {
+      setRevision((prev) => prev + 1);
+      onActiveLineChange?.(null);
+    }
+  }, [drawEnabled, onActiveLineChange]);
+
   if (!visible) return null;
 
   return (
