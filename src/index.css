@@ -2317,18 +2317,28 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .visual-metronome-light {
-  width: .68rem;
-  height: .68rem;
+  width: 1.1rem;
+  height: 1.1rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--muted) 45%, transparent);
   opacity: .45;
+  flex-shrink: 0;
 }
 
 .visual-metronome-light.is-running {
   background: color-mix(in srgb, var(--accent) 85%, white);
-  animation-name: metronome-pulse;
-  animation-iteration-count: infinite;
-  animation-timing-function: linear;
+  opacity: 1;
+  animation-name: metronome-flash;
+  animation-duration: .3s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.visual-metronome-light.is-running.is-downbeat {
+  width: 1.3rem;
+  height: 1.3rem;
+  animation-name: metronome-flash-downbeat;
+  animation-duration: .36s;
 }
 
 .visual-metronome-tempo-controls {
@@ -2399,21 +2409,22 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .visual-metronome-beat {
-  width: .38rem;
-  height: .38rem;
+  width: .46rem;
+  height: .46rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--muted) 35%, transparent);
-  transition: transform .14s ease, background .14s ease;
+  transition: transform .14s ease, background .14s ease, box-shadow .14s ease;
 }
 
 .visual-metronome-beat.is-active {
-  transform: scale(1.12);
+  transform: scale(1.35);
   background: color-mix(in srgb, var(--accent) 85%, white);
+  box-shadow: 0 0 0 .12rem color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .visual-metronome-beat.is-downbeat {
-  width: .5rem;
-  height: .5rem;
+  width: .62rem;
+  height: .62rem;
 }
 
 .song-view-header .visual-metronome {
@@ -3055,28 +3066,30 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--surface) 82%, var(--bg));
 }
 
-@keyframes metronome-pulse {
+@keyframes metronome-flash {
   0% {
-    transform: scale(.72);
-    opacity: .4;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent);
-  }
-
-  14% {
-    transform: scale(1);
+    transform: scale(1.35);
     opacity: 1;
-    box-shadow: 0 0 0 .34rem color-mix(in srgb, var(--accent) 26%, transparent);
-  }
-
-  32% {
-    transform: scale(.74);
-    opacity: .5;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+    box-shadow: 0 0 0 .5rem color-mix(in srgb, var(--accent) 40%, transparent);
   }
 
   100% {
-    transform: scale(.72);
-    opacity: .4;
+    transform: scale(1);
+    opacity: .55;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+@keyframes metronome-flash-downbeat {
+  0% {
+    transform: scale(1.55);
+    opacity: 1;
+    box-shadow: 0 0 0 .75rem color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: .55;
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
   }
 }

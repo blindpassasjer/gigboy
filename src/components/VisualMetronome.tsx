@@ -31,6 +31,7 @@ export default function VisualMetronome({ tempo, timeSignature, className = '', 
   const beatsPerBar = useMemo(() => parseBeatsPerBar(timeSignature), [timeSignature]);
   const [isRunning, setIsRunning] = useState(false);
   const [activeBeat, setActiveBeat] = useState(0);
+  const [tick, setTick] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -92,6 +93,7 @@ export default function VisualMetronome({ tempo, timeSignature, className = '', 
         playClick(next === 0);
         return next;
       });
+      setTick((t) => t + 1);
     }, intervalMs);
 
     return () => window.clearInterval(intervalId);
@@ -124,8 +126,6 @@ export default function VisualMetronome({ tempo, timeSignature, className = '', 
     setBpm(newBpm);
   };
 
-  const playState = isRunning ? 'running' : 'paused';
-
   return (
     <div className={`visual-metronome ${className}`.trim()}>
       <button
@@ -150,11 +150,8 @@ export default function VisualMetronome({ tempo, timeSignature, className = '', 
 
       <div className="visual-metronome-readout">
         <span
-          className={`visual-metronome-light${isRunning ? ' is-running' : ''}`}
-          style={{
-            animationDuration: `${Math.max(80, Math.round(60000 / bpm))}ms`,
-            animationPlayState: playState,
-          }}
+          key={isRunning ? tick : 'idle'}
+          className={`visual-metronome-light${isRunning ? ' is-running' : ''}${isRunning && activeBeat === 0 ? ' is-downbeat' : ''}`}
           aria-hidden="true"
         />
         <div className="visual-metronome-tempo-controls">
