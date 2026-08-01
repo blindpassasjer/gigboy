@@ -20,6 +20,12 @@ interface Props {
    * words on the line stays a single straight shape instead of bending across two rows.
    */
   pinnedLineIds?: Set<number>;
+  /**
+   * Hide {title}/{subtitle}/{artist} directive lines. Callers that already show the song's
+   * title/artist elsewhere (e.g. concert mode's header) pass this so the chordpro body
+   * doesn't waste page space repeating them above the actual lyrics.
+   */
+  hideMetaDirectives?: boolean;
 }
 
 export default function ChordDisplay({
@@ -31,6 +37,7 @@ export default function ChordDisplay({
   timeSignature,
   onChordClick,
   pinnedLineIds,
+  hideMetaDirectives = false,
 }: Props) {
   const lines = useMemo(() => assignLineIds(parseChordPro(chordpro)), [chordpro]);
 
@@ -47,6 +54,7 @@ export default function ChordDisplay({
           timeSignature={timeSignature}
           onChordClick={onChordClick}
           pinnedLineIds={pinnedLineIds}
+          hideMetaDirectives={hideMetaDirectives}
         />
       ))}
     </div>
@@ -96,6 +104,7 @@ interface LineRendererProps {
   timeSignature?: string;
   onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement) => void;
   pinnedLineIds?: Set<number>;
+  hideMetaDirectives?: boolean;
 }
 
 function LineRenderer({
@@ -107,6 +116,7 @@ function LineRenderer({
   timeSignature,
   onChordClick,
   pinnedLineIds,
+  hideMetaDirectives,
 }: LineRendererProps) {
   if (line.type === 'empty') {
     return <div className="chord-line chord-line--empty" data-line-id={line.lineId} />;
@@ -141,6 +151,7 @@ function LineRenderer({
             timeSignature={timeSignature}
             onChordClick={onChordClick}
             pinnedLineIds={pinnedLineIds}
+            hideMetaDirectives={hideMetaDirectives}
           />
         ))}
       </div>
@@ -149,9 +160,9 @@ function LineRenderer({
 
   if (line.type === 'directive') {
     const dir = line.directive!;
-    if (dir === 'title') return <h2 className="song-title-directive">{line.directiveValue}</h2>;
+    if (dir === 'title') return hideMetaDirectives ? null : <h2 className="song-title-directive">{line.directiveValue}</h2>;
     if (dir === 'subtitle' || dir === 'artist')
-      return <p className="song-subtitle-directive">{line.directiveValue}</p>;
+      return hideMetaDirectives ? null : <p className="song-subtitle-directive">{line.directiveValue}</p>;
     // Short-form section labels (e.g. {chorus} without start/end)
     if (dir === 'chorus') return <div className="section-label">Chorus</div>;
     if (dir === 'intro') return <div className="section-label">Intro</div>;

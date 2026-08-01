@@ -758,6 +758,7 @@ export default function ConcertModeView({
                   bpm={currentSong.tempo}
                   timeSignature={currentSong.timeSignature}
                   instrument={chordInstrument}
+                  hideMetaDirectives
                   onChordClick={showChords && !drawEnabled
                     ? (chord, rect) => {
                       setActiveChord((previous) =>
