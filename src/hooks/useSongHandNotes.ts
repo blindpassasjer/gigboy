@@ -43,6 +43,15 @@ export function useSongHandNotes(params: {
   const [visibleAuthorIds, setVisibleAuthorIds] = useState<string[]>([]);
   const hasManualVisibilitySelectionRef = useRef(false);
 
+  // Undo/redo stacks of stroke snapshots for the current user's own strokes.
+  // Reset whenever the song changes so history doesn't leak across songs.
+  const [undoStack, setUndoStack] = useState<LyricNoteStroke[][]>([]);
+  const [redoStack, setRedoStack] = useState<LyricNoteStroke[][]>([]);
+  useEffect(() => {
+    setUndoStack([]);
+    setRedoStack([]);
+  }, [songId]);
+
   useEffect(() => {
     if (!enabled) {
       setVisibleAuthorIds([]);
@@ -143,13 +152,18 @@ export function useSongHandNotes(params: {
     return notes.find((note) => note.authorUid === userId) ?? null;
   }, [notes, userId]);
 
-  // Keep a ref so saveMyNotes can read the latest textNotes without being a dependency.
+  // Keep refs so save/undo/redo can read the latest values without being a dependency.
   const myNoteTextNotesRef = useRef<LyricTextNote[] | undefined>(undefined);
   useEffect(() => {
     myNoteTextNotesRef.current = myNote?.textNotes;
   }, [myNote?.textNotes]);
 
-  const saveMyNotes = useCallback(async (strokes: LyricNoteStroke[]) => {
+  const myStrokesRef = useRef<LyricNoteStroke[]>([]);
+  useEffect(() => {
+    myStrokesRef.current = myNote?.strokes ?? [];
+  }, [myNote?.strokes]);
+
+  const persistStrokes = useCallback(async (strokes: LyricNoteStroke[]) => {
     if (!db || !scope || !userId || !user) return;
 
     // Normalize all strokes to user's assigned color
@@ -192,6 +206,32 @@ export function useSongHandNotes(params: {
       setSaveState('error');
     }
   }, [scope, songId, user, userId]);
+
+  const saveMyNotes = useCallback(async (strokes: LyricNoteStroke[]) => {
+    setUndoStack((prev) => [...prev, myStrokesRef.current].slice(-50));
+    setRedoStack([]);
+    await persistStrokes(strokes);
+  }, [persistStrokes]);
+
+  const undoStroke = useCallback(() => {
+    setUndoStack((prev) => {
+      if (prev.length === 0) return prev;
+      const previousStrokes = prev[prev.length - 1];
+      setRedoStack((redo) => [...redo, myStrokesRef.current].slice(-50));
+      void persistStrokes(previousStrokes);
+      return prev.slice(0, -1);
+    });
+  }, [persistStrokes]);
+
+  const redoStroke = useCallback(() => {
+    setRedoStack((prev) => {
+      if (prev.length === 0) return prev;
+      const nextStrokes = prev[prev.length - 1];
+      setUndoStack((undo) => [...undo, myStrokesRef.current].slice(-50));
+      void persistStrokes(nextStrokes);
+      return prev.slice(0, -1);
+    });
+  }, [persistStrokes]);
 
   const saveMyTextNotes = useCallback(async (textNotes: LyricTextNote[]) => {
     if (!db || !scope || !userId || !user) return;
@@ -237,6 +277,9 @@ export function useSongHandNotes(params: {
 
   const clearMyNotes = useCallback(async () => {
     if (!db || !scope || !userId) return;
+
+    setUndoStack((prev) => [...prev, myStrokesRef.current].slice(-50));
+    setRedoStack([]);
 
     const previousNotes = notes;
     setNotes((prev) => prev.filter((entry) => entry.authorUid !== userId));
@@ -299,5 +342,9 @@ export function useSongHandNotes(params: {
     deleteNotesByAuthor,
     showAll,
     toggleVisibleAuthor,
+    undoStroke,
+    redoStroke,
+    canUndo: undoStack.length > 0,
+    canRedo: redoStack.length > 0,
   };
 }

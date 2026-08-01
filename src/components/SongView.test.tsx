@@ -79,6 +79,10 @@ vi.mock('../hooks/useSongHandNotes', () => ({
     showAll: vi.fn(),
     showMineOnly: vi.fn(),
     toggleVisibleAuthor: vi.fn(),
+    undoStroke: vi.fn(),
+    redoStroke: vi.fn(),
+    canUndo: false,
+    canRedo: false,
   }),
 }));
 

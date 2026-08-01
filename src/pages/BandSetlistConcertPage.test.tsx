@@ -96,6 +96,10 @@ vi.mock('../hooks/useSongHandNotes', () => ({
     visibleAuthorIds: ['collab-1'],
     showAll: vi.fn(),
     toggleVisibleAuthor: vi.fn(),
+    undoStroke: vi.fn(),
+    redoStroke: vi.fn(),
+    canUndo: false,
+    canRedo: false,
   }),
 }));
 

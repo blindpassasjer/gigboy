@@ -23,6 +23,8 @@ import {
   Metronome,
   Search,
   X,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { LyricNoteStroke, Song, LyricTextNote } from '../types';
@@ -757,14 +759,34 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                       </label>
 
                       {drawEnabled && (
-                        <button
-                          className="notes-toolbar-btn notes-toolbar-btn--danger"
-                          onClick={handleClearNotes}
-                          disabled={handNotes.myStrokes.length === 0}
-                          title="Clear my notes"
-                        >
-                          Clear
-                        </button>
+                        <>
+                          <button
+                            className="notes-toolbar-btn"
+                            onClick={handNotes.undoStroke}
+                            disabled={!handNotes.canUndo}
+                            title="Undo"
+                            aria-label="Undo"
+                          >
+                            <Undo2 size={12} />
+                          </button>
+                          <button
+                            className="notes-toolbar-btn"
+                            onClick={handNotes.redoStroke}
+                            disabled={!handNotes.canRedo}
+                            title="Redo"
+                            aria-label="Redo"
+                          >
+                            <Redo2 size={12} />
+                          </button>
+                          <button
+                            className="notes-toolbar-btn notes-toolbar-btn--danger"
+                            onClick={handleClearNotes}
+                            disabled={handNotes.myStrokes.length === 0}
+                            title="Clear my notes"
+                          >
+                            Clear
+                          </button>
+                        </>
                       )}
 
                       {handNotes.authors.length > 0 && (

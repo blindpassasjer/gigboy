@@ -14,6 +14,8 @@ import {
   RotateCcw,
   SlidersHorizontal,
   X,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { LyricNoteStroke, Song } from '../types';
@@ -687,14 +689,34 @@ export default function ConcertModeView({
                         </label>
 
                         {drawEnabled && (
-                          <button
-                            className="notes-toolbar-btn notes-toolbar-btn--danger"
-                            onClick={() => { void handleClearNotes(); }}
-                            disabled={handNotes.myStrokes.length === 0}
-                            title="Clear my notes"
-                          >
-                            Clear
-                          </button>
+                          <>
+                            <button
+                              className="notes-toolbar-btn"
+                              onClick={handNotes.undoStroke}
+                              disabled={!handNotes.canUndo}
+                              title="Undo"
+                              aria-label="Undo"
+                            >
+                              <Undo2 size={12} />
+                            </button>
+                            <button
+                              className="notes-toolbar-btn"
+                              onClick={handNotes.redoStroke}
+                              disabled={!handNotes.canRedo}
+                              title="Redo"
+                              aria-label="Redo"
+                            >
+                              <Redo2 size={12} />
+                            </button>
+                            <button
+                              className="notes-toolbar-btn notes-toolbar-btn--danger"
+                              onClick={() => { void handleClearNotes(); }}
+                              disabled={handNotes.myStrokes.length === 0}
+                              title="Clear my notes"
+                            >
+                              Clear
+                            </button>
+                          </>
                         )}
 
                         {handNotes.saveState === 'saving' && (

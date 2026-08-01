@@ -170,12 +170,17 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     songListId,
   ]);
 
+  // Reset the undo/redo history only when a *different* song is loaded (by id),
+  // not on every `initialValues` recompute — autosave round-trips the saved song
+  // back through `initialSong` on every save, which would otherwise wipe the
+  // history stack seconds after the user starts typing.
   useEffect(() => {
     setLastSavedValues(initialValues);
     setSaveState('idle');
     historyRef.current = [initialValues];
     setHistoryIndex(0);
-  }, [initialValues]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSong?.id]);
 
   const isDirty = useMemo(() => {
     return formValues.title !== lastSavedValues.title
