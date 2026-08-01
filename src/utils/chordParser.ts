@@ -66,8 +66,8 @@ function parseLine(raw: string): ParsedLine {
   return { type: 'chord-lyric', segments, raw };
 }
 
-const SECTION_START_RE = /^\{start_of_(\w+)\}$/;
-const SECTION_END_RE = /^\{end_of_(\w+)\}$/;
+const SECTION_START_RE = /^\{start_of_(\w+)(?::([^}]*))?\}$/;
+const SECTION_END_RE = /^\{end_of_(\w+)(?::[^}]*)?\}$/;
 
 /** Consume a {start_of_tab}...{end_of_tab} block starting at i+1. Returns the tab lines and new i. */
 function consumeTabBlock(rawLines: string[], startI: number): { tabLines: string[]; nextI: number } {
@@ -110,12 +110,14 @@ export function parseChordPro(text: string): ParsedLine[] {
       const sectionMatch = trimmed.match(SECTION_START_RE);
       if (sectionMatch && sectionMatch[1] !== 'tab') {
         const sectionType = sectionMatch[1];
+        // Re-match against the untouched line to preserve the label's original casing.
+        const sectionLabel = rawLines[i].trim().match(SECTION_START_RE)?.[2]?.trim() || undefined;
         const endDirective = `{end_of_${sectionType}}`;
         // Find the matching end
         let j = i + 1;
-        while (j < endI && rawLines[j].trim().toLowerCase() !== endDirective) j++;
+        while (j < endI && !rawLines[j].trim().toLowerCase().startsWith(endDirective.slice(0, -1))) j++;
         const sectionLines = parseRange(i + 1, j);
-        result.push({ type: 'section', sectionType, sectionLines, raw: '' });
+        result.push({ type: 'section', sectionType, sectionLabel, sectionLines, raw: '' });
         i = j < endI ? j + 1 : j; // skip the end directive if found
         continue;
       }

@@ -29,6 +29,7 @@ import type { LyricNoteStroke, Song, LyricTextNote } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
+import SongMetaBadges from './SongMetaBadges';
 import VisualMetronome from './VisualMetronome';
 import VisualTuner from './VisualTuner';
 import { transposeChord } from '../utils/chordParser';
@@ -174,6 +175,12 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   });
   const hasRecordings = recordings.length > 0;
   const hasAttachments = attachments.length > 0;
+
+  const badgeCounts = useMemo(() => ({
+    notes: handNotes.notes.filter((note) => note.strokes.length > 0 || (note.textNotes?.length ?? 0) > 0).length,
+    attachments: attachments.length,
+    recordings: recordings.length,
+  }), [handNotes.notes, attachments.length, recordings.length]);
 
   const handleStrokesChange = useCallback((strokes: LyricNoteStroke[]) => {
     handNotes.saveMyNotes(strokes);
@@ -452,6 +459,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             <LanguageBadge code={song.language} />
             {song.secondaryLanguages?.map((l) => <LanguageBadge key={l} code={l} />)}
             {song.tags?.map((t) => <span key={t} className="tag">{t}</span>)}
+            <SongMetaBadges song={song} counts={badgeCounts} />
           </div>
         </div>
 

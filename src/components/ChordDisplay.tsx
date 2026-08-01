@@ -74,6 +74,8 @@ function assignLineIds(lines: ParsedLine[]): ParsedLine[] {
   return assign(lines);
 }
 
+const METADATA_DIRECTIVES = new Set(['key', 'capo', 'tempo', 'time', 'duration']);
+
 const SECTION_LABELS: Record<string, string> = {
   verse: 'Verse',
   chorus: 'Chorus',
@@ -124,7 +126,7 @@ function LineRenderer({
   }
 
   if (line.type === 'section') {
-    const label = SECTION_LABELS[line.sectionType ?? ''] ?? line.sectionType ?? '';
+    const label = line.sectionLabel || SECTION_LABELS[line.sectionType ?? ''] || line.sectionType || '';
     return (
       <div className={`chord-section chord-section--${line.sectionType}`}>
         {label && <div className="section-label">{label}</div>}
@@ -158,6 +160,9 @@ function LineRenderer({
     if (dir === 'interlude') return <div className="section-label">Interlude</div>;
     if (dir === 'solo') return <div className="section-label">Solo</div>;
     if (dir === 'outro') return <div className="section-label">Outro</div>;
+    // Pure metadata directives (key, tempo, capo, etc.) are already surfaced via the
+    // song's own fields/toolbar — don't dump their raw value as a stray, unlabeled line.
+    if (METADATA_DIRECTIVES.has(dir)) return null;
     if (line.directiveValue) return <div className="section-label">{line.directiveValue}</div>;
     return null;
   }

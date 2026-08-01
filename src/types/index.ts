@@ -409,6 +409,8 @@ export interface ParsedLine {
   tabLines?: string[];
   /** Section name, e.g. "verse", "chorus" (only present when type === 'section') */
   sectionType?: string;
+  /** Custom label from {start_of_verse: Verse 1}, overrides the default section heading */
+  sectionLabel?: string;
   /** Content lines nested inside a section block (only present when type === 'section') */
   sectionLines?: ParsedLine[];
   /**
