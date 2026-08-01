@@ -4,23 +4,26 @@ import { Link } from 'react-router-dom';
 import {
   Activity,
   ArrowRight,
+  Check,
   Disc3,
   FileText,
   Globe2,
   Guitar,
   ListMusic,
   Map as MapIcon,
+  Menu,
   Mic2,
   Minus,
   Moon,
+  Music,
   Newspaper,
-  Paperclip,
   Plus,
   Search,
   ShieldCheck,
   Sun,
   Users,
   WifiOff,
+  X,
 } from 'lucide-react';
 import BrandMark from '../components/BrandMark';
 import ChordDisplay from '../components/ChordDisplay';
@@ -39,17 +42,14 @@ I [C]once was [G]lost, but [Em]now am [D]found
 Was [G]blind, but [C]now I [G]see
 {end_of_chorus}`;
 
-const SECTIONS = [
-  { id: 'chordpro', kicker: 'Songbook' },
-  { id: 'setlists', kicker: 'Setlists' },
-  { id: 'bands', kicker: 'Collaboration' },
-  { id: 'gig-docs', kicker: 'Show up prepared' },
-  { id: 'rehearsal', kicker: 'Rehearsal tools' },
-  { id: 'more', kicker: 'And more' },
+const NAV_LINKS = [
+  { id: 'features', label: 'Features' },
+  { id: 'demo', label: 'See it work' },
+  { id: 'how', label: 'How it works' },
+  { id: 'plans', label: 'Plans' },
 ] as const;
-const SECTION_IDS = SECTIONS.map((s) => s.id);
 
-/** Reveals a section with a staggered fade/slide-up transition once it scrolls into view. */
+/** Reveals an element with a fade/slide-up transition once it scrolls into view. */
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   const [visible, setVisible] = useState(false);
@@ -64,7 +64,7 @@ function useReveal<T extends HTMLElement>() {
           observer.disconnect();
         }
       },
-      { threshold: 0.2, rootMargin: '0px 0px -60px 0px' },
+      { threshold: 0.15, rootMargin: '0px 0px -60px 0px' },
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -73,133 +73,73 @@ function useReveal<T extends HTMLElement>() {
   return { ref, visible };
 }
 
-/** Tracks which showcase section is most in-view, for the side progress rail. */
-function useActiveSection(ids: readonly string[]) {
-  const [active, setActive] = useState<string>(ids[0]);
-
-  useEffect(() => {
-    const elements = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!elements.length) return;
-
-    const ratios = new Map<string, number>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          ratios.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0);
-        }
-        let bestId = '';
-        let bestRatio = 0;
-        for (const [id, ratio] of ratios) {
-          if (ratio > bestRatio) {
-            bestRatio = ratio;
-            bestId = id;
-          }
-        }
-        if (bestRatio > 0) setActive(bestId);
-      },
-      { threshold: [0.25, 0.5, 0.75] },
-    );
-    elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [ids]);
-
-  return active;
+function Reveal({ as: As = 'div', className = '', children }: { as?: 'div' | 'section'; className?: string; children: ReactNode }) {
+  const { ref, visible } = useReveal<HTMLDivElement>();
+  return (
+    <As ref={ref as never} className={`showcase-reveal${visible ? ' is-visible' : ''} ${className}`}>
+      {children}
+    </As>
+  );
 }
 
-/** Fixed bar across the top that fills as the page is scrolled. */
-function ScrollProgressBar() {
-  const [progress, setProgress] = useState(0);
+/** Sticky top navigation with section anchors and a mobile menu. */
+function ShowcaseNav() {
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    let raf = 0;
-    function measure() {
-      const doc = document.documentElement;
-      const scrollable = doc.scrollHeight - doc.clientHeight;
-      setProgress(scrollable > 0 ? Math.min(1, Math.max(0, doc.scrollTop / scrollable)) : 0);
-    }
     function onScroll() {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(measure);
+      setScrolled(window.scrollY > 8);
     }
-    measure();
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(raf);
-    };
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   return (
-    <div className="showcase-progress-track" aria-hidden="true">
-      <span className="showcase-progress-fill" style={{ transform: `scaleX(${progress})` }} />
-    </div>
-  );
-}
-
-/** Vertical rail of dots for jumping between sections, highlighting the one in view. */
-function ShowcaseRail() {
-  const active = useActiveSection(SECTION_IDS);
-
-  return (
-    <nav className="showcase-rail" aria-label="Showcase sections">
-      {SECTIONS.map((s) => (
+    <header className={`showcase-nav${scrolled ? ' is-scrolled' : ''}`}>
+      <div className="showcase-nav-inner">
+        <Link to="/" className="showcase-nav-brand">
+          <BrandMark size={26} />
+        </Link>
+        <nav className="showcase-nav-links" aria-label="Showcase sections">
+          {NAV_LINKS.map((l) => (
+            <a key={l.id} href={`#${l.id}`}>{l.label}</a>
+          ))}
+        </nav>
+        <div className="showcase-nav-ctas">
+          <Link to="/login" className="showcase-nav-login">Log in</Link>
+          <Link to="/login" className="btn-primary showcase-nav-cta">Get started free</Link>
+        </div>
         <button
-          key={s.id}
           type="button"
-          className={`showcase-rail-dot${active === s.id ? ' is-active' : ''}`}
-          onClick={() => {
-            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            document.getElementById(s.id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
-          }}
-          aria-label={`Jump to ${s.kicker}`}
-          title={s.kicker}
-        />
-      ))}
-    </nav>
-  );
-}
-
-function ShowcaseSection({
-  id,
-  kicker,
-  title,
-  copy,
-  children,
-  align = 'left',
-}: {
-  id: string;
-  kicker: string;
-  title: string;
-  copy: string;
-  children: ReactNode;
-  align?: 'left' | 'right';
-}) {
-  const { ref, visible } = useReveal<HTMLElement>();
-
-  return (
-    <section
-      id={id}
-      ref={ref}
-      className={`showcase-section${visible ? ' is-visible' : ''}${align === 'right' ? ' showcase-section--reverse' : ''}`}
-    >
-      <div className="showcase-section-copy">
-        <span className="showcase-kicker">{kicker}</span>
-        <h2>{title}</h2>
-        <p>{copy}</p>
+          className="showcase-nav-menu-btn"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </div>
-      <div className="showcase-section-demo">{children}</div>
-    </section>
+      {menuOpen && (
+        <nav className="showcase-nav-mobile" aria-label="Showcase sections (mobile)">
+          {NAV_LINKS.map((l) => (
+            <a key={l.id} href={`#${l.id}`} onClick={() => setMenuOpen(false)}>{l.label}</a>
+          ))}
+          <Link to="/login" onClick={() => setMenuOpen(false)}>Log in</Link>
+          <Link to="/login" className="btn-primary" onClick={() => setMenuOpen(false)}>Get started free</Link>
+        </nav>
+      )}
+    </header>
   );
 }
 
-function ChordProDemo() {
+function HeroChordCard() {
   const [transpose, setTranspose] = useState(0);
   return (
-    <div className="showcase-card showcase-chord-demo">
+    <div className="showcase-hero-card">
       <div className="showcase-card-toolbar">
-        <span className="showcase-card-label">Harbor Lights &mdash; live transpose</span>
+        <span className="showcase-card-label"><Music size={13} aria-hidden="true" /> Harbor Lights</span>
         <div className="showcase-transpose-controls">
           <button type="button" onClick={() => setTranspose((t) => Math.max(t - 1, -6))} aria-label="Transpose down">
             <Minus size={14} />
@@ -211,6 +151,55 @@ function ChordProDemo() {
         </div>
       </div>
       <ChordDisplay chordpro={DEMO_SONG} transpose={transpose} />
+    </div>
+  );
+}
+
+const FEATURES = [
+  {
+    icon: ListMusic,
+    title: 'ChordPro songbook',
+    desc: 'Type chords inline with the lyrics and get clean, transposable charts — no re-typing on stage.',
+  },
+  {
+    icon: Users,
+    title: 'One workspace, whole band',
+    desc: 'Invite members with a role that fits — owner, editor, or member. Everyone reads the same library.',
+  },
+  {
+    icon: Newspaper,
+    title: 'Gig documents',
+    desc: 'Press kits, tech riders, and stage plots, shareable with a single public link — no login required.',
+  },
+  {
+    icon: Activity,
+    title: 'Rehearsal tools',
+    desc: 'A visual metronome, chromatic tuner, and recorder built right into the song you’re practicing.',
+  },
+  {
+    icon: Globe2,
+    title: 'Multi-language',
+    desc: 'Write and read songs in any language, with search and filters that understand your library.',
+  },
+  {
+    icon: WifiOff,
+    title: 'Offline-capable PWA',
+    desc: 'Install it and take it to the gig. No signal, no problem — your setlist is already on the device.',
+  },
+];
+
+function FeatureGrid() {
+  return (
+    <div className="showcase-feature-grid">
+      {FEATURES.map(({ icon: Icon, title, desc }, i) => (
+        <Reveal key={title} className="showcase-feature-card" as="div">
+          <span className="showcase-feature-icon" style={{ transitionDelay: `${i * 60}ms` }} aria-hidden="true">
+            <Icon size={20} />
+          </span>
+          <h3>{title}</h3>
+          <p>{desc}</p>
+        </Reveal>
+      ))}
     </div>
   );
 }
@@ -228,7 +217,7 @@ function SetlistDemo() {
         <span className="showcase-card-label">Saturday &mdash; The Loft</span>
         <ListMusic size={16} />
       </div>
-      <ol className="showcase-setlist showcase-stagger-list">
+      <ol className="showcase-setlist">
         {items.map((item, i) => (
           <li key={item.title}>
             <span className="showcase-setlist-num">{i + 1}</span>
@@ -241,31 +230,6 @@ function SetlistDemo() {
   );
 }
 
-function BandDemo() {
-  const members = [
-    { name: 'Sebastian', role: 'Owner' },
-    { name: 'Mia', role: 'Editor' },
-    { name: 'Jonas', role: 'Member' },
-  ];
-  return (
-    <div className="showcase-card">
-      <div className="showcase-card-toolbar">
-        <span className="showcase-card-label">The Fixtures</span>
-        <Users size={16} />
-      </div>
-      <ul className="showcase-band-members showcase-stagger-list">
-        {members.map((m) => (
-          <li key={m.name}>
-            <span className="showcase-avatar" aria-hidden="true">{m.name.charAt(0)}</span>
-            <span className="showcase-band-name">{m.name}</span>
-            <span className="showcase-band-role">{m.role}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 function GigDocsDemo() {
   const docs = [
     { icon: Newspaper, label: 'Press kit', desc: 'Bio, photos & links' },
@@ -273,7 +237,7 @@ function GigDocsDemo() {
     { icon: MapIcon, label: 'Stage plot', desc: 'Positions & monitors' },
   ];
   return (
-    <div className="showcase-doc-grid showcase-stagger-list">
+    <div className="showcase-doc-grid">
       {docs.map(({ icon: Icon, label, desc }) => (
         <div className="showcase-card showcase-doc-card" key={label}>
           <Icon size={20} className="showcase-doc-icon" aria-hidden="true" />
@@ -306,39 +270,93 @@ function MoreFeaturesDemo() {
   const { dark, toggle } = useDarkModeContext();
   const langs = ['en', 'no', 'es', 'pt', 'fr'];
   return (
-    <div className="showcase-more-grid showcase-stagger-list">
+    <div className="showcase-more-strip">
       <div className="showcase-card showcase-more-card">
-        <Paperclip size={18} aria-hidden="true" />
-        <h3>Attachments</h3>
-        <p>Scanned sheet music or lyric PDFs, up to 20 MB per song.</p>
+        <Search size={16} aria-hidden="true" />
+        <span>Full-text search across your whole library</span>
       </div>
       <div className="showcase-card showcase-more-card">
-        <Search size={18} aria-hidden="true" />
-        <h3>Search &amp; filter</h3>
-        <p>Full-text search by title, artist, or tag &mdash; instantly.</p>
-      </div>
-      <div className="showcase-card showcase-more-card">
-        <Globe2 size={18} aria-hidden="true" />
-        <h3>Multi-language</h3>
+        <Globe2 size={16} aria-hidden="true" />
         <div className="showcase-lang-strip">
           {langs.map((code) => <LanguageBadge key={code} code={code} size="sm" />)}
         </div>
       </div>
-      <div className="showcase-card showcase-more-card">
-        <WifiOff size={18} aria-hidden="true" />
-        <h3>Offline-capable PWA</h3>
-        <p>Install it, take it to the gig &mdash; no signal required.</p>
-      </div>
       <button type="button" className="showcase-card showcase-more-card showcase-dark-toggle" onClick={toggle}>
-        {dark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
-        <h3>{dark ? 'Light mode' : 'Dark mode'}</h3>
-        <p>Try it &mdash; tap this card to flip the whole page.</p>
+        {dark ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+        <span>Tap to try {dark ? 'light' : 'dark'} mode</span>
       </button>
-      <div className="showcase-card showcase-more-card">
-        <ShieldCheck size={18} aria-hidden="true" />
-        <h3>Free / Pro / Crew</h3>
-        <p>Start free. Upgrade only when your band outgrows it.</p>
-      </div>
+    </div>
+  );
+}
+
+const STEPS = [
+  {
+    n: '01',
+    title: 'Add your songs',
+    desc: 'Paste lyrics with inline chords or import from a text file. Gigboy handles the formatting.',
+  },
+  {
+    n: '02',
+    title: 'Build the set',
+    desc: 'Order songs for the gig, invite your bandmates, and attach the rider, stage plot, and press kit.',
+  },
+  {
+    n: '03',
+    title: 'Take the stage',
+    desc: 'Switch into concert mode for a distraction-free view, transpose on the fly, and play.',
+  },
+];
+
+function HowItWorks() {
+  return (
+    <div className="showcase-steps">
+      {STEPS.map((s, i) => (
+        <Reveal key={s.n} className="showcase-step">
+          <span className="showcase-step-num" style={{ transitionDelay: `${i * 80}ms` }}>{s.n}</span>
+          <h3>{s.title}</h3>
+          <p>{s.desc}</p>
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
+const PLANS = [
+  {
+    tier: 'Free',
+    tagline: 'One band, forever free',
+    features: ['Full songbook & ChordPro editor', 'Setlists & concert mode', '1 band workspace'],
+    highlight: false,
+  },
+  {
+    tier: 'Pro',
+    tagline: 'All features, solo member',
+    features: ['Everything in Free', 'Gig docs: press kit, rider, stage plot', 'Song attachments & recordings'],
+    highlight: true,
+  },
+  {
+    tier: 'Crew',
+    tagline: 'All features, up to 5 members',
+    features: ['Everything in Pro', 'Up to 5 band members', 'Shared roles & permissions'],
+    highlight: false,
+  },
+] as const;
+
+function PlansTeaser() {
+  return (
+    <div className="showcase-plans-grid">
+      {PLANS.map((p) => (
+        <div className={`showcase-plan-card${p.highlight ? ' is-highlight' : ''}`} key={p.tier}>
+          {p.highlight && <span className="showcase-plan-badge">Most popular</span>}
+          <h3>{p.tier}</h3>
+          <p className="showcase-plan-tagline">{p.tagline}</p>
+          <ul>
+            {p.features.map((f) => (
+              <li key={f}><Check size={14} aria-hidden="true" /> {f}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
@@ -348,89 +366,97 @@ export default function ShowcasePage() {
 
   return (
     <div className="showcase-page">
-      <ScrollProgressBar />
-      <ShowcaseRail />
+      <ShowcaseNav />
+
       <header className={`showcase-hero${heroReveal.visible ? ' is-visible' : ''}`} ref={heroReveal.ref}>
         <div className="showcase-hero-bg" aria-hidden="true">
           <span className="showcase-note showcase-note--1">&#9835;</span>
           <span className="showcase-note showcase-note--2">&#9834;</span>
           <span className="showcase-note showcase-note--3">&#9835;</span>
           <span className="showcase-note showcase-note--4">&#9833;</span>
-          <span className="showcase-grid" />
         </div>
-        <Link to="/" className="showcase-hero-nav-link">&larr; Back to Gigboy</Link>
-        <BrandMark size={56} />
-        <h1>See Gigboy in action</h1>
-        <p>
-          Scroll through everything a working band gets in one shared workspace &mdash;
-          from the songbook to the stage.
-        </p>
-        <div className="showcase-hero-ctas">
-          <Link to="/login" className="btn-primary">Get started free</Link>
-          <Link to="/pricing" className="btn-secondary">See pricing</Link>
-        </div>
-        <div className="showcase-scroll-cue" aria-hidden="true">
-          <span />
+        <div className="showcase-hero-inner">
+          <div className="showcase-hero-copy">
+            <span className="showcase-eyebrow">For working bands</span>
+            <h1>Your whole band, one workspace</h1>
+            <p>
+              Songbook, setlists, gig documents, and rehearsal tools &mdash; everything a band needs
+              to show up prepared, shared in real time with everyone in the lineup.
+            </p>
+            <div className="showcase-hero-ctas">
+              <Link to="/login" className="btn-primary">Get started free</Link>
+              <Link to="/pricing" className="btn-secondary">See pricing</Link>
+            </div>
+            <p className="showcase-hero-note">Free forever for one band. No credit card required.</p>
+          </div>
+          <div className="showcase-hero-visual">
+            <HeroChordCard />
+          </div>
         </div>
       </header>
 
       <main className="showcase-body">
-        <ShowcaseSection
-          id="chordpro"
-          kicker="Songbook"
-          title="Chords that read the way musicians already write them"
-          copy="Type [G]Amazing [C]grace inline with the lyrics. Gigboy renders clean chord charts and transposes in real time — no re-typing, no fumbling on stage."
-        >
-          <ChordProDemo />
-        </ShowcaseSection>
+        <section id="features" className="showcase-section-block">
+          <Reveal as="div" className="showcase-section-head">
+            <span className="showcase-kicker">Everything included</span>
+            <h2>Built for the way bands actually work</h2>
+            <p>No add-ons to hunt down, no separate apps for rehearsal. It's all in Gigboy from day one.</p>
+          </Reveal>
+          <FeatureGrid />
+        </section>
 
-        <ShowcaseSection
-          id="setlists"
-          kicker="Setlists"
-          title="Build the set in seconds"
-          copy="Order songs for a gig, reorder on the fly, and switch into concert mode for a distraction-free view during the show."
-          align="right"
-        >
-          <SetlistDemo />
-        </ShowcaseSection>
+        <section id="demo" className="showcase-section-block showcase-section-block--muted">
+          <Reveal as="div" className="showcase-section-head">
+            <span className="showcase-kicker">See it work</span>
+            <h2>From setlist to stage plot in one place</h2>
+          </Reveal>
 
-        <ShowcaseSection
-          id="bands"
-          kicker="Collaboration"
-          title="One workspace, the whole band"
-          copy="Invite every member with a role that fits — owner, editor, or member. Everyone reads from the same shared library and setlists."
-        >
-          <BandDemo />
-        </ShowcaseSection>
+          <div className="showcase-demo-row">
+            <Reveal className="showcase-demo-copy">
+              <h3>Build the set in seconds</h3>
+              <p>Order songs for a gig, reorder on the fly, and switch into concert mode for a distraction-free view during the show.</p>
+            </Reveal>
+            <Reveal className="showcase-demo-visual"><SetlistDemo /></Reveal>
+          </div>
 
-        <ShowcaseSection
-          id="gig-docs"
-          kicker="Show up prepared"
-          title="Press kits, tech riders & stage plots"
-          copy="Generate professional gig documents per band and share them with a single public link — no login required for the person on the other end."
-          align="right"
-        >
-          <GigDocsDemo />
-        </ShowcaseSection>
+          <div className="showcase-demo-row showcase-demo-row--reverse">
+            <Reveal className="showcase-demo-copy">
+              <h3>Show up prepared</h3>
+              <p>Generate professional gig documents per band and share them with a single public link &mdash; no login required for the person on the other end.</p>
+            </Reveal>
+            <Reveal className="showcase-demo-visual"><GigDocsDemo /></Reveal>
+          </div>
 
-        <ShowcaseSection
-          id="rehearsal"
-          kicker="Rehearsal tools"
-          title="Everything you'd otherwise need a separate app for"
-          copy="A visual metronome, chromatic tuner, and browser-based recorder — built into the same page as the song you're rehearsing."
-        >
-          <RehearsalDemo />
-        </ShowcaseSection>
+          <div className="showcase-demo-row">
+            <Reveal className="showcase-demo-copy">
+              <h3>Rehearse without extra apps</h3>
+              <p>A visual metronome, chromatic tuner, and browser-based recorder &mdash; built into the same page as the song you're rehearsing.</p>
+            </Reveal>
+            <Reveal className="showcase-demo-visual"><RehearsalDemo /></Reveal>
+          </div>
 
-        <ShowcaseSection
-          id="more"
-          kicker="And more"
-          title="The small things that add up"
-          copy="Attachments, full-text search, multi-language songs, offline support, and a dark mode that's actually easy on the eyes at a late rehearsal."
-          align="right"
-        >
-          <MoreFeaturesDemo />
-        </ShowcaseSection>
+          <Reveal className="showcase-more-wrap"><MoreFeaturesDemo /></Reveal>
+        </section>
+
+        <section id="how" className="showcase-section-block">
+          <Reveal as="div" className="showcase-section-head">
+            <span className="showcase-kicker">How it works</span>
+            <h2>Three steps to a tighter show</h2>
+          </Reveal>
+          <HowItWorks />
+        </section>
+
+        <section id="plans" className="showcase-section-block showcase-section-block--muted">
+          <Reveal as="div" className="showcase-section-head">
+            <span className="showcase-kicker">Plans</span>
+            <h2>Start free. Upgrade only when your band outgrows it.</h2>
+            <p>Every account gets one free band, forever.</p>
+          </Reveal>
+          <PlansTeaser />
+          <div className="showcase-plans-cta">
+            <Link to="/pricing" className="btn-secondary">Compare plans in detail <ArrowRight size={14} /></Link>
+          </div>
+        </section>
       </main>
 
       <footer className="showcase-cta">
@@ -444,6 +470,7 @@ export default function ShowcasePage() {
         <p className="footer-links" style={{ marginTop: '1.5rem' }}>
           <Link to="/terms">Terms</Link>
           <Link to="/privacy">Privacy</Link>
+          <span className="showcase-footer-security"><ShieldCheck size={12} aria-hidden="true" /> Private by default</span>
         </p>
       </footer>
     </div>
