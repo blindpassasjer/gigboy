@@ -167,6 +167,17 @@ function PricingRoute() {
   );
 }
 
+/** Public showcase for signed-out visitors at "/"; signed-in users fall through to their band. */
+function RootLanding() {
+  const { user, loading, authEnabled } = useAuth();
+
+  if (!loading && authEnabled && !user) {
+    return <ShowcasePage />;
+  }
+
+  return <AuthenticatedApp />;
+}
+
 const router = createBrowserRouter([
   { path: '/public/bands/:bandId/:bandName/setlists/:setlistId', element: <PublicBandSetlistPage />, errorElement: routerErrorElement },
   { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage />, errorElement: routerErrorElement },
@@ -178,6 +189,7 @@ const router = createBrowserRouter([
   { path: '/checkout-result', element: <CheckoutResultPage />, errorElement: routerErrorElement },
   { path: '/terms', element: <TermsPage />, errorElement: routerErrorElement },
   { path: '/privacy', element: <PrivacyPage />, errorElement: routerErrorElement },
+  { path: '/', element: <RootLanding />, errorElement: routerErrorElement },
   { path: '*', element: <AuthenticatedApp />, errorElement: routerErrorElement },
 ]);
 
