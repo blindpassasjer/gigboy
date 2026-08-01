@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import type { LyricNoteStroke, Song } from '../types';
 import LanguageBadge from './LanguageBadge';
+import SongMetaBadges from './SongMetaBadges';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LyricHandNotesOverlay from './LyricHandNotesOverlay';
@@ -726,6 +727,8 @@ export default function ConcertModeView({
                 <span className="capo-badge">Capo {currentSong.capo}</span>
               )}
               {currentSong.timeSignature && <span className="meta-pill">{currentSong.timeSignature}</span>}
+              <SongMetaBadges song={currentSong} />
+              {currentSong.tags?.map((t) => <span key={t} className="tag">{t}</span>)}
             </div>
             {currentSongNote && (
               <p className="concert-song-note">{currentSongNote}</p>
