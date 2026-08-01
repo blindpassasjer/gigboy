@@ -198,17 +198,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   }
 
   try {
-    try {
-      await deleteFirebaseAuthUser(ctx.env, userId);
-    } catch (authErr) {
-      console.error('Failed to delete Firebase Auth user:', authErr);
-      return Response.json({
-        error: authErr instanceof Error
-          ? `Failed to delete Firebase Auth account: ${authErr.message}`
-          : 'Failed to delete Firebase Auth account.',
-      }, { status: 500 });
-    }
-
     const userProfile = await getFirestoreDocument(ctx.env, ['users', userId]);
     const usernameLower = typeof userProfile?.usernameLower === 'string' ? userProfile.usernameLower : null;
 
@@ -334,6 +323,20 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     await deleteFirestoreDocument(ctx.env, ['users', userId]);
     if (usernameLower) {
       await deleteFirestoreDocument(ctx.env, ['usernames', usernameLower]);
+    }
+
+    // Deleted last, deliberately: once the Auth user is gone the user can never log back in to
+    // retry, so this must only run after every other cleanup step (Stripe cancellation,
+    // Firestore/Storage deletion) has already succeeded.
+    try {
+      await deleteFirebaseAuthUser(ctx.env, userId);
+    } catch (authErr) {
+      console.error('Failed to delete Firebase Auth user:', authErr);
+      return Response.json({
+        error: authErr instanceof Error
+          ? `Failed to delete Firebase Auth account: ${authErr.message}`
+          : 'Failed to delete Firebase Auth account.',
+      }, { status: 500 });
     }
 
     return Response.json({

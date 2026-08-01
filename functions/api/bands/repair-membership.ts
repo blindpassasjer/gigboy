@@ -6,15 +6,6 @@ interface Data extends Record<string, unknown> {
   userEmail?: string;
 }
 
-function normalizedStringSetFromRecord(record: unknown): Set<string> {
-  if (!record || typeof record !== 'object') return new Set<string>();
-  const values = Object.values(record as Record<string, unknown>)
-    .filter((entry): entry is string => typeof entry === 'string')
-    .map((entry) => entry.trim().toLowerCase())
-    .filter((entry) => entry.length > 0);
-  return new Set(values);
-}
-
 export const onRequestPost: PagesFunction<Record<string, string | undefined>, never, Data> = async (ctx) => {
   const userId = ctx.data.userId;
   if (!userId) {
@@ -30,7 +21,6 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   const profileUsername = typeof profile?.username === 'string' ? profile.username.trim().toLowerCase() : '';
   const profileFullName = typeof profile?.fullName === 'string' ? profile.fullName : '';
   const profileAvatar = typeof profile?.avatar === 'string' ? profile.avatar : '';
-  const usernameCandidates = new Set([profileUsername].filter((entry) => entry.length > 0));
 
   const allBands = await listFirestoreDocuments(ctx.env, ['bands']);
   let repairedCount = 0;
@@ -59,12 +49,11 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
       ? { ...(band.memberAvatars as Record<string, unknown>) }
       : {};
 
-    const bandEmailSet = normalizedStringSetFromRecord(memberEmails);
-    const bandUsernameSet = normalizedStringSetFromRecord(memberUsernames);
-    const matchesByOwner = ownerId === userId;
-    const matchesByEmail = userEmail.length > 0 && bandEmailSet.has(userEmail);
-    const matchesByUsername = Array.from(usernameCandidates).some((entry) => bandUsernameSet.has(entry));
-    const shouldAssociate = matchesByOwner || matchesByEmail || matchesByUsername;
+    // Only re-associate via an exact ownerId match on the band's own record — matching by
+    // email/username against stored member labels is not safe, since those strings can go
+    // stale (e.g. reused by a different account) and don't prove current identity the way
+    // the authoritative ownerId field does.
+    const shouldAssociate = ownerId === userId;
 
     if (!shouldAssociate) return;
 
