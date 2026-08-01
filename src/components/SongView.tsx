@@ -34,7 +34,6 @@ import VisualMetronome from './VisualMetronome';
 import VisualTuner from './VisualTuner';
 import { transposeChord } from '../utils/chordParser';
 import type { ChordNotation } from '../utils/chordParser';
-import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { useAuth } from '../context/AuthContext';
@@ -81,7 +80,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const location = useLocation();
   const pageState = location.state as SongPageState | null;
   const [transpose, setTranspose] = useState(0);
-  const showChords = true;
   const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
   const chordNotation: ChordNotation = 'anglo';
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
@@ -92,7 +90,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [toolbarVisible, setToolbarVisible] = useState(true);
   const { updateSong, deleteSong } = useSongs();
-  const { songLists, addSongToList, removeSongFromList } = useSongLists();
   const {
     bands,
     bandSongListsByBandId,
@@ -101,7 +98,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     removeSongFromBandSongList,
     removeSongFromBandLibrary,
   } = useBands();
-  const effectiveSongLists = bandId ? (bandSongListsByBandId[bandId] ?? []) : songLists;
+  const bandSongLists = bandId ? (bandSongListsByBandId[bandId] ?? []) : [];
   const { user } = useAuth();
   const availableBands = bands ?? [];
   
@@ -275,8 +272,17 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     const el = activeChord.element;
     const update = () => setActiveChord(prev => prev ? { ...prev, rect: el.getBoundingClientRect() } : null);
     window.addEventListener('scroll', update, { passive: true, capture: true });
-    return () => window.removeEventListener('scroll', update, { capture: true });
+    window.addEventListener('resize', update, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', update, { capture: true });
+      window.removeEventListener('resize', update);
+    };
   }, [activeChord?.element]);
+
+  // Close the chord diagram when transpose changes so it can't show a stale chord name
+  useEffect(() => {
+    setActiveChord(null);
+  }, [transpose]);
 
   async function handleRename() {
     const nextTitle = await showPromptToast('Rename song', {
@@ -364,6 +370,17 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   async function handleUpdateFromFile(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
+
+    const confirmed = await showConfirmToast(
+      `Replace "${song.title}"'s content with ${file.name}? This overwrites the current lyrics/chords and can't be undone.`,
+      { confirmLabel: 'Update' },
+    );
+    if (!confirmed) {
+      if (updateFromFileInputRef.current) {
+        updateFromFileInputRef.current.value = '';
+      }
+      return;
+    }
 
     setUpdatingFromFile(true);
     try {
@@ -857,6 +874,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
           <div className="song-toolbar-row song-toolbar-row--actions">
             <div className="song-actions">
+              {bandId && (
               <div className="add-to-list-wrap" ref={menuRef}>
                 <button
                   className="rec-btn rec-btn--toggle"
@@ -869,26 +887,20 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 </button>
                 {listMenuOpen && (
                   <div className="list-dropdown">
-                    {effectiveSongLists.length === 0 ? (
-                      <p className="list-dropdown-empty">No lists yet — create one in the sidebar</p>
+                    {bandSongLists.length === 0 ? (
+                      <p className="list-dropdown-empty">No songlists yet — create one from the band sidebar</p>
                     ) : (
-                      effectiveSongLists.map((list) => {
+                      bandSongLists.map((list) => {
                         const inList = list.songIds.includes(song.id);
                         return (
                           <button
                             key={list.id}
                             className={`list-dropdown-item${inList ? ' in-list' : ''}`}
                             onClick={() => {
-                              if (bandId) {
-                                if (inList) {
-                                  void removeSongFromBandSongList(bandId, list.id, song.id);
-                                } else {
-                                  void addSongToBandSongList(bandId, list.id, song.id);
-                                }
-                              } else if (inList) {
-                                removeSongFromList(list.id, song.id);
+                              if (inList) {
+                                void removeSongFromBandSongList(bandId, list.id, song.id);
                               } else {
-                                addSongToList(list.id, song.id);
+                                void addSongToBandSongList(bandId, list.id, song.id);
                               }
                             }}
                           >
@@ -901,6 +913,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   </div>
                 )}
               </div>
+              )}
 
               <button
                 className="song-action-btn song-action-btn--import song-action-btn--labeled"
@@ -963,11 +976,10 @@ export default function SongView({ song, accentColor, bandId }: Props) {
           <ChordDisplay
             chordpro={song.chordpro}
             transpose={transpose}
-            showChords={showChords}
             notation={chordNotation}
             timeSignature={song.timeSignature}
             instrument={chordInstrument}
-            onChordClick={showChords && !drawEnabled && !typeEnabled ? handleChordClick : undefined}
+            onChordClick={!drawEnabled && !typeEnabled ? handleChordClick : undefined}
             pinnedLineIds={pinnedLineIds}
           />
           <LyricHandNotesOverlay

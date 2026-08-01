@@ -11,7 +11,9 @@ export const onRequestGet: PagesFunction<Record<string, string | undefined>, nev
 
   const url = new URL(ctx.request.url);
   const bandId = url.searchParams.get('bandId');
+  const kitId = url.searchParams.get('kitId');
   if (!bandId) return Response.json({ error: 'bandId is required.' }, { status: 400 });
+  if (!kitId) return Response.json({ error: 'kitId is required.' }, { status: 400 });
 
   const [band, shares] = await Promise.all([
     getFirestoreDocument(ctx.env, ['bands', bandId]),
@@ -25,7 +27,7 @@ export const onRequestGet: PagesFunction<Record<string, string | undefined>, nev
   if (!canView) return Response.json({ error: 'Forbidden.' }, { status: 403 });
 
   const active = shares
-    .filter((s) => s.data.status === 'active')
+    .filter((s) => s.data.status === 'active' && s.data.kitId === kitId)
     .sort((a, b) => {
       const aCreated = typeof a.data.createdAt === 'string' ? Date.parse(a.data.createdAt) : 0;
       const bCreated = typeof b.data.createdAt === 'string' ? Date.parse(b.data.createdAt) : 0;

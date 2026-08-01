@@ -16,8 +16,8 @@ export default function EditSongPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const { songs, updateSong } = useSongs();
-  const { categories, songLists, activeSongListId, addSongToList } = useSongLists();
-  const { bandSongsByBandId, bandSongListsByBandId, addSongToBandSongList, updateBandSong } = useBands();
+  const { categories, songLists, activeSongListId, addSongToList, removeSongFromList } = useSongLists();
+  const { bandSongsByBandId, bandSongListsByBandId, addSongToBandSongList, removeSongFromBandSongList, updateBandSong } = useBands();
   const pageState = location.state as SongPageState | null;
   const bandId = pageState?.bandId;
   const bandSongs = bandId ? (bandSongsByBandId[bandId] ?? []) : [];
@@ -68,12 +68,22 @@ export default function EditSongPage() {
         onSave={handleSave}
         songListOptions={songListOptions}
         initialSongListId={initialSongListId}
-        onSongListChange={(songListId, songId) => {
+        onSongListChange={(nextSongListId, previousSongListId, songId) => {
           if (bandId) {
-            void addSongToBandSongList(bandId, songListId, songId);
+            if (previousSongListId && previousSongListId !== nextSongListId) {
+              void removeSongFromBandSongList(bandId, previousSongListId, songId);
+            }
+            if (nextSongListId) {
+              void addSongToBandSongList(bandId, nextSongListId, songId);
+            }
             return;
           }
-          addSongToList(songListId, songId);
+          if (previousSongListId && previousSongListId !== nextSongListId) {
+            removeSongFromList(previousSongListId, songId);
+          }
+          if (nextSongListId) {
+            addSongToList(nextSongListId, songId);
+          }
         }}
         songPageState={pageState ?? undefined}
       />

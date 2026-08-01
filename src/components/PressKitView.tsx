@@ -454,8 +454,9 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   useEffect(() => {
     if (!userId || !userEmail) return;
-    void getActivePressKitShare(userId, userEmail, bandId).then(setActiveShare);
-  }, [bandId, userId, userEmail]);
+    setActiveShare(null);
+    void getActivePressKitShare(userId, userEmail, bandId, kit.id).then(setActiveShare);
+  }, [bandId, kit.id, userId, userEmail]);
 
   // ── Video URLs ───────────────────────────────────────────────────────────
   const [videoUrls, setVideoUrls] = useState<string[]>(kit.videoUrls ?? []);
@@ -580,7 +581,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     if (!confirmed) return;
     setBusyDisable(true);
     try {
-      await disablePressKitShare(userId, userEmail, bandId, activeShare.token);
+      await disablePressKitShare(userId, userEmail, bandId, kit.id, activeShare.token);
       setActiveShare(null);
       toast.success('Public link disabled.');
     } catch (error) {
@@ -600,6 +601,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         riders: [],
         texts: richText ? [{ title: kit.name, body: richText }] : [],
         images: attachedImages,
+        videoUrls,
         generatedAt: new Date().toISOString(),
       });
       const blobUrl = URL.createObjectURL(blob);

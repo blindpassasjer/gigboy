@@ -30,6 +30,8 @@ interface Props {
   setlistIconOverride?: string;
   /** Override whether the delete button is shown */
   canDeleteOverride?: boolean;
+  /** Whether the current user may rename or change the icon of this setlist (defaults to true) */
+  canEdit?: boolean;
   /** Override the rename handler (skips SetlistsContext) */
   onRenameOverride?: (name: string) => void;
   /** Override the delete handler (skips SetlistsContext) */
@@ -64,6 +66,7 @@ export default function SetlistsView({
   concertRoute,
   setlistIconOverride,
   canDeleteOverride,
+  canEdit = true,
   onRenameOverride,
   onDeleteOverride,
   onUpdateIconOverride,
@@ -323,8 +326,9 @@ export default function SetlistsView({
               />
             ) : (
               <div className="song-list-title-row">
-                <h1 className="resource-title setlist-title resource-title--setlist" onDoubleClick={startRenaming}>
+                <h1 className="resource-title setlist-title resource-title--setlist" onDoubleClick={canEdit ? startRenaming : undefined}>
                   <div className="icon-picker-wrapper" ref={iconPickerRef}>
+                    {canEdit ? (
                     <button
                       ref={iconTriggerRef}
                       type="button"
@@ -339,7 +343,12 @@ export default function SetlistsView({
                         ? <span className="resource-title-icon" aria-hidden="true">{effectiveIcon}</span>
                         : <ListMusic size={16} aria-hidden="true" />}
                     </button>
-                    {showIconEditor && (
+                    ) : (
+                      effectiveIcon
+                        ? <span className="resource-title-icon" aria-hidden="true">{effectiveIcon}</span>
+                        : <ListMusic size={16} aria-hidden="true" />
+                    )}
+                    {canEdit && showIconEditor && (
                       <div className="icon-picker-popover" role="dialog" aria-label="Choose setlist icon">
                         <div className="emoji-choice-grid" role="radiogroup" aria-label="Setlist icon options">
                           <button
@@ -404,15 +413,17 @@ export default function SetlistsView({
                   </div>
                   {setlistName}
                 </h1>
-                <button
-                  type="button"
-                  className="title-rename-btn"
-                  onClick={startRenaming}
-                  title="Rename setlist"
-                  aria-label="Rename setlist"
-                >
-                  <PenLine size={14} />
-                </button>
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="title-rename-btn"
+                    onClick={startRenaming}
+                    title="Rename setlist"
+                    aria-label="Rename setlist"
+                  >
+                    <PenLine size={14} />
+                  </button>
+                )}
               </div>
             )}
             <p className="song-list-summary setlist-song-count">

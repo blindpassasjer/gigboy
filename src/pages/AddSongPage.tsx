@@ -64,7 +64,7 @@ export default function AddSongPage() {
     return addSong(song);
   }
 
-  function handleSongListChange(songListId: string, songId: string) {
+  function handleSongListChange(songListId: string, _previousSongListId: string, songId: string) {
     if (activeBandId) {
       void addSongToBandSongList(activeBandId, songListId, songId);
       return;

@@ -119,7 +119,6 @@ export default function ConcertModeView({
   const [currentPageInSong, setCurrentPageInSong] = useState(0);
   const [pageOffsets, setPageOffsets] = useState<number[]>([0]);
   const currentPageCount = pageOffsets.length;
-  const [songPageCounts, setSongPageCounts] = useState<Record<number, number>>({});
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
   const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
@@ -158,6 +157,44 @@ export default function ConcertModeView({
     });
   }, [songs.length]);
 
+  // Keep the screen awake for the duration of the show. The lock is released
+  // automatically by the browser when the tab is hidden, so re-acquire it on
+  // return (e.g. switching apps to check a text, then coming back mid-set).
+  useEffect(() => {
+    if (!('wakeLock' in navigator)) return;
+
+    let sentinel: WakeLockSentinel | null = null;
+    let cancelled = false;
+
+    const acquire = async () => {
+      try {
+        const lock = await navigator.wakeLock.request('screen');
+        if (cancelled) {
+          void lock.release();
+          return;
+        }
+        sentinel = lock;
+      } catch {
+        // Wake lock can be denied (e.g. low battery, unsupported context) — ignore.
+      }
+    };
+
+    void acquire();
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !sentinel) {
+        void acquire();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      void sentinel?.release();
+    };
+  }, []);
+
   useEffect(() => {
     setCurrentPageInSong(targetPageRef.current);
     targetPageRef.current = 0;
@@ -166,10 +203,6 @@ export default function ConcertModeView({
     setDrawEnabled(false);
     setActiveChord(null);
   }, [currentIndex]);
-
-  useEffect(() => {
-    setSongPageCounts((prev) => ({ ...prev, [currentIndex]: currentPageCount }));
-  }, [currentIndex, currentPageCount]);
 
   useEffect(() => {
     setTranspose(activeSong?.preferredTranspose ?? 0);
@@ -242,9 +275,22 @@ export default function ConcertModeView({
     if (next && !showNotes) setShowNotes(true);
   }, [showNotes]);
 
+  const [confirmingStop, setConfirmingStop] = useState(false);
+  const confirmStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (confirmStopTimeoutRef.current) clearTimeout(confirmStopTimeoutRef.current);
+  }, []);
+
   const handleStopConcert = useCallback(() => {
+    if (!confirmingStop) {
+      setConfirmingStop(true);
+      confirmStopTimeoutRef.current = setTimeout(() => setConfirmingStop(false), 3000);
+      return;
+    }
+    if (confirmStopTimeoutRef.current) clearTimeout(confirmStopTimeoutRef.current);
     navigate(backRoute);
-  }, [navigate, backRoute]);
+  }, [confirmingStop, navigate, backRoute]);
 
   const handlePinTranspose = useCallback(async () => {
     if (!activeSong) return;
@@ -269,12 +315,13 @@ export default function ConcertModeView({
     if (currentPageInSong > 0) {
       setCurrentPageInSong((p) => p - 1);
     } else if (currentIndex > 0) {
-      const prevIndex = currentIndex - 1;
-      const prevPageCount = songPageCounts[prevIndex] ?? 1;
-      targetPageRef.current = prevPageCount - 1;
-      setCurrentIndex(prevIndex);
+      // Land on the previous song's last page even if it hasn't been measured yet
+      // (e.g. the navigator was used to skip ahead) — the layout effect clamps this
+      // once real page offsets are computed for that song.
+      targetPageRef.current = Number.POSITIVE_INFINITY;
+      setCurrentIndex((i) => i - 1);
     }
-  }, [currentPageInSong, currentIndex, songPageCounts]);
+  }, [currentPageInSong, currentIndex]);
 
   const onSwipeStart = useCallback((e: React.PointerEvent) => {
     swipeRef.current = { x: e.clientX, y: e.clientY };
@@ -385,9 +432,10 @@ export default function ConcertModeView({
           type="button"
           className="concert-chip-btn concert-chip-btn--danger"
           onClick={handleStopConcert}
-          aria-label="Stop concert mode"
+          onBlur={() => setConfirmingStop(false)}
+          aria-label={confirmingStop ? 'Tap again to confirm stopping concert mode' : 'Stop concert mode'}
         >
-          <X size={14} /> Stop Concert
+          <X size={14} /> {confirmingStop ? 'Tap again to stop' : 'Stop Concert'}
         </button>
       </div>
       {showTopbar && (
@@ -402,7 +450,10 @@ export default function ConcertModeView({
               {currentPageCount > 1 && (
                 <span>Page {currentPageInSong + 1} of {currentPageCount} · </span>
               )}
-              <span className="concert-shortcut-hint">Use left/right arrows to turn pages</span>
+              <span className="concert-shortcut-hint">
+                Use left/right arrows to turn pages
+                {isMultiSong && <>, N for song list</>}
+              </span>
             </p>
           </div>
 

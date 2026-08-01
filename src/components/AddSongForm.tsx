@@ -20,7 +20,7 @@ interface Props {
   mode?: 'add' | 'edit';
   songListOptions?: Array<{ id: string; label: string }>;
   initialSongListId?: string;
-  onSongListChange?: (songListId: string, songId: string) => void;
+  onSongListChange?: (nextSongListId: string, previousSongListId: string, songId: string) => void;
   songPageState?: {
     backTo?: string;
     backLabel?: string;
@@ -206,29 +206,6 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     blocker.reset();
   }, [blocker]);
 
-  useEffect(() => {
-    if (mode !== 'edit') return;
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-
-      if (isDirty) {
-        toast(UNSAVED_CHANGES_WARNING, { icon: '!' });
-      }
-
-      flushSync(() => {
-        setAllowNavigation(true);
-      });
-      navigate(initialSong?.id ? `/songs/${initialSong.id}` : '/', { state: songPageState });
-    };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => {
-      window.removeEventListener('keydown', handleEscape);
-    };
-  }, [mode, isDirty, navigate, initialSong?.id, songPageState]);
-
   function validate(values: SongFormValues) {
     const errs: string[] = [];
     if (!values.title.trim()) errs.push('Title is required.');
@@ -249,7 +226,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
       language: values.language,
       tags: values.tags.split(',').map((t) => t.trim()).filter(Boolean),
       key: values.key.trim() || undefined,
-      tempo: values.tempo ? parseInt(values.tempo, 10) : undefined,
+      tempo: values.tempo && !Number.isNaN(parseInt(values.tempo, 10)) ? parseInt(values.tempo, 10) : undefined,
       timeSignature: values.timeSignature.trim() || undefined,
       chordpro: values.chordpro.trim(),
       createdAt: initialSong?.createdAt ?? new Date().toISOString(),
@@ -423,8 +400,8 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
       return;
     }
 
-    if (songListId) {
-      onSongListChange?.(songListId, song.id);
+    if (songListId !== initialValues.songListId) {
+      onSongListChange?.(songListId, initialValues.songListId, song.id);
     }
 
     flushSync(() => {
@@ -432,6 +409,85 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     });
     navigate(`/songs/${song.id}`, { state: songPageState });
   }
+
+  const performSave = useCallback(async (valuesToSave: SongFormValues, previousSongListId: string) => {
+    const generation = ++saveGenerationRef.current;
+    const song = buildSong(valuesToSave);
+    setSaveState('saving');
+
+    try {
+      const saveError = await onSave(song);
+      if (generation !== saveGenerationRef.current) return saveError;
+      if (saveError) {
+        setErrors([`Could not save song: ${saveError}`]);
+        setSaveState('error');
+        return saveError;
+      }
+
+      if (valuesToSave.songListId !== previousSongListId) {
+        onSongListChange?.(valuesToSave.songListId, previousSongListId, song.id);
+      }
+
+      setLastSavedValues(valuesToSave);
+      setSaveState('saved');
+      window.setTimeout(() => {
+        setSaveState((current) => (current === 'saved' ? 'idle' : current));
+      }, 1200);
+      return null;
+    } catch (error: unknown) {
+      if (generation !== saveGenerationRef.current) return null;
+      const message = error instanceof Error ? error.message : String(error);
+      setErrors([`Could not save song: ${message}`]);
+      setSaveState('error');
+      return message;
+    }
+  }, [onSave, onSongListChange, buildSong]);
+
+  useEffect(() => {
+    if (mode !== 'edit') return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (editingTabIdx !== null) return;
+      event.preventDefault();
+
+      const goBack = () => {
+        flushSync(() => {
+          setAllowNavigation(true);
+        });
+        navigate(initialSong?.id ? `/songs/${initialSong.id}` : '/', { state: songPageState });
+      };
+
+      if (isDirty) {
+        if (autosaveTimerRef.current) {
+          window.clearTimeout(autosaveTimerRef.current);
+          autosaveTimerRef.current = null;
+        }
+        const errs = validate(formValues);
+        if (errs.length > 0) {
+          toast.error(UNSAVED_CHANGES_WARNING);
+          setErrors(errs);
+          setSaveState('error');
+          return;
+        }
+        void performSave({ ...formValues }, lastSavedValues.songListId).then((saveError) => {
+          if (saveError) {
+            toast.error(UNSAVED_CHANGES_WARNING);
+            return;
+          }
+          goBack();
+        });
+        return;
+      }
+
+      goBack();
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [mode, isDirty, navigate, initialSong?.id, songPageState, editingTabIdx, formValues, lastSavedValues, performSave]);
 
   useEffect(() => {
     if (mode !== 'edit') return;
@@ -454,37 +510,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
 
     setErrors([]);
     autosaveTimerRef.current = window.setTimeout(() => {
-      const generation = ++saveGenerationRef.current;
-      const valuesToSave = { ...formValues };
-      const previousSongListId = lastSavedValues.songListId;
-      const song = buildSong(valuesToSave);
-      setSaveState('saving');
-
-      void onSave(song)
-        .then((saveError) => {
-          if (generation !== saveGenerationRef.current) return;
-          if (saveError) {
-            setErrors([`Could not save song: ${saveError}`]);
-            setSaveState('error');
-            return;
-          }
-
-          if (valuesToSave.songListId && valuesToSave.songListId !== previousSongListId) {
-            onSongListChange?.(valuesToSave.songListId, song.id);
-          }
-
-          setLastSavedValues(valuesToSave);
-          setSaveState('saved');
-          window.setTimeout(() => {
-            setSaveState((current) => (current === 'saved' ? 'idle' : current));
-          }, 1200);
-        })
-        .catch((error: unknown) => {
-          if (generation !== saveGenerationRef.current) return;
-          const message = error instanceof Error ? error.message : String(error);
-          setErrors([`Could not save song: ${message}`]);
-          setSaveState('error');
-        });
+      void performSave({ ...formValues }, lastSavedValues.songListId);
     }, AUTOSAVE_DELAY_MS);
 
     return () => {
@@ -493,7 +519,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
         autosaveTimerRef.current = null;
       }
     };
-  }, [mode, isDirty, formValues, lastSavedValues, onSave, onSongListChange, buildSong]);
+  }, [mode, isDirty, formValues, lastSavedValues, performSave]);
 
   return (
     <>

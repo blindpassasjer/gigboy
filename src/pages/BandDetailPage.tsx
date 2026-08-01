@@ -448,6 +448,7 @@ export default function BandDetailPage() {
           bandId={band.id}
           setlistIconOverride={activeBandSetlist.icon}
           canDeleteOverride={canEditBand}
+          canEdit={canEditBand}
           concertRoute={`/bands/${band.id}/setlists/${activeBandSetlist.id}/concert`}
           onRenameOverride={canEditBand ? async (name) => {
             const error = await renameBandSetlist(band.id, activeBandSetlist.id, name);

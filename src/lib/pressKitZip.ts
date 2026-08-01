@@ -36,6 +36,7 @@ export interface PressKitPayload {
   riders: PressKitRiderItem[];
   texts: PressKitTextItem[];
   images: PressKitImageItem[];
+  videoUrls?: string[];
   generatedAt?: string;
 }
 
@@ -102,6 +103,8 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
   const root = zip.folder(sanitizeFileName(payload.bandName));
   if (!root) throw new Error('Failed to build ZIP folder');
 
+  const videoUrls = payload.videoUrls ?? [];
+
   root.file(
     'README.txt',
     [
@@ -112,8 +115,13 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
       `Input Lists: ${payload.riders.length}`,
       `Texts: ${payload.texts.length}`,
       `Images: ${payload.images.length}`,
+      `Videos: ${videoUrls.length}`,
     ].join('\n')
   );
+
+  if (videoUrls.length > 0) {
+    root.file('videos.txt', videoUrls.join('\n'));
+  }
 
   if (payload.stageplots.length > 0) {
     const stageplotFolder = root.folder('stageplots');

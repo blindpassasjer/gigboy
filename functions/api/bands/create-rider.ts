@@ -47,14 +47,12 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
     // Free plan bands get one technical rider; Pro/Crew get unlimited.
     const ownerId = typeof band.ownerId === 'string' ? band.ownerId : '';
     const hasProOrCrew = ownerId ? await resolveBandHasProOrCrew(ctx.env, ownerId, bandId) : false;
-    if (!hasProOrCrew) {
-      const existingRiders = await listFirestoreDocuments(ctx.env, ['bands', bandId, 'technicalRiders']);
-      if (existingRiders.length >= FREE_RIDER_LIMIT) {
-        return Response.json(
-          { error: `This band has reached the ${FREE_RIDER_LIMIT}-technical-rider limit for the Free plan. Upgrade to Pro or Crew for unlimited technical riders.` },
-          { status: 403 }
-        );
-      }
+    const existingRiders = await listFirestoreDocuments(ctx.env, ['bands', bandId, 'technicalRiders']);
+    if (!hasProOrCrew && existingRiders.length >= FREE_RIDER_LIMIT) {
+      return Response.json(
+        { error: `This band has reached the ${FREE_RIDER_LIMIT}-technical-rider limit for the Free plan. Upgrade to Pro or Crew for unlimited technical riders.` },
+        { status: 403 }
+      );
     }
 
     // Create the technical rider
@@ -71,7 +69,7 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       stageSize: undefined,
       publicShareEnabled: false,
       bandName: band.name,
-      sortOrder: 0,
+      sortOrder: existingRiders.length,
       createdAt: now,
       updatedAt: now,
       ownerId: userId,
@@ -79,7 +77,7 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       items: [],
     });
 
-    return Response.json({ ok: true, riderId });
+    return Response.json({ ok: true, riderId, sortOrder: existingRiders.length });
   } catch (error) {
     console.error('Error creating technical rider:', error);
     return Response.json(

@@ -16,8 +16,9 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
 
   const token = typeof body.token === 'string' ? body.token.trim() : '';
   const bandId = typeof body.bandId === 'string' ? body.bandId.trim() : '';
-  if (!token || !bandId) {
-    return Response.json({ error: 'token and bandId are required.' }, { status: 400 });
+  const kitId = typeof body.kitId === 'string' ? body.kitId.trim() : '';
+  if (!token || !bandId || !kitId) {
+    return Response.json({ error: 'token, bandId, and kitId are required.' }, { status: 400 });
   }
 
   const [band, share] = await Promise.all([
@@ -33,7 +34,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     return Response.json({ error: 'Only band editors can disable a press kit share.' }, { status: 403 });
   }
 
-  if (!share || share.bandId !== bandId) {
+  if (!share || share.bandId !== bandId || share.kitId !== kitId) {
     return Response.json({ error: 'Share not found.' }, { status: 404 });
   }
 

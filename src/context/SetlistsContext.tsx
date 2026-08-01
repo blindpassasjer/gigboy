@@ -317,20 +317,32 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     };
 
     setTrashedSetlists((prev) => prev.filter((entry) => entry.trashId !== trashId));
-    setSetlists((prev) => normalizeSetlists([restoredSetlist, ...prev.filter((entry) => entry.id !== restoredSetlist.id)]));
+
+    let previousSetlists: Setlist[] = [];
+    let nextSetlists: Setlist[] = [];
+    setSetlists((prev) => {
+      previousSetlists = prev;
+      nextSetlists = normalizeSetlists([restoredSetlist, ...prev.filter((entry) => entry.id !== restoredSetlist.id)]);
+      return nextSetlists;
+    });
 
     if (!db || !userId) {
       return null;
     }
 
+    const changed = nextSetlists.filter((list) => {
+      const p = previousSetlists.find((item) => item.id === list.id);
+      return !p || p.sortOrder !== list.sortOrder;
+    });
+
     try {
       await Promise.all([
-        writeSetlist(restoredSetlist, userId),
+        ...changed.map((list) => writeSetlist(list, userId)),
         deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId)),
       ]);
       return null;
     } catch (error) {
-      setSetlists((prev) => prev.filter((entry) => entry.id !== restoredSetlist.id));
+      setSetlists(previousSetlists);
       setTrashedSetlists((prev) => [trashed, ...prev].sort(compareTrashByDeletedAtDesc));
       return error instanceof Error ? error.message : 'Failed to restore setlist.';
     }

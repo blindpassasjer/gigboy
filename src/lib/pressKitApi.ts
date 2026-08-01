@@ -71,8 +71,8 @@ export interface ActivePressKitShare {
   createdAt: string;
 }
 
-export async function getActivePressKitShare(userId: string, userEmail: string, bandId: string): Promise<ActivePressKitShare | null> {
-  const response = await fetch(`/api/press-kit/active-share?bandId=${encodeURIComponent(bandId)}`, {
+export async function getActivePressKitShare(userId: string, userEmail: string, bandId: string, kitId: string): Promise<ActivePressKitShare | null> {
+  const response = await fetch(`/api/press-kit/active-share?bandId=${encodeURIComponent(bandId)}&kitId=${encodeURIComponent(kitId)}`, {
     headers: await buildHeaders({ userId, userEmail }),
   });
 
@@ -89,11 +89,11 @@ export async function getActivePressKitShare(userId: string, userEmail: string, 
   };
 }
 
-export async function disablePressKitShare(userId: string, userEmail: string, bandId: string, token: string): Promise<void> {
+export async function disablePressKitShare(userId: string, userEmail: string, bandId: string, kitId: string, token: string): Promise<void> {
   const response = await fetch('/api/press-kit/disable-share', {
     method: 'POST',
     headers: await buildHeaders({ userId, userEmail }),
-    body: JSON.stringify({ bandId, token }),
+    body: JSON.stringify({ bandId, kitId, token }),
   });
 
   const payload = await response.json().catch(() => ({} as Record<string, unknown>));

@@ -128,7 +128,7 @@ export default function InputListEditor({
   }, [inventoryEquipment, lines, preferredEquipment, rider.inventoryEquipment, rider.lines, rider.preferredEquipment]);
 
   const handleRenameCommit = async () => {
-    const trimmed = renameValue.trim();
+    const trimmed = renameValue.trim().slice(0, 150);
     if (!trimmed) {
       setRenameValue(rider.name);
       setIsRenaming(false);
@@ -206,6 +206,7 @@ export default function InputListEditor({
                 <input
                   type="text"
                   value={renameValue}
+                  maxLength={150}
                   onChange={(event) => setRenameValue(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') void handleRenameCommit();

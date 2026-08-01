@@ -5,6 +5,7 @@ import { useBands } from '../context/BandsContext';
 import { useBandPlan } from '../hooks/usePlan';
 import type { Song } from '../types';
 import ConcertModeView from '../components/ConcertModeView';
+import toast from '../utils/anchoredToast';
 
 export default function BandSetlistConcertPage() {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ export default function BandSetlistConcertPage() {
     };
     const error = await updateBandSong(bandId, nextSong);
     if (error) {
-      window.alert(`Could not save pinned transpose: ${error}`);
+      toast.error(`Could not save pinned transpose: ${error}`);
     }
   };
 

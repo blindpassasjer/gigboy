@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ClipboardList, Download, Link2, Link2Off, PenLine, Trash2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { InputList, Stageplot } from '../types';
@@ -50,6 +50,9 @@ export default function BandTechRiderPanel({
   const iconPickerRef = useRef<HTMLDivElement | null>(null);
   const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const toolbarPortalRef = useCallback((el: HTMLDivElement | null) => {
+    setToolbarPortalTarget(el);
+  }, []);
 
   const activeRider = useMemo(
     () => riders.find((entry) => entry.id === activeRiderId) ?? null,
@@ -438,7 +441,7 @@ export default function BandTechRiderPanel({
               <div className="technical-rider-section-header">
                 <h2>Stagerider</h2>
               </div>
-            <div ref={(el) => setToolbarPortalTarget(el)} />
+            <div ref={toolbarPortalRef} />
             {activeRiderAsStageplot ? (
               <StageplotEditor
                 stageplot={activeRiderAsStageplot}

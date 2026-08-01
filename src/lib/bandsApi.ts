@@ -142,7 +142,7 @@ export async function createBandRiderOnServer(params: {
   bandId: string;
   name: string;
 }) {
-  return postJson<{ ok: true; riderId: string }>(`/api/bands/create-rider`, { bandId: params.bandId, name: params.name }, {
+  return postJson<{ ok: true; riderId: string; sortOrder: number }>(`/api/bands/create-rider`, { bandId: params.bandId, name: params.name }, {
     userId: params.userId,
     userEmail: params.userEmail,
   });

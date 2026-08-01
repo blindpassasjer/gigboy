@@ -135,6 +135,7 @@ export default function PublicBandPressKitPage() {
         riders: payload.riders,
         texts: payload.texts,
         images: payload.images,
+        videoUrls: payload.videoUrls,
         generatedAt: payload.generatedAt,
       });
       triggerBlobDownload(blob, `${slugifyFileName(payload.bandName)}-press-kit.zip`);
