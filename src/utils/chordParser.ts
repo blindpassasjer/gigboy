@@ -2,6 +2,14 @@ import type { ParsedLine, ChordSegment } from '../types';
 
 const DIRECTIVE_RE = /^\{([^:}]+)(?::([^}]*))?\}$/;
 
+// Valueless directives (no `:value`) are only recognized as directives when the name
+// is one of these — anything else wrapped in braces (e.g. ad-lib lyrics like "{la la la}")
+// is treated as a regular lyric line instead of being silently dropped.
+const KNOWN_VALUELESS_DIRECTIVES = new Set([
+  'title', 't', 'subtitle', 'st', 'artist',
+  'chorus', 'verse', 'intro', 'bridge', 'pre_chorus', 'interlude', 'solo', 'outro',
+]);
+
 /** Parse a single ChordPro line into a structured representation. */
 function parseLine(raw: string): ParsedLine {
   const trimmed = raw.trim();
@@ -11,17 +19,12 @@ function parseLine(raw: string): ParsedLine {
   // ChordPro directive: {title: My Song} or {chorus}
   const dirMatch = trimmed.match(DIRECTIVE_RE);
   if (dirMatch) {
-    return {
-      type: 'directive',
-      directive: dirMatch[1].trim().toLowerCase(),
-      directiveValue: dirMatch[2]?.trim(),
-      raw,
-    };
-  }
-
-  // Comment line
-  if (trimmed.startsWith('#')) {
-    return { type: 'comment', raw };
+    const directive = dirMatch[1].trim().toLowerCase();
+    const directiveValue = dirMatch[2]?.trim();
+    if (directiveValue || KNOWN_VALUELESS_DIRECTIVES.has(directive)) {
+      return { type: 'directive', directive, directiveValue, raw };
+    }
+    // Not a recognized directive — fall through and treat as a lyric line.
   }
 
   // Chord-lyric line — parse [Chord]lyric pairs.
@@ -73,6 +76,9 @@ function consumeTabBlock(rawLines: string[], startI: number): { tabLines: string
   while (i < rawLines.length) {
     const inner = rawLines[i].trim().toLowerCase();
     if (inner === '{end_of_tab}' || inner === '{eot}') { i++; break; }
+    // Missing {end_of_tab}: bail out at the next directive-looking line instead of
+    // swallowing the rest of the song as tab data.
+    if (/^\{[^}]*\}$/.test(inner) && inner !== '{start_of_tab}' && inner !== '{sot}') break;
     tabLines.push(rawLines[i]);
     i++;
   }
