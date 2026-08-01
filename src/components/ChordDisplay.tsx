@@ -191,7 +191,7 @@ function LineRenderer({
     >
       {segments.map((seg, idx) => (
         <span key={idx} className="chord-segment">
-          {showChords && (
+          {hasChords && (
             <span className="chord-name">
               {seg.chord ? (
                 onChordClick ? (
