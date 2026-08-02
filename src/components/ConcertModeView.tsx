@@ -197,7 +197,12 @@ export default function ConcertModeView({
     };
   }, []);
 
-  useEffect(() => {
+  // Layout effect (not a regular effect): must resolve the target page for the new
+  // song *before* the pagination-measuring layout effect below runs, since that effect
+  // clamps the current page against the new song's page count. Layout effects for a
+  // given commit always run before regular effects, so if this were a plain useEffect
+  // it would still be reading the *previous* song's page index when that clamp ran.
+  useLayoutEffect(() => {
     setCurrentPageInSong(targetPageRef.current);
     targetPageRef.current = 0;
     setShowMediaPlayer(false);
@@ -815,7 +820,12 @@ export default function ConcertModeView({
               style={(() => {
                 const offsetY = pageOffsets[currentPageInSong] ?? 0;
                 const nextOffsetY = pageOffsets[currentPageInSong + 1] ?? contentScrollHeightRef.current;
-                const bottomClip = Math.max(0, contentScrollHeightRef.current - nextOffsetY);
+                // Guard against a broken/non-monotonic offset pair (e.g. a stale page
+                // index read against a different song's offsets) ever clipping away an
+                // entire page — better to show unclipped content than render nothing.
+                const bottomClip = nextOffsetY > offsetY
+                  ? Math.max(0, contentScrollHeightRef.current - nextOffsetY)
+                  : 0;
                 return {
                   transform: `translateY(${-offsetY}px)`,
                   clipPath: bottomClip > 0 ? `inset(0 0 ${bottomClip}px 0)` : undefined,
