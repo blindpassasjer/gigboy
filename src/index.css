@@ -7351,6 +7351,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 290px;
+  grid-template-rows: minmax(0, 1fr);
   gap: .85rem;
 }
 
