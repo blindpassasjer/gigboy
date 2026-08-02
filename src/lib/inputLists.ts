@@ -124,6 +124,7 @@ export function normalizeInputList(id: string, raw: Record<string, unknown>): In
     stageSize: raw.stageSize === 'small' || raw.stageSize === 'medium' || raw.stageSize === 'large'
       ? raw.stageSize
       : undefined,
+    hospitalityNotes: typeof raw.hospitalityNotes === 'string' ? raw.hospitalityNotes : undefined,
     publicShareEnabled: raw.publicShareEnabled === true ? true : undefined,
     bandName: typeof raw.bandName === 'string' ? raw.bandName : undefined,
     sortOrder: typeof raw.sortOrder === 'number' ? raw.sortOrder : undefined,

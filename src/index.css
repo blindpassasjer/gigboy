@@ -2787,6 +2787,26 @@ input, select, textarea { font: inherit; color: var(--text); }
 .technical-rider-empty {
   color: var(--muted);
 }
+.technical-rider-notes-input {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .55rem .65rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.technical-rider-notes-view {
+  white-space: pre-wrap;
+  color: var(--text);
+  margin: 0;
+}
+.technical-rider-stage-meta {
+  color: var(--muted);
+  font-size: .85rem;
+  text-transform: capitalize;
+}
 .technical-rider-public-section {
   margin-top: .85rem;
   display: flex;

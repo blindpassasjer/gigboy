@@ -15,6 +15,7 @@ interface Props {
     lines: InputListLine[];
     preferredEquipment: RiderEquipmentItem[];
     inventoryEquipment: RiderEquipmentItem[];
+    hospitalityNotes: string;
   }) => Promise<void> | void;
   onCopyPublicLink: () => Promise<void> | void;
 }
@@ -56,6 +57,7 @@ export default function InputListEditor({
   const [lines, setLines] = useState<InputListLine[]>(rider.lines);
   const [preferredEquipment, setPreferredEquipment] = useState<RiderEquipmentItem[]>(rider.preferredEquipment);
   const [inventoryEquipment, setInventoryEquipment] = useState<RiderEquipmentItem[]>(rider.inventoryEquipment);
+  const [hospitalityNotes, setHospitalityNotes] = useState(rider.hospitalityNotes ?? '');
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [iconDraft, setIconDraft] = useState(rider.icon ?? '🎤');
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -73,10 +75,11 @@ export default function InputListEditor({
     setLines(rider.lines);
     setPreferredEquipment(rider.preferredEquipment);
     setInventoryEquipment(rider.inventoryEquipment);
+    setHospitalityNotes(rider.hospitalityNotes ?? '');
     setIconDraft(rider.icon ?? '🎤');
     setSaveState('idle');
     setShowIconEditor(false);
-  }, [rider.id, rider.icon, rider.inventoryEquipment, rider.lines, rider.name, rider.preferredEquipment]);
+  }, [rider.id, rider.icon, rider.inventoryEquipment, rider.lines, rider.name, rider.preferredEquipment, rider.hospitalityNotes]);
 
   useEffect(() => {
     return () => {
@@ -120,12 +123,13 @@ export default function InputListEditor({
   }, [rider.icon]);
 
   const hasChanges = useMemo(() => {
-    return JSON.stringify({ lines, preferredEquipment, inventoryEquipment }) !== JSON.stringify({
+    return JSON.stringify({ lines, preferredEquipment, inventoryEquipment, hospitalityNotes }) !== JSON.stringify({
       lines: rider.lines,
       preferredEquipment: rider.preferredEquipment,
       inventoryEquipment: rider.inventoryEquipment,
+      hospitalityNotes: rider.hospitalityNotes ?? '',
     });
-  }, [inventoryEquipment, lines, preferredEquipment, rider.inventoryEquipment, rider.lines, rider.preferredEquipment]);
+  }, [inventoryEquipment, lines, preferredEquipment, hospitalityNotes, rider.inventoryEquipment, rider.lines, rider.preferredEquipment, rider.hospitalityNotes]);
 
   const handleRenameCommit = async () => {
     const trimmed = renameValue.trim().slice(0, 150);
@@ -150,7 +154,7 @@ export default function InputListEditor({
     saveRequestIdRef.current = requestId;
 
     const timer = setTimeout(() => {
-      void Promise.resolve(onSaveContent({ lines, preferredEquipment, inventoryEquipment }))
+      void Promise.resolve(onSaveContent({ lines, preferredEquipment, inventoryEquipment, hospitalityNotes }))
         .then(() => {
           if (requestId !== saveRequestIdRef.current) return;
           setSaveState('saved');
@@ -169,7 +173,18 @@ export default function InputListEditor({
 
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lines, preferredEquipment, inventoryEquipment]);
+  }, [lines, preferredEquipment, inventoryEquipment, hospitalityNotes]);
+
+  // Warn before leaving the page while an edit hasn't been autosaved yet.
+  useEffect(() => {
+    if (!canEdit) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasChanges && saveState !== 'saving') return;
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [canEdit, hasChanges, saveState]);
 
   const saveStatusLabel = saveState === 'saving'
     ? 'Autosaving…'
@@ -423,6 +438,23 @@ export default function InputListEditor({
         canEdit={canEdit}
         onChange={setInventoryEquipment}
       />
+
+      <section className="technical-rider-section">
+        <div className="technical-rider-section-header">
+          <h2>Hospitality & Logistics</h2>
+        </div>
+        {canEdit ? (
+          <textarea
+            className="technical-rider-notes-input"
+            value={hospitalityNotes}
+            onChange={(event) => setHospitalityNotes(event.target.value)}
+            placeholder="Load-in time, parking, on-site contact, power requirements, catering/hospitality needs, etc."
+            rows={5}
+          />
+        ) : (
+          <p className="technical-rider-notes-view">{hospitalityNotes || 'No hospitality or logistics notes provided.'}</p>
+        )}
+      </section>
     </>
   );
 }

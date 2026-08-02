@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useEditor, useEditorState, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Link2Off, Download, Trash2, PenLine, Newspaper, X, ArrowDownToLine } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Link2Off, Download, Trash2, PenLine, Newspaper, X, ArrowDownToLine, GripVertical } from 'lucide-react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
@@ -205,6 +206,54 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     setKitImageIds(kit.imageIds ?? []);
     setImagePage(1);
   }, [kit.id, kit.imageIds]);
+
+  // ── Attached image reordering (mouse, touch, and pen via Pointer Events) ──
+  const [draggingImageId, setDraggingImageId] = useState<string | null>(null);
+  const dragOrderRef = useRef<string[] | null>(null);
+
+  const persistImageOrder = async (order: string[]) => {
+    if (!db) return;
+    try {
+      await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { imageIds: order }, { merge: true });
+    } catch {
+      toast.error('Failed to save image order.');
+    }
+  };
+
+  const handleImageDragStart = (event: ReactPointerEvent<HTMLButtonElement>, imageId: string) => {
+    if (!canEdit) return;
+    event.preventDefault();
+    dragOrderRef.current = [...kitImageIds];
+    setDraggingImageId(imageId);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleImageDragMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const order = dragOrderRef.current;
+    if (!order || !draggingImageId) return;
+    const hovered = document.elementFromPoint(event.clientX, event.clientY);
+    const tile = hovered?.closest<HTMLElement>('[data-image-tile-id]');
+    const targetId = tile?.dataset.imageTileId;
+    if (!targetId || targetId === draggingImageId) return;
+    const fromIndex = order.indexOf(draggingImageId);
+    const toIndex = order.indexOf(targetId);
+    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
+    const next = [...order];
+    next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, draggingImageId);
+    dragOrderRef.current = next;
+    setKitImageIds(next);
+  };
+
+  const handleImageDragEnd = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const order = dragOrderRef.current;
+    dragOrderRef.current = null;
+    setDraggingImageId(null);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (order) void persistImageOrder(order);
+  };
 
   useEffect(() => {
     if (!db) return;
@@ -539,7 +588,10 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   };
   const [busyDownload, setBusyDownload] = useState(false);
 
-  const attachedImages = imageAssets.filter((img) => kitImageIds.includes(img.id));
+  const imageAssetsById = new Map(imageAssets.map((img) => [img.id, img]));
+  const attachedImages = kitImageIds
+    .map((id) => imageAssetsById.get(id))
+    .filter((img): img is PressKitImageAsset => Boolean(img));
   const imageTotalPages = Math.max(1, Math.ceil(imageAssets.length / MEDIA_ITEMS_PER_PAGE));
   const imagePageStart = (imagePage - 1) * MEDIA_ITEMS_PER_PAGE;
   const pagedImageAssets = imageAssets.slice(imagePageStart, imagePageStart + MEDIA_ITEMS_PER_PAGE);
@@ -844,6 +896,72 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
               {!loadingImages && imageAssets.length === 0 && (
                 <p className="bands-status">No images uploaded yet.</p>
+              )}
+
+              {attachedImages.length > 0 && (
+                <div style={{ marginBottom: '0.9rem' }}>
+                  <p className="songlist-item-meta" style={{ margin: '0 0 0.4rem' }}>
+                    In this press kit{canEdit ? ' — drag to reorder' : ''}
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: '0.5rem' }}>
+                    {attachedImages.map((img) => (
+                      <div
+                        key={img.id}
+                        data-image-tile-id={img.id}
+                        style={{
+                          position: 'relative',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          border: '1px solid var(--border)',
+                          opacity: draggingImageId === img.id ? 0.5 : 1,
+                          touchAction: draggingImageId ? 'none' : undefined,
+                        }}
+                      >
+                        <img
+                          src={img.thumbUrl ?? img.url}
+                          alt={img.title}
+                          loading="lazy"
+                          decoding="async"
+                          style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
+                        />
+                        {canEdit && (
+                          <button
+                            type="button"
+                            aria-label={`Reorder ${img.title}`}
+                            title="Drag to reorder"
+                            onPointerDown={(e) => handleImageDragStart(e, img.id)}
+                            onPointerMove={handleImageDragMove}
+                            onPointerUp={handleImageDragEnd}
+                            onPointerCancel={handleImageDragEnd}
+                            style={{
+                              position: 'absolute',
+                              top: '4px',
+                              right: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '1.6rem',
+                              height: '1.6rem',
+                              background: 'rgba(0,0,0,0.55)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'grab',
+                              touchAction: 'none',
+                              zIndex: 1,
+                            }}
+                          >
+                            <GripVertical size={14} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {imageAssets.length > 0 && (
+                <p className="songlist-item-meta" style={{ margin: '0 0 0.4rem' }}>Image library</p>
               )}
 
               {canEdit && imageAssets.length > 0 && (

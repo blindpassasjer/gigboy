@@ -157,6 +157,8 @@ export interface InputList extends CollaborationMetadata {
   drawingLayers?: SongHandNoteDocument[];
   stageShape?: 'rectangle' | 'oval' | 'circle';
   stageSize?: 'small' | 'medium' | 'large';
+  /** Free-text hospitality/load-in/logistics notes for venues (parking, contact, power, catering, etc). */
+  hospitalityNotes?: string;
   publicShareEnabled?: boolean;
   /** Band name denormalized for unauthenticated public reads. */
   bandName?: string;

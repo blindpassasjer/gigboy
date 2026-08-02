@@ -423,6 +423,7 @@ export default function BandTechRiderPanel({
                     lines: content.lines,
                     preferredEquipment: content.preferredEquipment,
                     inventoryEquipment: content.inventoryEquipment,
+                    hospitalityNotes: content.hospitalityNotes,
                   });
                   if (error) { toast.error(error); throw new Error(error); }
                 }}

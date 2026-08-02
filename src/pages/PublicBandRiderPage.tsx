@@ -251,9 +251,24 @@ export default function PublicBandRiderPage() {
           </div>
         </section>
 
+        {rider.hospitalityNotes ? (
+          <section className="technical-rider-section technical-rider-public-section">
+            <h2>Hospitality & Logistics</h2>
+            <p className="technical-rider-notes-view">{rider.hospitalityNotes}</p>
+          </section>
+        ) : null}
+
         {stageplot && (stageplot.items.length > 0 || stageplot.drawingLayers.length > 0) ? (
           <section className="technical-rider-section technical-rider-public-section">
             <h2>Stage Plot</h2>
+            {(rider.stageShape || rider.stageSize) ? (
+              <p className="technical-rider-notes-view technical-rider-stage-meta">
+                {[
+                  rider.stageShape ? `Shape: ${rider.stageShape}` : null,
+                  rider.stageSize ? `Size: ${rider.stageSize}` : null,
+                ].filter(Boolean).join(' · ')}
+              </p>
+            ) : null}
           <div className="stageplot-stage song-notes-stage stageplot-stage--public">
             <div className="stageplot-stage-grid" />
             <div className="stageplot-front-edge" aria-hidden="true" />
