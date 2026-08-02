@@ -245,7 +245,25 @@ export default function ConcertModeView({
     if (viewportRef.current) observer.observe(viewportRef.current);
     if (contentRef.current) observer.observe(contentRef.current);
     measure();
-    return () => observer.disconnect();
+
+    // JetBrains Mono (the chord-display font) loads asynchronously via a Google Fonts
+    // @import with font-display: swap — the very first measurement above almost always
+    // runs against the fallback font's metrics, before the real font has downloaded.
+    // Once it swaps in, text can re-wrap without the browser reliably re-painting the
+    // clip-path'd, will-change:transform page layer on its own (only a real reflow —
+    // e.g. a window resize — was forcing that in practice). Re-measure once the real
+    // font is confirmed ready so pagination reflects the font actually being displayed.
+    let cancelled = false;
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        if (!cancelled) measure();
+      });
+    }
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, showChords, transpose, chordNotation, showTopbar]);
 
