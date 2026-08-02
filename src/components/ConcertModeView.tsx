@@ -838,11 +838,18 @@ export default function ConcertModeView({
               style={(() => {
                 const offsetY = pageOffsets[currentPageInSong] ?? 0;
                 const nextOffsetY = pageOffsets[currentPageInSong + 1] ?? contentScrollHeightRef.current;
+                // Read the content's *live* height rather than trusting the cached
+                // snapshot from the last measurement pass. Content can shrink after that
+                // snapshot was taken (e.g. hand-note data arriving and un-pinning lines
+                // that were temporarily forced to single-row layout) without a resize
+                // event ever re-running measure() — clipping against a stale, too-tall
+                // snapshot can clip away an entire page's visible content.
+                const liveScrollHeight = contentRef.current?.scrollHeight ?? contentScrollHeightRef.current;
                 // Guard against a broken/non-monotonic offset pair (e.g. a stale page
                 // index read against a different song's offsets) ever clipping away an
                 // entire page — better to show unclipped content than render nothing.
                 const bottomClip = nextOffsetY > offsetY
-                  ? Math.max(0, contentScrollHeightRef.current - nextOffsetY)
+                  ? Math.max(0, liveScrollHeight - nextOffsetY)
                   : 0;
                 return {
                   transform: `translateY(${-offsetY}px)`,
