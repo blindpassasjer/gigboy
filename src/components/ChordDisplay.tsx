@@ -122,8 +122,6 @@ function LineRenderer({
     return <div className="chord-line chord-line--empty" data-line-id={line.lineId} />;
   }
 
-  if (line.type === 'comment') return null;
-
   if (line.type === 'tab') {
     return (
       <TabDisplay

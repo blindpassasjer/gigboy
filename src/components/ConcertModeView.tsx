@@ -247,12 +247,10 @@ export default function ConcertModeView({
     measure();
 
     // JetBrains Mono (the chord-display font) loads asynchronously via a Google Fonts
-    // @import with font-display: swap — the very first measurement above almost always
-    // runs against the fallback font's metrics, before the real font has downloaded.
-    // Once it swaps in, text can re-wrap without the browser reliably re-painting the
-    // clip-path'd, will-change:transform page layer on its own (only a real reflow —
-    // e.g. a window resize — was forcing that in practice). Re-measure once the real
-    // font is confirmed ready so pagination reflects the font actually being displayed.
+    // @import with font-display: swap, so the measurement above can briefly run against
+    // fallback-font metrics. Re-measure once the real font is confirmed loaded so page
+    // breaks reflect the font actually being displayed (the ResizeObserver above also
+    // catches the resulting reflow, but this avoids a visible re-wrap on slow networks).
     let cancelled = false;
     if (typeof document !== 'undefined' && document.fonts?.ready) {
       document.fonts.ready.then(() => {
@@ -837,7 +835,6 @@ export default function ConcertModeView({
               ref={contentRef}
               style={(() => {
                 const offsetY = pageOffsets[currentPageInSong] ?? 0;
-                const nextOffsetY = pageOffsets[currentPageInSong + 1] ?? contentScrollHeightRef.current;
                 // Read the content's *live* height rather than trusting the cached
                 // snapshot from the last measurement pass. Content can shrink after that
                 // snapshot was taken (e.g. hand-note data arriving and un-pinning lines
@@ -845,6 +842,7 @@ export default function ConcertModeView({
                 // event ever re-running measure() — clipping against a stale, too-tall
                 // snapshot can clip away an entire page's visible content.
                 const liveScrollHeight = contentRef.current?.scrollHeight ?? contentScrollHeightRef.current;
+                const nextOffsetY = pageOffsets[currentPageInSong + 1] ?? liveScrollHeight;
                 // Guard against a broken/non-monotonic offset pair (e.g. a stale page
                 // index read against a different song's offsets) ever clipping away an
                 // entire page — better to show unclipped content than render nothing.

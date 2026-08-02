@@ -399,7 +399,7 @@ export interface SongHandNoteAuthor {
 }
 
 export interface ParsedLine {
-  type: 'chord-lyric' | 'directive' | 'comment' | 'empty' | 'tab' | 'section';
+  type: 'chord-lyric' | 'directive' | 'empty' | 'tab' | 'section';
   segments?: ChordSegment[];
   /** Directive name (e.g. "title", "chorus") */
   directive?: string;
