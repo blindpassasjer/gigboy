@@ -3,6 +3,7 @@ name: Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch: {}
 
 jobs:
   deploy-rate-limiter:
@@ -43,7 +44,7 @@ jobs:
           node-version: 22
       - run: echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/gcp-key.json"
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SECRET_ACCOUNT }}
       - run: npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage --project songbook-bebd5 --non-interactive
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-key.json
