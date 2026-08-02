@@ -7465,7 +7465,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .concert-page-content {
   width: 100%;
   transition: transform 0.28s ease;
-  will-change: transform;
 }
 
 .concert-page-indicator {
