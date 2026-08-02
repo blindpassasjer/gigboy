@@ -10,6 +10,32 @@ const KNOWN_VALUELESS_DIRECTIVES = new Set([
   'chorus', 'verse', 'intro', 'bridge', 'pre_chorus', 'interlude', 'solo', 'outro',
 ]);
 
+// A real chord token: root note, optional quality/extension, optional /bass — e.g. "A",
+// "Bm", "A/F#", "Cmaj7". Bracketed text that doesn't look like this (e.g. a performance
+// note like "[repeat from the top]") is left as literal lyric text instead of being
+// swallowed as a chord.
+const CHORD_TOKEN_RE = /^[A-G][#b]?[a-zA-Z0-9()+-]{0,10}(?:\/[A-G][#b]?)?$/;
+
+function isChordLike(text: string): boolean {
+  return CHORD_TOKEN_RE.test(text);
+}
+
+/** Finds the next bracket pair whose content looks like a real chord, skipping over
+ * any bracketed text along the way that doesn't (treated as literal lyric text). */
+function findNextChordBracket(str: string): { start: number; end: number; chord: string } | null {
+  let idx = 0;
+  while (idx < str.length) {
+    const bracketIdx = str.indexOf('[', idx);
+    if (bracketIdx === -1) return null;
+    const closeIdx = str.indexOf(']', bracketIdx);
+    if (closeIdx === -1) return null;
+    const content = str.slice(bracketIdx + 1, closeIdx);
+    if (isChordLike(content)) return { start: bracketIdx, end: closeIdx, chord: content };
+    idx = closeIdx + 1;
+  }
+  return null;
+}
+
 /** Parse a single ChordPro line into a structured representation. */
 function parseLine(raw: string): ParsedLine {
   const trimmed = raw.trim();
@@ -35,27 +61,19 @@ function parseLine(raw: string): ParsedLine {
   let pendingChord = '';
 
   while (remaining.length > 0) {
-    const bracketIdx = remaining.indexOf('[');
-    if (bracketIdx === -1) {
+    const next = findNextChordBracket(remaining);
+    if (!next) {
       segments.push({ chord: pendingChord, lyric: remaining });
       pendingChord = '';
       break;
     }
 
-    const lyricBefore = remaining.slice(0, bracketIdx);
-    const closeIdx = remaining.indexOf(']', bracketIdx);
-    if (closeIdx === -1) {
-      // Malformed — treat rest as lyric
-      segments.push({ chord: pendingChord, lyric: lyricBefore + remaining.slice(bracketIdx) });
-      pendingChord = '';
-      break;
-    }
-
+    const lyricBefore = remaining.slice(0, next.start);
     if (lyricBefore || pendingChord) {
       segments.push({ chord: pendingChord, lyric: lyricBefore });
     }
-    pendingChord = remaining.slice(bracketIdx + 1, closeIdx);
-    remaining = remaining.slice(closeIdx + 1);
+    pendingChord = next.chord;
+    remaining = remaining.slice(next.end + 1);
   }
 
   // Trailing chord with no following lyric
