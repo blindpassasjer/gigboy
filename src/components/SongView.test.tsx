@@ -69,6 +69,7 @@ vi.mock('../hooks/usePlan', () => ({
 
 vi.mock('../hooks/useSongHandNotes', () => ({
   useSongHandNotes: () => ({
+    notes: [],
     myStrokes: [],
     visibleNotes: [],
     saveMyNotes: vi.fn(),

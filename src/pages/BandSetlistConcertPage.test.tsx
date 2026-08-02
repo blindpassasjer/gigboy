@@ -117,7 +117,7 @@ vi.mock('../components/SongMediaPlayer', () => ({ default: () => <div /> }));
 vi.mock('../components/VisualMetronome', () => ({ default: () => <div /> }));
 vi.mock('../components/VisualTuner', () => ({ default: () => <div /> }));
 
-vi.mock('../components/SongHandNotesOverlay', () => ({
+vi.mock('../components/LyricHandNotesOverlay', () => ({
   default: (props: {
     visible: boolean;
     drawEnabled: boolean;
