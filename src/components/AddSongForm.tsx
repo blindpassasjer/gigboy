@@ -240,7 +240,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
   }, [initialSong?.id, initialSong?.createdAt]);
 
   function applyParsedSong(rawText: string, source: 'manual' | 'paste') {
-    const parsed = parsePastedSong(rawText);
+    const parsed = parsePastedSong(rawText, { guessTitleArtist: source === 'paste' });
     if (parsed.title) setTitle(parsed.title);
     if (parsed.artist) setArtist(parsed.artist);
     if (parsed.author) setAuthor(parsed.author);

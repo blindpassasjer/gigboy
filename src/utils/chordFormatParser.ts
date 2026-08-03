@@ -259,7 +259,7 @@ function lineStartsContent(line: string): boolean {
     || INLINE_CHORD_MARKER_RE.test(trimmed);
 }
 
-function parseLeadingMetadata(lines: string[]): {
+function parseLeadingMetadata(lines: string[], guessTitleArtist: boolean): {
   title?: string;
   artist?: string;
   author?: string;
@@ -311,13 +311,13 @@ function parseLeadingMetadata(lines: string[]): {
       continue;
     }
 
-    if (!title && !lineStartsContent(current) && current.length <= 90) {
+    if (guessTitleArtist && !title && !lineStartsContent(current) && current.length <= 90) {
       title = current;
       startIndex += 1;
       continue;
     }
 
-    if (!artist && !lineStartsContent(current) && current.length <= 80) {
+    if (guessTitleArtist && !artist && !lineStartsContent(current) && current.length <= 80) {
       artist = current.replace(/^by\s+/i, '').trim();
       startIndex += 1;
       continue;
@@ -338,7 +338,8 @@ function parseLeadingMetadata(lines: string[]): {
  * - Ultimate Guitar: [ch]Chord[/ch] tags, [tab] blocks, [Verse 1] / [Chorus] section labels
  * - cuerdas.net: [Estribillo] / Estribillo: section labels, (Chord)lyrics inline format
  */
-export function parsePastedSong(text: string): ParsedImportResult {
+export function parsePastedSong(text: string, options?: { guessTitleArtist?: boolean }): ParsedImportResult {
+  const guessTitleArtist = options?.guessTitleArtist ?? true;
   const normalized = normalizeLineEndings(text).trim();
   if (!normalized) {
     return { chordpro: '', warnings: [] };
@@ -357,7 +358,7 @@ export function parsePastedSong(text: string): ParsedImportResult {
   const hasChordProMarkers = /\{\s*[a-z_]+\s*:/.test(input);
 
   const lines = input.split('\n');
-  const meta = parseLeadingMetadata(lines);
+  const meta = parseLeadingMetadata(lines, guessTitleArtist);
   const content = lines.slice(meta.startIndex);
 
   if (hasChordProMarkers) {
