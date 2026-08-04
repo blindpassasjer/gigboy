@@ -56,11 +56,10 @@ function RouterErrorFallback() {
   }, [chunkFailure]);
 
   const handleReload = () => {
-    if (chunkFailure) {
-      forceReloadAfterChunkFailure();
-    } else {
-      window.location.reload();
-    }
+    // Always clear the service worker/caches before reloading, not just for
+    // classified chunk failures: a plain reload can keep re-serving stale
+    // cached files through an outdated SW for any other post-update error too.
+    forceReloadAfterChunkFailure();
   };
 
   return (
