@@ -460,6 +460,7 @@ interface BandsContextValue {
     lines: InputList['lines'];
     preferredEquipment: InputList['preferredEquipment'];
     inventoryEquipment: InputList['inventoryEquipment'];
+    monitorMixes: InputList['monitorMixes'];
     hospitalityNotes: string;
   }) => Promise<string | null>;
   updateBandInputListStageplotContent: (params: {
@@ -2839,9 +2840,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     lines: InputList['lines'];
     preferredEquipment: InputList['preferredEquipment'];
     inventoryEquipment: InputList['inventoryEquipment'];
+    monitorMixes: InputList['monitorMixes'];
     hospitalityNotes: string;
   }) => {
-    const { bandId, riderId, lines, preferredEquipment, inventoryEquipment, hospitalityNotes } = params;
+    const { bandId, riderId, lines, preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes } = params;
 
     if (!db || !userId) {
       return 'Band riders require cloud sync.';
@@ -2865,6 +2867,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
             lines: withSequentialRiderLineSortOrder(lines),
             preferredEquipment: withSequentialRiderEquipmentSortOrder(preferredEquipment),
             inventoryEquipment: withSequentialRiderEquipmentSortOrder(inventoryEquipment),
+            monitorMixes: withSequentialRiderEquipmentSortOrder(monitorMixes ?? []),
             hospitalityNotes: hospitalityNotes || undefined,
             updatedAt: now,
           }
@@ -2883,6 +2886,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         lines: (next?.lines ?? []).map(stripUndefinedFields),
         preferredEquipment: (next?.preferredEquipment ?? []).map(stripUndefinedFields),
         inventoryEquipment: (next?.inventoryEquipment ?? []).map(stripUndefinedFields),
+        monitorMixes: (next?.monitorMixes ?? []).map(stripUndefinedFields),
         hospitalityNotes: hospitalityNotes || deleteField(),
         updatedAt: now,
       }, { merge: true });

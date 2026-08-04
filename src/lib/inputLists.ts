@@ -47,6 +47,7 @@ function normalizeLine(raw: unknown): InputListLine | null {
     id: data.id,
     name: typeof data.name === 'string' ? data.name : 'Line',
     description: typeof data.description === 'string' ? data.description : '',
+    stand: typeof data.stand === 'string' ? data.stand : undefined,
     sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : undefined,
   };
 }
@@ -83,6 +84,7 @@ export function normalizeInputList(id: string, raw: Record<string, unknown>): In
   const linesRaw = Array.isArray(raw.lines) ? raw.lines : [];
   const preferredRaw = Array.isArray(raw.preferredEquipment) ? raw.preferredEquipment : [];
   const inventoryRaw = Array.isArray(raw.inventoryEquipment) ? raw.inventoryEquipment : [];
+  const monitorMixesRaw = Array.isArray(raw.monitorMixes) ? raw.monitorMixes : [];
 
   const lines = withSequentialSortOrder(
     linesRaw
@@ -105,6 +107,13 @@ export function normalizeInputList(id: string, raw: Record<string, unknown>): In
       .sort(compareBySortOrderThenName)
   );
 
+  const monitorMixes = withSequentialSortOrder(
+    monitorMixesRaw
+      .map(normalizeEquipmentItem)
+      .filter((entry): entry is RiderEquipmentItem => Boolean(entry))
+      .sort(compareBySortOrderThenName)
+  );
+
   return {
     id,
     name: typeof raw.name === 'string' ? raw.name : 'Untitled rider',
@@ -112,6 +121,7 @@ export function normalizeInputList(id: string, raw: Record<string, unknown>): In
     lines,
     preferredEquipment,
     inventoryEquipment,
+    monitorMixes,
     items: Array.isArray(raw.items)
       ? raw.items.map(normalizeStageplotItem).filter((entry): entry is StageplotItem => Boolean(entry))
       : [],

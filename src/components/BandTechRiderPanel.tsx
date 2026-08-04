@@ -209,6 +209,7 @@ export default function BandTechRiderPanel({
           name: activeRider.name,
           icon: activeRider.icon,
           items: activeRider.items ?? [],
+          drawingLayers: activeRider.drawingLayers ?? [],
           stageShape: activeRider.stageShape,
           stageSize: activeRider.stageSize,
           updatedAt: activeRider.updatedAt,
@@ -220,6 +221,10 @@ export default function BandTechRiderPanel({
           lines: activeRider.lines,
           preferredEquipment: activeRider.preferredEquipment,
           inventoryEquipment: activeRider.inventoryEquipment,
+          monitorMixes: activeRider.monitorMixes ?? [],
+          hospitalityNotes: activeRider.hospitalityNotes,
+          stageShape: activeRider.stageShape,
+          stageSize: activeRider.stageSize,
           updatedAt: activeRider.updatedAt,
         }],
         texts: [],
@@ -423,6 +428,7 @@ export default function BandTechRiderPanel({
                     lines: content.lines,
                     preferredEquipment: content.preferredEquipment,
                     inventoryEquipment: content.inventoryEquipment,
+                    monitorMixes: content.monitorMixes,
                     hospitalityNotes: content.hospitalityNotes,
                   });
                   if (error) { toast.error(error); throw new Error(error); }

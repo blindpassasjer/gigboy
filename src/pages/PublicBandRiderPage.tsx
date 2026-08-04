@@ -173,6 +173,7 @@ export default function PublicBandRiderPage() {
                   <th>#</th>
                   <th>Name</th>
                   <th>Description</th>
+                  <th>Stand</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,11 +182,12 @@ export default function PublicBandRiderPage() {
                     <td>{index + 1}</td>
                     <td>{line.name}</td>
                     <td>{line.description || '-'}</td>
+                    <td>{line.stand || '-'}</td>
                   </tr>
                 ))}
                 {rider.lines.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="technical-rider-empty-cell">No line items listed.</td>
+                    <td colSpan={4} className="technical-rider-empty-cell">No line items listed.</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -250,6 +252,32 @@ export default function PublicBandRiderPage() {
             </table>
           </div>
         </section>
+
+        {rider.monitorMixes && rider.monitorMixes.length > 0 ? (
+          <section className="technical-rider-section technical-rider-public-section">
+            <h2>Monitoring</h2>
+            <div className="technical-rider-table-wrap">
+              <table className="technical-rider-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Position</th>
+                    <th>Priority Order</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rider.monitorMixes.map((mix, index) => (
+                    <tr key={mix.id}>
+                      <td>{index + 1}</td>
+                      <td>{mix.name}</td>
+                      <td>{mix.description || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
 
         {rider.hospitalityNotes ? (
           <section className="technical-rider-section technical-rider-public-section">

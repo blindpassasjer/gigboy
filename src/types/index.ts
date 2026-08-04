@@ -134,6 +134,8 @@ export interface InputListLine {
   id: string;
   name: string;
   description: string;
+  /** Stand/clip requirement for this input, e.g. "Short boom", "Tall boom + clip", "Clip". */
+  stand?: string;
   sortOrder?: number;
 }
 
@@ -151,6 +153,10 @@ export interface InputList extends CollaborationMetadata {
   lines: InputListLine[];
   preferredEquipment: RiderEquipmentItem[];
   inventoryEquipment: RiderEquipmentItem[];
+  /** Monitor mixes: one entry per wedge/IEM mix. `name` holds the mix position
+   * (e.g. "Vocal / guitar — downstage stage left"), `description` holds the
+   * priority order (e.g. "Vocal · guitar · kick and snare · bass"). */
+  monitorMixes?: RiderEquipmentItem[];
   /** Stageplot canvas items embedded in this technical rider. */
   items?: StageplotItem[];
   /** Stageplot freehand drawing layers embedded in this technical rider. */

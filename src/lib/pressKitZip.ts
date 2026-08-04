@@ -15,6 +15,7 @@ export interface PressKitStageplotItem {
   name: string;
   icon?: string;
   items: unknown[];
+  drawingLayers?: unknown[];
   stageShape?: string;
   stageSize?: string;
   updatedAt?: string;
@@ -24,9 +25,13 @@ export interface PressKitRiderItem {
   id: string;
   name: string;
   icon?: string;
-  lines: Array<{ id?: string; name?: string; description?: string }>;
+  lines: Array<{ id?: string; name?: string; description?: string; stand?: string }>;
   preferredEquipment: Array<{ id?: string; name?: string; description?: string }>;
   inventoryEquipment: Array<{ id?: string; name?: string; description?: string }>;
+  monitorMixes?: Array<{ id?: string; name?: string; description?: string }>;
+  hospitalityNotes?: string;
+  stageShape?: string;
+  stageSize?: string;
   updatedAt?: string;
 }
 
@@ -68,7 +73,9 @@ export function riderAsText(rider: PressKitRiderItem): string {
   const lines = rider.lines.map((line) => {
     const name = (line.name ?? '').trim();
     const description = (line.description ?? '').trim();
-    return name ? `- ${name}${description ? `: ${description}` : ''}` : null;
+    const stand = (line.stand ?? '').trim();
+    const details = [description, stand ? `stand: ${stand}` : null].filter(Boolean).join(', ');
+    return name ? `- ${name}${details ? `: ${details}` : ''}` : null;
   }).filter((entry): entry is string => Boolean(entry));
 
   const preferred = rider.preferredEquipment.map((entry) => {
@@ -83,6 +90,18 @@ export function riderAsText(rider: PressKitRiderItem): string {
     return name ? `- ${name}${description ? `: ${description}` : ''}` : null;
   }).filter((entry): entry is string => Boolean(entry));
 
+  const monitorMixes = (rider.monitorMixes ?? []).map((entry) => {
+    const name = (entry.name ?? '').trim();
+    const description = (entry.description ?? '').trim();
+    return name ? `- ${name}${description ? `: ${description}` : ''}` : null;
+  }).filter((entry): entry is string => Boolean(entry));
+
+  const hospitalityNotes = (rider.hospitalityNotes ?? '').trim();
+  const stageMeta = [
+    rider.stageShape ? `Shape: ${rider.stageShape}` : null,
+    rider.stageSize ? `Size: ${rider.stageSize}` : null,
+  ].filter(Boolean).join(' · ');
+
   return [
     `Input List: ${rider.name}`,
     '',
@@ -94,6 +113,15 @@ export function riderAsText(rider: PressKitRiderItem): string {
     '',
     'Inventory Equipment',
     inventory.length > 0 ? inventory.join('\n') : '- None',
+    '',
+    'Monitoring',
+    monitorMixes.length > 0 ? monitorMixes.join('\n') : '- None',
+    '',
+    'Stage Plot',
+    stageMeta || '- Not specified',
+    '',
+    'Hospitality & Logistics',
+    hospitalityNotes || '- None',
   ].join('\n');
 }
 
