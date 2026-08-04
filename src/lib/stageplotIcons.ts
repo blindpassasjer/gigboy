@@ -5,6 +5,12 @@ import keyboardAmp from '../assets/stageplot-icons/keyboard-amp.svg';
 import bass from '../assets/stageplot-icons/bass.svg';
 import custom from '../assets/stageplot-icons/custom.svg';
 import drums from '../assets/stageplot-icons/drums.svg';
+import drumKick from '../assets/stageplot-icons/drum-kick.svg';
+import drumSnare from '../assets/stageplot-icons/drum-snare.svg';
+import drumHihat from '../assets/stageplot-icons/drum-hihat.svg';
+import drumRackTom from '../assets/stageplot-icons/drum-rack-tom.svg';
+import drumFloorTom from '../assets/stageplot-icons/drum-floor-tom.svg';
+import drumOverhead from '../assets/stageplot-icons/drum-overhead.svg';
 import guitar from '../assets/stageplot-icons/guitar.svg';
 import keys from '../assets/stageplot-icons/keys.svg';
 import monitor from '../assets/stageplot-icons/monitor.svg';
@@ -24,12 +30,12 @@ const ICON_BY_KIND: Record<string, string> = {
   bass,
   custom,
   drums,
-  'drum-kick': drums,
-  'drum-snare': drums,
-  'drum-hihat': drums,
-  'drum-rack-tom': drums,
-  'drum-floor-tom': drums,
-  'drum-overhead': drums,
+  'drum-kick': drumKick,
+  'drum-snare': drumSnare,
+  'drum-hihat': drumHihat,
+  'drum-rack-tom': drumRackTom,
+  'drum-floor-tom': drumFloorTom,
+  'drum-overhead': drumOverhead,
   guitar,
   keys,
   monitor,
