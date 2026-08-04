@@ -62,6 +62,7 @@ export default function ProfilePage() {
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, deleteAccount, logout } = useAuth();
   const {
     bands,
+    loading: bandsLoading,
     createBand,
     bandSongsByBandId,
     bandSongListsByBandId,
@@ -372,7 +373,7 @@ export default function ProfilePage() {
 
   return (
     <section className="profile-settings-page profile-settings-page--account">
-      {bands.length === 0 && (
+      {!bandsLoading && bands.length === 0 && (
         <div className="profile-welcome-card profile-welcome-card--highlight">
           <div className="profile-welcome-card-icon">
             <Sparkles size={22} />
