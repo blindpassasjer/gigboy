@@ -15,8 +15,6 @@ interface Props {
   bandName: string;
   riders: InputList[];
   canEdit: boolean;
-  userId: string | null;
-  userEmail: string | null;
   initialRiderId?: string | null;
   autoStartRenameToken?: string | number | null;
 }
@@ -36,8 +34,6 @@ export default function BandTechRiderPanel({
   bandName,
   riders,
   canEdit,
-  userId,
-  userEmail,
   initialRiderId = null,
   autoStartRenameToken = null,
 }: Props) {
@@ -454,11 +450,6 @@ export default function BandTechRiderPanel({
                 stageplot={activeRiderAsStageplot}
                 canEdit={canEdit}
                 toolbarPortalTarget={toolbarPortalTarget}
-                currentUser={{
-                  id: userId,
-                  name: userEmail ?? 'Unknown user',
-                  avatar: null,
-                }}
                 onRename={async (name) => {
                   const error = await renameBandInputList(bandId, activeRiderAsStageplot.id, name);
                   if (error) toast.error(error);

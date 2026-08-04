@@ -10,6 +10,8 @@ import drumSnare from '../assets/stageplot-icons/drum-snare.svg';
 import drumHihat from '../assets/stageplot-icons/drum-hihat.svg';
 import drumRackTom from '../assets/stageplot-icons/drum-rack-tom.svg';
 import drumFloorTom from '../assets/stageplot-icons/drum-floor-tom.svg';
+import drumCrash from '../assets/stageplot-icons/drum-crash.svg';
+import drumRide from '../assets/stageplot-icons/drum-ride.svg';
 import drumOverhead from '../assets/stageplot-icons/drum-overhead.svg';
 import guitar from '../assets/stageplot-icons/guitar.svg';
 import keys from '../assets/stageplot-icons/keys.svg';
@@ -35,6 +37,8 @@ const ICON_BY_KIND: Record<string, string> = {
   'drum-hihat': drumHihat,
   'drum-rack-tom': drumRackTom,
   'drum-floor-tom': drumFloorTom,
+  'drum-crash': drumCrash,
+  'drum-ride': drumRide,
   'drum-overhead': drumOverhead,
   guitar,
   keys,

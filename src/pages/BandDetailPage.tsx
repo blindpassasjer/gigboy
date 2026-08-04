@@ -517,8 +517,6 @@ export default function BandDetailPage() {
         bandName={band.name}
         riders={bandInputLists}
         canEdit={canEditBand}
-        userId={user?.id ?? null}
-        userEmail={user?.email ?? null}
         initialRiderId={bandResourceId}
         autoStartRenameToken={
           autoRenameState?.kind === 'rider' && autoRenameState.resourceId === bandResourceId

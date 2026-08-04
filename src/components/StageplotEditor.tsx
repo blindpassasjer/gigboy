@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link2, PenLine, Plus, Trash2, Undo2, X, Map } from 'lucide-react';
-import type { HandNoteStroke, SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
-import SongHandNotesOverlay from './SongHandNotesOverlay';
+import { Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
+import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { stageplotIconForKind } from '../lib/stageplotIcons';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
@@ -13,11 +12,6 @@ interface StageplotEditorProps {
   canEdit: boolean;
   showHeader?: boolean;
   toolbarPortalTarget?: HTMLElement | null;
-  currentUser: {
-    id: string | null;
-    name: string;
-    avatar?: string | null;
-  };
   onRename: (name: string) => void;
   onUpdateIcon: (icon?: string) => void;
   onDelete: () => Promise<void>;
@@ -61,6 +55,8 @@ const PALETTE_CATEGORIES: PaletteCategory[] = [
       { kind: 'drum-hihat', label: 'Hi-Hat', color: '#fb7185' },
       { kind: 'drum-rack-tom', label: 'Rack Tom', color: '#e11d48' },
       { kind: 'drum-floor-tom', label: 'Floor Tom', color: '#be123c' },
+      { kind: 'drum-crash', label: 'Crash', color: '#fb923c' },
+      { kind: 'drum-ride', label: 'Ride', color: '#c2410c' },
       { kind: 'drum-overhead', label: 'Overhead', color: '#9f1239' },
     ],
   },
@@ -91,16 +87,119 @@ function normalizeRotation(value: unknown): number {
   return wrapped;
 }
 
-function userLayerFrom(layers: SongHandNoteDocument[], userId: string | null) {
-  if (!userId) return null;
-  return layers.find((layer) => layer.authorUid === userId) ?? null;
+// Candidate directions labels can be nudged toward to dodge overlap, tried in this priority order.
+const LABEL_CANDIDATE_DIRECTIONS: Array<{ dx: number; dy: number }> = [
+  { dx: 0, dy: 1 },
+  { dx: 0, dy: -1 },
+  { dx: 1, dy: 0 },
+  { dx: -1, dy: 0 },
+  { dx: 0.7071, dy: 0.7071 },
+  { dx: -0.7071, dy: 0.7071 },
+  { dx: 0.7071, dy: -0.7071 },
+  { dx: -0.7071, dy: -0.7071 },
+];
+
+const LABEL_OFFSET_RADIUS = 34;
+const ITEM_ICON_HALF = 24;
+const DEFAULT_LABEL_OFFSET = { dx: 0, dy: LABEL_OFFSET_RADIUS };
+
+interface Rect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
 }
 
-function upsertLayer(layers: SongHandNoteDocument[], nextLayer: SongHandNoteDocument) {
-  return [
-    nextLayer,
-    ...layers.filter((layer) => layer.authorUid !== nextLayer.authorUid),
-  ];
+function rectOverlapArea(a: Rect, b: Rect): number {
+  const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  if (width <= 0 || height <= 0) return 0;
+  return width * height;
+}
+
+function estimateLabelSize(item: StageplotItem): { width: number; height: number } {
+  const width = Math.min(120, Math.max(46, item.label.length * 6.4 + 16));
+  const height = item.channel ? 32 : 18;
+  return { width, height };
+}
+
+// Greedily nudges each item's label toward whichever nearby direction overlaps
+// the least with other icons and already-placed labels, so labels spread out
+// instead of stacking on top of neighbors.
+function computeLabelOffsets(
+  items: StageplotItem[],
+  stageSize: { width: number; height: number }
+): Record<string, { dx: number; dy: number }> {
+  const offsets: Record<string, { dx: number; dy: number }> = {};
+  if (stageSize.width <= 0 || stageSize.height <= 0) return offsets;
+
+  const iconRects: Rect[] = items.map((item) => {
+    const cx = item.x * stageSize.width;
+    const cy = item.y * stageSize.height;
+    return {
+      left: cx - ITEM_ICON_HALF,
+      top: cy - ITEM_ICON_HALF,
+      right: cx + ITEM_ICON_HALF,
+      bottom: cy + ITEM_ICON_HALF,
+    };
+  });
+
+  const placedLabelRects: Rect[] = [];
+
+  items.forEach((item, index) => {
+    const cx = item.x * stageSize.width;
+    const cy = item.y * stageSize.height;
+    const { width, height } = estimateLabelSize(item);
+
+    let bestDirection = LABEL_CANDIDATE_DIRECTIONS[0];
+    let bestCost = Infinity;
+
+    for (const dir of LABEL_CANDIDATE_DIRECTIONS) {
+      const labelCx = cx + dir.dx * LABEL_OFFSET_RADIUS;
+      const labelCy = cy + dir.dy * LABEL_OFFSET_RADIUS;
+      const rect: Rect = {
+        left: labelCx - width / 2,
+        top: labelCy - height / 2,
+        right: labelCx + width / 2,
+        bottom: labelCy + height / 2,
+      };
+
+      let cost = 0;
+      for (let iconIndex = 0; iconIndex < iconRects.length; iconIndex += 1) {
+        if (iconIndex === index) continue;
+        cost += rectOverlapArea(rect, iconRects[iconIndex]);
+      }
+      for (const labelRect of placedLabelRects) {
+        cost += rectOverlapArea(rect, labelRect);
+      }
+
+      // Mild penalty for spilling outside the visible stage area.
+      const outLeft = Math.max(0, -rect.left);
+      const outTop = Math.max(0, -rect.top);
+      const outRight = Math.max(0, rect.right - stageSize.width);
+      const outBottom = Math.max(0, rect.bottom - stageSize.height);
+      cost += (outLeft + outTop + outRight + outBottom) * 40;
+
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestDirection = dir;
+        if (cost === 0) break;
+      }
+    }
+
+    offsets[item.id] = { dx: bestDirection.dx * LABEL_OFFSET_RADIUS, dy: bestDirection.dy * LABEL_OFFSET_RADIUS };
+
+    const chosenCx = cx + bestDirection.dx * LABEL_OFFSET_RADIUS;
+    const chosenCy = cy + bestDirection.dy * LABEL_OFFSET_RADIUS;
+    placedLabelRects.push({
+      left: chosenCx - width / 2,
+      top: chosenCy - height / 2,
+      right: chosenCx + width / 2,
+      bottom: chosenCy + height / 2,
+    });
+  });
+
+  return offsets;
 }
 
 export default function StageplotEditor({
@@ -108,7 +207,6 @@ export default function StageplotEditor({
   canEdit,
   showHeader = true,
   toolbarPortalTarget = null,
-  currentUser,
   onRename,
   onUpdateIcon,
   onDelete,
@@ -118,7 +216,6 @@ export default function StageplotEditor({
   const stageRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<StageplotItem[]>(stageplot.items);
   const [drawingLayers, setDrawingLayers] = useState<SongHandNoteDocument[]>(stageplot.drawingLayers ?? []);
-  const [drawEnabled, setDrawEnabled] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
   const [renameValue, setRenameValue] = useState(stageplot.name);
   const [renaming, setRenaming] = useState(false);
@@ -126,13 +223,33 @@ export default function StageplotEditor({
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [undoStack, setUndoStack] = useState<HandNoteStroke[][]>([]);
+  const [stagePixelSize, setStagePixelSize] = useState({ width: 0, height: 0 });
   const saveStateResetTimerRef = useRef<number | null>(null);
   const iconPickerRef = useRef<HTMLDivElement | null>(null);
   const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const stageShapePreview = stageplot.stageShape ?? 'rectangle';
   const stageSizePreview = stageplot.stageSize ?? 'medium';
+
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const updateSize = () => {
+      const rect = stage.getBoundingClientRect();
+      setStagePixelSize({ width: rect.width, height: rect.height });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, []);
+
+  const labelOffsets = useMemo(
+    () => computeLabelOffsets(items, stagePixelSize),
+    [items, stagePixelSize]
+  );
 
   useEffect(() => {
     setItems(stageplot.items);
@@ -172,9 +289,6 @@ export default function StageplotEditor({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [showIconEditor]);
-
-  const myLayer = useMemo(() => userLayerFrom(drawingLayers, currentUser.id), [currentUser.id, drawingLayers]);
-  const myStrokes = myLayer?.strokes ?? [];
 
   const selectedItem = useMemo(
     () => items.find((item) => item.id === selectedItemId) ?? null,
@@ -222,9 +336,6 @@ export default function StageplotEditor({
   };
 
   const handlePaletteDragStart = (event: React.DragEvent<HTMLButtonElement>, template: { kind: string; label: string; color: string }) => {
-    // If drawing mode is active, the drawing overlay can intercept drag/drop.
-    // Disable it as soon as the user starts dragging a template.
-    setDrawEnabled(false);
     event.dataTransfer.effectAllowed = 'copy';
     event.dataTransfer.setData(ITEM_DRAG_MIME, JSON.stringify(template));
     event.dataTransfer.setData('text/plain', template.label);
@@ -263,7 +374,7 @@ export default function StageplotEditor({
   };
 
   const moveItem = (itemId: string, event: React.PointerEvent<HTMLButtonElement>) => {
-    if (!canEdit || drawEnabled) return;
+    if (!canEdit) return;
 
     const stage = stageRef.current;
     if (!stage) return;
@@ -353,7 +464,7 @@ export default function StageplotEditor({
   };
 
   const rotateItemWithHandle = (itemId: string, event: React.PointerEvent<HTMLSpanElement>) => {
-    if (!canEdit || drawEnabled) return;
+    if (!canEdit) return;
 
     const stage = stageRef.current;
     if (!stage) return;
@@ -433,77 +544,6 @@ export default function StageplotEditor({
     }
     setRenameValue(stageplot.name);
     setRenaming(false);
-  };
-
-  const handleStrokesChange = (strokes: HandNoteStroke[], viewport: { width: number; height: number }) => {
-    if (!currentUser.id) return;
-
-    setUndoStack((prev) => [...prev, myStrokes]);
-
-    const nextLayer: SongHandNoteDocument = {
-      authorUid: currentUser.id,
-      authorName: currentUser.name,
-      authorAvatar: currentUser.avatar ?? null,
-      updatedAt: new Date().toISOString(),
-      viewport,
-      coordinateSystem: 'v2',
-      strokes,
-    };
-
-    const nextLayers = upsertLayer(drawingLayers, nextLayer);
-
-    setDrawingLayers(nextLayers);
-    void persistContent(items, nextLayers);
-  };
-
-  const handleUndoStroke = () => {
-    if (!currentUser.id) return;
-    if (undoStack.length === 0) return;
-
-    const nextUndoStack = undoStack.slice(0, undoStack.length - 1);
-    const lastStrokes = undoStack[undoStack.length - 1] ?? [];
-    const viewportRect = stageRef.current?.getBoundingClientRect();
-    const nextLayer: SongHandNoteDocument = {
-      authorUid: currentUser.id,
-      authorName: currentUser.name,
-      authorAvatar: currentUser.avatar ?? null,
-      updatedAt: new Date().toISOString(),
-      viewport: {
-        width: viewportRect?.width ?? 1,
-        height: viewportRect?.height ?? 1,
-      },
-      coordinateSystem: 'v2',
-      strokes: lastStrokes,
-    };
-
-    const nextLayers = upsertLayer(drawingLayers, nextLayer);
-    setUndoStack(nextUndoStack);
-    setDrawingLayers(nextLayers);
-    void persistContent(items, nextLayers);
-  };
-
-  const handleClearMyDrawing = () => {
-    if (!currentUser.id) return;
-    if (myStrokes.length === 0) return;
-
-    const viewportRect = stageRef.current?.getBoundingClientRect();
-    const nextLayer: SongHandNoteDocument = {
-      authorUid: currentUser.id,
-      authorName: currentUser.name,
-      authorAvatar: currentUser.avatar ?? null,
-      updatedAt: new Date().toISOString(),
-      viewport: {
-        width: viewportRect?.width ?? 1,
-        height: viewportRect?.height ?? 1,
-      },
-      coordinateSystem: 'v2',
-      strokes: [],
-    };
-
-    const nextLayers = upsertLayer(drawingLayers, nextLayer);
-    setUndoStack((prev) => [...prev, myStrokes]);
-    setDrawingLayers(nextLayers);
-    void persistContent(items, nextLayers);
   };
 
   const handleDeleteStageplot = async () => {
@@ -615,29 +655,13 @@ export default function StageplotEditor({
                 className="stageplot-toolbar-input stageplot-toolbar-input--channel"
               />
             </div>
+            <div className="stageplot-toolbar-actions">
+              <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem}>
+                <Trash2 size={12} /> Remove
+              </button>
+            </div>
           </div>
         ) : null}
-        <div className="stageplot-palette-category stageplot-palette-category--annotations">
-          <div className="stageplot-toolbar-section-heading">Annotations</div>
-          <div className="stageplot-toolbar-actions">
-            <button
-              type="button"
-              className={`notes-toolbar-btn${drawEnabled ? ' setlist-action-btn--active' : ''}`}
-              onClick={() => setDrawEnabled((prev) => !prev)}
-            >
-              <PenLine size={12} /> Draw
-            </button>
-            <button type="button" className="notes-toolbar-btn" onClick={handleUndoStroke} disabled={undoStack.length === 0}>
-              <Undo2 size={12} /> Undo
-            </button>
-            <button type="button" className="notes-toolbar-btn" onClick={handleClearMyDrawing}>
-              <X size={12} /> Clear
-            </button>
-            <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItemId}>
-              <Trash2 size={12} /> Remove
-            </button>
-          </div>
-        </div>
       </div>
     </>
   ) : null;
@@ -797,55 +821,60 @@ export default function StageplotEditor({
         <div className="stageplot-audience-marker" aria-label="Audience-facing side">
           Audience
         </div>
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            draggable={false}
-            className={`stageplot-item${selectedItemId === item.id ? ' stageplot-item--selected' : ''}`}
-            style={{
-              left: `${item.x * 100}%`,
-              top: `${item.y * 100}%`,
-              transform: `translate(-50%, -50%) rotate(${normalizeRotation(item.rotation)}deg)`,
-              color: item.color ?? 'var(--text)',
-            }}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              setSelectedItemId(item.id);
-              moveItem(item.id, event);
-            }}
-            onClick={() => setSelectedItemId(item.id)}
-            title={drawEnabled ? 'Disable drawing to move items' : item.label}
-          >
-            <img
-              src={stageplotIconForKind(item.kind)}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              className="stageplot-instrument-icon stageplot-instrument-icon--item"
-            />
-            <span>{item.label}</span>
-            {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
-            {canEdit && selectedItemId === item.id ? (
-              <span
-                className="stageplot-rotation-handle"
-                aria-label="Rotate item"
-                title="Drag to rotate"
-                onPointerDown={(event) => rotateItemWithHandle(item.id, event)}
-              />
-            ) : null}
-          </button>
-        ))}
-
-        <SongHandNotesOverlay
-          visible
-          drawEnabled={canEdit && drawEnabled}
-          notes={drawingLayers}
-          myStrokes={myStrokes}
-          onMyStrokesChange={handleStrokesChange}
-          strokeColor="#fb7185"
-          strokeWidth={2.6}
-        />
+        {items.map((item) => {
+          const labelOffset = labelOffsets[item.id] ?? DEFAULT_LABEL_OFFSET;
+          return (
+            <Fragment key={item.id}>
+              <button
+                type="button"
+                draggable={false}
+                className={`stageplot-item${selectedItemId === item.id ? ' stageplot-item--selected' : ''}`}
+                style={{
+                  left: `${item.x * 100}%`,
+                  top: `${item.y * 100}%`,
+                  transform: `translate(-50%, -50%) rotate(${normalizeRotation(item.rotation)}deg)`,
+                  color: item.color ?? 'var(--text)',
+                }}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  setSelectedItemId(item.id);
+                  moveItem(item.id, event);
+                }}
+                onClick={() => setSelectedItemId(item.id)}
+                title={item.label}
+              >
+                <img
+                  src={stageplotIconForKind(item.kind)}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  className="stageplot-instrument-icon stageplot-instrument-icon--item"
+                />
+                {canEdit && selectedItemId === item.id ? (
+                  <span
+                    className="stageplot-rotation-handle"
+                    aria-label="Rotate item"
+                    title="Drag to rotate"
+                    onPointerDown={(event) => rotateItemWithHandle(item.id, event)}
+                  />
+                ) : null}
+              </button>
+              <div
+                className="stageplot-item-label"
+                style={{
+                  left: `${item.x * 100}%`,
+                  top: `${item.y * 100}%`,
+                  color: item.color ?? 'var(--text)',
+                  ['--label-dx' as string]: `${labelOffset.dx}px`,
+                  ['--label-dy' as string]: `${labelOffset.dy}px`,
+                }}
+              >
+                <span>{item.label}</span>
+                {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
+              </div>
+            </Fragment>
+          );
+        })}
         </div>
       </div>
     </section>
