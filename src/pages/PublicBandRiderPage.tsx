@@ -30,6 +30,7 @@ function normalizeItem(raw: unknown): StageplotItem | null {
       : 0,
     color: typeof data.color === 'string' ? data.color : undefined,
     icon: typeof data.icon === 'string' ? data.icon : undefined,
+    channel: typeof data.channel === 'string' ? data.channel : undefined,
   };
 }
 
@@ -322,6 +323,7 @@ export default function PublicBandRiderPage() {
                   className="stageplot-instrument-icon"
                 />
                 <span>{item.label}</span>
+                {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
               </div>
             ))}
             <SongHandNotesOverlay

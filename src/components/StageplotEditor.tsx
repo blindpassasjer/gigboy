@@ -54,6 +54,17 @@ const PALETTE_CATEGORIES: PaletteCategory[] = [
     ],
   },
   {
+    name: 'Drum Kit',
+    items: [
+      { kind: 'drum-kick', label: 'Kick', color: '#ef4444' },
+      { kind: 'drum-snare', label: 'Snare', color: '#f43f5e' },
+      { kind: 'drum-hihat', label: 'Hi-Hat', color: '#fb7185' },
+      { kind: 'drum-rack-tom', label: 'Rack Tom', color: '#e11d48' },
+      { kind: 'drum-floor-tom', label: 'Floor Tom', color: '#be123c' },
+      { kind: 'drum-overhead', label: 'Overhead', color: '#9f1239' },
+    ],
+  },
+  {
     name: 'Speakers & Amps',
     items: [
       { kind: 'monitor', label: 'Monitor', color: '#f59e0b' },
@@ -164,6 +175,18 @@ export default function StageplotEditor({
 
   const myLayer = useMemo(() => userLayerFrom(drawingLayers, currentUser.id), [currentUser.id, drawingLayers]);
   const myStrokes = myLayer?.strokes ?? [];
+
+  const selectedItem = useMemo(
+    () => items.find((item) => item.id === selectedItemId) ?? null,
+    [items, selectedItemId]
+  );
+  const [labelDraft, setLabelDraft] = useState('');
+  const [channelDraft, setChannelDraft] = useState('');
+
+  useEffect(() => {
+    setLabelDraft(selectedItem?.label ?? '');
+    setChannelDraft(selectedItem?.channel ?? '');
+  }, [selectedItem]);
 
   const persistContent = useCallback(async (nextItems: StageplotItem[], nextLayers: SongHandNoteDocument[]) => {
     setSaveState('saving');
@@ -299,6 +322,21 @@ export default function StageplotEditor({
     ];
 
     setCustomLabel('');
+    setItems(nextItems);
+    void persistContent(nextItems, drawingLayers);
+  };
+
+  const commitSelectedItemEdits = () => {
+    if (!selectedItemId || !canEdit || !selectedItem) return;
+    const nextLabel = labelDraft.trim() || selectedItem.label;
+    const nextChannel = channelDraft.trim();
+    if (nextLabel === selectedItem.label && nextChannel === (selectedItem.channel ?? '')) return;
+
+    const nextItems = items.map((item) => (
+      item.id === selectedItemId
+        ? { ...item, label: nextLabel, channel: nextChannel || undefined }
+        : item
+    ));
     setItems(nextItems);
     void persistContent(nextItems, drawingLayers);
   };
@@ -548,6 +586,37 @@ export default function StageplotEditor({
             </button>
           </div>
         </div>
+        {selectedItem ? (
+          <div className="stageplot-palette-category stageplot-palette-category--inspector">
+            <div className="stageplot-toolbar-section-heading">Selected item</div>
+            <div className="stageplot-inspector-fields">
+              <input
+                type="text"
+                value={labelDraft}
+                onChange={(event) => setLabelDraft(event.target.value)}
+                onBlur={commitSelectedItemEdits}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
+                }}
+                placeholder="Label"
+                aria-label="Item label"
+                className="stageplot-toolbar-input"
+              />
+              <input
+                type="text"
+                value={channelDraft}
+                onChange={(event) => setChannelDraft(event.target.value)}
+                onBlur={commitSelectedItemEdits}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
+                }}
+                placeholder="Channel (e.g. 8)"
+                aria-label="Item channel"
+                className="stageplot-toolbar-input stageplot-toolbar-input--channel"
+              />
+            </div>
+          </div>
+        ) : null}
         <div className="stageplot-palette-category stageplot-palette-category--annotations">
           <div className="stageplot-toolbar-section-heading">Annotations</div>
           <div className="stageplot-toolbar-actions">
@@ -757,6 +826,7 @@ export default function StageplotEditor({
               className="stageplot-instrument-icon stageplot-instrument-icon--item"
             />
             <span>{item.label}</span>
+            {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
             {canEdit && selectedItemId === item.id ? (
               <span
                 className="stageplot-rotation-handle"

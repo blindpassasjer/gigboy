@@ -112,6 +112,9 @@ export interface StageplotItem {
   rotation?: number;
   color?: string;
   icon?: string;
+  /** Input-list channel number/name this item feeds, e.g. "8" or "10". Free text so it
+   * can hold non-numeric channel labels too. */
+  channel?: string;
 }
 
 export interface Stageplot extends CollaborationMetadata {

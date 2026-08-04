@@ -11773,6 +11773,28 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-shrink: 0;
 }
 
+.stageplot-inspector-fields {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.stageplot-toolbar-input--channel {
+  width: 110px;
+  flex: 0 0 auto;
+}
+
+.stageplot-item-channel {
+  display: block;
+  font-size: .66rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
 .stageplot-toolbar-actions {
   display: flex;
   flex-wrap: wrap;
