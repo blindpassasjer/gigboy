@@ -1,8 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-  <circle cx="12" cy="9.5" r="6"/>
-  <path d="M8 5.9l8 7.2"/>
-  <path d="M16 5.9l-8 7.2"/>
-  <path d="M9 15.5l-2 4.5"/>
-  <path d="M15 15.5l2 4.5"/>
-  <path d="M12 16v4.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path fill-rule="evenodd" d="M12 3a8 8 0 100 16 8 8 0 000-16zm0 2.4a5.6 5.6 0 110 11.2 5.6 5.6 0 010-11.2z"/>
+  <path fill-rule="evenodd" d="M12 8a3.2 3.2 0 100 6.4A3.2 3.2 0 0012 8zm0 1.4a1.8 1.8 0 110 3.6 1.8 1.8 0 010-3.6z"/>
 </svg>

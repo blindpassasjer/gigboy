@@ -11746,20 +11746,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-instrument-icon {
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   display: block;
   object-fit: contain;
 }
 
 .stageplot-instrument-icon--palette {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
 }
 
 .stageplot-instrument-icon--item {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
 }
 
 .stageplot-toolbar-input--custom {
@@ -12136,8 +12136,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .stageplot-instrument-icon--item {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
   }
 }
 
