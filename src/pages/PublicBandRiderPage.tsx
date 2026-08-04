@@ -312,7 +312,6 @@ export default function PublicBandRiderPage() {
                   left: `${item.x * 100}%`,
                   top: `${item.y * 100}%`,
                   transform: `translate(-50%, -50%) rotate(${item.rotation ?? 0}deg)`,
-                  borderColor: item.color ?? 'var(--border)',
                   color: item.color ?? 'var(--text)',
                 }}
               >

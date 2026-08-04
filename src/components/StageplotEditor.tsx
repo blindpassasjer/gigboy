@@ -807,7 +807,6 @@ export default function StageplotEditor({
               left: `${item.x * 100}%`,
               top: `${item.y * 100}%`,
               transform: `translate(-50%, -50%) rotate(${normalizeRotation(item.rotation)}deg)`,
-              borderColor: item.color ?? 'var(--border)',
               color: item.color ?? 'var(--text)',
             }}
             onPointerDown={(event) => {

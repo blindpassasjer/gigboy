@@ -12013,19 +12013,19 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: inline-grid;
   align-items: center;
   justify-items: center;
-  gap: .28rem;
+  gap: .15rem;
   transform: translate(-50%, -50%);
-  min-width: 96px;
-  max-width: min(28vw, 150px);
-  padding: .5rem .62rem;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 90%, #fff 10%);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
-  font-size: .78rem;
+  min-width: 64px;
+  max-width: min(24vw, 120px);
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  font-size: .74rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.15;
   text-align: center;
+  text-shadow: 0 1px 3px color-mix(in srgb, var(--bg) 60%, transparent);
   white-space: normal;
   word-break: break-word;
   cursor: grab;
@@ -12075,8 +12075,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   cursor: grabbing;
 }
 
-.stageplot-item--selected {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent), 0 8px 20px rgba(0, 0, 0, .16);
+.stageplot-item--selected .stageplot-instrument-icon--item {
+  outline: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
+  outline-offset: 4px;
+  border-radius: 999px;
 }
 
 .stageplot-item--public {
@@ -12128,10 +12130,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .stageplot-item {
-    min-width: 88px;
-    max-width: min(42vw, 130px);
-    padding: .44rem .52rem;
-    font-size: .74rem;
+    min-width: 56px;
+    max-width: min(38vw, 110px);
+    font-size: .7rem;
   }
 
   .stageplot-instrument-icon--item {
