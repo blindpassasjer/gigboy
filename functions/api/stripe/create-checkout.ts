@@ -146,6 +146,8 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
     const existingSubscriptionId = typeof existingBand?.stripeSubscriptionId === 'string'
       ? existingBand.stripeSubscriptionId
       : null;
+    const existingBandName = typeof existingBand?.name === 'string' ? existingBand.name : '';
+    const bandNameForReceipt = isNewBandRequest ? newBandName : existingBandName;
     const existingBandItemId = typeof existingBand?.stripeBandItemId === 'string'
       ? existingBand.stripeBandItemId
       : null;
@@ -181,6 +183,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       await stripe.subscriptions.update(existingSubscriptionId, {
         items,
         proration_behavior: 'create_prorations',
+        ...(bandNameForReceipt ? { description: `Gigboy — ${bandNameForReceipt}` } : {}),
       });
 
       return Response.json({ updated: true });
@@ -233,6 +236,7 @@ export const onRequestPost: PagesFunction<Env, never, Data> = async (ctx) => {
       metadata: sessionMetadata,
       subscription_data: {
         metadata: subscriptionMetadata,
+        ...(bandNameForReceipt ? { description: `Gigboy — ${bandNameForReceipt}` } : {}),
       },
     });
 

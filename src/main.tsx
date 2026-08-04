@@ -52,6 +52,22 @@ async function setupPwa() {
     onOfflineReady() {
       console.info('GIGBOY is ready to work offline.')
     },
+    // A SPA tab left open never re-fetches sw.js on its own — browsers only
+    // check for a new SW on navigation or ~once per 24h. Poll explicitly so
+    // an open tab picks up a new deploy within a minute instead of waiting
+    // for the user to navigate or the 24h cap.
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration) return
+
+      const checkForUpdate = () => {
+        if (document.visibilityState === 'visible') {
+          void registration.update()
+        }
+      }
+
+      setInterval(checkForUpdate, 45_000)
+      document.addEventListener('visibilitychange', checkForUpdate)
+    },
   })
 }
 
