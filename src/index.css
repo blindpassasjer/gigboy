@@ -11758,8 +11758,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-instrument-icon--item {
-  width: 40px;
-  height: 40px;
+  width: calc(40px * var(--item-scale, 1));
+  height: calc(40px * var(--item-scale, 1));
 }
 
 .stageplot-instrument-icon--legend {
@@ -12011,8 +12011,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   justify-content: center;
   transform: translate(-50%, -50%);
-  width: 52px;
-  height: 52px;
+  width: calc(52px * var(--item-scale, 1));
+  height: calc(52px * var(--item-scale, 1));
   padding: 0;
   border: none;
   background: none;
@@ -12218,13 +12218,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .stageplot-item {
-    width: 44px;
-    height: 44px;
+    width: calc(44px * var(--item-scale, 1));
+    height: calc(44px * var(--item-scale, 1));
   }
 
   .stageplot-instrument-icon--item {
-    width: 34px;
-    height: 34px;
+    width: calc(34px * var(--item-scale, 1));
+    height: calc(34px * var(--item-scale, 1));
   }
 
   .stageplot-legend {

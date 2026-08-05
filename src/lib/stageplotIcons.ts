@@ -55,3 +55,29 @@ const ICON_BY_KIND: Record<string, string> = {
 export function stageplotIconForKind(kind: string) {
   return ICON_BY_KIND[kind] ?? custom;
 }
+
+// Relative on-stage size for each item kind, so e.g. a kick drum reads as
+// physically larger than a hi-hat or overhead mic, matching real proportions.
+const ICON_SCALE_BY_KIND: Record<string, number> = {
+  drums: 1.3,
+  'drum-kick': 1.3,
+  'drum-floor-tom': 1.15,
+  'drum-rack-tom': 1.05,
+  'drum-snare': 1,
+  'drum-crash': 0.9,
+  'drum-ride': 0.9,
+  'drum-hihat': 0.85,
+  'drum-overhead': 0.8,
+  pa: 1.2,
+  subs: 1.2,
+  amp: 1.1,
+  'guitar-amp': 1.1,
+  'bass-amp': 1.1,
+  'keyboard-amp': 1.1,
+  monitor: 0.95,
+  iem: 0.75,
+};
+
+export function stageplotIconScaleForKind(kind: string) {
+  return ICON_SCALE_BY_KIND[kind] ?? 1;
+}

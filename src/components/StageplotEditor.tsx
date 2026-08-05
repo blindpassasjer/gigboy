@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
 import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
-import { stageplotIconForKind } from '../lib/stageplotIcons';
+import { stageplotIconForKind, stageplotIconScaleForKind } from '../lib/stageplotIcons';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
 import { clamp01 } from '../lib/lineAnchor';
 
@@ -695,6 +695,7 @@ export default function StageplotEditor({
               left: `${item.x * 100}%`,
               top: `${item.y * 100}%`,
               color: item.color ?? 'var(--text)',
+              ['--item-scale' as string]: stageplotIconScaleForKind(item.kind),
             }}
             onPointerDown={(event) => {
               event.preventDefault();

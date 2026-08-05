@@ -6,7 +6,7 @@ import { db } from '../lib/firebase';
 import { normalizeInputList } from '../lib/inputLists';
 import type { InputList, SongHandNoteDocument, StageplotItem } from '../types';
 import SongHandNotesOverlay from '../components/SongHandNotesOverlay';
-import { stageplotIconForKind } from '../lib/stageplotIcons';
+import { stageplotIconForKind, stageplotIconScaleForKind } from '../lib/stageplotIcons';
 
 type Status = 'loading' | 'not-found' | 'private' | 'error' | 'ready';
 
@@ -312,6 +312,7 @@ export default function PublicBandRiderPage() {
                   left: `${item.x * 100}%`,
                   top: `${item.y * 100}%`,
                   color: item.color ?? 'var(--text)',
+                  ['--item-scale' as string]: stageplotIconScaleForKind(item.kind),
                 }}
               >
                 <div
