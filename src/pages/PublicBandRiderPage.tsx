@@ -71,13 +71,9 @@ function renderPublicLegendRow(item: StageplotItem, index: number) {
     <li key={item.id}>
       <div className="stageplot-legend-row stageplot-legend-row--static" style={{ color: item.color ?? 'var(--text)' }}>
         <span className="stageplot-legend-row-main">
-          {item.noChannel ? (
-            <span className="stageplot-legend-number stageplot-legend-number--none" title="Doesn't need its own channel">–</span>
-          ) : (
-            <span className={numberClassName}>
-              {badge.value}
-            </span>
-          )}
+          <span className={numberClassName}>
+            {badge.value}
+          </span>
           <img
             src={stageplotIconForKind(item.kind)}
             alt=""
@@ -88,6 +84,24 @@ function renderPublicLegendRow(item: StageplotItem, index: number) {
         </span>
         {meta ? <span className="stageplot-legend-meta">{meta}</span> : null}
       </div>
+    </li>
+  );
+}
+
+// Items marked "no channel" (e.g. a player position — the amp gets the
+// channel, not the performer) aren't part of the actual patch list, so they
+// get a lightweight unnumbered reference row instead of a legend slot, just
+// enough to identify the icon on the diagram.
+function renderPublicReferenceRow(item: StageplotItem) {
+  return (
+    <li key={item.id} className="stageplot-reference-row" style={{ color: item.color ?? 'var(--text)' }}>
+      <img
+        src={stageplotIconForKind(item.kind)}
+        alt=""
+        aria-hidden="true"
+        className="stageplot-instrument-icon stageplot-instrument-icon--legend"
+      />
+      <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
     </li>
   );
 }
@@ -265,41 +279,52 @@ export default function PublicBandRiderPage() {
             />
           </div>
           {stageplot.items.length > 0 ? (
-            <div className="stageplot-legend-section">
-              {(() => {
-                const inputListItems = stageplot.items
-                  .map((item, index) => ({ item, index }))
-                  .filter(({ item }) => !stageplotIsOutputKind(item.kind))
-                  .sort(compareStageplotItemsByChannel);
-                const outputListItems = stageplot.items
-                  .map((item, index) => ({ item, index }))
-                  .filter(({ item }) => stageplotIsOutputKind(item.kind))
-                  .sort(compareStageplotItemsByChannel);
-                return (
-                  <>
-                    {inputListItems.length > 0 ? (
-                      <div className="stageplot-legend-group">
-                        <div className="stageplot-legend-heading">Technical Inputs</div>
-                        <ol className="stageplot-legend">
-                          {inputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
-                        </ol>
-                      </div>
-                    ) : null}
-                    {inputListItems.length > 0 && outputListItems.length > 0 ? (
-                      <div className="stageplot-legend-divider" aria-hidden="true" />
-                    ) : null}
-                    {outputListItems.length > 0 ? (
-                      <div className="stageplot-legend-group">
-                        <div className="stageplot-legend-heading">Monitors</div>
-                        <ol className="stageplot-legend">
-                          {outputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
-                        </ol>
-                      </div>
-                    ) : null}
-                  </>
-                );
-              })()}
-            </div>
+            (() => {
+              const inputListItems = stageplot.items
+                .map((item, index) => ({ item, index }))
+                .filter(({ item }) => !stageplotIsOutputKind(item.kind) && !item.noChannel)
+                .sort(compareStageplotItemsByChannel);
+              const outputListItems = stageplot.items
+                .map((item, index) => ({ item, index }))
+                .filter(({ item }) => stageplotIsOutputKind(item.kind) && !item.noChannel)
+                .sort(compareStageplotItemsByChannel);
+              const referenceItems = stageplot.items.filter((item) => item.noChannel === true);
+              return (
+                <>
+                  {inputListItems.length > 0 || outputListItems.length > 0 ? (
+                    <div className="stageplot-legend-section">
+                      {inputListItems.length > 0 ? (
+                        <div className="stageplot-legend-group">
+                          <div className="stageplot-legend-heading">Technical Inputs</div>
+                          <ol className="stageplot-legend">
+                            {inputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
+                          </ol>
+                        </div>
+                      ) : null}
+                      {inputListItems.length > 0 && outputListItems.length > 0 ? (
+                        <div className="stageplot-legend-divider" aria-hidden="true" />
+                      ) : null}
+                      {outputListItems.length > 0 ? (
+                        <div className="stageplot-legend-group">
+                          <div className="stageplot-legend-heading">Monitors</div>
+                          <ol className="stageplot-legend">
+                            {outputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
+                          </ol>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {referenceItems.length > 0 ? (
+                    <div className="stageplot-reference-group">
+                      <div className="stageplot-legend-heading">Also on stage</div>
+                      <ul className="stageplot-reference-list">
+                        {referenceItems.map((item) => renderPublicReferenceRow(item))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </>
+              );
+            })()
           ) : null}
           </div>
         </section>

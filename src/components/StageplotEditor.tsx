@@ -174,6 +174,7 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
           ) : canEdit ? (
             <input
               type="text"
+              inputMode="numeric"
               value={channel}
               onChange={(event) => setChannel(event.target.value)}
               onBlur={commit}
