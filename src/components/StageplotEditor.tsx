@@ -735,7 +735,6 @@ export default function StageplotEditor({
           : null}
 
       <div className="stageplot-layout">
-      <div className="stageplot-stage-wrap">
         <div
           ref={stageRef}
           className={`stageplot-stage song-notes-stage stageplot-stage--shape-${stageShapePreview} stageplot-stage--size-${stageSizePreview}`}
@@ -804,7 +803,6 @@ export default function StageplotEditor({
           );
         })}
         </div>
-      </div>
       {(inputListItems.length > 0 || outputListItems.length > 0) ? (
         <div className="stageplot-legend-section">
           {inputListItems.length > 0 ? (

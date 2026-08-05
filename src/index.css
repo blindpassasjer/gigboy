@@ -11667,13 +11667,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-width: 0;
 }
 
-.stageplot-stage-wrap {
-  overflow-x: auto;
-  overflow-y: hidden;
-  min-width: 0;
-  flex: 2 1 420px;
-}
-
 .stageplot-legend-section {
   display: flex;
   gap: 1.25rem;
@@ -11886,6 +11879,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
   max-width: min(100%, var(--stage-max-width));
   min-height: var(--stage-min-height);
+  min-width: 0;
+  flex: 2 1 420px;
   margin-inline: auto;
   border-radius: 14px;
   border: 1px solid var(--border);
