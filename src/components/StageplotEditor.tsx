@@ -685,7 +685,7 @@ export default function StageplotEditor({
         <div className="stageplot-audience-marker" aria-label="Audience-facing side">
           Audience
         </div>
-        {items.map((item) => (
+        {items.map((item, index) => (
           <button
             key={item.id}
             type="button"
@@ -702,7 +702,7 @@ export default function StageplotEditor({
               moveItem(item.id, event);
             }}
             onClick={() => setSelectedItemId(item.id)}
-            title={item.label}
+            title={item.label ? `${index + 1}. ${item.label}` : `${index + 1}`}
           >
             <div
               className="stageplot-item-icon-wrap"
@@ -724,15 +724,34 @@ export default function StageplotEditor({
                 />
               ) : null}
             </div>
-            {item.label || item.channel ? (
-              <div className="stageplot-item-text">
-                {item.label ? <span>{item.label}</span> : null}
-                {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
-              </div>
-            ) : null}
+            <span className="stageplot-item-number" aria-hidden="true">{index + 1}</span>
           </button>
         ))}
         </div>
+        {items.length > 0 ? (
+          <ol className="stageplot-legend">
+            {items.map((item, index) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={`stageplot-legend-row${selectedItemId === item.id ? ' stageplot-legend-row--selected' : ''}`}
+                  onClick={() => setSelectedItemId(item.id)}
+                  style={{ color: item.color ?? 'var(--text)' }}
+                >
+                  <span className="stageplot-legend-number">{index + 1}</span>
+                  <img
+                    src={stageplotIconForKind(item.kind)}
+                    alt=""
+                    aria-hidden="true"
+                    className="stageplot-instrument-icon stageplot-instrument-icon--legend"
+                  />
+                  <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
+                  {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
+                </button>
+              </li>
+            ))}
+          </ol>
+        ) : null}
       </div>
     </section>
   );

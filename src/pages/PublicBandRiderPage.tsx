@@ -304,7 +304,7 @@ export default function PublicBandRiderPage() {
             <div className="stageplot-audience-marker" aria-label="Audience-facing side">
               Audience
             </div>
-            {stageplot.items.map((item) => (
+            {stageplot.items.map((item, index) => (
               <div
                 key={item.id}
                 className="stageplot-item stageplot-item--public"
@@ -325,12 +325,7 @@ export default function PublicBandRiderPage() {
                     className="stageplot-instrument-icon stageplot-instrument-icon--item"
                   />
                 </div>
-                {item.label || item.channel ? (
-                  <div className="stageplot-item-text">
-                    {item.label ? <span>{item.label}</span> : null}
-                    {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
-                  </div>
-                ) : null}
+                <span className="stageplot-item-number" aria-hidden="true">{index + 1}</span>
               </div>
             ))}
             <SongHandNotesOverlay
@@ -341,6 +336,23 @@ export default function PublicBandRiderPage() {
               onMyStrokesChange={() => {}}
             />
           </div>
+          <ol className="stageplot-legend">
+            {stageplot.items.map((item, index) => (
+              <li key={item.id}>
+                <div className="stageplot-legend-row stageplot-legend-row--static" style={{ color: item.color ?? 'var(--text)' }}>
+                  <span className="stageplot-legend-number">{index + 1}</span>
+                  <img
+                    src={stageplotIconForKind(item.kind)}
+                    alt=""
+                    aria-hidden="true"
+                    className="stageplot-instrument-icon stageplot-instrument-icon--legend"
+                  />
+                  <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
+                  {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
+                </div>
+              </li>
+            ))}
+          </ol>
         </section>
       ) : null}
       </div>

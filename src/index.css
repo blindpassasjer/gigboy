@@ -11758,8 +11758,14 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-instrument-icon--item {
-  width: 96px;
-  height: 96px;
+  width: 40px;
+  height: 40px;
+}
+
+.stageplot-instrument-icon--legend {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 .stageplot-toolbar-input--custom {
@@ -11784,15 +11790,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .stageplot-toolbar-input--channel {
   width: 110px;
   flex: 0 0 auto;
-}
-
-.stageplot-item-channel {
-  display: block;
-  font-size: .6rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, .85);
-  text-transform: uppercase;
-  letter-spacing: .02em;
 }
 
 .stageplot-toolbar-actions {
@@ -12014,8 +12011,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   justify-content: center;
   transform: translate(-50%, -50%);
-  width: 96px;
-  height: 96px;
+  width: 52px;
+  height: 52px;
   padding: 0;
   border: none;
   background: none;
@@ -12066,31 +12063,25 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--accent) 55%, var(--border));
 }
 
-/* Sits on top of the icon, inset from its edges, styled like text
-   silkscreened onto the gear itself rather than a UI label glued on top. */
-.stageplot-item-text {
+/* Small numbered badge pinned to the icon's corner; cross-references the legend list. */
+.stageplot-item-number {
   position: absolute;
-  inset: 14px;
-  display: flex;
-  flex-direction: column;
+  right: -4px;
+  bottom: -4px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 3px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .1rem;
-  max-width: 100%;
-  text-align: center;
-}
-
-.stageplot-item-text span {
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  color: #fff;
-  text-shadow:
-    0 1px 1px rgba(0, 0, 0, .6),
-    0 0 3px rgba(0, 0, 0, .45),
-    0 0 1px rgba(0, 0, 0, .8);
-  font-size: .68rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--surface);
+  background: color-mix(in srgb, currentColor 82%, var(--text) 18%);
+  color: var(--surface);
+  font-size: .6rem;
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1;
+  z-index: 1;
 }
 
 .stageplot-item:active {
@@ -12110,6 +12101,81 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .stageplot-stage--public {
   min-height: 60vh;
+}
+
+.stageplot-legend {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: .4rem;
+  margin: .75rem 0 0;
+  padding: 0;
+}
+
+.stageplot-legend-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  padding: .4rem .55rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .15s ease, background .15s ease;
+}
+
+.stageplot-legend-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.stageplot-legend-row--static {
+  cursor: default;
+}
+
+.stageplot-legend-row--static:hover {
+  border-color: var(--border);
+}
+
+.stageplot-legend-row--selected {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface) 90%);
+}
+
+.stageplot-legend-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 82%, var(--text) 18%);
+  color: var(--surface);
+  font-size: .62rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.stageplot-legend-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.stageplot-legend-channel {
+  flex-shrink: 0;
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .03em;
 }
 
 @media (max-width: 900px) {
@@ -12152,25 +12218,17 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .stageplot-item {
-    width: 72px;
-    height: 72px;
-  }
-
-  .stageplot-item-text {
-    inset: 10px;
-  }
-
-  .stageplot-item-text span {
-    font-size: .58rem;
-  }
-
-  .stageplot-item-channel {
-    font-size: .5rem;
+    width: 44px;
+    height: 44px;
   }
 
   .stageplot-instrument-icon--item {
-    width: 72px;
-    height: 72px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .stageplot-legend {
+    grid-template-columns: 1fr;
   }
 }
 
