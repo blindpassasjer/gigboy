@@ -398,8 +398,8 @@ export default function BandTechRiderPanel({
           </header>
         </div>
 
-        <div className="tech-rider-sections">
-          <section className="tech-rider-section" aria-label="Stageplot view">
+        <div className="tech-rider-panels">
+          <section className="tech-rider-panel" aria-label="Stageplot view">
             <section className="technical-rider-section">
               <div className="technical-rider-section-header">
                 <h2>Stage Plot</h2>
@@ -441,7 +441,7 @@ export default function BandTechRiderPanel({
             </section>
           </section>
 
-          <section className="tech-rider-section" aria-label="Technical rider view">
+          <section className="tech-rider-panel" aria-label="Technical rider view">
             {activeRider ? (
               <InputListEditor
                 rider={activeRider}

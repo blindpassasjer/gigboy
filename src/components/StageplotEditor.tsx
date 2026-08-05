@@ -597,7 +597,7 @@ export default function StageplotEditor({
   ) : null;
 
   return (
-    <section className="setlist-view stageplot-view">
+    <>
       {showHeader ? (
         <div className="list-sticky-header">
           <div className="page-section-header resource-header">
@@ -734,8 +734,7 @@ export default function StageplotEditor({
           )
           : null}
 
-      <div className="stageplot-layout">
-        <div
+      <div
           ref={stageRef}
           className={`stageplot-stage song-notes-stage stageplot-stage--shape-${stageShapePreview} stageplot-stage--size-${stageSizePreview}`}
           onDragOver={(event) => {
@@ -845,7 +844,6 @@ export default function StageplotEditor({
           ) : null}
         </div>
       ) : null}
-      </div>
-    </section>
+    </>
   );
 }

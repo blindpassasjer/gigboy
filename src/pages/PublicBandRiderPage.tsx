@@ -209,7 +209,6 @@ export default function PublicBandRiderPage() {
                 ].filter(Boolean).join(' · ')}
               </p>
             ) : null}
-          <div className="stageplot-layout">
           <div className="stageplot-stage song-notes-stage stageplot-stage--public">
             <div className="stageplot-stage-grid" />
             <div className="stageplot-front-edge" aria-hidden="true" />
@@ -291,7 +290,6 @@ export default function PublicBandRiderPage() {
               })()}
             </div>
           ) : null}
-          </div>
         </section>
       ) : null}
 
