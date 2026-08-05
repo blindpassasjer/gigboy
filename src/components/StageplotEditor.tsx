@@ -7,7 +7,6 @@ import {
   stageplotIconForKind,
   stageplotIconScaleForKind,
   stageplotItemBadge,
-  stageplotContrastTextColor,
   stageplotIsOutputKind,
   compareStageplotItemsByChannel,
 } from '../lib/stageplotIcons';
@@ -145,11 +144,28 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
   };
 
   const meta = [item.description?.trim(), item.stand?.trim()].filter(Boolean).join(' · ');
+  const isOutput = stageplotIsOutputKind(item.kind);
+  const hasChannel = channel.trim().length > 0;
+  const numberClassName = `stageplot-legend-number${hasChannel ? (isOutput ? ' stageplot-legend-number--output' : ' stageplot-legend-number--input') : ' stageplot-legend-number--index'}`;
 
   return (
     <li>
       <div className={`stageplot-legend-row${selected ? ' stageplot-legend-row--selected' : ''}`} style={{ color: item.color ?? 'var(--text)' }}>
         <div className="stageplot-legend-row-main">
+          {canEdit ? (
+            <input
+              type="text"
+              value={channel}
+              onChange={(event) => setChannel(event.target.value)}
+              onBlur={commit}
+              onKeyDown={blurOnEnter}
+              placeholder={`#${index + 1}`}
+              aria-label="Channel number"
+              className={numberClassName}
+            />
+          ) : (
+            <span className={numberClassName}>{badge.value}</span>
+          )}
           <button
             type="button"
             className="stageplot-legend-select"
@@ -157,15 +173,6 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
             title="Select on stage"
             aria-label={`Select ${item.label || 'item'} on stage`}
           >
-            <span
-              className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}
-              style={badge.isChannel ? {
-                backgroundColor: item.color ?? undefined,
-                color: stageplotContrastTextColor(item.color),
-              } : undefined}
-            >
-              {badge.value}
-            </span>
             <img
               src={stageplotIconForKind(item.kind)}
               alt=""
@@ -186,20 +193,6 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
             />
           ) : (
             <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
-          )}
-          {canEdit ? (
-            <input
-              type="text"
-              value={channel}
-              onChange={(event) => setChannel(event.target.value)}
-              onBlur={commit}
-              onKeyDown={blurOnEnter}
-              placeholder="Ch"
-              aria-label="Item channel"
-              className="stageplot-legend-input stageplot-legend-input--channel"
-            />
-          ) : (
-            item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null
           )}
           {canEdit ? (
             <button type="button" className="stageplot-legend-remove" onClick={onRemove} title="Remove item" aria-label="Remove item">
@@ -802,11 +795,7 @@ export default function StageplotEditor({
               ) : null}
             </div>
             <span
-              className={`stageplot-item-number${badge.isChannel ? '' : ' stageplot-item-number--index'}`}
-              style={badge.isChannel ? {
-                backgroundColor: item.color ?? undefined,
-                color: stageplotContrastTextColor(item.color),
-              } : undefined}
+              className={`stageplot-item-number${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
               aria-hidden="true"
             >
               {badge.value}

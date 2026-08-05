@@ -10,7 +10,6 @@ import {
   stageplotIconForKind,
   stageplotIconScaleForKind,
   stageplotItemBadge,
-  stageplotContrastTextColor,
   stageplotIsOutputKind,
   compareStageplotItemsByChannel,
 } from '../lib/stageplotIcons';
@@ -66,17 +65,12 @@ function normalizeLayer(raw: unknown): SongHandNoteDocument | null {
 function renderPublicLegendRow(item: StageplotItem, index: number) {
   const badge = stageplotItemBadge(item, index);
   const meta = [item.description?.trim(), item.stand?.trim()].filter(Boolean).join(' · ');
+  const numberClassName = `stageplot-legend-number${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-legend-number--output' : ' stageplot-legend-number--input') : ' stageplot-legend-number--index'}`;
   return (
     <li key={item.id}>
       <div className="stageplot-legend-row stageplot-legend-row--static" style={{ color: item.color ?? 'var(--text)' }}>
         <span className="stageplot-legend-row-main">
-          <span
-            className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}
-            style={badge.isChannel ? {
-              backgroundColor: item.color ?? undefined,
-              color: stageplotContrastTextColor(item.color),
-            } : undefined}
-          >
+          <span className={numberClassName}>
             {badge.value}
           </span>
           <img
@@ -86,7 +80,6 @@ function renderPublicLegendRow(item: StageplotItem, index: number) {
             className="stageplot-instrument-icon stageplot-instrument-icon--legend"
           />
           <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
-          {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
         </span>
         {meta ? <span className="stageplot-legend-meta">{meta}</span> : null}
       </div>
@@ -164,23 +157,23 @@ export default function PublicBandRiderPage() {
   }, [bandId, riderId]);
 
   if (status === 'loading') {
-    return <div className="public-setlist-page"><p className="public-setlist-status">Loading technical rider...</p></div>;
+    return <div className="public-setlist-page public-setlist-page--wide"><p className="public-setlist-status">Loading technical rider...</p></div>;
   }
 
   if (status === 'not-found') {
-    return <div className="public-setlist-page"><p className="public-setlist-status">Technical rider not found.</p></div>;
+    return <div className="public-setlist-page public-setlist-page--wide"><p className="public-setlist-status">Technical rider not found.</p></div>;
   }
 
   if (status === 'private') {
-    return <div className="public-setlist-page"><p className="public-setlist-status">This technical rider is not publicly shared.</p></div>;
+    return <div className="public-setlist-page public-setlist-page--wide"><p className="public-setlist-status">This technical rider is not publicly shared.</p></div>;
   }
 
   if (status === 'error' || !rider) {
-    return <div className="public-setlist-page"><p className="public-setlist-status">Failed to load technical rider.</p></div>;
+    return <div className="public-setlist-page public-setlist-page--wide"><p className="public-setlist-status">Failed to load technical rider.</p></div>;
   }
 
   return (
-    <main className="public-setlist-page technical-rider-public-page">
+    <main className="public-setlist-page public-setlist-page--wide technical-rider-public-page">
       <header className="public-setlist-header public-share-header">
         <Link to="/" className="public-page-nav-brand public-page-nav-brand--large"><BrandMark size={22} /></Link>
         <div className="public-share-branding-row public-share-branding-row--header">
@@ -249,11 +242,7 @@ export default function PublicBandRiderPage() {
                   />
                 </div>
                 <span
-                  className={`stageplot-item-number${badge.isChannel ? '' : ' stageplot-item-number--index'}`}
-                  style={badge.isChannel ? {
-                    backgroundColor: item.color ?? undefined,
-                    color: stageplotContrastTextColor(item.color),
-                  } : undefined}
+                  className={`stageplot-item-number${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
                   aria-hidden="true"
                 >
                   {badge.value}
