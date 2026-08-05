@@ -11668,9 +11668,21 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-top: 0;
 }
 
+.stageplot-legend-divider {
+  align-self: stretch;
+  width: 1px;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--border) 90%, transparent);
+}
+
 @media (max-width: 720px) {
   .stageplot-legend-section {
     flex-direction: column;
+  }
+
+  .stageplot-legend-divider {
+    width: auto;
+    height: 1px;
   }
 }
 
@@ -11679,7 +11691,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-direction: column;
   gap: .8rem;
   align-items: stretch;
-  padding: 0 1.5rem;
 }
 
 .stageplot-toolbar-section-heading {
@@ -11744,6 +11755,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-palette-btn--custom {
+  align-self: flex-start;
   border-style: dashed;
   color: var(--muted);
 }
@@ -12202,6 +12214,22 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-color: color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
+.stageplot-legend-add-details {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.stageplot-legend-add-details:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .stageplot-legend-number {
   display: inline-flex;
   align-items: center;
@@ -12299,10 +12327,6 @@ input.stageplot-legend-number:focus {
   .stageplot-instrument-icon--item {
     width: calc(34px * var(--item-scale, 1));
     height: calc(34px * var(--item-scale, 1));
-  }
-
-  .stageplot-legend {
-    grid-template-columns: 1fr;
   }
 }
 

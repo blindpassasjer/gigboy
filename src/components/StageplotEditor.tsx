@@ -28,6 +28,19 @@ interface StageplotEditorProps {
 const ITEM_DRAG_MIME = 'application/x-gigboy-stageplot-item-template';
 const CUSTOM_ITEM_TEMPLATE = { kind: 'custom', label: 'Custom item', color: '#6b7280' } as const;
 
+// Cycled through for items added via a palette click (rather than dragged to
+// an exact spot), so repeated clicks land near the center without stacking
+// exactly on top of each other.
+const CLICK_ADD_OFFSETS: Array<{ dx: number; dy: number }> = [
+  { dx: 0, dy: 0 },
+  { dx: 0.05, dy: 0.04 },
+  { dx: -0.05, dy: 0.06 },
+  { dx: 0.06, dy: -0.05 },
+  { dx: -0.06, dy: -0.04 },
+  { dx: 0.03, dy: 0.08 },
+  { dx: -0.03, dy: -0.08 },
+];
+
 interface PaletteItem {
   kind: string;
   label: string;
@@ -147,6 +160,10 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
   const isOutput = stageplotIsOutputKind(item.kind);
   const hasChannel = channel.trim().length > 0;
   const numberClassName = `stageplot-legend-number${hasChannel ? (isOutput ? ' stageplot-legend-number--output' : ' stageplot-legend-number--input') : ' stageplot-legend-number--index'}`;
+  // Keep rows compact by default — only show the stand/description editors
+  // once the row is selected or already has something in them, rather than
+  // always showing two empty inputs per item.
+  const showDetails = selected || stand.trim().length > 0 || description.trim().length > 0;
 
   return (
     <li>
@@ -200,7 +217,7 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
             </button>
           ) : null}
         </div>
-        {canEdit ? (
+        {canEdit && showDetails ? (
           <input
             type="text"
             value={stand}
@@ -212,7 +229,7 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
             className="stageplot-legend-input stageplot-legend-input--stand"
           />
         ) : null}
-        {canEdit ? (
+        {canEdit && showDetails ? (
           <input
             type="text"
             value={description}
@@ -223,9 +240,13 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
             aria-label="Item description"
             className="stageplot-legend-input stageplot-legend-input--description"
           />
-        ) : (
-          meta ? <span className="stageplot-legend-meta">{meta}</span> : null
-        )}
+        ) : null}
+        {canEdit && !showDetails ? (
+          <button type="button" className="stageplot-legend-add-details" onClick={onSelect}>
+            + Stand / description
+          </button>
+        ) : null}
+        {!canEdit && meta ? <span className="stageplot-legend-meta">{meta}</span> : null}
       </div>
     </li>
   );
@@ -354,7 +375,11 @@ export default function StageplotEditor({
 
   const handlePaletteAddClick = (template: { kind: string; label: string; color: string }) => {
     if (!canEdit) return;
-    addItemAtPosition(template, 0.5, 0.5);
+    // Stagger successive click-added items around the center instead of
+    // dropping every one on the exact same spot, so they don't perfectly
+    // overlap and need to be dragged apart by hand.
+    const offset = CLICK_ADD_OFFSETS[items.length % CLICK_ADD_OFFSETS.length];
+    addItemAtPosition(template, clamp01(0.5 + offset.dx), clamp01(0.5 + offset.dy));
   };
 
   const handleStageDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -578,20 +603,20 @@ export default function StageplotEditor({
                   <span>{entry.label}</span>
                 </button>
               ))}
-              <button
-                type="button"
-                className="stageplot-palette-btn stageplot-palette-btn--custom"
-                draggable
-                onDragStart={(event) => handlePaletteDragStart(event, CUSTOM_ITEM_TEMPLATE)}
-                onClick={() => handlePaletteAddClick(CUSTOM_ITEM_TEMPLATE)}
-                title="Add a custom item"
-              >
-                <Plus size={14} aria-hidden="true" />
-                <span>Custom</span>
-              </button>
             </div>
           </div>
         ))}
+        <button
+          type="button"
+          className="stageplot-palette-btn stageplot-palette-btn--custom"
+          draggable
+          onDragStart={(event) => handlePaletteDragStart(event, CUSTOM_ITEM_TEMPLATE)}
+          onClick={() => handlePaletteAddClick(CUSTOM_ITEM_TEMPLATE)}
+          title="Add a custom item"
+        >
+          <Plus size={14} aria-hidden="true" />
+          <span>Custom</span>
+        </button>
       </div>
     </>
   ) : null;
@@ -823,6 +848,9 @@ export default function StageplotEditor({
                 ))}
               </ol>
             </div>
+          ) : null}
+          {inputListItems.length > 0 && outputListItems.length > 0 ? (
+            <div className="stageplot-legend-divider" aria-hidden="true" />
           ) : null}
           {outputListItems.length > 0 ? (
             <div className="stageplot-legend-group">

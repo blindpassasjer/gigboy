@@ -278,6 +278,9 @@ export default function PublicBandRiderPage() {
                         </ol>
                       </div>
                     ) : null}
+                    {inputListItems.length > 0 && outputListItems.length > 0 ? (
+                      <div className="stageplot-legend-divider" aria-hidden="true" />
+                    ) : null}
                     {outputListItems.length > 0 ? (
                       <div className="stageplot-legend-group">
                         <div className="stageplot-legend-heading">Monitors</div>
