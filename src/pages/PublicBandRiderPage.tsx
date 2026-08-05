@@ -6,7 +6,13 @@ import { db } from '../lib/firebase';
 import { normalizeInputList } from '../lib/inputLists';
 import type { InputList, SongHandNoteDocument, StageplotItem } from '../types';
 import SongHandNotesOverlay from '../components/SongHandNotesOverlay';
-import { stageplotIconForKind, stageplotIconScaleForKind, stageplotItemBadge } from '../lib/stageplotIcons';
+import {
+  stageplotIconForKind,
+  stageplotIconScaleForKind,
+  stageplotItemBadge,
+  stageplotContrastTextColor,
+  stageplotIsOutputKind,
+} from '../lib/stageplotIcons';
 
 type Status = 'loading' | 'not-found' | 'private' | 'error' | 'ready';
 
@@ -52,6 +58,33 @@ function normalizeLayer(raw: unknown): SongHandNoteDocument | null {
     },
     strokes: Array.isArray(data.strokes) ? (data.strokes as SongHandNoteDocument['strokes']) : [],
   };
+}
+
+function renderPublicLegendRow(item: StageplotItem, index: number) {
+  const badge = stageplotItemBadge(item, index);
+  return (
+    <li key={item.id}>
+      <div className="stageplot-legend-row stageplot-legend-row--static" style={{ color: item.color ?? 'var(--text)' }}>
+        <span
+          className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}
+          style={badge.isChannel ? {
+            backgroundColor: item.color ?? undefined,
+            color: stageplotContrastTextColor(item.color),
+          } : undefined}
+        >
+          {badge.value}
+        </span>
+        <img
+          src={stageplotIconForKind(item.kind)}
+          alt=""
+          aria-hidden="true"
+          className="stageplot-instrument-icon stageplot-instrument-icon--legend"
+        />
+        <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
+        {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
+      </div>
+    </li>
+  );
 }
 
 export default function PublicBandRiderPage() {
@@ -330,6 +363,10 @@ export default function PublicBandRiderPage() {
                 </div>
                 <span
                   className={`stageplot-item-number${badge.isChannel ? '' : ' stageplot-item-number--index'}`}
+                  style={badge.isChannel ? {
+                    backgroundColor: item.color ?? undefined,
+                    color: stageplotContrastTextColor(item.color),
+                  } : undefined}
                   aria-hidden="true"
                 >
                   {badge.value}
@@ -345,28 +382,22 @@ export default function PublicBandRiderPage() {
               onMyStrokesChange={() => {}}
             />
           </div>
-          <ol className="stageplot-legend">
-            {stageplot.items.map((item, index) => {
-              const badge = stageplotItemBadge(item, index);
-              return (
-              <li key={item.id}>
-                <div className="stageplot-legend-row stageplot-legend-row--static" style={{ color: item.color ?? 'var(--text)' }}>
-                  <span className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}>
-                    {badge.value}
-                  </span>
-                  <img
-                    src={stageplotIconForKind(item.kind)}
-                    alt=""
-                    aria-hidden="true"
-                    className="stageplot-instrument-icon stageplot-instrument-icon--legend"
-                  />
-                  <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
-                  {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
-                </div>
-              </li>
-              );
-            })}
-          </ol>
+          {stageplot.items.filter((item) => !stageplotIsOutputKind(item.kind)).length > 0 ? (
+            <div className="stageplot-legend-group">
+              <div className="stageplot-legend-heading">Input List</div>
+              <ol className="stageplot-legend">
+                {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? null : renderPublicLegendRow(item, index)))}
+              </ol>
+            </div>
+          ) : null}
+          {stageplot.items.filter((item) => stageplotIsOutputKind(item.kind)).length > 0 ? (
+            <div className="stageplot-legend-group">
+              <div className="stageplot-legend-heading">Output List (Monitors / PA)</div>
+              <ol className="stageplot-legend">
+                {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? renderPublicLegendRow(item, index) : null))}
+              </ol>
+            </div>
+          ) : null}
         </section>
       ) : null}
       </div>

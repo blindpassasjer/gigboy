@@ -83,6 +83,16 @@ export function stageplotIconScaleForKind(kind: string) {
   return ICON_SCALE_BY_KIND[kind] ?? 1;
 }
 
+// Most stage items feed a channel on the input list (mics, DI'd instruments,
+// amps). A few instead receive signal from the desk — monitors, PA, subs,
+// IEM packs — and belong on a separate output list rather than being mixed
+// in with numbered input channels.
+const OUTPUT_KINDS = new Set(['monitor', 'pa', 'subs', 'iem']);
+
+export function stageplotIsOutputKind(kind: string): boolean {
+  return OUTPUT_KINDS.has(kind);
+}
+
 // The on-stage/legend badge shows the mixer channel when one is assigned,
 // since that's what a stage plot's numbers conventionally mean — falling
 // back to list position (visually distinct) only for unassigned items, so
@@ -93,4 +103,20 @@ export function stageplotItemBadge(
 ): { value: string; isChannel: boolean } {
   const channel = item.channel?.trim();
   return channel ? { value: channel, isChannel: true } : { value: `#${index + 1}`, isChannel: false };
+}
+
+const DEFAULT_ITEM_COLOR = '#6b7280';
+
+// Picks black or white text for a badge filled with the item's own color, so
+// it stays legible against light colors (e.g. yellow, cyan) instead of
+// assuming white text always works.
+export function stageplotContrastTextColor(hex: string | undefined): string {
+  const match = /^#?([0-9a-f]{6})$/i.exec(hex ?? DEFAULT_ITEM_COLOR);
+  const normalized = match ? match[1] : DEFAULT_ITEM_COLOR.slice(1);
+  const r = parseInt(normalized.slice(0, 2), 16) / 255;
+  const g = parseInt(normalized.slice(2, 4), 16) / 255;
+  const b = parseInt(normalized.slice(4, 6), 16) / 255;
+  const toLinear = (channel: number) => (channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+  const luminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return luminance > 0.42 ? '#1a1a1a' : '#ffffff';
 }

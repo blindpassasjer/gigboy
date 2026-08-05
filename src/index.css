@@ -12079,8 +12079,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: center;
   border-radius: 999px;
   border: 1.5px solid var(--surface);
-  background: color-mix(in srgb, currentColor 82%, var(--text) 18%);
-  color: var(--surface);
+  background: var(--muted);
+  color: #fff;
   font-size: .6rem;
   font-weight: 800;
   line-height: 1;
@@ -12113,12 +12113,25 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-height: 60vh;
 }
 
+.stageplot-legend-group {
+  margin-top: .85rem;
+}
+
+.stageplot-legend-heading {
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  margin: 0 0 .4rem;
+}
+
 .stageplot-legend {
   list-style: none;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: .4rem;
-  margin: .75rem 0 0;
+  margin: 0;
   padding: 0;
 }
 
@@ -12162,8 +12175,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: 0 3px;
   border-radius: 999px;
   border: 1.5px solid transparent;
-  background: color-mix(in srgb, currentColor 82%, var(--text) 18%);
-  color: var(--surface);
+  background: var(--muted);
+  color: #fff;
   font-size: .62rem;
   font-weight: 800;
   flex-shrink: 0;
