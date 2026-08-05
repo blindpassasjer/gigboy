@@ -12063,7 +12063,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--accent) 55%, var(--border));
 }
 
-/* Small numbered badge pinned to the icon's corner; cross-references the legend list. */
+/* Small badge pinned to the icon's corner; cross-references the legend list.
+   Solid fill = mixer channel number. Outlined "#n" = no channel assigned yet,
+   just the item's position — kept visually distinct so the two are never
+   mistaken for each other. */
 .stageplot-item-number {
   position: absolute;
   right: -4px;
@@ -12082,6 +12085,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-weight: 800;
   line-height: 1;
   z-index: 1;
+}
+
+.stageplot-item-number--index {
+  border: 1.5px dashed color-mix(in srgb, var(--muted) 70%, var(--border));
+  background: var(--surface);
+  color: var(--muted);
+  font-weight: 700;
 }
 
 .stageplot-item:active {
@@ -12151,11 +12161,19 @@ input, select, textarea { font: inherit; color: var(--text); }
   height: 18px;
   padding: 0 3px;
   border-radius: 999px;
+  border: 1.5px solid transparent;
   background: color-mix(in srgb, currentColor 82%, var(--text) 18%);
   color: var(--surface);
   font-size: .62rem;
   font-weight: 800;
   flex-shrink: 0;
+}
+
+.stageplot-legend-number--index {
+  border: 1.5px dashed color-mix(in srgb, var(--muted) 70%, var(--border));
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
 }
 
 .stageplot-legend-label {

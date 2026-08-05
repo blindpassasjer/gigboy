@@ -6,7 +6,7 @@ import { db } from '../lib/firebase';
 import { normalizeInputList } from '../lib/inputLists';
 import type { InputList, SongHandNoteDocument, StageplotItem } from '../types';
 import SongHandNotesOverlay from '../components/SongHandNotesOverlay';
-import { stageplotIconForKind, stageplotIconScaleForKind } from '../lib/stageplotIcons';
+import { stageplotIconForKind, stageplotIconScaleForKind, stageplotItemBadge } from '../lib/stageplotIcons';
 
 type Status = 'loading' | 'not-found' | 'private' | 'error' | 'ready';
 
@@ -304,7 +304,9 @@ export default function PublicBandRiderPage() {
             <div className="stageplot-audience-marker" aria-label="Audience-facing side">
               Audience
             </div>
-            {stageplot.items.map((item, index) => (
+            {stageplot.items.map((item, index) => {
+              const badge = stageplotItemBadge(item, index);
+              return (
               <div
                 key={item.id}
                 className="stageplot-item stageplot-item--public"
@@ -326,9 +328,15 @@ export default function PublicBandRiderPage() {
                     className="stageplot-instrument-icon stageplot-instrument-icon--item"
                   />
                 </div>
-                <span className="stageplot-item-number" aria-hidden="true">{index + 1}</span>
+                <span
+                  className={`stageplot-item-number${badge.isChannel ? '' : ' stageplot-item-number--index'}`}
+                  aria-hidden="true"
+                >
+                  {badge.value}
+                </span>
               </div>
-            ))}
+              );
+            })}
             <SongHandNotesOverlay
               visible
               drawEnabled={false}
@@ -338,10 +346,14 @@ export default function PublicBandRiderPage() {
             />
           </div>
           <ol className="stageplot-legend">
-            {stageplot.items.map((item, index) => (
+            {stageplot.items.map((item, index) => {
+              const badge = stageplotItemBadge(item, index);
+              return (
               <li key={item.id}>
                 <div className="stageplot-legend-row stageplot-legend-row--static" style={{ color: item.color ?? 'var(--text)' }}>
-                  <span className="stageplot-legend-number">{index + 1}</span>
+                  <span className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}>
+                    {badge.value}
+                  </span>
                   <img
                     src={stageplotIconForKind(item.kind)}
                     alt=""
@@ -352,7 +364,8 @@ export default function PublicBandRiderPage() {
                   {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ol>
         </section>
       ) : null}

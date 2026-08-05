@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
 import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
-import { stageplotIconForKind, stageplotIconScaleForKind } from '../lib/stageplotIcons';
+import { stageplotIconForKind, stageplotIconScaleForKind, stageplotItemBadge } from '../lib/stageplotIcons';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
 import { clamp01 } from '../lib/lineAnchor';
 
@@ -685,7 +685,9 @@ export default function StageplotEditor({
         <div className="stageplot-audience-marker" aria-label="Audience-facing side">
           Audience
         </div>
-        {items.map((item, index) => (
+        {items.map((item, index) => {
+          const badge = stageplotItemBadge(item, index);
+          return (
           <button
             key={item.id}
             type="button"
@@ -703,7 +705,7 @@ export default function StageplotEditor({
               moveItem(item.id, event);
             }}
             onClick={() => setSelectedItemId(item.id)}
-            title={item.label ? `${index + 1}. ${item.label}` : `${index + 1}`}
+            title={[item.label, badge.isChannel ? `Ch ${badge.value}` : `item ${badge.value}`].filter(Boolean).join(' — ')}
           >
             <div
               className="stageplot-item-icon-wrap"
@@ -725,13 +727,21 @@ export default function StageplotEditor({
                 />
               ) : null}
             </div>
-            <span className="stageplot-item-number" aria-hidden="true">{index + 1}</span>
+            <span
+              className={`stageplot-item-number${badge.isChannel ? '' : ' stageplot-item-number--index'}`}
+              aria-hidden="true"
+            >
+              {badge.value}
+            </span>
           </button>
-        ))}
+          );
+        })}
         </div>
         {items.length > 0 ? (
           <ol className="stageplot-legend">
-            {items.map((item, index) => (
+            {items.map((item, index) => {
+              const badge = stageplotItemBadge(item, index);
+              return (
               <li key={item.id}>
                 <button
                   type="button"
@@ -739,7 +749,9 @@ export default function StageplotEditor({
                   onClick={() => setSelectedItemId(item.id)}
                   style={{ color: item.color ?? 'var(--text)' }}
                 >
-                  <span className="stageplot-legend-number">{index + 1}</span>
+                  <span className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}>
+                    {badge.value}
+                  </span>
                   <img
                     src={stageplotIconForKind(item.kind)}
                     alt=""
@@ -750,7 +762,8 @@ export default function StageplotEditor({
                   {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
                 </button>
               </li>
-            ))}
+              );
+            })}
           </ol>
         ) : null}
       </div>

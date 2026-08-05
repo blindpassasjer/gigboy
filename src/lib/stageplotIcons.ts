@@ -1,3 +1,4 @@
+import type { StageplotItem } from '../types';
 import amp from '../assets/stageplot-icons/amp.svg';
 import guitarAmp from '../assets/stageplot-icons/guitar-amp.svg';
 import bassAmp from '../assets/stageplot-icons/bass-amp.svg';
@@ -80,4 +81,16 @@ const ICON_SCALE_BY_KIND: Record<string, number> = {
 
 export function stageplotIconScaleForKind(kind: string) {
   return ICON_SCALE_BY_KIND[kind] ?? 1;
+}
+
+// The on-stage/legend badge shows the mixer channel when one is assigned,
+// since that's what a stage plot's numbers conventionally mean — falling
+// back to list position (visually distinct) only for unassigned items, so
+// the two kinds of number are never mistakable for each other.
+export function stageplotItemBadge(
+  item: StageplotItem,
+  index: number
+): { value: string; isChannel: boolean } {
+  const channel = item.channel?.trim();
+  return channel ? { value: channel, isChannel: true } : { value: `#${index + 1}`, isChannel: false };
 }
