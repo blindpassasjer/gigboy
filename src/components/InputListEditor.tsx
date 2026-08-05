@@ -27,15 +27,6 @@ function normalizeEmojiIcon(value: string): string | undefined {
   return [...trimmed].slice(0, 2).join('');
 }
 
-function createLine(): InputListLine {
-  return {
-    id: crypto.randomUUID(),
-    name: '',
-    description: '',
-    stand: '',
-  };
-}
-
 function createEquipmentItem(): RiderEquipmentItem {
   return {
     id: crypto.randomUUID(),
@@ -56,7 +47,6 @@ export default function InputListEditor({
 }: Props) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(rider.name);
-  const [lines, setLines] = useState<InputListLine[]>(rider.lines);
   const [preferredEquipment, setPreferredEquipment] = useState<RiderEquipmentItem[]>(rider.preferredEquipment);
   const [inventoryEquipment, setInventoryEquipment] = useState<RiderEquipmentItem[]>(rider.inventoryEquipment);
   const [monitorMixes, setMonitorMixes] = useState<RiderEquipmentItem[]>(rider.monitorMixes ?? []);
@@ -75,7 +65,6 @@ export default function InputListEditor({
     if (prevRiderIdRef.current === rider.id) return;
     prevRiderIdRef.current = rider.id;
     setRenameValue(rider.name);
-    setLines(rider.lines);
     setPreferredEquipment(rider.preferredEquipment);
     setInventoryEquipment(rider.inventoryEquipment);
     setMonitorMixes(rider.monitorMixes ?? []);
@@ -83,7 +72,7 @@ export default function InputListEditor({
     setIconDraft(rider.icon ?? '🎤');
     setSaveState('idle');
     setShowIconEditor(false);
-  }, [rider.id, rider.icon, rider.inventoryEquipment, rider.lines, rider.name, rider.preferredEquipment, rider.monitorMixes, rider.hospitalityNotes]);
+  }, [rider.id, rider.icon, rider.inventoryEquipment, rider.name, rider.preferredEquipment, rider.monitorMixes, rider.hospitalityNotes]);
 
   useEffect(() => {
     return () => {
@@ -126,15 +115,16 @@ export default function InputListEditor({
     setIconDraft(rider.icon ?? '🎤');
   }, [rider.icon]);
 
+  const equipmentCount = preferredEquipment.length + inventoryEquipment.length;
+
   const hasChanges = useMemo(() => {
-    return JSON.stringify({ lines, preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes }) !== JSON.stringify({
-      lines: rider.lines,
+    return JSON.stringify({ preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes }) !== JSON.stringify({
       preferredEquipment: rider.preferredEquipment,
       inventoryEquipment: rider.inventoryEquipment,
       monitorMixes: rider.monitorMixes ?? [],
       hospitalityNotes: rider.hospitalityNotes ?? '',
     });
-  }, [inventoryEquipment, lines, preferredEquipment, monitorMixes, hospitalityNotes, rider.inventoryEquipment, rider.lines, rider.preferredEquipment, rider.monitorMixes, rider.hospitalityNotes]);
+  }, [inventoryEquipment, preferredEquipment, monitorMixes, hospitalityNotes, rider.inventoryEquipment, rider.preferredEquipment, rider.monitorMixes, rider.hospitalityNotes]);
 
   const handleRenameCommit = async () => {
     const trimmed = renameValue.trim().slice(0, 150);
@@ -159,7 +149,7 @@ export default function InputListEditor({
     saveRequestIdRef.current = requestId;
 
     const timer = setTimeout(() => {
-      void Promise.resolve(onSaveContent({ lines, preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes }))
+      void Promise.resolve(onSaveContent({ lines: rider.lines, preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes }))
         .then(() => {
           if (requestId !== saveRequestIdRef.current) return;
           setSaveState('saved');
@@ -178,7 +168,7 @@ export default function InputListEditor({
 
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lines, preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes]);
+  }, [preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes]);
 
   // Warn before leaving the page while an edit hasn't been autosaved yet.
   useEffect(() => {
@@ -305,7 +295,7 @@ export default function InputListEditor({
               )}
               <div className="autosave-status-row">
                 <p className="song-list-summary setlist-song-count">
-                  {lines.length} line{lines.length === 1 ? '' : 's'}
+                  {equipmentCount} equipment item{equipmentCount === 1 ? '' : 's'}
                 </p>
                 {canEdit ? (
                   <span className={saveStatusClassName} aria-live="polite">{saveStatusLabel}</span>
@@ -341,110 +331,6 @@ export default function InputListEditor({
 
         </div>
       ) : null}
-
-      <section className="technical-rider-section">
-        <div className="technical-rider-section-header">
-          <h2>Technical Lines</h2>
-        </div>
-
-        <div className="technical-rider-table-wrap">
-          <table className="technical-rider-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Stand</th>
-                {canEdit ? <th aria-label="Actions" /> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((line, index) => (
-                <tr key={line.id}>
-                  <td>{index + 1}</td>
-                  <td>
-                    {canEdit ? (
-                      <input
-                        type="text"
-                        value={line.name}
-                        onChange={(event) => {
-                          const name = event.target.value;
-                          setLines((prev) => prev.map((entry) => (entry.id === line.id ? { ...entry, name } : entry)));
-                        }}
-                        placeholder="Input list"
-                      />
-                    ) : (
-                      line.name || '-'
-                    )}
-                  </td>
-                  <td>
-                    {canEdit ? (
-                      <input
-                        type="text"
-                        value={line.description}
-                        onChange={(event) => {
-                          const description = event.target.value;
-                          setLines((prev) => prev.map((entry) => (entry.id === line.id ? { ...entry, description } : entry)));
-                        }}
-                        placeholder="Description"
-                      />
-                    ) : (
-                      line.description || '-'
-                    )}
-                  </td>
-                  <td>
-                    {canEdit ? (
-                      <input
-                        type="text"
-                        value={line.stand ?? ''}
-                        onChange={(event) => {
-                          const stand = event.target.value;
-                          setLines((prev) => prev.map((entry) => (entry.id === line.id ? { ...entry, stand } : entry)));
-                        }}
-                        placeholder="Short boom"
-                      />
-                    ) : (
-                      line.stand || '-'
-                    )}
-                  </td>
-                  {canEdit ? (
-                    <td>
-                      <button
-                        type="button"
-                        className="setlist-action-btn setlist-action-btn--secondary"
-                        onClick={() => setLines((prev) => prev.filter((entry) => entry.id !== line.id))}
-                        title="Delete row"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
-              {lines.length === 0 ? (
-                <tr>
-                  <td colSpan={canEdit ? 5 : 4} className="technical-rider-empty-cell">No line items yet.</td>
-                </tr>
-              ) : null}
-              {canEdit ? (
-                <tr>
-                  <td>
-                    <button
-                      type="button"
-                      className="setlist-action-btn setlist-action-btn--secondary"
-                      onClick={() => setLines((prev) => [...prev, createLine()])}
-                      title="Add row"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </td>
-                  <td colSpan={4} />
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
 
       <EquipmentTableEditor
         title="Preferred Equipment"

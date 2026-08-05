@@ -115,6 +115,10 @@ export interface StageplotItem {
   /** Input-list channel number/name this item feeds, e.g. "8" or "10". Free text so it
    * can hold non-numeric channel labels too. */
   channel?: string;
+  /** Free-text notes for this input, e.g. mic model or DI requirements. */
+  description?: string;
+  /** Stand/clip requirement for this input, e.g. "Short boom", "Tall boom + clip", "Clip". */
+  stand?: string;
 }
 
 export interface Stageplot extends CollaborationMetadata {

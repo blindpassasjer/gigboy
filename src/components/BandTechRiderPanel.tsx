@@ -399,6 +399,48 @@ export default function BandTechRiderPanel({
         </div>
 
         <div className="tech-rider-sections">
+          <section className="tech-rider-section" aria-label="Stageplot view">
+            <section className="technical-rider-section">
+              <div className="technical-rider-section-header">
+                <h2>Stage Plot</h2>
+              </div>
+            <div ref={toolbarPortalRef} />
+            {activeRiderAsStageplot ? (
+              <StageplotEditor
+                stageplot={activeRiderAsStageplot}
+                canEdit={canEdit}
+                toolbarPortalTarget={toolbarPortalTarget}
+                onRename={async (name) => {
+                  const error = await renameBandInputList(bandId, activeRiderAsStageplot.id, name);
+                  if (error) toast.error(error);
+                }}
+                onUpdateIcon={async (icon) => {
+                  const error = await updateBandInputListIcon(bandId, activeRiderAsStageplot.id, icon);
+                  if (error) toast.error(error);
+                }}
+                onDelete={async () => {
+                  const error = await deleteBandInputList(bandId, activeRiderAsStageplot.id);
+                  if (error) { toast.error(error); return; }
+                  setActiveRiderId(null);
+                }}
+                onSaveContent={async (items, drawingLayers) => {
+                  const error = await updateBandInputListStageplotContent({
+                    bandId,
+                    riderId: activeRiderAsStageplot.id,
+                    items,
+                    drawingLayers,
+                  });
+                  if (error) { toast.error(error); throw new Error(error); }
+                }}
+                onCopyPublicLink={async () => {
+                  await handleCopyRiderPublicLink(activeRiderAsStageplot.id, activeRiderAsStageplot.publicShareEnabled);
+                }}
+                showHeader={false}
+              />
+            ) : null}
+            </section>
+          </section>
+
           <section className="tech-rider-section" aria-label="Technical rider view">
             {activeRider ? (
               <InputListEditor
@@ -437,48 +479,6 @@ export default function BandTechRiderPanel({
             ) : (
               <p className="bands-status">No technical riders available yet.</p>
             )}
-          </section>
-
-          <section className="tech-rider-section" aria-label="Stageplot view">
-            <section className="technical-rider-section">
-              <div className="technical-rider-section-header">
-                <h2>Stagerider</h2>
-              </div>
-            <div ref={toolbarPortalRef} />
-            {activeRiderAsStageplot ? (
-              <StageplotEditor
-                stageplot={activeRiderAsStageplot}
-                canEdit={canEdit}
-                toolbarPortalTarget={toolbarPortalTarget}
-                onRename={async (name) => {
-                  const error = await renameBandInputList(bandId, activeRiderAsStageplot.id, name);
-                  if (error) toast.error(error);
-                }}
-                onUpdateIcon={async (icon) => {
-                  const error = await updateBandInputListIcon(bandId, activeRiderAsStageplot.id, icon);
-                  if (error) toast.error(error);
-                }}
-                onDelete={async () => {
-                  const error = await deleteBandInputList(bandId, activeRiderAsStageplot.id);
-                  if (error) { toast.error(error); return; }
-                  setActiveRiderId(null);
-                }}
-                onSaveContent={async (items, drawingLayers) => {
-                  const error = await updateBandInputListStageplotContent({
-                    bandId,
-                    riderId: activeRiderAsStageplot.id,
-                    items,
-                    drawingLayers,
-                  });
-                  if (error) { toast.error(error); throw new Error(error); }
-                }}
-                onCopyPublicLink={async () => {
-                  await handleCopyRiderPublicLink(activeRiderAsStageplot.id, activeRiderAsStageplot.publicShareEnabled);
-                }}
-                showHeader={false}
-              />
-            ) : null}
-            </section>
           </section>
         </div>
 

@@ -179,6 +179,7 @@ export default function StageplotEditor({
 
   const renderLegendRow = (item: StageplotItem, index: number) => {
     const badge = stageplotItemBadge(item, index);
+    const meta = [item.description?.trim(), item.stand?.trim()].filter(Boolean).join(' · ');
     return (
       <li key={item.id}>
         <button
@@ -187,33 +188,40 @@ export default function StageplotEditor({
           onClick={() => setSelectedItemId(item.id)}
           style={{ color: item.color ?? 'var(--text)' }}
         >
-          <span
-            className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}
-            style={badge.isChannel ? {
-              backgroundColor: item.color ?? undefined,
-              color: stageplotContrastTextColor(item.color),
-            } : undefined}
-          >
-            {badge.value}
+          <span className="stageplot-legend-row-main">
+            <span
+              className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}
+              style={badge.isChannel ? {
+                backgroundColor: item.color ?? undefined,
+                color: stageplotContrastTextColor(item.color),
+              } : undefined}
+            >
+              {badge.value}
+            </span>
+            <img
+              src={stageplotIconForKind(item.kind)}
+              alt=""
+              aria-hidden="true"
+              className="stageplot-instrument-icon stageplot-instrument-icon--legend"
+            />
+            <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
+            {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
           </span>
-          <img
-            src={stageplotIconForKind(item.kind)}
-            alt=""
-            aria-hidden="true"
-            className="stageplot-instrument-icon stageplot-instrument-icon--legend"
-          />
-          <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
-          {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
+          {meta ? <span className="stageplot-legend-meta">{meta}</span> : null}
         </button>
       </li>
     );
   };
   const [labelDraft, setLabelDraft] = useState('');
   const [channelDraft, setChannelDraft] = useState('');
+  const [descriptionDraft, setDescriptionDraft] = useState('');
+  const [standDraft, setStandDraft] = useState('');
 
   useEffect(() => {
     setLabelDraft(selectedItem?.label ?? '');
     setChannelDraft(selectedItem?.channel ?? '');
+    setDescriptionDraft(selectedItem?.description ?? '');
+    setStandDraft(selectedItem?.stand ?? '');
   }, [selectedItem]);
 
   const persistContent = useCallback(async (nextItems: StageplotItem[], nextLayers: SongHandNoteDocument[]) => {
@@ -355,11 +363,24 @@ export default function StageplotEditor({
     if (!selectedItemId || !canEdit || !selectedItem) return;
     const nextLabel = labelDraft.trim();
     const nextChannel = channelDraft.trim();
-    if (nextLabel === selectedItem.label && nextChannel === (selectedItem.channel ?? '')) return;
+    const nextDescription = descriptionDraft.trim();
+    const nextStand = standDraft.trim();
+    if (
+      nextLabel === selectedItem.label
+      && nextChannel === (selectedItem.channel ?? '')
+      && nextDescription === (selectedItem.description ?? '')
+      && nextStand === (selectedItem.stand ?? '')
+    ) return;
 
     const nextItems = items.map((item) => (
       item.id === selectedItemId
-        ? { ...item, label: nextLabel, channel: nextChannel || undefined }
+        ? {
+            ...item,
+            label: nextLabel,
+            channel: nextChannel || undefined,
+            description: nextDescription || undefined,
+            stand: nextStand || undefined,
+          }
         : item
     ));
     setItems(nextItems);
@@ -545,7 +566,7 @@ export default function StageplotEditor({
         <div className="stageplot-palette-category stageplot-palette-category--inspector">
           <div className="stageplot-toolbar-section-heading">Selected item</div>
           {selectedItem ? null : (
-            <p className="stageplot-inspector-hint">Select an item on the stage to edit its label and channel.</p>
+            <p className="stageplot-inspector-hint">Select an item on the stage to edit its label, channel, description, and stand.</p>
           )}
           <div className="stageplot-inspector-fields">
             <input
@@ -572,6 +593,32 @@ export default function StageplotEditor({
               placeholder="Channel (e.g. 8)"
               aria-label="Item channel"
               className="stageplot-toolbar-input stageplot-toolbar-input--channel"
+              disabled={!selectedItem}
+            />
+            <input
+              type="text"
+              value={descriptionDraft}
+              onChange={(event) => setDescriptionDraft(event.target.value)}
+              onBlur={commitSelectedItemEdits}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
+              }}
+              placeholder="Description (e.g. mic model)"
+              aria-label="Item description"
+              className="stageplot-toolbar-input"
+              disabled={!selectedItem}
+            />
+            <input
+              type="text"
+              value={standDraft}
+              onChange={(event) => setStandDraft(event.target.value)}
+              onBlur={commitSelectedItemEdits}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
+              }}
+              placeholder="Stand (e.g. short boom)"
+              aria-label="Item stand"
+              className="stageplot-toolbar-input"
               disabled={!selectedItem}
             />
           </div>

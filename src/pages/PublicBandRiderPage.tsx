@@ -37,6 +37,8 @@ function normalizeItem(raw: unknown): StageplotItem | null {
     color: typeof data.color === 'string' ? data.color : undefined,
     icon: typeof data.icon === 'string' ? data.icon : undefined,
     channel: typeof data.channel === 'string' ? data.channel : undefined,
+    description: typeof data.description === 'string' ? data.description : undefined,
+    stand: typeof data.stand === 'string' ? data.stand : undefined,
   };
 }
 
@@ -62,26 +64,30 @@ function normalizeLayer(raw: unknown): SongHandNoteDocument | null {
 
 function renderPublicLegendRow(item: StageplotItem, index: number) {
   const badge = stageplotItemBadge(item, index);
+  const meta = [item.description?.trim(), item.stand?.trim()].filter(Boolean).join(' · ');
   return (
     <li key={item.id}>
       <div className="stageplot-legend-row stageplot-legend-row--static" style={{ color: item.color ?? 'var(--text)' }}>
-        <span
-          className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}
-          style={badge.isChannel ? {
-            backgroundColor: item.color ?? undefined,
-            color: stageplotContrastTextColor(item.color),
-          } : undefined}
-        >
-          {badge.value}
+        <span className="stageplot-legend-row-main">
+          <span
+            className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}
+            style={badge.isChannel ? {
+              backgroundColor: item.color ?? undefined,
+              color: stageplotContrastTextColor(item.color),
+            } : undefined}
+          >
+            {badge.value}
+          </span>
+          <img
+            src={stageplotIconForKind(item.kind)}
+            alt=""
+            aria-hidden="true"
+            className="stageplot-instrument-icon stageplot-instrument-icon--legend"
+          />
+          <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
+          {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
         </span>
-        <img
-          src={stageplotIconForKind(item.kind)}
-          alt=""
-          aria-hidden="true"
-          className="stageplot-instrument-icon stageplot-instrument-icon--legend"
-        />
-        <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
-        {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
+        {meta ? <span className="stageplot-legend-meta">{meta}</span> : null}
       </div>
     </li>
   );
@@ -198,36 +204,86 @@ export default function PublicBandRiderPage() {
       </header>
 
       <div className="public-presskit-body">
-        <section className="technical-rider-section technical-rider-public-section">
-          <h2>Technical Lines</h2>
-          <div className="technical-rider-table-wrap">
-            <table className="technical-rider-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Stand</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rider.lines.map((line, index) => (
-                  <tr key={line.id}>
-                    <td>{index + 1}</td>
-                    <td>{line.name}</td>
-                    <td>{line.description || '-'}</td>
-                    <td>{line.stand || '-'}</td>
-                  </tr>
-                ))}
-                {rider.lines.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="technical-rider-empty-cell">No line items listed.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+        {stageplot && (stageplot.items.length > 0 || stageplot.drawingLayers.length > 0) ? (
+          <section className="technical-rider-section technical-rider-public-section">
+            <h2>Stage Plot</h2>
+            {(rider.stageShape || rider.stageSize) ? (
+              <p className="technical-rider-notes-view technical-rider-stage-meta">
+                {[
+                  rider.stageShape ? `Shape: ${rider.stageShape}` : null,
+                  rider.stageSize ? `Size: ${rider.stageSize}` : null,
+                ].filter(Boolean).join(' · ')}
+              </p>
+            ) : null}
+          <div className="stageplot-stage song-notes-stage stageplot-stage--public">
+            <div className="stageplot-stage-grid" />
+            <div className="stageplot-front-edge" aria-hidden="true" />
+            <div className="stageplot-audience-marker" aria-label="Audience-facing side">
+              Audience
+            </div>
+            {stageplot.items.map((item, index) => {
+              const badge = stageplotItemBadge(item, index);
+              return (
+              <div
+                key={item.id}
+                className="stageplot-item stageplot-item--public"
+                style={{
+                  left: `${item.x * 100}%`,
+                  top: `${item.y * 100}%`,
+                  color: item.color ?? 'var(--text)',
+                  ['--item-scale' as string]: stageplotIconScaleForKind(item.kind),
+                }}
+              >
+                <div
+                  className="stageplot-item-icon-wrap"
+                  style={{ transform: `rotate(${item.rotation ?? 0}deg)` }}
+                >
+                  <img
+                    src={stageplotIconForKind(item.kind)}
+                    alt=""
+                    aria-hidden="true"
+                    className="stageplot-instrument-icon stageplot-instrument-icon--item"
+                  />
+                </div>
+                <span
+                  className={`stageplot-item-number${badge.isChannel ? '' : ' stageplot-item-number--index'}`}
+                  style={badge.isChannel ? {
+                    backgroundColor: item.color ?? undefined,
+                    color: stageplotContrastTextColor(item.color),
+                  } : undefined}
+                  aria-hidden="true"
+                >
+                  {badge.value}
+                </span>
+              </div>
+              );
+            })}
+            <SongHandNotesOverlay
+              visible
+              drawEnabled={false}
+              notes={stageplot.drawingLayers}
+              myStrokes={[]}
+              onMyStrokesChange={() => {}}
+            />
           </div>
+          {stageplot.items.filter((item) => !stageplotIsOutputKind(item.kind)).length > 0 ? (
+            <div className="stageplot-legend-group">
+              <div className="stageplot-legend-heading">Input List</div>
+              <ol className="stageplot-legend">
+                {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? null : renderPublicLegendRow(item, index)))}
+              </ol>
+            </div>
+          ) : null}
+          {stageplot.items.filter((item) => stageplotIsOutputKind(item.kind)).length > 0 ? (
+            <div className="stageplot-legend-group">
+              <div className="stageplot-legend-heading">Output List (Monitors / PA)</div>
+              <ol className="stageplot-legend">
+                {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? renderPublicLegendRow(item, index) : null))}
+              </ol>
+            </div>
+          ) : null}
         </section>
+      ) : null}
 
         <section className="technical-rider-section technical-rider-public-section">
           <h2>Preferred Equipment</h2>
@@ -319,87 +375,6 @@ export default function PublicBandRiderPage() {
             <p className="technical-rider-notes-view">{rider.hospitalityNotes}</p>
           </section>
         ) : null}
-
-        {stageplot && (stageplot.items.length > 0 || stageplot.drawingLayers.length > 0) ? (
-          <section className="technical-rider-section technical-rider-public-section">
-            <h2>Stage Plot</h2>
-            {(rider.stageShape || rider.stageSize) ? (
-              <p className="technical-rider-notes-view technical-rider-stage-meta">
-                {[
-                  rider.stageShape ? `Shape: ${rider.stageShape}` : null,
-                  rider.stageSize ? `Size: ${rider.stageSize}` : null,
-                ].filter(Boolean).join(' · ')}
-              </p>
-            ) : null}
-          <div className="stageplot-stage song-notes-stage stageplot-stage--public">
-            <div className="stageplot-stage-grid" />
-            <div className="stageplot-front-edge" aria-hidden="true" />
-            <div className="stageplot-audience-marker" aria-label="Audience-facing side">
-              Audience
-            </div>
-            {stageplot.items.map((item, index) => {
-              const badge = stageplotItemBadge(item, index);
-              return (
-              <div
-                key={item.id}
-                className="stageplot-item stageplot-item--public"
-                style={{
-                  left: `${item.x * 100}%`,
-                  top: `${item.y * 100}%`,
-                  color: item.color ?? 'var(--text)',
-                  ['--item-scale' as string]: stageplotIconScaleForKind(item.kind),
-                }}
-              >
-                <div
-                  className="stageplot-item-icon-wrap"
-                  style={{ transform: `rotate(${item.rotation ?? 0}deg)` }}
-                >
-                  <img
-                    src={stageplotIconForKind(item.kind)}
-                    alt=""
-                    aria-hidden="true"
-                    className="stageplot-instrument-icon stageplot-instrument-icon--item"
-                  />
-                </div>
-                <span
-                  className={`stageplot-item-number${badge.isChannel ? '' : ' stageplot-item-number--index'}`}
-                  style={badge.isChannel ? {
-                    backgroundColor: item.color ?? undefined,
-                    color: stageplotContrastTextColor(item.color),
-                  } : undefined}
-                  aria-hidden="true"
-                >
-                  {badge.value}
-                </span>
-              </div>
-              );
-            })}
-            <SongHandNotesOverlay
-              visible
-              drawEnabled={false}
-              notes={stageplot.drawingLayers}
-              myStrokes={[]}
-              onMyStrokesChange={() => {}}
-            />
-          </div>
-          {stageplot.items.filter((item) => !stageplotIsOutputKind(item.kind)).length > 0 ? (
-            <div className="stageplot-legend-group">
-              <div className="stageplot-legend-heading">Input List</div>
-              <ol className="stageplot-legend">
-                {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? null : renderPublicLegendRow(item, index)))}
-              </ol>
-            </div>
-          ) : null}
-          {stageplot.items.filter((item) => stageplotIsOutputKind(item.kind)).length > 0 ? (
-            <div className="stageplot-legend-group">
-              <div className="stageplot-legend-heading">Output List (Monitors / PA)</div>
-              <ol className="stageplot-legend">
-                {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? renderPublicLegendRow(item, index) : null))}
-              </ol>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
       </div>
 
       <footer className="footer">From Norway {'<3'} with chords</footer>
