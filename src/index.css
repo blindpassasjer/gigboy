@@ -11689,6 +11689,21 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
 }
 
+/* Custom item + Selected item live on their own row beneath the instrument
+   palette, side by side (Custom on the left) rather than flowing inline
+   with the palette categories above. */
+.stageplot-palette-secondary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  width: 100%;
+  margin-top: .45rem;
+}
+
+.stageplot-palette-secondary-row .stageplot-palette-category {
+  flex: 1 1 240px;
+}
+
 .stageplot-palette-category {
   display: flex;
   flex-direction: column;
@@ -11837,6 +11852,17 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-toolbar-input::placeholder {
+  color: var(--muted);
+}
+
+.stageplot-toolbar-input:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.stageplot-inspector-hint {
+  margin: 0 0 .5rem;
+  font-size: .78rem;
   color: var(--muted);
 }
 

@@ -516,6 +516,8 @@ export default function StageplotEditor({
             </div>
           </div>
         ))}
+      </div>
+      <div className="stageplot-palette-secondary-row">
         <div className="stageplot-palette-category stageplot-palette-category--custom">
           <div className="stageplot-palette-category-name">Custom</div>
           <div className="stageplot-palette-custom-controls">
@@ -540,42 +542,45 @@ export default function StageplotEditor({
             </button>
           </div>
         </div>
-        {selectedItem ? (
-          <div className="stageplot-palette-category stageplot-palette-category--inspector">
-            <div className="stageplot-toolbar-section-heading">Selected item</div>
-            <div className="stageplot-inspector-fields">
-              <input
-                type="text"
-                value={labelDraft}
-                onChange={(event) => setLabelDraft(event.target.value)}
-                onBlur={commitSelectedItemEdits}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
-                }}
-                placeholder="Label"
-                aria-label="Item label"
-                className="stageplot-toolbar-input"
-              />
-              <input
-                type="text"
-                value={channelDraft}
-                onChange={(event) => setChannelDraft(event.target.value)}
-                onBlur={commitSelectedItemEdits}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
-                }}
-                placeholder="Channel (e.g. 8)"
-                aria-label="Item channel"
-                className="stageplot-toolbar-input stageplot-toolbar-input--channel"
-              />
-            </div>
-            <div className="stageplot-toolbar-actions">
-              <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem}>
-                <Trash2 size={12} /> Remove
-              </button>
-            </div>
+        <div className="stageplot-palette-category stageplot-palette-category--inspector">
+          <div className="stageplot-toolbar-section-heading">Selected item</div>
+          {selectedItem ? null : (
+            <p className="stageplot-inspector-hint">Select an item on the stage to edit its label and channel.</p>
+          )}
+          <div className="stageplot-inspector-fields">
+            <input
+              type="text"
+              value={labelDraft}
+              onChange={(event) => setLabelDraft(event.target.value)}
+              onBlur={commitSelectedItemEdits}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
+              }}
+              placeholder="Label"
+              aria-label="Item label"
+              className="stageplot-toolbar-input"
+              disabled={!selectedItem}
+            />
+            <input
+              type="text"
+              value={channelDraft}
+              onChange={(event) => setChannelDraft(event.target.value)}
+              onBlur={commitSelectedItemEdits}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
+              }}
+              placeholder="Channel (e.g. 8)"
+              aria-label="Item channel"
+              className="stageplot-toolbar-input stageplot-toolbar-input--channel"
+              disabled={!selectedItem}
+            />
           </div>
-        ) : null}
+          <div className="stageplot-toolbar-actions">
+            <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItem}>
+              <Trash2 size={12} /> Remove
+            </button>
+          </div>
+        </div>
       </div>
     </>
   ) : null;
