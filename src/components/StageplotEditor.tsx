@@ -734,6 +734,7 @@ export default function StageplotEditor({
           )
           : null}
 
+      <div className="stageplot-content-row">
       <div
           ref={stageRef}
           className={`stageplot-stage song-notes-stage stageplot-stage--shape-${stageShapePreview} stageplot-stage--size-${stageSizePreview}`}
@@ -844,6 +845,7 @@ export default function StageplotEditor({
           ) : null}
         </div>
       ) : null}
+      </div>
     </>
   );
 }

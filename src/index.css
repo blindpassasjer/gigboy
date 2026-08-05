@@ -11642,9 +11642,24 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
 }
 
+.stageplot-content-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.25rem;
+  width: 100%;
+  min-width: 0;
+}
+
 .stageplot-legend-section {
   display: flex;
   gap: 1.25rem;
+  flex: 1 1 320px;
+  min-width: 0;
+  padding: .8rem;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-alt) 72%, var(--surface) 28%);
 }
 
 .stageplot-legend-section .stageplot-legend-group {
@@ -11852,7 +11867,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
   max-width: min(100%, var(--stage-max-width));
   min-height: var(--stage-min-height);
-  margin-inline: auto;
+  min-width: 0;
+  flex: 2 1 420px;
+  margin-inline: 0;
   border-radius: 14px;
   border: 1px solid var(--border);
   background:
