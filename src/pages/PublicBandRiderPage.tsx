@@ -215,6 +215,8 @@ export default function PublicBandRiderPage() {
                 ].filter(Boolean).join(' · ')}
               </p>
             ) : null}
+          <div className="stageplot-layout">
+          <div className="stageplot-stage-wrap">
           <div className="stageplot-stage song-notes-stage stageplot-stage--public">
             <div className="stageplot-stage-grid" />
             <div className="stageplot-front-edge" aria-hidden="true" />
@@ -266,108 +268,30 @@ export default function PublicBandRiderPage() {
               onMyStrokesChange={() => {}}
             />
           </div>
-          {stageplot.items.filter((item) => !stageplotIsOutputKind(item.kind)).length > 0 ? (
-            <div className="stageplot-legend-group">
-              <div className="stageplot-legend-heading">Technical Inputs</div>
-              <ol className="stageplot-legend">
-                {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? null : renderPublicLegendRow(item, index)))}
-              </ol>
+          </div>
+          {stageplot.items.length > 0 ? (
+            <div className="stageplot-legend-section">
+              {stageplot.items.filter((item) => !stageplotIsOutputKind(item.kind)).length > 0 ? (
+                <div className="stageplot-legend-group">
+                  <div className="stageplot-legend-heading">Technical Inputs</div>
+                  <ol className="stageplot-legend">
+                    {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? null : renderPublicLegendRow(item, index)))}
+                  </ol>
+                </div>
+              ) : null}
+              {stageplot.items.filter((item) => stageplotIsOutputKind(item.kind)).length > 0 ? (
+                <div className="stageplot-legend-group">
+                  <div className="stageplot-legend-heading">Monitors</div>
+                  <ol className="stageplot-legend">
+                    {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? renderPublicLegendRow(item, index) : null))}
+                  </ol>
+                </div>
+              ) : null}
             </div>
           ) : null}
-          {stageplot.items.filter((item) => stageplotIsOutputKind(item.kind)).length > 0 ? (
-            <div className="stageplot-legend-group">
-              <div className="stageplot-legend-heading">Monitors</div>
-              <ol className="stageplot-legend">
-                {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? renderPublicLegendRow(item, index) : null))}
-              </ol>
-            </div>
-          ) : null}
+          </div>
         </section>
       ) : null}
-
-        <section className="technical-rider-section technical-rider-public-section">
-          <h2>Preferred Equipment</h2>
-          <div className="technical-rider-table-wrap">
-            <table className="technical-rider-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rider.preferredEquipment.map((item, index) => (
-                  <tr key={item.id}>
-                    <td>{index + 1}</td>
-                    <td>{item.name}</td>
-                    <td>{item.description || '-'}</td>
-                  </tr>
-                ))}
-                {rider.preferredEquipment.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="technical-rider-empty-cell">No equipment listed.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="technical-rider-section technical-rider-public-section">
-          <h2>We Bring (Inventory)</h2>
-          <div className="technical-rider-table-wrap">
-            <table className="technical-rider-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rider.inventoryEquipment.map((item, index) => (
-                  <tr key={item.id}>
-                    <td>{index + 1}</td>
-                    <td>{item.name}</td>
-                    <td>{item.description || '-'}</td>
-                  </tr>
-                ))}
-                {rider.inventoryEquipment.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="technical-rider-empty-cell">No equipment listed.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {rider.monitorMixes && rider.monitorMixes.length > 0 ? (
-          <section className="technical-rider-section technical-rider-public-section">
-            <h2>Monitoring</h2>
-            <div className="technical-rider-table-wrap">
-              <table className="technical-rider-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Position</th>
-                    <th>Priority Order</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rider.monitorMixes.map((mix, index) => (
-                    <tr key={mix.id}>
-                      <td>{index + 1}</td>
-                      <td>{mix.name}</td>
-                      <td>{mix.description || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        ) : null}
 
         {rider.hospitalityNotes ? (
           <section className="technical-rider-section technical-rider-public-section">

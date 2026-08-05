@@ -733,6 +733,7 @@ export default function StageplotEditor({
           )
           : null}
 
+      <div className="stageplot-layout">
       <div className="stageplot-stage-wrap">
         <div
           ref={stageRef}
@@ -806,22 +807,27 @@ export default function StageplotEditor({
           );
         })}
         </div>
-        {inputListItems.length > 0 ? (
-          <div className="stageplot-legend-group">
-            <div className="stageplot-legend-heading">Technical Inputs</div>
-            <ol className="stageplot-legend">
-              {inputListItems.map(({ item, index }) => renderLegendRow(item, index))}
-            </ol>
-          </div>
-        ) : null}
-        {outputListItems.length > 0 ? (
-          <div className="stageplot-legend-group">
-            <div className="stageplot-legend-heading">Monitors</div>
-            <ol className="stageplot-legend">
-              {outputListItems.map(({ item, index }) => renderLegendRow(item, index))}
-            </ol>
-          </div>
-        ) : null}
+      </div>
+      {(inputListItems.length > 0 || outputListItems.length > 0) ? (
+        <div className="stageplot-legend-section">
+          {inputListItems.length > 0 ? (
+            <div className="stageplot-legend-group">
+              <div className="stageplot-legend-heading">Technical Inputs</div>
+              <ol className="stageplot-legend">
+                {inputListItems.map(({ item, index }) => renderLegendRow(item, index))}
+              </ol>
+            </div>
+          ) : null}
+          {outputListItems.length > 0 ? (
+            <div className="stageplot-legend-group">
+              <div className="stageplot-legend-heading">Monitors</div>
+              <ol className="stageplot-legend">
+                {outputListItems.map(({ item, index }) => renderLegendRow(item, index))}
+              </ol>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       </div>
     </section>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link2, Plus, Trash2, PenLine, ClipboardList } from 'lucide-react';
+import { Link2, Trash2, PenLine, ClipboardList } from 'lucide-react';
 import type { RiderEquipmentItem, InputList, InputListLine } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
@@ -27,14 +27,6 @@ function normalizeEmojiIcon(value: string): string | undefined {
   return [...trimmed].slice(0, 2).join('');
 }
 
-function createEquipmentItem(): RiderEquipmentItem {
-  return {
-    id: crypto.randomUUID(),
-    name: '',
-    description: '',
-  };
-}
-
 export default function InputListEditor({
   rider,
   canEdit,
@@ -47,9 +39,6 @@ export default function InputListEditor({
 }: Props) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(rider.name);
-  const [preferredEquipment, setPreferredEquipment] = useState<RiderEquipmentItem[]>(rider.preferredEquipment);
-  const [inventoryEquipment, setInventoryEquipment] = useState<RiderEquipmentItem[]>(rider.inventoryEquipment);
-  const [monitorMixes, setMonitorMixes] = useState<RiderEquipmentItem[]>(rider.monitorMixes ?? []);
   const [hospitalityNotes, setHospitalityNotes] = useState(rider.hospitalityNotes ?? '');
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [iconDraft, setIconDraft] = useState(rider.icon ?? '🎤');
@@ -65,14 +54,11 @@ export default function InputListEditor({
     if (prevRiderIdRef.current === rider.id) return;
     prevRiderIdRef.current = rider.id;
     setRenameValue(rider.name);
-    setPreferredEquipment(rider.preferredEquipment);
-    setInventoryEquipment(rider.inventoryEquipment);
-    setMonitorMixes(rider.monitorMixes ?? []);
     setHospitalityNotes(rider.hospitalityNotes ?? '');
     setIconDraft(rider.icon ?? '🎤');
     setSaveState('idle');
     setShowIconEditor(false);
-  }, [rider.id, rider.icon, rider.inventoryEquipment, rider.name, rider.preferredEquipment, rider.monitorMixes, rider.hospitalityNotes]);
+  }, [rider.id, rider.icon, rider.name, rider.hospitalityNotes]);
 
   useEffect(() => {
     return () => {
@@ -115,16 +101,9 @@ export default function InputListEditor({
     setIconDraft(rider.icon ?? '🎤');
   }, [rider.icon]);
 
-  const equipmentCount = preferredEquipment.length + inventoryEquipment.length;
-
   const hasChanges = useMemo(() => {
-    return JSON.stringify({ preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes }) !== JSON.stringify({
-      preferredEquipment: rider.preferredEquipment,
-      inventoryEquipment: rider.inventoryEquipment,
-      monitorMixes: rider.monitorMixes ?? [],
-      hospitalityNotes: rider.hospitalityNotes ?? '',
-    });
-  }, [inventoryEquipment, preferredEquipment, monitorMixes, hospitalityNotes, rider.inventoryEquipment, rider.preferredEquipment, rider.monitorMixes, rider.hospitalityNotes]);
+    return hospitalityNotes !== (rider.hospitalityNotes ?? '');
+  }, [hospitalityNotes, rider.hospitalityNotes]);
 
   const handleRenameCommit = async () => {
     const trimmed = renameValue.trim().slice(0, 150);
@@ -149,7 +128,13 @@ export default function InputListEditor({
     saveRequestIdRef.current = requestId;
 
     const timer = setTimeout(() => {
-      void Promise.resolve(onSaveContent({ lines: rider.lines, preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes }))
+      void Promise.resolve(onSaveContent({
+        lines: rider.lines,
+        preferredEquipment: rider.preferredEquipment,
+        inventoryEquipment: rider.inventoryEquipment,
+        monitorMixes: rider.monitorMixes ?? [],
+        hospitalityNotes,
+      }))
         .then(() => {
           if (requestId !== saveRequestIdRef.current) return;
           setSaveState('saved');
@@ -168,7 +153,7 @@ export default function InputListEditor({
 
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes]);
+  }, [hospitalityNotes]);
 
   // Warn before leaving the page while an edit hasn't been autosaved yet.
   useEffect(() => {
@@ -294,9 +279,6 @@ export default function InputListEditor({
                 </div>
               )}
               <div className="autosave-status-row">
-                <p className="song-list-summary setlist-song-count">
-                  {equipmentCount} equipment item{equipmentCount === 1 ? '' : 's'}
-                </p>
                 {canEdit ? (
                   <span className={saveStatusClassName} aria-live="polite">{saveStatusLabel}</span>
                 ) : null}
@@ -332,32 +314,6 @@ export default function InputListEditor({
         </div>
       ) : null}
 
-      <EquipmentTableEditor
-        title="Preferred Equipment"
-        items={preferredEquipment}
-        canEdit={canEdit}
-        onChange={setPreferredEquipment}
-      />
-
-      <EquipmentTableEditor
-        title="We Bring (Inventory)"
-        items={inventoryEquipment}
-        canEdit={canEdit}
-        onChange={setInventoryEquipment}
-      />
-
-      <EquipmentTableEditor
-        title="Monitoring"
-        items={monitorMixes}
-        canEdit={canEdit}
-        onChange={setMonitorMixes}
-        nameLabel="Position"
-        namePlaceholder="Vocal / guitar — downstage stage left"
-        descriptionLabel="Priority order"
-        descriptionPlaceholder="Vocal · guitar · kick and snare · bass"
-        emptyLabel="No monitor mixes listed."
-      />
-
       <section className="technical-rider-section">
         <div className="technical-rider-section-header">
           <h2>Hospitality & Logistics</h2>
@@ -375,119 +331,5 @@ export default function InputListEditor({
         )}
       </section>
     </>
-  );
-}
-
-interface EquipmentTableEditorProps {
-  title: string;
-  items: RiderEquipmentItem[];
-  canEdit: boolean;
-  onChange: (items: RiderEquipmentItem[]) => void;
-  nameLabel?: string;
-  namePlaceholder?: string;
-  descriptionLabel?: string;
-  descriptionPlaceholder?: string;
-  emptyLabel?: string;
-}
-
-function EquipmentTableEditor({
-  title,
-  items,
-  canEdit,
-  onChange,
-  nameLabel = 'Name',
-  namePlaceholder = 'Equipment name',
-  descriptionLabel = 'Description',
-  descriptionPlaceholder = 'Description',
-  emptyLabel = 'No equipment listed.',
-}: EquipmentTableEditorProps) {
-  return (
-    <section className="technical-rider-section">
-      <div className="technical-rider-section-header">
-        <h2>{title}</h2>
-      </div>
-
-      <div className="technical-rider-table-wrap">
-        <table className="technical-rider-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>{nameLabel}</th>
-              <th>{descriptionLabel}</th>
-              {canEdit ? <th aria-label="Actions" /> : null}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={item.id}>
-                <td>{index + 1}</td>
-                <td>
-                  {canEdit ? (
-                    <input
-                      type="text"
-                      value={item.name}
-                      onChange={(event) => {
-                        const name = event.target.value;
-                        onChange(items.map((entry) => (entry.id === item.id ? { ...entry, name } : entry)));
-                      }}
-                      placeholder={namePlaceholder}
-                    />
-                  ) : (
-                    item.name || '-'
-                  )}
-                </td>
-                <td>
-                  {canEdit ? (
-                    <input
-                      type="text"
-                      value={item.description ?? ''}
-                      onChange={(event) => {
-                        const description = event.target.value;
-                        onChange(items.map((entry) => (entry.id === item.id ? { ...entry, description } : entry)));
-                      }}
-                      placeholder={descriptionPlaceholder}
-                    />
-                  ) : (
-                    item.description || '-'
-                  )}
-                </td>
-                {canEdit ? (
-                  <td>
-                    <button
-                      type="button"
-                      className="setlist-action-btn setlist-action-btn--secondary"
-                      onClick={() => onChange(items.filter((entry) => entry.id !== item.id))}
-                      title="Delete row"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                ) : null}
-              </tr>
-            ))}
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={canEdit ? 4 : 3} className="technical-rider-empty-cell">{emptyLabel}</td>
-              </tr>
-            ) : null}
-            {canEdit ? (
-              <tr>
-                <td>
-                  <button
-                    type="button"
-                    className="setlist-action-btn setlist-action-btn--secondary"
-                    onClick={() => onChange([...items, createEquipmentItem()])}
-                    title="Add row"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </td>
-                <td colSpan={3} />
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-    </section>
   );
 }
