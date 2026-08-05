@@ -107,11 +107,17 @@ export function stageplotItemBadge(
 
 // Orders legend rows the way a sound engineer reads an input list: numbered
 // channels ascending first, then anything without a (valid numeric) channel
-// yet, in the order it was added to the stage.
+// yet, then items marked as not needing a channel at all — each group in the
+// order it was added to the stage.
 export function compareStageplotItemsByChannel(
   a: { item: StageplotItem; index: number },
   b: { item: StageplotItem; index: number }
 ): number {
+  const aNoChannel = a.item.noChannel === true;
+  const bNoChannel = b.item.noChannel === true;
+  if (aNoChannel !== bNoChannel) return aNoChannel ? 1 : -1;
+  if (aNoChannel && bNoChannel) return a.index - b.index;
+
   const aChannel = a.item.channel?.trim();
   const bChannel = b.item.channel?.trim();
   const aNum = aChannel ? Number(aChannel) : NaN;

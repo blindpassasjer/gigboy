@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
+import { Ban, Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
 import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import {
@@ -112,7 +112,7 @@ interface LegendItemRowProps {
   canEdit: boolean;
   selected: boolean;
   onSelect: () => void;
-  onCommit: (patch: Partial<Pick<StageplotItem, 'label' | 'channel' | 'description' | 'stand'>>) => void;
+  onCommit: (patch: Partial<Pick<StageplotItem, 'label' | 'channel' | 'description' | 'stand' | 'noChannel'>>) => void;
   onRemove: () => void;
 }
 
@@ -169,7 +169,9 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
     <li>
       <div className={`stageplot-legend-row${selected ? ' stageplot-legend-row--selected' : ''}`} style={{ color: item.color ?? 'var(--text)' }}>
         <div className="stageplot-legend-row-main">
-          {canEdit ? (
+          {item.noChannel ? (
+            <span className="stageplot-legend-number stageplot-legend-number--none" title="Doesn't need its own channel">–</span>
+          ) : canEdit ? (
             <input
               type="text"
               value={channel}
@@ -183,6 +185,20 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
           ) : (
             <span className={numberClassName}>{badge.value}</span>
           )}
+          {canEdit ? (
+            <button
+              type="button"
+              className={`stageplot-legend-no-channel${item.noChannel ? ' stageplot-legend-no-channel--active' : ''}`}
+              onClick={() => onCommit({ noChannel: !item.noChannel })}
+              title={item.noChannel
+                ? 'Needs its own channel? Click to add one'
+                : "Doesn't need its own channel (e.g. a player position — the amp gets the channel)"}
+              aria-pressed={item.noChannel === true}
+              aria-label="Toggle whether this item needs its own channel"
+            >
+              <Ban size={12} />
+            </button>
+          ) : null}
           <button
             type="button"
             className="stageplot-legend-select"
@@ -450,7 +466,7 @@ export default function StageplotEditor({
     target.addEventListener('pointercancel', release, { once: true });
   };
 
-  const updateItemFields = (itemId: string, patch: Partial<Pick<StageplotItem, 'label' | 'channel' | 'description' | 'stand'>>) => {
+  const updateItemFields = (itemId: string, patch: Partial<Pick<StageplotItem, 'label' | 'channel' | 'description' | 'stand' | 'noChannel'>>) => {
     if (!canEdit) return;
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, ...patch } : item));
     setItems(nextItems);
@@ -795,7 +811,7 @@ export default function StageplotEditor({
               moveItem(item.id, event);
             }}
             onClick={() => setSelectedItemId(item.id)}
-            title={[item.label, badge.isChannel ? `Ch ${badge.value}` : `item ${badge.value}`].filter(Boolean).join(' — ')}
+            title={[item.label, item.noChannel ? null : (badge.isChannel ? `Ch ${badge.value}` : `item ${badge.value}`)].filter(Boolean).join(' — ')}
           >
             <div
               className="stageplot-item-icon-wrap"
@@ -817,12 +833,14 @@ export default function StageplotEditor({
                 />
               ) : null}
             </div>
-            <span
-              className={`stageplot-item-number${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
-              aria-hidden="true"
-            >
-              {badge.value}
-            </span>
+            {item.noChannel ? null : (
+              <span
+                className={`stageplot-item-number${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
+                aria-hidden="true"
+              >
+                {badge.value}
+              </span>
+            )}
           </button>
           );
         })}

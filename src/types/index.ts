@@ -119,6 +119,11 @@ export interface StageplotItem {
   description?: string;
   /** Stand/clip requirement for this input, e.g. "Short boom", "Tall boom + clip", "Clip". */
   stand?: string;
+  /** True for stage-position markers that don't feed their own mixer channel
+   * (e.g. a bassist standing at their amp — the amp gets the channel, not
+   * the player). Matches real stage-plot convention: unmic'd/DI'd items
+   * aren't numbered at all. */
+  noChannel?: boolean;
 }
 
 export interface Stageplot extends CollaborationMetadata {

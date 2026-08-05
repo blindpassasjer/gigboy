@@ -39,6 +39,7 @@ function normalizeItem(raw: unknown): StageplotItem | null {
     channel: typeof data.channel === 'string' ? data.channel : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,
     stand: typeof data.stand === 'string' ? data.stand : undefined,
+    noChannel: data.noChannel === true ? true : undefined,
   };
 }
 
@@ -70,9 +71,13 @@ function renderPublicLegendRow(item: StageplotItem, index: number) {
     <li key={item.id}>
       <div className="stageplot-legend-row stageplot-legend-row--static" style={{ color: item.color ?? 'var(--text)' }}>
         <span className="stageplot-legend-row-main">
-          <span className={numberClassName}>
-            {badge.value}
-          </span>
+          {item.noChannel ? (
+            <span className="stageplot-legend-number stageplot-legend-number--none" title="Doesn't need its own channel">–</span>
+          ) : (
+            <span className={numberClassName}>
+              {badge.value}
+            </span>
+          )}
           <img
             src={stageplotIconForKind(item.kind)}
             alt=""
@@ -240,12 +245,14 @@ export default function PublicBandRiderPage() {
                     className="stageplot-instrument-icon stageplot-instrument-icon--item"
                   />
                 </div>
-                <span
-                  className={`stageplot-item-number${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
-                  aria-hidden="true"
-                >
-                  {badge.value}
-                </span>
+                {item.noChannel ? null : (
+                  <span
+                    className={`stageplot-item-number${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
+                    aria-hidden="true"
+                  >
+                    {badge.value}
+                  </span>
+                )}
               </div>
               );
             })}

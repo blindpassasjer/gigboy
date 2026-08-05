@@ -18,6 +18,7 @@ function normalizeStageplotItem(raw: unknown): StageplotItem | null {
     channel: typeof data.channel === 'string' ? data.channel : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,
     stand: typeof data.stand === 'string' ? data.stand : undefined,
+    noChannel: data.noChannel === true ? true : undefined,
   };
 }
 
