@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
 import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
@@ -87,121 +87,6 @@ function normalizeRotation(value: unknown): number {
   return wrapped;
 }
 
-// Candidate directions labels can be nudged toward to dodge overlap, tried in this priority order.
-const LABEL_CANDIDATE_DIRECTIONS: Array<{ dx: number; dy: number }> = [
-  { dx: 0, dy: 1 },
-  { dx: 0, dy: -1 },
-  { dx: 1, dy: 0 },
-  { dx: -1, dy: 0 },
-  { dx: 0.7071, dy: 0.7071 },
-  { dx: -0.7071, dy: 0.7071 },
-  { dx: 0.7071, dy: -0.7071 },
-  { dx: -0.7071, dy: -0.7071 },
-];
-
-const LABEL_OFFSET_RADIUS = 34;
-const ITEM_ICON_HALF = 24;
-const DEFAULT_LABEL_OFFSET = { dx: 0, dy: LABEL_OFFSET_RADIUS };
-
-interface Rect {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
-
-function rectOverlapArea(a: Rect, b: Rect): number {
-  const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-  const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-  if (width <= 0 || height <= 0) return 0;
-  return width * height;
-}
-
-function estimateLabelSize(item: StageplotItem): { width: number; height: number } {
-  const width = Math.min(120, Math.max(46, item.label.length * 6.4 + 16));
-  const height = item.channel ? 32 : 18;
-  return { width, height };
-}
-
-// Greedily nudges each item's label toward whichever nearby direction overlaps
-// the least with other icons and already-placed labels, so labels spread out
-// instead of stacking on top of neighbors.
-function computeLabelOffsets(
-  items: StageplotItem[],
-  stageSize: { width: number; height: number }
-): Record<string, { dx: number; dy: number }> {
-  const offsets: Record<string, { dx: number; dy: number }> = {};
-  if (stageSize.width <= 0 || stageSize.height <= 0) return offsets;
-
-  const iconRects: Rect[] = items.map((item) => {
-    const cx = item.x * stageSize.width;
-    const cy = item.y * stageSize.height;
-    return {
-      left: cx - ITEM_ICON_HALF,
-      top: cy - ITEM_ICON_HALF,
-      right: cx + ITEM_ICON_HALF,
-      bottom: cy + ITEM_ICON_HALF,
-    };
-  });
-
-  const placedLabelRects: Rect[] = [];
-
-  items.forEach((item, index) => {
-    const cx = item.x * stageSize.width;
-    const cy = item.y * stageSize.height;
-    const { width, height } = estimateLabelSize(item);
-
-    let bestDirection = LABEL_CANDIDATE_DIRECTIONS[0];
-    let bestCost = Infinity;
-
-    for (const dir of LABEL_CANDIDATE_DIRECTIONS) {
-      const labelCx = cx + dir.dx * LABEL_OFFSET_RADIUS;
-      const labelCy = cy + dir.dy * LABEL_OFFSET_RADIUS;
-      const rect: Rect = {
-        left: labelCx - width / 2,
-        top: labelCy - height / 2,
-        right: labelCx + width / 2,
-        bottom: labelCy + height / 2,
-      };
-
-      let cost = 0;
-      for (let iconIndex = 0; iconIndex < iconRects.length; iconIndex += 1) {
-        if (iconIndex === index) continue;
-        cost += rectOverlapArea(rect, iconRects[iconIndex]);
-      }
-      for (const labelRect of placedLabelRects) {
-        cost += rectOverlapArea(rect, labelRect);
-      }
-
-      // Mild penalty for spilling outside the visible stage area.
-      const outLeft = Math.max(0, -rect.left);
-      const outTop = Math.max(0, -rect.top);
-      const outRight = Math.max(0, rect.right - stageSize.width);
-      const outBottom = Math.max(0, rect.bottom - stageSize.height);
-      cost += (outLeft + outTop + outRight + outBottom) * 40;
-
-      if (cost < bestCost) {
-        bestCost = cost;
-        bestDirection = dir;
-        if (cost === 0) break;
-      }
-    }
-
-    offsets[item.id] = { dx: bestDirection.dx * LABEL_OFFSET_RADIUS, dy: bestDirection.dy * LABEL_OFFSET_RADIUS };
-
-    const chosenCx = cx + bestDirection.dx * LABEL_OFFSET_RADIUS;
-    const chosenCy = cy + bestDirection.dy * LABEL_OFFSET_RADIUS;
-    placedLabelRects.push({
-      left: chosenCx - width / 2,
-      top: chosenCy - height / 2,
-      right: chosenCx + width / 2,
-      bottom: chosenCy + height / 2,
-    });
-  });
-
-  return offsets;
-}
-
 export default function StageplotEditor({
   stageplot,
   canEdit,
@@ -223,33 +108,12 @@ export default function StageplotEditor({
   const [showIconEditor, setShowIconEditor] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [stagePixelSize, setStagePixelSize] = useState({ width: 0, height: 0 });
   const saveStateResetTimerRef = useRef<number | null>(null);
   const iconPickerRef = useRef<HTMLDivElement | null>(null);
   const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const stageShapePreview = stageplot.stageShape ?? 'rectangle';
   const stageSizePreview = stageplot.stageSize ?? 'medium';
-
-  useLayoutEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const updateSize = () => {
-      const rect = stage.getBoundingClientRect();
-      setStagePixelSize({ width: rect.width, height: rect.height });
-    };
-
-    updateSize();
-    const observer = new ResizeObserver(updateSize);
-    observer.observe(stage);
-    return () => observer.disconnect();
-  }, []);
-
-  const labelOffsets = useMemo(
-    () => computeLabelOffsets(items, stagePixelSize),
-    [items, stagePixelSize]
-  );
 
   useEffect(() => {
     setItems(stageplot.items);
@@ -821,62 +685,53 @@ export default function StageplotEditor({
         <div className="stageplot-audience-marker" aria-label="Audience-facing side">
           Audience
         </div>
-        {items.map((item) => {
-          const labelOffset = labelOffsets[item.id] ?? DEFAULT_LABEL_OFFSET;
-          return (
-            <Fragment key={item.id}>
-              <button
-                type="button"
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            draggable={false}
+            className={`stageplot-item${selectedItemId === item.id ? ' stageplot-item--selected' : ''}`}
+            style={{
+              left: `${item.x * 100}%`,
+              top: `${item.y * 100}%`,
+              color: item.color ?? 'var(--text)',
+            }}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              setSelectedItemId(item.id);
+              moveItem(item.id, event);
+            }}
+            onClick={() => setSelectedItemId(item.id)}
+            title={item.label}
+          >
+            <div
+              className="stageplot-item-icon-wrap"
+              style={{ transform: `rotate(${normalizeRotation(item.rotation)}deg)` }}
+            >
+              <img
+                src={stageplotIconForKind(item.kind)}
+                alt=""
+                aria-hidden="true"
                 draggable={false}
-                className={`stageplot-item${selectedItemId === item.id ? ' stageplot-item--selected' : ''}`}
-                style={{
-                  left: `${item.x * 100}%`,
-                  top: `${item.y * 100}%`,
-                  transform: `translate(-50%, -50%) rotate(${normalizeRotation(item.rotation)}deg)`,
-                  color: item.color ?? 'var(--text)',
-                }}
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  setSelectedItemId(item.id);
-                  moveItem(item.id, event);
-                }}
-                onClick={() => setSelectedItemId(item.id)}
-                title={item.label}
-              >
-                <img
-                  src={stageplotIconForKind(item.kind)}
-                  alt=""
-                  aria-hidden="true"
-                  draggable={false}
-                  className="stageplot-instrument-icon stageplot-instrument-icon--item"
+                className="stageplot-instrument-icon stageplot-instrument-icon--item"
+              />
+              {canEdit && selectedItemId === item.id ? (
+                <span
+                  className="stageplot-rotation-handle"
+                  aria-label="Rotate item"
+                  title="Drag to rotate"
+                  onPointerDown={(event) => rotateItemWithHandle(item.id, event)}
                 />
-                {canEdit && selectedItemId === item.id ? (
-                  <span
-                    className="stageplot-rotation-handle"
-                    aria-label="Rotate item"
-                    title="Drag to rotate"
-                    onPointerDown={(event) => rotateItemWithHandle(item.id, event)}
-                  />
-                ) : null}
-              </button>
-              {item.label || item.channel ? (
-                <div
-                  className="stageplot-item-label"
-                  style={{
-                    left: `${item.x * 100}%`,
-                    top: `${item.y * 100}%`,
-                    color: item.color ?? 'var(--text)',
-                    ['--label-dx' as string]: `${labelOffset.dx}px`,
-                    ['--label-dy' as string]: `${labelOffset.dy}px`,
-                  }}
-                >
-                  {item.label ? <span>{item.label}</span> : null}
-                  {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
-                </div>
               ) : null}
-            </Fragment>
-          );
-        })}
+            </div>
+            {item.label || item.channel ? (
+              <div className="stageplot-item-text">
+                {item.label ? <span>{item.label}</span> : null}
+                {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
+              </div>
+            ) : null}
+          </button>
+        ))}
         </div>
       </div>
     </section>

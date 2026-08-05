@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import { doc, getDoc } from 'firebase/firestore';
@@ -305,35 +305,33 @@ export default function PublicBandRiderPage() {
               Audience
             </div>
             {stageplot.items.map((item) => (
-              <Fragment key={item.id}>
+              <div
+                key={item.id}
+                className="stageplot-item stageplot-item--public"
+                style={{
+                  left: `${item.x * 100}%`,
+                  top: `${item.y * 100}%`,
+                  color: item.color ?? 'var(--text)',
+                }}
+              >
                 <div
-                  className="stageplot-item stageplot-item--public"
-                  style={{
-                    left: `${item.x * 100}%`,
-                    top: `${item.y * 100}%`,
-                    transform: `translate(-50%, -50%) rotate(${item.rotation ?? 0}deg)`,
-                    color: item.color ?? 'var(--text)',
-                  }}
+                  className="stageplot-item-icon-wrap"
+                  style={{ transform: `rotate(${item.rotation ?? 0}deg)` }}
                 >
                   <img
                     src={stageplotIconForKind(item.kind)}
                     alt=""
                     aria-hidden="true"
-                    className="stageplot-instrument-icon"
+                    className="stageplot-instrument-icon stageplot-instrument-icon--item"
                   />
                 </div>
-                <div
-                  className="stageplot-item-label"
-                  style={{
-                    left: `${item.x * 100}%`,
-                    top: `${item.y * 100}%`,
-                    color: item.color ?? 'var(--text)',
-                  }}
-                >
-                  <span>{item.label}</span>
-                  {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
-                </div>
-              </Fragment>
+                {item.label || item.channel ? (
+                  <div className="stageplot-item-text">
+                    {item.label ? <span>{item.label}</span> : null}
+                    {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
+                  </div>
+                ) : null}
+              </div>
             ))}
             <SongHandNotesOverlay
               visible
