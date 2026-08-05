@@ -12283,21 +12283,14 @@ input.stageplot-legend-number:focus {
   font-weight: 700;
 }
 
-.stageplot-legend-no-channel {
+.stageplot-legend-channel-toggle {
   flex-shrink: 0;
-  gap: .25rem;
-  font-size: .68rem;
-  font-weight: 600;
+}
+
+.stageplot-legend-channel-toggle .instrument-toggle-btn {
+  padding: .12rem .4rem;
+  font-size: .62rem;
   white-space: nowrap;
-}
-
-.stageplot-legend-no-channel input {
-  width: 12px;
-  height: 12px;
-}
-
-.stageplot-legend-no-channel--active {
-  color: var(--accent);
 }
 
 .stageplot-legend-label {
