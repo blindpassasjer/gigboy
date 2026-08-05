@@ -365,6 +365,20 @@ export default function StageplotEditor({
     }
   }, [onSaveContent]);
 
+  // Lowest channel number not already claimed by another item, so new items
+  // (or items switched back to needing a channel) get patched in numerically
+  // rather than left blank for the user to fill in by hand.
+  const nextAvailableChannel = (currentItems: StageplotItem[]): string => {
+    const usedChannels = new Set(
+      currentItems
+        .map((item) => Number(item.channel?.trim()))
+        .filter((value) => Number.isFinite(value))
+    );
+    let candidate = 1;
+    while (usedChannels.has(candidate)) candidate += 1;
+    return String(candidate);
+  };
+
   const makeItem = (template: { kind: string; label: string; color: string }, x: number, y: number): StageplotItem => ({
     id: crypto.randomUUID(),
     kind: template.kind,
@@ -373,6 +387,7 @@ export default function StageplotEditor({
     x,
     y,
     rotation: 0,
+    channel: nextAvailableChannel(items),
   });
 
   const addItemAtPosition = (template: { kind: string; label: string; color: string }, x: number, y: number) => {
@@ -473,14 +488,7 @@ export default function StageplotEditor({
     // free channel number right away, rather than leaving it blank for the
     // user to fill in by hand.
     if (patch.noChannel === false && current && !current.channel?.trim()) {
-      const usedChannels = new Set(
-        items
-          .map((item) => Number(item.channel?.trim()))
-          .filter((value) => Number.isFinite(value))
-      );
-      let nextChannel = 1;
-      while (usedChannels.has(nextChannel)) nextChannel += 1;
-      nextPatch.channel = String(nextChannel);
+      nextPatch.channel = nextAvailableChannel(items);
     }
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, ...nextPatch } : item));
     setItems(nextItems);
