@@ -268,7 +268,7 @@ export default function PublicBandRiderPage() {
           </div>
           {stageplot.items.filter((item) => !stageplotIsOutputKind(item.kind)).length > 0 ? (
             <div className="stageplot-legend-group">
-              <div className="stageplot-legend-heading">Input List</div>
+              <div className="stageplot-legend-heading">Technical Inputs</div>
               <ol className="stageplot-legend">
                 {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? null : renderPublicLegendRow(item, index)))}
               </ol>
@@ -276,7 +276,7 @@ export default function PublicBandRiderPage() {
           ) : null}
           {stageplot.items.filter((item) => stageplotIsOutputKind(item.kind)).length > 0 ? (
             <div className="stageplot-legend-group">
-              <div className="stageplot-legend-heading">Output List (Monitors / PA)</div>
+              <div className="stageplot-legend-heading">Monitors</div>
               <ol className="stageplot-legend">
                 {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? renderPublicLegendRow(item, index) : null))}
               </ol>

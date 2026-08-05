@@ -107,7 +107,6 @@ export default function StageplotEditor({
   const stageRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<StageplotItem[]>(stageplot.items);
   const [drawingLayers, setDrawingLayers] = useState<SongHandNoteDocument[]>(stageplot.drawingLayers ?? []);
-  const [customLabel, setCustomLabel] = useState('');
   const [renameValue, setRenameValue] = useState(stageplot.name);
   const [renaming, setRenaming] = useState(false);
   const [iconDraft, setIconDraft] = useState(stageplot.icon ?? '🎤');
@@ -336,29 +335,6 @@ export default function StageplotEditor({
     target.addEventListener('pointercancel', release, { once: true });
   };
 
-  const addCustomItem = () => {
-    if (!canEdit) return;
-    const label = customLabel.trim();
-    if (!label) return;
-
-    const nextItems = [
-      ...items,
-      {
-        id: crypto.randomUUID(),
-        kind: 'custom',
-        label,
-        color: '#6b7280',
-        x: 0.5,
-        y: 0.5,
-        rotation: 0,
-      },
-    ];
-
-    setCustomLabel('');
-    setItems(nextItems);
-    void persistContent(nextItems, drawingLayers);
-  };
-
   const commitSelectedItemEdits = () => {
     if (!selectedItemId || !canEdit || !selectedItem) return;
     const nextLabel = labelDraft.trim();
@@ -534,35 +510,22 @@ export default function StageplotEditor({
                   <span>{entry.label}</span>
                 </button>
               ))}
+              <button
+                type="button"
+                className="stageplot-palette-btn stageplot-palette-btn--custom"
+                draggable
+                onDragStart={(event) => handlePaletteDragStart(event, CUSTOM_ITEM_TEMPLATE)}
+                onClick={() => handlePaletteAddClick(CUSTOM_ITEM_TEMPLATE)}
+                title="Add a custom item"
+              >
+                <Plus size={14} aria-hidden="true" />
+                <span>Custom</span>
+              </button>
             </div>
           </div>
         ))}
       </div>
       <div className="stageplot-palette-secondary-row">
-        <div className="stageplot-palette-category stageplot-palette-category--custom">
-          <div className="stageplot-palette-category-name">Custom</div>
-          <div className="stageplot-palette-custom-controls">
-            <img
-              src={stageplotIconForKind(CUSTOM_ITEM_TEMPLATE.kind)}
-              alt=""
-              aria-hidden="true"
-              className="stageplot-instrument-icon stageplot-instrument-icon--palette"
-            />
-            <input
-              type="text"
-              value={customLabel}
-              onChange={(event) => setCustomLabel(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') addCustomItem();
-              }}
-              placeholder="Custom item"
-              className="stageplot-toolbar-input stageplot-toolbar-input--custom"
-            />
-            <button type="button" className="notes-toolbar-btn" onClick={addCustomItem}>
-              <Plus size={12} /> Add
-            </button>
-          </div>
-        </div>
         <div className="stageplot-palette-category stageplot-palette-category--inspector">
           <div className="stageplot-toolbar-section-heading">Selected item</div>
           {selectedItem ? null : (
@@ -845,7 +808,7 @@ export default function StageplotEditor({
         </div>
         {inputListItems.length > 0 ? (
           <div className="stageplot-legend-group">
-            <div className="stageplot-legend-heading">Input List</div>
+            <div className="stageplot-legend-heading">Technical Inputs</div>
             <ol className="stageplot-legend">
               {inputListItems.map(({ item, index }) => renderLegendRow(item, index))}
             </ol>
@@ -853,7 +816,7 @@ export default function StageplotEditor({
         ) : null}
         {outputListItems.length > 0 ? (
           <div className="stageplot-legend-group">
-            <div className="stageplot-legend-heading">Output List (Monitors / PA)</div>
+            <div className="stageplot-legend-heading">Monitors</div>
             <ol className="stageplot-legend">
               {outputListItems.map(({ item, index }) => renderLegendRow(item, index))}
             </ol>

@@ -11682,26 +11682,20 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .stageplot-palette {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: .45rem;
   min-width: 0;
-  align-content: flex-start;
   width: 100%;
 }
 
-/* Custom item + Selected item live on their own row beneath the instrument
-   palette, side by side (Custom on the left) rather than flowing inline
-   with the palette categories above. */
+/* Custom item + Selected item live on their own rows beneath the instrument
+   palette, stacked one under the other like every other toolbar category. */
 .stageplot-palette-secondary-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: .45rem;
   width: 100%;
   margin-top: .45rem;
-}
-
-.stageplot-palette-secondary-row .stageplot-palette-category {
-  flex: 1 1 240px;
 }
 
 .stageplot-palette-category {
@@ -11709,6 +11703,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-direction: column;
   gap: .35rem;
   padding: .55rem;
+  width: 100%;
   background: color-mix(in srgb, var(--surface-alt) 72%, var(--surface) 28%);
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: 10px;
@@ -11727,14 +11722,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-wrap: wrap;
   gap: .35rem;
-  width: 100%;
-}
-
-.stageplot-palette-custom-controls {
-  display: flex;
-  align-items: center;
-  gap: .45rem;
-  flex-wrap: nowrap;
   width: 100%;
 }
 
@@ -11760,6 +11747,15 @@ input, select, textarea { font: inherit; color: var(--text); }
   box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
+.stageplot-palette-btn--custom {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.stageplot-palette-btn--custom:hover {
+  color: var(--accent);
+}
+
 .stageplot-instrument-icon {
   width: 26px;
   height: 26px;
@@ -11780,17 +11776,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .stageplot-instrument-icon--legend {
   width: 22px;
   height: 22px;
-  flex-shrink: 0;
-}
-
-.stageplot-toolbar-input--custom {
-  min-width: 150px;
-  width: auto;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.stageplot-palette-custom-controls .notes-toolbar-btn {
   flex-shrink: 0;
 }
 
