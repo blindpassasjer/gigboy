@@ -578,7 +578,6 @@ export default function StageplotEditor({
 
   const toolbarPanel = canEdit ? (
     <>
-      <div className="stageplot-toolbar-section-heading">Items</div>
       <div className="stageplot-palette">
         {PALETTE_CATEGORIES.map((category) => (
           <div key={category.name} className="stageplot-palette-category">

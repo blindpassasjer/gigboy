@@ -11693,14 +11693,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: stretch;
 }
 
-.stageplot-toolbar-section-heading {
-  font-size: .72rem;
-  font-weight: 800;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .stageplot-palette {
   display: flex;
   flex-direction: column;
@@ -11765,25 +11757,25 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-instrument-icon {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   display: block;
   object-fit: contain;
 }
 
 .stageplot-instrument-icon--palette {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
 }
 
 .stageplot-instrument-icon--item {
-  width: calc(40px * var(--item-scale, 1));
-  height: calc(40px * var(--item-scale, 1));
+  width: calc(48px * var(--item-scale, 1));
+  height: calc(48px * var(--item-scale, 1));
 }
 
 .stageplot-instrument-icon--legend {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
 }
 
@@ -11970,8 +11962,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   justify-content: center;
   transform: translate(-50%, -50%);
-  width: calc(52px * var(--item-scale, 1));
-  height: calc(52px * var(--item-scale, 1));
+  width: calc(60px * var(--item-scale, 1));
+  height: calc(60px * var(--item-scale, 1));
   padding: 0;
   border: none;
   background: none;
@@ -12030,8 +12022,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   position: absolute;
   right: -4px;
   bottom: -4px;
-  min-width: 17px;
-  height: 17px;
+  min-width: 19px;
+  height: 19px;
   padding: 0 3px;
   display: inline-flex;
   align-items: center;
@@ -12040,7 +12032,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1.5px solid var(--surface);
   background: var(--muted);
   color: #fff;
-  font-size: .6rem;
+  font-size: .64rem;
   font-weight: 800;
   line-height: 1;
   z-index: 1;
@@ -12320,13 +12312,13 @@ input.stageplot-legend-number:focus {
   }
 
   .stageplot-item {
-    width: calc(44px * var(--item-scale, 1));
-    height: calc(44px * var(--item-scale, 1));
+    width: calc(50px * var(--item-scale, 1));
+    height: calc(50px * var(--item-scale, 1));
   }
 
   .stageplot-instrument-icon--item {
-    width: calc(34px * var(--item-scale, 1));
-    height: calc(34px * var(--item-scale, 1));
+    width: calc(40px * var(--item-scale, 1));
+    height: calc(40px * var(--item-scale, 1));
   }
 }
 
