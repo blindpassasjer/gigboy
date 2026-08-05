@@ -11653,11 +11653,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
 }
 
-.tech-rider-section .setlist-view,
-.tech-rider-section .stageplot-view {
-  min-width: 0;
-}
-
 .stageplot-layout {
   display: flex;
   flex-wrap: wrap;

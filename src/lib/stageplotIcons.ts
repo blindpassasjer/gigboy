@@ -105,6 +105,26 @@ export function stageplotItemBadge(
   return channel ? { value: channel, isChannel: true } : { value: `#${index + 1}`, isChannel: false };
 }
 
+// Orders legend rows the way a sound engineer reads an input list: numbered
+// channels ascending first, then anything without a (valid numeric) channel
+// yet, in the order it was added to the stage.
+export function compareStageplotItemsByChannel(
+  a: { item: StageplotItem; index: number },
+  b: { item: StageplotItem; index: number }
+): number {
+  const aChannel = a.item.channel?.trim();
+  const bChannel = b.item.channel?.trim();
+  const aNum = aChannel ? Number(aChannel) : NaN;
+  const bNum = bChannel ? Number(bChannel) : NaN;
+  const aHasNum = aChannel !== undefined && aChannel !== '' && !Number.isNaN(aNum);
+  const bHasNum = bChannel !== undefined && bChannel !== '' && !Number.isNaN(bNum);
+
+  if (aHasNum && bHasNum) return aNum - bNum;
+  if (aHasNum) return -1;
+  if (bHasNum) return 1;
+  return a.index - b.index;
+}
+
 const DEFAULT_ITEM_COLOR = '#6b7280';
 
 // Picks black or white text for a badge filled with the item's own color, so

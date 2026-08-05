@@ -9,6 +9,7 @@ import {
   stageplotItemBadge,
   stageplotContrastTextColor,
   stageplotIsOutputKind,
+  compareStageplotItemsByChannel,
 } from '../lib/stageplotIcons';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
 import { clamp01 } from '../lib/lineAnchor';
@@ -307,11 +308,15 @@ export default function StageplotEditor({
   // few (monitors, PA, subs, IEM) are outputs from the desk and belong on
   // their own list rather than mixed in with input channel numbers.
   const inputListItems = useMemo(
-    () => items.map((item, index) => ({ item, index })).filter(({ item }) => !stageplotIsOutputKind(item.kind)),
+    () => items.map((item, index) => ({ item, index }))
+      .filter(({ item }) => !stageplotIsOutputKind(item.kind))
+      .sort(compareStageplotItemsByChannel),
     [items]
   );
   const outputListItems = useMemo(
-    () => items.map((item, index) => ({ item, index })).filter(({ item }) => stageplotIsOutputKind(item.kind)),
+    () => items.map((item, index) => ({ item, index }))
+      .filter(({ item }) => stageplotIsOutputKind(item.kind))
+      .sort(compareStageplotItemsByChannel),
     [items]
   );
 

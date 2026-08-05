@@ -12,6 +12,7 @@ import {
   stageplotItemBadge,
   stageplotContrastTextColor,
   stageplotIsOutputKind,
+  compareStageplotItemsByChannel,
 } from '../lib/stageplotIcons';
 
 type Status = 'loading' | 'not-found' | 'private' | 'error' | 'ready';
@@ -271,22 +272,36 @@ export default function PublicBandRiderPage() {
           </div>
           {stageplot.items.length > 0 ? (
             <div className="stageplot-legend-section">
-              {stageplot.items.filter((item) => !stageplotIsOutputKind(item.kind)).length > 0 ? (
-                <div className="stageplot-legend-group">
-                  <div className="stageplot-legend-heading">Technical Inputs</div>
-                  <ol className="stageplot-legend">
-                    {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? null : renderPublicLegendRow(item, index)))}
-                  </ol>
-                </div>
-              ) : null}
-              {stageplot.items.filter((item) => stageplotIsOutputKind(item.kind)).length > 0 ? (
-                <div className="stageplot-legend-group">
-                  <div className="stageplot-legend-heading">Monitors</div>
-                  <ol className="stageplot-legend">
-                    {stageplot.items.map((item, index) => (stageplotIsOutputKind(item.kind) ? renderPublicLegendRow(item, index) : null))}
-                  </ol>
-                </div>
-              ) : null}
+              {(() => {
+                const inputListItems = stageplot.items
+                  .map((item, index) => ({ item, index }))
+                  .filter(({ item }) => !stageplotIsOutputKind(item.kind))
+                  .sort(compareStageplotItemsByChannel);
+                const outputListItems = stageplot.items
+                  .map((item, index) => ({ item, index }))
+                  .filter(({ item }) => stageplotIsOutputKind(item.kind))
+                  .sort(compareStageplotItemsByChannel);
+                return (
+                  <>
+                    {inputListItems.length > 0 ? (
+                      <div className="stageplot-legend-group">
+                        <div className="stageplot-legend-heading">Technical Inputs</div>
+                        <ol className="stageplot-legend">
+                          {inputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
+                        </ol>
+                      </div>
+                    ) : null}
+                    {outputListItems.length > 0 ? (
+                      <div className="stageplot-legend-group">
+                        <div className="stageplot-legend-heading">Monitors</div>
+                        <ol className="stageplot-legend">
+                          {outputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
+                        </ol>
+                      </div>
+                    ) : null}
+                  </>
+                );
+              })()}
             </div>
           ) : null}
           </div>
