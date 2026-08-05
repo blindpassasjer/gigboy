@@ -12287,13 +12287,15 @@ input.stageplot-legend-number:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
   flex-shrink: 0;
-  border: 1px solid transparent;
-  border-radius: 6px;
+  padding: .2rem .45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
   background: none;
   color: var(--muted);
+  font-size: .64rem;
+  font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
   transition: color .15s, background .15s, border-color .15s;
 }

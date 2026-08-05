@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Ban, Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
+import { Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
 import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import {
@@ -196,7 +196,7 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
               aria-pressed={item.noChannel === true}
               aria-label="Toggle whether this item needs its own channel"
             >
-              <Ban size={12} />
+              No ch.
             </button>
           ) : null}
           <button
