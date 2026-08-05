@@ -11718,16 +11718,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: 100%;
 }
 
-/* Custom item + Selected item live on their own rows beneath the instrument
-   palette, stacked one under the other like every other toolbar category. */
-.stageplot-palette-secondary-row {
-  display: flex;
-  flex-direction: column;
-  gap: .45rem;
-  width: 100%;
-  margin-top: .45rem;
-}
-
 .stageplot-palette-category {
   display: flex;
   flex-direction: column;
@@ -11809,36 +11799,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-shrink: 0;
 }
 
-.stageplot-inspector-fields {
-  display: flex;
-  align-items: center;
-  gap: .45rem;
-  flex-wrap: wrap;
-  width: 100%;
-}
-
-.stageplot-toolbar-input--channel {
-  width: 110px;
-  flex: 0 0 auto;
-}
-
-.stageplot-toolbar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .45rem;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 0;
-}
-
-.stageplot-toolbar-sep {
-  width: 1px;
-  height: 1.4rem;
-  background: var(--border);
-  margin: 0 .15rem;
-  flex-shrink: 0;
-}
-
 .stageplot-shape-toggle {
   padding: .3rem .45rem;
 }
@@ -11847,38 +11807,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: block;
   width: 16px;
   height: 16px;
-}
-
-.stageplot-toolbar-input {
-  padding: .4rem .6rem;
-  font-size: .8rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
-  transition: border-color .15s, background .15s;
-}
-
-.stageplot-toolbar-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: var(--surface);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
-}
-
-.stageplot-toolbar-input::placeholder {
-  color: var(--muted);
-}
-
-.stageplot-toolbar-input:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-.stageplot-inspector-hint {
-  margin: 0 0 .5rem;
-  font-size: .78rem;
-  color: var(--muted);
 }
 
 .stageplot-settings-grid {
@@ -12169,24 +12097,24 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .stageplot-legend {
   list-style: none;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: .4rem;
   margin: 0;
   padding: 0;
+  min-width: 0;
 }
 
 .stageplot-legend-row {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: .2rem;
+  gap: .35rem;
   width: 100%;
-  padding: .4rem .55rem;
+  padding: .45rem .55rem;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
-  cursor: pointer;
   text-align: left;
   transition: border-color .15s ease, background .15s ease;
 }
@@ -12194,7 +12122,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .stageplot-legend-row-main {
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: .4rem;
   width: 100%;
 }
 
@@ -12207,21 +12135,84 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
 }
 
-.stageplot-legend-row:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-}
-
 .stageplot-legend-row--static {
   cursor: default;
-}
-
-.stageplot-legend-row--static:hover {
-  border-color: var(--border);
 }
 
 .stageplot-legend-row--selected {
   border-color: color-mix(in srgb, var(--accent) 70%, transparent);
   background: color-mix(in srgb, var(--accent) 10%, var(--surface) 90%);
+}
+
+.stageplot-legend-select {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.stageplot-legend-select:hover .stageplot-legend-number {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.stageplot-legend-input {
+  min-width: 0;
+  width: 100%;
+  padding: .3rem .45rem;
+  font-size: .78rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color .15s, background .15s;
+}
+
+.stageplot-legend-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.stageplot-legend-input::placeholder {
+  color: var(--muted);
+}
+
+.stageplot-legend-input--label {
+  flex: 1 1 auto;
+  width: auto;
+  font-weight: 600;
+}
+
+.stageplot-legend-input--channel {
+  width: 3.6rem;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.stageplot-legend-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, background .15s, border-color .15s;
+}
+
+.stageplot-legend-remove:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 .stageplot-legend-number {
@@ -12267,16 +12258,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   letter-spacing: .03em;
 }
 
-@media (max-width: 900px) {
-  .stageplot-toolbar {
-    grid-template-columns: 1fr;
-  }
-
-  .stageplot-toolbar-actions {
-    justify-content: flex-start;
-  }
-}
-
 @media (max-width: 600px) {
   .stageplot-stage {
     --stage-max-width: 100%;
@@ -12296,14 +12277,8 @@ input, select, textarea { font: inherit; color: var(--text); }
     max-width: min(100%, 76vw);
   }
 
-  .stageplot-palette,
-  .stageplot-toolbar-actions {
+  .stageplot-palette {
     width: 100%;
-  }
-
-  .stageplot-toolbar-actions .setlist-name-input {
-    width: 100%;
-    max-width: 100%;
   }
 
   .stageplot-item {

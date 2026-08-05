@@ -93,6 +93,150 @@ function normalizeRotation(value: unknown): number {
   return wrapped;
 }
 
+interface LegendItemRowProps {
+  item: StageplotItem;
+  index: number;
+  canEdit: boolean;
+  selected: boolean;
+  onSelect: () => void;
+  onCommit: (patch: Partial<Pick<StageplotItem, 'label' | 'channel' | 'description' | 'stand'>>) => void;
+  onRemove: () => void;
+}
+
+// Each legend row doubles as the editor for that item's channel info, with its
+// own local draft state so typing doesn't fight updates from sibling rows or
+// canvas drags. Edits commit on blur/Enter, matching the rest of the editor.
+function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onRemove }: LegendItemRowProps) {
+  const badge = stageplotItemBadge(item, index);
+  const [label, setLabel] = useState(item.label);
+  const [channel, setChannel] = useState(item.channel ?? '');
+  const [description, setDescription] = useState(item.description ?? '');
+  const [stand, setStand] = useState(item.stand ?? '');
+
+  useEffect(() => {
+    setLabel(item.label);
+    setChannel(item.channel ?? '');
+    setDescription(item.description ?? '');
+    setStand(item.stand ?? '');
+  }, [item.id, item.label, item.channel, item.description, item.stand]);
+
+  const commit = () => {
+    const nextLabel = label.trim() || item.label;
+    const nextChannel = channel.trim();
+    const nextDescription = description.trim();
+    const nextStand = stand.trim();
+    if (
+      nextLabel === item.label
+      && nextChannel === (item.channel ?? '')
+      && nextDescription === (item.description ?? '')
+      && nextStand === (item.stand ?? '')
+    ) return;
+    onCommit({
+      label: nextLabel,
+      channel: nextChannel || undefined,
+      description: nextDescription || undefined,
+      stand: nextStand || undefined,
+    });
+  };
+
+  const blurOnEnter = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
+  };
+
+  const meta = [item.description?.trim(), item.stand?.trim()].filter(Boolean).join(' · ');
+
+  return (
+    <li>
+      <div className={`stageplot-legend-row${selected ? ' stageplot-legend-row--selected' : ''}`} style={{ color: item.color ?? 'var(--text)' }}>
+        <div className="stageplot-legend-row-main">
+          <button
+            type="button"
+            className="stageplot-legend-select"
+            onClick={onSelect}
+            title="Select on stage"
+            aria-label={`Select ${item.label || 'item'} on stage`}
+          >
+            <span
+              className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}
+              style={badge.isChannel ? {
+                backgroundColor: item.color ?? undefined,
+                color: stageplotContrastTextColor(item.color),
+              } : undefined}
+            >
+              {badge.value}
+            </span>
+            <img
+              src={stageplotIconForKind(item.kind)}
+              alt=""
+              aria-hidden="true"
+              className="stageplot-instrument-icon stageplot-instrument-icon--legend"
+            />
+          </button>
+          {canEdit ? (
+            <input
+              type="text"
+              value={label}
+              onChange={(event) => setLabel(event.target.value)}
+              onBlur={commit}
+              onKeyDown={blurOnEnter}
+              placeholder="Label"
+              aria-label="Item label"
+              className="stageplot-legend-input stageplot-legend-input--label"
+            />
+          ) : (
+            <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
+          )}
+          {canEdit ? (
+            <input
+              type="text"
+              value={channel}
+              onChange={(event) => setChannel(event.target.value)}
+              onBlur={commit}
+              onKeyDown={blurOnEnter}
+              placeholder="Ch"
+              aria-label="Item channel"
+              className="stageplot-legend-input stageplot-legend-input--channel"
+            />
+          ) : (
+            item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null
+          )}
+          {canEdit ? (
+            <button type="button" className="stageplot-legend-remove" onClick={onRemove} title="Remove item" aria-label="Remove item">
+              <Trash2 size={12} />
+            </button>
+          ) : null}
+        </div>
+        {canEdit ? (
+          <input
+            type="text"
+            value={stand}
+            onChange={(event) => setStand(event.target.value)}
+            onBlur={commit}
+            onKeyDown={blurOnEnter}
+            placeholder="Stand (e.g. short boom)"
+            aria-label="Item stand"
+            className="stageplot-legend-input stageplot-legend-input--stand"
+          />
+        ) : null}
+        {canEdit ? (
+          <input
+            type="text"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            onBlur={commit}
+            onKeyDown={blurOnEnter}
+            placeholder="Description (e.g. mic model)"
+            aria-label="Item description"
+            className="stageplot-legend-input stageplot-legend-input--description"
+          />
+        ) : (
+          meta ? <span className="stageplot-legend-meta">{meta}</span> : null
+        )}
+      </div>
+    </li>
+  );
+}
+
 export default function StageplotEditor({
   stageplot,
   canEdit,
@@ -159,11 +303,6 @@ export default function StageplotEditor({
     };
   }, [showIconEditor]);
 
-  const selectedItem = useMemo(
-    () => items.find((item) => item.id === selectedItemId) ?? null,
-    [items, selectedItemId]
-  );
-
   // Split for the legend: most items feed a numbered input channel, but a
   // few (monitors, PA, subs, IEM) are outputs from the desk and belong on
   // their own list rather than mixed in with input channel numbers.
@@ -175,53 +314,6 @@ export default function StageplotEditor({
     () => items.map((item, index) => ({ item, index })).filter(({ item }) => stageplotIsOutputKind(item.kind)),
     [items]
   );
-
-  const renderLegendRow = (item: StageplotItem, index: number) => {
-    const badge = stageplotItemBadge(item, index);
-    const meta = [item.description?.trim(), item.stand?.trim()].filter(Boolean).join(' · ');
-    return (
-      <li key={item.id}>
-        <button
-          type="button"
-          className={`stageplot-legend-row${selectedItemId === item.id ? ' stageplot-legend-row--selected' : ''}`}
-          onClick={() => setSelectedItemId(item.id)}
-          style={{ color: item.color ?? 'var(--text)' }}
-        >
-          <span className="stageplot-legend-row-main">
-            <span
-              className={`stageplot-legend-number${badge.isChannel ? '' : ' stageplot-legend-number--index'}`}
-              style={badge.isChannel ? {
-                backgroundColor: item.color ?? undefined,
-                color: stageplotContrastTextColor(item.color),
-              } : undefined}
-            >
-              {badge.value}
-            </span>
-            <img
-              src={stageplotIconForKind(item.kind)}
-              alt=""
-              aria-hidden="true"
-              className="stageplot-instrument-icon stageplot-instrument-icon--legend"
-            />
-            <span className="stageplot-legend-label">{item.label || 'Untitled item'}</span>
-            {item.channel ? <span className="stageplot-legend-channel">Ch {item.channel}</span> : null}
-          </span>
-          {meta ? <span className="stageplot-legend-meta">{meta}</span> : null}
-        </button>
-      </li>
-    );
-  };
-  const [labelDraft, setLabelDraft] = useState('');
-  const [channelDraft, setChannelDraft] = useState('');
-  const [descriptionDraft, setDescriptionDraft] = useState('');
-  const [standDraft, setStandDraft] = useState('');
-
-  useEffect(() => {
-    setLabelDraft(selectedItem?.label ?? '');
-    setChannelDraft(selectedItem?.channel ?? '');
-    setDescriptionDraft(selectedItem?.description ?? '');
-    setStandDraft(selectedItem?.stand ?? '');
-  }, [selectedItem]);
 
   const persistContent = useCallback(async (nextItems: StageplotItem[], nextLayers: SongHandNoteDocument[]) => {
     setSaveState('saving');
@@ -335,43 +427,21 @@ export default function StageplotEditor({
     target.addEventListener('pointercancel', release, { once: true });
   };
 
-  const commitSelectedItemEdits = () => {
-    if (!selectedItemId || !canEdit || !selectedItem) return;
-    const nextLabel = labelDraft.trim();
-    const nextChannel = channelDraft.trim();
-    const nextDescription = descriptionDraft.trim();
-    const nextStand = standDraft.trim();
-    if (
-      nextLabel === selectedItem.label
-      && nextChannel === (selectedItem.channel ?? '')
-      && nextDescription === (selectedItem.description ?? '')
-      && nextStand === (selectedItem.stand ?? '')
-    ) return;
-
-    const nextItems = items.map((item) => (
-      item.id === selectedItemId
-        ? {
-            ...item,
-            label: nextLabel,
-            channel: nextChannel || undefined,
-            description: nextDescription || undefined,
-            stand: nextStand || undefined,
-          }
-        : item
-    ));
+  const updateItemFields = (itemId: string, patch: Partial<Pick<StageplotItem, 'label' | 'channel' | 'description' | 'stand'>>) => {
+    if (!canEdit) return;
+    const nextItems = items.map((item) => (item.id === itemId ? { ...item, ...patch } : item));
     setItems(nextItems);
     void persistContent(nextItems, drawingLayers);
   };
 
-  const removeSelectedItem = () => {
-    if (!selectedItemId || !canEdit) return;
-    const deletingId = selectedItemId;
+  const removeItem = (itemId: string) => {
+    if (!canEdit) return;
     setItems((prev) => {
-      const nextItems = prev.filter((item) => item.id !== deletingId);
+      const nextItems = prev.filter((item) => item.id !== itemId);
       void persistContent(nextItems, drawingLayers);
       return nextItems;
     });
-    setSelectedItemId(null);
+    setSelectedItemId((current) => (current === itemId ? null : current));
   };
 
   const rotateItemWithHandle = (itemId: string, event: React.PointerEvent<HTMLSpanElement>) => {
@@ -524,73 +594,6 @@ export default function StageplotEditor({
             </div>
           </div>
         ))}
-      </div>
-      <div className="stageplot-palette-secondary-row">
-        <div className="stageplot-palette-category stageplot-palette-category--inspector">
-          <div className="stageplot-toolbar-section-heading">Selected item</div>
-          {selectedItem ? null : (
-            <p className="stageplot-inspector-hint">Select an item on the stage to edit its label, channel, description, and stand.</p>
-          )}
-          <div className="stageplot-inspector-fields">
-            <input
-              type="text"
-              value={labelDraft}
-              onChange={(event) => setLabelDraft(event.target.value)}
-              onBlur={commitSelectedItemEdits}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
-              }}
-              placeholder="Label"
-              aria-label="Item label"
-              className="stageplot-toolbar-input"
-              disabled={!selectedItem}
-            />
-            <input
-              type="text"
-              value={channelDraft}
-              onChange={(event) => setChannelDraft(event.target.value)}
-              onBlur={commitSelectedItemEdits}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
-              }}
-              placeholder="Channel (e.g. 8)"
-              aria-label="Item channel"
-              className="stageplot-toolbar-input stageplot-toolbar-input--channel"
-              disabled={!selectedItem}
-            />
-            <input
-              type="text"
-              value={descriptionDraft}
-              onChange={(event) => setDescriptionDraft(event.target.value)}
-              onBlur={commitSelectedItemEdits}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
-              }}
-              placeholder="Description (e.g. mic model)"
-              aria-label="Item description"
-              className="stageplot-toolbar-input"
-              disabled={!selectedItem}
-            />
-            <input
-              type="text"
-              value={standDraft}
-              onChange={(event) => setStandDraft(event.target.value)}
-              onBlur={commitSelectedItemEdits}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
-              }}
-              placeholder="Stand (e.g. short boom)"
-              aria-label="Item stand"
-              className="stageplot-toolbar-input"
-              disabled={!selectedItem}
-            />
-          </div>
-          <div className="stageplot-toolbar-actions">
-            <button type="button" className="notes-toolbar-btn" onClick={removeSelectedItem} disabled={!selectedItem}>
-              <Trash2 size={12} /> Remove
-            </button>
-          </div>
-        </div>
       </div>
     </>
   ) : null;
@@ -814,7 +817,18 @@ export default function StageplotEditor({
             <div className="stageplot-legend-group">
               <div className="stageplot-legend-heading">Technical Inputs</div>
               <ol className="stageplot-legend">
-                {inputListItems.map(({ item, index }) => renderLegendRow(item, index))}
+                {inputListItems.map(({ item, index }) => (
+                  <LegendItemRow
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    canEdit={canEdit}
+                    selected={selectedItemId === item.id}
+                    onSelect={() => setSelectedItemId(item.id)}
+                    onCommit={(patch) => updateItemFields(item.id, patch)}
+                    onRemove={() => removeItem(item.id)}
+                  />
+                ))}
               </ol>
             </div>
           ) : null}
@@ -822,7 +836,18 @@ export default function StageplotEditor({
             <div className="stageplot-legend-group">
               <div className="stageplot-legend-heading">Monitors</div>
               <ol className="stageplot-legend">
-                {outputListItems.map(({ item, index }) => renderLegendRow(item, index))}
+                {outputListItems.map(({ item, index }) => (
+                  <LegendItemRow
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    canEdit={canEdit}
+                    selected={selectedItemId === item.id}
+                    onSelect={() => setSelectedItemId(item.id)}
+                    onCommit={(patch) => updateItemFields(item.id, patch)}
+                    onRemove={() => removeItem(item.id)}
+                  />
+                ))}
               </ol>
             </div>
           ) : null}
