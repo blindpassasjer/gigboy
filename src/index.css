@@ -11713,7 +11713,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .stageplot-palette {
   display: flex;
   flex-direction: column;
-  gap: .45rem;
+  gap: .7rem;
   min-width: 0;
   width: 100%;
 }
@@ -11722,11 +11722,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   flex-direction: column;
   gap: .35rem;
-  padding: .55rem;
   width: 100%;
-  background: color-mix(in srgb, var(--surface-alt) 72%, var(--surface) 28%);
-  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 10px;
 }
 
 .stageplot-palette-category-name {
