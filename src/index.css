@@ -12284,32 +12284,20 @@ input.stageplot-legend-number:focus {
 }
 
 .stageplot-legend-no-channel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  padding: .2rem .45rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: none;
-  color: var(--muted);
-  font-size: .64rem;
-  font-weight: 700;
+  gap: .25rem;
+  font-size: .68rem;
+  font-weight: 600;
   white-space: nowrap;
-  cursor: pointer;
-  transition: color .15s, background .15s, border-color .15s;
 }
 
-.stageplot-legend-no-channel:hover {
-  color: var(--accent);
-  background: var(--chord-bg);
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+.stageplot-legend-no-channel input {
+  width: 12px;
+  height: 12px;
 }
 
 .stageplot-legend-no-channel--active {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 
 .stageplot-legend-label {
