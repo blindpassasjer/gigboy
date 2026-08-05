@@ -35,7 +35,6 @@ function normalizeItem(raw: unknown): StageplotItem | null {
       ? ((data.rotation % 360) + 360) % 360
       : 0,
     color: typeof data.color === 'string' ? data.color : undefined,
-    icon: typeof data.icon === 'string' ? data.icon : undefined,
     channel: typeof data.channel === 'string' ? data.channel : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,
     stand: typeof data.stand === 'string' ? data.stand : undefined,
@@ -220,14 +219,6 @@ export default function PublicBandRiderPage() {
         {stageplot && (stageplot.items.length > 0 || stageplot.drawingLayers.length > 0) ? (
           <section className="technical-rider-section technical-rider-public-section">
             <h2>Stage Plot</h2>
-            {(rider.stageShape || rider.stageSize) ? (
-              <p className="technical-rider-notes-view technical-rider-stage-meta">
-                {[
-                  rider.stageShape ? `Shape: ${rider.stageShape}` : null,
-                  rider.stageSize ? `Size: ${rider.stageSize}` : null,
-                ].filter(Boolean).join(' · ')}
-              </p>
-            ) : null}
           <div className="stageplot-content-row">
           <div className="stageplot-stage song-notes-stage stageplot-stage--public">
             <div className="stageplot-stage-grid" />

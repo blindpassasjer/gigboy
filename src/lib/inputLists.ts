@@ -14,7 +14,6 @@ function normalizeStageplotItem(raw: unknown): StageplotItem | null {
       ? ((data.rotation % 360) + 360) % 360
       : 0,
     color: typeof data.color === 'string' ? data.color : undefined,
-    icon: typeof data.icon === 'string' ? data.icon : undefined,
     channel: typeof data.channel === 'string' ? data.channel : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,
     stand: typeof data.stand === 'string' ? data.stand : undefined,
@@ -132,12 +131,6 @@ export function normalizeInputList(id: string, raw: Record<string, unknown>): In
     drawingLayers: Array.isArray(raw.drawingLayers)
       ? raw.drawingLayers.map(normalizeDrawingLayer).filter((entry): entry is SongHandNoteDocument => Boolean(entry))
       : [],
-    stageShape: raw.stageShape === 'rectangle' || raw.stageShape === 'oval' || raw.stageShape === 'circle'
-      ? raw.stageShape
-      : undefined,
-    stageSize: raw.stageSize === 'small' || raw.stageSize === 'medium' || raw.stageSize === 'large'
-      ? raw.stageSize
-      : undefined,
     hospitalityNotes: typeof raw.hospitalityNotes === 'string' ? raw.hospitalityNotes : undefined,
     publicShareEnabled: raw.publicShareEnabled === true ? true : undefined,
     bandName: typeof raw.bandName === 'string' ? raw.bandName : undefined,

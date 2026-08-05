@@ -16,8 +16,6 @@ export interface PressKitStageplotItem {
   icon?: string;
   items: unknown[];
   drawingLayers?: unknown[];
-  stageShape?: string;
-  stageSize?: string;
   updatedAt?: string;
 }
 
@@ -30,8 +28,6 @@ export interface PressKitRiderItem {
   inventoryEquipment: Array<{ id?: string; name?: string; description?: string }>;
   monitorMixes?: Array<{ id?: string; name?: string; description?: string }>;
   hospitalityNotes?: string;
-  stageShape?: string;
-  stageSize?: string;
   updatedAt?: string;
 }
 
@@ -97,10 +93,6 @@ export function riderAsText(rider: PressKitRiderItem): string {
   }).filter((entry): entry is string => Boolean(entry));
 
   const hospitalityNotes = (rider.hospitalityNotes ?? '').trim();
-  const stageMeta = [
-    rider.stageShape ? `Shape: ${rider.stageShape}` : null,
-    rider.stageSize ? `Size: ${rider.stageSize}` : null,
-  ].filter(Boolean).join(' · ');
 
   return [
     `Input List: ${rider.name}`,
@@ -116,9 +108,6 @@ export function riderAsText(rider: PressKitRiderItem): string {
     '',
     'Monitoring',
     monitorMixes.length > 0 ? monitorMixes.join('\n') : '- None',
-    '',
-    'Stage Plot',
-    stageMeta || '- Not specified',
     '',
     'Hospitality & Logistics',
     hospitalityNotes || '- None',

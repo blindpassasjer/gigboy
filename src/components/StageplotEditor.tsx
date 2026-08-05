@@ -291,9 +291,6 @@ export default function StageplotEditor({
   const iconPickerRef = useRef<HTMLDivElement | null>(null);
   const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  const stageShapePreview = stageplot.stageShape ?? 'rectangle';
-  const stageSizePreview = stageplot.stageSize ?? 'medium';
-
   useEffect(() => {
     setItems(stageplot.items);
     setDrawingLayers(stageplot.drawingLayers ?? []);
@@ -799,7 +796,7 @@ export default function StageplotEditor({
       <div className="stageplot-content-row">
       <div
           ref={stageRef}
-          className={`stageplot-stage song-notes-stage stageplot-stage--shape-${stageShapePreview} stageplot-stage--size-${stageSizePreview}`}
+          className="stageplot-stage song-notes-stage"
           onDragOver={(event) => {
             if (!canEdit) return;
             if (!event.dataTransfer.types.includes(ITEM_DRAG_MIME)) return;

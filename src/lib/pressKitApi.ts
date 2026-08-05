@@ -47,8 +47,6 @@ export interface PublicPressKitPayload {
     name: string;
     icon?: string;
     items: unknown[];
-    stageShape?: string;
-    stageSize?: string;
     updatedAt?: string;
   }>;
   riders: Array<{

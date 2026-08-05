@@ -111,7 +111,6 @@ export interface StageplotItem {
   y: number;
   rotation?: number;
   color?: string;
-  icon?: string;
   /** Input-list channel number/name this item feeds, e.g. "8" or "10". Free text so it
    * can hold non-numeric channel labels too. */
   channel?: string;
@@ -133,8 +132,6 @@ export interface Stageplot extends CollaborationMetadata {
   items: StageplotItem[];
   drawingLayers?: SongHandNoteDocument[];
   publicShareEnabled?: boolean;
-  stageShape?: 'rectangle' | 'oval' | 'circle';
-  stageSize?: 'small' | 'medium' | 'large';
   /** Band name denormalized for unauthenticated public reads. */
   bandName?: string;
   createdAt?: string;
@@ -173,8 +170,6 @@ export interface InputList extends CollaborationMetadata {
   items?: StageplotItem[];
   /** Stageplot freehand drawing layers embedded in this technical rider. */
   drawingLayers?: SongHandNoteDocument[];
-  stageShape?: 'rectangle' | 'oval' | 'circle';
-  stageSize?: 'small' | 'medium' | 'large';
   /** Free-text hospitality/load-in/logistics notes for venues (parking, contact, power, catering, etc). */
   hospitalityNotes?: string;
   publicShareEnabled?: boolean;
