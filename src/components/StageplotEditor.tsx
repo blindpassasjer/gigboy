@@ -439,7 +439,7 @@ export default function StageplotEditor({
 
   const commitSelectedItemEdits = () => {
     if (!selectedItemId || !canEdit || !selectedItem) return;
-    const nextLabel = labelDraft.trim() || selectedItem.label;
+    const nextLabel = labelDraft.trim();
     const nextChannel = channelDraft.trim();
     if (nextLabel === selectedItem.label && nextChannel === (selectedItem.channel ?? '')) return;
 
@@ -859,19 +859,21 @@ export default function StageplotEditor({
                   />
                 ) : null}
               </button>
-              <div
-                className="stageplot-item-label"
-                style={{
-                  left: `${item.x * 100}%`,
-                  top: `${item.y * 100}%`,
-                  color: item.color ?? 'var(--text)',
-                  ['--label-dx' as string]: `${labelOffset.dx}px`,
-                  ['--label-dy' as string]: `${labelOffset.dy}px`,
-                }}
-              >
-                <span>{item.label}</span>
-                {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
-              </div>
+              {item.label || item.channel ? (
+                <div
+                  className="stageplot-item-label"
+                  style={{
+                    left: `${item.x * 100}%`,
+                    top: `${item.y * 100}%`,
+                    color: item.color ?? 'var(--text)',
+                    ['--label-dx' as string]: `${labelOffset.dx}px`,
+                    ['--label-dy' as string]: `${labelOffset.dy}px`,
+                  }}
+                >
+                  {item.label ? <span>{item.label}</span> : null}
+                  {item.channel ? <span className="stageplot-item-channel">Ch {item.channel}</span> : null}
+                </div>
+              ) : null}
             </Fragment>
           );
         })}
