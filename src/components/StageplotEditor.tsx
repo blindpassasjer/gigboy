@@ -467,7 +467,22 @@ export default function StageplotEditor({
 
   const updateItemFields = (itemId: string, patch: Partial<Pick<StageplotItem, 'label' | 'channel' | 'description' | 'stand' | 'noChannel'>>) => {
     if (!canEdit) return;
-    const nextItems = items.map((item) => (item.id === itemId ? { ...item, ...patch } : item));
+    const current = items.find((item) => item.id === itemId);
+    const nextPatch = { ...patch };
+    // Switching an item back to "needs a channel" should hand it the next
+    // free channel number right away, rather than leaving it blank for the
+    // user to fill in by hand.
+    if (patch.noChannel === false && current && !current.channel?.trim()) {
+      const usedChannels = new Set(
+        items
+          .map((item) => Number(item.channel?.trim()))
+          .filter((value) => Number.isFinite(value))
+      );
+      let nextChannel = 1;
+      while (usedChannels.has(nextChannel)) nextChannel += 1;
+      nextPatch.channel = String(nextChannel);
+    }
+    const nextItems = items.map((item) => (item.id === itemId ? { ...item, ...nextPatch } : item));
     setItems(nextItems);
     void persistContent(nextItems, drawingLayers);
   };
