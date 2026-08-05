@@ -11758,8 +11758,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-instrument-icon--item {
-  width: 44px;
-  height: 44px;
+  width: 96px;
+  height: 96px;
 }
 
 .stageplot-toolbar-input--custom {
@@ -11788,9 +11788,9 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .stageplot-item-channel {
   display: block;
-  font-size: .56rem;
+  font-size: .6rem;
   font-weight: 700;
-  color: var(--muted);
+  color: rgba(255, 255, 255, .85);
   text-transform: uppercase;
   letter-spacing: .02em;
 }
@@ -12014,8 +12014,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   justify-content: center;
   transform: translate(-50%, -50%);
-  width: 72px;
-  height: 72px;
+  width: 96px;
+  height: 96px;
   padding: 0;
   border: none;
   background: none;
@@ -12066,11 +12066,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--accent) 55%, var(--border));
 }
 
-/* Sits on top of the icon, inset from its edges, so the label reads as
-   part of the icon's artwork rather than a separate element beside it. */
+/* Sits on top of the icon, inset from its edges, styled like text
+   silkscreened onto the gear itself rather than a UI label glued on top. */
 .stageplot-item-text {
   position: absolute;
-  inset: 10px;
+  inset: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12083,11 +12083,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 .stageplot-item-text span {
   max-width: 100%;
   overflow-wrap: anywhere;
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
-  color: var(--text);
-  padding: .02rem .3rem;
-  border-radius: 4px;
-  font-size: .62rem;
+  color: #fff;
+  text-shadow:
+    0 1px 1px rgba(0, 0, 0, .6),
+    0 0 3px rgba(0, 0, 0, .45),
+    0 0 1px rgba(0, 0, 0, .8);
+  font-size: .68rem;
   font-weight: 800;
   line-height: 1.15;
 }
@@ -12151,26 +12152,25 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .stageplot-item {
-    width: 56px;
-    height: 56px;
+    width: 72px;
+    height: 72px;
   }
 
   .stageplot-item-text {
-    inset: 6px;
+    inset: 10px;
   }
 
   .stageplot-item-text span {
-    font-size: .52rem;
-    padding: 0 .2rem;
+    font-size: .58rem;
   }
 
   .stageplot-item-channel {
-    font-size: .46rem;
+    font-size: .5rem;
   }
 
   .stageplot-instrument-icon--item {
-    width: 56px;
-    height: 56px;
+    width: 72px;
+    height: 72px;
   }
 }
 
