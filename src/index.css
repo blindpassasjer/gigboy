@@ -12307,14 +12307,41 @@ input.stageplot-legend-number:focus {
   font-weight: 700;
 }
 
-.stageplot-legend-channel-toggle {
+.stageplot-channel-switch {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1.5px solid color-mix(in srgb, var(--muted) 50%, var(--border));
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.stageplot-legend-channel-toggle .instrument-toggle-btn {
-  padding: .12rem .4rem;
+.stageplot-channel-switch-track {
+  padding: .12rem .5rem;
   font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .01em;
   white-space: nowrap;
+  color: var(--muted);
+  transition: color .15s ease;
+}
+
+.stageplot-channel-switch--active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.stageplot-channel-switch--active .stageplot-channel-switch-track {
+  color: var(--accent-contrast);
+}
+
+.stageplot-channel-switch:hover {
+  border-color: var(--accent);
 }
 
 .stageplot-legend-label {

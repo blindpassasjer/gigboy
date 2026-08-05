@@ -187,24 +187,16 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
             <span className={numberClassName}>{badge.value}</span>
           )}
           {canEdit ? (
-            <div className="instrument-toggle stageplot-legend-channel-toggle" role="group" aria-label="Channel needed">
-              <button
-                type="button"
-                className={`instrument-toggle-btn${item.noChannel ? '' : ' instrument-toggle-btn--active'}`}
-                onClick={() => onCommit({ noChannel: false })}
-                title="Needs its own channel"
-              >
-                Ch
-              </button>
-              <button
-                type="button"
-                className={`instrument-toggle-btn${item.noChannel ? ' instrument-toggle-btn--active' : ''}`}
-                onClick={() => onCommit({ noChannel: true })}
-                title="Doesn't need its own channel (e.g. a player position — the amp gets the channel)"
-              >
-                No ch.
-              </button>
-            </div>
+            <button
+              type="button"
+              className={`stageplot-channel-switch${item.noChannel ? '' : ' stageplot-channel-switch--active'}`}
+              role="switch"
+              aria-checked={!item.noChannel}
+              onClick={() => onCommit({ noChannel: !item.noChannel })}
+              title={item.noChannel ? "Doesn't need its own channel (e.g. a player position — the amp gets the channel)" : 'Needs its own channel'}
+            >
+              <span className="stageplot-channel-switch-track">Channel</span>
+            </button>
           ) : null}
           <button
             type="button"
