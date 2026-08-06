@@ -911,10 +911,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 @keyframes tempo-pulse {
   0%, 100% {
-    opacity: 1;
+    background: var(--chord-bg);
+    color: var(--accent);
   }
   15% {
-    opacity: .25;
+    background: #3b82f6;
+    color: #fff;
   }
 }
 
