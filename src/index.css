@@ -11775,12 +11775,16 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-stage {
-  --stage-min-height: 56vh;
   --stage-max-width: 860px;
   position: relative;
   width: 100%;
   max-width: min(100%, var(--stage-max-width));
-  min-height: var(--stage-min-height);
+  /* Fixed aspect ratio (rather than a viewport-height-based min-height) so the
+     box's width:height proportions never change across screen sizes — only its
+     overall scale does. Items are positioned by x/y percentage of this box, so
+     a shifting aspect ratio was moving them relative to each other and to the
+     stage edges whenever the viewport changed. */
+  aspect-ratio: 16 / 9;
   min-width: 0;
   flex: 2 1 420px;
   margin-inline: 0;
@@ -11949,10 +11953,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .stageplot-item--public {
   pointer-events: none;
   cursor: default;
-}
-
-.stageplot-stage--public {
-  min-height: 60vh;
 }
 
 .stageplot-legend-group {
@@ -12242,10 +12242,6 @@ input.stageplot-legend-number:focus {
 
   .stageplot-palette-category {
     width: 100%;
-  }
-
-  .stageplot-stage {
-    --stage-min-height: 52vh;
   }
 
   .stageplot-palette {
