@@ -11900,46 +11900,55 @@ input, select, textarea { font: inherit; color: var(--text); }
   justify-content: center;
 }
 
-.stageplot-item .stageplot-rotation-handle {
+/* Both handles are sized to a comfortable touch target (~28px) even though
+   they read visually smaller, and use distinct shapes + icons (circle +
+   rotate arrow vs. rounded square + diagonal expand arrows) so the two
+   controls are never mistaken for each other. */
+.stageplot-item .stageplot-rotation-handle,
+.stageplot-item .stageplot-resize-handle {
   position: absolute;
-  left: 50%;
-  top: -20px;
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border: 2px solid color-mix(in srgb, var(--accent) 65%, #fff 35%);
   background: color-mix(in srgb, var(--surface) 60%, #fff 40%);
+  color: var(--accent);
   box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
-  transform: translateX(-50%);
-  cursor: grabbing;
   pointer-events: auto;
   touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stageplot-item .stageplot-rotation-handle {
+  left: 50%;
+  top: -38px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  cursor: grab;
+}
+
+.stageplot-item .stageplot-rotation-handle:active {
+  cursor: grabbing;
 }
 
 .stageplot-item .stageplot-rotation-handle::before {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -12px;
+  bottom: -14px;
   width: 1px;
-  height: 10px;
+  height: 12px;
   transform: translateX(-50%);
   background: color-mix(in srgb, var(--accent) 55%, var(--border));
 }
 
 .stageplot-item .stageplot-resize-handle {
-  position: absolute;
-  left: -6px;
-  bottom: -6px;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  border: 2px solid color-mix(in srgb, var(--accent) 65%, #fff 35%);
-  background: color-mix(in srgb, var(--surface) 60%, #fff 40%);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+  left: -12px;
+  bottom: -12px;
+  border-radius: 8px;
   cursor: nesw-resize;
-  pointer-events: auto;
-  touch-action: none;
   z-index: 2;
 }
 

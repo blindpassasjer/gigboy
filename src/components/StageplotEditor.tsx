@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
+import { Link2, PenLine, Plus, Trash2, Map, RotateCw, Maximize2 } from 'lucide-react';
 import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import toast from '../utils/anchoredToast';
@@ -390,10 +390,12 @@ export default function StageplotEditor({
   // patched in numerically rather than left blank for the user to fill in
   // by hand. Inputs and outputs (monitors/PA/subs/IEM) are numbered as two
   // separate sequences, matching how a real input list vs. monitor list works.
-  const nextAvailableChannel = (currentItems: StageplotItem[], isOutput: boolean): string => {
+  // Items currently marked "no channel" don't count as occupying their old
+  // number — that number is free for anyone else to claim while it's unused.
+  const nextAvailableChannel = (currentItems: StageplotItem[], isOutput: boolean, excludeItemId?: string): string => {
     const usedChannels = new Set(
       currentItems
-        .filter((item) => stageplotIsOutputKind(item.kind) === isOutput)
+        .filter((item) => item.id !== excludeItemId && !item.noChannel && stageplotIsOutputKind(item.kind) === isOutput)
         .map((item) => Number(item.channel?.trim()))
         .filter((value) => Number.isFinite(value))
     );
@@ -507,14 +509,28 @@ export default function StageplotEditor({
     if (!canEdit) return;
     const current = items.find((item) => item.id === itemId);
     const nextPatch = { ...patch };
-    // An item with no channel yet shows a position-based fallback number
-    // (e.g. "#3") that isn't actually stored. Freeze a real channel number
-    // the moment the toggle changes state in either direction — otherwise
-    // switching to "no channel" and back would silently swap that fallback
-    // display for a freshly computed "next available" number instead of the
-    // one the user was actually looking at.
-    if (typeof patch.noChannel === 'boolean' && current && !current.channel?.trim()) {
-      nextPatch.channel = nextAvailableChannel(items, stageplotIsOutputKind(current.kind));
+    if (typeof patch.noChannel === 'boolean' && current) {
+      const isOutput = stageplotIsOutputKind(current.kind);
+      if (patch.noChannel === true) {
+        // An item with no channel yet shows a position-based fallback number
+        // (e.g. "#3") that isn't actually stored — freeze a real one so
+        // there's something concrete to try to reclaim if it's switched back
+        // on before anyone else claims the number.
+        if (!current.channel?.trim()) {
+          nextPatch.channel = nextAvailableChannel(items, isOutput, itemId);
+        }
+      } else {
+        // Switching back on: reclaim the remembered number if it's still
+        // free, otherwise (another item claimed it while this one was
+        // channel-less) fall back to the next available number instead.
+        const remembered = current.channel?.trim();
+        const stillFree = remembered && !items.some((item) => (
+          item.id !== itemId && !item.noChannel && stageplotIsOutputKind(item.kind) === isOutput && item.channel?.trim() === remembered
+        ));
+        if (!stillFree) {
+          nextPatch.channel = nextAvailableChannel(items, isOutput, itemId);
+        }
+      }
     }
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, ...nextPatch } : item));
     setItems(nextItems);
@@ -938,7 +954,9 @@ export default function StageplotEditor({
                   aria-label="Rotate item"
                   title="Drag to rotate"
                   onPointerDown={(event) => rotateItemWithHandle(item.id, event)}
-                />
+                >
+                  <RotateCw size={13} strokeWidth={2.5} aria-hidden="true" />
+                </span>
               ) : null}
             </div>
             {canEdit && selectedItemId === item.id ? (
@@ -947,7 +965,9 @@ export default function StageplotEditor({
                 aria-label="Resize item"
                 title="Drag to resize"
                 onPointerDown={(event) => resizeItemWithHandle(item.id, event)}
-              />
+              >
+                <Maximize2 size={13} strokeWidth={2.5} aria-hidden="true" />
+              </span>
             ) : null}
             {item.noChannel ? null : (
               <span
