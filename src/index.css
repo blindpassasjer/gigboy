@@ -11672,7 +11672,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-direction: column;
   gap: 1.25rem;
   width: 100%;
-  max-width: 860px;
   min-width: 0;
 }
 
