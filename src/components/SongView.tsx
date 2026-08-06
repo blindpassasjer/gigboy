@@ -621,6 +621,13 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               >
                 <Metronome size={14} />
                 Metronome
+                {song.tempo ? (
+                  <span
+                    className="tempo-pulse-dot"
+                    style={{ animationDuration: `${60000 / song.tempo}ms` }}
+                    aria-hidden="true"
+                  />
+                ) : null}
               </button>
 
               {user && (
