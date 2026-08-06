@@ -190,6 +190,17 @@ export default function PublicBandRiderPage() {
     return <div className="public-setlist-page public-setlist-page--wide"><p className="public-setlist-status">Failed to load technical rider.</p></div>;
   }
 
+  const stageplotItems = stageplot?.items ?? [];
+  const stageplotInputListItems = stageplotItems
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => !stageplotIsOutputKind(item.kind) && !item.noChannel)
+    .sort(compareStageplotItemsByChannel);
+  const stageplotOutputListItems = stageplotItems
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => stageplotIsOutputKind(item.kind) && !item.noChannel)
+    .sort(compareStageplotItemsByChannel);
+  const stageplotReferenceItems = stageplotItems.filter((item) => item.noChannel === true);
+
   return (
     <main className="public-setlist-page public-setlist-page--wide technical-rider-public-page">
       <header className="public-setlist-header public-share-header">
@@ -269,55 +280,38 @@ export default function PublicBandRiderPage() {
               onMyStrokesChange={() => {}}
             />
           </div>
-          {stageplot.items.length > 0 ? (
-            (() => {
-              const inputListItems = stageplot.items
-                .map((item, index) => ({ item, index }))
-                .filter(({ item }) => !stageplotIsOutputKind(item.kind) && !item.noChannel)
-                .sort(compareStageplotItemsByChannel);
-              const outputListItems = stageplot.items
-                .map((item, index) => ({ item, index }))
-                .filter(({ item }) => stageplotIsOutputKind(item.kind) && !item.noChannel)
-                .sort(compareStageplotItemsByChannel);
-              const referenceItems = stageplot.items.filter((item) => item.noChannel === true);
-              return (
-                <>
-                  {inputListItems.length > 0 || outputListItems.length > 0 ? (
-                    <div className="stageplot-legend-section">
-                      {inputListItems.length > 0 ? (
-                        <div className="stageplot-legend-group">
-                          <div className="stageplot-legend-heading">Technical Inputs</div>
-                          <ol className="stageplot-legend">
-                            {inputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
-                          </ol>
-                        </div>
-                      ) : null}
-                      {inputListItems.length > 0 && outputListItems.length > 0 ? (
-                        <div className="stageplot-legend-divider" aria-hidden="true" />
-                      ) : null}
-                      {outputListItems.length > 0 ? (
-                        <div className="stageplot-legend-group">
-                          <div className="stageplot-legend-heading">Monitors</div>
-                          <ol className="stageplot-legend">
-                            {outputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
-                          </ol>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  {referenceItems.length > 0 ? (
-                    <div className="stageplot-reference-group">
-                      <div className="stageplot-legend-heading">Also on stage</div>
-                      <ul className="stageplot-reference-list">
-                        {referenceItems.map((item) => renderPublicReferenceRow(item))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </>
-              );
-            })()
+          {stageplotInputListItems.length > 0 || stageplotOutputListItems.length > 0 ? (
+            <div className="stageplot-legend-section">
+              {stageplotInputListItems.length > 0 ? (
+                <div className="stageplot-legend-group">
+                  <div className="stageplot-legend-heading">Technical Inputs</div>
+                  <ol className="stageplot-legend">
+                    {stageplotInputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
+                  </ol>
+                </div>
+              ) : null}
+              {stageplotInputListItems.length > 0 && stageplotOutputListItems.length > 0 ? (
+                <div className="stageplot-legend-divider" aria-hidden="true" />
+              ) : null}
+              {stageplotOutputListItems.length > 0 ? (
+                <div className="stageplot-legend-group">
+                  <div className="stageplot-legend-heading">Monitors</div>
+                  <ol className="stageplot-legend">
+                    {stageplotOutputListItems.map(({ item, index }) => renderPublicLegendRow(item, index))}
+                  </ol>
+                </div>
+              ) : null}
+            </div>
           ) : null}
           </div>
+          {stageplotReferenceItems.length > 0 ? (
+            <div className="stageplot-reference-group">
+              <div className="stageplot-legend-heading">Also on stage</div>
+              <ul className="stageplot-reference-list">
+                {stageplotReferenceItems.map((item) => renderPublicReferenceRow(item))}
+              </ul>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
