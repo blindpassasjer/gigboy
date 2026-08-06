@@ -1369,10 +1369,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-card-link {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: .5rem;
+  flex-direction: column;
+  gap: .25rem;
   min-width: 0;
   flex: 1;
   color: inherit;
@@ -8277,8 +8275,7 @@ input, select, textarea { font: inherit; color: var(--text); }
     flex: 1;
     justify-content: center;
   }
-  .song-card,
-  .song-card-link {
+  .song-card {
     align-items: flex-start;
   }
   .song-actions {
