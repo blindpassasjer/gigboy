@@ -210,10 +210,7 @@ export default function BandTechRiderPanel({
           id: activeRider.id,
           name: activeRider.name,
           icon: activeRider.icon,
-          lines: activeRider.lines,
-          preferredEquipment: activeRider.preferredEquipment,
-          inventoryEquipment: activeRider.inventoryEquipment,
-          monitorMixes: activeRider.monitorMixes ?? [],
+          items: activeRider.items ?? [],
           hospitalityNotes: activeRider.hospitalityNotes,
           updatedAt: activeRider.updatedAt,
         }],
@@ -457,10 +454,6 @@ export default function BandTechRiderPanel({
                   const error = await updateBandInputListContent({
                     bandId,
                     riderId: activeRider.id,
-                    lines: content.lines,
-                    preferredEquipment: content.preferredEquipment,
-                    inventoryEquipment: content.inventoryEquipment,
-                    monitorMixes: content.monitorMixes,
                     hospitalityNotes: content.hospitalityNotes,
                   });
                   if (error) { toast.error(error); throw new Error(error); }

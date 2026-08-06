@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link2, PenLine, Plus, Trash2, Map } from 'lucide-react';
 import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
+import toast from '../utils/anchoredToast';
 import {
   stageplotIconForKind,
   stageplotIconScaleForKind,
@@ -111,6 +112,9 @@ interface LegendItemRowProps {
   index: number;
   canEdit: boolean;
   selected: boolean;
+  /** Other items on the same list (inputs or outputs), used to block manually
+   * typing a channel number that's already claimed by a sibling. */
+  siblingItems: StageplotItem[];
   onSelect: () => void;
   onCommit: (patch: Partial<Pick<StageplotItem, 'label' | 'channel' | 'description' | 'stand' | 'noChannel'>>) => void;
   onRemove: () => void;
@@ -119,7 +123,7 @@ interface LegendItemRowProps {
 // Each legend row doubles as the editor for that item's channel info, with its
 // own local draft state so typing doesn't fight updates from sibling rows or
 // canvas drags. Edits commit on blur/Enter, matching the rest of the editor.
-function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onRemove }: LegendItemRowProps) {
+function LegendItemRow({ item, index, canEdit, selected, siblingItems, onSelect, onCommit, onRemove }: LegendItemRowProps) {
   const badge = stageplotItemBadge(item, index);
   const [label, setLabel] = useState(item.label);
   const [channel, setChannel] = useState(item.channel ?? '');
@@ -135,9 +139,19 @@ function LegendItemRow({ item, index, canEdit, selected, onSelect, onCommit, onR
 
   const commit = () => {
     const nextLabel = label.trim() || item.label;
-    const nextChannel = channel.trim();
+    let nextChannel = channel.trim();
     const nextDescription = description.trim();
     const nextStand = stand.trim();
+
+    if (nextChannel && nextChannel !== (item.channel ?? '')) {
+      const claimedBy = siblingItems.find((other) => other.id !== item.id && other.channel?.trim() === nextChannel);
+      if (claimedBy) {
+        toast.error(`Channel ${nextChannel} is already used by "${claimedBy.label || 'another item'}".`);
+        nextChannel = item.channel ?? '';
+        setChannel(nextChannel);
+      }
+    }
+
     if (
       nextLabel === item.label
       && nextChannel === (item.channel ?? '')
@@ -886,6 +900,7 @@ export default function StageplotEditor({
                     index={index}
                     canEdit={canEdit}
                     selected={selectedItemId === item.id}
+                    siblingItems={inputListItems.map(({ item: other }) => other)}
                     onSelect={() => setSelectedItemId(item.id)}
                     onCommit={(patch) => updateItemFields(item.id, patch)}
                     onRemove={() => removeItem(item.id)}
@@ -908,6 +923,7 @@ export default function StageplotEditor({
                     index={index}
                     canEdit={canEdit}
                     selected={selectedItemId === item.id}
+                    siblingItems={outputListItems.map(({ item: other }) => other)}
                     onSelect={() => setSelectedItemId(item.id)}
                     onCommit={(patch) => updateItemFields(item.id, patch)}
                     onRemove={() => removeItem(item.id)}
@@ -931,6 +947,7 @@ export default function StageplotEditor({
                   index={index}
                   canEdit={canEdit}
                   selected={selectedItemId === item.id}
+                  siblingItems={[]}
                   onSelect={() => setSelectedItemId(item.id)}
                   onCommit={(patch) => updateItemFields(item.id, patch)}
                   onRemove={() => removeItem(item.id)}

@@ -62,11 +62,6 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
     await setFirestoreDocument(ctx.env, ['bands', bandId, 'technicalRiders', riderId], {
       name: name.trim(),
       icon: undefined,
-      lines: [],
-      preferredEquipment: [],
-      inventoryEquipment: [],
-      stageShape: undefined,
-      stageSize: undefined,
       publicShareEnabled: false,
       bandName: band.name,
       sortOrder: existingRiders.length,

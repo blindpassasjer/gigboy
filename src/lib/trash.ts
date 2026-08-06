@@ -108,7 +108,7 @@ export function parseInputListTrashRecord(id: string, raw: Record<string, unknow
   if (!raw.data || typeof raw.data !== 'object') return null;
 
   const data = raw.data as InputList;
-  if (typeof data.id !== 'string' || typeof data.name !== 'string' || !Array.isArray(data.lines)) return null;
+  if (typeof data.id !== 'string' || typeof data.name !== 'string') return null;
 
   return {
     id,

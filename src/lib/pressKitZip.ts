@@ -1,4 +1,6 @@
 import JSZip from 'jszip';
+import type { StageplotItem } from '../types';
+import { stageplotIsOutputKind, stageplotItemBadge, compareStageplotItemsByChannel } from './stageplotIcons';
 
 export interface PressKitTextItem {
   title: string;
@@ -23,10 +25,9 @@ export interface PressKitRiderItem {
   id: string;
   name: string;
   icon?: string;
-  lines: Array<{ id?: string; name?: string; description?: string; stand?: string }>;
-  preferredEquipment: Array<{ id?: string; name?: string; description?: string }>;
-  inventoryEquipment: Array<{ id?: string; name?: string; description?: string }>;
-  monitorMixes?: Array<{ id?: string; name?: string; description?: string }>;
+  /** The stage plot's own items ARE the input list — channel/description/stand
+   * live on each item, grouped into inputs/monitors/reference for display. */
+  items?: StageplotItem[];
   hospitalityNotes?: string;
   updatedAt?: string;
 }
@@ -65,49 +66,52 @@ export function extensionFromUrl(url: string): string {
   return 'bin';
 }
 
+function formatChannelLine({ item, index }: { item: StageplotItem; index: number }): string {
+  const badge = stageplotItemBadge(item, index);
+  const name = item.label.trim() || 'Untitled item';
+  const details = [item.description?.trim(), item.stand?.trim() ? `stand: ${item.stand.trim()}` : null]
+    .filter(Boolean)
+    .join(', ');
+  return `- [${badge.value}] ${name}${details ? `: ${details}` : ''}`;
+}
+
+function formatReferenceLine(item: StageplotItem): string {
+  return `- ${item.label.trim() || 'Untitled item'}`;
+}
+
+// The stage plot's per-item channel/description/stand fields ARE the input
+// list now (there's no separate line-item table), so the exported rider text
+// mirrors the same Technical Inputs / Monitors / Also on Stage grouping the
+// app shows in the Stage Plot legend.
 export function riderAsText(rider: PressKitRiderItem): string {
-  const lines = rider.lines.map((line) => {
-    const name = (line.name ?? '').trim();
-    const description = (line.description ?? '').trim();
-    const stand = (line.stand ?? '').trim();
-    const details = [description, stand ? `stand: ${stand}` : null].filter(Boolean).join(', ');
-    return name ? `- ${name}${details ? `: ${details}` : ''}` : null;
-  }).filter((entry): entry is string => Boolean(entry));
+  const items = rider.items ?? [];
+  const inputItems = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => !stageplotIsOutputKind(item.kind) && !item.noChannel)
+    .sort(compareStageplotItemsByChannel);
+  const outputItems = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => stageplotIsOutputKind(item.kind) && !item.noChannel)
+    .sort(compareStageplotItemsByChannel);
+  const referenceItems = items.filter((item) => item.noChannel === true);
 
-  const preferred = rider.preferredEquipment.map((entry) => {
-    const name = (entry.name ?? '').trim();
-    const description = (entry.description ?? '').trim();
-    return name ? `- ${name}${description ? `: ${description}` : ''}` : null;
-  }).filter((entry): entry is string => Boolean(entry));
-
-  const inventory = rider.inventoryEquipment.map((entry) => {
-    const name = (entry.name ?? '').trim();
-    const description = (entry.description ?? '').trim();
-    return name ? `- ${name}${description ? `: ${description}` : ''}` : null;
-  }).filter((entry): entry is string => Boolean(entry));
-
-  const monitorMixes = (rider.monitorMixes ?? []).map((entry) => {
-    const name = (entry.name ?? '').trim();
-    const description = (entry.description ?? '').trim();
-    return name ? `- ${name}${description ? `: ${description}` : ''}` : null;
-  }).filter((entry): entry is string => Boolean(entry));
+  const inputs = inputItems.map(formatChannelLine);
+  const outputs = outputItems.map(formatChannelLine);
+  const reference = referenceItems.map(formatReferenceLine);
 
   const hospitalityNotes = (rider.hospitalityNotes ?? '').trim();
 
   return [
-    `Input List: ${rider.name}`,
+    `Technical Rider: ${rider.name}`,
     '',
-    'Lines',
-    lines.length > 0 ? lines.join('\n') : '- None',
+    'Technical Inputs',
+    inputs.length > 0 ? inputs.join('\n') : '- None',
     '',
-    'Preferred Equipment',
-    preferred.length > 0 ? preferred.join('\n') : '- None',
+    'Monitors',
+    outputs.length > 0 ? outputs.join('\n') : '- None',
     '',
-    'Inventory Equipment',
-    inventory.length > 0 ? inventory.join('\n') : '- None',
-    '',
-    'Monitoring',
-    monitorMixes.length > 0 ? monitorMixes.join('\n') : '- None',
+    'Also on Stage',
+    reference.length > 0 ? reference.join('\n') : '- None',
     '',
     'Hospitality & Logistics',
     hospitalityNotes || '- None',

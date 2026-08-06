@@ -1,4 +1,4 @@
-import type { RiderEquipmentItem, InputList, InputListLine, StageplotItem, SongHandNoteDocument } from '../types';
+import type { InputList, StageplotItem, SongHandNoteDocument } from '../types';
 
 function normalizeStageplotItem(raw: unknown): StageplotItem | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -41,33 +41,6 @@ function normalizeDrawingLayer(raw: unknown): SongHandNoteDocument | null {
   };
 }
 
-function normalizeLine(raw: unknown): InputListLine | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const data = raw as Record<string, unknown>;
-  if (typeof data.id !== 'string') return null;
-
-  return {
-    id: data.id,
-    name: typeof data.name === 'string' ? data.name : 'Line',
-    description: typeof data.description === 'string' ? data.description : '',
-    stand: typeof data.stand === 'string' ? data.stand : undefined,
-    sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : undefined,
-  };
-}
-
-function normalizeEquipmentItem(raw: unknown): RiderEquipmentItem | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const data = raw as Record<string, unknown>;
-  if (typeof data.id !== 'string') return null;
-
-  return {
-    id: data.id,
-    name: typeof data.name === 'string' ? data.name : 'Item',
-    description: typeof data.description === 'string' ? data.description : undefined,
-    sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : undefined,
-  };
-}
-
 function compareBySortOrderThenName<T extends { sortOrder?: number; name?: string }>(a: T, b: T) {
   const aSortOrder = typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
   const bSortOrder = typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
@@ -79,52 +52,11 @@ function compareBySortOrderThenName<T extends { sortOrder?: number; name?: strin
   return (a.name ?? '').localeCompare(b.name ?? '');
 }
 
-function withSequentialSortOrder<T extends { sortOrder?: number }>(entries: T[]) {
-  return entries.map((entry, index) => ({ ...entry, sortOrder: index }));
-}
-
 export function normalizeInputList(id: string, raw: Record<string, unknown>): InputList {
-  const linesRaw = Array.isArray(raw.lines) ? raw.lines : [];
-  const preferredRaw = Array.isArray(raw.preferredEquipment) ? raw.preferredEquipment : [];
-  const inventoryRaw = Array.isArray(raw.inventoryEquipment) ? raw.inventoryEquipment : [];
-  const monitorMixesRaw = Array.isArray(raw.monitorMixes) ? raw.monitorMixes : [];
-
-  const lines = withSequentialSortOrder(
-    linesRaw
-      .map(normalizeLine)
-      .filter((entry): entry is InputListLine => Boolean(entry))
-      .sort(compareBySortOrderThenName)
-  );
-
-  const preferredEquipment = withSequentialSortOrder(
-    preferredRaw
-      .map(normalizeEquipmentItem)
-      .filter((entry): entry is RiderEquipmentItem => Boolean(entry))
-      .sort(compareBySortOrderThenName)
-  );
-
-  const inventoryEquipment = withSequentialSortOrder(
-    inventoryRaw
-      .map(normalizeEquipmentItem)
-      .filter((entry): entry is RiderEquipmentItem => Boolean(entry))
-      .sort(compareBySortOrderThenName)
-  );
-
-  const monitorMixes = withSequentialSortOrder(
-    monitorMixesRaw
-      .map(normalizeEquipmentItem)
-      .filter((entry): entry is RiderEquipmentItem => Boolean(entry))
-      .sort(compareBySortOrderThenName)
-  );
-
   return {
     id,
     name: typeof raw.name === 'string' ? raw.name : 'Untitled rider',
     icon: typeof raw.icon === 'string' ? raw.icon : undefined,
-    lines,
-    preferredEquipment,
-    inventoryEquipment,
-    monitorMixes,
     items: Array.isArray(raw.items)
       ? raw.items.map(normalizeStageplotItem).filter((entry): entry is StageplotItem => Boolean(entry))
       : [],
@@ -159,12 +91,4 @@ export function sortInputLists(riders: InputList[]) {
 
 export function withSequentialInputListSortOrder(riders: InputList[]) {
   return riders.map((rider, index) => ({ ...rider, sortOrder: index }));
-}
-
-export function withSequentialRiderLineSortOrder(lines: InputListLine[]) {
-  return withSequentialSortOrder(lines);
-}
-
-export function withSequentialRiderEquipmentSortOrder(items: RiderEquipmentItem[]) {
-  return withSequentialSortOrder(items);
 }

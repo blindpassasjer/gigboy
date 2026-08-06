@@ -132,8 +132,6 @@ export async function getPublicPressKitData(
       name: typeof stageplot.name === 'string' ? stageplot.name : 'Untitled stageplot',
       icon: typeof stageplot.icon === 'string' ? stageplot.icon : undefined,
       items: Array.isArray(stageplot.items) ? stageplot.items : [],
-      stageShape: typeof stageplot.stageShape === 'string' ? stageplot.stageShape : undefined,
-      stageSize: typeof stageplot.stageSize === 'string' ? stageplot.stageSize : undefined,
       updatedAt: typeof stageplot.updatedAt === 'string' ? stageplot.updatedAt : undefined,
     });
   }
@@ -146,9 +144,8 @@ export async function getPublicPressKitData(
       id: riderId,
       name: typeof rider.name === 'string' ? rider.name : 'Untitled rider',
       icon: typeof rider.icon === 'string' ? rider.icon : undefined,
-      lines: Array.isArray(rider.lines) ? rider.lines : [],
-      preferredEquipment: Array.isArray(rider.preferredEquipment) ? rider.preferredEquipment : [],
-      inventoryEquipment: Array.isArray(rider.inventoryEquipment) ? rider.inventoryEquipment : [],
+      items: Array.isArray(rider.items) ? rider.items : [],
+      hospitalityNotes: typeof rider.hospitalityNotes === 'string' ? rider.hospitalityNotes : undefined,
       updatedAt: typeof rider.updatedAt === 'string' ? rider.updatedAt : undefined,
     });
   }

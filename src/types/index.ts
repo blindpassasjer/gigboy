@@ -139,34 +139,12 @@ export interface Stageplot extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export interface InputListLine {
-  id: string;
-  name: string;
-  description: string;
-  /** Stand/clip requirement for this input, e.g. "Short boom", "Tall boom + clip", "Clip". */
-  stand?: string;
-  sortOrder?: number;
-}
-
-export interface RiderEquipmentItem {
-  id: string;
-  name: string;
-  description?: string;
-  sortOrder?: number;
-}
-
 export interface InputList extends CollaborationMetadata {
   id: string;
   name: string;
   icon?: string;
-  lines: InputListLine[];
-  preferredEquipment: RiderEquipmentItem[];
-  inventoryEquipment: RiderEquipmentItem[];
-  /** Monitor mixes: one entry per wedge/IEM mix. `name` holds the mix position
-   * (e.g. "Vocal / guitar — downstage stage left"), `description` holds the
-   * priority order (e.g. "Vocal · guitar · kick and snare · bass"). */
-  monitorMixes?: RiderEquipmentItem[];
-  /** Stageplot canvas items embedded in this technical rider. */
+  /** Stageplot canvas items embedded in this technical rider. Each item's channel/
+   * description/stand fields ARE the input list — there is no separate line-item table. */
   items?: StageplotItem[];
   /** Stageplot freehand drawing layers embedded in this technical rider. */
   drawingLayers?: SongHandNoteDocument[];

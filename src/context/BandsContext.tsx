@@ -50,8 +50,6 @@ import {
 import {
   normalizeInputList,
   sortInputLists,
-  withSequentialRiderEquipmentSortOrder,
-  withSequentialRiderLineSortOrder,
   withSequentialInputListSortOrder,
 } from '../lib/inputLists';
 import { useAuth } from './AuthContext';
@@ -457,10 +455,6 @@ interface BandsContextValue {
   updateBandInputListContent: (params: {
     bandId: string;
     riderId: string;
-    lines: InputList['lines'];
-    preferredEquipment: InputList['preferredEquipment'];
-    inventoryEquipment: InputList['inventoryEquipment'];
-    monitorMixes: InputList['monitorMixes'];
     hospitalityNotes: string;
   }) => Promise<string | null>;
   updateBandInputListStageplotContent: (params: {
@@ -2691,9 +2685,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       const newRider: InputList = {
         id: response.riderId,
         name: trimmed,
-        lines: [],
-        preferredEquipment: [],
-        inventoryEquipment: [],
         ownerId: band.ownerId,
         accessRole: 'owner',
         bandName: band.name,
@@ -2837,13 +2828,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const updateBandInputListContent = useCallback(async (params: {
     bandId: string;
     riderId: string;
-    lines: InputList['lines'];
-    preferredEquipment: InputList['preferredEquipment'];
-    inventoryEquipment: InputList['inventoryEquipment'];
-    monitorMixes: InputList['monitorMixes'];
     hospitalityNotes: string;
   }) => {
-    const { bandId, riderId, lines, preferredEquipment, inventoryEquipment, monitorMixes, hospitalityNotes } = params;
+    const { bandId, riderId, hospitalityNotes } = params;
 
     if (!db || !userId) {
       return 'Band riders require cloud sync.';
@@ -2864,17 +2851,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       rider.id === riderId
         ? {
             ...rider,
-            lines: withSequentialRiderLineSortOrder(lines),
-            preferredEquipment: withSequentialRiderEquipmentSortOrder(preferredEquipment),
-            inventoryEquipment: withSequentialRiderEquipmentSortOrder(inventoryEquipment),
-            monitorMixes: withSequentialRiderEquipmentSortOrder(monitorMixes ?? []),
             hospitalityNotes: hospitalityNotes || undefined,
             updatedAt: now,
           }
         : rider
     ));
-
-    const next = nextRiders.find((rider) => rider.id === riderId);
 
     setBandInputListsByBandId((prev) => ({
       ...prev,
@@ -2883,10 +2864,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_INPUT_LISTS_COLLECTION, riderId), {
-        lines: (next?.lines ?? []).map(stripUndefinedFields),
-        preferredEquipment: (next?.preferredEquipment ?? []).map(stripUndefinedFields),
-        inventoryEquipment: (next?.inventoryEquipment ?? []).map(stripUndefinedFields),
-        monitorMixes: (next?.monitorMixes ?? []).map(stripUndefinedFields),
         hospitalityNotes: hospitalityNotes || deleteField(),
         updatedAt: now,
       }, { merge: true });

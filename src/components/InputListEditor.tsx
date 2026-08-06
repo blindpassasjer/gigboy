@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link2, Trash2, PenLine, ClipboardList } from 'lucide-react';
-import type { RiderEquipmentItem, InputList, InputListLine } from '../types';
+import type { InputList } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
 
@@ -12,10 +12,6 @@ interface Props {
   onDelete?: () => Promise<void> | void;
   onUpdateIcon: (icon?: string) => Promise<void> | void;
   onSaveContent: (params: {
-    lines: InputListLine[];
-    preferredEquipment: RiderEquipmentItem[];
-    inventoryEquipment: RiderEquipmentItem[];
-    monitorMixes: RiderEquipmentItem[];
     hospitalityNotes: string;
   }) => Promise<void> | void;
   onCopyPublicLink: () => Promise<void> | void;
@@ -128,13 +124,7 @@ export default function InputListEditor({
     saveRequestIdRef.current = requestId;
 
     const timer = setTimeout(() => {
-      void Promise.resolve(onSaveContent({
-        lines: rider.lines,
-        preferredEquipment: rider.preferredEquipment,
-        inventoryEquipment: rider.inventoryEquipment,
-        monitorMixes: rider.monitorMixes ?? [],
-        hospitalityNotes,
-      }))
+      void Promise.resolve(onSaveContent({ hospitalityNotes }))
         .then(() => {
           if (requestId !== saveRequestIdRef.current) return;
           setSaveState('saved');
