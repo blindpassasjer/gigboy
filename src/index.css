@@ -11669,12 +11669,10 @@ input, select, textarea { font: inherit; color: var(--text); }
    channel-list column beside it. Stack the legend below the canvas instead
    of letting it fight for space on the same row. */
 .stageplot-content-row {
-  --stage-max-width: 860px;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   width: 100%;
-  max-width: var(--stage-max-width);
   min-width: 0;
 }
 
@@ -11807,10 +11805,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-stage {
-  --stage-max-width: 860px;
   position: relative;
   width: 100%;
-  max-width: min(100%, var(--stage-max-width));
   /* Fixed aspect ratio (rather than a viewport-height-based min-height) so the
      box's width:height proportions never change across screen sizes — only its
      overall scale does. Items are positioned by x/y percentage of this box, so

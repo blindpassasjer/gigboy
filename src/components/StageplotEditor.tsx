@@ -887,7 +887,7 @@ export default function StageplotEditor({
           );
         })}
         </div>
-      {(inputListItems.length > 0 || outputListItems.length > 0) ? (
+      {(inputListItems.length > 0 || outputListItems.length > 0 || referenceListItems.length > 0) ? (
         <div className="stageplot-legend-section">
           {inputListItems.length > 0 ? (
             <div className="stageplot-legend-group">
@@ -909,7 +909,7 @@ export default function StageplotEditor({
               </ol>
             </div>
           ) : null}
-          {inputListItems.length > 0 && outputListItems.length > 0 ? (
+          {inputListItems.length > 0 && (outputListItems.length > 0 || referenceListItems.length > 0) ? (
             <div className="stageplot-legend-divider" aria-hidden="true" />
           ) : null}
           {outputListItems.length > 0 ? (
@@ -932,31 +932,32 @@ export default function StageplotEditor({
               </ol>
             </div>
           ) : null}
+          {outputListItems.length > 0 && referenceListItems.length > 0 ? (
+            <div className="stageplot-legend-divider" aria-hidden="true" />
+          ) : null}
+          {referenceListItems.length > 0 ? (
+            <div className="stageplot-legend-group">
+              <div className="stageplot-legend-heading">Also on stage</div>
+              <ol className="stageplot-legend">
+                {referenceListItems.map(({ item, index }) => (
+                  <LegendItemRow
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    canEdit={canEdit}
+                    selected={selectedItemId === item.id}
+                    siblingItems={[]}
+                    onSelect={() => setSelectedItemId(item.id)}
+                    onCommit={(patch) => updateItemFields(item.id, patch)}
+                    onRemove={() => removeItem(item.id)}
+                  />
+                ))}
+              </ol>
+            </div>
+          ) : null}
         </div>
       ) : null}
       </div>
-      {referenceListItems.length > 0 ? (
-        <div className="stageplot-legend-section">
-          <div className="stageplot-legend-group">
-            <div className="stageplot-legend-heading">Also on stage</div>
-            <ol className="stageplot-legend">
-              {referenceListItems.map(({ item, index }) => (
-                <LegendItemRow
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  canEdit={canEdit}
-                  selected={selectedItemId === item.id}
-                  siblingItems={[]}
-                  onSelect={() => setSelectedItemId(item.id)}
-                  onCommit={(patch) => updateItemFields(item.id, patch)}
-                  onRemove={() => removeItem(item.id)}
-                />
-              ))}
-            </ol>
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }
