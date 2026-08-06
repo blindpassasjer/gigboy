@@ -903,6 +903,33 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .1rem .45rem;
 }
 
+.song-meta-badge--pulse {
+  animation-name: tempo-pulse;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes tempo-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  12% {
+    transform: scale(1.14);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .song-meta-badge--pulse {
+    animation: none;
+  }
+}
+
 /* ─── Song List ─────────────────────────────────────────────────────────────── */
 .song-list-page {
   display: flex;
