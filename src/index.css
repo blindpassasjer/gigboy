@@ -11626,6 +11626,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .tech-rider-panels {
   --sticky-header-content-gap: .75rem;
   display: grid;
+  grid-template-columns: 1fr;
   gap: 1rem;
   align-items: start;
   scroll-margin-top: 8rem;
