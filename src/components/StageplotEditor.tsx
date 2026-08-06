@@ -332,17 +332,23 @@ export default function StageplotEditor({
 
   // Split for the legend: most items feed a numbered input channel, but a
   // few (monitors, PA, subs, IEM) are outputs from the desk and belong on
-  // their own list rather than mixed in with input channel numbers.
+  // their own list rather than mixed in with input channel numbers. Items
+  // toggled to "no channel" (e.g. a player position) move out of both
+  // numbered lists into their own reference list.
   const inputListItems = useMemo(
     () => items.map((item, index) => ({ item, index }))
-      .filter(({ item }) => !stageplotIsOutputKind(item.kind))
+      .filter(({ item }) => !stageplotIsOutputKind(item.kind) && !item.noChannel)
       .sort(compareStageplotItemsByChannel),
     [items]
   );
   const outputListItems = useMemo(
     () => items.map((item, index) => ({ item, index }))
-      .filter(({ item }) => stageplotIsOutputKind(item.kind))
+      .filter(({ item }) => stageplotIsOutputKind(item.kind) && !item.noChannel)
       .sort(compareStageplotItemsByChannel),
+    [items]
+  );
+  const referenceListItems = useMemo(
+    () => items.map((item, index) => ({ item, index })).filter(({ item }) => item.noChannel),
     [items]
   );
 
@@ -913,6 +919,27 @@ export default function StageplotEditor({
         </div>
       ) : null}
       </div>
+      {referenceListItems.length > 0 ? (
+        <div className="stageplot-legend-section">
+          <div className="stageplot-legend-group">
+            <div className="stageplot-legend-heading">Also on stage</div>
+            <ol className="stageplot-legend">
+              {referenceListItems.map(({ item, index }) => (
+                <LegendItemRow
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  canEdit={canEdit}
+                  selected={selectedItemId === item.id}
+                  onSelect={() => setSelectedItemId(item.id)}
+                  onCommit={(patch) => updateItemFields(item.id, patch)}
+                  onRemove={() => removeItem(item.id)}
+                />
+              ))}
+            </ol>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
