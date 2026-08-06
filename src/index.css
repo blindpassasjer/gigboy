@@ -2520,9 +2520,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-toolbar-tool-btn--has-content::after {
   content: '';
-  position: absolute;
-  top: .3rem;
-  right: .3rem;
+  display: inline-block;
   width: .4rem;
   height: .4rem;
   border-radius: 50%;
