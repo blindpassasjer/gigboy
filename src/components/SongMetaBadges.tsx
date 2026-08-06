@@ -21,12 +21,13 @@ export default function SongMetaBadges({ song, counts }: Props) {
         </span>
       )}
       {song.tempo ? (
-        <span
-          className="song-meta-badge song-meta-badge--pulse"
-          style={{ animationDuration: `${60000 / song.tempo}ms` }}
-          title={`Tempo: ${song.tempo} BPM`}
-        >
-          <Gauge size={11} /> {song.tempo}
+        <span className="song-meta-badge" title={`Tempo: ${song.tempo} BPM`}>
+          <span
+            className="song-meta-badge-pulse"
+            style={{ animationDuration: `${60000 / song.tempo}ms` }}
+          >
+            <Gauge size={11} /> {song.tempo}
+          </span>
         </span>
       ) : null}
       {counts && counts.notes > 0 && (

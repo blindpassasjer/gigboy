@@ -903,7 +903,11 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .1rem .45rem;
 }
 
-.song-meta-badge--pulse {
+.song-meta-badge-pulse {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  color: inherit;
   animation-name: tempo-pulse;
   animation-timing-function: ease-out;
   animation-iteration-count: infinite;
@@ -911,17 +915,15 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 @keyframes tempo-pulse {
   0%, 100% {
-    background: var(--chord-bg);
-    color: var(--accent);
+    color: inherit;
   }
   15% {
-    background: #3b82f6;
-    color: #fff;
+    color: #3b82f6;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .song-meta-badge--pulse {
+  .song-meta-badge-pulse {
     animation: none;
   }
 }
