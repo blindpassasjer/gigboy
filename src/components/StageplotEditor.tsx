@@ -6,10 +6,13 @@ import { showConfirmToast } from '../utils/toastDialogs';
 import toast from '../utils/anchoredToast';
 import {
   stageplotIconForKind,
-  stageplotIconScaleForKind,
+  stageplotItemDisplayScale,
   stageplotItemBadge,
+  stageplotItemBadgeCorner,
   stageplotIsOutputKind,
   compareStageplotItemsByChannel,
+  STAGEPLOT_ITEM_SCALE_MIN,
+  STAGEPLOT_ITEM_SCALE_MAX,
 } from '../lib/stageplotIcons';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
 import { clamp01 } from '../lib/lineAnchor';
@@ -504,10 +507,13 @@ export default function StageplotEditor({
     if (!canEdit) return;
     const current = items.find((item) => item.id === itemId);
     const nextPatch = { ...patch };
-    // Switching an item back to "needs a channel" should hand it the next
-    // free channel number right away, rather than leaving it blank for the
-    // user to fill in by hand.
-    if (patch.noChannel === false && current && !current.channel?.trim()) {
+    // An item with no channel yet shows a position-based fallback number
+    // (e.g. "#3") that isn't actually stored. Freeze a real channel number
+    // the moment the toggle changes state in either direction — otherwise
+    // switching to "no channel" and back would silently swap that fallback
+    // display for a freshly computed "next available" number instead of the
+    // one the user was actually looking at.
+    if (typeof patch.noChannel === 'boolean' && current && !current.channel?.trim()) {
       nextPatch.channel = nextAvailableChannel(items, stageplotIsOutputKind(current.kind));
     }
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, ...nextPatch } : item));
@@ -560,6 +566,66 @@ export default function StageplotEditor({
             ? {
                 ...item,
                 rotation: nextRotation,
+              }
+            : item
+        ));
+        latestItems = next;
+        return next;
+      });
+    };
+
+    const release = () => {
+      target.removeEventListener('pointermove', move);
+      target.removeEventListener('pointerup', release);
+      target.removeEventListener('pointercancel', release);
+      void persistContent(latestItems, drawingLayers);
+    };
+
+    target.addEventListener('pointermove', move);
+    target.addEventListener('pointerup', release, { once: true });
+    target.addEventListener('pointercancel', release, { once: true });
+  };
+
+  const resizeItemWithHandle = (itemId: string, event: React.PointerEvent<HTMLSpanElement>) => {
+    if (!canEdit) return;
+
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const target = event.currentTarget;
+    const pointerId = event.pointerId;
+    target.setPointerCapture(pointerId);
+
+    const rect = stage.getBoundingClientRect();
+    const targetItem = items.find((item) => item.id === itemId);
+    if (!targetItem) return;
+
+    const centerX = rect.left + (targetItem.x * rect.width);
+    const centerY = rect.top + (targetItem.y * rect.height);
+    // Distance from the item's center to the pointer at drag start, so
+    // subsequent movement scales relative to where the handle was grabbed
+    // rather than jumping to an absolute size.
+    const startDistance = Math.max(1, Math.hypot(event.clientX - centerX, event.clientY - centerY));
+    const startScale = typeof targetItem.scale === 'number' && Number.isFinite(targetItem.scale) ? targetItem.scale : 1;
+
+    let latestItems = items;
+
+    const move = (moveEvent: PointerEvent) => {
+      const distance = Math.hypot(moveEvent.clientX - centerX, moveEvent.clientY - centerY);
+      const nextScale = Math.min(
+        STAGEPLOT_ITEM_SCALE_MAX,
+        Math.max(STAGEPLOT_ITEM_SCALE_MIN, startScale * (distance / startDistance))
+      );
+
+      setItems((prev) => {
+        const next = prev.map((item) => (
+          item.id === itemId
+            ? {
+                ...item,
+                scale: nextScale,
               }
             : item
         ));
@@ -845,7 +911,7 @@ export default function StageplotEditor({
               left: `${item.x * 100}%`,
               top: `${item.y * 100}%`,
               color: item.color ?? 'var(--text)',
-              ['--item-scale' as string]: stageplotIconScaleForKind(item.kind),
+              ['--item-scale' as string]: stageplotItemDisplayScale(item),
             }}
             onPointerDown={(event) => {
               event.preventDefault();
@@ -875,9 +941,17 @@ export default function StageplotEditor({
                 />
               ) : null}
             </div>
+            {canEdit && selectedItemId === item.id ? (
+              <span
+                className="stageplot-resize-handle"
+                aria-label="Resize item"
+                title="Drag to resize"
+                onPointerDown={(event) => resizeItemWithHandle(item.id, event)}
+              />
+            ) : null}
             {item.noChannel ? null : (
               <span
-                className={`stageplot-item-number${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
+                className={`stageplot-item-number stageplot-item-number--${stageplotItemBadgeCorner(item, items)}${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
                 aria-hidden="true"
               >
                 {badge.value}

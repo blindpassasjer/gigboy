@@ -8,8 +8,9 @@ import type { InputList, SongHandNoteDocument, StageplotItem } from '../types';
 import SongHandNotesOverlay from '../components/SongHandNotesOverlay';
 import {
   stageplotIconForKind,
-  stageplotIconScaleForKind,
+  stageplotItemDisplayScale,
   stageplotItemBadge,
+  stageplotItemBadgeCorner,
   stageplotIsOutputKind,
   compareStageplotItemsByChannel,
 } from '../lib/stageplotIcons';
@@ -34,6 +35,7 @@ function normalizeItem(raw: unknown): StageplotItem | null {
     rotation: typeof data.rotation === 'number' && Number.isFinite(data.rotation)
       ? ((data.rotation % 360) + 360) % 360
       : 0,
+    scale: typeof data.scale === 'number' && Number.isFinite(data.scale) ? data.scale : undefined,
     color: typeof data.color === 'string' ? data.color : undefined,
     channel: typeof data.channel === 'string' ? data.channel : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,
@@ -247,7 +249,7 @@ export default function PublicBandRiderPage() {
                   left: `${item.x * 100}%`,
                   top: `${item.y * 100}%`,
                   color: item.color ?? 'var(--text)',
-                  ['--item-scale' as string]: stageplotIconScaleForKind(item.kind),
+                  ['--item-scale' as string]: stageplotItemDisplayScale(item),
                 }}
               >
                 <div
@@ -263,7 +265,7 @@ export default function PublicBandRiderPage() {
                 </div>
                 {item.noChannel ? null : (
                   <span
-                    className={`stageplot-item-number${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
+                    className={`stageplot-item-number stageplot-item-number--${stageplotItemBadgeCorner(item, stageplot.items)}${badge.isChannel ? (stageplotIsOutputKind(item.kind) ? ' stageplot-item-number--output' : ' stageplot-item-number--input') : ' stageplot-item-number--index'}`}
                     aria-hidden="true"
                   >
                     {badge.value}

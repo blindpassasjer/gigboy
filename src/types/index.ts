@@ -110,6 +110,9 @@ export interface StageplotItem {
   x: number;
   y: number;
   rotation?: number;
+  /** User-adjustable size multiplier on top of the kind's base icon scale,
+   * set by dragging the item's resize handle. Defaults to 1 when unset. */
+  scale?: number;
   color?: string;
   /** Input-list channel number/name this item feeds, e.g. "8" or "10". Free text so it
    * can hold non-numeric channel labels too. */

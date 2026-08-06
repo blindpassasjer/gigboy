@@ -13,6 +13,7 @@ function normalizeStageplotItem(raw: unknown): StageplotItem | null {
     rotation: typeof data.rotation === 'number' && Number.isFinite(data.rotation)
       ? ((data.rotation % 360) + 360) % 360
       : 0,
+    scale: typeof data.scale === 'number' && Number.isFinite(data.scale) ? data.scale : undefined,
     color: typeof data.color === 'string' ? data.color : undefined,
     channel: typeof data.channel === 'string' ? data.channel : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,

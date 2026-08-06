@@ -11927,14 +11927,28 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--accent) 55%, var(--border));
 }
 
+.stageplot-item .stageplot-resize-handle {
+  position: absolute;
+  left: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 2px solid color-mix(in srgb, var(--accent) 65%, #fff 35%);
+  background: color-mix(in srgb, var(--surface) 60%, #fff 40%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+  cursor: nesw-resize;
+  pointer-events: auto;
+  touch-action: none;
+  z-index: 2;
+}
+
 /* Small badge pinned to the icon's corner; cross-references the legend list.
    Solid fill = mixer channel number. Outlined "#n" = no channel assigned yet,
    just the item's position — kept visually distinct so the two are never
    mistaken for each other. */
 .stageplot-item-number {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
   min-width: 19px;
   height: 19px;
   padding: 0 3px;
@@ -11949,6 +11963,29 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-weight: 800;
   line-height: 1;
   z-index: 1;
+}
+
+/* Corner the badge is pinned to — steered away from the nearest other item
+   so two close-together items don't have their badges overlap each other
+   or sit on top of the neighboring icon. */
+.stageplot-item-number--br {
+  right: -4px;
+  bottom: -4px;
+}
+
+.stageplot-item-number--bl {
+  left: -4px;
+  bottom: -4px;
+}
+
+.stageplot-item-number--tr {
+  right: -4px;
+  top: -4px;
+}
+
+.stageplot-item-number--tl {
+  left: -4px;
+  top: -4px;
 }
 
 .stageplot-item-number--index {

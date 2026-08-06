@@ -83,6 +83,16 @@ export function stageplotIconScaleForKind(kind: string) {
   return ICON_SCALE_BY_KIND[kind] ?? 1;
 }
 
+export const STAGEPLOT_ITEM_SCALE_MIN = 0.5;
+export const STAGEPLOT_ITEM_SCALE_MAX = 2.5;
+
+// Combines the kind's base proportional scale with the user's own resize-handle
+// adjustment (defaults to 1x when the item has never been resized).
+export function stageplotItemDisplayScale(item: StageplotItem): number {
+  const userScale = typeof item.scale === 'number' && Number.isFinite(item.scale) ? item.scale : 1;
+  return stageplotIconScaleForKind(item.kind) * userScale;
+}
+
 // Most stage items feed a channel on the input list (mics, DI'd instruments,
 // amps). A few instead receive signal from the desk — monitors, PA, subs,
 // IEM packs — and belong on a separate output list rather than being mixed
@@ -103,6 +113,40 @@ export function stageplotItemBadge(
 ): { value: string; isChannel: boolean } {
   const channel = item.channel?.trim();
   return channel ? { value: channel, isChannel: true } : { value: `#${index + 1}`, isChannel: false };
+}
+
+// Items dragged close together (e.g. a bassist standing right at their amp)
+// would otherwise always pin their channel badge to the same bottom-right
+// corner, overlapping the neighboring item or its own badge. Steer the badge
+// to whichever corner points away from the nearest other item instead, only
+// kicking in once items are close enough to actually collide.
+const BADGE_COLLISION_DISTANCE = 0.1;
+
+export type StageplotBadgeCorner = 'tl' | 'tr' | 'bl' | 'br';
+
+export function stageplotItemBadgeCorner(
+  item: StageplotItem,
+  items: StageplotItem[]
+): StageplotBadgeCorner {
+  let nearest: StageplotItem | null = null;
+  let nearestDistance = Infinity;
+  for (const other of items) {
+    if (other.id === item.id) continue;
+    const distance = Math.hypot(other.x - item.x, other.y - item.y);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearest = other;
+    }
+  }
+
+  if (!nearest || nearestDistance > BADGE_COLLISION_DISTANCE) return 'br';
+
+  const neighborIsRight = nearest.x >= item.x;
+  const neighborIsBelow = nearest.y >= item.y;
+  if (neighborIsRight && neighborIsBelow) return 'tl';
+  if (!neighborIsRight && neighborIsBelow) return 'tr';
+  if (neighborIsRight && !neighborIsBelow) return 'bl';
+  return 'br';
 }
 
 // Orders legend rows the way a sound engineer reads an input list: numbered
