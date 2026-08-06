@@ -11637,10 +11637,13 @@ input, select, textarea { font: inherit; color: var(--text); }
   white-space: nowrap;
 }
 
+/* The canvas now holds a fixed aspect ratio (see .stageplot-stage), so at
+   typical page widths it alone fills the row — leaving no real room for the
+   channel-list column beside it. Stack the legend below the canvas instead
+   of letting it fight for space on the same row. */
 .stageplot-content-row {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 1.25rem;
   width: 100%;
   min-width: 0;
@@ -11649,7 +11652,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .stageplot-legend-section {
   display: flex;
   gap: 1.25rem;
-  flex: 1 1 320px;
+  width: 100%;
   min-width: 0;
   padding: .8rem;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
@@ -11786,7 +11789,7 @@ input, select, textarea { font: inherit; color: var(--text); }
      stage edges whenever the viewport changed. */
   aspect-ratio: 16 / 9;
   min-width: 0;
-  flex: 2 1 420px;
+  flex: none;
   margin-inline: 0;
   border-radius: 14px;
   border: 1px solid var(--border);

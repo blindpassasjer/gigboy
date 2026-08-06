@@ -362,12 +362,15 @@ export default function StageplotEditor({
     }
   }, [onSaveContent]);
 
-  // Lowest channel number not already claimed by another item, so new items
-  // (or items switched back to needing a channel) get patched in numerically
-  // rather than left blank for the user to fill in by hand.
-  const nextAvailableChannel = (currentItems: StageplotItem[]): string => {
+  // Lowest channel number not already claimed by another item on the same
+  // list, so new items (or items switched back to needing a channel) get
+  // patched in numerically rather than left blank for the user to fill in
+  // by hand. Inputs and outputs (monitors/PA/subs/IEM) are numbered as two
+  // separate sequences, matching how a real input list vs. monitor list works.
+  const nextAvailableChannel = (currentItems: StageplotItem[], isOutput: boolean): string => {
     const usedChannels = new Set(
       currentItems
+        .filter((item) => stageplotIsOutputKind(item.kind) === isOutput)
         .map((item) => Number(item.channel?.trim()))
         .filter((value) => Number.isFinite(value))
     );
@@ -384,7 +387,7 @@ export default function StageplotEditor({
     x,
     y,
     rotation: 0,
-    channel: nextAvailableChannel(items),
+    channel: nextAvailableChannel(items, stageplotIsOutputKind(template.kind)),
   });
 
   const addItemAtPosition = (template: { kind: string; label: string; color: string }, x: number, y: number) => {
@@ -485,7 +488,7 @@ export default function StageplotEditor({
     // free channel number right away, rather than leaving it blank for the
     // user to fill in by hand.
     if (patch.noChannel === false && current && !current.channel?.trim()) {
-      nextPatch.channel = nextAvailableChannel(items);
+      nextPatch.channel = nextAvailableChannel(items, stageplotIsOutputKind(current.kind));
     }
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, ...nextPatch } : item));
     setItems(nextItems);
