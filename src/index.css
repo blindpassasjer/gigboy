@@ -903,34 +903,34 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: .1rem .45rem;
 }
 
-.song-meta-badge-pulse {
-  display: inline-flex;
-  align-items: center;
-  gap: .2rem;
-  color: inherit;
+.tempo-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: .3rem;
+  border-radius: 50%;
+  background: #3b82f6;
+  opacity: .25;
   animation-name: tempo-pulse;
   animation-timing-function: ease-out;
   animation-iteration-count: infinite;
 }
 
 @keyframes tempo-pulse {
-  0% {
+  0%, 100% {
+    opacity: .25;
     transform: scale(1);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
   }
   12% {
-    transform: scale(1.14);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 0%, transparent);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 transparent;
+    opacity: 1;
+    transform: scale(1.4);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .song-meta-badge-pulse {
+  .tempo-pulse-dot {
     animation: none;
+    opacity: 1;
   }
 }
 

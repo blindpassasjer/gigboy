@@ -5,9 +5,10 @@ import type { SongBadgeCounts } from '../hooks/useSongListBadges';
 interface Props {
   song: Song;
   counts?: SongBadgeCounts;
+  pulseTempo?: boolean;
 }
 
-export default function SongMetaBadges({ song, counts }: Props) {
+export default function SongMetaBadges({ song, counts, pulseTempo = false }: Props) {
   const hasAny =
     song.tempo || song.key || (counts && (counts.notes > 0 || counts.attachments > 0 || counts.recordings > 0));
 
@@ -22,12 +23,14 @@ export default function SongMetaBadges({ song, counts }: Props) {
       )}
       {song.tempo ? (
         <span className="song-meta-badge" title={`Tempo: ${song.tempo} BPM`}>
-          <span
-            className="song-meta-badge-pulse"
-            style={{ animationDuration: `${60000 / song.tempo}ms` }}
-          >
-            <Gauge size={11} /> {song.tempo}
-          </span>
+          <Gauge size={11} /> {song.tempo}
+          {pulseTempo && (
+            <span
+              className="tempo-pulse-dot"
+              style={{ animationDuration: `${60000 / song.tempo}ms` }}
+              aria-hidden="true"
+            />
+          )}
         </span>
       ) : null}
       {counts && counts.notes > 0 && (

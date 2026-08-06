@@ -539,7 +539,7 @@ export default function SetlistsView({
                           {tag}
                         </span>
                       ))}
-                      <SongMetaBadges song={song} counts={songBadgeCounts[song.id]} />
+                      <SongMetaBadges song={song} counts={songBadgeCounts[song.id]} pulseTempo />
                     </div>
                   </Link>
 
