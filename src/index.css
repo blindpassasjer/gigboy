@@ -11672,6 +11672,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   flex-direction: column;
   gap: 1.25rem;
   width: 100%;
+  max-width: 860px;
   min-width: 0;
 }
 
@@ -11793,8 +11794,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-instrument-icon--item {
-  width: calc(48px * var(--item-scale, 1));
-  height: calc(48px * var(--item-scale, 1));
+  width: calc(clamp(22px, 5.6cqw, 48px) * var(--item-scale, 1));
+  height: calc(clamp(22px, 5.6cqw, 48px) * var(--item-scale, 1));
 }
 
 .stageplot-instrument-icon--legend {
@@ -11804,6 +11805,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .stageplot-stage {
+  container-type: inline-size;
   position: relative;
   width: 100%;
   max-width: 100%;
@@ -11873,8 +11875,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   align-items: center;
   justify-content: center;
   transform: translate(-50%, -50%);
-  width: calc(60px * var(--item-scale, 1));
-  height: calc(60px * var(--item-scale, 1));
+  width: calc(clamp(28px, 7cqw, 60px) * var(--item-scale, 1));
+  height: calc(clamp(28px, 7cqw, 60px) * var(--item-scale, 1));
   padding: 0;
   border: none;
   background: none;
