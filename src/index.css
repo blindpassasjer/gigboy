@@ -11806,6 +11806,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .stageplot-stage {
   position: relative;
   width: 100%;
+  max-width: 640px;
   /* Fixed aspect ratio (rather than a viewport-height-based min-height) so the
      box's width:height proportions never change across screen sizes — only its
      overall scale does. Items are positioned by x/y percentage of this box, so
