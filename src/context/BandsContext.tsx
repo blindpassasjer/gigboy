@@ -456,6 +456,7 @@ interface BandsContextValue {
     bandId: string;
     riderId: string;
     hospitalityNotes: string;
+    logisticsNotes: string;
   }) => Promise<string | null>;
   updateBandInputListStageplotContent: (params: {
     bandId: string;
@@ -2829,8 +2830,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     bandId: string;
     riderId: string;
     hospitalityNotes: string;
+    logisticsNotes: string;
   }) => {
-    const { bandId, riderId, hospitalityNotes } = params;
+    const { bandId, riderId, hospitalityNotes, logisticsNotes } = params;
 
     if (!db || !userId) {
       return 'Band riders require cloud sync.';
@@ -2852,6 +2854,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         ? {
             ...rider,
             hospitalityNotes: hospitalityNotes || undefined,
+            logisticsNotes: logisticsNotes || undefined,
             updatedAt: now,
           }
         : rider
@@ -2865,6 +2868,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     try {
       await setDoc(doc(db, BANDS_COLLECTION, bandId, BAND_INPUT_LISTS_COLLECTION, riderId), {
         hospitalityNotes: hospitalityNotes || deleteField(),
+        logisticsNotes: logisticsNotes || deleteField(),
         updatedAt: now,
       }, { merge: true });
       return null;

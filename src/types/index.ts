@@ -151,8 +151,10 @@ export interface InputList extends CollaborationMetadata {
   items?: StageplotItem[];
   /** Stageplot freehand drawing layers embedded in this technical rider. */
   drawingLayers?: SongHandNoteDocument[];
-  /** Free-text hospitality/load-in/logistics notes for venues (parking, contact, power, catering, etc). */
+  /** Free-text hospitality notes for venues (catering, green room, drink/rider requests, etc). */
   hospitalityNotes?: string;
+  /** Free-text logistics notes for venues (load-in time, parking, on-site contact, power, etc). */
+  logisticsNotes?: string;
   publicShareEnabled?: boolean;
   /** Band name denormalized for unauthenticated public reads. */
   bandName?: string;

@@ -29,6 +29,7 @@ export interface PressKitRiderItem {
    * live on each item, grouped into inputs/monitors/reference for display. */
   items?: StageplotItem[];
   hospitalityNotes?: string;
+  logisticsNotes?: string;
   updatedAt?: string;
 }
 
@@ -100,6 +101,7 @@ export function riderAsText(rider: PressKitRiderItem): string {
   const reference = referenceItems.map(formatReferenceLine);
 
   const hospitalityNotes = (rider.hospitalityNotes ?? '').trim();
+  const logisticsNotes = (rider.logisticsNotes ?? '').trim();
 
   return [
     `Technical Rider: ${rider.name}`,
@@ -113,7 +115,10 @@ export function riderAsText(rider: PressKitRiderItem): string {
     'Also on Stage',
     reference.length > 0 ? reference.join('\n') : '- None',
     '',
-    'Hospitality & Logistics',
+    'Logistics',
+    logisticsNotes || '- None',
+    '',
+    'Hospitality',
     hospitalityNotes || '- None',
   ].join('\n');
 }

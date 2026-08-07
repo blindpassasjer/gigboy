@@ -212,6 +212,7 @@ export default function BandTechRiderPanel({
           icon: activeRider.icon,
           items: activeRider.items ?? [],
           hospitalityNotes: activeRider.hospitalityNotes,
+          logisticsNotes: activeRider.logisticsNotes,
           updatedAt: activeRider.updatedAt,
         }],
         texts: [],
@@ -455,6 +456,7 @@ export default function BandTechRiderPanel({
                     bandId,
                     riderId: activeRider.id,
                     hospitalityNotes: content.hospitalityNotes,
+                    logisticsNotes: content.logisticsNotes,
                   });
                   if (error) { toast.error(error); throw new Error(error); }
                 }}

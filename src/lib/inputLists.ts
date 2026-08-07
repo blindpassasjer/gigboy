@@ -65,6 +65,7 @@ export function normalizeInputList(id: string, raw: Record<string, unknown>): In
       ? raw.drawingLayers.map(normalizeDrawingLayer).filter((entry): entry is SongHandNoteDocument => Boolean(entry))
       : [],
     hospitalityNotes: typeof raw.hospitalityNotes === 'string' ? raw.hospitalityNotes : undefined,
+    logisticsNotes: typeof raw.logisticsNotes === 'string' ? raw.logisticsNotes : undefined,
     publicShareEnabled: raw.publicShareEnabled === true ? true : undefined,
     bandName: typeof raw.bandName === 'string' ? raw.bandName : undefined,
     sortOrder: typeof raw.sortOrder === 'number' ? raw.sortOrder : undefined,

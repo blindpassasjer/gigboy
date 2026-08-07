@@ -317,9 +317,16 @@ export default function PublicBandRiderPage() {
         </section>
       ) : null}
 
+        {rider.logisticsNotes ? (
+          <section className="technical-rider-section technical-rider-public-section">
+            <h2>Logistics</h2>
+            <p className="technical-rider-notes-view">{rider.logisticsNotes}</p>
+          </section>
+        ) : null}
+
         {rider.hospitalityNotes ? (
           <section className="technical-rider-section technical-rider-public-section">
-            <h2>Hospitality & Logistics</h2>
+            <h2>Hospitality</h2>
             <p className="technical-rider-notes-view">{rider.hospitalityNotes}</p>
           </section>
         ) : null}

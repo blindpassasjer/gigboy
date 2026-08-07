@@ -146,6 +146,7 @@ export async function getPublicPressKitData(
       icon: typeof rider.icon === 'string' ? rider.icon : undefined,
       items: Array.isArray(rider.items) ? rider.items : [],
       hospitalityNotes: typeof rider.hospitalityNotes === 'string' ? rider.hospitalityNotes : undefined,
+      logisticsNotes: typeof rider.logisticsNotes === 'string' ? rider.logisticsNotes : undefined,
       updatedAt: typeof rider.updatedAt === 'string' ? rider.updatedAt : undefined,
     });
   }
