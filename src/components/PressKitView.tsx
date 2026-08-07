@@ -1155,8 +1155,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
           <div className="press-kit-section-card">
             <section className="press-kit-videos-section">
               <header className="press-kit-section-header">
-                <p className="press-kit-section-title">Videos</p>
-                {canEdit && <p className="press-kit-section-hint">Add videos and choose which ones are included in the public share link.</p>}
+                <p className="press-kit-section-title">Music & Videos</p>
+                {canEdit && <p className="press-kit-section-hint">Add videos, tracks, and playlists, and choose which ones are included in the public share link.</p>}
               </header>
               <div className="setlist-notes-editor">
                 {canEdit && (

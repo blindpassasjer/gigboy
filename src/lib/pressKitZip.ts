@@ -146,7 +146,7 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
       `Input Lists: ${payload.riders.length}`,
       `Texts: ${payload.texts.length}`,
       `Images: ${payload.images.length}`,
-      `Videos: ${videoUrls.length}`,
+      `Music & Videos: ${videoUrls.length}`,
       `Presave links: ${presaveUrls.length}`,
     ].join('\n')
   );

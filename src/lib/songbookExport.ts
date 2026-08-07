@@ -141,7 +141,7 @@ function addPressKitsFolder(zip: JSZip, kits: PressKit[], imagesById: Map<string
         'Attached images (see ../../images):',
         attachedImageNames.length > 0 ? attachedImageNames.map((t) => `- ${t}`).join('\n') : '- None',
         '',
-        'Videos:',
+        'Music & Videos:',
         videoUrls.length > 0 ? videoUrls.map((u) => `- ${u}`).join('\n') : '- None',
         '',
         'Presaves:',
