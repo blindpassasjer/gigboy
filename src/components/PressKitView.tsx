@@ -936,6 +936,9 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         </div>
 
         <div className="press-kit-body-columns">
+          {/* ── Text + Presave ────────────────────────────────────────────── */}
+          <div className="press-kit-column-stack">
+
           <div className="press-kit-section-card">
             <section className="press-kit-text-section">
               <header className="press-kit-section-header">
@@ -964,9 +967,6 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
               </div>
             </section>
           </div>
-
-          {/* ── Presave + Images + Videos ────────────────────────────────── */}
-          <div className="press-kit-column-stack">
 
           <div className="press-kit-section-card press-kit-section-card--presave">
             <section className="press-kit-videos-section">
@@ -1066,6 +1066,11 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
               </div>
             </section>
           </div>
+
+          </div>
+
+          {/* ── Images + Videos ──────────────────────────────────────────── */}
+          <div className="press-kit-column-stack">
 
           <div className="press-kit-section-card">
           <section className="press-kit-images-section">
