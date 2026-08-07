@@ -965,8 +965,108 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
             </section>
           </div>
 
-          {/* ── Images + Videos ─────────────────────────────────────────── */}
+          {/* ── Presave + Images + Videos ────────────────────────────────── */}
           <div className="press-kit-column-stack">
+
+          <div className="press-kit-section-card press-kit-section-card--presave">
+            <section className="press-kit-videos-section">
+              <header className="press-kit-section-header">
+                <p className="press-kit-section-title">Presave / Upcoming Release</p>
+                {canEdit && <p className="press-kit-section-hint">Announce an unreleased track and add presave links for each platform.</p>}
+              </header>
+              <div className="setlist-notes-editor">
+                {canEdit && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      value={presaveReleaseName}
+                      onChange={(e) => setPresaveReleaseName(e.target.value)}
+                      onBlur={() => void savePresaveMeta(presaveReleaseName, presaveReleaseDate)}
+                      placeholder="Release name (e.g. New Single — Out Sept 12)"
+                      className="press-kit-video-url-input"
+                      style={{ flex: '2 1 220px' }}
+                    />
+                    <input
+                      type="date"
+                      value={presaveReleaseDate}
+                      onChange={(e) => setPresaveReleaseDate(e.target.value)}
+                      onBlur={() => void savePresaveMeta(presaveReleaseName, presaveReleaseDate)}
+                      className="press-kit-video-url-input"
+                      style={{ flex: '1 1 160px' }}
+                    />
+                  </div>
+                )}
+
+                {canEdit && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <input
+                      type="url"
+                      value={newPresaveUrl}
+                      onChange={(e) => setNewPresaveUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          void addPresaveUrl();
+                        }
+                      }}
+                      placeholder="Spotify, Apple Music, or smart link"
+                      className="press-kit-video-url-input"
+                    />
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      onClick={() => void addPresaveUrl()}
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
+
+                {presaveUrls.length === 0 ? (
+                  <p className="bands-status">No presave links added yet.</p>
+                ) : (
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {presaveUrls.map((url) => {
+                      const selected = selectedPresaveUrls.includes(url);
+                      return (
+                        <li key={url} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', padding: '0.4rem 0.6rem' }}>
+                          {canEdit && (
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={(e) => { void togglePresaveSelection(url, e.target.checked); }}
+                              title="Include in public share"
+                            />
+                          )}
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', flexShrink: 0 }}>{detectPresavePlatformLabel(url)}</span>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
+                          <button
+                            type="button"
+                            className="title-rename-btn"
+                            title="Copy URL"
+                            onClick={() => { void handleCopyUrl(url); }}
+                          >
+                            <Copy size={13} />
+                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              className="title-rename-btn"
+                              title="Remove presave link"
+                              onClick={() => { void removePresaveUrl(url); }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </section>
+          </div>
+
           <div className="press-kit-section-card">
           <section className="press-kit-images-section">
             <header className="press-kit-section-header">
@@ -1284,105 +1384,6 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                       );
                     })}
                   </div>
-                )}
-              </div>
-            </section>
-          </div>
-
-          <div className="press-kit-section-card">
-            <section className="press-kit-videos-section">
-              <header className="press-kit-section-header">
-                <p className="press-kit-section-title">Presave / Upcoming Release</p>
-                {canEdit && <p className="press-kit-section-hint">Announce an unreleased track and add presave links for each platform.</p>}
-              </header>
-              <div className="setlist-notes-editor">
-                {canEdit && (
-                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                    <input
-                      type="text"
-                      value={presaveReleaseName}
-                      onChange={(e) => setPresaveReleaseName(e.target.value)}
-                      onBlur={() => void savePresaveMeta(presaveReleaseName, presaveReleaseDate)}
-                      placeholder="Release name (e.g. New Single — Out Sept 12)"
-                      className="press-kit-video-url-input"
-                      style={{ flex: '2 1 220px' }}
-                    />
-                    <input
-                      type="date"
-                      value={presaveReleaseDate}
-                      onChange={(e) => setPresaveReleaseDate(e.target.value)}
-                      onBlur={() => void savePresaveMeta(presaveReleaseName, presaveReleaseDate)}
-                      className="press-kit-video-url-input"
-                      style={{ flex: '1 1 160px' }}
-                    />
-                  </div>
-                )}
-
-                {canEdit && (
-                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                    <input
-                      type="url"
-                      value={newPresaveUrl}
-                      onChange={(e) => setNewPresaveUrl(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          void addPresaveUrl();
-                        }
-                      }}
-                      placeholder="Spotify, Apple Music, or smart link"
-                      className="press-kit-video-url-input"
-                    />
-                    <button
-                      type="button"
-                      className="setlist-action-btn setlist-action-btn--secondary"
-                      onClick={() => void addPresaveUrl()}
-                    >
-                      Add
-                    </button>
-                  </div>
-                )}
-
-                {presaveUrls.length === 0 ? (
-                  <p className="bands-status">No presave links added yet.</p>
-                ) : (
-                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    {presaveUrls.map((url) => {
-                      const selected = selectedPresaveUrls.includes(url);
-                      return (
-                        <li key={url} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', padding: '0.4rem 0.6rem' }}>
-                          {canEdit && (
-                            <input
-                              type="checkbox"
-                              checked={selected}
-                              onChange={(e) => { void togglePresaveSelection(url, e.target.checked); }}
-                              title="Include in public share"
-                            />
-                          )}
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', flexShrink: 0 }}>{detectPresavePlatformLabel(url)}</span>
-                          <span style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
-                          <button
-                            type="button"
-                            className="title-rename-btn"
-                            title="Copy URL"
-                            onClick={() => { void handleCopyUrl(url); }}
-                          >
-                            <Copy size={13} />
-                          </button>
-                          {canEdit && (
-                            <button
-                              type="button"
-                              className="title-rename-btn"
-                              title="Remove presave link"
-                              onClick={() => { void removePresaveUrl(url); }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
                 )}
               </div>
             </section>

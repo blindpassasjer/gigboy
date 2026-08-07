@@ -238,6 +238,31 @@ export default function PublicBandPressKitPage() {
       </header>
 
       <div className="public-presskit-body">
+        {hasPresaves && (
+          <section className="public-presskit-videos-section public-presskit-presave-section">
+            <h2 className="public-presskit-section-heading">
+              {payload.presaveReleaseName || 'Presave the upcoming release'}
+            </h2>
+            {payload.presaveReleaseDate ? (
+              <p className="public-setlist-count">Out {payload.presaveReleaseDate}</p>
+            ) : null}
+            <ul className="public-presskit-presave-list">
+              {payload.presaveUrls.map((url) => (
+                <li key={url} className="public-presskit-presave-item">
+                  <a href={url} target="_blank" rel="noreferrer" className="public-presskit-presave-link">
+                    <span className="public-presskit-presave-platform">{detectPresavePlatformLabel(url)}</span>
+                    <span className="public-presskit-presave-url">{url}</span>
+                  </a>
+                  <button type="button" className="public-presskit-dl-btn" onClick={() => void handleCopyVideoUrl(url)}>
+                    <Copy size={13} />
+                    <span>{copiedVideoUrl === url ? 'Copied' : 'Copy URL'}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {hasTexts && (
           <section className="public-presskit-texts-section">
             <div className="public-presskit-text-grid">
@@ -368,31 +393,6 @@ export default function PublicBandPressKitPage() {
                 return null;
               })}
             </div>
-          </section>
-        )}
-
-        {hasPresaves && (
-          <section className="public-presskit-videos-section">
-            <h2 className="public-presskit-section-heading">
-              {payload.presaveReleaseName || 'Presave the upcoming release'}
-            </h2>
-            {payload.presaveReleaseDate ? (
-              <p className="public-setlist-count">Out {payload.presaveReleaseDate}</p>
-            ) : null}
-            <ul className="public-presskit-presave-list">
-              {payload.presaveUrls.map((url) => (
-                <li key={url} className="public-presskit-presave-item">
-                  <a href={url} target="_blank" rel="noreferrer" className="public-presskit-presave-link">
-                    <span className="public-presskit-presave-platform">{detectPresavePlatformLabel(url)}</span>
-                    <span className="public-presskit-presave-url">{url}</span>
-                  </a>
-                  <button type="button" className="public-presskit-dl-btn" onClick={() => void handleCopyVideoUrl(url)}>
-                    <Copy size={13} />
-                    <span>{copiedVideoUrl === url ? 'Copied' : 'Copy URL'}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
           </section>
         )}
 
