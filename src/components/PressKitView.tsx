@@ -18,7 +18,7 @@ import type { PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { bandCanUse } from '../lib/planLimits';
-import { parsePressKitMedia, detectPresavePlatformLabel } from '../utils/pressKitMedia';
+import { parsePressKitMedia, detectPresavePlatformLabel, normalizePresaveUrl } from '../utils/pressKitMedia';
 
 interface PressKitImageAsset {
   id: string;
@@ -632,10 +632,15 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   const savePresaveState = async (nextPresaveUrls: string[], nextSelectedPresaveUrls: string[]) => {
     if (!db || !canEdit) return;
-    const validUrls = nextPresaveUrls.map((u) => u.trim()).filter(Boolean);
+    const cleanedUrls = nextPresaveUrls.map((u) => u.trim()).filter(Boolean);
+    const validUrls = cleanedUrls.filter((url) => normalizePresaveUrl(url));
     const validSelected = nextSelectedPresaveUrls
       .map((u) => u.trim())
       .filter((url) => validUrls.includes(url));
+
+    if (validUrls.length !== cleanedUrls.length) {
+      toast.error('Some links were ignored. Use a full URL (e.g. https://open.spotify.com/...).');
+    }
 
     try {
       await setDoc(
@@ -658,13 +663,19 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     const trimmed = newPresaveUrl.trim();
     if (!trimmed) return;
 
-    if (presaveUrls.includes(trimmed)) {
+    const normalized = normalizePresaveUrl(trimmed);
+    if (!normalized) {
+      toast.error('Use a valid link, e.g. https://open.spotify.com/... or a smart link.');
+      return;
+    }
+
+    if (presaveUrls.includes(normalized)) {
       toast.error('That link is already added.');
       return;
     }
 
-    const nextUrls = [...presaveUrls, trimmed];
-    const nextSelected = [...selectedPresaveUrls, trimmed];
+    const nextUrls = [...presaveUrls, normalized];
+    const nextSelected = [...selectedPresaveUrls, normalized];
     setNewPresaveUrl('');
     await savePresaveState(nextUrls, nextSelected);
   };

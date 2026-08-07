@@ -164,3 +164,16 @@ export function detectPresavePlatformLabel(rawUrl: string): string {
   const entry = PRESAVE_PLATFORM_HOSTS.find(({ match }) => match(host));
   return entry?.label ?? 'Link';
 }
+
+/**
+ * Validates a presave link isn't an embeddable-media URL (those go through
+ * parsePressKitMedia) and returns it as an absolute http(s) URL, or null if
+ * it doesn't look like a real domain (e.g. plain text with no dot).
+ */
+export function normalizePresaveUrl(rawUrl: string): string | null {
+  const url = normalizeUrl(rawUrl);
+  if (!url) return null;
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+  if (!url.hostname.includes('.')) return null;
+  return url.toString();
+}
