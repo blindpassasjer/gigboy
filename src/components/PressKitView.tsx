@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useEditor, useEditorState, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Link2Off, Download, Trash2, PenLine, Newspaper, X, ArrowDownToLine, GripVertical } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Link2Off, Download, Trash2, PenLine, Newspaper, X, ArrowDownToLine, GripVertical, Copy } from 'lucide-react';
 import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
@@ -18,7 +18,7 @@ import type { PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { bandCanUse } from '../lib/planLimits';
-import { parsePressKitMedia } from '../utils/pressKitMedia';
+import { parsePressKitMedia, detectPresavePlatformLabel } from '../utils/pressKitMedia';
 
 interface PressKitImageAsset {
   id: string;
@@ -530,7 +530,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
       .filter((url) => validUrls.includes(url));
 
     if (validUrls.length !== cleanedUrls.length) {
-      toast.error('Some links were ignored. Only YouTube, Vimeo, VEVO, and Spotify URLs are supported.');
+      toast.error('Some links were ignored. Only YouTube, Vimeo, VEVO, Spotify, and SoundCloud URLs are supported.');
     }
 
     try {
@@ -555,7 +555,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     if (!trimmed) return;
 
     if (!parsePressKitMedia(trimmed)) {
-      toast.error('Use a valid YouTube, Vimeo, VEVO, or Spotify link.');
+      toast.error('Use a valid YouTube, Vimeo, VEVO, Spotify, or SoundCloud link.');
       return;
     }
 
@@ -586,6 +586,102 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const toggleAllVideos = async (selectAll: boolean) => {
     await saveVideoState(videoUrls, selectAll ? [...videoUrls] : []);
   };
+
+  const handleCopyUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copied.');
+    } catch {
+      toast.error(`Failed to copy. Copy this link: ${url}`);
+    }
+  };
+
+  // ── Presaves / upcoming release ─────────────────────────────────────────
+  const [presaveReleaseName, setPresaveReleaseName] = useState(kit.presaveReleaseName ?? '');
+  const [presaveReleaseDate, setPresaveReleaseDate] = useState(kit.presaveReleaseDate ?? '');
+  const [presaveUrls, setPresaveUrls] = useState<string[]>(kit.presaveUrls ?? []);
+  const [selectedPresaveUrls, setSelectedPresaveUrls] = useState<string[]>(
+    kit.selectedPresaveUrls ?? kit.presaveUrls ?? [],
+  );
+  const [newPresaveUrl, setNewPresaveUrl] = useState('');
+
+  useEffect(() => {
+    setPresaveReleaseName(kit.presaveReleaseName ?? '');
+    setPresaveReleaseDate(kit.presaveReleaseDate ?? '');
+    const nextPresaveUrls = kit.presaveUrls ?? [];
+    const nextSelected = kit.selectedPresaveUrls ?? nextPresaveUrls;
+    setPresaveUrls(nextPresaveUrls);
+    setSelectedPresaveUrls(nextSelected.filter((url) => nextPresaveUrls.includes(url)));
+  }, [kit.id, kit.presaveReleaseName, kit.presaveReleaseDate, kit.presaveUrls, kit.selectedPresaveUrls]);
+
+  const savePresaveMeta = async (nextName: string, nextDate: string) => {
+    if (!db || !canEdit) return;
+    try {
+      await setDoc(
+        doc(db, 'bands', bandId, 'pressKits', kit.id),
+        {
+          presaveReleaseName: nextName.trim() || null,
+          presaveReleaseDate: nextDate || null,
+        },
+        { merge: true },
+      );
+    } catch {
+      toast.error('Failed to save release info.');
+    }
+  };
+
+  const savePresaveState = async (nextPresaveUrls: string[], nextSelectedPresaveUrls: string[]) => {
+    if (!db || !canEdit) return;
+    const validUrls = nextPresaveUrls.map((u) => u.trim()).filter(Boolean);
+    const validSelected = nextSelectedPresaveUrls
+      .map((u) => u.trim())
+      .filter((url) => validUrls.includes(url));
+
+    try {
+      await setDoc(
+        doc(db, 'bands', bandId, 'pressKits', kit.id),
+        {
+          presaveUrls: validUrls.length > 0 ? validUrls : null,
+          selectedPresaveUrls: validSelected.length > 0 ? validSelected : null,
+        },
+        { merge: true },
+      );
+      setPresaveUrls(validUrls);
+      setSelectedPresaveUrls(validSelected);
+    } catch {
+      toast.error('Failed to save presave links.');
+    }
+  };
+
+  const addPresaveUrl = async () => {
+    if (!canEdit) return;
+    const trimmed = newPresaveUrl.trim();
+    if (!trimmed) return;
+
+    if (presaveUrls.includes(trimmed)) {
+      toast.error('That link is already added.');
+      return;
+    }
+
+    const nextUrls = [...presaveUrls, trimmed];
+    const nextSelected = [...selectedPresaveUrls, trimmed];
+    setNewPresaveUrl('');
+    await savePresaveState(nextUrls, nextSelected);
+  };
+
+  const removePresaveUrl = async (url: string) => {
+    const nextUrls = presaveUrls.filter((entry) => entry !== url);
+    const nextSelected = selectedPresaveUrls.filter((entry) => entry !== url);
+    await savePresaveState(nextUrls, nextSelected);
+  };
+
+  const togglePresaveSelection = async (url: string, selected: boolean) => {
+    const nextSelected = selected
+      ? Array.from(new Set([...selectedPresaveUrls, url]))
+      : selectedPresaveUrls.filter((entry) => entry !== url);
+    await savePresaveState(presaveUrls, nextSelected);
+  };
+
   const [busyDownload, setBusyDownload] = useState(false);
 
   const imageAssetsById = new Map(imageAssets.map((img) => [img.id, img]));
@@ -654,6 +750,9 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         texts: richText ? [{ title: kit.name, body: richText }] : [],
         images: attachedImages,
         videoUrls,
+        presaveReleaseName,
+        presaveReleaseDate,
+        presaveUrls,
         generatedAt: new Date().toISOString(),
       });
       const blobUrl = URL.createObjectURL(blob);
@@ -1072,7 +1171,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                           void addVideoUrl();
                         }
                       }}
-                      placeholder="YouTube, Vimeo or Vevo"
+                      placeholder="YouTube, Vimeo, Vevo, Spotify, or SoundCloud"
                       className="press-kit-video-url-input"
                     />
                     <button
@@ -1113,12 +1212,12 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                         <div key={url} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
                           <div style={{ position: 'relative' }}>
                             {media ? (
-                              media.provider === 'spotify' ? (
+                              media.provider === 'spotify' || media.provider === 'soundcloud' ? (
                                 <iframe
                                   src={media.embedUrl}
                                   width="100%"
                                   height={media.embedHeight ?? 152}
-                                  title="Spotify player"
+                                  title={media.provider === 'spotify' ? 'Spotify player' : 'SoundCloud player'}
                                   allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                                   loading="lazy"
                                 />
@@ -1151,6 +1250,14 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0 0.4rem 0.4rem' }}>
                             <span style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{url}</span>
+                            <button
+                              type="button"
+                              className="title-rename-btn"
+                              title="Copy URL"
+                              onClick={() => { void handleCopyUrl(url); }}
+                            >
+                              <Copy size={13} />
+                            </button>
                             {canEdit && (
                               <button
                                 type="button"
@@ -1166,6 +1273,105 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                       );
                     })}
                   </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+          <div className="press-kit-section-card">
+            <section className="press-kit-videos-section">
+              <header className="press-kit-section-header">
+                <p className="press-kit-section-title">Presave / Upcoming Release</p>
+                {canEdit && <p className="press-kit-section-hint">Announce an unreleased track and add presave links for each platform.</p>}
+              </header>
+              <div className="setlist-notes-editor">
+                {canEdit && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      value={presaveReleaseName}
+                      onChange={(e) => setPresaveReleaseName(e.target.value)}
+                      onBlur={() => void savePresaveMeta(presaveReleaseName, presaveReleaseDate)}
+                      placeholder="Release name (e.g. New Single — Out Sept 12)"
+                      className="press-kit-video-url-input"
+                      style={{ flex: '2 1 220px' }}
+                    />
+                    <input
+                      type="date"
+                      value={presaveReleaseDate}
+                      onChange={(e) => setPresaveReleaseDate(e.target.value)}
+                      onBlur={() => void savePresaveMeta(presaveReleaseName, presaveReleaseDate)}
+                      className="press-kit-video-url-input"
+                      style={{ flex: '1 1 160px' }}
+                    />
+                  </div>
+                )}
+
+                {canEdit && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <input
+                      type="url"
+                      value={newPresaveUrl}
+                      onChange={(e) => setNewPresaveUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          void addPresaveUrl();
+                        }
+                      }}
+                      placeholder="Spotify, Apple Music, or smart link"
+                      className="press-kit-video-url-input"
+                    />
+                    <button
+                      type="button"
+                      className="setlist-action-btn setlist-action-btn--secondary"
+                      onClick={() => void addPresaveUrl()}
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
+
+                {presaveUrls.length === 0 ? (
+                  <p className="bands-status">No presave links added yet.</p>
+                ) : (
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {presaveUrls.map((url) => {
+                      const selected = selectedPresaveUrls.includes(url);
+                      return (
+                        <li key={url} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', padding: '0.4rem 0.6rem' }}>
+                          {canEdit && (
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={(e) => { void togglePresaveSelection(url, e.target.checked); }}
+                              title="Include in public share"
+                            />
+                          )}
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', flexShrink: 0 }}>{detectPresavePlatformLabel(url)}</span>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
+                          <button
+                            type="button"
+                            className="title-rename-btn"
+                            title="Copy URL"
+                            onClick={() => { void handleCopyUrl(url); }}
+                          >
+                            <Copy size={13} />
+                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              className="title-rename-btn"
+                              title="Remove presave link"
+                              onClick={() => { void removePresaveUrl(url); }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
               </div>
             </section>

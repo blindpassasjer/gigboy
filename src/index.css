@@ -11607,6 +11607,55 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-color: var(--accent);
 }
 
+.public-presskit-presave-list {
+  list-style: none;
+  margin: .75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.public-presskit-presave-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.public-presskit-presave-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.public-presskit-presave-link:hover {
+  text-decoration: underline;
+}
+
+.public-presskit-presave-platform {
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: .8rem;
+  color: var(--accent);
+}
+
+.public-presskit-presave-url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
 @media (min-width: 900px) {
   .public-presskit-images-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

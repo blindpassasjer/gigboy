@@ -13,6 +13,9 @@ export interface PublicPressKitData {
   texts: Array<{ title: string; body: string }>;
   images: Array<{ title: string; url: string }>;
   videoUrls: string[];
+  presaveReleaseName?: string;
+  presaveReleaseDate?: string;
+  presaveUrls: string[];
 }
 
 export type PublicPressKitResult =
@@ -69,6 +72,7 @@ export async function getPublicPressKitData(
         texts: Array.isArray(snapshot.texts) ? (snapshot.texts as Array<{ title: string; body: string }>) : [],
         images: Array.isArray(snapshot.images) ? (snapshot.images as Array<{ title: string; url: string }>) : [],
         videoUrls: Array.isArray(snapshot.videoUrls) ? (snapshot.videoUrls as string[]) : [],
+        presaveUrls: Array.isArray(snapshot.presaveUrls) ? (snapshot.presaveUrls as string[]) : [],
         generatedAt: typeof snapshot.generatedAt === 'string' ? snapshot.generatedAt : undefined,
       },
     };
@@ -96,6 +100,11 @@ export async function getPublicPressKitData(
   const selectedVideoUrls = Array.isArray(kitDoc.selectedVideoUrls)
     ? (kitDoc.selectedVideoUrls as unknown[]).filter((u): u is string => typeof u === 'string').map((u) => u.trim()).filter(Boolean)
     : [];
+  const selectedPresaveUrls = Array.isArray(kitDoc.selectedPresaveUrls)
+    ? (kitDoc.selectedPresaveUrls as unknown[]).filter((u): u is string => typeof u === 'string').map((u) => u.trim()).filter(Boolean)
+    : [];
+  const presaveReleaseName = typeof kitDoc.presaveReleaseName === 'string' ? kitDoc.presaveReleaseName : undefined;
+  const presaveReleaseDate = typeof kitDoc.presaveReleaseDate === 'string' ? kitDoc.presaveReleaseDate : undefined;
 
   // Fetch images that belong to this press kit.
   let images: Array<{ title: string; url: string }> = [];
@@ -164,6 +173,9 @@ export async function getPublicPressKitData(
       texts: richText ? [{ title: kitName, body: richText }] : [],
       images,
       videoUrls: selectedVideoUrls,
+      presaveReleaseName,
+      presaveReleaseDate,
+      presaveUrls: selectedPresaveUrls,
     },
   };
 }

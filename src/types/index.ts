@@ -171,10 +171,18 @@ export interface PressKit {
   icon?: string;
   richText: string;
   imageIds: string[];
-  /** Video URLs (YouTube, Vimeo, VEVO, Spotify) to embed in the public press kit. */
+  /** Video URLs (YouTube, Vimeo, VEVO, Spotify, SoundCloud) to embed in the public press kit. */
   videoUrls?: string[];
   /** Selected video URLs to include in shared public press-kit links. */
   selectedVideoUrls?: string[];
+  /** Optional label for an upcoming release the presave links below announce (e.g. "New Single — Out Sept 12"). */
+  presaveReleaseName?: string;
+  /** Optional ISO date for the announced release. */
+  presaveReleaseDate?: string;
+  /** Presave/pre-order links (Spotify, Apple Music, smart links, etc) for an unreleased track. */
+  presaveUrls?: string[];
+  /** Selected presave URLs to include in shared public press-kit links. */
+  selectedPresaveUrls?: string[];
   createdAt?: string;
 }
 

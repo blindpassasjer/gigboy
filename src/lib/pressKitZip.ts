@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import type { StageplotItem } from '../types';
 import { stageplotIsOutputKind, stageplotItemBadge, compareStageplotItemsByChannel } from './stageplotIcons';
+import { detectPresavePlatformLabel } from '../utils/pressKitMedia';
 
 export interface PressKitTextItem {
   title: string;
@@ -40,6 +41,9 @@ export interface PressKitPayload {
   texts: PressKitTextItem[];
   images: PressKitImageItem[];
   videoUrls?: string[];
+  presaveReleaseName?: string;
+  presaveReleaseDate?: string;
+  presaveUrls?: string[];
   generatedAt?: string;
 }
 
@@ -130,6 +134,7 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
   if (!root) throw new Error('Failed to build ZIP folder');
 
   const videoUrls = payload.videoUrls ?? [];
+  const presaveUrls = payload.presaveUrls ?? [];
 
   root.file(
     'README.txt',
@@ -142,11 +147,27 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
       `Texts: ${payload.texts.length}`,
       `Images: ${payload.images.length}`,
       `Videos: ${videoUrls.length}`,
+      `Presave links: ${presaveUrls.length}`,
     ].join('\n')
   );
 
   if (videoUrls.length > 0) {
     root.file('videos.txt', videoUrls.join('\n'));
+  }
+
+  if (presaveUrls.length > 0) {
+    const releaseHeader = [
+      payload.presaveReleaseName ? `Release: ${payload.presaveReleaseName}` : null,
+      payload.presaveReleaseDate ? `Date: ${payload.presaveReleaseDate}` : null,
+    ].filter(Boolean);
+    root.file(
+      'presaves.txt',
+      [
+        ...releaseHeader,
+        ...(releaseHeader.length > 0 ? [''] : []),
+        ...presaveUrls.map((url) => `- [${detectPresavePlatformLabel(url)}] ${url}`),
+      ].join('\n')
+    );
   }
 
   if (payload.stageplots.length > 0) {

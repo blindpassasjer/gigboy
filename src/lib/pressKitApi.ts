@@ -61,6 +61,9 @@ export interface PublicPressKitPayload {
   texts: PressKitTextItem[];
   images: PressKitImageItem[];
   videoUrls: string[];
+  presaveReleaseName?: string;
+  presaveReleaseDate?: string;
+  presaveUrls: string[];
 }
 
 export interface ActivePressKitShare {
@@ -123,6 +126,11 @@ export async function fetchPublicPressKit(token: string): Promise<PublicPressKit
     images: Array.isArray(payload.images) ? payload.images as PressKitImageItem[] : [],
     videoUrls: Array.isArray(payload.videoUrls)
       ? (payload.videoUrls as unknown[]).filter((entry): entry is string => typeof entry === 'string')
+      : [],
+    presaveReleaseName: typeof payload.presaveReleaseName === 'string' ? payload.presaveReleaseName : undefined,
+    presaveReleaseDate: typeof payload.presaveReleaseDate === 'string' ? payload.presaveReleaseDate : undefined,
+    presaveUrls: Array.isArray(payload.presaveUrls)
+      ? (payload.presaveUrls as unknown[]).filter((entry): entry is string => typeof entry === 'string')
       : [],
   };
 }

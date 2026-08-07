@@ -67,6 +67,8 @@ export const onRequestPost: PagesFunction<{ bandId: string }, never, Data> = asy
       imageIds: [],
       videoUrls: [],
       selectedVideoUrls: [],
+      presaveUrls: [],
+      selectedPresaveUrls: [],
       createdAt: now,
       createdBy: userId,
     });

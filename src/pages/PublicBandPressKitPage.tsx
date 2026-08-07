@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
 import BrandMark from '../components/BrandMark';
 import { fetchPublicPressKit } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
-import { parsePressKitMedia } from '../utils/pressKitMedia';
+import { parsePressKitMedia, detectPresavePlatformLabel } from '../utils/pressKitMedia';
 
 type PublicPressKitPayload = Awaited<ReturnType<typeof fetchPublicPressKit>>;
 
@@ -136,6 +136,9 @@ export default function PublicBandPressKitPage() {
         texts: payload.texts,
         images: payload.images,
         videoUrls: payload.videoUrls,
+        presaveReleaseName: payload.presaveReleaseName,
+        presaveReleaseDate: payload.presaveReleaseDate,
+        presaveUrls: payload.presaveUrls,
         generatedAt: payload.generatedAt,
       });
       triggerBlobDownload(blob, `${slugifyFileName(payload.bandName)}-press-kit.zip`);
@@ -197,6 +200,7 @@ export default function PublicBandPressKitPage() {
   const hasTexts = payload.texts.length > 0;
   const hasImages = payload.images.length > 0;
   const hasVideos = payload.videoUrls.length > 0;
+  const hasPresaves = payload.presaveUrls.length > 0;
 
   return (
     <main className="public-setlist-page public-presskit-page">
@@ -336,7 +340,7 @@ export default function PublicBandPressKitPage() {
                   );
                 }
 
-                if (media.provider === 'spotify') {
+                if (media.provider === 'spotify' || media.provider === 'soundcloud') {
                   return (
                     <article key={url} className="public-presskit-image-card public-presskit-video-card">
                       <div className="public-presskit-video-shell public-presskit-video-shell--spotify">
@@ -344,7 +348,7 @@ export default function PublicBandPressKitPage() {
                           src={media.embedUrl}
                           width="100%"
                           height={media.embedHeight}
-                          title="Spotify player"
+                          title={media.provider === 'spotify' ? 'Spotify player' : 'SoundCloud player'}
                           allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                           loading="lazy"
                           className="public-presskit-video-embed"
@@ -367,7 +371,32 @@ export default function PublicBandPressKitPage() {
           </section>
         )}
 
-        {!hasTexts && !hasImages && !hasVideos && (
+        {hasPresaves && (
+          <section className="public-presskit-videos-section">
+            <h2 className="public-presskit-section-heading">
+              {payload.presaveReleaseName || 'Presave the upcoming release'}
+            </h2>
+            {payload.presaveReleaseDate ? (
+              <p className="public-setlist-count">Out {payload.presaveReleaseDate}</p>
+            ) : null}
+            <ul className="public-presskit-presave-list">
+              {payload.presaveUrls.map((url) => (
+                <li key={url} className="public-presskit-presave-item">
+                  <a href={url} target="_blank" rel="noreferrer" className="public-presskit-presave-link">
+                    <span className="public-presskit-presave-platform">{detectPresavePlatformLabel(url)}</span>
+                    <span className="public-presskit-presave-url">{url}</span>
+                  </a>
+                  <button type="button" className="public-presskit-dl-btn" onClick={() => void handleCopyVideoUrl(url)}>
+                    <Copy size={13} />
+                    <span>{copiedVideoUrl === url ? 'Copied' : 'Copy URL'}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {!hasTexts && !hasImages && !hasVideos && !hasPresaves && (
           <p className="public-setlist-status">This press kit has no content yet.</p>
         )}
       </div>

@@ -772,6 +772,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         selectedVideoUrls: Array.isArray(data.selectedVideoUrls)
           ? data.selectedVideoUrls.filter((entry): entry is string => typeof entry === 'string')
           : undefined,
+        presaveReleaseName: typeof data.presaveReleaseName === 'string' ? data.presaveReleaseName : undefined,
+        presaveReleaseDate: typeof data.presaveReleaseDate === 'string' ? data.presaveReleaseDate : undefined,
+        presaveUrls: Array.isArray(data.presaveUrls)
+          ? data.presaveUrls.filter((entry): entry is string => typeof entry === 'string')
+          : [],
+        selectedPresaveUrls: Array.isArray(data.selectedPresaveUrls)
+          ? data.selectedPresaveUrls.filter((entry): entry is string => typeof entry === 'string')
+          : undefined,
         createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
       };
     });

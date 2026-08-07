@@ -132,6 +132,7 @@ function addPressKitsFolder(zip: JSZip, kits: PressKit[], imagesById: Map<string
       .map((id) => imagesById.get(id)?.title)
       .filter((title): title is string => Boolean(title));
     const videoUrls = kit.selectedVideoUrls ?? kit.videoUrls ?? [];
+    const presaveUrls = kit.selectedPresaveUrls ?? kit.presaveUrls ?? [];
     kitFolder.file(
       'info.txt',
       [
@@ -142,6 +143,9 @@ function addPressKitsFolder(zip: JSZip, kits: PressKit[], imagesById: Map<string
         '',
         'Videos:',
         videoUrls.length > 0 ? videoUrls.map((u) => `- ${u}`).join('\n') : '- None',
+        '',
+        'Presaves:',
+        presaveUrls.length > 0 ? presaveUrls.map((u) => `- ${u}`).join('\n') : '- None',
       ].join('\n'),
     );
   });
