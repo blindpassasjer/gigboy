@@ -89,7 +89,13 @@ function parseSpotify(url: URL): PressKitMedia | null {
     return null;
   }
 
-  const parts = url.pathname.split('/').filter(Boolean);
+  let parts = url.pathname.split('/').filter(Boolean);
+
+  // Spotify share links sometimes include a locale segment, e.g. /intl-en/playlist/<id>.
+  if (/^intl-[a-z]{2}$/i.test(parts[0] ?? '')) {
+    parts = parts.slice(1);
+  }
+
   const [first, second, third] = parts;
 
   let type = first;
