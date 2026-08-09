@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import type { SongList, SongListCategory, TrashedSongList } from '../types';
@@ -599,31 +599,55 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
+  const value = useMemo(
+    () => ({
+      categories,
+      songLists,
+      trashedSongLists,
+      activeCategoryId,
+      activeSongListId,
+      addCategory,
+      deleteCategory,
+      addSongList,
+      deleteSongList,
+      restoreSongListFromTrash,
+      deleteSongListPermanently,
+      renameSongList,
+      addSongToList,
+      removeSongFromList,
+      moveSongInList,
+      updateSongListAppearance,
+      moveSongList,
+      setActiveCategoryId,
+      setActiveSongListId: setActiveListId,
+      clearActiveSelection,
+    }),
+    [
+      categories,
+      songLists,
+      trashedSongLists,
+      activeCategoryId,
+      activeSongListId,
+      addCategory,
+      deleteCategory,
+      addSongList,
+      deleteSongList,
+      restoreSongListFromTrash,
+      deleteSongListPermanently,
+      renameSongList,
+      addSongToList,
+      removeSongFromList,
+      moveSongInList,
+      updateSongListAppearance,
+      moveSongList,
+      setActiveCategoryId,
+      setActiveListId,
+      clearActiveSelection,
+    ]
+  );
+
   return (
-    <SongListsContext.Provider
-      value={{
-        categories,
-        songLists,
-        trashedSongLists,
-        activeCategoryId,
-        activeSongListId,
-        addCategory,
-        deleteCategory,
-        addSongList,
-        deleteSongList,
-        restoreSongListFromTrash,
-        deleteSongListPermanently,
-        renameSongList,
-        addSongToList,
-        removeSongFromList,
-        moveSongInList,
-        updateSongListAppearance,
-        moveSongList,
-        setActiveCategoryId,
-        setActiveSongListId: setActiveListId,
-        clearActiveSelection,
-      }}
-    >
+    <SongListsContext.Provider value={value}>
       {children}
     </SongListsContext.Provider>
   );

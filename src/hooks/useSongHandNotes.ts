@@ -113,7 +113,7 @@ export function useSongHandNotes(params: {
 
       return authorIds;
     });
-  }, [notes, userId]);
+  }, [notes, userId, defaultToCurrentUser]);
 
   const authors = useMemo<SongHandNoteAuthor[]>(() => {
     return notes.map((note) => ({
@@ -145,7 +145,7 @@ export function useSongHandNotes(params: {
     return notes
       .filter((note) => visible.has(note.authorUid))
       .map(colorizeByAuthor);
-  }, [notes, visibleAuthorIds]);
+  }, [notes, visibleAuthorIds, defaultToCurrentUser]);
 
   const myNote = useMemo(() => {
     if (!userId) return null;

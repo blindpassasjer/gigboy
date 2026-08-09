@@ -73,7 +73,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
     console.error('Failed to create band.', error);
     return Response.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to create band.',
+        error: 'Failed to create band.',
       },
       { status: 500 }
     );

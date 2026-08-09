@@ -35,26 +35,46 @@ service firebase.storage {
         );
     }
 
+    // Recordings are browser-recorded audio (MediaRecorder, audio/webm or audio/ogg);
+    // there's no fixed per-file cap client-side (only an aggregate plan storage quota),
+    // so this is a generous sanity ceiling against abuse, not a plan limit.
+    function isValidRecordingUpload() {
+      return request.resource.size <= 200 * 1024 * 1024
+        && request.resource.contentType.matches('^audio/.*');
+    }
+
     // User-scoped song recordings
     match /users/{userId}/songs/{songId}/recordings/{fileName} {
       allow read: if isOwner(userId);
-      allow write: if isOwner(userId) && request.auth.token.email_verified == true;
+      allow write: if isOwner(userId) && request.auth.token.email_verified == true
+        && isValidRecordingUpload();
     }
 
     // Band-scoped song recordings
     match /bands/{bandId}/songs/{songId}/recordings/{fileName} {
-      allow read, write: if isBandMember(bandId);
+      allow read: if isBandMember(bandId);
+      allow write: if isBandMember(bandId) && isValidRecordingUpload();
+    }
+
+    // Server-side mirror of ATTACHMENT_MAX_SIZE_BYTES / ATTACHMENT_ACCEPTED_MIME_TYPE
+    // in src/lib/songAttachments.ts. Client-side checks alone can be bypassed by
+    // calling the Storage SDK/REST API directly, so enforce them here too.
+    function isValidAttachmentUpload() {
+      return request.resource.size <= 20 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
     }
 
     // User-scoped song attachments (PDFs)
     match /users/{userId}/songs/{songId}/attachments/{fileName} {
       allow read: if isOwner(userId);
-      allow write: if isOwner(userId) && request.auth.token.email_verified == true;
+      allow write: if isOwner(userId) && request.auth.token.email_verified == true
+        && isValidAttachmentUpload();
     }
 
     // Band-scoped song attachments (PDFs)
     match /bands/{bandId}/songs/{songId}/attachments/{fileName} {
-      allow read, write: if isBandMember(bandId);
+      allow read: if isBandMember(bandId);
+      allow write: if isBandMember(bandId) && isValidAttachmentUpload();
     }
 
     // Band-scoped press kit image assets

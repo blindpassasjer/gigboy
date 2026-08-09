@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import type { Setlist, TrashedSetlist } from '../types';
@@ -578,27 +578,47 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     setActiveSetlistId(null);
   }, []);
 
+  const value = useMemo(
+    () => ({
+      setlists,
+      trashedSetlists,
+      activeSetlistId,
+      addSetlist,
+      deleteSetlist,
+      restoreSetlistFromTrash,
+      deleteSetlistPermanently,
+      renameSetlist,
+      updateSetlistIcon,
+      setSetlistPublicShare,
+      addSongToSetlist,
+      removeSongFromSetlist,
+      moveSongInSetlist,
+      updateSongNoteInSetlist,
+      setActiveSetlistId,
+      clearActiveSelection,
+    }),
+    [
+      setlists,
+      trashedSetlists,
+      activeSetlistId,
+      addSetlist,
+      deleteSetlist,
+      restoreSetlistFromTrash,
+      deleteSetlistPermanently,
+      renameSetlist,
+      updateSetlistIcon,
+      setSetlistPublicShare,
+      addSongToSetlist,
+      removeSongFromSetlist,
+      moveSongInSetlist,
+      updateSongNoteInSetlist,
+      setActiveSetlistId,
+      clearActiveSelection,
+    ]
+  );
+
   return (
-    <SetlistsContext.Provider
-      value={{
-        setlists,
-        trashedSetlists,
-        activeSetlistId,
-        addSetlist,
-        deleteSetlist,
-        restoreSetlistFromTrash,
-        deleteSetlistPermanently,
-        renameSetlist,
-        updateSetlistIcon,
-        setSetlistPublicShare,
-        addSongToSetlist,
-        removeSongFromSetlist,
-        moveSongInSetlist,
-        updateSongNoteInSetlist,
-        setActiveSetlistId,
-        clearActiveSelection,
-      }}
-    >
+    <SetlistsContext.Provider value={value}>
       {children}
     </SetlistsContext.Provider>
   );

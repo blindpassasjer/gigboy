@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import {
   collection,
@@ -247,7 +247,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     }
   }, [userSongs]);
 
-  const songs = [...userSongs];
+  const songs = useMemo(() => [...userSongs], [userSongs]);
 
   const addSong = useCallback(async (song: Song): Promise<string | null> => {
     const limit = songLimit ?? PLAN_LIMITS.free.songLimit ?? 12;
@@ -271,7 +271,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
         collaboratorIds: song.collaboratorIds ?? [],
         collaborationPermissions: song.collaborationPermissions ?? {},
         accessRole: 'owner',
-        sortOrder: song.sortOrder ?? Math.min(...ownSongs.map((entry) => entry.sortOrder ?? 0), 0) - 1,
+        sortOrder: song.sortOrder ?? ownSongs.reduce((min, entry) => Math.min(min, entry.sortOrder ?? 0), 0) - 1,
       };
 
       pendingAdd.nextSong = nextSong;
@@ -519,20 +519,23 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
+  const value = useMemo(
+    () => ({
+      songs,
+      trashedSongs,
+      loading,
+      addSong,
+      updateSong,
+      deleteSong,
+      restoreSongFromTrash,
+      deleteSongPermanently,
+      moveSong,
+    }),
+    [songs, trashedSongs, loading, addSong, updateSong, deleteSong, restoreSongFromTrash, deleteSongPermanently, moveSong]
+  );
+
   return (
-    <SongsContext.Provider
-      value={{
-        songs,
-        trashedSongs,
-        loading,
-        addSong,
-        updateSong,
-        deleteSong,
-        restoreSongFromTrash,
-        deleteSongPermanently,
-        moveSong,
-      }}
-    >
+    <SongsContext.Provider value={value}>
       {children}
     </SongsContext.Provider>
   );

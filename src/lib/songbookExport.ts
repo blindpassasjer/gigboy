@@ -278,6 +278,10 @@ export function triggerSongbookExportDownload(blob: Blob): void {
   const anchor = document.createElement('a');
   anchor.href = blobUrl;
   anchor.download = `gigboy-export-${new Date().toISOString().slice(0, 10)}.zip`;
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(blobUrl);
+  anchor.remove();
+  // Defer revocation so Safari/Firefox have started the download before the
+  // blob URL is invalidated; revoking synchronously can truncate the download.
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 0);
 }

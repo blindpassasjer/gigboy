@@ -355,7 +355,7 @@ export const onRequestPost: PagesFunction<Record<string, string | undefined>, ne
   } catch (error) {
     console.error('Failed to delete account data.', error);
     return Response.json({
-      error: error instanceof Error ? error.message : 'Failed to delete account data.',
+      error: 'Failed to delete account data.',
     }, { status: 500 });
   }
 };

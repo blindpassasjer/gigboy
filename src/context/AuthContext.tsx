@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import {
   EmailAuthProvider,
@@ -576,31 +576,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
   }, []);
 
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      authEnabled: firebaseEnabled,
+      authError: firebaseConfigError,
+      login,
+      register,
+      loginWithGoogle,
+      loginWithGithub,
+      pendingLinkEmail,
+      linkWithPassword,
+      cancelPendingLink,
+      completeUsername,
+      updateEmailAddress,
+      updateUsername: updateUsernameValue,
+      updateAvatar: updateAvatarValue,
+      updateFullName: updateFullNameValue,
+      updatePassword: updatePasswordValue,
+      deleteAccount: deleteAccountValue,
+      isDeletingAccount,
+      logout,
+    }),
+    [
+      user,
+      loading,
+      login,
+      register,
+      loginWithGoogle,
+      loginWithGithub,
+      pendingLinkEmail,
+      linkWithPassword,
+      cancelPendingLink,
+      completeUsername,
+      updateEmailAddress,
+      updateUsernameValue,
+      updateAvatarValue,
+      updateFullNameValue,
+      updatePasswordValue,
+      deleteAccountValue,
+      isDeletingAccount,
+      logout,
+    ]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        authEnabled: firebaseEnabled,
-        authError: firebaseConfigError,
-        login,
-        register,
-        loginWithGoogle,
-        loginWithGithub,
-        pendingLinkEmail,
-        linkWithPassword,
-        cancelPendingLink,
-        completeUsername,
-        updateEmailAddress,
-        updateUsername: updateUsernameValue,
-        updateAvatar: updateAvatarValue,
-        updateFullName: updateFullNameValue,
-        updatePassword: updatePasswordValue,
-        deleteAccount: deleteAccountValue,
-        isDeletingAccount,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

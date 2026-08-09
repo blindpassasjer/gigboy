@@ -130,10 +130,23 @@ export function parseChordPro(text: string): ParsedLine[] {
         const sectionType = sectionMatch[1];
         // Re-match against the untouched line to preserve the label's original casing.
         const sectionLabel = rawLines[i].trim().match(SECTION_START_RE)?.[2]?.trim() || undefined;
-        const endDirective = `{end_of_${sectionType}}`;
-        // Find the matching end
+        const startDirectivePrefix = `{start_of_${sectionType}`;
+        const endDirectivePrefix = `{end_of_${sectionType}`;
+        // Find the matching end, tracking nesting depth so a same-type section
+        // nested inside another (e.g. {start_of_chorus} inside {start_of_chorus}...
+        // {end_of_chorus}) closes on its own {end_of_...}, not the outer one's.
+        let depth = 1;
         let j = i + 1;
-        while (j < endI && !rawLines[j].trim().toLowerCase().startsWith(endDirective.slice(0, -1))) j++;
+        while (j < endI) {
+          const lineLower = rawLines[j].trim().toLowerCase();
+          if (lineLower.startsWith(startDirectivePrefix)) {
+            depth++;
+          } else if (lineLower.startsWith(endDirectivePrefix)) {
+            depth--;
+            if (depth === 0) break;
+          }
+          j++;
+        }
         const sectionLines = parseRange(i + 1, j);
         result.push({ type: 'section', sectionType, sectionLabel, sectionLines, raw: '' });
         i = j < endI ? j + 1 : j; // skip the end directive if found
@@ -178,9 +191,14 @@ export function convertChordNotation(chord: string, notation: ChordNotation): st
 const SHARP_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const FLAT_NOTES  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
+// Edge-case enharmonic spellings not in the 12-entry tables above (e.g. "Cb" is
+// really B). Normalize to the equivalent in-table note before transposing.
+const ENHARMONIC_EQUIVALENTS: Record<string, string> = { Cb: 'B', Fb: 'E', 'E#': 'F', 'B#': 'C' };
+
 function transposeNote(note: string, semitones: number): string {
-  const scale = note.includes('b') ? FLAT_NOTES : SHARP_NOTES;
-  const idx = scale.indexOf(note);
+  const normalized = ENHARMONIC_EQUIVALENTS[note] ?? note;
+  const scale = normalized.includes('b') ? FLAT_NOTES : SHARP_NOTES;
+  const idx = scale.indexOf(normalized);
   if (idx === -1) return note;
   return scale[((idx + semitones) % 12 + 12) % 12];
 }
