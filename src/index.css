@@ -11661,8 +11661,16 @@ input, select, textarea { font: inherit; color: var(--text); }
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .public-presskit-images-grid > .public-presskit-image-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
   .public-presskit-videos-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .public-presskit-videos-grid > .public-presskit-video-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 
