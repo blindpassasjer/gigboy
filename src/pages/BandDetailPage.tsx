@@ -14,6 +14,7 @@ import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function BandDetailPage() {
   const { id } = useParams();
@@ -59,6 +60,9 @@ export default function BandDetailPage() {
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
+
+  useDocumentTitle(band ? band.name : 'Band');
+
   const bandSongs = useMemo(() => (id ? (bandSongsByBandId[id] ?? []) : []), [bandSongsByBandId, id]);
   const bandSongLists = id ? (bandSongListsByBandId[id] ?? []) : [];
   const bandSetlists = id ? (bandSetlistsByBandId[id] ?? []) : [];

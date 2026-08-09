@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const CONFETTI = ['🎉', '🎊', '⭐', '🎸', '🥁', '🎵', '🎶', '✨'];
 
@@ -6,6 +7,8 @@ export default function CheckoutResultPage() {
   const [searchParams] = useSearchParams();
   const status = searchParams.get('status');
   const success = status === 'success';
+
+  useDocumentTitle(success ? "You're all set!" : 'Checkout canceled');
 
   return (
     <section className="checkout-result-page">

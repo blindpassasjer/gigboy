@@ -7,6 +7,7 @@ import { usePlan, useBandPlan } from '../hooks/usePlan';
 import type { Song } from '../types';
 import ConcertModeView from '../components/ConcertModeView';
 import toast from '../utils/anchoredToast';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type SongPageState = {
   backTo?: string;
@@ -38,6 +39,8 @@ export default function SongConcertPage() {
   const canUseMetronome = (bandId && band ? bandPlanState : userPlanState).canUse('metronome');
 
   const backRoute = pageState?.backTo ?? (id ? `/songs/${id}` : '/');
+
+  useDocumentTitle(song ? `${song.title} — Concert Mode` : 'Concert Mode');
 
   const handlePinTranspose = async (s: Song, transpose: number) => {
     const nextSong: Song = {

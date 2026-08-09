@@ -15,6 +15,7 @@ import { createPortalSession } from '../lib/billingApi';
 import { db, storage } from '../lib/firebase';
 import { loadSongRecordings, type SongRecording } from '../lib/songRecordings';
 import { buildSongbookExportZip, triggerSongbookExportDownload, type PressKitImageAsset } from '../lib/songbookExport';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 function formatPeriodEnd(value: number | null) {
   if (!value) return null;
@@ -59,6 +60,7 @@ function getEffectiveBandPlan(
 }
 
 export default function ProfilePage() {
+  useDocumentTitle('Profile');
   const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, deleteAccount, logout } = useAuth();
   const {
     bands,

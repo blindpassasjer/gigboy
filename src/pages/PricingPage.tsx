@@ -18,6 +18,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useOptionalBands } from '../context/BandsContext';
 import { createCheckoutSession } from '../lib/billingApi';
 import { useBandPlan } from '../hooks/usePlan';
@@ -154,6 +155,7 @@ function getCtaLabel(
 }
 
 export default function PricingPage() {
+  useDocumentTitle('Pricing');
   const { user } = useAuth();
   const bandsContext = useOptionalBands();
   const bands = bandsContext?.bands ?? [];

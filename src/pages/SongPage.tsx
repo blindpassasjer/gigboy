@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useSongs } from '../context/SongsContext';
 import { useBands } from '../context/BandsContext';
 import SongView from '../components/SongView';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type SongPageState = {
   backTo?: string;
@@ -27,6 +28,8 @@ export default function SongPage() {
   const bandSongs = bandId ? (bandSongsByBandId[bandId] ?? []) : [];
   const song = (bandSongs.find((s) => s.id === id) ?? songs.find((s) => s.id === id));
   const backLinkText = backLabel ? `Return to ${backLabel}` : 'All songs';
+
+  useDocumentTitle(song ? song.title : 'Song not found');
 
   if (!song) {
     return (

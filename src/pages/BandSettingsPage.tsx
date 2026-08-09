@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
 import { useBandPlan } from '../hooks/usePlan';
 import { db } from '../lib/firebase';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const LOGO_CARD_MIN_WIDTH_PX = 130;
 const LOGO_GRID_GAP_PX = 10;
@@ -75,6 +76,8 @@ export default function BandSettingsPage() {
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
+
+  useDocumentTitle(band ? `${band.name} Settings` : 'Band Settings');
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');

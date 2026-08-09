@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function PrivacyPage() {
+  useDocumentTitle('Privacy Policy');
   return (
     <section className="legal-page">
       <Link to="/" className="back-link">← Back</Link>

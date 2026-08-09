@@ -6,6 +6,7 @@ import BrandMark from '../components/BrandMark';
 import { fetchPublicPressKit } from '../lib/pressKitApi';
 import { generatePressKitZip } from '../lib/pressKitZip';
 import { parsePressKitMedia, detectPresavePlatformLabel } from '../utils/pressKitMedia';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type PublicPressKitPayload = Awaited<ReturnType<typeof fetchPublicPressKit>>;
 
@@ -73,6 +74,8 @@ export default function PublicBandPressKitPage() {
   const [copiedVideoUrl, setCopiedVideoUrl] = useState<string | null>(null);
   const [payload, setPayload] = useState<PublicPressKitPayload | null>(null);
   const copyResetTimer = useRef<number | null>(null);
+
+  useDocumentTitle(payload ? `${payload.bandName} — Press Kit` : 'Press Kit');
 
   useEffect(() => {
     return () => {

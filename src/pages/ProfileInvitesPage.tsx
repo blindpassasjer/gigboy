@@ -9,9 +9,11 @@ import { acceptBandInviteOnServer } from '../lib/bandsApi';
 import { acceptInviteOnServer } from '../lib/shareApi';
 import { emitInviteNotificationsChanged } from '../lib/inviteNotifications';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { CollaborationInvite } from '../types';
 
 export default function ProfileInvitesPage() {
+  useDocumentTitle('Invites');
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { bands, refreshBands } = useBands();

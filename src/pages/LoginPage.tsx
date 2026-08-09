@@ -5,6 +5,7 @@ import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardLis
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const LOGIN_FEATURES: { icon: LucideIcon; title: string; description: string }[] = [
   {
@@ -281,6 +282,8 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [linkPassword, setLinkPassword] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useDocumentTitle(mode === 'register' ? 'Create account' : 'Sign in');
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

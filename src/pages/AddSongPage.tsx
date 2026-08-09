@@ -3,6 +3,7 @@ import { useSongs } from '../context/SongsContext';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import AddSongForm from '../components/AddSongForm';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { Song } from '../types';
 
 type AddSongScopeState = {
@@ -14,6 +15,7 @@ type AddSongScopeState = {
 };
 
 export default function AddSongPage() {
+  useDocumentTitle('Add Song');
   const location = useLocation();
   const { addSong } = useSongs();
   const { categories, songLists, activeSongListId, addSongToList } = useSongLists();

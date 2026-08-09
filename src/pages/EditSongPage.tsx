@@ -4,6 +4,7 @@ import { useSongs } from '../context/SongsContext';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import AddSongForm from '../components/AddSongForm';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { Song } from '../types';
 
 type SongPageState = {
@@ -22,6 +23,8 @@ export default function EditSongPage() {
   const bandId = pageState?.bandId;
   const bandSongs = bandId ? (bandSongsByBandId[bandId] ?? []) : [];
   const song = bandSongs.find((s) => s.id === id) ?? songs.find((s) => s.id === id);
+
+  useDocumentTitle(song ? `Edit ${song.title}` : 'Edit Song');
 
   const categoryNameById = new Map(categories.map((category) => [category.id, category.name]));
   const songListOptions = (bandId

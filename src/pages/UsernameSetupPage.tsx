@@ -2,8 +2,10 @@ import { FormEvent, useState } from 'react';
 import BrandMark from '../components/BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function UsernameSetupPage() {
+  useDocumentTitle('Choose your username');
   const { completeUsername, user, logout } = useAuth();
   const [username, setUsername] = useState('');
   const [busy, setBusy] = useState(false);

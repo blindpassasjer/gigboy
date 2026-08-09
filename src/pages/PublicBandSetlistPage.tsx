@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { PublicSetlistSongEntry } from '../types';
 
 interface PublicSetlist {
@@ -19,6 +20,8 @@ export default function PublicBandSetlistPage() {
   const { bandId, setlistId } = useParams<{ bandId: string; setlistId: string }>();
   const [status, setStatus] = useState<Status>('loading');
   const [setlist, setSetlist] = useState<PublicSetlist | null>(null);
+
+  useDocumentTitle(setlist ? `${setlist.name}${setlist.bandName ? ` — ${setlist.bandName}` : ''}` : 'Setlist');
 
   useEffect(() => {
     if (!bandId || !setlistId || !db) {

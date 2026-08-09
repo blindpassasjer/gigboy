@@ -4,6 +4,7 @@ import toast from '../utils/anchoredToast';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function BandMembersPage() {
   const { id } = useParams();
@@ -17,6 +18,8 @@ export default function BandMembersPage() {
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
+
+  useDocumentTitle(band ? `${band.name} Members` : 'Band Members');
   const [busyDeleteBand, setBusyDeleteBand] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');

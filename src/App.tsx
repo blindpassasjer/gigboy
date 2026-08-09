@@ -32,6 +32,7 @@ const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const PublicBandSetlistPage = lazy(() => import('./pages/PublicBandSetlistPage'));
 const PublicBandRiderPage = lazy(() => import('./pages/PublicBandRiderPage'));
 const PublicBandPressKitPage = lazy(() => import('./pages/PublicBandPressKitPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function getRouteErrorMessage(error: unknown): string {
   if (typeof error === 'string') return error;
@@ -148,7 +149,7 @@ function AuthenticatedApp() {
                     <Route path="/checkout-result" element={<CheckoutResultPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/profile/invites" element={<ProfileInvitesPage />} />
-                    <Route path="*" element={<Navigate to="/profile" replace />} />
+                    <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Layout>
               </BandsProvider>

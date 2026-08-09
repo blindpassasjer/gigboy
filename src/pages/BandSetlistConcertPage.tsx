@@ -6,6 +6,7 @@ import { useBandPlan } from '../hooks/usePlan';
 import type { Song } from '../types';
 import ConcertModeView from '../components/ConcertModeView';
 import toast from '../utils/anchoredToast';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function BandSetlistConcertPage() {
   const navigate = useNavigate();
@@ -51,6 +52,8 @@ export default function BandSetlistConcertPage() {
   const backRoute = bandId && setlistId
     ? `/bands/${bandId}/setlists/${setlistId}`
     : `/bands`;
+
+  useDocumentTitle(setlist ? `${setlist.name} — Concert Mode` : 'Concert Mode');
 
   const handlePinTranspose = async (song: Song, transpose: number) => {
     if (!bandId) return;

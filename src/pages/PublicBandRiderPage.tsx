@@ -4,6 +4,7 @@ import BrandMark from '../components/BrandMark';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { normalizeInputList } from '../lib/inputLists';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { InputList, SongHandNoteDocument, StageplotItem } from '../types';
 import SongHandNotesOverlay from '../components/SongHandNotesOverlay';
 import {
@@ -113,6 +114,8 @@ export default function PublicBandRiderPage() {
   const [rider, setRider] = useState<InputList | null>(null);
   const [stageplot, setStageplot] = useState<StageplotData | null>(null);
   const [bandLogo, setBandLogo] = useState<string | undefined>();
+
+  useDocumentTitle(rider ? `${rider.name}${rider.bandName ? ` — ${rider.bandName}` : ''}` : 'Technical Rider');
 
   useEffect(() => {
     if (!bandId || !riderId || !db) {
