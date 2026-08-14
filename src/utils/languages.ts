@@ -23,3 +23,18 @@ export const LANGUAGE_FLAGS: Record<string, string> = {
   it: '🇮🇹',
   la: '🏛️',
 };
+
+export const LANGUAGE_ABBR: Record<string, string> = {
+  en: 'ENG',
+  es: 'ESP',
+  no: 'NOR',
+  pt: 'POR',
+  fr: 'FRA',
+  de: 'GER',
+  it: 'ITA',
+  la: 'LAT',
+};
+
+export function languageAbbr(code: string): string {
+  return LANGUAGE_ABBR[code] ?? code.slice(0, 3).toUpperCase();
+}
