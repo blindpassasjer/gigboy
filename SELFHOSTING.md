@@ -5,9 +5,10 @@ or Cloudflare account required.
 
 > This build covers: email/password auth; personal and band-owned songs, songlists, and
 > setlists; bands with invite-link membership; band technical riders/stage plots with public
-> share links; and song PDF attachments (20MB cap) — all with full feature access (no plan
-> gating). Not yet included: press kits, recordings, hand notes, trash/soft-delete (deletes
-> are permanent), account deletion, and ad-hoc per-resource sharing outside of bands.
+> share links; song PDF attachments (20MB cap); trash/soft-delete with 30-day retention; and
+> band press kits (rich text, images, video/presave links, public share links) — all with full
+> feature access (no plan gating). Not yet included: recordings, hand notes, account deletion,
+> band logo upload, OG-tag social previews, and ad-hoc per-resource sharing outside of bands.
 
 ## Prerequisites
 
@@ -37,6 +38,14 @@ or Cloudflare account required.
    ```sh
    docker compose --env-file .env.selfhost up -d --build
    ```
+
+   **Using a GUI container tool instead of the CLI** (Synology/QNAP/UGREEN-style Docker
+   apps, Portainer, etc.)? Docker Compose only auto-loads a file named exactly `.env` — the
+   `--env-file .env.selfhost` flag above is how the CLI points at a differently-named file,
+   but most GUI "import a compose project" features don't expose that flag and will fail
+   with `required variable POSTGRES_PASSWORD is missing a value`. If that happens, copy your
+   filled-in `.env.selfhost` to a plain `.env` in the same folder (`cp .env.selfhost .env` —
+   `.env` is gitignored too) and deploy again.
 
    The `app` container waits for Postgres to report healthy, then runs pending database
    migrations automatically on every start (via `docker-entrypoint.sh`) before starting the

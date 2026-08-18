@@ -265,8 +265,10 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [serverRepairUserId, setServerRepairUserId] = useState<string | null>(null);
 
   // Server-side recovery: re-associate this user to likely matching bands by ownerId/username/email.
+  // Firestore-data-migration tool with no self-host equivalent (Postgres's band_members join
+  // table doesn't have the denormalized-field-drift problem this repairs) — skip entirely there.
   useEffect(() => {
-    if (!userId || serverRepairUserId === userId) return;
+    if (isSelfHost || !userId || serverRepairUserId === userId) return;
     if (hasMigrationMarker(SERVER_REPAIR_MARKER, userId)) {
       setServerRepairUserId(userId);
       return;

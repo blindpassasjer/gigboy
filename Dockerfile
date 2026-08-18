@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+ENV VITE_BACKEND=selfhost
 RUN npm run build \
   && npx tsc -p server/tsconfig.json
 
