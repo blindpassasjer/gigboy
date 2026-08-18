@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import { declineInvite, loadPendingInvites } from '../lib/collaboration';
-import { acceptBandInviteOnServer } from '../lib/bandsApi';
+import { dataClient } from '../lib/dataClient';
 import { acceptInviteOnServer } from '../lib/shareApi';
 import { emitInviteNotificationsChanged } from '../lib/inviteNotifications';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
@@ -79,11 +79,7 @@ export default function ProfileInvitesPage() {
 
     void (async () => {
       try {
-        await acceptBandInviteOnServer({
-          userId: user.id,
-          userEmail: user.email,
-          inviteId: bandInviteId,
-        });
+        await dataClient.bands.acceptInvite(bandInviteId);
         if (!active) return;
 
         await refreshBands();

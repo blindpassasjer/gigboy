@@ -5,6 +5,8 @@ import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore'
 import type { SongList, SongListCategory, TrashedSongList } from '../types';
 import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db } from '../lib/firebase';
+import { dataClient } from '../lib/dataClient';
+import { songListFromDoc } from '../lib/dataClient/firebaseClient';
 import {
   compareTrashByDeletedAtDesc,
   createTrashPayload,
@@ -88,6 +90,14 @@ async function writeSongList(songList: SongList, userId: string | null) {
 
   const targetOwnerId = songList.ownerId ?? userId;
 
+  if (targetOwnerId === userId) {
+    // Our own song list: goes through the backend-agnostic data client.
+    await dataClient.songLists.update(songList);
+    return;
+  }
+
+  // Editor updating a song list shared by another owner: out of dataClient's
+  // scope (collaboration stays Firestore-only), write directly.
   const { id, ...rest } = songList;
   const firestoreData = Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== undefined));
   await setDoc(doc(db, 'users', targetOwnerId, LISTS_COLLECTION, id), firestoreData);
@@ -109,11 +119,6 @@ function canEditSongList(songList: SongList, userId: string | null) {
 function isSongListOwner(songList: SongList, userId: string | null) {
   const ownerId = songList.ownerId ?? userId;
   return Boolean(userId && ownerId === userId);
-}
-
-function songListFromDoc(id: string, data: Record<string, unknown>, ownerId: string, currentUserId: string): SongList {
-  const songList = { id, ownerId, ...(data as Omit<SongList, 'id'>) } as SongList;
-  return { ...songList, accessRole: roleForSongList(songList, currentUserId) };
 }
 
 function findLastIndexByFolderId(songLists: SongList[], folderId: string | undefined) {
@@ -176,7 +181,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
 
     Promise.allSettled([
       getDocs(collection(firestore, 'users', userId, CATEGORIES_COLLECTION)),
-      getDocs(collection(firestore, 'users', userId, LISTS_COLLECTION)),
+      dataClient.songLists.list(),
       loadAcceptedSharedResources({
         db: firestore,
         userId,
@@ -187,7 +192,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
     ])
       .then(([categoryResult, listResult, sharedResult, trashResult]) => {
         const categorySnapshot = categoryResult.status === 'fulfilled' ? categoryResult.value : null;
-        const listSnapshot = listResult.status === 'fulfilled' ? listResult.value : null;
+        const ownedLists = listResult.status === 'fulfilled' ? listResult.value : null;
         const sharedLists = sharedResult.status === 'fulfilled' ? sharedResult.value : [];
         const trashDocs = trashResult.status === 'fulfilled' ? trashResult.value.docs : [];
 
@@ -219,7 +224,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
             .sort(compareTrashByDeletedAtDesc)
         );
 
-        if (!categorySnapshot || !listSnapshot) {
+        if (!categorySnapshot || !ownedLists) {
           if (categoryResult.status === 'rejected') {
             console.error('Failed to load song list categories from Firestore.', categoryResult.reason);
           }
@@ -231,9 +236,6 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
 
         const fetchedCategories = categorySnapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }) as SongListCategory);
         const nextCategories = ensureSongListsCategory(fetchedCategories);
-        const ownedLists = listSnapshot.docs.map((entry) =>
-          songListFromDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
-        );
 
         const nextLists = normalizeSongLists([...ownedLists, ...sharedLists]);
 
@@ -373,7 +375,7 @@ export function SongListsProvider({ children }: { children: ReactNode }) {
             doc(db, 'users', userId, TRASH_COLLECTION, trashId),
             createTrashPayload('songlist', deletedAt, purgeAt, deleting)
           ),
-          deleteDoc(doc(db, 'users', userId, LISTS_COLLECTION, id)),
+          dataClient.songLists.remove(id),
           ...changed.map((list) => writeSongList(list, userId)),
         ]).catch((error) => {
           console.error('Failed to move song list to trash in Firestore.', error);

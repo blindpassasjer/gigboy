@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Maximize2, Minimize2, MessageSquare, Music, Folder, ListMusic, ClipboardList, Newspaper } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Maximize2, Minimize2, MessageSquare, Music, Folder, ListMusic, ClipboardList, Newspaper, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -549,6 +549,17 @@ export default function Layout({ children }: Props) {
           >
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
+          {user && (
+            <Link
+              to="/trash"
+              className="topbar-icon-btn"
+              title="Trash"
+              aria-label="Trash"
+              aria-current={pathname === '/trash' ? 'page' : undefined}
+            >
+              <Trash2 size={16} />
+            </Link>
+          )}
           {user && (
             <Link
               to="/profile"

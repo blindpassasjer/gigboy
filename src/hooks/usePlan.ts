@@ -18,11 +18,34 @@ function isBandPlanActive(plan: PlanTier, subscriptionStatus: string | null) {
   return false;
 }
 
+const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
 
 export function usePlan() {
   const { user } = useAuth();
 
   return useMemo(() => {
+    // Self-host builds have no Stripe/plan gating: every feature is unlocked,
+    // equivalent to today's `crew` tier with unlimited limits.
+    if (isSelfHost) {
+      const limits = PLAN_LIMITS.crew;
+      return {
+        plan: 'crew' as PlanTier,
+        planLabel: PLAN_LABELS.crew,
+        isActive: true,
+        isFree: false,
+        isPro: true,
+        isCrew: true,
+        planOverride: true,
+        subscriptionStatus: null,
+        songLimit: limits.songLimit,
+        storageQuotaBytes: limits.storageQuotaBytes,
+        memberLimit: limits.memberLimit,
+        canUse() {
+          return true;
+        },
+      };
+    }
+
     const plan = user?.plan ?? 'free';
     const planOverride = user?.planOverride === true;
     const subscriptionStatus = user?.subscriptionStatus ?? null;
@@ -59,6 +82,26 @@ const PLAN_ORDER: Record<PlanTier, number> = { free: 0, pro: 1, crew: 2 };
  * once (e.g. a band list), where calling the hook per-item isn't an option.
  */
 export function computeBandPlan(band: Band | null, user: Pick<UserProfile, 'plan' | 'planOverride' | 'subscriptionStatus'> | null | undefined) {
+  if (isSelfHost) {
+    const limits = PLAN_LIMITS.crew;
+    return {
+      plan: 'crew' as PlanTier,
+      planLabel: PLAN_LABELS.crew,
+      isActive: true,
+      isFree: false,
+      isPro: true,
+      isCrew: true,
+      planOverride: true,
+      subscriptionStatus: null,
+      songLimit: limits.songLimit,
+      storageQuotaBytes: limits.storageQuotaBytes,
+      memberLimit: limits.memberLimit,
+      canUse() {
+        return true;
+      },
+    };
+  }
+
   const userPlan: PlanTier = user?.plan ?? 'free';
   const planOverride = user?.planOverride === true;
   const bandPlan: PlanTier = band?.billingPlan === 'pro' || band?.billingPlan === 'crew'

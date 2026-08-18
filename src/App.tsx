@@ -24,6 +24,7 @@ const SongConcertPage = lazy(() => import('./pages/SongConcertPage'));
 const EditSongPage = lazy(() => import('./pages/EditSongPage'));
 const ProfileInvitesPage = lazy(() => import('./pages/ProfileInvitesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const TrashPage = lazy(() => import('./pages/TrashPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const ShowcasePage = lazy(() => import('./pages/ShowcasePage'));
 const CheckoutResultPage = lazy(() => import('./pages/CheckoutResultPage'));
@@ -33,6 +34,9 @@ const PublicBandSetlistPage = lazy(() => import('./pages/PublicBandSetlistPage')
 const PublicBandRiderPage = lazy(() => import('./pages/PublicBandRiderPage'));
 const PublicBandPressKitPage = lazy(() => import('./pages/PublicBandPressKitPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+
+// Self-host builds have no Stripe/plan gating, so pricing/upgrade UI is hidden entirely.
+const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
 
 function getRouteErrorMessage(error: unknown): string {
   if (typeof error === 'string') return error;
@@ -145,10 +149,11 @@ function AuthenticatedApp() {
                     <Route path="/bands/:id/settings" element={<BandSettingsPage />} />
                     <Route path="/bands/:id/members" element={<BandMembersPage />} />
                     <Route path="/bands/:id/*" element={<BandDetailPage />} />
-                    <Route path="/pricing" element={<PricingPage />} />
+                    {!isSelfHost && <Route path="/pricing" element={<PricingPage />} />}
                     <Route path="/checkout-result" element={<CheckoutResultPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/profile/invites" element={<ProfileInvitesPage />} />
+                    <Route path="/trash" element={<TrashPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Layout>
@@ -160,6 +165,10 @@ function AuthenticatedApp() {
 }
 
 function PricingRoute() {
+  if (isSelfHost) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <BandsProvider>
       <PricingPage />
@@ -184,7 +193,7 @@ const router = createBrowserRouter([
   { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
   { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
   { path: '/public/press-kit/:token', element: <PublicBandPressKitPage />, errorElement: routerErrorElement },
-  { path: '/pricing', element: <PricingRoute />, errorElement: routerErrorElement },
+  { path: '/pricing', element: isSelfHost ? <NotFoundPage /> : <PricingRoute />, errorElement: routerErrorElement },
   { path: '/showcase', element: <ShowcasePage />, errorElement: routerErrorElement },
   { path: '/checkout-result', element: <CheckoutResultPage />, errorElement: routerErrorElement },
   { path: '/terms', element: <TermsPage />, errorElement: routerErrorElement },

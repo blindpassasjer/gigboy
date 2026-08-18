@@ -63,7 +63,7 @@ export async function acceptBandInviteOnServer(params: {
   userEmail: string;
   inviteId: string;
 }) {
-  await postJson('/api/bands/accept', { inviteId: params.inviteId }, {
+  return postJson<{ ok: true; bandId: string }>('/api/bands/accept', { inviteId: params.inviteId }, {
     userId: params.userId,
     userEmail: params.userEmail,
   });

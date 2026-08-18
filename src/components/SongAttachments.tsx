@@ -190,9 +190,8 @@ export default function SongAttachments({ song, user, bandId }: Props) {
       return;
     }
 
-    const displayName = user.fullName?.trim() || user.username?.trim() || user.email;
     try {
-      await uploadAttachment(file, { userId: user.id, displayName, avatar: user.avatar });
+      await uploadAttachment(file);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save attachment';
       setError(message);
@@ -246,7 +245,7 @@ export default function SongAttachments({ song, user, bandId }: Props) {
                 currentUserId={user.id}
                 isBandContext={isBandContext}
                 onDelete={(a) => {
-                  void deleteAttachment(a, song.title).then(() => {
+                  void deleteAttachment(a).then(() => {
                     if (bandId) void refreshBandTrash(bandId);
                   });
                 }}

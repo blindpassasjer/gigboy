@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { FolderInput, Link2, Plus, Search, Settings, Upload, X } from 'lucide-react';
@@ -8,13 +8,16 @@ import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import BandTechRiderPanel from '../components/BandTechRiderPanel';
-import TrashView from '../components/TrashView';
+import TrashView, { type TrashListItem } from '../components/TrashView';
 import PressKitView from '../components/PressKitView';
+import { dataClient } from '../lib/dataClient';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
+const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
 
 export default function BandDetailPage() {
   const { id } = useParams();
@@ -28,14 +31,12 @@ export default function BandDetailPage() {
     bandSongListsByBandId,
     bandSetlistsByBandId,
     bandInputListsByBandId,
-    bandTrashByBandId,
     loading,
     renameBand,
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
     refreshBandInputLists,
-    refreshBandTrash,
     addSongToBandLibrary,
     removeSongFromBandLibrary,
     renameBandSongList,
@@ -67,8 +68,18 @@ export default function BandDetailPage() {
   const bandSongLists = id ? (bandSongListsByBandId[id] ?? []) : [];
   const bandSetlists = id ? (bandSetlistsByBandId[id] ?? []) : [];
   const bandInputLists = id ? (bandInputListsByBandId[id] ?? []) : [];
-  const bandTrash = id ? (bandTrashByBandId[id] ?? []) : [];
   const bandPressKits = id ? (bandPressKitsByBandId[id] ?? []) : [];
+
+  const [bandTrashItems, setBandTrashItems] = useState<TrashListItem[]>([]);
+  const loadBandTrash = useCallback(async () => {
+    if (!id) return;
+    try {
+      const items = await dataClient.bandTrash.list(id);
+      setBandTrashItems(items);
+    } catch (error) {
+      console.error('Failed to load band trash.', error);
+    }
+  }, [id]);
 
   const allBandsSongs = useMemo(() => {
     return Object.entries(bandSongsByBandId)
@@ -159,10 +170,8 @@ export default function BandDetailPage() {
 
   useEffect(() => {
     if (!id || !band) return;
-    void refreshBandTrash(id).catch((error) => {
-      console.error('Failed to load band trash.', error);
-    });
-  }, [band, id, refreshBandTrash]);
+    void loadBandTrash();
+  }, [band, id, loadBandTrash]);
 
   useEffect(() => {
     if (!id || !band) return;
@@ -494,7 +503,7 @@ export default function BandDetailPage() {
               toast.error(error);
             }
           }}
-          extraActions={(
+          extraActions={!isSelfHost ? (
             <button
               type="button"
               className="setlist-action-btn setlist-action-btn--accent"
@@ -503,7 +512,7 @@ export default function BandDetailPage() {
             >
               <Link2 size={14} />
             </button>
-          )}
+          ) : undefined}
           autoStartRenameToken={
             autoRenameState?.kind === 'setlist' && autoRenameState.resourceId === activeBandSetlist.id
               ? autoRenameState.token
@@ -554,112 +563,26 @@ export default function BandDetailPage() {
   }
 
   if (bandSection === 'trash') {
-    const trashItems = bandTrash.map((entry) => {
-      if (entry.itemType === 'song') {
-        return {
-          trashId: entry.trashId,
-          itemType: 'song' as const,
-          name: entry.song.title,
-          deletedAt: entry.deletedAt,
-          purgeAt: entry.purgeAt,
-        };
-      }
-
-      if (entry.itemType === 'songlist') {
-        return {
-          trashId: entry.trashId,
-          itemType: 'songlist' as const,
-          name: entry.songList.name,
-          deletedAt: entry.deletedAt,
-          purgeAt: entry.purgeAt,
-        };
-      }
-
-      if (entry.itemType === 'technicalRider') {
-        return {
-          trashId: entry.trashId,
-          itemType: 'technicalRider' as const,
-          name: entry.inputList.name,
-          deletedAt: entry.deletedAt,
-          purgeAt: entry.purgeAt,
-        };
-      }
-
-      if (entry.itemType === 'pressKitImage') {
-        return {
-          itemType: 'pressKitImage' as const,
-          trashId: entry.trashId,
-          name: entry.image.title,
-          deletedAt: entry.deletedAt,
-          purgeAt: entry.purgeAt,
-        };
-      }
-
-      if (entry.itemType === 'bandLogo') {
-        return {
-          itemType: 'bandLogo' as const,
-          trashId: entry.trashId,
-          name: entry.image.title,
-          deletedAt: entry.deletedAt,
-          purgeAt: entry.purgeAt,
-        };
-      }
-
-      if (entry.itemType === 'pressKit') {
-        return {
-          itemType: 'pressKit' as const,
-          trashId: entry.trashId,
-          name: entry.pressKit.name,
-          deletedAt: entry.deletedAt,
-          purgeAt: entry.purgeAt,
-        };
-      }
-
-      if (entry.itemType === 'setlist') {
-        return {
-          itemType: 'setlist' as const,
-          trashId: entry.trashId,
-          name: entry.setlist.name,
-          deletedAt: entry.deletedAt,
-          purgeAt: entry.purgeAt,
-        };
-      }
-
-      if (entry.itemType === 'attachment') {
-        return {
-          itemType: 'attachment' as const,
-          trashId: entry.trashId,
-          name: entry.attachment.name,
-          deletedAt: entry.deletedAt,
-          purgeAt: entry.purgeAt,
-        };
-      }
-
-      return null;
-    }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-
     return (
       <TrashView
         headerVariant="bands"
         title={`${band.name} Trash`}
         emptyMessage="Trash is empty."
-        items={trashItems}
-        onRestore={canEditBand ? (trashId) => restoreBandTrashItem(band.id, trashId) : undefined}
-        onDeletePermanently={isOwner ? (trashId) => deleteBandTrashItemPermanently(band.id, trashId) : undefined}
+        items={bandTrashItems}
+        onRestore={canEditBand ? async (trashId) => {
+          const error = await restoreBandTrashItem(band.id, trashId);
+          await loadBandTrash();
+          return error;
+        } : undefined}
+        onDeletePermanently={isOwner ? async (trashId) => {
+          const error = await deleteBandTrashItemPermanently(band.id, trashId);
+          await loadBandTrash();
+          return error;
+        } : undefined}
         onEmptyTrash={isOwner ? async () => {
-          const results = await Promise.allSettled(
-            trashItems.map((item) => deleteBandTrashItemPermanently(band.id, item.trashId))
-          );
-
-          const failedCount = results.reduce((count, result) => {
-            if (result.status === 'rejected') return count + 1;
-            if (result.value) return count + 1;
-            return count;
-          }, 0);
-
-          if (failedCount === 0) return null;
-          if (failedCount === trashItems.length) return 'Failed to empty trash.';
-          return `Deleted ${trashItems.length - failedCount} item${trashItems.length - failedCount === 1 ? '' : 's'}, but ${failedCount} item${failedCount === 1 ? '' : 's'} could not be deleted.`;
+          const error = await dataClient.bandTrash.empty(band.id);
+          await loadBandTrash();
+          return error;
         } : undefined}
       />
     );

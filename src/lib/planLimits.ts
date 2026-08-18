@@ -85,6 +85,8 @@ export const PLAN_FEATURE_ACCESS: Record<PlanTier, Record<ProFeature, boolean>> 
   },
 };
 
+const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
+
 function isBandPlanActive(plan: PlanTier, subscriptionStatus: string | null | undefined) {
   if (plan === 'free') return true;
   if (subscriptionStatus === 'active' || subscriptionStatus === 'trialing') return true;
@@ -132,6 +134,7 @@ export function bandCanUse(
   userSubscriptionStatus: string | null = null,
   planOverride = false
 ): boolean {
+  if (isSelfHost) return true;
   if (planOverride) return true;
   if (!band) return false;
 
@@ -152,6 +155,7 @@ export function resolveResourceLimit(
   userSubscriptionStatus: string | null = null,
   planOverride = false
 ): number | null {
+  if (isSelfHost) return null;
   if (planOverride) return null;
   const { effectivePlan, effectiveActive } = resolveEffectivePlan(band, userPlan, userSubscriptionStatus);
   return effectiveActive ? PLAN_LIMITS[effectivePlan][limitKey] : PLAN_LIMITS.free[limitKey];

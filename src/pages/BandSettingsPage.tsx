@@ -11,6 +11,7 @@ import { useBandPlan } from '../hooks/usePlan';
 import { db } from '../lib/firebase';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
+const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
 const LOGO_CARD_MIN_WIDTH_PX = 130;
 const LOGO_GRID_GAP_PX = 10;
 const LOGO_GRID_ROWS_PER_PAGE = 4;
@@ -434,6 +435,7 @@ export default function BandSettingsPage() {
           </section>
 
           {/* ── Appearance ── */}
+          {!isSelfHost && (
           <section className="bands-panel">
             <h2 className="bands-section-heading">
               Appearance
@@ -564,6 +566,7 @@ export default function BandSettingsPage() {
             </div>
 
         </section>
+        )}
         </div>
 
         <div className="bands-settings-left">

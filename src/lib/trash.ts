@@ -3,9 +3,9 @@ import type { Setlist, Song, SongList, InputList, PressKit, TrashItemType } from
 export const TRASH_COLLECTION = 'trashItems';
 const TRASH_RETENTION_DAYS = 30;
 
-export interface TrashRecord<T> {
+export interface TrashRecord<T, K extends TrashItemType = TrashItemType> {
   id: string;
-  itemType: TrashItemType;
+  itemType: K;
   deletedAt: string;
   purgeAt: string;
   data: T;
@@ -51,7 +51,7 @@ export function compareTrashByDeletedAtDesc(a: { deletedAt: string }, b: { delet
   return b.deletedAt.localeCompare(a.deletedAt);
 }
 
-export function parseSongTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<Song> | null {
+export function parseSongTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<Song, 'song'> | null {
   if (raw.itemType !== 'song') return null;
   if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
   if (!raw.data || typeof raw.data !== 'object') return null;
@@ -68,7 +68,7 @@ export function parseSongTrashRecord(id: string, raw: Record<string, unknown>): 
   };
 }
 
-export function parseSongListTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<SongList> | null {
+export function parseSongListTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<SongList, 'songlist'> | null {
   if (raw.itemType !== 'songlist') return null;
   if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
   if (!raw.data || typeof raw.data !== 'object') return null;
@@ -85,7 +85,7 @@ export function parseSongListTrashRecord(id: string, raw: Record<string, unknown
   };
 }
 
-export function parseSetlistTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<Setlist> | null {
+export function parseSetlistTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<Setlist, 'setlist'> | null {
   if (raw.itemType !== 'setlist') return null;
   if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
   if (!raw.data || typeof raw.data !== 'object') return null;
@@ -102,7 +102,7 @@ export function parseSetlistTrashRecord(id: string, raw: Record<string, unknown>
   };
 }
 
-export function parseInputListTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<InputList> | null {
+export function parseInputListTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<InputList, 'technicalRider'> | null {
   if (raw.itemType !== 'technicalRider') return null;
   if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
   if (!raw.data || typeof raw.data !== 'object') return null;
@@ -119,7 +119,7 @@ export function parseInputListTrashRecord(id: string, raw: Record<string, unknow
   };
 }
 
-export function parsePressKitTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<PressKit> | null {
+export function parsePressKitTrashRecord(id: string, raw: Record<string, unknown>): TrashRecord<PressKit, 'pressKit'> | null {
   if (raw.itemType !== 'pressKit') return null;
   if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
   if (!raw.data || typeof raw.data !== 'object') return null;
@@ -155,7 +155,7 @@ export function parsePressKitImageTrashRecord(
     createdBy?: string;
   };
   linkedPressKitIds?: string[];
-}> | null {
+}, 'pressKitImage'> | null {
   if (raw.itemType !== 'pressKitImage') return null;
   if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
   if (!raw.data || typeof raw.data !== 'object') return null;
@@ -212,7 +212,7 @@ export function parseAttachmentTrashRecord(
       avatar: string | null;
     };
   };
-}> | null {
+}, 'attachment'> | null {
   if (raw.itemType !== 'attachment') return null;
   if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
   if (!raw.data || typeof raw.data !== 'object') return null;
@@ -273,7 +273,7 @@ export function parseBandLogoTrashRecord(
     createdBy?: string;
   };
   linkedPressKitIds?: string[];
-}> | null {
+}, 'bandLogo'> | null {
   if (raw.itemType !== 'bandLogo') return null;
   if (typeof raw.deletedAt !== 'string' || typeof raw.purgeAt !== 'string') return null;
   if (!raw.data || typeof raw.data !== 'object') return null;

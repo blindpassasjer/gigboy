@@ -29,7 +29,14 @@ const firebaseConfig = hasCompleteFirebaseEnvOverride
       messagingSenderId: firebaseEnvConfig.messagingSenderId,
       appId: firebaseEnvConfig.appId,
     }
-  : PUBLIC_FIREBASE_CONFIG;
+  : PUBLIC_FIREBASE_CONFIG ?? {
+      apiKey: undefined,
+      authDomain: undefined,
+      projectId: undefined,
+      storageBucket: undefined,
+      messagingSenderId: undefined,
+      appId: undefined,
+    };
 
 const shouldAllowCustomAuthDomain = import.meta.env.VITE_FIREBASE_ALLOW_CUSTOM_AUTH_DOMAIN === 'true';
 const normalizedFirebaseConfig = { ...firebaseConfig };

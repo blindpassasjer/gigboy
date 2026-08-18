@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { normalizeInputList } from '../lib/inputLists';
+import { dataClient } from '../lib/dataClient';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { InputList, SongHandNoteDocument, StageplotItem } from '../types';
 import SongHandNotesOverlay from '../components/SongHandNotesOverlay';
@@ -16,7 +14,7 @@ import {
   compareStageplotItemsByChannel,
 } from '../lib/stageplotIcons';
 
-type Status = 'loading' | 'not-found' | 'private' | 'error' | 'ready';
+type Status = 'loading' | 'not-found' | 'error' | 'ready';
 
 interface StageplotData {
   items: StageplotItem[];
@@ -118,49 +116,31 @@ export default function PublicBandRiderPage() {
   useDocumentTitle(rider ? `${rider.name}${rider.bandName ? ` — ${rider.bandName}` : ''}` : 'Technical Rider');
 
   useEffect(() => {
-    if (!bandId || !riderId || !db) {
+    if (!bandId || !riderId) {
       setStatus('error');
       return;
     }
 
-    const firestore = db;
     let cancelled = false;
 
     const load = async () => {
       try {
-        const snapshot = await getDoc(doc(firestore, 'bands', bandId, 'technicalRiders', riderId));
+        const result = await dataClient.publicRiders.get(bandId, riderId);
         if (cancelled) return;
 
-        if (!snapshot.exists()) {
+        if (!result) {
           setStatus('not-found');
           return;
         }
 
-        const data = snapshot.data() as Record<string, unknown>;
-        if (data.publicShareEnabled !== true) {
-          setStatus('private');
-          return;
-        }
+        setRider(result.rider);
+        setBandLogo(result.bandLogo ?? undefined);
 
-        setRider(normalizeInputList(snapshot.id, data));
-
-        try {
-          const bandSnap = await getDoc(doc(firestore, 'bands', bandId));
-          if (bandSnap.exists()) {
-            const bandData = bandSnap.data() as Record<string, unknown>;
-            setBandLogo(typeof bandData.logo === 'string' ? bandData.logo : undefined);
-          } else {
-            setBandLogo(undefined);
-          }
-        } catch {
-          setBandLogo(undefined);
-        }
-
-        const items = Array.isArray(data.items)
-          ? data.items.map(normalizeItem).filter((entry): entry is StageplotItem => Boolean(entry))
+        const items = Array.isArray(result.rider.items)
+          ? result.rider.items.map(normalizeItem).filter((entry): entry is StageplotItem => Boolean(entry))
           : [];
-        const drawingLayers = Array.isArray(data.drawingLayers)
-          ? data.drawingLayers.map(normalizeLayer).filter((entry): entry is SongHandNoteDocument => Boolean(entry))
+        const drawingLayers = Array.isArray(result.rider.drawingLayers)
+          ? result.rider.drawingLayers.map(normalizeLayer).filter((entry): entry is SongHandNoteDocument => Boolean(entry))
           : [];
 
         if (items.length > 0 || drawingLayers.length > 0) {
@@ -185,10 +165,6 @@ export default function PublicBandRiderPage() {
 
   if (status === 'not-found') {
     return <div className="public-setlist-page public-setlist-page--wide"><p className="public-setlist-status">Technical rider not found.</p></div>;
-  }
-
-  if (status === 'private') {
-    return <div className="public-setlist-page public-setlist-page--wide"><p className="public-setlist-status">This technical rider is not publicly shared.</p></div>;
   }
 
   if (status === 'error' || !rider) {

@@ -4,7 +4,7 @@ import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import UserAvatar from './UserAvatar';
-import { createBandInviteLinkOnServer } from '../lib/bandsApi';
+import { dataClient } from '../lib/dataClient';
 import type { Band } from '../types';
 
 interface BandManagementPanelProps {
@@ -55,11 +55,7 @@ export default function BandManagementPanel({
 
     setBusyInviteLink(true);
     try {
-      const result = await createBandInviteLinkOnServer({
-        userId: user.id,
-        userEmail: user.email,
-        bandId: band.id,
-      });
+      const result = await dataClient.bands.createInviteLink(band.id);
 
       setLastInviteLink(result.inviteUrl);
       setLastInviteLinkExpiresAt(result.expiresAt ?? null);

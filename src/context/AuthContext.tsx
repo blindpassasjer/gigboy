@@ -7,10 +7,7 @@ import {
   type OAuthCredential,
   GithubAuthProvider,
   GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  deleteUser,
   linkWithCredential,
-  onAuthStateChanged,
   reauthenticateWithCredential,
   updateEmail,
   updatePassword,
@@ -20,12 +17,12 @@ import {
   signOut,
 } from 'firebase/auth';
 import type { FirebaseError } from 'firebase/app';
-import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { changeUsername, claimUsername, loadUserProfile, updateProfileFields } from '../lib/userProfiles';
+import { changeUsername, claimUsername, updateProfileFields } from '../lib/userProfiles';
 import { isValidAvatar } from '../lib/avatars';
 import { deleteAccountOnServer } from '../lib/bandsApi';
+import { dataClient } from '../lib/dataClient';
 import type { PlanTier, SubscriptionStatus } from '../types';
 
 export interface User {
@@ -100,165 +97,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!auth) {
+    const unsubscribe = dataClient.auth.onAuthStateChanged((nextUser) => {
+      setUser(nextUser);
       setLoading(false);
-      return;
-    }
-    const authInstance = auth;
-
-    let unsubscribeProfile: (() => void) | null = null;
-
-    const unsubscribeAuth = onAuthStateChanged(authInstance, (firebaseUser) => {
-      if (unsubscribeProfile) {
-        unsubscribeProfile();
-        unsubscribeProfile = null;
-      }
-
-      if (!firebaseUser) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
-      if (!db) {
-        setUser({
-          id: firebaseUser.uid,
-          email: firebaseUser.email ?? '',
-          username: null,
-          avatar: null,
-          fullName: null,
-          plan: 'free',
-          planOverride: false,
-          subscriptionStatus: null,
-          currentPeriodEnd: null,
-          storageQuotaBytes: 100 * 1024 * 1024,
-          bandExtraMembers: 0,
-          memberLimit: 1,
-          stripeCustomerId: null,
-        });
-        setLoading(false);
-        return;
-      }
-      const firestore = db;
-
-      const syncProfile = async () => {
-        try {
-          const profile = await loadUserProfile(firestore, firebaseUser.uid);
-          if (authInstance.currentUser?.uid !== firebaseUser.uid) return;
-
-          setUser({
-            id: firebaseUser.uid,
-            email: firebaseUser.email ?? '',
-              username: profile?.username ?? null,
-            avatar: profile?.avatar ?? null,
-            fullName: profile?.fullName ?? null,
-            plan: profile?.plan ?? 'free',
-            planOverride: profile?.planOverride === true,
-            subscriptionStatus: profile?.subscriptionStatus ?? null,
-            currentPeriodEnd: profile?.currentPeriodEnd ?? null,
-            storageQuotaBytes: profile?.storageQuotaBytes ?? 100 * 1024 * 1024,
-            bandExtraMembers: profile?.bandExtraMembers ?? 0,
-            memberLimit: profile?.memberLimit ?? 1,
-            stripeCustomerId: profile?.stripeCustomerId ?? null,
-          });
-        } catch (error) {
-          if (authInstance.currentUser?.uid !== firebaseUser.uid) return;
-
-          console.error('Failed to load user profile.', error);
-          setUser({
-            id: firebaseUser.uid,
-            email: firebaseUser.email ?? '',
-              username: null,
-            avatar: null,
-            fullName: null,
-            plan: 'free',
-            planOverride: false,
-            subscriptionStatus: null,
-            currentPeriodEnd: null,
-            storageQuotaBytes: 100 * 1024 * 1024,
-            bandExtraMembers: 0,
-            memberLimit: 1,
-            stripeCustomerId: null,
-          });
-        } finally {
-          if (authInstance.currentUser?.uid === firebaseUser.uid) {
-            setLoading(false);
-          }
-        }
-      };
-
-      setLoading(true);
-      unsubscribeProfile = onSnapshot(
-        doc(firestore, 'users', firebaseUser.uid),
-        () => {
-          void syncProfile();
-        },
-        (error) => {
-          console.error('Failed to subscribe to user profile.', error);
-          void syncProfile();
-        }
-      );
     });
-
-    return () => {
-      unsubscribeAuth();
-      if (unsubscribeProfile) {
-        unsubscribeProfile();
-      }
-    };
+    return unsubscribe;
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<string | null> => {
-    if (!auth) {
-      return firebaseConfigError ?? 'Firebase authentication is not configured.';
-    }
+    const { user: loggedInUser, error } = await dataClient.auth.login(email, password);
+    if (error) return error;
 
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-
-      const pendingCredential = pendingCredentialRef.current;
-      const pendingEmail = pendingLinkEmail;
-      const normalizedPendingEmail = pendingEmail?.trim().toLowerCase();
-      const normalizedEmail = email.trim().toLowerCase();
-      if (pendingCredential && normalizedPendingEmail === normalizedEmail) {
-        await linkWithCredential(result.user, pendingCredential);
+    const pendingCredential = pendingCredentialRef.current;
+    const pendingEmail = pendingLinkEmail;
+    const normalizedPendingEmail = pendingEmail?.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (pendingCredential && normalizedPendingEmail === normalizedEmail && auth?.currentUser) {
+      try {
+        await linkWithCredential(auth.currentUser, pendingCredential);
         clearPendingLink();
+      } catch (err: unknown) {
+        return err instanceof Error ? err.message : 'Failed to link accounts.';
       }
-
-      return null;
-    } catch (err: unknown) {
-      const code = getAuthErrorCode(err);
-      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-login-credentials') {
-        return 'Invalid email or password.';
-      }
-      return err instanceof Error ? err.message : 'Login failed';
     }
-  }, [clearPendingLink, getAuthErrorCode, pendingLinkEmail]);
+
+    if (loggedInUser) {
+      setUser(loggedInUser);
+    }
+    return null;
+  }, [clearPendingLink, pendingLinkEmail]);
 
   const register = useCallback(async (email: string, password: string, username: string): Promise<string | null> => {
-    if (!auth || !db) {
-      return firebaseConfigError ?? 'Firebase authentication is not configured.';
-    }
+    const { user: registeredUser, error } = await dataClient.auth.register(email, password, username);
+    if (error) return error;
 
-    try {
-      const credential = await createUserWithEmailAndPassword(auth, email, password);
-      try {
-        await claimUsername(db, {
-          userId: credential.user.uid,
-          email: credential.user.email ?? email,
-          username,
-        });
-      } catch (profileError) {
-        await deleteUser(credential.user).catch(() => undefined);
-        throw profileError;
-      }
-      // Optimistically set username so the race between onAuthStateChanged and the
-      // Firestore write doesn't briefly show UsernameSetupPage after registration.
-      setUser((current) => (current ? { ...current, username } : current));
-      return null;
-    } catch (err: unknown) {
-      return err instanceof Error ? err.message : 'Registration failed';
-    }
+    // Optimistically set username so the race between onAuthStateChanged and the
+    // backend write doesn't briefly show UsernameSetupPage after registration.
+    setUser((current) => (current ? { ...current, username } : registeredUser));
+    return null;
   }, []);
 
   const formatAuthError = useCallback((err: unknown, providerLabel?: string): string => {
@@ -572,8 +448,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [getAuthErrorCode]);
 
   const logout = useCallback(async () => {
-    if (!auth) return;
-    await signOut(auth);
+    await dataClient.auth.logout();
+    setUser(null);
   }, []);
 
   const value = useMemo(

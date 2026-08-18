@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { db, storage } from '../lib/firebase';
-import {
-  moveSongAttachmentToTrash,
-  loadSongAttachments,
-  uploadSongAttachment,
-  type AttachmentsScope,
-  type SongAttachment,
-  type UploaderIdentity,
-  renameSongAttachment,
-} from '../lib/songAttachments';
+import { dataClient } from '../lib/dataClient';
+import type { AttachmentsScope, SongAttachment } from '../lib/songAttachments';
 
 interface Params {
   scope: AttachmentsScope;
@@ -24,12 +16,15 @@ export function useSongAttachments({ scope, songId }: Params) {
   const scopeKey = scope.type === 'band' ? `band:${scope.bandId}` : `user:${scope.ownerId}`;
 
   useEffect(() => {
-    if (!db || !songId) {
+    if (!songId) {
       setAttachments([]);
       return;
     }
     setLoading(true);
-    loadSongAttachments(db, storage, scope, songId)
+    const listPromise = scope.type === 'band'
+      ? dataClient.bandAttachments.list(scope.bandId, songId)
+      : dataClient.attachments.list(songId);
+    listPromise
       .then(setAttachments)
       .catch((err) => console.error('Failed to load attachments', err))
       .finally(() => setLoading(false));
@@ -37,12 +32,13 @@ export function useSongAttachments({ scope, songId }: Params) {
   }, [scopeKey, songId]);
 
   const uploadAttachment = useCallback(
-    async (file: File, uploader: UploaderIdentity) => {
-      if (!db || !storage) return;
+    async (file: File) => {
       setUploading(true);
       setUploadError(null);
       try {
-        const attachment = await uploadSongAttachment(db, storage, scope, songId, file, uploader);
+        const attachment = scope.type === 'band'
+          ? await dataClient.bandAttachments.upload(scope.bandId, songId, file)
+          : await dataClient.attachments.upload(songId, file);
         setAttachments((prev) => [attachment, ...prev]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to save attachment';
@@ -59,9 +55,12 @@ export function useSongAttachments({ scope, songId }: Params) {
 
   const renameAttachment = useCallback(
     async (attachment: SongAttachment, newName: string) => {
-      if (!db) return;
       try {
-        await renameSongAttachment(db, scope, songId, attachment, newName);
+        if (scope.type === 'band') {
+          await dataClient.bandAttachments.rename(scope.bandId, songId, attachment.id, newName);
+        } else {
+          await dataClient.attachments.rename(songId, attachment.id, newName);
+        }
         setAttachments((prev) =>
           prev.map((a) => (a.id === attachment.id ? { ...a, name: newName } : a)),
         );
@@ -74,10 +73,13 @@ export function useSongAttachments({ scope, songId }: Params) {
   );
 
   const deleteAttachment = useCallback(
-    async (attachment: SongAttachment, songTitle: string) => {
-      if (!db) return;
+    async (attachment: SongAttachment) => {
       try {
-        await moveSongAttachmentToTrash(db, scope, songId, songTitle, attachment);
+        if (scope.type === 'band') {
+          await dataClient.bandAttachments.remove(scope.bandId, songId, attachment.id);
+        } else {
+          await dataClient.attachments.remove(songId, attachment.id);
+        }
         setAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
       } catch (err) {
         console.error('Failed to move attachment to trash', err);

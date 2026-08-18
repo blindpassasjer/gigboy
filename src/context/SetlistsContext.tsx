@@ -5,6 +5,8 @@ import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore'
 import type { Setlist, TrashedSetlist } from '../types';
 import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db } from '../lib/firebase';
+import { dataClient } from '../lib/dataClient';
+import { setlistFromDoc } from '../lib/dataClient/firebaseClient';
 import {
   compareTrashByDeletedAtDesc,
   createTrashPayload,
@@ -72,6 +74,14 @@ async function writeSetlist(setlist: Setlist, userId: string | null) {
 
   const targetOwnerId = setlist.ownerId ?? userId;
 
+  if (targetOwnerId === userId) {
+    // Our own setlist: goes through the backend-agnostic data client.
+    await dataClient.setlists.update(setlist);
+    return;
+  }
+
+  // Editor updating a setlist shared by another owner: out of dataClient's
+  // scope (collaboration stays Firestore-only), write directly.
   const { id, ...rest } = setlist;
   const firestoreData = Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== undefined));
   await setDoc(doc(db, 'users', targetOwnerId, SETLISTS_COLLECTION, id), firestoreData);
@@ -94,11 +104,6 @@ function canEditSetlist(setlist: Setlist, userId: string | null) {
 function isSetlistOwner(setlist: Setlist, userId: string | null) {
   const ownerId = setlist.ownerId ?? userId;
   return Boolean(userId && ownerId === userId);
-}
-
-function setlistFromDoc(id: string, data: Record<string, unknown>, ownerId: string, userId: string): Setlist {
-  const setlist = { id, ownerId, ...(data as Omit<Setlist, 'id'>) } as Setlist;
-  return { ...setlist, accessRole: getRole(setlist, userId) };
 }
 
 interface SetlistsContextValue {
@@ -142,7 +147,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     const firestore = db;
 
     Promise.allSettled([
-      getDocs(collection(firestore, 'users', userId, SETLISTS_COLLECTION)),
+      dataClient.setlists.list(),
       loadAcceptedSharedResources({
         db: firestore,
         userId,
@@ -152,7 +157,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       getDocs(collection(firestore, 'users', userId, TRASH_COLLECTION)),
     ])
       .then(([ownedResult, sharedResult, trashResult]) => {
-        const ownedSnapshot = ownedResult.status === 'fulfilled' ? ownedResult.value : null;
+        const ownedSetlistsResult = ownedResult.status === 'fulfilled' ? ownedResult.value : null;
         const sharedSetlists = sharedResult.status === 'fulfilled' ? sharedResult.value : [];
         const trashDocs = trashResult.status === 'fulfilled' ? trashResult.value.docs : [];
 
@@ -184,7 +189,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
             .sort(compareTrashByDeletedAtDesc)
         );
 
-        if (!ownedSnapshot) {
+        if (!ownedSetlistsResult) {
           if (ownedResult.status === 'rejected') {
             if (isPermissionDeniedError(ownedResult.reason)) {
               logSetlistsPermissionHelp(ownedResult.reason);
@@ -195,11 +200,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const ownedSetlists = ownedSnapshot.docs.map((entry) =>
-          setlistFromDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
-        );
-
-        setSetlists(normalizeSetlists([...ownedSetlists, ...sharedSetlists]));
+        setSetlists(normalizeSetlists([...ownedSetlistsResult, ...sharedSetlists]));
       })
       .catch((error) => {
         if (isPermissionDeniedError(error)) {
@@ -285,7 +286,7 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
             doc(db, 'users', userId, TRASH_COLLECTION, trashId),
             createTrashPayload('setlist', deletedAt, purgeAt, deleting)
           ),
-          deleteDoc(doc(db, 'users', userId, SETLISTS_COLLECTION, id)),
+          dataClient.setlists.remove(id),
           ...changed.map((list) => writeSetlist(list, userId)),
         ]).catch((error) => {
           if (isPermissionDeniedError(error)) {

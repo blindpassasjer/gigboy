@@ -11,6 +11,8 @@ import {
 import type { Song, TrashedSong } from '../types';
 import { loadAcceptedSharedResources } from '../lib/collaboration';
 import { db, firebaseEnabled } from '../lib/firebase';
+import { dataClient } from '../lib/dataClient';
+import { songFromOwnedDoc } from '../lib/dataClient/firebaseClient';
 import {
   compareTrashByDeletedAtDesc,
   createTrashPayload,
@@ -100,40 +102,6 @@ interface SongsContextValue {
 const SongsContext = createContext<SongsContextValue | null>(null);
 const SONGS_COLLECTION = 'songs';
 
-function songFromOwnedDoc(id: string, data: Record<string, unknown>, ownerId: string, currentUserId: string): Song {
-  const playbackUrl =
-    typeof data.playbackUrl === 'string' && data.playbackUrl.trim().length > 0
-      ? data.playbackUrl
-      : typeof data.playbackURL === 'string' && data.playbackURL.trim().length > 0
-        ? data.playbackURL
-        : typeof data.playback_url === 'string' && data.playback_url.trim().length > 0
-          ? data.playback_url
-          : typeof data.mediaUrl === 'string' && data.mediaUrl.trim().length > 0
-            ? data.mediaUrl
-            : typeof data.mediaURL === 'string' && data.mediaURL.trim().length > 0
-              ? data.mediaURL
-              : typeof data.media_url === 'string' && data.media_url.trim().length > 0
-                ? data.media_url
-                : undefined;
-
-  const song: Song = {
-    ...(data as Omit<Song, 'id' | 'title' | 'language' | 'chordpro'>),
-    id,
-    ownerId,
-    title: typeof data.title === 'string' ? data.title : '',
-    language: typeof data.language === 'string' ? data.language : 'en',
-    chordpro: typeof data.chordpro === 'string' ? data.chordpro : '',
-    playbackUrl,
-  };
-  const role = ownerId === currentUserId
-    ? 'owner'
-    : song.collaborationPermissions?.[currentUserId];
-  return {
-    ...song,
-    accessRole: role === 'editor' || role === 'viewer' ? role : ownerId === currentUserId ? 'owner' : undefined,
-  };
-}
-
 function canEditSong(song: Song, userId: string | null) {
   if (!userId) return false;
   return song.ownerId === userId || song.accessRole === 'editor';
@@ -165,7 +133,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     const firestore = db;
 
     Promise.allSettled([
-      getDocs(collection(firestore, ...songsCollectionPath(userId))),
+      dataClient.songs.list(),
       loadAcceptedSharedResources({
         db: firestore,
         userId,
@@ -175,7 +143,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       getDocs(collection(firestore, 'users', userId, TRASH_COLLECTION)),
     ])
       .then(async ([ownedResult, sharedResult, trashResult]) => {
-        const ownedSnap = ownedResult.status === 'fulfilled' ? ownedResult.value : null;
+        const ownedSongs = ownedResult.status === 'fulfilled' ? normalizeSongs(ownedResult.value) : null;
         const sharedSongs = sharedResult.status === 'fulfilled' ? normalizeSongs(sharedResult.value) : [];
         const trashDocs = trashResult.status === 'fulfilled' ? trashResult.value.docs : [];
         const now = Date.now();
@@ -219,18 +187,14 @@ export function SongsProvider({ children }: { children: ReactNode }) {
           console.warn('Failed to load trashed songs from Firestore.', trashResult.reason);
         }
 
-        const directSongs = normalizeSongs(
-          (ownedSnap?.docs ?? []).map((entry) =>
-            songFromOwnedDoc(entry.id, entry.data() as Record<string, unknown>, userId, userId)
-          )
-        );
+        const directSongs = ownedSongs ?? [];
 
         if (directSongs.length > 0 || sharedSongs.length > 0) {
           setUserSongs(normalizeSongs([...directSongs, ...sharedSongs]));
           return;
         }
 
-        if (!ownedSnap) {
+        if (!ownedSongs) {
           return;
         }
 
@@ -291,11 +255,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { id, ...rest } = pendingAdd.nextSong;
-      const firestoreData = Object.fromEntries(
-        Object.entries(rest).filter(([, v]) => v !== undefined)
-      );
-      await setDoc(doc(db, ...songsCollectionPath(userId), id), firestoreData);
+      await dataClient.songs.create(pendingAdd.nextSong);
       return null;
     } catch (err) {
       setUserSongs((prev) => prev.filter((s) => s.id !== pendingAdd.nextSong?.id));
@@ -337,12 +297,19 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     const songToSave: Song = nextSong;
 
     try {
-      const { id, ...rest } = songToSave;
-      const firestoreData = Object.fromEntries(
-        Object.entries(rest).filter(([, v]) => v !== undefined)
-      );
       const targetOwnerId = songToSave.ownerId ?? userId;
-      await setDoc(doc(db, ...songsCollectionPath(targetOwnerId as string), id), firestoreData);
+      if (targetOwnerId === userId) {
+        // Editing our own song: goes through the backend-agnostic data client.
+        await dataClient.songs.update(songToSave);
+      } else {
+        // Editor updating a song shared by another owner: out of dataClient's
+        // scope (collaboration stays Firestore-only), write directly.
+        const { id, ...rest } = songToSave;
+        const firestoreData = Object.fromEntries(
+          Object.entries(rest).filter(([, v]) => v !== undefined)
+        );
+        await setDoc(doc(db, ...songsCollectionPath(targetOwnerId as string), id), firestoreData);
+      }
       return null;
     } catch (err) {
       if (previousSong) {
@@ -382,13 +349,13 @@ export function SongsProvider({ children }: { children: ReactNode }) {
           doc(db, 'users', userId, TRASH_COLLECTION, trashId),
           createTrashPayload('song', deletedAt, purgeAt, targetSong)
         ),
-        deleteDoc(doc(db, ...songsCollectionPath(userId), id)),
+        dataClient.songs.remove(id),
       ]);
     } catch (error) {
       console.error('Failed to move song to trash in Firestore. Restoring list from server.', error);
       setTrashedSongs((prev) => prev.filter((entry) => entry.trashId !== trashId));
-      getDocs(collection(db, ...songsCollectionPath(userId))).then((snap) => {
-        setUserSongs(normalizeSongs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Song)));
+      dataClient.songs.list().then((songs) => {
+        setUserSongs(normalizeSongs(songs));
       });
     }
   }, [userId, userSongs]);
@@ -432,13 +399,8 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { id: restoredSongId, ...rest } = restoredSong;
-      const firestoreData = Object.fromEntries(
-        Object.entries(rest).filter(([, value]) => value !== undefined)
-      );
-
       await Promise.all([
-        setDoc(doc(db, ...songsCollectionPath(userId), restoredSongId), firestoreData),
+        dataClient.songs.update(restoredSong),
         deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId)),
       ]);
 
@@ -494,8 +456,6 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const firestore = db;
-
     const changedSongs = nextSongs.filter((song, index) => {
       const previousSong = previousSongs[index];
       return previousSong?.id !== song.id || previousSong?.sortOrder !== song.sortOrder;
@@ -505,15 +465,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    Promise.all(
-      changedSongs.map((song) => {
-        const { id, ...rest } = song;
-        const firestoreData = Object.fromEntries(
-          Object.entries(rest).filter(([, value]) => value !== undefined)
-        );
-        return setDoc(doc(firestore, ...songsCollectionPath(userId), id), firestoreData);
-      })
-    ).catch((error) => {
+    Promise.all(changedSongs.map((song) => dataClient.songs.update(song))).catch((error) => {
       console.error('Failed to reorder songs in Firestore.', error);
       setUserSongs(previousSongs);
     });

@@ -11,10 +11,12 @@ node_modules
 dist
 dist-ssr
 dist-apk
+dist-server
 .android-toolchain
 *.local
 .env
 .env.local
+.env.selfhost
 config/firebase/*.json
 
 # Editor directories and files

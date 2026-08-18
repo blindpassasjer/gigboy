@@ -945,9 +945,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                 )}
 
 
-
-
-
               </div>
             </div>
           ))}
