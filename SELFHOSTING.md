@@ -3,12 +3,13 @@
 Run your own copy of Gigboy on your own infrastructure with Docker — no Firebase, Stripe,
 or Cloudflare account required.
 
-> This build covers: email/password auth; personal and band-owned songs, songlists, and
+> This build covers: email/password auth with full profile management (email/username/avatar/
+> full name/password changes, account deletion); personal and band-owned songs, songlists, and
 > setlists; bands with invite-link membership; band technical riders/stage plots with public
 > share links; song PDF attachments (20MB cap); trash/soft-delete with 30-day retention; and
 > band press kits (rich text, images, video/presave links, public share links) — all with full
-> feature access (no plan gating). Not yet included: recordings, hand notes, account deletion,
-> band logo upload, OG-tag social previews, and ad-hoc per-resource sharing outside of bands.
+> feature access (no plan gating). Not yet included: recordings, hand notes, band logo upload,
+> OG-tag social previews, and ad-hoc per-resource sharing outside of bands.
 
 ## Prerequisites
 
@@ -53,6 +54,14 @@ or Cloudflare account required.
    upgrades that add new migrations.
 
 5. Open `http://localhost:3000` (or whatever `PORT` you set) and register an account.
+
+   **Accessing over plain HTTP (no reverse proxy / no TLS)** — the default and common case for
+   a home NAS or LAN deployment (e.g. `http://192.168.1.50:3000`) — session cookies are set
+   *without* the `Secure` flag by default (`COOKIE_SECURE=false`), since a `Secure` cookie is
+   silently dropped by the browser over plain HTTP: login would appear to succeed but every
+   API call afterward would 401 with "Authentication required." Only set `COOKIE_SECURE=true`
+   in `.env.selfhost` once you've put a reverse proxy in front of the container that terminates
+   real HTTPS.
 
 ## Data persistence
 

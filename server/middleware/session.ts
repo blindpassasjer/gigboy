@@ -27,7 +27,10 @@ export function setSessionCookie(res: Response, token: string, expires: Date): v
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
+    // Self-hosted deployments are commonly served over plain HTTP (no reverse-proxy TLS in front
+    // of the container) — a `secure` cookie would be silently dropped by the browser in that case.
+    // Defaults to non-secure; set COOKIE_SECURE=true once a reverse proxy terminates HTTPS.
+    secure: process.env.COOKIE_SECURE === 'true',
     signed: true,
     path: '/',
     expires,

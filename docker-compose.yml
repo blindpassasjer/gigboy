@@ -26,6 +26,7 @@ services:
       ATTACHMENTS_DIR: /data/attachments
       PORT: ${PORT:-3000}
       NODE_ENV: production
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes:
       - gigboy-attachments-data:/data/attachments
     ports:
