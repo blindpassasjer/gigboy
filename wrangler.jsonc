@@ -13,30 +13,31 @@
           }
         ]
       },
-      // This file is tracked in git and is a template: it intentionally contains no
-      // real project IDs or Stripe price IDs. For an actual deployment, override every
-      // value below via `wrangler pages secret put <NAME>` or the Cloudflare Pages
-      // dashboard's per-environment variables (which take precedence over these
-      // placeholders) rather than editing this file with real values.
+      // TEMPORARY: real values restored 2026-08-18 as an emergency hotfix — these were
+      // swapped for placeholders on the (wrong, or at least unconfirmed) assumption that
+      // Cloudflare Pages dashboard env vars already overrode them; production broke
+      // instead. Move these to dashboard-managed variables/secrets (Settings > Environment
+      // variables, production environment) and swap this file back to placeholders only
+      // once that's confirmed working end-to-end — don't repeat the same mistake blind.
       "vars": {
-        "FIREBASE_PROJECT_ID": "your-firebase-project-id",
+        "FIREBASE_PROJECT_ID": "songbook-bebd5",
         // Secrets managed via Cloudflare dashboard / wrangler pages secret put:
         // FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL,
         // STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
-        "STRIPE_PRO_MONTHLY_PRICE_ID": "price_replace_me_pro_monthly",
-        "STRIPE_PRO_ANNUAL_PRICE_ID": "price_replace_me_pro_annual",
-        "STRIPE_CREW_MONTHLY_PRICE_ID": "price_replace_me_crew_monthly",
-        "STRIPE_CREW_ANNUAL_PRICE_ID": "price_replace_me_crew_annual",
-        "STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID": "price_replace_me_crew_monthly_extra_member",
-        "STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID": "price_replace_me_crew_annual_extra_member",
+        "STRIPE_PRO_MONTHLY_PRICE_ID": "price_1Tu6PKQ9ZHGjaIIRdjZjFyLf",
+        "STRIPE_PRO_ANNUAL_PRICE_ID": "price_1Tu6VDQ9ZHGjaIIRY1wo2Hv0",
+        "STRIPE_CREW_MONTHLY_PRICE_ID": "price_1Tu6QjQ9ZHGjaIIRoFAHH0Bi",
+        "STRIPE_CREW_ANNUAL_PRICE_ID": "price_1Tu6TPQ9ZHGjaIIR9kobQc4P",
+        "STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID": "price_1Tu6WQQ9ZHGjaIIR28LmsKPJ",
+        "STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID": "price_1Tu6XTQ9ZHGjaIIRZKLLVOKk",
         "ADMIN_UIDS": "",
         // Client-side (Vite build-time) copies, exposed to the browser bundle:
-        "VITE_STRIPE_PRO_MONTHLY_PRICE_ID": "price_replace_me_pro_monthly",
-        "VITE_STRIPE_PRO_ANNUAL_PRICE_ID": "price_replace_me_pro_annual",
-        "VITE_STRIPE_CREW_MONTHLY_PRICE_ID": "price_replace_me_crew_monthly",
-        "VITE_STRIPE_CREW_ANNUAL_PRICE_ID": "price_replace_me_crew_annual",
-        "VITE_STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID": "price_replace_me_crew_monthly_extra_member",
-        "VITE_STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID": "price_replace_me_crew_annual_extra_member"
+        "VITE_STRIPE_PRO_MONTHLY_PRICE_ID": "price_1Tu6PKQ9ZHGjaIIRdjZjFyLf",
+        "VITE_STRIPE_PRO_ANNUAL_PRICE_ID": "price_1Tu6VDQ9ZHGjaIIRY1wo2Hv0",
+        "VITE_STRIPE_CREW_MONTHLY_PRICE_ID": "price_1Tu6QjQ9ZHGjaIIRoFAHH0Bi",
+        "VITE_STRIPE_CREW_ANNUAL_PRICE_ID": "price_1Tu6TPQ9ZHGjaIIR9kobQc4P",
+        "VITE_STRIPE_CREW_MONTHLY_EXTRA_MEMBER_PRICE_ID": "price_1Tu6WQQ9ZHGjaIIR28LmsKPJ",
+        "VITE_STRIPE_CREW_ANNUAL_EXTRA_MEMBER_PRICE_ID": "price_1Tu6XTQ9ZHGjaIIRZKLLVOKk"
       }
     }
   }
