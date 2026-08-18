@@ -397,6 +397,63 @@ const authClient: AuthClient = {
   async logout() {
     await apiFetch<Record<string, never>>('/auth/logout', { method: 'POST' });
   },
+  async updateEmail(email) {
+    try {
+      return await apiFetch<{ user: User | null; error: string | null }>('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ email }),
+      });
+    } catch (err) {
+      return { user: null, error: err instanceof Error ? err.message : 'Failed to update email.' };
+    }
+  },
+  async updateUsername(username) {
+    try {
+      return await apiFetch<{ user: User | null; error: string | null }>('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ username }),
+      });
+    } catch (err) {
+      return { user: null, error: err instanceof Error ? err.message : 'Failed to update username.' };
+    }
+  },
+  async updateAvatar(avatar) {
+    try {
+      return await apiFetch<{ user: User | null; error: string | null }>('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ avatar }),
+      });
+    } catch (err) {
+      return { user: null, error: err instanceof Error ? err.message : 'Failed to update avatar.' };
+    }
+  },
+  async updateFullName(fullName) {
+    try {
+      return await apiFetch<{ user: User | null; error: string | null }>('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ fullName }),
+      });
+    } catch (err) {
+      return { user: null, error: err instanceof Error ? err.message : 'Failed to update full name.' };
+    }
+  },
+  async updatePassword(currentPassword, newPassword) {
+    try {
+      return await apiFetch<{ error: string | null }>('/auth/password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Failed to update password.' };
+    }
+  },
+  async deleteAccount() {
+    try {
+      return await apiFetch<{ error: string | null }>('/auth/me', { method: 'DELETE' });
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Failed to delete account.' };
+    }
+  },
 };
 
 export const apiClient: DataClient = {

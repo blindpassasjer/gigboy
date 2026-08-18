@@ -1,9 +1,13 @@
 import {
   createUserWithEmailAndPassword,
   deleteUser,
+  EmailAuthProvider,
   onAuthStateChanged as onFirebaseAuthStateChanged,
+  reauthenticateWithCredential,
   signInWithEmailAndPassword,
   signOut,
+  updateEmail as firebaseUpdateEmail,
+  updatePassword as firebaseUpdatePassword,
   type User as FirebaseUser,
 } from 'firebase/auth';
 import type { FirebaseError } from 'firebase/app';
@@ -13,7 +17,8 @@ import type { Band, CollaborationPermission, InputList, PressKit, PublicSongEntr
 import type { User } from '../../context/AuthContext';
 import type { TrashListItem } from '../../components/TrashView';
 import { auth, db, firebaseConfigError } from '../firebase';
-import { claimUsername, loadUserProfile } from '../userProfiles';
+import { changeUsername, claimUsername, loadUserProfile, updateProfileFields } from '../userProfiles';
+import { isValidAvatar } from '../avatars';
 import { normalizeInputList } from '../inputLists';
 import {
   createBandOnServer,
@@ -23,6 +28,7 @@ import {
   removeBandMemberOnServer,
   createBandRiderOnServer,
   createBandPressKitOnServer,
+  deleteAccountOnServer,
 } from '../bandsApi';
 import {
   createPressKitShare,
@@ -256,6 +262,130 @@ const authClient: AuthClient = {
   async logout() {
     if (!auth) return;
     await signOut(auth);
+  },
+
+  async updateEmail(email) {
+    if (!auth?.currentUser || !db) {
+      return { user: null, error: firebaseConfigError ?? 'Firebase authentication is not configured.' };
+    }
+    const trimmed = email.trim();
+    if (!trimmed) {
+      return { user: null, error: 'Email is required.' };
+    }
+    try {
+      await firebaseUpdateEmail(auth.currentUser, trimmed);
+      await updateProfileFields(db, { userId: auth.currentUser.uid, email: trimmed });
+      return { user: await resolveUser(auth.currentUser), error: null };
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes('auth/requires-recent-login')) {
+        return { user: null, error: 'Please sign in again, then retry changing your email.' };
+      }
+      return { user: null, error: err instanceof Error ? err.message : 'Failed to update email.' };
+    }
+  },
+
+  async updateUsername(username) {
+    if (!auth?.currentUser || !db) {
+      return { user: null, error: firebaseConfigError ?? 'Firebase authentication is not configured.' };
+    }
+    try {
+      await changeUsername(db, {
+        userId: auth.currentUser.uid,
+        email: auth.currentUser.email ?? undefined,
+        username,
+      });
+      return { user: await resolveUser(auth.currentUser), error: null };
+    } catch (err: unknown) {
+      return { user: null, error: err instanceof Error ? err.message : 'Failed to update username.' };
+    }
+  },
+
+  async updateAvatar(avatar) {
+    if (!auth?.currentUser || !db) {
+      return { user: null, error: firebaseConfigError ?? 'Firebase authentication is not configured.' };
+    }
+    if (!isValidAvatar(avatar)) {
+      return { user: null, error: 'Invalid avatar selection.' };
+    }
+    try {
+      await updateProfileFields(db, { userId: auth.currentUser.uid, avatar });
+      return { user: await resolveUser(auth.currentUser), error: null };
+    } catch (err: unknown) {
+      return { user: null, error: err instanceof Error ? err.message : 'Failed to update avatar.' };
+    }
+  },
+
+  async updateFullName(fullName) {
+    if (!auth?.currentUser || !db) {
+      return { user: null, error: firebaseConfigError ?? 'Firebase authentication is not configured.' };
+    }
+    const trimmed = fullName.trim();
+    if (!trimmed) {
+      return { user: null, error: 'Full name is required.' };
+    }
+    if (trimmed.length > 80) {
+      return { user: null, error: 'Full name must be 80 characters or fewer.' };
+    }
+    try {
+      await updateProfileFields(db, { userId: auth.currentUser.uid, fullName: trimmed });
+      return { user: await resolveUser(auth.currentUser), error: null };
+    } catch (err: unknown) {
+      return { user: null, error: err instanceof Error ? err.message : 'Failed to update full name.' };
+    }
+  },
+
+  async updatePassword(currentPassword, newPassword) {
+    if (!auth?.currentUser) {
+      return { error: firebaseConfigError ?? 'Firebase authentication is not configured.' };
+    }
+    if (!auth.currentUser.email) {
+      return { error: 'Password changes are only available for email/password accounts.' };
+    }
+    const hasPasswordProvider = auth.currentUser.providerData.some((provider) => provider.providerId === 'password');
+    if (hasPasswordProvider && !currentPassword) {
+      return { error: 'Current password is required.' };
+    }
+    if (newPassword.length < 8) {
+      return { error: 'Password must be at least 8 characters.' };
+    }
+    try {
+      if (hasPasswordProvider) {
+        const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+        await reauthenticateWithCredential(auth.currentUser, credential);
+      }
+      await firebaseUpdatePassword(auth.currentUser, newPassword);
+      return { error: null };
+    } catch (err: unknown) {
+      const code = getAuthErrorCode(err);
+      if (hasPasswordProvider && (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials')) {
+        return { error: 'Current password is incorrect.' };
+      }
+      if (code === 'auth/requires-recent-login') {
+        return {
+          error: hasPasswordProvider
+            ? 'Please sign in again, then retry changing your password.'
+            : 'Please sign in with Google again, then retry setting a password.',
+        };
+      }
+      if (code === 'auth/weak-password') {
+        return { error: 'Password must be at least 8 characters.' };
+      }
+      return { error: err instanceof Error ? err.message : 'Failed to update password.' };
+    }
+  },
+
+  async deleteAccount() {
+    if (!auth?.currentUser) {
+      return { error: firebaseConfigError ?? 'Firebase authentication is not configured.' };
+    }
+    const currentUser = auth.currentUser;
+    try {
+      await deleteAccountOnServer({ userId: currentUser.uid, userEmail: currentUser.email ?? '' });
+      await signOut(auth);
+      return { error: null };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err.message : 'Failed to delete account.' };
+    }
   },
 };
 

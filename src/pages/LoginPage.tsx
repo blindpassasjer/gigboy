@@ -7,6 +7,8 @@ import BrandMark from '../components/BrandMark';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
+const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
+
 const LOGIN_FEATURES: { icon: LucideIcon; title: string; description: string }[] = [
   {
     icon: Music2,
@@ -421,30 +423,34 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="oauth-buttons">
-            <button
-              type="button"
-              className="btn-secondary oauth-btn"
-              onClick={() => { void handleProviderAuth('google'); }}
-              disabled={busy}
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-            <button
-              type="button"
-              className="btn-secondary oauth-btn"
-              onClick={() => { void handleProviderAuth('github'); }}
-              disabled={busy}
-            >
-              <GitHubIcon />
-              Continue with GitHub
-            </button>
-          </div>
+          {!isSelfHost && (
+            <>
+              <div className="oauth-buttons">
+                <button
+                  type="button"
+                  className="btn-secondary oauth-btn"
+                  onClick={() => { void handleProviderAuth('google'); }}
+                  disabled={busy}
+                >
+                  <GoogleIcon />
+                  Continue with Google
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary oauth-btn"
+                  onClick={() => { void handleProviderAuth('github'); }}
+                  disabled={busy}
+                >
+                  <GitHubIcon />
+                  Continue with GitHub
+                </button>
+              </div>
 
-          <p className="login-divider" role="separator" aria-label="or">
-            <span>or with email</span>
-          </p>
+              <p className="login-divider" role="separator" aria-label="or">
+                <span>or with email</span>
+              </p>
+            </>
+          )}
 
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             {mode === 'register' ? (

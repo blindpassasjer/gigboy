@@ -47,6 +47,14 @@ export interface AuthClient {
   login(email: string, password: string): Promise<{ user: User | null; error: string | null }>;
   register(email: string, password: string, username: string): Promise<{ user: User | null; error: string | null }>;
   logout(): Promise<void>;
+  updateEmail(email: string): Promise<{ user: User | null; error: string | null }>;
+  updateUsername(username: string): Promise<{ user: User | null; error: string | null }>;
+  updateAvatar(avatar: string): Promise<{ user: User | null; error: string | null }>;
+  updateFullName(fullName: string): Promise<{ user: User | null; error: string | null }>;
+  /** Requires the current password (re-auth). */
+  updatePassword(currentPassword: string, newPassword: string): Promise<{ error: string | null }>;
+  /** Permanently deletes the account. Self-host cascades via FKs; hosted SaaS calls the existing server-side cascade. */
+  deleteAccount(): Promise<{ error: string | null }>;
 }
 
 /**

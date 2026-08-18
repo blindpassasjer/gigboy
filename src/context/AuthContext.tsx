@@ -2,26 +2,21 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import {
-  EmailAuthProvider,
   type AuthProvider,
   type OAuthCredential,
   GithubAuthProvider,
   GoogleAuthProvider,
   linkWithCredential,
-  reauthenticateWithCredential,
-  updateEmail,
-  updatePassword,
   signInWithPopup,
   signInWithRedirect,
   signInWithEmailAndPassword,
-  signOut,
 } from 'firebase/auth';
 import type { FirebaseError } from 'firebase/app';
 import { auth, firebaseConfigError, firebaseEnabled } from '../lib/firebase';
+
+const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
 import { db } from '../lib/firebase';
-import { changeUsername, claimUsername, updateProfileFields } from '../lib/userProfiles';
-import { isValidAvatar } from '../lib/avatars';
-import { deleteAccountOnServer } from '../lib/bandsApi';
+import { claimUsername } from '../lib/userProfiles';
 import { dataClient } from '../lib/dataClient';
 import type { PlanTier, SubscriptionStatus } from '../types';
 
@@ -68,7 +63,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(firebaseEnabled);
+  const [loading, setLoading] = useState(firebaseEnabled || isSelfHost);
   const [pendingLinkEmail, setPendingLinkEmail] = useState<string | null>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const pendingCredentialRef = useRef<OAuthCredential | null>(null);
@@ -293,159 +288,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateEmailAddress = useCallback(async (email: string) => {
-    if (!auth?.currentUser || !db) {
-      return firebaseConfigError ?? 'Firebase authentication is not configured.';
-    }
-
-    const trimmed = email.trim();
-    if (!trimmed) {
-      return 'Email is required.';
-    }
-
-    try {
-      await updateEmail(auth.currentUser, trimmed);
-      await updateProfileFields(db, {
-        userId: auth.currentUser.uid,
-        email: trimmed,
-      });
-      setUser((current) => (current ? { ...current, email: trimmed } : current));
-      return null;
-    } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes('auth/requires-recent-login')) {
-        return 'Please sign in again, then retry changing your email.';
-      }
-      return err instanceof Error ? err.message : 'Failed to update email.';
-    }
+    const { user: updatedUser, error } = await dataClient.auth.updateEmail(email);
+    if (updatedUser) setUser(updatedUser);
+    return error;
   }, []);
 
   const updateUsernameValue = useCallback(async (username: string) => {
-    if (!auth?.currentUser || !db) {
-      return firebaseConfigError ?? 'Firebase authentication is not configured.';
-    }
-
-    try {
-      const claimed = await changeUsername(db, {
-        userId: auth.currentUser.uid,
-        email: auth.currentUser.email ?? undefined,
-        username,
-      });
-      setUser((current) => (current ? { ...current, username: claimed } : current));
-      return null;
-    } catch (err: unknown) {
-      return err instanceof Error ? err.message : 'Failed to update username.';
-    }
+    const { user: updatedUser, error } = await dataClient.auth.updateUsername(username);
+    if (updatedUser) setUser(updatedUser);
+    return error;
   }, []);
 
   const updateAvatarValue = useCallback(async (avatar: string) => {
-    if (!auth?.currentUser || !db) {
-      return firebaseConfigError ?? 'Firebase authentication is not configured.';
-    }
-
-    if (!isValidAvatar(avatar)) {
-      return 'Invalid avatar selection.';
-    }
-
-    try {
-      await updateProfileFields(db, {
-        userId: auth.currentUser.uid,
-        avatar,
-      });
-      setUser((current) => (current ? { ...current, avatar } : current));
-      return null;
-    } catch (err: unknown) {
-      return err instanceof Error ? err.message : 'Failed to update avatar.';
-    }
+    const { user: updatedUser, error } = await dataClient.auth.updateAvatar(avatar);
+    if (updatedUser) setUser(updatedUser);
+    return error;
   }, []);
 
   const updateFullNameValue = useCallback(async (fullName: string) => {
-    if (!auth?.currentUser || !db) {
-      return firebaseConfigError ?? 'Firebase authentication is not configured.';
-    }
-
-    const trimmed = fullName.trim();
-    if (!trimmed) {
-      return 'Full name is required.';
-    }
-
-    if (trimmed.length > 80) {
-      return 'Full name must be 80 characters or fewer.';
-    }
-
-    try {
-      await updateProfileFields(db, {
-        userId: auth.currentUser.uid,
-        fullName: trimmed,
-      });
-      setUser((current) => (current ? { ...current, fullName: trimmed } : current));
-      return null;
-    } catch (err: unknown) {
-      return err instanceof Error ? err.message : 'Failed to update full name.';
-    }
+    const { user: updatedUser, error } = await dataClient.auth.updateFullName(fullName);
+    if (updatedUser) setUser(updatedUser);
+    return error;
   }, []);
 
   const updatePasswordValue = useCallback(async (currentPassword: string, newPassword: string) => {
-    if (!auth?.currentUser) {
-      return firebaseConfigError ?? 'Firebase authentication is not configured.';
-    }
-
-    if (!auth.currentUser.email) {
-      return 'Password changes are only available for email/password accounts.';
-    }
-
-    const hasPasswordProvider = auth.currentUser.providerData.some((provider) => provider.providerId === 'password');
-
-    if (hasPasswordProvider && !currentPassword) {
-      return 'Current password is required.';
-    }
-
-    if (newPassword.length < 8) {
-      return 'Password must be at least 8 characters.';
-    }
-
-    try {
-      if (hasPasswordProvider) {
-        const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
-        await reauthenticateWithCredential(auth.currentUser, credential);
-      }
-      await updatePassword(auth.currentUser, newPassword);
-      return null;
-    } catch (err: unknown) {
-      const code = getAuthErrorCode(err);
-      if (hasPasswordProvider && (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials')) {
-        return 'Current password is incorrect.';
-      }
-      if (code === 'auth/requires-recent-login') {
-        return hasPasswordProvider
-          ? 'Please sign in again, then retry changing your password.'
-          : 'Please sign in with Google again, then retry setting a password.';
-      }
-      if (code === 'auth/weak-password') {
-        return 'Password must be at least 8 characters.';
-      }
-      return err instanceof Error ? err.message : 'Failed to update password.';
-    }
-  }, [getAuthErrorCode]);
+    const { error } = await dataClient.auth.updatePassword(currentPassword, newPassword);
+    return error;
+  }, []);
 
   const deleteAccountValue = useCallback(async (): Promise<string | null> => {
-    if (!auth?.currentUser) {
-      return firebaseConfigError ?? 'Firebase authentication is not configured.';
-    }
-
-    const currentUser = auth.currentUser;
-
     try {
       setIsDeletingAccount(true);
-      await deleteAccountOnServer({
-        userId: currentUser.uid,
-        userEmail: currentUser.email ?? '',
-      });
-      await signOut(auth!);
+      const { error } = await dataClient.auth.deleteAccount();
+      if (error) {
+        setIsDeletingAccount(false);
+        return error;
+      }
+      setUser(null);
       return null;
     } catch (err: unknown) {
       setIsDeletingAccount(false);
       return err instanceof Error ? err.message : 'Failed to delete account.';
     }
-  }, [getAuthErrorCode]);
+  }, []);
 
   const logout = useCallback(async () => {
     await dataClient.auth.logout();
@@ -456,8 +341,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       loading,
-      authEnabled: firebaseEnabled,
-      authError: firebaseConfigError,
+      authEnabled: firebaseEnabled || isSelfHost,
+      authError: isSelfHost ? null : firebaseConfigError,
       login,
       register,
       loginWithGoogle,
