@@ -14,7 +14,6 @@ installable PWA.
 - **In-app rehearsal tools** — browser-based audio recorder, visual metronome, visual tuner, and hand-drawn notes overlaid on the song sheet
 - **Attachments** — attach PDFs (up to 20 MB) to a song, e.g. scanned sheet music or lyric sheets; see [src/lib/songAttachments.ts](src/lib/songAttachments.ts)
 - **Band logo upload** — set a band's logo, used across its press kit and public pages
-- **Ad-hoc sharing** — per-resource collaboration invites for songs, songlists, and setlists
 - **Multi-language** — songs in English, Norwegian, Spanish, Portuguese, French, Italian, German, and more
 - **Add & edit songs** — live ChordPro preview while writing
 - **Search & filter** — full-text search by title/artist/tag, filter by language
@@ -47,6 +46,9 @@ cp .env.example .env
 # fill in POSTGRES_PASSWORD, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
 docker compose up -d --build
 ```
+
+Open [http://localhost:6168](http://localhost:6168) (or whatever `PORT` you set in `.env`) and log in
+with the admin account you configured.
 
 ## Local development (without Docker)
 

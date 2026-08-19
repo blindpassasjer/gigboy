@@ -13,17 +13,6 @@ export function languageName(code: string): string {
   return LANGUAGE_NAMES[code] ?? code.toUpperCase();
 }
 
-export const LANGUAGE_FLAGS: Record<string, string> = {
-  en: '🇬🇧',
-  es: '🇪🇸',
-  no: '🇳🇴',
-  pt: '🇧🇷',
-  fr: '🇫🇷',
-  de: '🇩🇪',
-  it: '🇮🇹',
-  la: '🏛️',
-};
-
 export const LANGUAGE_ABBR: Record<string, string> = {
   en: 'ENG',
   es: 'ESP',

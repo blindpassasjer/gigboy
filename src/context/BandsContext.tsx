@@ -2048,6 +2048,3 @@ export function useBands() {
   return context;
 }
 
-export function useOptionalBands() {
-  return useContext(BandsContext);
-}
