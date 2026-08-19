@@ -12,6 +12,8 @@ export function toApi(row: SongListRow) {
     folderId: row.folderId,
     icon: row.icon,
     sortOrder: row.sortOrder,
+    collaboratorIds: row.collaboratorIds,
+    collaborationPermissions: row.collaborationPermissions,
   });
 }
 
@@ -36,4 +38,5 @@ export const songListsRouter = buildCrudRouter({
   itemType: 'songlist',
   toApi,
   fromBody,
+  collaboratorIdsColumn: songLists.collaboratorIds,
 });

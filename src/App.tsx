@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, type ReactElement } from 'react';
 import { createBrowserRouter, RouterProvider, Routes, Route, Navigate, useRouteError } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Theme } from '@radix-ui/themes';
@@ -13,6 +13,7 @@ import { isDynamicImportFailure, recoverFromDynamicImportFailure, forceReloadAft
 
 const Layout = lazy(() => import('./components/Layout'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage'));
 const UsernameSetupPage = lazy(() => import('./pages/UsernameSetupPage'));
 const AddSongPage = lazy(() => import('./pages/AddSongPage'));
 const BandSetlistConcertPage = lazy(() => import('./pages/BandSetlistConcertPage'));
@@ -23,20 +24,15 @@ const SongPage = lazy(() => import('./pages/SongPage'));
 const SongConcertPage = lazy(() => import('./pages/SongConcertPage'));
 const EditSongPage = lazy(() => import('./pages/EditSongPage'));
 const ProfileInvitesPage = lazy(() => import('./pages/ProfileInvitesPage'));
+const AdminInvitesPage = lazy(() => import('./pages/AdminInvitesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const TrashPage = lazy(() => import('./pages/TrashPage'));
-const PricingPage = lazy(() => import('./pages/PricingPage'));
 const ShowcasePage = lazy(() => import('./pages/ShowcasePage'));
-const CheckoutResultPage = lazy(() => import('./pages/CheckoutResultPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
-const PublicBandSetlistPage = lazy(() => import('./pages/PublicBandSetlistPage'));
 const PublicBandRiderPage = lazy(() => import('./pages/PublicBandRiderPage'));
 const PublicBandPressKitPage = lazy(() => import('./pages/PublicBandPressKitPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
-
-// Self-host builds have no Stripe/plan gating, so pricing/upgrade UI is hidden entirely.
-const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
 
 function getRouteErrorMessage(error: unknown): string {
   if (typeof error === 'string') return error;
@@ -122,6 +118,13 @@ function RootRedirect() {
   return <Navigate to="/profile" replace />;
 }
 
+/** Guards a route to admins only; anyone else is bounced to their profile. */
+function RequireAdmin({ children }: { children: ReactElement }) {
+  const { user } = useAuth();
+  if (user?.role !== 'admin') return <Navigate to="/profile" replace />;
+  return children;
+}
+
 function AuthenticatedApp() {
   const { user, loading, authEnabled, isDeletingAccount } = useAuth();
 
@@ -149,10 +152,16 @@ function AuthenticatedApp() {
                     <Route path="/bands/:id/settings" element={<BandSettingsPage />} />
                     <Route path="/bands/:id/members" element={<BandMembersPage />} />
                     <Route path="/bands/:id/*" element={<BandDetailPage />} />
-                    {!isSelfHost && <Route path="/pricing" element={<PricingPage />} />}
-                    <Route path="/checkout-result" element={<CheckoutResultPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/profile/invites" element={<ProfileInvitesPage />} />
+                    <Route
+                      path="/admin/invites"
+                      element={
+                        <RequireAdmin>
+                          <AdminInvitesPage />
+                        </RequireAdmin>
+                      }
+                    />
                     <Route path="/trash" element={<TrashPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
@@ -161,18 +170,6 @@ function AuthenticatedApp() {
           </SetlistsProvider>
       </SongListsProvider>
     </SongsProvider>
-  );
-}
-
-function PricingRoute() {
-  if (isSelfHost) {
-    return <Navigate to="/" replace />;
-  }
-
-  return (
-    <BandsProvider>
-      <PricingPage />
-    </BandsProvider>
   );
 }
 
@@ -188,16 +185,13 @@ function RootLanding() {
 }
 
 const router = createBrowserRouter([
-  { path: '/public/bands/:bandId/:bandName/setlists/:setlistId', element: <PublicBandSetlistPage />, errorElement: routerErrorElement },
-  { path: '/public/bands/:bandId/setlists/:setlistId', element: <PublicBandSetlistPage />, errorElement: routerErrorElement },
   { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
   { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
   { path: '/public/press-kit/:token', element: <PublicBandPressKitPage />, errorElement: routerErrorElement },
-  { path: '/pricing', element: isSelfHost ? <NotFoundPage /> : <PricingRoute />, errorElement: routerErrorElement },
   { path: '/showcase', element: <ShowcasePage />, errorElement: routerErrorElement },
-  { path: '/checkout-result', element: <CheckoutResultPage />, errorElement: routerErrorElement },
   { path: '/terms', element: <TermsPage />, errorElement: routerErrorElement },
   { path: '/privacy', element: <PrivacyPage />, errorElement: routerErrorElement },
+  { path: '/invite/:token', element: <AcceptInvitePage />, errorElement: routerErrorElement },
   { path: '/', element: <RootLanding />, errorElement: routerErrorElement },
   { path: '*', element: <AuthenticatedApp />, errorElement: routerErrorElement },
 ]);

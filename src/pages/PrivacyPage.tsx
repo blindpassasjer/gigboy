@@ -19,25 +19,20 @@ export default function PrivacyPage() {
         <li>Account data: email address, username, display name, chosen avatar.</li>
         <li>Content you create: songs, chord charts, setlists, songlists, band data,
           press kits, technical riders, and in-browser recordings you make.</li>
-        <li>Billing data: handled by Stripe on our behalf — we store your Stripe
-          customer ID and subscription status, not your card details.</li>
-        <li>Basic usage/analytics data collected via Cloudflare's web analytics,
-          which does not use cookies or track you across sites.</li>
       </ul>
 
       <h2>2. How we use it</h2>
       <p>
-        To provide the Service (store and display your songs and setlists), process
-        payments for paid plans, authenticate you, and — if you contact us — respond
-        to support requests. We don't sell your data.
+        To provide the Service (store and display your songs and setlists), authenticate
+        you, and — if you contact us — respond to support requests. We don't sell your
+        data.
       </p>
 
       <h2>3. Where your data lives</h2>
       <p>
-        Account data and your song/setlist content are stored with Firebase
-        (Google Cloud). The web app and its serverless functions run on Cloudflare.
-        Payments are processed by Stripe. Each of these providers acts as a data
-        processor on our behalf under their own data processing terms.
+        GIGBOY is self-hosted: account data and your song/setlist content are stored in
+        this deployment's own database and file storage, run by whoever operates this
+        instance — not by a third-party SaaS provider.
       </p>
       <p>
         Some content (like a downloaded ChordPro export, or recordings before they
@@ -68,9 +63,7 @@ export default function PrivacyPage() {
       <p>
         We retain your account and content for as long as your account is active.
         Deleted songs/setlists move to a trash folder before permanent removal;
-        deleting your account removes your data outright, subject to what our
-        subprocessors (Firebase, Stripe) retain for their own legal/billing
-        obligations.
+        deleting your account removes your data outright.
       </p>
 
       <h2>7. Children</h2>

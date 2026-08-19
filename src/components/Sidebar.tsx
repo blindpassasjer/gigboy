@@ -1,13 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Crown, Folder, ListMusic, Music, Newspaper, Plus, Sparkles, Star, Trash2, X, ChevronsUpDown } from 'lucide-react';
-import type { PlanTier } from '../types';
+import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Music, Newspaper, Plus, Trash2, X, ChevronsUpDown } from 'lucide-react';
 import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
-import { useBandPlan, computeBandPlan } from '../hooks/usePlan';
-import { bandCanUse } from '../lib/planLimits';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
@@ -51,12 +48,6 @@ function SidebarItemIcon({ icon, fallback, title }: { icon?: string; fallback: R
   return <span className="sidebar-list-icon" aria-hidden="true" title={title}>{fallback}</span>;
 }
 
-const PLAN_TIER_ICON: Record<PlanTier, ReactNode> = {
-  free: <Music size={13} />,
-  pro: <Star size={13} />,
-  crew: <Crown size={13} />,
-};
-
 export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
   const navigate = useNavigate();
   const { pathname, state } = useLocation();
@@ -94,8 +85,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     addBandInputList,
   } = useBands();
 
-  const ownedBandCount = bands.filter(b => b.ownerId === user?.id).length;
-
   const [addingBand, setAddingBand] = useState(false);
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
@@ -115,13 +104,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     try { return window.localStorage.getItem('gigboy-active-band-id'); } catch { return null; }
   });
   const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
-  const bandPlan = useBandPlan(effectiveActiveBand);
-  const storageQuotaBytes = bandPlan.storageQuotaBytes;
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const [storagePopupOpen, setStoragePopupOpen] = useState(false);
   const bandSwitcherRef = useRef<HTMLDivElement>(null);
   const storagePopupRef = useRef<HTMLDivElement>(null);
-  const storageUsage = useStorageUsage(user?.id ?? null, storageQuotaBytes, activeBandId);
+  const storageUsage = useStorageUsage(user?.id ?? null, user?.storageQuotaBytes, activeBandId);
   const storagePercent = Math.round(storageUsage.usageRatio * 100);
   const storageLabel = storageUsage.loading
     ? 'Loading...'
@@ -274,20 +261,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
         navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
         onNavigate?.();
       } else if (result.error) {
-        if (
-          result.error.includes('Free tier accounts can only create one band workspace')
-          || result.error.includes('Additional bands require a Pro or Crew subscription')
-          || result.error.includes('one free band')
-        ) {
-          navigate('/pricing', {
-            state: {
-              source: 'create-new-band',
-              requestedBandName: name,
-            },
-          });
-        } else {
-          toast.error(result.error);
-        }
+        toast.error(result.error);
       }
     }
   };
@@ -478,7 +452,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           aria-expanded={bandSwitcherOpen}
         >
           <>
-            <SidebarItemIcon fallback={PLAN_TIER_ICON[bandPlan.plan]} title={bandPlan.planLabel} />
+            <SidebarItemIcon fallback={<Music size={13} />} />
             <span className="sidebar-band-switcher-name" title={effectiveActiveBand?.name ?? undefined}>
               {effectiveActiveBand?.name ?? ''}
             </span>
@@ -494,7 +468,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
               </div>
             )}
             {visibleBands.map((band) => {
-              const optionPlan = computeBandPlan(band, user);
               return (
                 <button
                   type="button"
@@ -511,7 +484,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     onNavigate?.();
                   }}
                 >
-                  <SidebarItemIcon fallback={PLAN_TIER_ICON[optionPlan.plan]} title={optionPlan.planLabel} />
+                  <SidebarItemIcon fallback={<Music size={13} />} />
                   <span className="sidebar-band-switcher-option-name">{band.name}</span>
                 </button>
               );
@@ -523,22 +496,18 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           <button
             type="button"
             className="sidebar-icon-btn"
-            title={ownedBandCount >= 1 ? 'Upgrade to add another band' : 'New band'}
-            aria-label={ownedBandCount >= 1 ? 'Upgrade to add another band' : 'Create new band'}
+            title="New band"
+            aria-label="Create new band"
             onClick={() => {
               if (addingBand) {
                 setAddingBand(false);
                 return;
               }
-              if (ownedBandCount >= 1) {
-                navigate('/pricing', { state: { source: 'sidebar-new-band', bandId: activeBandId } });
-              } else {
-                setAddingBand(true);
-                setDraftName('');
-              }
+              setAddingBand(true);
+              setDraftName('');
             }}
           >
-            {ownedBandCount >= 1 ? <Sparkles size={15} /> : <Plus size={15} />}
+            <Plus size={15} />
           </button>
         )}
       </div>
@@ -755,13 +724,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, 'setlists', user?.plan, user?.subscriptionStatus, user?.planOverride) ? 'New band setlist' : 'Upgrade this band to Pro or Crew to create setlists'}
+                    title="New band setlist"
                     aria-label="Create new band setlist"
                     onClick={() => {
-                      if (!bandCanUse(band, 'setlists', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
-                        toast.error('Setlists require a Pro or Crew plan for this band.');
-                        return;
-                      }
                       setCollapsedBandSetlistIds((prev) => prev.filter((entry) => entry !== band.id));
                       setAddingBandSetlistId(band.id);
                       setDraftName('');
@@ -826,13 +791,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, 'technicalRiders', user?.plan, user?.subscriptionStatus, user?.planOverride) ? 'New technical rider' : 'Upgrade this band to Pro or Crew to create technical riders'}
+                    title="New technical rider"
                     aria-label="Create new technical rider"
                     onClick={() => {
-                      if (!bandCanUse(band, 'technicalRiders', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
-                        toast.error('Technical riders require a Pro or Crew plan for this band.');
-                        return;
-                      }
                       setCollapsedBandInputListIds((prev) => prev.filter((id) => id !== band.id));
                       setAddingBandInputListId(band.id);
                       setDraftName('');
@@ -892,13 +853,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   <button
                     type="button"
                     className="sidebar-icon-btn"
-                    title={bandCanUse(band, 'pressKits', user?.plan, user?.subscriptionStatus, user?.planOverride) ? 'New press kit' : 'Upgrade this band to Pro or Crew to create press kits'}
+                    title="New press kit"
                     aria-label="Create new press kit"
                     onClick={() => {
-                      if (!bandCanUse(band, 'pressKits', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
-                        toast.error('Press kits require a Pro or Crew plan for this band.');
-                        return;
-                      }
                       setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));
                       setAddingBandPressKitId(band.id);
                       setDraftName('');

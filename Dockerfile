@@ -5,7 +5,6 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-ENV VITE_BACKEND=selfhost
 RUN npm run build \
   && npx tsc -p server/tsconfig.json
 
@@ -20,6 +19,6 @@ COPY --from=build /app/server/db/migrations ./dist-server/db/migrations
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-EXPOSE 3000
+EXPOSE 6168
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "dist-server/index.js"]

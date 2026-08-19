@@ -1,26 +1,41 @@
-import {
-  collection,
-  collectionGroup,
-  doc,
-  documentId,
-  getDoc,
-  getDocs,
-  query,
-  updateDoc,
-  where,
-  setDoc,
-} from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
 import type {
   CollaborationInvite,
   CollaborationPermission,
   ShareResourceType,
 } from '../types';
 
-const INVITES_COLLECTION = 'collaborationInvites';
+/**
+ * Self-host implementation of personal (per-resource) collaboration invites — song/songlist/setlist
+ * sharing by email, independent of band membership. Talks to `/api/collaboration-invites` on the
+ * Express/Postgres server (see server/routes/collaborationInvites.ts) instead of Firestore directly.
+ * Exported function names/signatures are kept as close as possible to the old Firestore version so
+ * call sites (ProfileInvitesPage.tsx, SongsContext.tsx, SongListsContext.tsx, SetlistsContext.tsx)
+ * only need to drop the `db`/`Firestore` argument they used to pass.
+ */
+const API_BASE = '/api';
 
-function inviteFromDoc(id: string, data: Record<string, unknown>): CollaborationInvite {
-  return { id, ...(data as Omit<CollaborationInvite, 'id'>) };
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body?.error) message = body.error;
+    } catch {
+      // Response wasn't JSON; fall back to the generic message.
+    }
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<T>;
 }
 
 export function normalizeInviteEmail(email: string) {
@@ -31,23 +46,7 @@ export function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function getResourceCollection(resourceType: ShareResourceType) {
-  if (resourceType === 'song') return 'songs';
-  if (resourceType === 'songlist') return 'songLists';
-  return 'setlists';
-}
-
-export function getSharedResourceRef(
-  db: Firestore,
-  ownerId: string,
-  resourceType: ShareResourceType,
-  resourceId: string
-) {
-  return doc(db, 'users', ownerId, getResourceCollection(resourceType), resourceId);
-}
-
 export async function createInvite(params: {
-  db: Firestore;
   ownerId: string;
   ownerEmail: string;
   recipientEmail: string;
@@ -55,205 +54,49 @@ export async function createInvite(params: {
   resourceId: string;
   resourceName: string;
   permission: CollaborationPermission;
-}) {
-  const {
-    db,
-    ownerId,
-    ownerEmail,
-    recipientEmail,
-    resourceType,
-    resourceId,
-    resourceName,
-    permission,
-  } = params;
-
-  const inviteId = crypto.randomUUID();
-  const now = new Date().toISOString();
-  const normalizedRecipient = normalizeInviteEmail(recipientEmail);
-
-  const invite: CollaborationInvite = {
-    id: inviteId,
-    ownerId,
-    ownerEmail,
-    recipientEmail: recipientEmail.trim(),
-    recipientEmailLower: normalizedRecipient,
-    resourceType,
-    resourceId,
-    resourceName,
-    permission,
-    status: 'pending',
-    createdAt: now,
-  };
-
-  const { id, ...payload } = invite;
-  await setDoc(doc(db, INVITES_COLLECTION, id), payload);
-  return invite;
-}
-
-function mergeInvites(invites: CollaborationInvite[]) {
-  const seen = new Map<string, CollaborationInvite>();
-  invites.forEach((invite) => {
-    seen.set(invite.id, invite);
+}): Promise<CollaborationInvite> {
+  const { resourceType, resourceId, resourceName, recipientEmail, permission } = params;
+  const data = await apiFetch<{ invite: CollaborationInvite }>('/collaboration-invites', {
+    method: 'POST',
+    body: JSON.stringify({ resourceType, resourceId, resourceName, recipientEmail, permission }),
   });
-  return [...seen.values()];
+  return data.invite;
 }
 
-export async function loadPendingInvites(db: Firestore, userId: string, email: string) {
-  const normalizedEmail = normalizeInviteEmail(email);
-
-  const byUidPromise = getDocs(
-    query(
-      collection(db, INVITES_COLLECTION),
-      where('recipientUid', '==', userId)
-    )
-  );
-
-  const byEmailPromise = isValidEmail(normalizedEmail)
-    ? getDocs(
-      query(
-        collection(db, INVITES_COLLECTION),
-        where('recipientEmailLower', '==', normalizedEmail)
-      )
-    )
-    : Promise.resolve(null);
-
-  const [byUidResult, byEmailResult] = await Promise.allSettled([byUidPromise, byEmailPromise]);
-  if (byUidResult.status !== 'fulfilled') {
-    throw byUidResult.reason;
-  }
-
-  if (byEmailResult.status === 'rejected') {
-    console.warn('Failed to load email-based invites; continuing with UID invites only.', byEmailResult.reason);
-  }
-
-  const byUidSnap = byUidResult.value;
-  const byEmailDocs = byEmailResult.status === 'fulfilled' && byEmailResult.value
-    ? byEmailResult.value.docs
-    : [];
-
-  const combined = mergeInvites([
-    ...byUidSnap.docs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
-    ...byEmailDocs.map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>)),
-  ]);
-
-  return combined
-    .filter((invite) => invite.status === 'pending')
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export async function loadPendingInvites(
+  userId: string,
+  email: string,
+): Promise<CollaborationInvite[]> {
+  void userId;
+  void email;
+  const data = await apiFetch<{ invites: CollaborationInvite[] }>('/collaboration-invites/pending');
+  return data.invites ?? [];
 }
 
-export async function acceptInvite(db: Firestore, invite: CollaborationInvite, userId: string) {
-  const inviteRef = doc(db, INVITES_COLLECTION, invite.id);
-  const latestInviteSnap = await getDoc(inviteRef);
-  if (!latestInviteSnap.exists()) {
-    throw new Error('Invite no longer exists.');
-  }
-
-  const latestInvite = inviteFromDoc(invite.id, latestInviteSnap.data() as Record<string, unknown>);
-  if (latestInvite.status !== 'pending') {
-    throw new Error('Invite is no longer pending.');
-  }
-
-  const resourceRef = getSharedResourceRef(db, latestInvite.ownerId, latestInvite.resourceType, latestInvite.resourceId);
-  const resourceSnap = await getDoc(resourceRef);
-
-  if (!resourceSnap.exists()) {
-    throw new Error('Shared resource was not found.');
-  }
-
-  const resourceData = resourceSnap.data() as Record<string, unknown>;
-  const collaboratorIds = Array.isArray(resourceData.collaboratorIds)
-    ? (resourceData.collaboratorIds as string[])
-    : [];
-
-  const permissions = (resourceData.collaborationPermissions ?? {}) as Record<string, CollaborationPermission>;
-  const nextPermissions = {
-    ...permissions,
-    [userId]: latestInvite.permission,
-  };
-
-  const nextCollaboratorIds = collaboratorIds.includes(userId)
-    ? collaboratorIds
-    : [...collaboratorIds, userId];
-
-  await Promise.all([
-    updateDoc(resourceRef, {
-      collaboratorIds: nextCollaboratorIds,
-      collaborationPermissions: nextPermissions,
-      updatedAt: new Date().toISOString(),
-    }),
-    updateDoc(inviteRef, {
-      recipientUid: userId,
-      status: 'accepted',
-      respondedAt: new Date().toISOString(),
-    }),
-  ]);
+export async function acceptInvite(invite: CollaborationInvite, userId: string): Promise<void> {
+  void userId;
+  await apiFetch(`/collaboration-invites/${invite.id}/accept`, { method: 'POST' });
 }
 
-export async function declineInvite(db: Firestore, inviteId: string, userId: string) {
-  const inviteRef = doc(db, INVITES_COLLECTION, inviteId);
-  await updateDoc(inviteRef, {
-    recipientUid: userId,
-    status: 'declined',
-    respondedAt: new Date().toISOString(),
-  });
+export async function declineInvite(inviteId: string, userId: string): Promise<void> {
+  void userId;
+  await apiFetch(`/collaboration-invites/${inviteId}/decline`, { method: 'POST' });
 }
 
+/**
+ * Self-host resources shared via an accepted collaboration invite are already returned by the
+ * owning resource's own list endpoint — `GET /api/songs` (and song-lists/setlists) matches both
+ * `userId = caller` and a jsonb-containment check against `collaboratorIds` server-side (see
+ * server/routes/crud.ts's `collaboratorIdsColumn`). So unlike the old Firestore version, there is
+ * nothing left to separately fetch and merge here — SongsContext.tsx/SongListsContext.tsx/
+ * SetlistsContext.tsx's self-host branch calls `dataClient.songs.list()` (etc.) alone and already
+ * gets shared resources back in the same response. This stays a no-op for API-shape compatibility.
+ */
 export async function loadAcceptedSharedResources<T>(params: {
-  db: Firestore;
   userId: string;
   resourceType: ShareResourceType;
   mapResource: (invite: CollaborationInvite, id: string, data: Record<string, unknown>) => T | null;
-}) {
-  const { db, userId, resourceType, mapResource } = params;
-  const snapshot = await getDocs(
-    query(
-      collection(db, INVITES_COLLECTION),
-      where('recipientUid', '==', userId)
-    )
-  );
-
-  const invitesByResource = new Map<string, CollaborationInvite>();
-
-  snapshot.docs
-    .map((entry) => inviteFromDoc(entry.id, entry.data() as Record<string, unknown>))
-    .filter((invite) => invite.status === 'accepted' && invite.resourceType === resourceType)
-    .forEach((invite) => {
-      const resourceKey = `${invite.ownerId}:${invite.resourceId}`;
-      const existing = invitesByResource.get(resourceKey);
-      const inviteTimestamp = invite.respondedAt ?? invite.createdAt;
-      const existingTimestamp = existing ? (existing.respondedAt ?? existing.createdAt) : '';
-      if (!existing || inviteTimestamp >= existingTimestamp) {
-        invitesByResource.set(resourceKey, invite);
-      }
-    });
-
-  const invites = [...invitesByResource.values()];
-  const resourceCollectionName = getResourceCollection(resourceType);
-  const IN_QUERY_CHUNK_SIZE = 30;
-
-  const dataByPath = new Map<string, Record<string, unknown>>();
-
-  for (let i = 0; i < invites.length; i += IN_QUERY_CHUNK_SIZE) {
-    const chunk = invites.slice(i, i + IN_QUERY_CHUNK_SIZE);
-    const paths = chunk.map(
-      (invite) => getSharedResourceRef(db, invite.ownerId, invite.resourceType, invite.resourceId).path
-    );
-
-    const snapshot = await getDocs(
-      query(collectionGroup(db, resourceCollectionName), where(documentId(), 'in', paths))
-    );
-
-    snapshot.docs.forEach((docSnap) => {
-      dataByPath.set(docSnap.ref.path, docSnap.data() as Record<string, unknown>);
-    });
-  }
-
-  return invites.flatMap((invite) => {
-    const resourceRef = getSharedResourceRef(db, invite.ownerId, invite.resourceType, invite.resourceId);
-    const data = dataByPath.get(resourceRef.path);
-    if (!data) return [];
-
-    const mapped = mapResource(invite, resourceRef.id, data);
-    return mapped ? [mapped] : [];
-  });
+}): Promise<T[]> {
+  void params;
+  return [];
 }

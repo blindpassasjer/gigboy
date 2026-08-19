@@ -3,6 +3,8 @@ import type { User } from '../../context/AuthContext';
 import type { SongAttachment } from '../songAttachments';
 import type { TrashListItem } from '../../components/TrashView';
 import type {
+  AcceptInviteInput,
+  AdminInvitesClient,
   AttachmentsClient,
   AuthClient,
   BandAttachmentsClient,
@@ -12,6 +14,7 @@ import type {
   BandTrashClient,
   CrudClient,
   DataClient,
+  InviteContext,
   PressKitImage,
   PressKitImagesClient,
   PressKitShare,
@@ -21,6 +24,7 @@ import type {
   PublicRider,
   PublicRidersClient,
   TrashClient,
+  UserInvite,
 } from './types';
 
 /**
@@ -384,14 +388,22 @@ const authClient: AuthClient = {
       return { user: null, error: err instanceof Error ? err.message : 'Login failed' };
     }
   },
-  async register(email, password, username) {
+  async getInvite(token) {
     try {
-      return await apiFetch<{ user: User | null; error: string | null }>('/auth/register', {
+      const invite = await apiFetch<InviteContext>(`/invites/${token}`);
+      return { invite, error: null };
+    } catch (err) {
+      return { invite: null, error: err instanceof Error ? err.message : 'Failed to look up invite.' };
+    }
+  },
+  async acceptInvite(token, input: AcceptInviteInput) {
+    try {
+      return await apiFetch<{ user: User | null; error: string | null }>(`/invites/${token}/accept`, {
         method: 'POST',
-        body: JSON.stringify({ email, password, username }),
+        body: JSON.stringify(input),
       });
     } catch (err) {
-      return { user: null, error: err instanceof Error ? err.message : 'Registration failed' };
+      return { user: null, error: err instanceof Error ? err.message : 'Failed to accept invite.' };
     }
   },
   async logout() {
@@ -456,6 +468,22 @@ const authClient: AuthClient = {
   },
 };
 
+const adminInvitesClient: AdminInvitesClient = {
+  async list() {
+    const data = await apiFetch<{ invites: UserInvite[] }>('/admin/invites');
+    return data.invites;
+  },
+  async create(input) {
+    return apiFetch<{ inviteId: string; inviteUrl: string; expiresAt: string }>('/admin/invites', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  async revoke(id) {
+    await apiFetch<Record<string, never>>(`/admin/invites/${id}`, { method: 'DELETE' });
+  },
+};
+
 export const apiClient: DataClient = {
   auth: authClient,
   songs: createCrudClient<Song>('songs', 'song', 'songs'),
@@ -475,4 +503,5 @@ export const apiClient: DataClient = {
   bandPressKitImages: bandPressKitImagesClient,
   bandPressKitShares: bandPressKitSharesClient,
   publicPressKits: publicPressKitsClient,
+  adminInvites: adminInvitesClient,
 };

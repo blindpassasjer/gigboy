@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
-import { eq, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { users, sessions } from '../db/schema.js';
 import {
@@ -21,61 +21,6 @@ function isUniqueViolation(err: unknown): boolean {
 const BCRYPT_ROUNDS = 12;
 
 export const authRouter = Router();
-
-authRouter.post('/register', async (req, res) => {
-  try {
-    const { email, password, username } = req.body ?? {};
-
-    if (typeof email !== 'string' || !email.includes('@')) {
-      res.json({ user: null, error: 'A valid email is required.' });
-      return;
-    }
-    if (typeof password !== 'string' || password.length < 8) {
-      res.json({ user: null, error: 'Password must be at least 8 characters.' });
-      return;
-    }
-    if (typeof username !== 'string' || username.trim().length < 2) {
-      res.json({ user: null, error: 'Username must be at least 2 characters.' });
-      return;
-    }
-
-    const emailLower = email.trim().toLowerCase();
-    const existing = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(or(eq(users.emailLower, emailLower), eq(users.username, username.trim())))
-      .limit(1);
-
-    if (existing.length > 0) {
-      res.json({ user: null, error: 'An account with this email or username already exists.' });
-      return;
-    }
-
-    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const id = crypto.randomUUID();
-
-    const [row] = await db
-      .insert(users)
-      .values({
-        id,
-        email: email.trim(),
-        emailLower,
-        username: username.trim(),
-        passwordHash,
-      })
-      .returning();
-
-    const token = generateSessionToken();
-    const expiresAt = sessionExpiry();
-    await db.insert(sessions).values({ token, userId: id, expiresAt });
-    setSessionCookie(res, token, expiresAt);
-
-    res.json({ user: toPublicUser(row), error: null });
-  } catch (err) {
-    console.error('Register failed:', err);
-    res.status(500).json({ error: 'Something went wrong. Please try again.' });
-  }
-});
 
 authRouter.post('/login', async (req, res) => {
   try {

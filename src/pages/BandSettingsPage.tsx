@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, CreditCard, Trash2, X, ArrowDownToLine } from 'lucide-react';
+import { ArrowLeft, Trash2, X, ArrowDownToLine } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { collection, deleteField, doc, getDocs, query, setDoc } from 'firebase/firestore';
 import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
-import { useBandPlan } from '../hooks/usePlan';
-import { db } from '../lib/firebase';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { listBandLogos, removeBandLogoAsset, selectBandLogo } from '../lib/bandLogos';
 
-const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
 const LOGO_CARD_MIN_WIDTH_PX = 130;
 const LOGO_GRID_GAP_PX = 10;
 const LOGO_GRID_ROWS_PER_PAGE = 4;
@@ -46,23 +43,6 @@ interface LogoAsset {
   createdAt?: string;
 }
 
-function formatPeriodEnd(value: number | null | undefined) {
-  if (!value) return null;
-  const normalized = value > 1_000_000_000_000 ? value : value * 1000;
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(date);
-}
-
-function formatSubscriptionStatus(status: string | null | undefined) {
-  if (!status) return 'Not subscribed';
-  return status.replace('_', ' ');
-}
-
 export default function BandSettingsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -74,6 +54,7 @@ export default function BandSettingsPage() {
     updateBandDescription,
     updateBandLogo,
     deleteBand,
+    refreshBands,
   } = useBands();
 
   const band = bands.find((entry) => entry.id === id) ?? null;
@@ -109,12 +90,6 @@ export default function BandSettingsPage() {
   const bandId = band?.id ?? null;
   const isOwner = band?.ownerId === user?.id;
   const canEditBand = isOwner;
-  const bandPlanState = useBandPlan(band);
-  const memberLimit = band?.billingMemberLimit
-    ?? (bandPlanState.isCrew ? 5 + (band?.billingExtraMembers ?? 0) : (isOwner ? user?.memberLimit ?? null : null));
-  const planFromBand = band?.billingPlan === 'pro' || band?.billingPlan === 'crew';
-  const effectiveStatus = planFromBand ? (band?.billingSubscriptionStatus ?? null) : (user?.subscriptionStatus ?? null);
-  const renewalDate = formatPeriodEnd(planFromBand ? (band?.billingCurrentPeriodEnd ?? null) : (user?.currentPeriodEnd ?? null));
 
   useEffect(() => {
     if (!band || !canEditBand) return;
@@ -153,29 +128,20 @@ export default function BandSettingsPage() {
   }, [band, canEditBand, name, description, renameBand, updateBandDescription]);
 
   useEffect(() => {
-    if (!bandId || !db) return;
+    if (!bandId) return;
     let mounted = true;
     setLoadingLogoAssets(true);
 
-    void getDocs(query(collection(db, 'bands', bandId, 'pressKitImages')))
-      .then((snapshot) => {
+    void listBandLogos(bandId)
+      .then((logos) => {
         if (!mounted) return;
-        const assets = snapshot.docs
-          .map((entry) => {
-            const data = entry.data() as Record<string, unknown>;
-            return {
-              id: entry.id,
-              title: typeof data.title === 'string' ? data.title : 'Image',
-              url: typeof data.url === 'string' ? data.url : '',
-              thumbUrl: typeof data.thumbUrl === 'string' ? data.thumbUrl : undefined,
-              storagePath: typeof data.storagePath === 'string' ? data.storagePath : undefined,
-              thumbStoragePath: typeof data.thumbStoragePath === 'string' ? data.thumbStoragePath : undefined,
-              createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
-            } as LogoAsset;
-          })
-          .filter((asset) => asset.url.length > 0)
-          .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
-
+        const assets: LogoAsset[] = logos.map((asset) => ({
+          id: asset.id,
+          title: 'Logo',
+          url: asset.url,
+          thumbUrl: asset.thumbUrl,
+          createdAt: asset.createdAt,
+        }));
         setLogoAssets(assets);
       })
       .catch(() => {
@@ -314,13 +280,28 @@ export default function BandSettingsPage() {
     }
   };
 
-  const handleRemoveLogo = async () => {
+  const handleRemoveLogo = async (asset?: LogoAsset) => {
     const confirmed = await showConfirmToast('Remove the current band logo?', {
       confirmLabel: 'Remove logo',
     });
     if (!confirmed) return;
 
     setBusyLogo(true);
+    if (asset && asset.id !== 'current-band-logo') {
+      try {
+        await removeBandLogoAsset(band.id, asset.id);
+        setLogoAssets((prev) => prev.filter((entry) => entry.id !== asset.id));
+        if (asset.url === logo) setLogo(undefined);
+        await refreshBands();
+        toast.success('Logo removed.');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to remove logo.');
+      } finally {
+        setBusyLogo(false);
+      }
+      return;
+    }
+
     const logoError = await updateBandLogo(band.id, null);
     setBusyLogo(false);
 
@@ -349,20 +330,17 @@ export default function BandSettingsPage() {
   };
 
   const handleUseLogoAsset = async (asset: LogoAsset) => {
-    if (!canEditBand || !db || busyLogo) return;
+    if (!canEditBand || busyLogo) return;
     if (asset.url === logo) return;
 
     setBusyLogo(true);
     try {
-      await setDoc(doc(db, 'bands', band.id), {
-        logo: asset.url,
-        logoStoragePath: deleteField(),
-        updatedAt: new Date().toISOString(),
-      }, { merge: true });
-      setLogo(asset.url);
+      const updated = await selectBandLogo(band.id, asset.id);
+      setLogo(updated.logo);
+      await refreshBands();
       toast.success('Band logo updated.');
-    } catch {
-      toast.error('Failed to update band logo.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update band logo.');
     } finally {
       setBusyLogo(false);
     }
@@ -435,7 +413,6 @@ export default function BandSettingsPage() {
           </section>
 
           {/* ── Appearance ── */}
-          {!isSelfHost && (
           <section className="bands-panel">
             <h2 className="bands-section-heading">
               Appearance
@@ -518,7 +495,7 @@ export default function BandSettingsPage() {
                               type="button"
                               className="title-rename-btn"
                               title="Delete logo"
-                              onClick={() => { void handleRemoveLogo(); }}
+                              onClick={() => { void handleRemoveLogo(asset); }}
                               disabled={busyLogo}
                             >
                               <Trash2 size={13} />
@@ -566,41 +543,9 @@ export default function BandSettingsPage() {
             </div>
 
         </section>
-        )}
         </div>
 
         <div className="bands-settings-left">
-          <section className="bands-panel">
-            <h2 className="bands-section-heading">Subscription</h2>
-            <div className="bands-subscription-row">
-              <div className="bands-subscription-copy">
-                <strong>{bandPlanState.planLabel}</strong>
-                <span>{bandPlanState.planOverride ? 'Complimentary' : formatSubscriptionStatus(effectiveStatus)}</span>
-                <span>{renewalDate ? `Renews ${renewalDate}` : planFromBand ? 'No recurring band subscription' : bandPlanState.isFree ? 'No active subscription' : 'Managed through your account'}</span>
-              </div>
-              {isOwner ? (
-                <Link
-                  to="/pricing"
-                  state={{ bandId: band.id }}
-                  className="setlist-action-btn setlist-action-btn--secondary"
-                >
-                  <CreditCard size={15} /> Open billing
-                </Link>
-              ) : null}
-            </div>
-            <div className="bands-subscription-row">
-              <div className="bands-subscription-copy">
-                <strong>Member capacity</strong>
-                <span>
-                  {memberLimit
-                    ? `${memberLimit} member${memberLimit === 1 ? '' : 's'} included for this band`
-                    : 'Capacity is managed through the band owner account'}
-                </span>
-                <span>{band.memberIds.length} currently in the band</span>
-              </div>
-            </div>
-          </section>
-
           <BandManagementPanel
             band={band}
             canEditBand={canEditBand}

@@ -8,14 +8,8 @@ export interface PublicUser {
   username: string | null;
   avatar: string | null;
   fullName: string | null;
-  plan: 'crew';
-  planOverride: true;
-  subscriptionStatus: 'active';
-  currentPeriodEnd: null;
+  role: 'member' | 'admin';
   storageQuotaBytes: number;
-  bandExtraMembers: 0;
-  memberLimit: 1;
-  stripeCustomerId: null;
 }
 
 /** Self-host builds have no billing/plan concept — every user gets full feature access. */
@@ -26,13 +20,7 @@ export function toPublicUser(row: UserRow): PublicUser {
     username: row.username,
     avatar: row.avatar,
     fullName: row.fullName,
-    plan: 'crew',
-    planOverride: true,
-    subscriptionStatus: 'active',
-    currentPeriodEnd: null,
+    role: row.role === 'admin' ? 'admin' : 'member',
     storageQuotaBytes: Number.MAX_SAFE_INTEGER,
-    bandExtraMembers: 0,
-    memberLimit: 1,
-    stripeCustomerId: null,
   };
 }

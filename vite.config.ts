@@ -1,28 +1,11 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-
-// The Cloudflare Web Analytics beacon in index.html is tied to the hosted SaaS's zone —
-// it fails with a CORS error (harmless, but noisy) when served from any other origin, which
-// every self-host deployment is by definition. Strip it from that build only.
-function stripCloudflareBeaconForSelfHost(): Plugin {
-  return {
-    name: 'strip-cloudflare-beacon-for-selfhost',
-    transformIndexHtml(html) {
-      if (process.env.VITE_BACKEND !== 'selfhost') return html
-      return html.replace(/\s*<script[^>]*static\.cloudflareinsights\.com[^>]*><\/script>\n?/, '\n')
-    },
-  }
-}
 
 const VENDOR_CHUNK_RULES: Array<{ chunk: string; packages: string[] }> = [
   {
     chunk: 'vendor-react',
     packages: ['react', 'react-dom', 'react-router-dom'],
-  },
-  {
-    chunk: 'vendor-firebase',
-    packages: ['firebase'],
   },
   {
     chunk: 'vendor-editor',
@@ -101,7 +84,6 @@ function resolveAllowedHostFromProxyUri() {
 export default defineConfig(({ command }) => ({
   plugins: [
     react(),
-    stripCloudflareBeaconForSelfHost(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [

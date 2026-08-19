@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: gigboy
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.selfhost}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: gigboy
     volumes:
       - gigboy-postgres-data:/var/lib/postgresql/data
@@ -21,16 +21,18 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.selfhost}
-      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env.selfhost}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
       ATTACHMENTS_DIR: /data/attachments
-      PORT: ${PORT:-3000}
+      PORT: ${PORT:-6168}
       NODE_ENV: production
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     volumes:
       - gigboy-attachments-data:/data/attachments
     ports:
-      - "${PORT:-3000}:${PORT:-3000}"
+      - "${PORT:-6168}:${PORT:-6168}"
 
 volumes:
   gigboy-postgres-data:

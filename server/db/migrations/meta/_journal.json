@@ -43,6 +43,20 @@
       "when": 1787059196274,
       "tag": "0005_wet_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787117223581,
+      "tag": "0006_fat_spiral",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787118338725,
+      "tag": "0007_harsh_mandroid",
+      "breakpoints": true
     }
   ]
 }

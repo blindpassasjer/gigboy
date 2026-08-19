@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { collection, getCountFromServer } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import type { Song } from '../types';
 
 export interface SongBadgeCounts {
@@ -9,56 +7,44 @@ export interface SongBadgeCounts {
   recordings: number;
 }
 
-function collectionPath(bandId: string | undefined, ownerId: string | undefined, songId: string, sub: string) {
-  if (bandId) return `bands/${bandId}/songs/${songId}/${sub}`;
-  if (ownerId) return `users/${ownerId}/songs/${songId}/${sub}`;
-  return null;
+interface SongBadgesResponse {
+  badges: Record<string, SongBadgeCounts>;
 }
 
 /**
  * Best-effort badge counts (notes/attachments/recordings) for songs shown in a list.
- * Uses count aggregation queries so cards can show "has content" indicators without
- * downloading every subcollection doc for every song.
+ * Self-host implementation: batches every not-yet-fetched song id into one call to
+ * `GET /api/song-badges` (see server/routes/songBadges.ts) instead of running a Firestore
+ * count-aggregation query per song per subcollection.
  */
 export function useSongListBadges(songs: Song[], bandId: string | undefined, currentUserId: string | undefined) {
   const [counts, setCounts] = useState<Record<string, SongBadgeCounts>>({});
   const fetchedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!db) return;
-    const firestore = db;
+    const pendingSongIds = songs
+      .filter((song) => {
+        if (!bandId && !(song.ownerId ?? currentUserId)) return false;
+        return !fetchedRef.current.has(song.id);
+      })
+      .map((song) => song.id);
 
-    songs.forEach((song) => {
-      const ownerId = bandId ? undefined : (song.ownerId ?? currentUserId);
-      const fetchKey = bandId ? `band:${bandId}:${song.id}` : `user:${ownerId}:${song.id}`;
-      if (!bandId && !ownerId) return;
-      if (fetchedRef.current.has(fetchKey)) return;
-      fetchedRef.current.add(fetchKey);
+    if (pendingSongIds.length === 0) return;
+    pendingSongIds.forEach((id) => fetchedRef.current.add(id));
 
-      const notesPath = collectionPath(bandId, ownerId, song.id, 'handNotes');
-      const attachmentsPath = collectionPath(bandId, ownerId, song.id, 'attachments');
-      const recordingsPath = collectionPath(bandId, ownerId, song.id, 'recordings');
-      if (!notesPath || !attachmentsPath || !recordingsPath) return;
-
-      Promise.all([
-        getCountFromServer(collection(firestore, notesPath)),
-        getCountFromServer(collection(firestore, attachmentsPath)),
-        getCountFromServer(collection(firestore, recordingsPath)),
-      ])
-        .then(([notesSnap, attachmentsSnap, recordingsSnap]) => {
-          setCounts((prev) => ({
-            ...prev,
-            [song.id]: {
-              notes: notesSnap.data().count,
-              attachments: attachmentsSnap.data().count,
-              recordings: recordingsSnap.data().count,
-            },
-          }));
-        })
-        .catch(() => {
-          // Badges are best-effort — leave the song without counts on failure.
-        });
-    });
+    const params = new URLSearchParams({ songIds: pendingSongIds.join(',') });
+    fetch(`/api/song-badges?${params.toString()}`, { credentials: 'include' })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+        return response.json() as Promise<SongBadgesResponse>;
+      })
+      .then((data) => {
+        setCounts((prev) => ({ ...prev, ...(data.badges ?? {}) }));
+      })
+      .catch(() => {
+        // Badges are best-effort — leave these songs without counts on failure, but allow retry.
+        pendingSongIds.forEach((id) => fetchedRef.current.delete(id));
+      });
   }, [songs, bandId, currentUserId]);
 
   return counts;

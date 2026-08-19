@@ -1,16 +1,21 @@
-import { pgTable, text, integer, timestamp, jsonb, boolean, primaryKey, check } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, jsonb, boolean, primaryKey, check, unique } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
-export const users = pgTable('users', {
-  id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
-  emailLower: text('email_lower').notNull().unique(),
-  username: text('username').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
-  avatar: text('avatar'),
-  fullName: text('full_name'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const users = pgTable(
+  'users',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull().unique(),
+    emailLower: text('email_lower').notNull().unique(),
+    username: text('username').notNull().unique(),
+    passwordHash: text('password_hash').notNull(),
+    avatar: text('avatar'),
+    fullName: text('full_name'),
+    role: text('role').notNull().default('member'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check('users_role_check', sql`${table.role} in ('member', 'admin')`)],
+);
 
 export const sessions = pgTable('sessions', {
   token: text('token').primaryKey(),
@@ -56,6 +61,19 @@ export const bandInvites = pgTable('band_invites', {
   check('band_invites_status_check', sql`${table.status} in ('pending', 'revoked')`),
 ]);
 
+export const userInvites = pgTable('user_invites', {
+  id: text('id').primaryKey(),
+  inviterId: text('inviter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  email: text('email'),
+  role: text('role').notNull().default('member'),
+  status: text('status').notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  acceptedUserId: text('accepted_user_id').references(() => users.id, { onDelete: 'set null' }),
+}, (table) => [
+  check('user_invites_status_check', sql`${table.status} in ('pending', 'revoked', 'accepted')`),
+]);
+
 export const songs = pgTable(
   'songs',
   {
@@ -76,6 +94,8 @@ export const songs = pgTable(
     tempo: integer('tempo'),
     timeSignature: text('time_signature'),
     sortOrder: integer('sort_order'),
+    collaboratorIds: jsonb('collaborator_ids').$type<string[]>(),
+    collaborationPermissions: jsonb('collaboration_permissions').$type<Record<string, string>>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -93,6 +113,8 @@ export const songLists = pgTable(
     folderId: text('folder_id'),
     icon: text('icon'),
     sortOrder: integer('sort_order'),
+    collaboratorIds: jsonb('collaborator_ids').$type<string[]>(),
+    collaborationPermissions: jsonb('collaboration_permissions').$type<Record<string, string>>(),
   },
   (table) => [check('song_lists_owner_check', sql`num_nonnulls(${table.userId}, ${table.bandId}) = 1`)],
 );
@@ -108,10 +130,56 @@ export const setlists = pgTable(
     songIds: jsonb('song_ids').$type<string[]>().notNull().default([]),
     songNotes: jsonb('song_notes').$type<Record<string, string>>(),
     sortOrder: integer('sort_order'),
+    collaboratorIds: jsonb('collaborator_ids').$type<string[]>(),
+    collaborationPermissions: jsonb('collaboration_permissions').$type<Record<string, string>>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [check('setlists_owner_check', sql`num_nonnulls(${table.userId}, ${table.bandId}) = 1`)],
+);
+
+/** One hand-drawn/typed note document per (song, author) — mirrors src/lib/songHandNotes.ts's Firestore shape. */
+export const handNotes = pgTable(
+  'hand_notes',
+  {
+    id: text('id').primaryKey(),
+    songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
+    scopeType: text('scope_type').notNull(),
+    /** bandId when scopeType = 'band', the owning user's id when scopeType = 'user'. */
+    scopeOwnerId: text('scope_owner_id').notNull(),
+    authorUserId: text('author_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    authorName: text('author_name'),
+    authorAvatar: text('author_avatar'),
+    strokes: jsonb('strokes').$type<unknown[]>().notNull().default([]),
+    textNotes: jsonb('text_notes').$type<unknown[]>(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('hand_notes_scope_type_check', sql`${table.scopeType} in ('user', 'band')`),
+    unique('hand_notes_song_author_unique').on(table.songId, table.authorUserId),
+  ],
+);
+
+/** Voice-memo style recordings attached to a song — mirrors src/lib/songRecordings.ts's Firestore + Storage shape. */
+export const songRecordings = pgTable(
+  'song_recordings',
+  {
+    id: text('id').primaryKey(),
+    songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
+    scopeType: text('scope_type').notNull(),
+    scopeOwnerId: text('scope_owner_id').notNull(),
+    name: text('name').notNull(),
+    storageKey: text('storage_key').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    mimeType: text('mime_type').notNull(),
+    durationMs: integer('duration_ms').notNull().default(0),
+    waveformBars: jsonb('waveform_bars').$type<number[]>(),
+    recorderUserId: text('recorder_user_id').references(() => users.id, { onDelete: 'set null' }),
+    recorderDisplayName: text('recorder_display_name'),
+    recorderAvatar: text('recorder_avatar'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check('song_recordings_scope_type_check', sql`${table.scopeType} in ('user', 'band')`)],
 );
 
 export const attachments = pgTable('attachments', {
@@ -197,4 +265,51 @@ export const pressKitShares = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [check('press_kit_shares_status_check', sql`${table.status} in ('active', 'revoked')`)],
+);
+
+/** Band logo asset library — clones press_kit_images' shape. bands.logo stores the selected asset's servable URL. */
+export const bandLogos = pgTable('band_logos', {
+  id: text('id').primaryKey(),
+  bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
+  storageKey: text('storage_key').notNull(),
+  thumbStorageKey: text('thumb_storage_key').notNull(),
+  mimeType: text('mime_type').notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+  thumbSizeBytes: integer('thumb_size_bytes').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+});
+
+export const feedback = pgTable('feedback', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  email: text('email'),
+  message: text('message').notNull(),
+  page: text('page'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Personal per-resource collaboration invites (song/songlist/setlist sharing by email) — independent of band membership. */
+export const collaborationInvites = pgTable(
+  'collaboration_invites',
+  {
+    id: text('id').primaryKey(),
+    ownerId: text('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    recipientEmail: text('recipient_email').notNull(),
+    recipientEmailLower: text('recipient_email_lower').notNull(),
+    recipientUserId: text('recipient_user_id').references(() => users.id, { onDelete: 'set null' }),
+    resourceType: text('resource_type').notNull(),
+    resourceId: text('resource_id').notNull(),
+    resourceName: text('resource_name').notNull(),
+    permission: text('permission').notNull(),
+    status: text('status').notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    respondedAt: timestamp('responded_at', { withTimezone: true }),
+  },
+  (table) => [
+    check('collaboration_invites_resource_type_check', sql`${table.resourceType} in ('song', 'songlist', 'setlist')`),
+    check('collaboration_invites_permission_check', sql`${table.permission} in ('viewer', 'editor')`),
+    check('collaboration_invites_status_check', sql`${table.status} in ('pending', 'accepted', 'declined', 'revoked')`),
+  ],
 );

@@ -4,9 +4,6 @@ export interface SongListCategory {
   sortOrder?: number;
 }
 
-export type PlanTier = 'free' | 'pro' | 'crew';
-export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | null;
-
 export type CollaborationPermission = 'viewer' | 'editor';
 export type CollaborationRole = 'owner' | CollaborationPermission;
 
@@ -53,14 +50,6 @@ export interface Band {
   memberUsernames: Record<string, string>;
   memberFullNames: Record<string, string>;
   memberAvatars: Record<string, string>;
-  billingPlan?: 'free' | 'pro' | 'crew';
-  billingSubscriptionStatus?: SubscriptionStatus;
-  billingCurrentPeriodEnd?: number | null;
-  billingExtraMembers?: number;
-  billingMemberLimit?: number;
-  stripeSubscriptionId?: string;
-  stripeBandItemId?: string;
-  stripeExtraMembersItemId?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -74,16 +63,6 @@ export interface SongList extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export interface PublicSongEntry {
-  id: string;
-  title: string;
-  artist?: string;
-}
-
-export interface PublicSetlistSongEntry extends PublicSongEntry {
-  note?: string;
-}
-
 export interface Setlist extends CollaborationMetadata {
   id: string;
   name: string;
@@ -91,13 +70,6 @@ export interface Setlist extends CollaborationMetadata {
   songIds: string[];
   /** Optional note keyed by song ID for setlist-specific performance cues. */
   songNotes?: Record<string, string>;
-  publicShareEnabled?: boolean;
-  /** Denormalized song titles/artists for unauthenticated public reads. */
-  publicSongs?: PublicSongEntry[];
-  /** Denormalized setlist notes for unauthenticated public reads. */
-  publicSongNotes?: Record<string, string>;
-  /** Band name denormalized into the setlist for unauthenticated public reads. */
-  bandName?: string;
   createdAt?: string;
   updatedAt?: string;
   sortOrder?: number;

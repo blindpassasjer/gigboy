@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
-import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
-import { declineInvite, loadPendingInvites } from '../lib/collaboration';
+import { acceptInvite, declineInvite, loadPendingInvites } from '../lib/collaboration';
 import { dataClient } from '../lib/dataClient';
-import { acceptInviteOnServer } from '../lib/shareApi';
 import { emitInviteNotificationsChanged } from '../lib/inviteNotifications';
 import { useInviteNotifications } from '../hooks/useInviteNotifications';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -25,7 +23,7 @@ export default function ProfileInvitesPage() {
   const { unseenAcceptedOutgoing, markAcceptedAsSeen } = useInviteNotifications();
 
   const refreshInvites = useCallback(async () => {
-    if (!db || !user?.id) {
+    if (!user?.id) {
       setInvites([]);
       setLoading(false);
       return;
@@ -33,7 +31,7 @@ export default function ProfileInvitesPage() {
 
     setLoading(true);
     try {
-      setInvites(await loadPendingInvites(db, user.id, user.email ?? ''));
+      setInvites(await loadPendingInvites(user.id, user.email ?? ''));
     } catch (error) {
       console.error('Failed to load collaboration invites.', error);
       setInvites([]);
@@ -110,11 +108,7 @@ export default function ProfileInvitesPage() {
 
     setBusyInviteId(invite.id);
     try {
-      await acceptInviteOnServer({
-        userId: user.id,
-        userEmail: user.email,
-        inviteId: invite.id,
-      });
+      await acceptInvite(invite, user.id);
       setInvites((prev) => prev.filter((entry) => entry.id !== invite.id));
       emitInviteNotificationsChanged();
       toast.success('Invite accepted.');
@@ -127,11 +121,11 @@ export default function ProfileInvitesPage() {
   };
 
   const onDecline = async (inviteId: string) => {
-    if (!db || !user?.id) return;
+    if (!user?.id) return;
 
     setBusyInviteId(inviteId);
     try {
-      await declineInvite(db, inviteId, user.id);
+      await declineInvite(inviteId, user.id);
       setInvites((prev) => prev.filter((entry) => entry.id !== inviteId));
       emitInviteNotificationsChanged();
       toast.success('Invite declined.');

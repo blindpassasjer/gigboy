@@ -39,7 +39,6 @@ import type { ChordNotation } from '../utils/chordParser';
 import { useBands } from '../context/BandsContext';
 import { useSongs } from '../context/SongsContext';
 import { useAuth } from '../context/AuthContext';
-import { usePlan, useBandPlan } from '../hooks/usePlan';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import { useSongRecordings } from '../hooks/useSongRecordings';
 import { useSongAttachments } from '../hooks/useSongAttachments';
@@ -104,11 +103,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const { user } = useAuth();
   const availableBands = bands ?? [];
   
-  // Use band plan if viewing from band context, otherwise use personal plan
   const band = bandId ? (availableBands.find((b) => b.id === bandId) ?? null) : null;
-  const userPlanState = usePlan();
-  const bandPlanState = useBandPlan(band);
-  const { canUse } = bandId && band ? bandPlanState : userPlanState;
 
   // Hand notes state
   const [showNotes, setShowNotes] = useState(false);
@@ -608,15 +603,9 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
               <button
                 type="button"
-                className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}${!canUse('metronome') ? ' song-toolbar-tool-btn--locked' : ''}`}
-                onClick={() => {
-                  if (!canUse('metronome')) {
-                    toast.error('The metronome requires a Pro or Crew plan.', { action: { label: 'Upgrade', href: '/upgrade' } });
-                    return;
-                  }
-                  setShowMetronome((prev) => !prev);
-                }}
-                title={!canUse('metronome') ? 'Upgrade to Pro, Crew, or join a Crew band to use the metronome' : (showMetronome ? 'Hide metronome' : 'Show metronome')}
+                className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}`}
+                onClick={() => setShowMetronome((prev) => !prev)}
+                title={showMetronome ? 'Hide metronome' : 'Show metronome'}
                 aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
               >
                 <Metronome size={14} />

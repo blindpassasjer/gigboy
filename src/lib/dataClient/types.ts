@@ -4,19 +4,16 @@ import type { SongAttachment } from '../songAttachments';
 import type { TrashListItem } from '../../components/TrashView';
 
 /**
- * Backend-agnostic contract for the data operations self-hosting covers so far:
- * auth, personal songs/songLists/setlists (Phase 1), bands + band-scoped
- * songs/songLists/setlists (Phase 2), band-scoped technical riders (Phase 3),
- * song attachments personal + band-scoped (Phase 4), trash/restore for all of
- * the above (Phase 5), and band press kits with public share links (Phase 6).
- * Implemented by `firebaseClient.ts` (today's Firestore-backed behavior, used
- * by the hosted SaaS) and `apiClient.ts` (self-host, talks to the
- * Express/Postgres server under `server/`). Selected once at startup by
- * `index.ts` based on `VITE_BACKEND`.
+ * Contract for self-host's data operations: auth, personal songs/songLists/setlists
+ * (Phase 1), bands + band-scoped songs/songLists/setlists (Phase 2), band-scoped technical
+ * riders (Phase 3), song attachments personal + band-scoped (Phase 4), trash/restore for
+ * all of the above (Phase 5), and band press kits with public share links (Phase 6).
+ * Implemented by `apiClient.ts`, which talks to the Express/Postgres server under `server/`
+ * — the only backend this app supports.
  *
- * Deliberately does not cover ad-hoc per-resource collaboration invites,
- * recordings, hand notes, or band logo upload — those stay Firestore-only
- * until a later phase.
+ * Ad-hoc per-resource collaboration invites, recordings, hand notes, and band logo upload
+ * are covered by separate self-host-only modules (`collaboration.ts`, `songRecordings.ts`,
+ * `songHandNotes.ts`, `bandLogos.ts`) rather than this interface.
  */
 export interface DataClient {
   auth: AuthClient;
@@ -37,6 +34,22 @@ export interface DataClient {
   bandPressKitImages: PressKitImagesClient;
   bandPressKitShares: PressKitSharesClient;
   publicPressKits: PublicPressKitsClient;
+  adminInvites: AdminInvitesClient;
+}
+
+/** Result of looking up an invite token, mirroring `GET /api/invites/:token`'s success body. */
+export interface InviteContext {
+  /** Pre-filled by the inviter, or null when the accepting user must supply their own. */
+  email: string | null;
+  expiresAt: string;
+}
+
+/** Fields collected on the invite-accept form; `email` is required only when the invite has none pinned. */
+export interface AcceptInviteInput {
+  username: string;
+  password: string;
+  fullName?: string;
+  email?: string;
 }
 
 export interface AuthClient {
@@ -45,7 +58,10 @@ export interface AuthClient {
   /** Subscribes to auth state changes; returns an unsubscribe function. Fires once immediately. */
   onAuthStateChanged(callback: (user: User | null) => void): () => void;
   login(email: string, password: string): Promise<{ user: User | null; error: string | null }>;
-  register(email: string, password: string, username: string): Promise<{ user: User | null; error: string | null }>;
+  /** Looks up an invite by token. Null invite + non-null error covers not-found/expired/revoked/already-used. */
+  getInvite(token: string): Promise<{ invite: InviteContext | null; error: string | null }>;
+  /** Accepts an invite, creating the account and (on success) signing it in via session cookie. */
+  acceptInvite(token: string, input: AcceptInviteInput): Promise<{ user: User | null; error: string | null }>;
   logout(): Promise<void>;
   updateEmail(email: string): Promise<{ user: User | null; error: string | null }>;
   updateUsername(username: string): Promise<{ user: User | null; error: string | null }>;
@@ -55,6 +71,28 @@ export interface AuthClient {
   updatePassword(currentPassword: string, newPassword: string): Promise<{ error: string | null }>;
   /** Permanently deletes the account. Self-host cascades via FKs; hosted SaaS calls the existing server-side cascade. */
   deleteAccount(): Promise<{ error: string | null }>;
+}
+
+/** A pending user invite as returned by `GET /api/admin/invites` (admin-only). */
+export interface UserInvite {
+  id: string;
+  email: string | null;
+  role: 'member' | 'admin';
+  status: 'pending' | 'accepted' | 'revoked';
+  createdAt: string;
+  expiresAt: string;
+}
+
+/** Admin-only management of user invites, mounted at `/api/admin/invites`. Self-host has no
+ * open self-registration — new accounts are created only by an admin generating an invite
+ * link and sharing it out-of-band. */
+export interface AdminInvitesClient {
+  /** Lists pending invites. */
+  list(): Promise<UserInvite[]>;
+  /** Creates a new invite. `email` pins the invite to one address (optional); `role` defaults to `member`. */
+  create(input: { email?: string; role?: 'member' | 'admin' }): Promise<{ inviteId: string; inviteUrl: string; expiresAt: string }>;
+  /** Revokes a pending invite so its link can no longer be used. */
+  revoke(id: string): Promise<void>;
 }
 
 /**
@@ -118,7 +156,7 @@ export interface PublicRidersClient {
   get(bandId: string, riderId: string): Promise<PublicRider | null>;
 }
 
-/** PDF attachments on a personal song. Upload is plan-gated upstream (usePlan); list/rename/remove are not. */
+/** PDF attachments on a personal song. Upload is storage-quota-gated upstream; list/rename/remove are not. */
 export interface AttachmentsClient {
   list(songId: string): Promise<SongAttachment[]>;
   upload(songId: string, file: File): Promise<SongAttachment>;

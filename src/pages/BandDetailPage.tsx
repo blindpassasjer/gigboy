@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
-import { FolderInput, Link2, Plus, Search, Settings, Upload, X } from 'lucide-react';
+import { FolderInput, Plus, Search, Settings, Upload, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongs } from '../context/SongsContext';
@@ -13,11 +13,8 @@ import PressKitView from '../components/PressKitView';
 import { dataClient } from '../lib/dataClient';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
-import { buildBandPublicShareUrl } from '../utils/publicShare';
 import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-
-const isSelfHost = import.meta.env.VITE_BACKEND === 'selfhost';
 
 export default function BandDetailPage() {
   const { id } = useParams();
@@ -46,7 +43,6 @@ export default function BandDetailPage() {
     removeSongFromBandSongList,
     renameBandSetlist,
     updateBandSetlistIcon,
-    setBandSetlistPublicShare,
     deleteBandSetlist,
     addSongToBandSetlist,
     moveSongInBandSetlist,
@@ -348,30 +344,6 @@ export default function BandDetailPage() {
     navigate(`/bands/${band.id}/library`);
   };
 
-  const handleShareSetlist = async () => {
-    if (!activeBandSetlist) return;
-    const publicUrl = buildBandPublicShareUrl(
-      window.location.origin,
-      band.id,
-      band.name,
-      'setlists',
-      activeBandSetlist.id
-    );
-    if (!activeBandSetlist.publicShareEnabled) {
-      const error = await setBandSetlistPublicShare(band.id, activeBandSetlist.id, true);
-      if (error) {
-        toast.error(error);
-        return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      toast.success('Public link copied to clipboard!');
-    } catch {
-      toast.error(`Failed to copy. Share this link: ${publicUrl}`);
-    }
-  };
-
   if (bandSection === 'songlists') {
     if (!activeBandSongList) {
       return (
@@ -503,16 +475,6 @@ export default function BandDetailPage() {
               toast.error(error);
             }
           }}
-          extraActions={!isSelfHost ? (
-            <button
-              type="button"
-              className="setlist-action-btn setlist-action-btn--accent"
-              onClick={() => void handleShareSetlist()}
-              title={activeBandSetlist.publicShareEnabled ? 'Copy public link' : 'Create & copy public link'}
-            >
-              <Link2 size={14} />
-            </button>
-          ) : undefined}
           autoStartRenameToken={
             autoRenameState?.kind === 'setlist' && autoRenameState.resourceId === activeBandSetlist.id
               ? autoRenameState.token

@@ -21,6 +21,8 @@ export function toApi(row: SongRow) {
     tempo: row.tempo,
     timeSignature: row.timeSignature,
     sortOrder: row.sortOrder,
+    collaboratorIds: row.collaboratorIds,
+    collaborationPermissions: row.collaborationPermissions,
     createdAt: row.createdAt?.toISOString(),
     updatedAt: row.updatedAt?.toISOString(),
   });
@@ -57,4 +59,5 @@ export const songsRouter = buildCrudRouter({
   itemType: 'song',
   toApi,
   fromBody,
+  collaboratorIdsColumn: songs.collaboratorIds,
 });

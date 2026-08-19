@@ -1,10 +1,8 @@
 import { useRef, useState } from 'react';
 import { FileText, Trash2, Pencil, Check, X, Upload, ExternalLink } from 'lucide-react';
 import { useSongAttachments } from '../hooks/useSongAttachments';
-import { usePlan, useBandPlan } from '../hooks/usePlan';
 import { useBands } from '../context/BandsContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
-import UpgradePrompt from './UpgradePrompt';
 import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
 import type { AttachmentsScope, SongAttachment } from '../lib/songAttachments';
@@ -167,11 +165,8 @@ export default function SongAttachments({ song, user, bandId }: Props) {
     scope,
     songId: song.id,
   });
-  const { bands, refreshBandTrash } = useBands();
-  const activeBand = bandId ? (bands.find((b) => b.id === bandId) ?? null) : null;
-  const userPlanState = usePlan();
-  const bandPlanState = useBandPlan(activeBand);
-  const { canUse, storageQuotaBytes } = activeBand ? bandPlanState : userPlanState;
+  const { refreshBandTrash } = useBands();
+  const storageQuotaBytes = user.storageQuotaBytes;
   const { usedBytes } = useStorageUsage(user.id);
 
   const [error, setError] = useState<string | null>(null);
@@ -203,26 +198,20 @@ export default function SongAttachments({ song, user, bandId }: Props) {
   return (
     <div className="song-attachments">
       <div className="attachments-controls">
-        {canUse('attachments') ? (
-          <>
-            <button
-              className="rec-btn rec-btn--start"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              <Upload size={14} /> {uploading ? 'Uploading…' : 'Add PDF'}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf"
-              className="attachments-file-input"
-              onChange={(e) => { void handleFileChosen(e.target.files?.[0]); }}
-            />
-          </>
-        ) : (
-          <UpgradePrompt feature="attachments" label="Song attachments" />
-        )}
+        <button
+          className="rec-btn rec-btn--start"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+        >
+          <Upload size={14} /> {uploading ? 'Uploading…' : 'Add PDF'}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          className="attachments-file-input"
+          onChange={(e) => { void handleFileChosen(e.target.files?.[0]); }}
+        />
 
         {(error || uploadError) && <p className="recorder-error">{error ?? uploadError}</p>}
         <p className="attachments-hint">PDF only, up to {Math.round(ATTACHMENT_MAX_SIZE_BYTES / (1024 * 1024))} MB</p>

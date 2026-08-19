@@ -52,7 +52,6 @@ vi.mock('../context/BandsContext', () => ({
       memberUsernames: {},
       memberFullNames: {},
       memberAvatars: {},
-      billingPlan: 'crew',
       createdAt: '2026-01-01T00:00:00.000Z',
     }],
     bandSetlistsByBandId: {
@@ -65,11 +64,6 @@ vi.mock('../context/BandsContext', () => ({
     refreshBandSongs: mocks.refreshBandSongs,
     updateBandSong: mocks.updateBandSong,
   }),
-}));
-
-vi.mock('../hooks/usePlan', () => ({
-  usePlan: () => ({ canUse: () => true }),
-  useBandPlan: () => ({ canUse: () => true }),
 }));
 
 vi.mock('../hooks/useSongHandNotes', () => ({

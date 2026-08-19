@@ -18,9 +18,8 @@ export default function TermsPage() {
       <h2>1. The Service</h2>
       <p>
         GIGBOY is a ChordPro-based songbook, setlist, and gig-preparation tool for
-        musicians and bands. Free and paid ("Pro", "Crew") plans are described on our
-        <Link to="/pricing"> Pricing page</Link>, including current limits on songs,
-        setlists, and band members.
+        musicians and bands. GIGBOY is self-hosted and free to use, with no paid
+        plans, subscriptions, or usage limits.
       </p>
 
       <h2>2. Your account</h2>
@@ -47,12 +46,10 @@ export default function TermsPage() {
         remove content in response to a valid copyright complaint.
       </p>
 
-      <h2>4. Subscriptions and billing</h2>
+      <h2>4. No fees</h2>
       <p>
-        Paid plans are billed in advance on a monthly or annual cycle through Stripe.
-        You can view invoices and cancel anytime from the billing portal in your
-        account settings; cancellation stops future renewals but does not retroactively
-        refund the current billing period unless required by law in your jurisdiction.
+        GIGBOY is free to use. There are no paid plans, subscriptions, or billing of
+        any kind.
       </p>
 
       <h2>5. Acceptable use</h2>

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq } from 'drizzle-orm';
+import { eq, or, sql } from 'drizzle-orm';
 import type { PgTableWithColumns, PgColumn } from 'drizzle-orm/pg-core';
 import { db } from '../db/client.js';
 import { requireAuth } from '../middleware/session.js';
@@ -16,17 +16,28 @@ interface CrudConfig<Row extends Record<string, unknown>, Api> {
   itemType: TrashItemType;
   toApi: (row: Row) => Api;
   fromBody: (body: Record<string, unknown>, id: string, userId: string) => Record<string, unknown>;
+  /**
+   * When set, `GET /` also returns rows this jsonb array column contains the caller's id in —
+   * i.e. resources personally shared with them via an accepted collaboration invite (Phase 2's
+   * collaboration_invites), not just rows they own. See collaborationInvites.ts.
+   */
+  collaboratorIdsColumn?: PgColumn;
 }
 
 /** Builds a standard auth-scoped CRUD router (list/upsert/update/delete), owner-checked on write. */
 export function buildCrudRouter<Row extends { userId: string | null }, Api>(config: CrudConfig<Row, Api>) {
-  const { table, idColumn, userIdColumn, resourceKey, pluralKey, itemType, toApi, fromBody } = config;
+  const { table, idColumn, userIdColumn, resourceKey, pluralKey, itemType, toApi, fromBody, collaboratorIdsColumn } =
+    config;
   const router = Router();
   router.use(requireAuth);
 
   router.get('/', async (req, res) => {
     try {
-      const rows = (await db.select().from(table).where(eq(userIdColumn, req.userId!))) as Row[];
+      const ownedCond = eq(userIdColumn, req.userId!);
+      const whereCond = collaboratorIdsColumn
+        ? or(ownedCond, sql`${collaboratorIdsColumn} @> ${JSON.stringify([req.userId])}::jsonb`)
+        : ownedCond;
+      const rows = (await db.select().from(table).where(whereCond)) as Row[];
       res.json({ [pluralKey]: rows.map(toApi) });
     } catch (err) {
       console.error(`Failed to list ${pluralKey}:`, err);
@@ -58,11 +69,21 @@ export function buildCrudRouter<Row extends { userId: string | null }, Api>(conf
   router.put('/:id', async (req, res) => {
     try {
       const existing = (await db.select().from(table).where(eq(idColumn, req.params.id)).limit(1)) as Row[];
-      if (!existing[0] || existing[0].userId !== req.userId) {
+      const row0 = existing[0] as (Row & Record<string, unknown>) | undefined;
+      const isOwner = row0?.userId === req.userId;
+      const isCollaboratorEditor =
+        !isOwner &&
+        row0 &&
+        Array.isArray(row0.collaboratorIds) &&
+        (row0.collaboratorIds as string[]).includes(req.userId!) &&
+        (row0.collaborationPermissions as Record<string, string> | null)?.[req.userId!] === 'editor';
+      if (!row0 || (!isOwner && !isCollaboratorEditor)) {
         res.status(404).json({ error: `${resourceKey} not found.` });
         return;
       }
-      const values = fromBody((req.body ?? {}) as Record<string, unknown>, req.params.id, req.userId!);
+      // Pass the resource's actual owner id (not the caller's) so a collaborator-editor update
+      // can't reassign ownership to themselves.
+      const values = fromBody((req.body ?? {}) as Record<string, unknown>, req.params.id, row0.userId as string);
       const [row] = (await db
         .update(table)
         .set(values)

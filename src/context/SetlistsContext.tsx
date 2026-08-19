@@ -1,40 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
-import type { Setlist, TrashedSetlist } from '../types';
-import { loadAcceptedSharedResources } from '../lib/collaboration';
-import { db } from '../lib/firebase';
+import type { Setlist } from '../types';
 import { dataClient } from '../lib/dataClient';
-import { setlistFromDoc } from '../lib/dataClient/firebaseClient';
-import {
-  compareTrashByDeletedAtDesc,
-  createTrashPayload,
-  createTrashTimestamps,
-  isTrashExpired,
-  parseSetlistTrashRecord,
-  TRASH_COLLECTION,
-} from '../lib/trash';
 import { useAuth } from './AuthContext';
-import type { PublicSongEntry } from '../types';
 import { moveIdBefore } from '../utils/arrayUtils';
 
 const KEY_SETLISTS = 'gigboy-setlists';
 const KEY_ACTIVE_SETLIST = 'gigboy-active-setlist';
-const SETLISTS_COLLECTION = 'setlists';
-
-function isPermissionDeniedError(error: unknown) {
-  if (!error || typeof error !== 'object') return false;
-  const maybeCode = (error as { code?: unknown }).code;
-  return maybeCode === 'permission-denied';
-}
-
-function logSetlistsPermissionHelp(error: unknown) {
-  console.warn(
-    'Firestore denied access to users/{uid}/setlists. Setlists will stay local until Firestore rules allow this path.',
-    error
-  );
-}
 
 function readLocal<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
@@ -69,24 +42,6 @@ function normalizeSetlists(setlists: Setlist[]) {
     .map((setlist, index) => ({ ...setlist, sortOrder: index }));
 }
 
-async function writeSetlist(setlist: Setlist, userId: string | null) {
-  if (!db || !userId) return;
-
-  const targetOwnerId = setlist.ownerId ?? userId;
-
-  if (targetOwnerId === userId) {
-    // Our own setlist: goes through the backend-agnostic data client.
-    await dataClient.setlists.update(setlist);
-    return;
-  }
-
-  // Editor updating a setlist shared by another owner: out of dataClient's
-  // scope (collaboration stays Firestore-only), write directly.
-  const { id, ...rest } = setlist;
-  const firestoreData = Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== undefined));
-  await setDoc(doc(db, 'users', targetOwnerId, SETLISTS_COLLECTION, id), firestoreData);
-}
-
 function getRole(setlist: Setlist, userId: string | null): Setlist['accessRole'] {
   if (!userId) return undefined;
   const ownerId = setlist.ownerId;
@@ -108,15 +63,11 @@ function isSetlistOwner(setlist: Setlist, userId: string | null) {
 
 interface SetlistsContextValue {
   setlists: Setlist[];
-  trashedSetlists: TrashedSetlist[];
   activeSetlistId: string | null;
   addSetlist: (name: string) => void;
   deleteSetlist: (id: string) => void;
-  restoreSetlistFromTrash: (trashId: string) => Promise<string | null>;
-  deleteSetlistPermanently: (trashId: string) => Promise<string | null>;
   renameSetlist: (id: string, name: string) => void;
   updateSetlistIcon: (id: string, icon?: string) => void;
-  setSetlistPublicShare: (id: string, enabled: boolean, publicSongs?: PublicSongEntry[]) => Promise<string | null>;
   addSongToSetlist: (setlistId: string, songId: string) => void;
   removeSongFromSetlist: (setlistId: string, songId: string) => void;
   moveSongInSetlist: (setlistId: string, songId: string, beforeSongId: string | null) => void;
@@ -133,83 +84,18 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
   const [setlists, setSetlists] = useState<Setlist[]>(() =>
     normalizeSetlists(readLocal(KEY_SETLISTS, []))
   );
-  const [trashedSetlists, setTrashedSetlists] = useState<TrashedSetlist[]>([]);
   const [activeSetlistId, setActiveSetlistId] = useState<string | null>(() =>
     readLocal(KEY_ACTIVE_SETLIST, null)
   );
 
   useEffect(() => {
-    if (!db || !userId) {
-      setTrashedSetlists([]);
-      return;
-    }
-
-    const firestore = db;
-
-    Promise.allSettled([
-      dataClient.setlists.list(),
-      loadAcceptedSharedResources({
-        db: firestore,
-        userId,
-        resourceType: 'setlist',
-        mapResource: (invite, id, data) => setlistFromDoc(id, data, invite.ownerId, userId),
-      }),
-      getDocs(collection(firestore, 'users', userId, TRASH_COLLECTION)),
-    ])
-      .then(([ownedResult, sharedResult, trashResult]) => {
-        const ownedSetlistsResult = ownedResult.status === 'fulfilled' ? ownedResult.value : null;
-        const sharedSetlists = sharedResult.status === 'fulfilled' ? sharedResult.value : [];
-        const trashDocs = trashResult.status === 'fulfilled' ? trashResult.value.docs : [];
-
-        const now = Date.now();
-        const parsedTrash = trashDocs
-          .map((entry) => parseSetlistTrashRecord(entry.id, entry.data() as Record<string, unknown>))
-          .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-
-        const expiredTrash = parsedTrash.filter((entry) => isTrashExpired(entry.purgeAt, now));
-        const activeTrash = parsedTrash.filter((entry) => !isTrashExpired(entry.purgeAt, now));
-
-        if (expiredTrash.length > 0) {
-          void Promise.all(
-            expiredTrash.map((entry) => deleteDoc(doc(firestore, 'users', userId, TRASH_COLLECTION, entry.id)))
-          ).catch((error) => {
-            console.warn('Failed to purge expired setlist trash items.', error);
-          });
-        }
-
-        setTrashedSetlists(
-          activeTrash
-            .map((entry) => ({
-              trashId: entry.id,
-              itemType: 'setlist' as const,
-              deletedAt: entry.deletedAt,
-              purgeAt: entry.purgeAt,
-              setlist: entry.data,
-            }))
-            .sort(compareTrashByDeletedAtDesc)
-        );
-
-        if (!ownedSetlistsResult) {
-          if (ownedResult.status === 'rejected') {
-            if (isPermissionDeniedError(ownedResult.reason)) {
-              logSetlistsPermissionHelp(ownedResult.reason);
-            } else {
-              console.error('Failed to load setlists from Firestore. Falling back to local data.', ownedResult.reason);
-            }
-          }
-          return;
-        }
-
-        setSetlists(normalizeSetlists([...ownedSetlistsResult, ...sharedSetlists]));
-      })
-      .catch((error) => {
-        if (isPermissionDeniedError(error)) {
-          logSetlistsPermissionHelp(error);
-          return;
-        }
-
-        console.error('Failed to load setlists from Firestore. Falling back to local data.', error);
-      });
+    if (!userId) return;
+    // Self-host's GET /api/setlists already includes setlists shared with the caller via an
+    // accepted collaboration invite (server-side jsonb collaborator match) — see SongsContext.tsx.
+    dataClient.setlists
+      .list()
+      .then((loaded) => setSetlists(normalizeSetlists(loaded)))
+      .catch((err) => console.error('Failed to load setlists.', err));
   }, [userId]);
 
   useEffect(() => {
@@ -236,17 +122,13 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
 
     setSetlists((prev) => {
       const nextSetlists = normalizeSetlists([...prev, nextSetlist]);
-      if (db && userId) {
+      if (userId) {
         const changed = nextSetlists.filter((list) => {
           const p = prev.find((item) => item.id === list.id);
           return !p || p.sortOrder !== list.sortOrder;
         });
-        Promise.all(changed.map((list) => writeSetlist(list, userId))).catch((error) => {
-          if (isPermissionDeniedError(error)) {
-            logSetlistsPermissionHelp(error);
-          } else {
-            console.error('Failed to save setlists to Firestore.', error);
-          }
+        Promise.all(changed.map((list) => dataClient.setlists.update(list))).catch((error) => {
+          console.error('Failed to save setlists.', error);
           setSetlists(prev);
         });
       }
@@ -255,116 +137,32 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const deleteSetlist = useCallback((id: string) => {
-    let trashedEntry: TrashedSetlist | null = null;
-
     setSetlists((prev) => {
       const deleting = prev.find((list) => list.id === id);
       if (!deleting || !isSetlistOwner(deleting, userId)) {
         return prev;
       }
 
-      const { deletedAt, purgeAt } = createTrashTimestamps();
-      const trashId = crypto.randomUUID();
-      trashedEntry = {
-        trashId,
-        itemType: 'setlist',
-        deletedAt,
-        purgeAt,
-        setlist: deleting,
-      };
-      setTrashedSetlists((prevTrash) => [trashedEntry as TrashedSetlist, ...prevTrash].sort(compareTrashByDeletedAtDesc));
-
       const nextSetlists = normalizeSetlists(prev.filter((list) => list.id !== id));
-      if (db && userId) {
+      if (userId) {
         const changed = nextSetlists.filter((list) => {
           const p = prev.find((item) => item.id === list.id);
           return p && p.sortOrder !== list.sortOrder;
         });
 
+        // The server moves the setlist to trash as part of the delete (see server/routes/crud.ts).
         Promise.all([
-          setDoc(
-            doc(db, 'users', userId, TRASH_COLLECTION, trashId),
-            createTrashPayload('setlist', deletedAt, purgeAt, deleting)
-          ),
           dataClient.setlists.remove(id),
-          ...changed.map((list) => writeSetlist(list, userId)),
+          ...changed.map((list) => dataClient.setlists.update(list)),
         ]).catch((error) => {
-          if (isPermissionDeniedError(error)) {
-            logSetlistsPermissionHelp(error);
-          } else {
-            console.error('Failed to move setlist to trash in Firestore.', error);
-          }
+          console.error('Failed to delete setlist.', error);
           setSetlists(prev);
-          if (trashedEntry) {
-            setTrashedSetlists((prevTrash) => prevTrash.filter((entry) => entry.trashId !== trashedEntry?.trashId));
-          }
         });
       }
       return nextSetlists;
     });
     setActiveSetlistId((prev) => (prev === id ? null : prev));
   }, [userId]);
-
-  const restoreSetlistFromTrash = useCallback(async (trashId: string): Promise<string | null> => {
-    const trashed = trashedSetlists.find((entry) => entry.trashId === trashId);
-    if (!trashed) {
-      return 'Setlist was not found in trash.';
-    }
-
-    const restoredSetlist: Setlist = {
-      ...trashed.setlist,
-      ownerId: userId ?? trashed.setlist.ownerId,
-      accessRole: 'owner',
-    };
-
-    setTrashedSetlists((prev) => prev.filter((entry) => entry.trashId !== trashId));
-
-    let previousSetlists: Setlist[] = [];
-    let nextSetlists: Setlist[] = [];
-    setSetlists((prev) => {
-      previousSetlists = prev;
-      nextSetlists = normalizeSetlists([restoredSetlist, ...prev.filter((entry) => entry.id !== restoredSetlist.id)]);
-      return nextSetlists;
-    });
-
-    if (!db || !userId) {
-      return null;
-    }
-
-    const changed = nextSetlists.filter((list) => {
-      const p = previousSetlists.find((item) => item.id === list.id);
-      return !p || p.sortOrder !== list.sortOrder;
-    });
-
-    try {
-      await Promise.all([
-        ...changed.map((list) => writeSetlist(list, userId)),
-        deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId)),
-      ]);
-      return null;
-    } catch (error) {
-      setSetlists(previousSetlists);
-      setTrashedSetlists((prev) => [trashed, ...prev].sort(compareTrashByDeletedAtDesc));
-      return error instanceof Error ? error.message : 'Failed to restore setlist.';
-    }
-  }, [trashedSetlists, userId]);
-
-  const deleteSetlistPermanently = useCallback(async (trashId: string): Promise<string | null> => {
-    const previousTrash = trashedSetlists;
-    setTrashedSetlists((prev) => prev.filter((entry) => entry.trashId !== trashId));
-
-    if (!db || !userId) {
-      return null;
-    }
-
-    try {
-      await deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId));
-      return null;
-    } catch (error) {
-      setTrashedSetlists(previousTrash);
-      return error instanceof Error ? error.message : 'Failed to permanently delete setlist.';
-    }
-  }, [trashedSetlists, userId]);
 
   const renameSetlist = useCallback((id: string, name: string) => {
     setSetlists((prev) => {
@@ -375,13 +173,9 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       const nextSetlist = { ...setlist, name, updatedAt: new Date().toISOString() };
       const nextSetlists = prev.map((l) => (l.id === id ? nextSetlist : l));
 
-      if (db && userId) {
-        void writeSetlist(nextSetlist, userId).catch((error) => {
-          if (isPermissionDeniedError(error)) {
-            logSetlistsPermissionHelp(error);
-          } else {
-            console.error('Failed to rename setlist in Firestore.', error);
-          }
+      if (userId) {
+        void dataClient.setlists.update(nextSetlist).catch((error) => {
+          console.error('Failed to rename setlist.', error);
           setSetlists(prev);
         });
       }
@@ -398,13 +192,9 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       const nextSetlist = { ...setlist, icon, updatedAt: new Date().toISOString() };
       const nextSetlists = prev.map((l) => (l.id === id ? nextSetlist : l));
 
-      if (db && userId) {
-        void writeSetlist(nextSetlist, userId).catch((error) => {
-          if (isPermissionDeniedError(error)) {
-            logSetlistsPermissionHelp(error);
-          } else {
-            console.error('Failed to update setlist icon in Firestore.', error);
-          }
+      if (userId) {
+        void dataClient.setlists.update(nextSetlist).catch((error) => {
+          console.error('Failed to update setlist icon.', error);
           setSetlists(prev);
         });
       }
@@ -412,41 +202,6 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       return nextSetlists;
     });
   }, [userId]);
-
-  const setSetlistPublicShare = useCallback(async (id: string, enabled: boolean, publicSongs?: PublicSongEntry[]) => {
-    if (!db || !userId) {
-      return 'Setlists require cloud sync.';
-    }
-
-    const setlist = setlists.find((entry) => entry.id === id);
-    if (!setlist) return 'Setlist not found.';
-    if (!isSetlistOwner(setlist, userId)) return 'Only the owner can share setlists publicly.';
-
-    const nextSetlist = {
-      ...setlist,
-      publicShareEnabled: enabled || undefined,
-      publicSongs: enabled ? (publicSongs ?? setlist.publicSongs ?? []) : undefined,
-      publicSongNotes: enabled ? (setlist.songNotes ?? {}) : undefined,
-      updatedAt: new Date().toISOString(),
-    };
-    const previousSetlists = setlists;
-    const nextSetlists = setlists.map((entry) => (entry.id === id ? nextSetlist : entry));
-
-    setSetlists(nextSetlists);
-
-    try {
-      await writeSetlist(nextSetlist, userId);
-      return null;
-    } catch (error) {
-      setSetlists(previousSetlists);
-      if (isPermissionDeniedError(error)) {
-        logSetlistsPermissionHelp(error);
-      } else {
-        console.error('Failed to update setlist sharing in Firestore.', error);
-      }
-      return error instanceof Error ? error.message : 'Failed to update setlist sharing.';
-    }
-  }, [setlists, userId]);
 
   const addSongToSetlist = useCallback((setlistId: string, songId: string) => {
     setSetlists((prev) => {
@@ -461,13 +216,9 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       };
       const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
 
-      if (db && userId) {
-        void writeSetlist(nextSetlist, userId).catch((error) => {
-          if (isPermissionDeniedError(error)) {
-            logSetlistsPermissionHelp(error);
-          } else {
-            console.error('Failed to add song to setlist in Firestore.', error);
-          }
+      if (userId) {
+        void dataClient.setlists.update(nextSetlist).catch((error) => {
+          console.error('Failed to add song to setlist.', error);
           setSetlists(prev);
         });
       }
@@ -492,13 +243,9 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       };
       const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
 
-      if (db && userId) {
-        void writeSetlist(nextSetlist, userId).catch((error) => {
-          if (isPermissionDeniedError(error)) {
-            logSetlistsPermissionHelp(error);
-          } else {
-            console.error('Failed to remove song from setlist in Firestore.', error);
-          }
+      if (userId) {
+        void dataClient.setlists.update(nextSetlist).catch((error) => {
+          console.error('Failed to remove song from setlist.', error);
           setSetlists(prev);
         });
       }
@@ -518,13 +265,9 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       const nextSetlist = { ...setlist, songIds: nextSongIds, updatedAt: new Date().toISOString() };
       const nextSetlists = prev.map((l) => (l.id === setlistId ? nextSetlist : l));
 
-      if (db && userId) {
-        void writeSetlist(nextSetlist, userId).catch((error) => {
-          if (isPermissionDeniedError(error)) {
-            logSetlistsPermissionHelp(error);
-          } else {
-            console.error('Failed to reorder setlist songs in Firestore.', error);
-          }
+      if (userId) {
+        void dataClient.setlists.update(nextSetlist).catch((error) => {
+          console.error('Failed to reorder setlist songs.', error);
           setSetlists(prev);
         });
       }
@@ -553,20 +296,13 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
       const nextSetlist: Setlist = {
         ...setlist,
         songNotes: Object.keys(nextSongNotes).length > 0 ? nextSongNotes : undefined,
-        publicSongNotes: setlist.publicShareEnabled
-          ? (Object.keys(nextSongNotes).length > 0 ? nextSongNotes : undefined)
-          : setlist.publicSongNotes,
         updatedAt: new Date().toISOString(),
       };
       const nextSetlists = prev.map((entry) => (entry.id === setlistId ? nextSetlist : entry));
 
-      if (db && userId) {
-        void writeSetlist(nextSetlist, userId).catch((error) => {
-          if (isPermissionDeniedError(error)) {
-            logSetlistsPermissionHelp(error);
-          } else {
-            console.error('Failed to update setlist song note in Firestore.', error);
-          }
+      if (userId) {
+        void dataClient.setlists.update(nextSetlist).catch((error) => {
+          console.error('Failed to update setlist song note.', error);
           setSetlists(prev);
         });
       }
@@ -582,15 +318,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       setlists,
-      trashedSetlists,
       activeSetlistId,
       addSetlist,
       deleteSetlist,
-      restoreSetlistFromTrash,
-      deleteSetlistPermanently,
       renameSetlist,
       updateSetlistIcon,
-      setSetlistPublicShare,
       addSongToSetlist,
       removeSongFromSetlist,
       moveSongInSetlist,
@@ -600,15 +332,11 @@ export function SetlistsProvider({ children }: { children: ReactNode }) {
     }),
     [
       setlists,
-      trashedSetlists,
       activeSetlistId,
       addSetlist,
       deleteSetlist,
-      restoreSetlistFromTrash,
-      deleteSetlistPermanently,
       renameSetlist,
       updateSetlistIcon,
-      setSetlistPublicShare,
       addSongToSetlist,
       removeSongFromSetlist,
       moveSongInSetlist,

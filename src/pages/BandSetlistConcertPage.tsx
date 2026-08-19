@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
-import { useBandPlan } from '../hooks/usePlan';
 import type { Song } from '../types';
 import ConcertModeView from '../components/ConcertModeView';
 import toast from '../utils/anchoredToast';
@@ -17,12 +16,7 @@ export default function BandSetlistConcertPage() {
     refreshBandSetlists,
     refreshBandSongs,
     updateBandSong,
-    bands,
   } = useBands();
-
-  const band = bands.find((b) => b.id === bandId) ?? null;
-  const bandPlanState = useBandPlan(band);
-  const { canUse } = bandPlanState;
 
   const bandSetlists = useMemo(() => (bandId ? (bandSetlistsByBandId[bandId] ?? []) : []), [bandId, bandSetlistsByBandId]);
   const bandSongs = useMemo(() => (bandId ? (bandSongsByBandId[bandId] ?? []) : []), [bandId, bandSongsByBandId]);
@@ -93,7 +87,7 @@ export default function BandSetlistConcertPage() {
       backRoute={backRoute}
       songNotes={setlist.songNotes}
       bandId={bandId}
-      canUseMetronome={canUse('metronome')}
+      canUseMetronome={true}
       onPinTranspose={handlePinTranspose}
     />
   );

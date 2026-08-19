@@ -1,29 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import {
-  collection,
-  doc,
-  getDocs,
-  setDoc,
-  deleteDoc,
-} from 'firebase/firestore';
-import type { Song, TrashedSong } from '../types';
-import { loadAcceptedSharedResources } from '../lib/collaboration';
-import { db, firebaseEnabled } from '../lib/firebase';
+import type { Song } from '../types';
 import { dataClient } from '../lib/dataClient';
-import { songFromOwnedDoc } from '../lib/dataClient/firebaseClient';
-import {
-  compareTrashByDeletedAtDesc,
-  createTrashPayload,
-  createTrashTimestamps,
-  isTrashExpired,
-  parseSongTrashRecord,
-  TRASH_COLLECTION,
-} from '../lib/trash';
 import { useAuth } from './AuthContext';
-import { usePlan } from '../hooks/usePlan';
-import { PLAN_LIMITS } from '../lib/planLimits';
 
 const LOCAL_STORAGE_KEY = 'gigboy-local-songs';
 
@@ -89,18 +69,14 @@ function writeLocalSongs(songs: Song[]) {
 
 interface SongsContextValue {
   songs: Song[];
-  trashedSongs: TrashedSong[];
   loading: boolean;
   addSong: (song: Song) => Promise<string | null>;
   updateSong: (song: Song) => Promise<string | null>;
   deleteSong: (id: string) => Promise<void>;
-  restoreSongFromTrash: (trashId: string) => Promise<string | null>;
-  deleteSongPermanently: (trashId: string) => Promise<string | null>;
   moveSong: (songId: string, beforeSongId: string | null) => void;
 }
 
 const SongsContext = createContext<SongsContextValue | null>(null);
-const SONGS_COLLECTION = 'songs';
 
 function canEditSong(song: Song, userId: string | null) {
   if (!userId) return false;
@@ -111,110 +87,35 @@ function isSongOwner(song: Song, userId: string | null) {
   return Boolean(userId && song.ownerId === userId);
 }
 
-function songsCollectionPath(userId: string) {
-  return ['users', userId, SONGS_COLLECTION] as const;
-}
-
 export function SongsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { plan, songLimit } = usePlan();
   const userId = user?.id ?? null;
-  const [userSongs, setUserSongs] = useState<Song[]>(() => (firebaseEnabled ? [] : readLocalSongs()));
-  const [trashedSongs, setTrashedSongs] = useState<TrashedSong[]>([]);
+  const [userSongs, setUserSongs] = useState<Song[]>(() => readLocalSongs());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!db || !userId) {
-      setTrashedSongs([]);
+    if (!userId) {
       setLoading(false);
       return;
     }
-
-    const firestore = db;
-
-    Promise.allSettled([
-      dataClient.songs.list(),
-      loadAcceptedSharedResources({
-        db: firestore,
-        userId,
-        resourceType: 'song',
-        mapResource: (invite, id, data) => songFromOwnedDoc(id, data, invite.ownerId, userId),
-      }),
-      getDocs(collection(firestore, 'users', userId, TRASH_COLLECTION)),
-    ])
-      .then(async ([ownedResult, sharedResult, trashResult]) => {
-        const ownedSongs = ownedResult.status === 'fulfilled' ? normalizeSongs(ownedResult.value) : null;
-        const sharedSongs = sharedResult.status === 'fulfilled' ? normalizeSongs(sharedResult.value) : [];
-        const trashDocs = trashResult.status === 'fulfilled' ? trashResult.value.docs : [];
-        const now = Date.now();
-
-        const parsedTrash = trashDocs
-          .map((entry) => parseSongTrashRecord(entry.id, entry.data() as Record<string, unknown>))
-          .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-
-        const expiredTrash = parsedTrash.filter((entry) => isTrashExpired(entry.purgeAt, now));
-        const activeTrash = parsedTrash.filter((entry) => !isTrashExpired(entry.purgeAt, now));
-
-        if (expiredTrash.length > 0) {
-          void Promise.all(
-            expiredTrash.map((entry) => deleteDoc(doc(firestore, 'users', userId, TRASH_COLLECTION, entry.id)))
-          ).catch((error) => {
-            console.warn('Failed to purge expired song trash items.', error);
-          });
-        }
-
-        setTrashedSongs(
-          activeTrash
-            .map((entry) => ({
-              trashId: entry.id,
-              itemType: 'song' as const,
-              deletedAt: entry.deletedAt,
-              purgeAt: entry.purgeAt,
-              song: entry.data,
-            }))
-            .sort(compareTrashByDeletedAtDesc)
-        );
-
-        if (ownedResult.status === 'rejected') {
-          console.error('Failed to load owned songs from Firestore.', ownedResult.reason);
-        }
-
-        if (sharedResult.status === 'rejected') {
-          console.warn('Failed to load shared songs from Firestore. Continuing with owned songs only.', sharedResult.reason);
-        }
-
-        if (trashResult.status === 'rejected') {
-          console.warn('Failed to load trashed songs from Firestore.', trashResult.reason);
-        }
-
-        const directSongs = ownedSongs ?? [];
-
-        if (directSongs.length > 0 || sharedSongs.length > 0) {
-          setUserSongs(normalizeSongs([...directSongs, ...sharedSongs]));
-          return;
-        }
-
-        if (!ownedSongs) {
-          return;
-        }
-
-        // Legacy root-collection ownership migration is intentionally disabled.
-        // Use explicit migration scripts for one-off backfills.
-        setUserSongs([]);
-      })
+    // Self-host's GET /api/songs already returns both owned songs and songs shared with the
+    // caller via an accepted collaboration invite (server-side jsonb collaborator match), so no
+    // separate shared-resource fetch is needed here.
+    setLoading(true);
+    dataClient.songs
+      .list()
+      .then((loaded) => setUserSongs(normalizeSongs(loaded)))
+      .catch((err) => console.error('Failed to load songs.', err))
       .finally(() => setLoading(false));
   }, [userId]);
 
   useEffect(() => {
-    if (!firebaseEnabled) {
-      writeLocalSongs(userSongs);
-    }
+    writeLocalSongs(userSongs);
   }, [userSongs]);
 
   const songs = useMemo(() => [...userSongs], [userSongs]);
 
   const addSong = useCallback(async (song: Song): Promise<string | null> => {
-    const limit = songLimit ?? PLAN_LIMITS.free.songLimit ?? 12;
     const pendingAdd: { nextSong: Song | null; error: string | null } = {
       nextSong: null,
       error: null,
@@ -222,12 +123,6 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
     setUserSongs((prev) => {
       const ownSongs = prev.filter((entry) => (entry.ownerId ?? userId) === userId);
-
-      // Use the latest state snapshot so rapid imports cannot bypass the cap.
-      if (plan === 'free' && ownSongs.length >= limit) {
-        pendingAdd.error = `You've reached the ${limit}-song limit on the Free plan. Upgrade to Pro to add unlimited songs.`;
-        return prev;
-      }
 
       const nextSong: Song = {
         ...song,
@@ -250,7 +145,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return 'Failed to prepare song for save.';
     }
 
-    if (!db || !userId) {
+    if (!userId) {
       return null;
     }
 
@@ -261,7 +156,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       setUserSongs((prev) => prev.filter((s) => s.id !== pendingAdd.nextSong?.id));
       return err instanceof Error ? err.message : 'Failed to save song.';
     }
-  }, [userId, plan, songLimit]);
+  }, [userId]);
 
   const updateSong = useCallback(async (song: Song): Promise<string | null> => {
     let previousSong: Song | null = null;
@@ -290,26 +185,16 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return 'You only have viewer access to this song.';
     }
 
-    if (!db || !userId) {
+    if (!userId) {
       return null;
     }
 
     const songToSave: Song = nextSong;
 
     try {
-      const targetOwnerId = songToSave.ownerId ?? userId;
-      if (targetOwnerId === userId) {
-        // Editing our own song: goes through the backend-agnostic data client.
-        await dataClient.songs.update(songToSave);
-      } else {
-        // Editor updating a song shared by another owner: out of dataClient's
-        // scope (collaboration stays Firestore-only), write directly.
-        const { id, ...rest } = songToSave;
-        const firestoreData = Object.fromEntries(
-          Object.entries(rest).filter(([, v]) => v !== undefined)
-        );
-        await setDoc(doc(db, ...songsCollectionPath(targetOwnerId as string), id), firestoreData);
-      }
+      // Works whether we own the song or are an editor-collaborator on someone else's —
+      // the server's PUT /songs/:id allows both (see server/routes/crud.ts).
+      await dataClient.songs.update(songToSave);
       return null;
     } catch (err) {
       if (previousSong) {
@@ -327,107 +212,21 @@ export function SongsProvider({ children }: { children: ReactNode }) {
 
     setUserSongs((prev) => prev.filter((s) => s.id !== id));
 
-    const now = new Date();
-    const trashId = crypto.randomUUID();
-    const { deletedAt, purgeAt } = createTrashTimestamps(now);
-    const trashedSong: TrashedSong = {
-      trashId,
-      itemType: 'song',
-      deletedAt,
-      purgeAt,
-      song: targetSong,
-    };
-    setTrashedSongs((prev) => [trashedSong, ...prev].sort(compareTrashByDeletedAtDesc));
-
-    if (!db || !userId) {
+    if (!userId) {
       return;
     }
 
     try {
-      await Promise.all([
-        setDoc(
-          doc(db, 'users', userId, TRASH_COLLECTION, trashId),
-          createTrashPayload('song', deletedAt, purgeAt, targetSong)
-        ),
-        dataClient.songs.remove(id),
-      ]);
+      // The server moves the song to trash as part of the delete (see server/routes/crud.ts),
+      // so there's nothing else to persist client-side here.
+      await dataClient.songs.remove(id);
     } catch (error) {
-      console.error('Failed to move song to trash in Firestore. Restoring list from server.', error);
-      setTrashedSongs((prev) => prev.filter((entry) => entry.trashId !== trashId));
+      console.error('Failed to delete song. Restoring list from server.', error);
       dataClient.songs.list().then((songs) => {
         setUserSongs(normalizeSongs(songs));
       });
     }
   }, [userId, userSongs]);
-
-  const restoreSongFromTrash = useCallback(async (trashId: string): Promise<string | null> => {
-    const trashed = trashedSongs.find((entry) => entry.trashId === trashId);
-    if (!trashed) {
-      return 'Song was not found in trash.';
-    }
-
-    const restoredSong: Song = {
-      ...trashed.song,
-      ownerId: userId ?? trashed.song.ownerId,
-      accessRole: 'owner',
-    };
-
-    const limit = songLimit ?? PLAN_LIMITS.free.songLimit ?? 12;
-    const restoreCheck: { error: string | null } = { error: null };
-
-    setUserSongs((prev) => {
-      const ownCount = prev.filter((entry) => (entry.ownerId ?? userId) === userId).length;
-      const replacingExisting = prev.some((entry) => entry.id === restoredSong.id);
-
-      // Restoring a deleted song should still respect plan limits.
-      if (plan === 'free' && !replacingExisting && ownCount >= limit) {
-        restoreCheck.error = `You've reached the ${limit}-song limit on the Free plan. Delete a song or upgrade to Pro before restoring.`;
-        return prev;
-      }
-
-      return normalizeSongs([restoredSong, ...prev.filter((entry) => entry.id !== restoredSong.id)]);
-    });
-
-    if (restoreCheck.error) {
-      return restoreCheck.error;
-    }
-
-    setTrashedSongs((prev) => prev.filter((entry) => entry.trashId !== trashId));
-
-    if (!db || !userId) {
-      return null;
-    }
-
-    try {
-      await Promise.all([
-        dataClient.songs.update(restoredSong),
-        deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId)),
-      ]);
-
-      return null;
-    } catch (error) {
-      setUserSongs((prev) => prev.filter((entry) => entry.id !== restoredSong.id));
-      setTrashedSongs((prev) => [trashed, ...prev].sort(compareTrashByDeletedAtDesc));
-      return error instanceof Error ? error.message : 'Failed to restore song.';
-    }
-  }, [plan, songLimit, trashedSongs, userId]);
-
-  const deleteSongPermanently = useCallback(async (trashId: string): Promise<string | null> => {
-    const previousTrash = trashedSongs;
-    setTrashedSongs((prev) => prev.filter((entry) => entry.trashId !== trashId));
-
-    if (!db || !userId) {
-      return null;
-    }
-
-    try {
-      await deleteDoc(doc(db, 'users', userId, TRASH_COLLECTION, trashId));
-      return null;
-    } catch (error) {
-      setTrashedSongs(previousTrash);
-      return error instanceof Error ? error.message : 'Failed to permanently delete song.';
-    }
-  }, [trashedSongs, userId]);
 
   const moveSong = useCallback((songId: string, beforeSongId: string | null) => {
     let previousSongs: Song[] = [];
@@ -452,7 +251,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
       return nextSongs;
     });
 
-    if (!db || !userId || nextSongs === previousSongs) {
+    if (!userId || nextSongs === previousSongs) {
       return;
     }
 
@@ -466,7 +265,7 @@ export function SongsProvider({ children }: { children: ReactNode }) {
     }
 
     Promise.all(changedSongs.map((song) => dataClient.songs.update(song))).catch((error) => {
-      console.error('Failed to reorder songs in Firestore.', error);
+      console.error('Failed to reorder songs.', error);
       setUserSongs(previousSongs);
     });
   }, [userId]);
@@ -474,16 +273,13 @@ export function SongsProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       songs,
-      trashedSongs,
       loading,
       addSong,
       updateSong,
       deleteSong,
-      restoreSongFromTrash,
-      deleteSongPermanently,
       moveSong,
     }),
-    [songs, trashedSongs, loading, addSong, updateSong, deleteSong, restoreSongFromTrash, deleteSongPermanently, moveSong]
+    [songs, loading, addSong, updateSong, deleteSong, moveSong]
   );
 
   return (

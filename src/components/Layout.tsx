@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Maximize2, Minimize2, MessageSquare, Music, Folder, ListMusic, ClipboardList, Newspaper, Trash2 } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Maximize2, Minimize2, MessageSquare, Music, Folder, ListMusic, ClipboardList, Newspaper, Trash2, ShieldCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import Sidebar from './Sidebar';
 import BrandMark from './BrandMark';
 import { useDarkModeContext } from '../context/DarkModeContext';
-import { useBandPlan } from '../hooks/usePlan';
-import { db } from '../lib/firebase';
 import { submitFeedback } from '../lib/feedback';
 import toast from '../utils/anchoredToast';
 import UserAvatar from './UserAvatar';
@@ -54,7 +52,6 @@ export default function Layout({ children }: Props) {
   const bandSection = routeBandId ? (routeSegments[2] ?? 'library') : null;
   const bandSongListId = routeBandId && bandSection === 'songlists' ? (routeSegments[3] ?? null) : null;
   const activeBand = routeBandId ? bands.find((entry) => entry.id === routeBandId) ?? null : null;
-  const activeBandPlanState = useBandPlan(activeBand);
   const canEditActiveBand = Boolean(
     activeBand
       && user
@@ -118,21 +115,6 @@ export default function Layout({ children }: Props) {
 
   const createBandResource = useCallback(async (kind: 'songlist' | 'setlist' | 'rider' | 'pressKit') => {
     if (!routeBandId) return;
-
-    if (kind === 'setlist' && !activeBandPlanState.canUse('setlists')) {
-      toast.error('Setlists require a Pro or Crew plan for this band.');
-      return;
-    }
-
-    if (kind === 'rider' && !activeBandPlanState.canUse('technicalRiders')) {
-      toast.error('Technical riders require a Pro or Crew plan for this band.');
-      return;
-    }
-
-    if (kind === 'pressKit' && !activeBandPlanState.canUse('pressKits')) {
-      toast.error('Press kits require a Pro or Crew plan for this band.');
-      return;
-    }
 
     const defaults = {
       songlist: 'New songlist',
@@ -214,7 +196,6 @@ export default function Layout({ children }: Props) {
     addBandSetlist,
     addBandSongList,
     addBandInputList,
-    activeBandPlanState,
     navigate,
     routeBandId,
   ]);
@@ -450,10 +431,10 @@ export default function Layout({ children }: Props) {
   }, [feedbackOpen]);
 
   const handleSubmitFeedback = async () => {
-    if (!db || !user?.id || !feedbackMessage.trim() || feedbackSubmitting) return;
+    if (!user?.id || !feedbackMessage.trim() || feedbackSubmitting) return;
     setFeedbackSubmitting(true);
     try {
-      await submitFeedback(db, {
+      await submitFeedback({
         userId: user.id,
         email: user.email ?? null,
         message: feedbackMessage,
@@ -549,6 +530,17 @@ export default function Layout({ children }: Props) {
           >
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
+          {user?.role === 'admin' && (
+            <Link
+              to="/admin/invites"
+              className="topbar-icon-btn"
+              title="Invites (admin)"
+              aria-label="Invites (admin)"
+              aria-current={pathname === '/admin/invites' ? 'page' : undefined}
+            >
+              <ShieldCheck size={16} />
+            </Link>
+          )}
           {user && (
             <Link
               to="/trash"

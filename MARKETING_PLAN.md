@@ -2,14 +2,14 @@
 
 ## 1. Product snapshot
 
-GIGBOY is a browser-based songbook and gig-prep tool for musicians and bands, built on ChordPro. Installable PWA, works offline, auth-optional (fully local mode with no login), Firebase-backed cloud sync and band collaboration when enabled. Free / Pro / Crew tiers via Stripe.
+GIGBOY is a browser-based songbook and gig-prep tool for musicians and bands, built on ChordPro. Installable PWA, works offline. Self-hosted: a band or musician (or their tech-savvy friend) runs it on their own server/NAS via Docker, with band collaboration and cloud sync included — no paid tier to unlock, every self-hosted instance gets full feature access.
 
 Standout features vs. a typical "chord chart app":
 - **Bands** — shared song libraries, setlists, songlists, roles, invites
 - **Press kits, technical riders, stage plots** — shareable public links, generated per band (this is rare in the category; most competitors stop at chord charts)
 - **Rehearsal tools** — audio recorder, metronome, tuner, hand-drawn notes on the sheet
-- **No lock-in** — full ChordPro export of your whole songbook at any time
-- **Local-first** — usable with zero signup; cloud/collab is opt-in
+- **No lock-in** — full ChordPro export of your whole songbook at any time, and it's your own server/database, not someone else's cloud
+- **Self-hosted, not another subscription** — one Docker Compose stack, run it once and it's yours; no recurring SaaS bill
 
 ## 2. Positioning
 
@@ -30,7 +30,7 @@ Standout features vs. a typical "chord chart app":
 |---|---|
 | "Your whole band, one songbook" | Bands feature, shared setlists/songlists, invites & roles |
 | "Get booked, not just rehearsed" | Press kits, tech riders, stage plots — shareable links to send venues |
-| "Works before you've even signed up" | Local-only mode, no login required, localStorage |
+| "Your server, your data" | Self-hosted via Docker Compose — no third-party account, no vendor lock-in on the infrastructure itself |
 | "Your songs, never trapped" | Full ChordPro export anytime, no lock-in |
 | "Practice like it's soundcheck" | In-app metronome, tuner, audio recorder, hand notes |
 
@@ -64,23 +64,25 @@ Standout features vs. a typical "chord chart app":
 
 ### Product-led / viral loop
 - The **Bands invite flow is a built-in referral mechanic** — every band member invited is a new signup. Lean into this: make the invite email/share link emphasize what the inviter is sharing (setlist/press kit), not just "join my band."
-- Public press-kit/stage-plot links are shared with venues who are not existing users — put a small "made with GIGBOY" footer/CTA on public share pages (opt-out for Crew if desired) to convert venue staff into curious visitors.
+- Public press-kit/stage-plot links are shared with venues who are not existing users — put a small "made with GIGBOY" footer/CTA on public share pages to convert venue staff into curious visitors and potential self-hosters.
 
 ### Paid (only after organic signal validates messaging)
 - Small-budget Meta/Instagram ads targeting cover-band and worship-team Facebook interest groups, using stage-plot/press-kit demo creative (the differentiated feature, not generic chord charts).
 - Google Ads on the long-tail terms above — cheap CPCs, high intent.
 
-## 7. Funnel & pricing motion
+## 7. Funnel & self-host motion
 
-- **Free tier = local mode**, zero-friction trial of the core song/chord experience — the funnel starts before signup even happens.
-- Convert Free → Pro when a user hits a real wall tied to collaboration or storage (multi-device sync, attachments, band creation) — make sure in-app upgrade prompts appear *at the moment of that specific friction*, not generically.
-- Convert Pro → Crew when a *band* (not an individual) needs shared billing — target the band leader/admin persona specifically in upgrade messaging ("your bandmates are on this plan too").
-- Track this funnel against `src/lib/planLimits.ts` gates so marketing claims about what's free vs. paid stay accurate as gating logic changes.
+There's no billing funnel — GIGBOY is free, self-hosted software with full feature access out of the box. The funnel is about getting a band (or its most technical member) from "never heard of it" to "running their own instance":
+
+- **Awareness → try it** — a band lead or the group's designated "tech person" finds GIGBOY through content/community channels and spins up the Docker Compose stack (see [SELFHOSTING.md](SELFHOSTING.md)), a five-minute setup on a NAS, VPS, or laptop.
+- **Deploy → invite the band** — the person who deployed it becomes the admin and generates invite links for bandmates (no open self-registration — the invite-link flow is a natural, deliberate act of bringing the rest of the band in, which doubles as a light viral loop).
+- **Retention lever** — once a band's setlists/press-kits/riders live in their own instance, switching cost is high (their own data, already set up) — lean on this in content/positioning rather than a paywall.
+- If a hosted/managed offering (someone else runs the Docker stack for a fee) is ever introduced, revisit this section — it does not exist today.
 
 ## 8. Launch phases
 
 **Phase 0 — Pre-launch (2–3 weeks)**
-- Ship the legal/production checklist already in README ("Before going public": Terms/Privacy review, Sentry DSN, credential rotation, offline/PWA end-to-end test).
+- Ship the legal/production checklist already in README ("Before going public": Terms/Privacy review, session secret/reverse-proxy HTTPS setup, credential rotation, offline/PWA end-to-end test).
 - Write 3–5 SEO/template blog posts (stage plot, tech rider, EPK templates) to have organic content live at launch.
 - Seed 10–15 real bands/solo musicians as beta users for testimonials and bug-catching before public push.
 
@@ -96,15 +98,15 @@ Standout features vs. a typical "chord chart app":
 
 ## 9. KPIs to track
 
-- Signups (local-mode → account creation rate — this is the real top-of-funnel since local mode has no signup gate)
-- Band creations & invite acceptance rate (proxy for the viral loop working)
-- Free → Pro and Pro → Crew conversion rate, and time-to-convert
-- Public press-kit/stage-plot link shares and their referral traffic back to GIGBOY
-- Organic search traffic to the template/checklist blog posts and their conversion into signups
+- Repo/README traffic and Docker image pulls (or `git clone`s) — the real top-of-funnel now that there's no hosted signup
+- Deployments started vs. completed (proxy: GitHub stars/forks, community-reported installs) — how many people who look actually stand up the stack
+- Band creations & invite acceptance rate per instance (proxy for the invite-link viral loop working)
+- Public press-kit/stage-plot link shares and their referral traffic back to the GIGBOY repo/site
+- Organic search traffic to the template/checklist blog posts and their conversion into repo visits or SELFHOSTING.md reads
 
 ## 10. Immediate next steps
 
-1. Confirm README's "Before going public" checklist is complete (legal pages, Sentry, credential rotation) — don't drive traffic to a site that isn't launch-ready.
+1. Confirm README's "Before going public" checklist is complete (legal pages, reverse-proxy/HTTPS, credential rotation) — don't point traffic at self-host instructions that aren't launch-ready.
 2. Write and publish the 3 highest-intent SEO pages: stage plot template, tech rider template, band EPK template.
-3. Draft the Reddit/Product Hunt launch post leading with the Bands + press-kit differentiation.
-4. Add a lightweight referral touch to the band-invite email/share flow if not already present.
+3. Draft the Reddit/Product Hunt launch post leading with the Bands + press-kit differentiation, framed as free self-hosted software.
+4. Add a lightweight referral touch to the band-invite share flow if not already present.

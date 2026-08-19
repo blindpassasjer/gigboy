@@ -3,12 +3,47 @@ import { Link, useParams } from 'react-router-dom';
 import { Download, ArrowDownToLine, Copy } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import BrandMark from '../components/BrandMark';
-import { fetchPublicPressKit } from '../lib/pressKitApi';
+import { dataClient } from '../lib/dataClient';
 import { generatePressKitZip } from '../lib/pressKitZip';
 import { parsePressKitMedia, detectPresavePlatformLabel } from '../utils/pressKitMedia';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
-type PublicPressKitPayload = Awaited<ReturnType<typeof fetchPublicPressKit>>;
+/**
+ * Normalized shape this page renders, adapted from `DataClient['publicPressKits']['get']`'s
+ * `{ kit, bandName, bandLogo, images }` response — the band press kit's rich text is a single
+ * HTML blob rather than the old multi-stageplot/rider `texts` array, and only the video/presave
+ * URLs the owner selected for public sharing are included.
+ */
+interface PublicPressKitPayload {
+  bandName: string;
+  bandLogo?: string;
+  pressKitIcon?: string;
+  createdAt?: string;
+  texts: Array<{ title: string; body: string }>;
+  images: Array<{ title: string; url: string }>;
+  videoUrls: string[];
+  presaveReleaseName?: string;
+  presaveReleaseDate?: string;
+  presaveUrls: string[];
+}
+
+async function fetchPublicPressKit(token: string): Promise<PublicPressKitPayload> {
+  const result = await dataClient.publicPressKits.get(token);
+  if (!result) throw new Error('Press kit not found.');
+  const { kit, bandName, bandLogo, images } = result;
+  return {
+    bandName,
+    bandLogo: bandLogo ?? undefined,
+    pressKitIcon: kit.icon,
+    createdAt: kit.createdAt,
+    texts: kit.richText ? [{ title: kit.name, body: kit.richText }] : [],
+    images: images.map((image) => ({ title: image.title, url: image.url })),
+    videoUrls: kit.selectedVideoUrls ?? kit.videoUrls ?? [],
+    presaveReleaseName: kit.presaveReleaseName,
+    presaveReleaseDate: kit.presaveReleaseDate,
+    presaveUrls: kit.selectedPresaveUrls ?? kit.presaveUrls ?? [],
+  };
+}
 
 function slugifyFileName(value: string): string {
   return value
@@ -134,15 +169,15 @@ export default function PublicBandPressKitPage() {
     try {
       const blob = await generatePressKitZip({
         bandName: payload.bandName,
-        stageplots: payload.stageplots,
-        riders: payload.riders,
+        stageplots: [],
+        riders: [],
         texts: payload.texts,
         images: payload.images,
         videoUrls: payload.videoUrls,
         presaveReleaseName: payload.presaveReleaseName,
         presaveReleaseDate: payload.presaveReleaseDate,
         presaveUrls: payload.presaveUrls,
-        generatedAt: payload.generatedAt,
+        generatedAt: new Date().toISOString(),
       });
       triggerBlobDownload(blob, `${slugifyFileName(payload.bandName)}-press-kit.zip`);
     } finally {

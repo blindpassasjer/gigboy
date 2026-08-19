@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mic, MicOff, Play, Pause, Trash2, Save, X, Pencil, Check, Upload } from 'lucide-react';
 import { useSongRecordings } from '../hooks/useSongRecordings';
-import { usePlan, useBandPlan } from '../hooks/usePlan';
-import { useBands } from '../context/BandsContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
-import UpgradePrompt from './UpgradePrompt';
 import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
 import type { RecordingsScope, SongRecording } from '../lib/songRecordings';
@@ -414,11 +411,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
     scope,
     songId: song.id,
   });
-  const { bands } = useBands();
-  const activeBand = bandId ? (bands.find((b) => b.id === bandId) ?? null) : null;
-  const userPlanState = usePlan();
-  const bandPlanState = useBandPlan(activeBand);
-  const { canUse, storageQuotaBytes } = activeBand ? bandPlanState : userPlanState;
+  const storageQuotaBytes = user.storageQuotaBytes;
   const { usedBytes } = useStorageUsage(user.id);
 
   const [recState, setRecState] = useState<RecorderState>('idle');
@@ -662,26 +655,22 @@ export default function SongRecorder({ song, user, bandId }: Props) {
       {/* ── Controls ─────────────────────────────────── */}
       <div className="recorder-controls">
         {recState === 'idle' && (
-          canUse('recordings') ? (
-            <div className="recorder-idle-actions">
-              <button className="rec-btn rec-btn--start" onClick={startRecording}>
-                <Mic size={14} /> Start recording
-              </button>
-              <button className="rec-btn rec-btn--upload" onClick={triggerFileUpload}>
-                <Upload size={14} /> Upload file
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*"
-                onChange={(e) => { void handleFileSelected(e); }}
-                style={{ display: 'none' }}
-                aria-label="Upload audio file"
-              />
-            </div>
-          ) : (
-            <UpgradePrompt feature="recordings" label="Recording songs" />
-          )
+          <div className="recorder-idle-actions">
+            <button className="rec-btn rec-btn--start" onClick={startRecording}>
+              <Mic size={14} /> Start recording
+            </button>
+            <button className="rec-btn rec-btn--upload" onClick={triggerFileUpload}>
+              <Upload size={14} /> Upload file
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              onChange={(e) => { void handleFileSelected(e); }}
+              style={{ display: 'none' }}
+              aria-label="Upload audio file"
+            />
+          </div>
         )}
 
         {recState === 'recording' && (

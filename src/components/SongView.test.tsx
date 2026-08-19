@@ -58,15 +58,6 @@ vi.mock('../context/AuthContext', () => ({
   }),
 }));
 
-vi.mock('../hooks/usePlan', () => ({
-  usePlan: () => ({
-    canUse: () => true,
-  }),
-  useBandPlan: () => ({
-    canUse: () => true,
-  }),
-}));
-
 vi.mock('../hooks/useSongHandNotes', () => ({
   useSongHandNotes: () => ({
     notes: [],

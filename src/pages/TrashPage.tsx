@@ -5,11 +5,10 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * Personal trash — reuses `TrashView.tsx` exactly as `BandDetailPage.tsx` does for band
- * trash, but wired to `dataClient.trash` so it works identically against both the hosted
- * Firebase SaaS and the self-host Express/Postgres backend. This is the first UI for
- * personal trash/restore; the underlying Firestore logic (`restoreSongFromTrash`, etc. in
- * `SongsContext`/`SongListsContext`/`SetlistsContext`) already existed but was never wired
- * up to any page.
+ * trash, wired to `dataClient.trash` (self-host Express/Postgres backend). The server moves
+ * songs/song-lists/setlists here automatically on delete (see `server/routes/crud.ts`); this
+ * is the only UI for personal trash/restore — `SongsContext`/`SongListsContext`/
+ * `SetlistsContext` no longer carry their own separate trash state.
  */
 export default function TrashPage() {
   useDocumentTitle('Trash');

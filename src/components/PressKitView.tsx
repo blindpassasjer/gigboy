@@ -3,44 +3,23 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useEditor, useEditorState, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Link2Off, Download, Trash2, PenLine, Newspaper, X, ArrowDownToLine, GripVertical, Copy } from 'lucide-react';
-import { collection, deleteDoc, doc, getDocs, query, setDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
-import { db, storage } from '../lib/firebase';
-import { createPressKitShare, disablePressKitShare, getActivePressKitShare } from '../lib/pressKitApi';
-import type { ActivePressKitShare } from '../lib/pressKitApi';
+import { dataClient } from '../lib/dataClient';
+import type { PressKitImage, PressKitShare } from '../lib/dataClient/types';
 import { generatePressKitZip } from '../lib/pressKitZip';
 import { PRESSKIT_ICON_OPTIONS } from '../lib/iconOptions';
-import { createTrashPayload, createTrashTimestamps, TRASH_COLLECTION } from '../lib/trash';
 import { createWebpThumbnail } from '../utils/imageThumbnail';
 import type { PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
-import { useAuth } from '../context/AuthContext';
-import { bandCanUse } from '../lib/planLimits';
 import { parsePressKitMedia, detectPresavePlatformLabel, normalizePresaveUrl } from '../utils/pressKitMedia';
 
-interface PressKitImageAsset {
-  id: string;
-  title: string;
-  url: string;
-  thumbUrl?: string;
-  storagePath?: string;
-  thumbStoragePath?: string;
-  mimeType?: string;
-  sizeBytes?: number;
-  thumbSizeBytes?: number;
-  createdAt?: string;
-}
+type PressKitImageAsset = PressKitImage;
 
 const MEDIA_ITEMS_PER_PAGE = 16;
 
 function slugifyFileName(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'press-kit';
-}
-
-function sanitizePathSegment(value: string): string {
-  return value.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'image';
 }
 
 function inferImageExtension(url: string, mimeType: string): string {
@@ -82,8 +61,7 @@ function normalizeEmojiIcon(value: string): string | undefined {
 }
 
 export default function PressKitView({ bandId, bandName, kit, canEdit, userId, userEmail, onDelete, onRename, onUpdateIcon }: Props) {
-  const { bands, deleteBandPressKit, refreshBandPressKits, refreshBandTrash, updateBandLogo } = useBands();
-  const { user } = useAuth();
+  const { deleteBandPressKit, refreshBandPressKits, refreshBandTrash, updateBandLogo } = useBands();
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(kit.name);
@@ -183,9 +161,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   }, []);
 
   const saveRichText = async (html: string) => {
-    if (!db) return;
     try {
-      await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { richText: html }, { merge: true });
+      await dataClient.bandPressKits.update(bandId, { ...kit, richText: html });
     } catch {
       toast.error('Failed to save text.');
     }
@@ -212,9 +189,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const dragOrderRef = useRef<string[] | null>(null);
 
   const persistImageOrder = async (order: string[]) => {
-    if (!db) return;
     try {
-      await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { imageIds: order }, { merge: true });
+      await dataClient.bandPressKits.update(bandId, { ...kit, imageIds: order });
     } catch {
       toast.error('Failed to save image order.');
     }
@@ -256,27 +232,14 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   };
 
   useEffect(() => {
-    if (!db) return;
     let mounted = true;
     setLoadingImages(true);
-    void getDocs(query(collection(db, 'bands', bandId, 'pressKitImages')))
-      .then((snapshot) => {
+    void dataClient.bandPressKitImages.list(bandId)
+      .then((images) => {
         if (!mounted) return;
-        const assets = snapshot.docs.map((entry) => {
-          const data = entry.data() as Record<string, unknown>;
-          return {
-            id: entry.id,
-            title: typeof data.title === 'string' ? data.title : 'Image',
-            url: typeof data.url === 'string' ? data.url : '',
-            storagePath: typeof data.storagePath === 'string' ? data.storagePath : undefined,
-            thumbUrl: typeof data.thumbUrl === 'string' ? data.thumbUrl : undefined,
-            thumbStoragePath: typeof data.thumbStoragePath === 'string' ? data.thumbStoragePath : undefined,
-            mimeType: typeof data.mimeType === 'string' ? data.mimeType : undefined,
-            sizeBytes: typeof data.sizeBytes === 'number' ? data.sizeBytes : undefined,
-            thumbSizeBytes: typeof data.thumbSizeBytes === 'number' ? data.thumbSizeBytes : undefined,
-            createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
-          } as PressKitImageAsset;
-        }).filter((a) => a.url.length > 0).sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+        const assets = [...images]
+          .filter((a) => a.url.length > 0)
+          .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
         setImageAssets(assets);
       })
       .catch(() => toast.error('Failed to load images.'))
@@ -305,71 +268,28 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   }, [imagePreview]);
 
   const uploadImages = async (files: FileList | null) => {
-    if (!files || files.length === 0 || !canEdit || !storage) return;
+    if (!files || files.length === 0 || !canEdit) return;
     const accepted = Array.from(files).filter((f) => f.type.startsWith('image/'));
     if (accepted.length === 0) { toast.error('Choose at least one image file.'); return; }
     setBusyUpload(true);
     try {
-      const uploaded = await Promise.all(accepted.map(async (file) => {
-        const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() ?? 'bin' : 'bin';
-        const imageId = crypto.randomUUID();
-        const storagePath = `bands/${bandId}/presskit/images/${imageId}-${sanitizePathSegment(file.name)}.${ext}`;
-        const thumbStoragePath = `bands/${bandId}/presskit/images/${imageId}-thumb.webp`;
-        const storageRef = ref(storage!, storagePath);
-        await uploadBytes(storageRef, file, {
-          contentType: file.type || undefined,
-          cacheControl: 'public,max-age=31536000,immutable',
-        });
-        const url = await getDownloadURL(storageRef);
+      const uploaded: PressKitImageAsset[] = [];
+      for (const file of accepted) {
         const thumbBlob = await createWebpThumbnail(file);
-        let thumbUrl: string | undefined;
-        let thumbSizeBytes: number | undefined;
-
-        if (thumbBlob) {
-          const thumbRef = ref(storage!, thumbStoragePath);
-          await uploadBytes(thumbRef, thumbBlob, {
-            contentType: 'image/webp',
-            cacheControl: 'public,max-age=31536000,immutable',
-          });
-          thumbUrl = await getDownloadURL(thumbRef);
-          thumbSizeBytes = thumbBlob.size;
+        if (!thumbBlob) {
+          toast.error(`Could not process "${file.name}" — skipped.`);
+          continue;
         }
-
-        const title = file.name.replace(/\.[^.]+$/, '').trim() || 'Image';
-        const createdAt = new Date().toISOString();
-        if (db) {
-          await setDoc(doc(db, 'bands', bandId, 'pressKitImages', imageId), {
-            title,
-            url,
-            thumbUrl: thumbUrl ?? null,
-            storagePath,
-            thumbStoragePath: thumbUrl ? thumbStoragePath : null,
-            mimeType: file.type || null,
-            sizeBytes: file.size,
-            thumbSizeBytes: thumbSizeBytes ?? null,
-            createdAt,
-            createdBy: userId ?? null,
-          });
-        }
-        return {
-          id: imageId,
-          title,
-          url,
-          thumbUrl,
-          storagePath,
-          thumbStoragePath: thumbUrl ? thumbStoragePath : undefined,
-          mimeType: file.type || undefined,
-          sizeBytes: file.size,
-          thumbSizeBytes,
-          createdAt,
-        } as PressKitImageAsset;
-      }));
+        const image = await dataClient.bandPressKitImages.upload(bandId, file, thumbBlob);
+        uploaded.push(image);
+      }
+      if (uploaded.length === 0) return;
       setImageAssets((current) => [...uploaded, ...current.filter((a) => !uploaded.some((u) => u.id === a.id))]);
       // Auto-attach uploaded images to this kit
       const newIds = uploaded.map((u) => u.id);
       const nextIds = [...new Set([...kitImageIds, ...newIds])];
       setKitImageIds(nextIds);
-      if (db) await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { imageIds: nextIds }, { merge: true });
+      await dataClient.bandPressKits.update(bandId, { ...kit, imageIds: nextIds });
       toast.success(`Uploaded ${uploaded.length} image${uploaded.length === 1 ? '' : 's'}.`);
     } catch {
       toast.error('Failed to upload images.');
@@ -381,13 +301,13 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   const toggleKitImage = async (imageId: string, attached: boolean) => {
     const next = attached ? [...kitImageIds, imageId] : kitImageIds.filter((id) => id !== imageId);
     setKitImageIds(next);
-    if (db) await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { imageIds: next }, { merge: true });
+    await dataClient.bandPressKits.update(bandId, { ...kit, imageIds: next });
   };
 
   const toggleAllImages = async (attachAll: boolean) => {
     const next = attachAll ? imageAssets.map((a) => a.id) : [];
     setKitImageIds(next);
-    if (db) await setDoc(doc(db, 'bands', bandId, 'pressKits', kit.id), { imageIds: next }, { merge: true });
+    await dataClient.bandPressKits.update(bandId, { ...kit, imageIds: next });
   };
 
   const removeImageAsset = async (asset: PressKitImageAsset) => {
@@ -417,60 +337,10 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     });
     if (!confirmed) return;
 
-    if (!db) {
-      toast.error('Band libraries require cloud sync.');
-      return;
-    }
-    const firestore = db;
-
     try {
-      const kitsSnapshot = await getDocs(query(collection(firestore, 'bands', bandId, 'pressKits')));
-      const linkedPressKitIds = kitsSnapshot.docs
-        .filter((entry) => {
-          const data = entry.data() as Record<string, unknown>;
-          return Array.isArray(data.imageIds) && data.imageIds.includes(asset.id);
-        })
-        .map((entry) => entry.id);
-
-      const { deletedAt, purgeAt } = createTrashTimestamps();
-      const trashId = crypto.randomUUID();
-      const now = new Date().toISOString();
-
-      await Promise.all([
-        setDoc(
-          doc(firestore, 'bands', bandId, TRASH_COLLECTION, trashId),
-          createTrashPayload('pressKitImage', deletedAt, purgeAt, {
-            image: {
-              id: asset.id,
-              title: asset.title,
-              url: asset.url,
-              thumbUrl: asset.thumbUrl,
-              storagePath: asset.storagePath,
-              thumbStoragePath: asset.thumbStoragePath,
-              mimeType: asset.mimeType,
-              sizeBytes: asset.sizeBytes,
-              thumbSizeBytes: asset.thumbSizeBytes,
-              createdAt: asset.createdAt,
-              createdBy: userId ?? undefined,
-            },
-            linkedPressKitIds,
-          })
-        ),
-        deleteDoc(doc(firestore, 'bands', bandId, 'pressKitImages', asset.id)),
-        ...kitsSnapshot.docs
-          .filter((entry) => linkedPressKitIds.includes(entry.id))
-          .map((entry) => {
-            const data = entry.data() as Record<string, unknown>;
-            const imageIds = Array.isArray(data.imageIds)
-              ? data.imageIds.filter((id): id is string => typeof id === 'string' && id !== asset.id)
-              : [];
-            return setDoc(
-              doc(firestore, 'bands', bandId, 'pressKits', entry.id),
-              { imageIds, updatedAt: now },
-              { merge: true }
-            );
-          }),
-      ]);
+      // The server handles the trash record and unlinking this image from any press kit that
+      // references it (see server/routes/bandPressKitImages.ts) — nothing else to persist here.
+      await dataClient.bandPressKitImages.remove(bandId, asset.id);
 
       setImageAssets((current) => current.filter((a) => a.id !== asset.id));
       setKitImageIds((current) => current.filter((id) => id !== asset.id));
@@ -499,12 +369,14 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   // ── Share / Download ──────────────────────────────────────────────────────
   const [busyShare, setBusyShare] = useState(false);
-  const [activeShare, setActiveShare] = useState<ActivePressKitShare | null>(null);
+  const [activeShare, setActiveShare] = useState<PressKitShare | null>(null);
 
   useEffect(() => {
     if (!userId || !userEmail) return;
     setActiveShare(null);
-    void getActivePressKitShare(userId, userEmail, bandId, kit.id).then(setActiveShare);
+    void dataClient.bandPressKitShares.get(bandId, kit.id)
+      .then(setActiveShare)
+      .catch(() => setActiveShare(null));
   }, [bandId, kit.id, userId, userEmail]);
 
   // ── Video URLs ───────────────────────────────────────────────────────────
@@ -522,7 +394,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   }, [kit.id, kit.videoUrls, kit.selectedVideoUrls]);
 
   const saveVideoState = async (nextVideoUrls: string[], nextSelectedVideoUrls: string[]) => {
-    if (!db || !canEdit) return;
+    if (!canEdit) return;
     const cleanedUrls = nextVideoUrls.map((u) => u.trim()).filter(Boolean);
     const validUrls = cleanedUrls.filter((url) => parsePressKitMedia(url));
     const validSelected = nextSelectedVideoUrls
@@ -534,14 +406,11 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     }
 
     try {
-      await setDoc(
-        doc(db, 'bands', bandId, 'pressKits', kit.id),
-        {
-          videoUrls: validUrls.length > 0 ? validUrls : null,
-          selectedVideoUrls: validSelected.length > 0 ? validSelected : null,
-        },
-        { merge: true },
-      );
+      await dataClient.bandPressKits.update(bandId, {
+        ...kit,
+        videoUrls: validUrls,
+        selectedVideoUrls: validSelected,
+      });
       setVideoUrls(validUrls);
       setSelectedVideoUrls(validSelected);
     } catch {
@@ -615,23 +484,23 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   }, [kit.id, kit.presaveReleaseName, kit.presaveReleaseDate, kit.presaveUrls, kit.selectedPresaveUrls]);
 
   const savePresaveMeta = async (nextName: string, nextDate: string) => {
-    if (!db || !canEdit) return;
+    if (!canEdit) return;
     try {
-      await setDoc(
-        doc(db, 'bands', bandId, 'pressKits', kit.id),
-        {
-          presaveReleaseName: nextName.trim() || null,
-          presaveReleaseDate: nextDate || null,
-        },
-        { merge: true },
-      );
+      // Explicit `null` (not `undefined`, which JSON.stringify would drop) so an emptied field
+      // actually clears server-side — see the `'presaveReleaseName' in body` check in
+      // server/routes/bandPressKits.ts.
+      await dataClient.bandPressKits.update(bandId, {
+        ...kit,
+        presaveReleaseName: (nextName.trim() || null) as unknown as string | undefined,
+        presaveReleaseDate: (nextDate || null) as unknown as string | undefined,
+      });
     } catch {
       toast.error('Failed to save release info.');
     }
   };
 
   const savePresaveState = async (nextPresaveUrls: string[], nextSelectedPresaveUrls: string[]) => {
-    if (!db || !canEdit) return;
+    if (!canEdit) return;
     const cleanedUrls = nextPresaveUrls.map((u) => u.trim()).filter(Boolean);
     const validUrls = cleanedUrls.filter((url) => normalizePresaveUrl(url));
     const validSelected = nextSelectedPresaveUrls
@@ -643,14 +512,11 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     }
 
     try {
-      await setDoc(
-        doc(db, 'bands', bandId, 'pressKits', kit.id),
-        {
-          presaveUrls: validUrls.length > 0 ? validUrls : null,
-          selectedPresaveUrls: validSelected.length > 0 ? validSelected : null,
-        },
-        { merge: true },
-      );
+      await dataClient.bandPressKits.update(bandId, {
+        ...kit,
+        presaveUrls: validUrls,
+        selectedPresaveUrls: validSelected,
+      });
       setPresaveUrls(validUrls);
       setSelectedPresaveUrls(validSelected);
     } catch {
@@ -705,22 +571,10 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   const handleShare = async () => {
     if (!userId || !userEmail) { toast.error('You must be signed in to share.'); return; }
-    const band = bands.find((entry) => entry.id === bandId) ?? null;
-    if (!bandCanUse(band, 'shareableLinks', user?.plan, user?.subscriptionStatus, user?.planOverride)) {
-      toast.error('Shareable public links require a Pro or Crew plan for this band.');
-      return;
-    }
     setBusyShare(true);
     try {
-      const result = await createPressKitShare({
-        userId,
-        userEmail,
-        bandId,
-        kitId: kit.id,
-        selectedStageplotIds: [],
-        selectedRiderIds: [],
-      });
-      setActiveShare({ token: result.token, publicUrl: result.publicUrl, createdAt: new Date().toISOString() });
+      const result = await dataClient.bandPressKitShares.create(bandId, kit.id);
+      setActiveShare(result);
       await navigator.clipboard.writeText(result.publicUrl);
       toast.success('Public link copied to clipboard.');
     } catch (error) {
@@ -740,7 +594,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     if (!confirmed) return;
     setBusyDisable(true);
     try {
-      await disablePressKitShare(userId, userEmail, bandId, kit.id, activeShare.token);
+      await dataClient.bandPressKitShares.disable(bandId, kit.id);
       setActiveShare(null);
       toast.success('Public link disabled.');
     } catch (error) {

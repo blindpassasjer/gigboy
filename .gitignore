@@ -16,7 +16,6 @@ dist-server
 *.local
 .env
 .env.local
-.env.selfhost
 config/firebase/*.json
 
 # Editor directories and files

@@ -1,11 +1,7 @@
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
 import type { CollaborationInvite } from '../types';
 import { loadPendingInvites } from './collaboration';
 
-const COLLABORATION_INVITES_COLLECTION = 'collaborationInvites';
-const PREFERENCES_COLLECTION = 'preferences';
-const INVITE_NOTIFICATIONS_PREF_DOC = 'inviteNotifications';
+const API_BASE = '/api';
 
 export interface AcceptedInviteNotification {
   id: string;
@@ -23,8 +19,28 @@ export interface InviteNotificationsSnapshot {
   acceptedOutgoing: AcceptedInviteNotification[];
 }
 
-function collaborationInviteFromDoc(id: string, data: Record<string, unknown>): CollaborationInvite {
-  return { id, ...(data as Omit<CollaborationInvite, 'id'>) };
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body?.error) message = body.error;
+    } catch {
+      // Response wasn't JSON; fall back to the generic message.
+    }
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<T>;
 }
 
 function collaborationInviteToNotification(invite: CollaborationInvite): AcceptedInviteNotification | null {
@@ -44,31 +60,25 @@ function collaborationInviteToNotification(invite: CollaborationInvite): Accepte
   };
 }
 
-async function loadAcceptedCollaborationInvites(db: Firestore, userId: string) {
-  const snapshot = await getDocs(
-    query(
-      collection(db, COLLABORATION_INVITES_COLLECTION),
-      where('ownerId', '==', userId)
-    )
-  );
-
-  return snapshot.docs
-    .map((entry) => collaborationInviteFromDoc(entry.id, entry.data() as Record<string, unknown>))
+/** Invites the current user sent (as owner) that the recipient has accepted, via `GET /api/collaboration-invites/sent`. */
+async function loadAcceptedCollaborationInvites(): Promise<AcceptedInviteNotification[]> {
+  const data = await apiFetch<{ invites: CollaborationInvite[] }>('/collaboration-invites/sent');
+  return (data.invites ?? [])
     .map(collaborationInviteToNotification)
     .flatMap((notification) => (notification ? [notification] : []));
 }
 
-export async function loadInviteNotificationsSnapshot(db: Firestore, userId: string, email: string) {
+export async function loadInviteNotificationsSnapshot(userId: string, email: string): Promise<InviteNotificationsSnapshot> {
   const [pendingInvites, acceptedCollaborationInvites] = await Promise.all([
-    loadPendingInvites(db, userId, email),
-    loadAcceptedCollaborationInvites(db, userId),
+    loadPendingInvites(userId, email),
+    loadAcceptedCollaborationInvites(),
   ]);
 
   return {
     pendingIncomingCount: pendingInvites.length,
     acceptedOutgoing: acceptedCollaborationInvites
       .sort((a, b) => b.respondedAt.localeCompare(a.respondedAt)),
-  } satisfies InviteNotificationsSnapshot;
+  };
 }
 
 // --- Seen IDs (localStorage only — just drives the badge count) ---
@@ -112,13 +122,15 @@ export function markAcceptedInviteIdsSeen(userId: string, ids: string[]) {
   }
 }
 
-// --- Dismissed IDs (Firestore as source of truth, localStorage as cache) ---
+// --- Dismissed IDs (localStorage only — self-host has no per-user preferences doc to sync
+// across devices for this; the badge simply re-appears on a fresh device, which is fine for
+// a "you have new activity" indicator). ---
 
 function getDismissedAcceptedInviteKey(userId: string) {
   return `gigboy-dismissed-accepted-invites:${userId}`;
 }
 
-function getDismissedAcceptedInviteIdsFromCache(userId: string): Set<string> {
+export function getDismissedAcceptedInviteIds(userId: string): Set<string> {
   if (typeof window === 'undefined') {
     return new Set<string>();
   }
@@ -138,7 +150,7 @@ function getDismissedAcceptedInviteIdsFromCache(userId: string): Set<string> {
   }
 }
 
-function saveDismissedAcceptedInviteIdsToCache(userId: string, ids: Set<string>) {
+export function saveDismissedAcceptedInviteIds(userId: string, ids: Set<string>): void {
   if (typeof window === 'undefined') {
     return;
   }
@@ -148,41 +160,6 @@ function saveDismissedAcceptedInviteIdsToCache(userId: string, ids: Set<string>)
   } catch {
     // Ignore storage failures.
   }
-}
-
-function inviteNotificationsPrefDocRef(db: Firestore, userId: string) {
-  return doc(db, 'users', userId, PREFERENCES_COLLECTION, INVITE_NOTIFICATIONS_PREF_DOC);
-}
-
-export async function loadDismissedAcceptedInviteIds(db: Firestore, userId: string): Promise<Set<string>> {
-  try {
-    const snap = await getDoc(inviteNotificationsPrefDocRef(db, userId));
-    const data = snap.data() as Record<string, unknown> | undefined;
-    const ids = Array.isArray(data?.dismissedAcceptedInviteIds)
-      ? (data.dismissedAcceptedInviteIds as unknown[]).filter((v): v is string => typeof v === 'string')
-      : [];
-    const result = new Set(ids);
-    // Keep localStorage in sync so next load is fast even before Firestore responds.
-    saveDismissedAcceptedInviteIdsToCache(userId, result);
-    return result;
-  } catch {
-    // Fall back to local cache on network errors.
-    return getDismissedAcceptedInviteIdsFromCache(userId);
-  }
-}
-
-export async function saveDismissedAcceptedInviteIds(db: Firestore, userId: string, ids: Set<string>): Promise<void> {
-  saveDismissedAcceptedInviteIdsToCache(userId, ids);
-  await setDoc(
-    inviteNotificationsPrefDocRef(db, userId),
-    { dismissedAcceptedInviteIds: [...ids] },
-    { merge: true }
-  );
-}
-
-// Exported for optimistic local reads before the first Firestore response.
-export function getDismissedAcceptedInviteIds(userId: string): Set<string> {
-  return getDismissedAcceptedInviteIdsFromCache(userId);
 }
 
 export function emitInviteNotificationsChanged() {

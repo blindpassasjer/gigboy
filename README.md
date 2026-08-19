@@ -1,6 +1,8 @@
 # GIGBOY
 
-A web-based songbook and gig-prep tool for musicians and bands, built on **ChordPro**. Runs as an installable PWA with optional Firebase authentication, Cloudflare Pages hosting, and Stripe billing for paid plans.
+A web-based songbook and gig-prep tool for musicians and bands, built on **ChordPro**. Self-hosted
+only: Express + Postgres backend, deployed as a single Docker Compose stack. Runs as an
+installable PWA.
 
 ## Features
 
@@ -8,69 +10,54 @@ A web-based songbook and gig-prep tool for musicians and bands, built on **Chord
 - **Transpose** — shift all chords up or down by semitone in real time
 - **Bands** — shared song libraries, songlists, and setlists with per-member roles and invites
 - **Setlists & songlists** — ordered setlists for gigs, plus freeform songlists for organizing your library
-- **Press kits, technical riders, stage plots** — shareable via public links, generated per band
+- **Press kits, technical riders, stage plots** — shareable via public links, generated per band, with OG-tag social previews
 - **In-app rehearsal tools** — browser-based audio recorder, visual metronome, visual tuner, and hand-drawn notes overlaid on the song sheet
-- **Attachments** — attach PDFs (up to 20 MB) to a song, e.g. scanned sheet music or lyric sheets; Pro/Crew only, see [src/lib/songAttachments.ts](src/lib/songAttachments.ts)
+- **Attachments** — attach PDFs (up to 20 MB) to a song, e.g. scanned sheet music or lyric sheets; see [src/lib/songAttachments.ts](src/lib/songAttachments.ts)
+- **Band logo upload** — set a band's logo, used across its press kit and public pages
+- **Ad-hoc sharing** — per-resource collaboration invites for songs, songlists, and setlists
 - **Multi-language** — songs in English, Norwegian, Spanish, Portuguese, French, Italian, German, and more
 - **Add & edit songs** — live ChordPro preview while writing
 - **Search & filter** — full-text search by title/artist/tag, filter by language
 - **Data export** — download your whole songbook (personal + every band you belong to) as plain ChordPro files from account settings, no lock-in
 - **Dark mode** — automatic system preference detection with manual toggle
 - **Offline-capable PWA** — installable, works offline via a service worker; see [chunkRecovery.ts](src/lib/chunkRecovery.ts) for how it recovers from stale-deploy cache issues
-- **Auth-optional locally** — Firebase auth can be enabled via environment variables; omitting them gives a fully local, login-free experience for local development
-- **Free / Pro / Crew plans** — see [/pricing](src/pages/PricingPage.tsx); Stripe handles billing and the customer portal handles cancellation
+- **Trash & restore** — soft-deleted songs, songlists, setlists, and press kits recover for 30 days before permanent deletion
+- **No plan gating** — every account gets full feature access; there's no paid tier to unlock
 
 ## Tech stack
 
 | Tool | Purpose |
 |---|---|
 | React 18 + TypeScript | UI |
-| Vite 4 | Build tooling |
+| Vite 7 | Build tooling |
 | React Router 7 | Client-side routing |
-| Firebase 11 | Auth & (optional) data storage |
-| Cloudflare Workers / Pages | Hosting & serverless functions |
+| Express + Postgres (Drizzle ORM) | API server & data storage |
+| Docker Compose | Deployment |
 | lucide-react | Icons |
-| `localStorage` | Local song & recording persistence |
 | Web MediaRecorder API | In-browser audio recording |
 
-## Quick start
+## Quick start (self-hosting)
+
+Gigboy is meant to be run via Docker Compose — see **[SELFHOSTING.md](SELFHOSTING.md)** for the
+full setup guide, including the admin account bootstrap and invite-link flow used to add users
+(there's no open self-registration).
+
+```bash
+cp .env.example .env
+# fill in POSTGRES_PASSWORD, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+docker compose up -d --build
+```
+
+## Local development (without Docker)
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
-
-Without any environment variables the app runs in local-only mode — no login required and songs are stored in `localStorage`.
-
-## Testing
-
-Use the release checklist in [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) before deploying.
-
-## Firebase setup (optional)
-
-To enable authentication and cloud storage, create a Firebase project and add the following variables to a `.env` file at the project root:
-
-```
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
-```
-
-Set `VITE_FIREBASE_AUTH_DOMAIN` to your Firebase Auth domain (usually `<project-id>.firebaseapp.com`).
-
-By default, the app will normalize non-Firebase auth domains to `<project-id>.firebaseapp.com` to keep Google/GitHub OAuth popup flows working on non-Firebase hosts.
-If you intentionally use a custom auth domain and have hosted the Firebase auth handlers for it, set:
-
-```
-VITE_FIREBASE_ALLOW_CUSTOM_AUTH_DOMAIN=true
-```
-
-When these are present the app requires login before showing any content.
+Open [http://localhost:5173](http://localhost:5173) for the frontend. The API server runs
+separately — see the "Development (without Docker)" section of [SELFHOSTING.md](SELFHOSTING.md)
+for running `server:dev` against a local Postgres instance.
 
 ## ChordPro format
 
@@ -104,50 +91,10 @@ Supported directives: `title`, `subtitle`, `artist`, `start_of_verse`, `end_of_v
 
 ## Deploying
 
-### Cloudflare Pages (recommended when using `/api/*`)
-
-```bash
-npm run deploy
-```
-
-This builds the project, writes the `_redirects` file for SPA fallback, then deploys via `wrangler pages deploy`.
-Use this if you need `functions/api/*` endpoints (invite, band create, accept, etc.).
-
-### Cloudflare Workers (static-only)
-
-```bash
-npm run deploy:workers
-```
-
-This deploys static assets only. Cloudflare Pages Functions in `functions/` are not included.
-
-### Other static hosts
-
-```bash
-npm run build
-# deploy the dist/ folder to Netlify, Vercel, etc.
-```
-
-Add the Firebase environment variables to your host's build environment if you want auth and cloud storage enabled in production.
-
-If you are deploying from the Cloudflare Pages dashboard, set build command `npm run build` and output directory `dist`.
-
-## Data migration helpers
-
-If you already have users and bands in Firestore, you can backfill new full-name fields:
-
-```bash
-# Dry run (no writes)
-npm run migrate:full-names -- --project <firebase-project-id> --credentials <service-account.json>
-
-# Execute writes
-npm run migrate:full-names:execute -- --project <firebase-project-id> --credentials <service-account.json>
-```
-
-This migration:
-- reports users missing `fullName`
-- syncs `bands.memberFullNames` from user profiles where `fullName` exists
-- optionally backfills missing user full names from usernames with `--also-fill-users-from-username`
+Deployment is Docker Compose only — see [SELFHOSTING.md](SELFHOSTING.md) for the full guide,
+including backups, updating, and the admin bootstrap/invite flow. There is no separate static
+build/hosting path: the `app` container builds the frontend and serves it alongside the API from
+the same origin.
 
 ## Project structure
 
@@ -155,12 +102,16 @@ This migration:
 src/
   components/     UI components (Layout, Sidebar, SongList, SongView, ChordDisplay, PressKitView, …)
   context/        SongsContext, SongListsContext, SetlistsContext, BandsContext, AuthContext
-  hooks/          usePlan, useBandPlan, useAudioRecorder, useStorageUsage, …
-  pages/          SongPage, AddSongPage, BandDetailPage, PricingPage, ProfilePage, TermsPage, PrivacyPage, …
-  lib/            planLimits (plan gating), songbookExport (ChordPro export), billingApi, chunkRecovery, …
+  hooks/          useAudioRecorder, useStorageUsage, useSongRecordings, …
+  pages/          SongPage, AddSongPage, BandDetailPage, ProfilePage, AdminInvitesPage, TermsPage, PrivacyPage, …
+  lib/            dataClient (REST API client), songbookExport (ChordPro export), chunkRecovery, …
   types/          Song, Setlist, SongList, Band, User types
   utils/          chordParser, languages
-functions/        Cloudflare Pages Functions (auth, bands, Stripe webhooks, PDF/press-kit generation)
+server/
+  routes/         Express route handlers (auth, songs, bands, invites, press kits, …)
+  db/             Drizzle schema, migrations, admin bootstrap
+  lib/            Server-side helpers (band logos, hand notes, recordings, press-kit OG tags)
+  middleware/     Session auth, admin gating
 ```
 
 ## Legal pages
@@ -170,13 +121,10 @@ Draft Terms of Service and Privacy Policy live at [src/pages/TermsPage.tsx](src/
 ## Before going public
 
 - [ ] Fill in and legally review `/terms` and `/privacy`
-- [ ] Set `VITE_SENTRY_DSN` (see `.env.example`) to enable production error monitoring via [Sentry](https://sentry.io) — unset by default, so no-op until you add a DSN
+- [ ] Set a strong `SESSION_SECRET` and `POSTGRES_PASSWORD` in `.env` (see [SELFHOSTING.md](SELFHOSTING.md))
+- [ ] Put a reverse proxy with real HTTPS in front of the container and set `COOKIE_SECURE=true`
 - [ ] Rotate any credentials embedded in local git remotes/config before adding collaborators or CI
 - [ ] Test the offline/PWA experience end-to-end (load, go offline, reopen) before promoting it to gigging musicians
-
-## Plan limits
-
-Free/Pro/Crew feature gating and song/setlist/storage caps live in [src/lib/planLimits.ts](src/lib/planLimits.ts) — check there before assuming a feature is (or isn't) behind a paywall.
 
 ## Codebase knowledge graph
 

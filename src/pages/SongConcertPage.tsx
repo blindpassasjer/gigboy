@@ -1,9 +1,7 @@
-import { useMemo } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useSongs } from '../context/SongsContext';
 import { useBands } from '../context/BandsContext';
-import { usePlan, useBandPlan } from '../hooks/usePlan';
 import type { Song } from '../types';
 import ConcertModeView from '../components/ConcertModeView';
 import toast from '../utils/anchoredToast';
@@ -22,7 +20,7 @@ export default function SongConcertPage() {
   const bandIdFromQuery = searchParams.get('bandId')?.trim() || null;
 
   const { songs } = useSongs();
-  const { bandSongsByBandId, bands, updateBandSong } = useBands();
+  const { bandSongsByBandId, updateBandSong } = useBands();
   const { updateSong } = useSongs();
 
   const inferredBandId = id
@@ -33,10 +31,8 @@ export default function SongConcertPage() {
   const bandSongs = bandId ? (bandSongsByBandId[bandId] ?? []) : [];
   const song = bandSongs.find((s) => s.id === id) ?? songs.find((s) => s.id === id) ?? null;
 
-  const band = useMemo(() => (bandId ? (bands.find((b) => b.id === bandId) ?? null) : null), [bandId, bands]);
-  const userPlanState = usePlan();
-  const bandPlanState = useBandPlan(band);
-  const canUseMetronome = (bandId && band ? bandPlanState : userPlanState).canUse('metronome');
+  // Self-host has no plan gating — the metronome is always available.
+  const canUseMetronome = true;
 
   const backRoute = pageState?.backTo ?? (id ? `/songs/${id}` : '/');
 

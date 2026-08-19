@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { User } from '../context/AuthContext';
-import { db } from '../lib/firebase';
 import {
   deleteSongHandNote,
   saveSongHandNote,
@@ -70,14 +69,14 @@ export function useSongHandNotes(params: {
   }, [enabled, ownerId, bandId, songId, userId]);
 
   useEffect(() => {
-    if (!enabled || !db || !scope) {
+    if (!enabled || !scope) {
       setNotes([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const unsubscribe = subscribeToSongHandNotes(db, scope, songId, (loaded) => {
+    const unsubscribe = subscribeToSongHandNotes(scope, songId, (loaded) => {
       setNotes(loaded);
       setLoading(false);
     });
@@ -164,7 +163,7 @@ export function useSongHandNotes(params: {
   }, [myNote?.strokes]);
 
   const persistStrokes = useCallback(async (strokes: LyricNoteStroke[]) => {
-    if (!db || !scope || !userId || !user) return;
+    if (!scope || !userId || !user) return;
 
     // Normalize all strokes to user's assigned color
     const userColor = getUserNoteColor(userId);
@@ -196,7 +195,7 @@ export function useSongHandNotes(params: {
 
     setSaveState('saving');
     try {
-      await saveSongHandNote({ db, scope, songId, note: nextNote });
+      await saveSongHandNote({ scope, songId, note: nextNote });
       setSaveState('saved');
       window.setTimeout(() => {
         setSaveState((current) => (current === 'saved' ? 'idle' : current));
@@ -234,7 +233,7 @@ export function useSongHandNotes(params: {
   }, [persistStrokes]);
 
   const saveMyTextNotes = useCallback(async (textNotes: LyricTextNote[]) => {
-    if (!db || !scope || !userId || !user) return;
+    if (!scope || !userId || !user) return;
 
     const userColor = getUserNoteColor(userId);
     const normalizedStrokes = (myNote?.strokes ?? []).map((stroke) => ({
@@ -264,7 +263,7 @@ export function useSongHandNotes(params: {
 
     setSaveState('saving');
     try {
-      await saveSongHandNote({ db, scope, songId, note: nextNote });
+      await saveSongHandNote({ scope, songId, note: nextNote });
       setSaveState('saved');
       window.setTimeout(() => {
         setSaveState((current) => (current === 'saved' ? 'idle' : current));
@@ -276,7 +275,7 @@ export function useSongHandNotes(params: {
   }, [myNote, scope, songId, user, userId]);
 
   const clearMyNotes = useCallback(async () => {
-    if (!db || !scope || !userId) return;
+    if (!scope || !userId) return;
 
     setUndoStack((prev) => [...prev, myStrokesRef.current].slice(-50));
     setRedoStack([]);
@@ -286,7 +285,7 @@ export function useSongHandNotes(params: {
     setSaveState('saving');
 
     try {
-      await deleteSongHandNote({ db, scope, songId, authorUid: userId });
+      await deleteSongHandNote({ scope, songId, authorUid: userId });
       setSaveState('saved');
       window.setTimeout(() => {
         setSaveState((current) => (current === 'saved' ? 'idle' : current));
@@ -299,13 +298,13 @@ export function useSongHandNotes(params: {
   }, [notes, scope, songId, userId]);
 
   const deleteNotesByAuthor = useCallback(async (authorUid: string) => {
-    if (!db || !scope || !isOwner || authorUid === userId) return;
+    if (!scope || !isOwner || authorUid === userId) return;
 
     const previousNotes = notes;
     setNotes((prev) => prev.filter((entry) => entry.authorUid !== authorUid));
 
     try {
-      await deleteSongHandNote({ db, scope, songId, authorUid });
+      await deleteSongHandNote({ scope, songId, authorUid });
     } catch (error) {
       console.error('Failed to delete notes by author.', error);
       setNotes(previousNotes);

@@ -12,6 +12,8 @@ export function toApi(row: SetlistRow) {
     songIds: row.songIds,
     songNotes: row.songNotes,
     sortOrder: row.sortOrder,
+    collaboratorIds: row.collaboratorIds,
+    collaborationPermissions: row.collaborationPermissions,
     createdAt: row.createdAt?.toISOString(),
     updatedAt: row.updatedAt?.toISOString(),
   });
@@ -39,4 +41,5 @@ export const setlistsRouter = buildCrudRouter({
   itemType: 'setlist',
   toApi,
   fromBody,
+  collaboratorIdsColumn: setlists.collaboratorIds,
 });

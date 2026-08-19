@@ -1,168 +1,109 @@
-import {
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  setDoc,
-} from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
-import type { LyricNoteStroke, LineAnchor, LyricNoteDocument, LyricTextNote } from '../types';
+import type { LyricNoteDocument } from '../types';
 
-const SONGS_COLLECTION = 'songs';
-const HAND_NOTES_COLLECTION = 'handNotes';
+/**
+ * Self-host implementation of song hand notes (freehand drawings + typed annotations on song
+ * lyrics), talking to `/api/songs/:songId/hand-notes` or `/api/bands/:bandId/songs/:songId/hand-notes`
+ * (see server/routes/songHandNotes.ts) instead of Firestore. `subscribeToSongHandNotes` keeps its
+ * old onSnapshot-shaped signature (callback in, unsubscribe function out) but is backed by polling
+ * instead of a realtime listener, so `useSongHandNotes.ts` doesn't need to change its call site.
+ */
+const API_BASE = '/api';
+const POLL_INTERVAL_MS = 4000;
 
 export type SongHandNotesScope =
   | { type: 'user'; ownerId: string }
   | { type: 'band'; bandId: string };
 
-function songHandNotesCollectionRef(db: Firestore, scope: SongHandNotesScope, songId: string) {
+function notesUrl(scope: SongHandNotesScope, songId: string): string {
   if (scope.type === 'band') {
-    return collection(db, 'bands', scope.bandId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION);
+    return `${API_BASE}/bands/${scope.bandId}/songs/${songId}/hand-notes`;
   }
-  return collection(db, 'users', scope.ownerId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION);
+  return `${API_BASE}/songs/${songId}/hand-notes`;
 }
 
-function songHandNotesDocRef(
-  db: Firestore,
-  scope: SongHandNotesScope,
-  songId: string,
-  authorUid: string,
-) {
-  if (scope.type === 'band') {
-    return doc(db, 'bands', scope.bandId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION, authorUid);
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
+    ...init,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body?.error) message = body.error;
+    } catch {
+      // Response wasn't JSON; fall back to the generic message.
+    }
+    throw new Error(message);
   }
-  return doc(db, 'users', scope.ownerId, SONGS_COLLECTION, songId, HAND_NOTES_COLLECTION, authorUid);
+
+  return response.json() as Promise<T>;
 }
 
-function normalizeLineAnchor(raw: unknown): LineAnchor | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const data = raw as Record<string, unknown>;
-  const lineId = typeof data.lineId === 'number' && Number.isFinite(data.lineId) ? data.lineId : null;
-  // fx/fy are deliberately not clamped — see LineAnchor's doc comment.
-  const fx = typeof data.fx === 'number' && Number.isFinite(data.fx) ? data.fx : null;
-  const fy = typeof data.fy === 'number' && Number.isFinite(data.fy) ? data.fy : null;
-  if (lineId === null || fx === null || fy === null) return null;
-  return { lineId, fx, fy };
-}
-
-function normalizeStroke(raw: unknown): LyricNoteStroke | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const data = raw as Record<string, unknown>;
-
-  const id = typeof data.id === 'string' ? data.id : crypto.randomUUID();
-  const color = typeof data.color === 'string' ? data.color : '#c0392b';
-  const width = typeof data.width === 'number' && Number.isFinite(data.width) ? data.width : 2;
-  const createdAt = typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString();
-
-  if (!Array.isArray(data.points)) return null;
-  const points = data.points
-    .map(normalizeLineAnchor)
-    .filter((p): p is LineAnchor => p !== null);
-
-  if (points.length < 2) return null;
-
-  return {
-    id,
-    color,
-    width,
-    points,
-    createdAt,
-  };
-}
-
-function normalizeTextNote(raw: unknown): LyricTextNote | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const data = raw as Record<string, unknown>;
-  const id = typeof data.id === 'string' ? data.id : crypto.randomUUID();
-  const anchor = normalizeLineAnchor(raw);
-  const text = typeof data.text === 'string' ? data.text.trim() : '';
-  const createdAt = typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString();
-  if (!anchor || !text) return null;
-  return { id, ...anchor, text, createdAt };
-}
-
-function normalizeNoteDocument(docId: string, raw: unknown): LyricNoteDocument {
-  const data = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-
-  const authorUid = typeof data.authorUid === 'string'
-    ? data.authorUid
-    : typeof data.authorId === 'string'
-      ? data.authorId
-      : typeof data.uid === 'string'
-        ? data.uid
-        : docId;
-  const authorName = typeof data.authorName === 'string'
-    ? data.authorName
-    : typeof data.name === 'string'
-      ? data.name
-      : null;
-  const authorAvatar = typeof data.authorAvatar === 'string'
-    ? data.authorAvatar
-    : typeof data.avatar === 'string'
-      ? data.avatar
-      : null;
-  const updatedAt = typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString();
-
-  const strokes = Array.isArray(data.strokes)
-    ? data.strokes.map(normalizeStroke).filter((stroke): stroke is LyricNoteStroke => Boolean(stroke))
-    : [];
-
-  const rawTextNotes = Array.isArray(data.textNotes)
-    ? data.textNotes.map(normalizeTextNote).filter((tn): tn is LyricTextNote => Boolean(tn))
-    : undefined;
-
-  return {
-    authorUid,
-    authorName,
-    authorAvatar,
-    updatedAt,
-    strokes,
-    textNotes: rawTextNotes?.length ? rawTextNotes : undefined,
-  };
-}
-
+/** Polls the notes list every 4s (matching the realtime feel `onSnapshot` used to give) and reports changes. */
 export function subscribeToSongHandNotes(
-  db: Firestore,
   scope: SongHandNotesScope,
   songId: string,
   onUpdate: (notes: LyricNoteDocument[]) => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
 ): () => void {
-  const collectionRef = songHandNotesCollectionRef(db, scope, songId);
-  const unsubscribe = onSnapshot(
-    collectionRef,
-    (snapshot) => {
-      const notes = snapshot.docs
-        .map((entry) => normalizeNoteDocument(entry.id, entry.data()))
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-      onUpdate(notes);
-    },
-    (error) => {
-      console.error('Failed to subscribe to song hand notes.', error);
+  let cancelled = false;
+  let lastPayload = '';
+
+  const poll = async () => {
+    try {
+      const data = await apiFetch<{ notes: LyricNoteDocument[] }>(notesUrl(scope, songId));
+      if (cancelled) return;
+      const notes = (data.notes ?? []).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      const payload = JSON.stringify(notes);
+      if (payload !== lastPayload) {
+        lastPayload = payload;
+        onUpdate(notes);
+      }
+    } catch (error) {
+      if (cancelled) return;
+      console.error('Failed to load song hand notes.', error);
       onError?.(error as Error);
     }
-  );
-  return unsubscribe;
+  };
+
+  void poll();
+  const intervalId = window.setInterval(() => void poll(), POLL_INTERVAL_MS);
+
+  return () => {
+    cancelled = true;
+    window.clearInterval(intervalId);
+  };
 }
 
 export async function saveSongHandNote(params: {
-  db: Firestore;
   scope: SongHandNotesScope;
   songId: string;
   note: LyricNoteDocument;
-}) {
-  const { db, scope, songId, note } = params;
-  const { authorUid } = note;
-
-  await setDoc(songHandNotesDocRef(db, scope, songId, authorUid), note);
+}): Promise<void> {
+  const { scope, songId, note } = params;
+  await apiFetch(`${notesUrl(scope, songId)}/me`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      authorName: note.authorName ?? null,
+      authorAvatar: note.authorAvatar ?? null,
+      strokes: note.strokes,
+      textNotes: note.textNotes ?? [],
+    }),
+  });
 }
 
 export async function deleteSongHandNote(params: {
-  db: Firestore;
   scope: SongHandNotesScope;
   songId: string;
   authorUid: string;
-}) {
-  const { db, scope, songId, authorUid } = params;
-  await deleteDoc(songHandNotesDocRef(db, scope, songId, authorUid));
+}): Promise<void> {
+  const { scope, songId, authorUid } = params;
+  const url = `${notesUrl(scope, songId)}/${authorUid}`;
+  await apiFetch(url, { method: 'DELETE' });
 }

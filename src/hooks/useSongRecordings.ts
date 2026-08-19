@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { db, storage } from '../lib/firebase';
 import {
   deleteSongRecording,
   loadSongRecordings,
@@ -24,12 +23,12 @@ export function useSongRecordings({ scope, songId }: Params) {
   const scopeKey = scope.type === 'band' ? `band:${scope.bandId}` : `user:${scope.ownerId}`;
 
   useEffect(() => {
-    if (!db || !songId) {
+    if (!songId) {
       setRecordings([]);
       return;
     }
     setLoading(true);
-    loadSongRecordings(db, storage, scope, songId)
+    loadSongRecordings(scope, songId)
       .then(setRecordings)
       .catch((err) => console.error('Failed to load recordings', err))
       .finally(() => setLoading(false));
@@ -38,11 +37,10 @@ export function useSongRecordings({ scope, songId }: Params) {
 
   const uploadRecording = useCallback(
     async (blob: Blob, name: string, durationMs: number, recorder: RecorderIdentity, waveformBars?: number[]) => {
-      if (!db || !storage) return;
       setUploading(true);
       setUploadError(null);
       try {
-        const rec = await uploadSongRecording(db, storage, scope, songId, blob, name, durationMs, recorder, waveformBars);
+        const rec = await uploadSongRecording(scope, songId, blob, name, durationMs, recorder, waveformBars);
         setRecordings((prev) => [rec, ...prev]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to save recording';
@@ -59,9 +57,8 @@ export function useSongRecordings({ scope, songId }: Params) {
 
   const renameRecording = useCallback(
     async (recording: SongRecording, newName: string) => {
-      if (!db) return;
       try {
-        await renameSongRecording(db, scope, songId, recording, newName);
+        await renameSongRecording(scope, songId, recording, newName);
         setRecordings((prev) =>
           prev.map((r) => (r.id === recording.id ? { ...r, name: newName } : r)),
         );
@@ -75,9 +72,8 @@ export function useSongRecordings({ scope, songId }: Params) {
 
   const deleteRecording = useCallback(
     async (recording: SongRecording) => {
-      if (!db || !storage) return;
       try {
-        await deleteSongRecording(db, storage, scope, songId, recording);
+        await deleteSongRecording(scope, songId, recording);
         setRecordings((prev) => prev.filter((r) => r.id !== recording.id));
       } catch (err) {
         console.error('Failed to delete recording', err);

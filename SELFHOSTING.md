@@ -1,15 +1,17 @@
 # Self-hosting Gigboy
 
-Run your own copy of Gigboy on your own infrastructure with Docker — no Firebase, Stripe,
-or Cloudflare account required.
+Gigboy is self-hosted only: run your own copy on your own infrastructure with Docker Compose.
+There is no hosted SaaS version, and no third-party account (Firebase, Stripe, Cloudflare) is
+involved anywhere in the stack — it's just this app, a Postgres database, and a volume for
+uploaded files.
 
 > This build covers: email/password auth with full profile management (email/username/avatar/
 > full name/password changes, account deletion); personal and band-owned songs, songlists, and
 > setlists; bands with invite-link membership; band technical riders/stage plots with public
-> share links; song PDF attachments (20MB cap); trash/soft-delete with 30-day retention; and
-> band press kits (rich text, images, video/presave links, public share links) — all with full
-> feature access (no plan gating). Not yet included: recordings, hand notes, band logo upload,
-> OG-tag social previews, and ad-hoc per-resource sharing outside of bands.
+> share links; song PDF attachments (20MB cap); song hand notes and recordings; band logo
+> upload; OG-tag social previews; per-resource collaboration invites; trash/soft-delete with
+> 30-day retention; and band press kits (rich text, images, video/presave links, public share
+> links) — all with full feature access (no plan gating).
 
 ## Prerequisites
 
@@ -21,47 +23,67 @@ or Cloudflare account required.
 1. Copy the example env file:
 
    ```sh
-   cp .env.selfhost.example .env.selfhost
+   cp .env.example .env
    ```
 
-2. Generate a session secret and set it in `.env.selfhost`:
+2. Generate a session secret and set it in `.env`:
 
    ```sh
    openssl rand -hex 32
    ```
 
-3. Pick a Postgres password and set it as `POSTGRES_PASSWORD` in `.env.selfhost`, then make
+3. Pick a Postgres password and set it as `POSTGRES_PASSWORD` in `.env`, then make
    sure `DATABASE_URL` uses the same password (the example file's `DATABASE_URL` already
    points at the `postgres` service host used by Compose — just swap in your password).
 
-4. Bring the stack up:
+4. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` — see [Admin account and invites](#admin-account-and-invites)
+   below. Set both, or leave both unset if an admin already exists from a previous run.
+
+5. Bring the stack up:
 
    ```sh
-   docker compose --env-file .env.selfhost up -d --build
+   docker compose up -d --build
    ```
 
-   **Using a GUI container tool instead of the CLI** (Synology/QNAP/UGREEN-style Docker
-   apps, Portainer, etc.)? Docker Compose only auto-loads a file named exactly `.env` — the
-   `--env-file .env.selfhost` flag above is how the CLI points at a differently-named file,
-   but most GUI "import a compose project" features don't expose that flag and will fail
-   with `required variable POSTGRES_PASSWORD is missing a value`. If that happens, copy your
-   filled-in `.env.selfhost` to a plain `.env` in the same folder (`cp .env.selfhost .env` —
-   `.env` is gitignored too) and deploy again.
+   Docker Compose auto-loads `.env` from the project directory — no `--env-file` flag needed,
+   whether you're using the CLI or a GUI container tool (Synology/QNAP/UGREEN-style Docker
+   apps, Portainer, etc.).
 
    The `app` container waits for Postgres to report healthy, then runs pending database
-   migrations automatically on every start (via `docker-entrypoint.sh`) before starting the
-   server — so `docker compose up` is always enough, including on first run and after
-   upgrades that add new migrations.
+   migrations and bootstraps the admin account (if configured) automatically on every start
+   (via `docker-entrypoint.sh`) before starting the server — so `docker compose up` is always
+   enough, including on first run and after upgrades that add new migrations.
 
-5. Open `http://localhost:3000` (or whatever `PORT` you set) and register an account.
+6. Open `http://localhost:6168` (or whatever `PORT` you set) and log in as the admin account
+   you configured in step 4. There is no open self-registration — every other account is
+   created by an admin generating an invite link (see below).
 
    **Accessing over plain HTTP (no reverse proxy / no TLS)** — the default and common case for
-   a home NAS or LAN deployment (e.g. `http://192.168.1.50:3000`) — session cookies are set
+   a home NAS or LAN deployment (e.g. `http://192.168.1.50:6168`) — session cookies are set
    *without* the `Secure` flag by default (`COOKIE_SECURE=false`), since a `Secure` cookie is
    silently dropped by the browser over plain HTTP: login would appear to succeed but every
    API call afterward would 401 with "Authentication required." Only set `COOKIE_SECURE=true`
-   in `.env.selfhost` once you've put a reverse proxy in front of the container that terminates
+   in `.env` once you've put a reverse proxy in front of the container that terminates
    real HTTPS.
+
+## Admin account and invites
+
+Gigboy has no open self-registration. The first account is bootstrapped from environment
+variables, and every account after that is created by an admin generating an invite link.
+
+**Bootstrapping the first admin** — set both `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`
+before running `docker compose up` for the first time. On startup, `docker-entrypoint.sh` runs
+pending migrations and then a bootstrap step that creates the admin account if it doesn't
+already exist (matched by email) and leaves it untouched if it does — safe to leave the
+variables set across restarts. Setting only one of the two is a startup error. Leave both
+unset once the admin account exists from a previous run.
+
+**Inviting new users** — log in as an admin and open the shield icon in the top bar
+(`/admin/invites`) to generate invite links: optionally pin an invite to one email address,
+choose whether the new account should be an admin or a regular member, and create the link.
+Copy it (it's copied to your clipboard automatically) and share it with the person you're
+inviting — they open it at `/invite/<token>` to set a username and password and create their
+account. Links expire after 7 days and can be revoked from the same page before they're used.
 
 ## Data persistence
 
@@ -75,7 +97,7 @@ removed if you explicitly run `docker compose down -v` or `docker volume rm <nam
 Back up both volumes — the database and the attachment files are separate stores:
 
 ```sh
-docker compose --env-file .env.selfhost exec postgres pg_dump -U gigboy gigboy > backup.sql
+docker compose exec postgres pg_dump -U gigboy gigboy > backup.sql
 docker run --rm -v gigboy_gigboy-attachments-data:/data -v "$PWD":/backup alpine \
   tar czf /backup/attachments-backup.tar.gz -C /data .
 ```
@@ -86,7 +108,7 @@ docker run --rm -v gigboy_gigboy-attachments-data:/data -v "$PWD":/backup alpine
 To restore into fresh volumes:
 
 ```sh
-cat backup.sql | docker compose --env-file .env.selfhost exec -T postgres psql -U gigboy gigboy
+cat backup.sql | docker compose exec -T postgres psql -U gigboy gigboy
 docker run --rm -v gigboy_gigboy-attachments-data:/data -v "$PWD":/backup alpine \
   tar xzf /backup/attachments-backup.tar.gz -C /data
 ```
@@ -99,7 +121,7 @@ to 20MB — Express itself already accepts them.
 
 ```sh
 git pull
-docker compose --env-file .env.selfhost up -d --build
+docker compose up -d --build
 ```
 
 Migrations run automatically on startup, so new schema changes are applied before the app
@@ -116,5 +138,8 @@ npm run db:migrate
 npm run server:dev
 ```
 
-The server serves the API only in this mode — run `npm run dev` (Vite) separately for the
-frontend during development, pointed at `VITE_BACKEND=selfhost`.
+This starts the API only, listening on `PORT` (default 6168). Run `npm run dev` (Vite) separately
+for the frontend during development — it serves on its own port (5173 by default) and calls the
+API via relative `/api/...` requests, so use a reverse proxy (or open the Vite dev server through
+one) if you need both running against a single origin; otherwise `npm run build` + `npm run
+server:dev` serves the built frontend and API together from the same origin/port.
