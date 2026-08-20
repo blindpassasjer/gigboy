@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { anchorFromClientPoint, findContentStage, lineIdAtClientY, pointFromAnchor, resolveLineRects } from '../lib/lineAnchor';
+import { generateId } from '../lib/uuid';
 import type { LyricNoteStroke, LineAnchor, LyricNoteDocument } from '../types';
 
 interface Props {
@@ -339,7 +340,7 @@ export default function LyricHandNotesOverlay({
     event.currentTarget.setPointerCapture(event.pointerId);
 
     activeStrokeRef.current = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       color: strokeColor,
       width: strokeWidth,
       points: [anchor],

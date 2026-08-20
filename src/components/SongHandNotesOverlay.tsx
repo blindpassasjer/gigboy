@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { clamp01 } from '../lib/lineAnchor';
+import { generateId } from '../lib/uuid';
 import type { HandNoteStroke, SongHandNoteDocument } from '../types';
 
 interface Props {
@@ -377,7 +378,7 @@ export default function SongHandNotesOverlay({
     event.currentTarget.setPointerCapture(event.pointerId);
 
     activeStrokeRef.current = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       color: strokeColor,
       width: strokeWidth,
       points: [point.x, point.y],

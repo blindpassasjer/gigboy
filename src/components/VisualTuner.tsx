@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Mic, MicOff } from 'lucide-react';
+import { getMicrophoneUnavailableReason } from '../lib/mediaAccess';
 
 interface Props {
   className?: string;
@@ -104,6 +105,12 @@ export default function VisualTuner({ className = '' }: Props) {
 
     const start = async () => {
       try {
+        const unavailableReason = getMicrophoneUnavailableReason();
+        if (unavailableReason) {
+          setError(unavailableReason);
+          return;
+        }
+
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: false,

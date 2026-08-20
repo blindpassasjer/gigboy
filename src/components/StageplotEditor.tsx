@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link2, PenLine, Plus, Trash2, Map, RotateCw, Maximize2 } from 'lucide-react';
 import type { SongHandNoteDocument, Stageplot, StageplotItem } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
+import { generateId } from '../lib/uuid';
 import toast from '../utils/anchoredToast';
 import {
   stageplotIconForKind,
@@ -405,7 +406,7 @@ export default function StageplotEditor({
   };
 
   const makeItem = (template: { kind: string; label: string; color: string }, x: number, y: number): StageplotItem => ({
-    id: crypto.randomUUID(),
+    id: generateId(),
     kind: template.kind,
     label: template.label,
     color: template.color,

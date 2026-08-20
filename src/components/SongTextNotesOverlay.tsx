@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { X } from 'lucide-react';
 import { anchorFromClientPoint, findContentStage, pointFromAnchor, resolveLineRects } from '../lib/lineAnchor';
 import { getUserNoteColor } from '../lib/userColors';
+import { generateId } from '../lib/uuid';
 import type { LineAnchor, LyricNoteDocument, LyricTextNote } from '../types';
 
 interface Props {
@@ -130,7 +131,7 @@ export default function SongTextNotesOverlay({
     if (!contentStage) return;
     const anchor = anchorFromClientPoint(contentStage, e.clientX, e.clientY);
     if (!anchor) return;
-    setPendingNew({ id: crypto.randomUUID(), anchor });
+    setPendingNew({ id: generateId(), anchor });
     setPendingNewText('');
   }, [typeEnabled, getContentStage]);
 

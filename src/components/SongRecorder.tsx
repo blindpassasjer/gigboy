@@ -7,6 +7,7 @@ import type { User } from '../context/AuthContext';
 import type { SongRecording } from '../lib/songRecordings';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { markReloadUnsafe } from '../lib/reloadGuard';
+import { getMicrophoneUnavailableReason } from '../lib/mediaAccess';
 
 const WAVEFORM_SAMPLES = 100;
 
@@ -463,6 +464,11 @@ export default function SongRecorder({ song, user, bandId }: Props) {
 
   async function startRecording() {
     setError(null);
+    const unavailableReason = getMicrophoneUnavailableReason();
+    if (unavailableReason) {
+      setError(unavailableReason);
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {

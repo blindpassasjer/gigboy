@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { generateId } from '../lib/uuid';
 import type {
   Band,
   SongHandNoteDocument,
@@ -306,7 +307,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     if (!kitToDelete) return null;
 
     const { deletedAt, purgeAt } = createTrashTimestamps();
-    const trashId = crypto.randomUUID();
+    const trashId = generateId();
 
     const nextKits = previousKits.filter((k) => k.id !== kitId);
     setBandPressKitsByBandId((prev) => ({
@@ -665,7 +666,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     const currentBandSongs = bandSongsByBandId[bandId] ?? [];
 
-    const songId = song.id || crypto.randomUUID();
+    const songId = song.id || generateId();
     const nextSortOrder = currentBandSongs.reduce((max, entry) => {
       if (typeof entry.sortOrder !== 'number') return max;
       return Math.max(max, entry.sortOrder);
@@ -754,7 +755,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
 
     const { deletedAt, purgeAt } = createTrashTimestamps();
-    const trashId = crypto.randomUUID();
+    const trashId = generateId();
 
     setBandSongsByBandId((prev) => ({
       ...prev,
@@ -851,7 +852,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       return { songListId: null, error: 'Songlist name is required.' };
     }
 
-    const songListId = crypto.randomUUID();
+    const songListId = generateId();
     const currentSongLists = bandSongListsByBandId[bandId] ?? [];
     const nextSongList: SongList = {
       id: songListId,
@@ -973,7 +974,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
 
     const { deletedAt, purgeAt } = createTrashTimestamps();
-    const trashId = crypto.randomUUID();
+    const trashId = generateId();
     const nextSongLists = withSequentialSongListSortOrder(
       previousSongLists.filter((songList) => songList.id !== songListId)
     );
@@ -1160,7 +1161,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const now = new Date().toISOString();
     const currentSetlists = bandSetlistsByBandId[bandId] ?? [];
 
-    const setlistId = crypto.randomUUID();
+    const setlistId = generateId();
     const nextSetlist: Setlist = {
       id: setlistId,
       name: trimmedName,
@@ -1279,7 +1280,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
 
     const { deletedAt, purgeAt } = createTrashTimestamps();
-    const trashId = crypto.randomUUID();
+    const trashId = generateId();
     const nextSetlists = withSequentialSetlistSortOrder(
       previousSetlists.filter((setlist) => setlist.id !== setlistId)
     );
@@ -1537,7 +1538,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     const now = new Date().toISOString();
     const draftRider: InputList = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: trimmed,
       bandName: band.name,
       sortOrder: currentRiders.length,
@@ -1796,7 +1797,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
 
     const { deletedAt, purgeAt } = createTrashTimestamps();
-    const trashId = crypto.randomUUID();
+    const trashId = generateId();
     const nextRiders = withSequentialInputListSortOrder(sortInputLists(
       previousRiders.filter((rider) => rider.id !== riderId)
     ));

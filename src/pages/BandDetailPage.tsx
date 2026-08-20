@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/anchoredToast';
 import { FolderInput, Plus, Search, Settings, Upload, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
+import { generateId } from '../lib/uuid';
 import { useAuth } from '../context/AuthContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
@@ -239,7 +240,7 @@ export default function BandDetailPage() {
         const imported = await parseImportedSongFile(file);
         const now = new Date().toISOString();
         const song: Song = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           title: imported.title,
           artist: imported.artist,
           author: imported.author,

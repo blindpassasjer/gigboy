@@ -3,6 +3,7 @@ import { useBeforeUnload, useNavigate, useBlocker } from 'react-router-dom';
 import { flushSync } from 'react-dom';
 import { ChevronDown, FileUp, Redo2, Save, Undo2, Wand2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
+import { generateId } from '../lib/uuid';
 import type { Song } from '../types';
 import ChordDisplay from './ChordDisplay';
 import ChordProToolbar from './ChordProToolbar';
@@ -223,7 +224,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
 
   const buildSong = useCallback((values: SongFormValues): Song => {
     return {
-      id: initialSong?.id ?? crypto.randomUUID(),
+      id: initialSong?.id ?? generateId(),
       title: values.title.trim(),
       artist: values.artist.trim() || undefined,
       author: values.author.trim() || undefined,
