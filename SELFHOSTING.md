@@ -96,6 +96,12 @@ Copy it (it's copied to your clipboard automatically) and share it with the pers
 inviting — they open it at `/invite/<token>` to set a username and password and create their
 account. Links expire after 7 days and can be revoked from the same page before they're used.
 
+**Managing storage quotas** — the "Users" tab next to Invites (`/admin/users`) lists every
+account with the storage used across bands they own, and lets an admin set (or reset to the
+5GB default) each user's storage quota. Uploads (attachments, recordings, press kit images,
+band logos) that would push a band's total usage past the uploading user's quota are rejected
+server-side.
+
 ## Data persistence
 
 Postgres data lives in the named Docker volume `gigboy-postgres-data`, and uploaded song

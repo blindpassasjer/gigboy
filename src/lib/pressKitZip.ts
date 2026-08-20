@@ -11,6 +11,7 @@ export interface PressKitTextItem {
 export interface PressKitImageItem {
   title: string;
   url: string;
+  mimeType: string;
 }
 
 export interface PressKitStageplotItem {
@@ -56,19 +57,19 @@ export function sanitizeFileName(value: string): string {
     .replace(/^-|-$/g, '') || 'item';
 }
 
-export function extensionFromUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    const pathname = parsed.pathname.toLowerCase();
-    if (pathname.endsWith('.png')) return 'png';
-    if (pathname.endsWith('.jpg') || pathname.endsWith('.jpeg')) return 'jpg';
-    if (pathname.endsWith('.webp')) return 'webp';
-    if (pathname.endsWith('.svg')) return 'svg';
-    if (pathname.endsWith('.gif')) return 'gif';
-  } catch {
-    // Ignore invalid URL parsing.
-  }
-  return 'bin';
+/**
+ * Self-host's image download URLs are `/api/.../:id/download` — no extension in the path, and
+ * relative rather than absolute (so `new URL()` on them throws without a base). Derive the
+ * extension from the image's own mimeType instead, which is always present on `PressKitImage`.
+ */
+export function extensionFromImageMimeType(mimeType: string): string {
+  const normalized = mimeType.split(';')[0].trim().toLowerCase();
+  if (normalized === 'image/jpeg') return 'jpg';
+  if (normalized === 'image/png') return 'png';
+  if (normalized === 'image/webp') return 'webp';
+  if (normalized === 'image/svg+xml') return 'svg';
+  if (normalized === 'image/gif') return 'gif';
+  return normalized.includes('/') ? normalized.split('/')[1] : 'bin';
 }
 
 function formatChannelLine({ item, index }: { item: StageplotItem; index: number }): string {
@@ -203,7 +204,7 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
         const response = await fetch(image.url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const bytes = await response.arrayBuffer();
-        const extension = extensionFromUrl(image.url);
+        const extension = extensionFromImageMimeType(image.mimeType);
         imagesFolder?.file(`${sanitizeFileName(image.title)}.${extension}`, bytes);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';

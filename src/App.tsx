@@ -21,6 +21,7 @@ const SongPage = lazy(() => import('./pages/SongPage'));
 const SongConcertPage = lazy(() => import('./pages/SongConcertPage'));
 const EditSongPage = lazy(() => import('./pages/EditSongPage'));
 const AdminInvitesPage = lazy(() => import('./pages/AdminInvitesPage'));
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
@@ -149,6 +150,14 @@ function AuthenticatedApp() {
             element={
               <RequireAdmin>
                 <AdminInvitesPage />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <RequireAdmin>
+                <AdminUsersPage />
               </RequireAdmin>
             }
           />

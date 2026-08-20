@@ -13,6 +13,7 @@ import {
   streamAttachment,
 } from '../lib/attachments.js';
 import { insertTrashItem } from '../lib/trash.js';
+import { assertUploadWithinQuota } from '../lib/storageQuota.js';
 
 export const bandAttachmentsRouter = Router({ mergeParams: true });
 bandAttachmentsRouter.use(requireAuth, requireBandMember);
@@ -106,6 +107,12 @@ bandAttachmentsRouter.post(
       }
       if (file.mimetype !== ATTACHMENT_ACCEPTED_MIME_TYPE) {
         res.status(400).json({ error: 'Only PDF files are accepted.' });
+        return;
+      }
+
+      const quotaCheck = await assertUploadWithinQuota(req.userId!, req.params.bandId, file.size);
+      if (!quotaCheck.ok) {
+        res.status(413).json({ error: quotaCheck.message });
         return;
       }
 

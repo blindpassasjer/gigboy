@@ -14,6 +14,7 @@ import {
   streamSongRecording,
 } from '../lib/songRecordings.js';
 import { loadBandSongScope, type ResolvedSongScope } from '../lib/songScope.js';
+import { assertUploadWithinQuota } from '../lib/storageQuota.js';
 
 function handleUploadErrors(err: unknown, res: Response): boolean {
   if (!err) return false;
@@ -85,6 +86,12 @@ function buildRecordingsRouter(
         }
         if (!RECORDING_ACCEPTED_MIME_TYPES.includes(file.mimetype)) {
           res.status(400).json({ error: 'Only audio recordings (webm, ogg, mp3, m4a, wav) are accepted.' });
+          return;
+        }
+
+        const quotaCheck = await assertUploadWithinQuota(req.userId!, scope.bandId, file.size);
+        if (!quotaCheck.ok) {
+          res.status(413).json({ error: quotaCheck.message });
           return;
         }
 

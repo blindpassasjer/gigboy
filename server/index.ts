@@ -9,6 +9,7 @@ import { renderPressKitOgHtml } from './lib/pressKitOg.js';
 import { authRateLimit } from './middleware/rateLimit.js';
 import { authRouter } from './routes/auth.js';
 import { adminInvitesRouter, publicInvitesRouter } from './routes/invites.js';
+import { adminUsersRouter } from './routes/adminUsers.js';
 import { bandsRouter } from './routes/bands.js';
 import { bandSongsRouter } from './routes/bandSongs.js';
 import { bandSongListsRouter } from './routes/bandSongLists.js';
@@ -24,7 +25,6 @@ import { publicPressKitsRouter } from './routes/publicPressKits.js';
 import { bandSongHandNotesRouter } from './routes/songHandNotes.js';
 import { bandSongRecordingsRouter } from './routes/songRecordings.js';
 import { bandLogosRouter } from './routes/bandLogos.js';
-import { feedbackRouter } from './routes/feedback.js';
 import { storageUsageRouter } from './routes/storageUsage.js';
 import { songBadgesRouter } from './routes/songBadges.js';
 
@@ -53,10 +53,10 @@ app.use(attachSession);
 
 app.use('/api/auth', authRateLimit, authRouter);
 app.use('/api/admin/invites', adminInvitesRouter);
+app.use('/api/admin/users', adminUsersRouter);
 app.use('/api/invites', authRateLimit, publicInvitesRouter);
 app.use('/api/storage-usage', storageUsageRouter);
 app.use('/api/song-badges', songBadgesRouter);
-app.use('/api/feedback', feedbackRouter);
 app.use('/api/bands/:bandId/songs/:songId/attachments', bandAttachmentsRouter);
 app.use('/api/bands/:bandId/songs/:songId/hand-notes', bandSongHandNotesRouter);
 app.use('/api/bands/:bandId/songs/:songId/recordings', bandSongRecordingsRouter);

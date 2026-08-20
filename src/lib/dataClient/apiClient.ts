@@ -5,6 +5,8 @@ import type { TrashListItem } from '../../components/TrashView';
 import type {
   AcceptInviteInput,
   AdminInvitesClient,
+  AdminUserListing,
+  AdminUsersClient,
   AuthClient,
   BandAttachmentsClient,
   BandInvite,
@@ -404,6 +406,19 @@ const adminInvitesClient: AdminInvitesClient = {
   },
 };
 
+const adminUsersClient: AdminUsersClient = {
+  async list() {
+    const data = await apiFetch<{ users: AdminUserListing[] }>('/admin/users');
+    return data.users;
+  },
+  async setQuota(id, storageQuotaBytes) {
+    await apiFetch<{ id: string; storageQuotaBytes: number; hasCustomQuota: boolean }>(`/admin/users/${id}/quota`, {
+      method: 'PATCH',
+      body: JSON.stringify({ storageQuotaBytes }),
+    });
+  },
+};
+
 export const apiClient: DataClient = {
   auth: authClient,
   bands: bandsClient,
@@ -419,4 +434,5 @@ export const apiClient: DataClient = {
   bandPressKitShares: bandPressKitSharesClient,
   publicPressKits: publicPressKitsClient,
   adminInvites: adminInvitesClient,
+  adminUsers: adminUsersClient,
 };

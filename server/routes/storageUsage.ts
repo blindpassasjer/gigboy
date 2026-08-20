@@ -1,20 +1,9 @@
 import { Router } from 'express';
 import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import {
-  attachments,
-  bandLogos,
-  bandMembers,
-  pressKitImages,
-  songRecordings,
-  songs,
-} from '../db/schema.js';
+import { attachments, bandLogos, bandMembers, pressKitImages, songRecordings, songs } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
-
-// Self-host has no plan tiers or per-user/per-band quota overrides in the schema; every
-// scope gets this same raw quota. Matches the old Firestore hosted-SaaS default (the
-// former `crew` tier's figure) — see src/hooks/useStorageUsage.ts.
-const DEFAULT_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024;
+import { getUserStorageQuotaBytes } from '../lib/storageQuota.js';
 
 function sumBytes(rows: Array<{ sizeBytes: number }>): number {
   return rows.reduce((sum, row) => sum + row.sizeBytes, 0);
@@ -63,11 +52,13 @@ storageUsageRouter.get('/', async (req, res) => {
     const imageBytes = sumBytes(imageRows.map((r) => ({ sizeBytes: r.sizeBytes + r.thumbSizeBytes })))
       + sumBytes(logoRows.map((r) => ({ sizeBytes: r.sizeBytes + r.thumbSizeBytes })));
 
+    const quotaBytes = await getUserStorageQuotaBytes(userId);
+
     res.json({
       recordingBytes,
       attachmentBytes,
       imageBytes,
-      quotaBytes: DEFAULT_STORAGE_QUOTA_BYTES,
+      quotaBytes,
     });
   } catch (err) {
     console.error('Failed to compute storage usage:', err);

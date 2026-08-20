@@ -1,12 +1,13 @@
 import JSZip from 'jszip';
 import type { Band, InputList, PressKit, Setlist, Song, SongList } from '../types';
 import type { SongRecording } from './songRecordings';
-import { extensionFromUrl, riderAsText, sanitizeFileName } from './pressKitZip';
+import { extensionFromImageMimeType, riderAsText, sanitizeFileName } from './pressKitZip';
 
 export interface PressKitImageAsset {
   id: string;
   title: string;
   url: string;
+  mimeType: string;
 }
 
 export interface SongbookExportInput {
@@ -103,7 +104,7 @@ async function addPressKitImagesFolder(zip: JSZip, images: PressKitImageAsset[])
       const response = await fetch(image.url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const bytes = await response.arrayBuffer();
-      const extension = extensionFromUrl(image.url);
+      const extension = extensionFromImageMimeType(image.mimeType);
       folder?.file(`${sanitizeFileName(image.title)}.${extension}`, bytes);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';

@@ -235,7 +235,7 @@ export default function ProfilePage() {
         try {
           const images = await dataClient.bandPressKitImages.list(band.id);
           bandPressKitImagesByBandId[band.id] = images
-            .map((image) => ({ id: image.id, title: image.title, url: image.url }))
+            .map((image) => ({ id: image.id, title: image.title, url: image.url, mimeType: image.mimeType }))
             .filter((image) => image.url.length > 0);
         } catch {
           bandPressKitImagesByBandId[band.id] = [];

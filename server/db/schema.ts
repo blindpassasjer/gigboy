@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, jsonb, boolean, primaryKey, check, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, bigint, timestamp, jsonb, boolean, primaryKey, check, unique } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const users = pgTable(
@@ -12,6 +12,10 @@ export const users = pgTable(
     avatar: text('avatar'),
     fullName: text('full_name'),
     role: text('role').notNull().default('member'),
+    // Admin-assigned storage cap for this user's uploads. Null means "use the default"
+    // (see DEFAULT_STORAGE_QUOTA_BYTES in server/lib/storageQuota.ts). bigint, not integer —
+    // quota values in bytes (e.g. 5GB = 5368709120) exceed Postgres's int32 range.
+    storageQuotaBytes: bigint('storage_quota_bytes', { mode: 'number' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [check('users_role_check', sql`${table.role} in ('member', 'admin')`)],

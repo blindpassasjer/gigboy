@@ -15,6 +15,7 @@ import {
   streamPressKitImageFile,
 } from '../lib/pressKitImages.js';
 import { insertTrashItem } from '../lib/trash.js';
+import { assertUploadWithinQuota } from '../lib/storageQuota.js';
 
 function downloadUrlBase(req: Request): string {
   return `/api/bands/${bandIdFromReq(req)}/press-kit-images`;
@@ -101,6 +102,12 @@ bandPressKitImagesRouter.post(
       }
       if (thumb.mimetype !== PRESS_KIT_IMAGE_THUMB_MIME_TYPE) {
         res.status(400).json({ error: 'Thumbnail must be a WebP image.' });
+        return;
+      }
+
+      const quotaCheck = await assertUploadWithinQuota(req.userId!, bandId, file.size + thumb.size);
+      if (!quotaCheck.ok) {
+        res.status(413).json({ error: quotaCheck.message });
         return;
       }
 

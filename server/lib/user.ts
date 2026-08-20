@@ -1,4 +1,5 @@
 import type { users } from '../db/schema.js';
+import { resolveStorageQuotaBytes } from './storageQuota.js';
 
 type UserRow = typeof users.$inferSelect;
 
@@ -12,7 +13,8 @@ export interface PublicUser {
   storageQuotaBytes: number;
 }
 
-/** Self-host builds have no billing/plan concept — every user gets full feature access. */
+/** Self-host builds have no billing/plan concept — every user gets full feature access, aside
+ * from the admin-assignable storage quota (see server/lib/storageQuota.ts). */
 export function toPublicUser(row: UserRow): PublicUser {
   return {
     id: row.id,
@@ -21,6 +23,6 @@ export function toPublicUser(row: UserRow): PublicUser {
     avatar: row.avatar,
     fullName: row.fullName,
     role: row.role === 'admin' ? 'admin' : 'member',
-    storageQuotaBytes: Number.MAX_SAFE_INTEGER,
+    storageQuotaBytes: resolveStorageQuotaBytes(row.storageQuotaBytes),
   };
 }

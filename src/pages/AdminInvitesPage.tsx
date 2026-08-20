@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Copy, UserPlus } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { dataClient } from '../lib/dataClient';
@@ -94,6 +95,11 @@ export default function AdminInvitesPage() {
         <h1>Invites</h1>
         <p>Generate invite links so new users can create an account. Self-host has no open registration.</p>
       </header>
+
+      <nav className="admin-tabs">
+        <Link to="/admin/invites" className="active" aria-current="page">Invites</Link>
+        <Link to="/admin/users">Users</Link>
+      </nav>
 
       <section className="profile-invites-section">
         <h2>Create an invite</h2>

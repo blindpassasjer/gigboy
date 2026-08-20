@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Maximize2, Minimize2, MessageSquare, Music, Folder, ListMusic, ClipboardList, Newspaper, ShieldCheck } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Coffee, Music, Folder, ListMusic, ClipboardList, Newspaper, ShieldCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import Sidebar from './Sidebar';
 import BrandMark from './BrandMark';
 import { useDarkModeContext } from '../context/DarkModeContext';
-import { submitFeedback } from '../lib/feedback';
 import toast from '../utils/anchoredToast';
 import UserAvatar from './UserAvatar';
 
@@ -91,10 +90,8 @@ export default function Layout({ children }: Props) {
     if (typeof document === 'undefined') return false;
     return Boolean(document.fullscreenElement);
   });
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
-  const feedbackPopoverRef = useRef<HTMLDivElement>(null);
+  const [coffeeOpen, setCoffeeOpen] = useState(false);
+  const coffeePopoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mainEl = mainContentRef.current;
@@ -407,17 +404,17 @@ export default function Layout({ children }: Props) {
   }, [dark, themedBandId]);
 
   useEffect(() => {
-    if (!feedbackOpen) return;
+    if (!coffeeOpen) return;
 
     const handleWindowClick = (event: MouseEvent) => {
-      if (!feedbackPopoverRef.current) return;
-      if (feedbackPopoverRef.current.contains(event.target as Node)) return;
-      setFeedbackOpen(false);
+      if (!coffeePopoverRef.current) return;
+      if (coffeePopoverRef.current.contains(event.target as Node)) return;
+      setCoffeeOpen(false);
     };
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setFeedbackOpen(false);
+        setCoffeeOpen(false);
       }
     };
 
@@ -428,26 +425,16 @@ export default function Layout({ children }: Props) {
       window.removeEventListener('mousedown', handleWindowClick);
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [feedbackOpen]);
+  }, [coffeeOpen]);
 
-  const handleSubmitFeedback = async () => {
-    if (!user?.id || !feedbackMessage.trim() || feedbackSubmitting) return;
-    setFeedbackSubmitting(true);
+  const VIPPS_NUMBER = '+47 934 93 144';
+
+  const handleCopyVippsNumber = async () => {
     try {
-      await submitFeedback({
-        userId: user.id,
-        email: user.email ?? null,
-        message: feedbackMessage,
-        page: pathname,
-      });
-      toast.success('Thanks for the feedback!');
-      setFeedbackMessage('');
-      setFeedbackOpen(false);
-    } catch (error) {
-      console.error('Failed to submit feedback', error);
-      toast.error('Could not send feedback. Please try again.');
-    } finally {
-      setFeedbackSubmitting(false);
+      await navigator.clipboard.writeText(VIPPS_NUMBER);
+      toast.success('Vipps number copied.');
+    } catch {
+      toast.error('Could not copy. Number: ' + VIPPS_NUMBER);
     }
   };
 
@@ -469,43 +456,43 @@ export default function Layout({ children }: Props) {
           <BrandMark size={35} scale={1} />
         </Link>
         <nav className="topbar-nav">
-          <div className="topbar-feedback" ref={feedbackPopoverRef}>
+          <div className="topbar-coffee" ref={coffeePopoverRef}>
             <button
               type="button"
-              onClick={() => setFeedbackOpen((current) => !current)}
-              className={['topbar-feedback-trigger', feedbackOpen ? 'active' : ''].filter(Boolean).join(' ')}
-              title="Send feedback"
-              aria-label="Send feedback"
-              aria-expanded={feedbackOpen}
+              onClick={() => setCoffeeOpen((current) => !current)}
+              className={['topbar-coffee-trigger', coffeeOpen ? 'active' : ''].filter(Boolean).join(' ')}
+              title="Buy me a coffee"
+              aria-label="Buy me a coffee"
+              aria-expanded={coffeeOpen}
               aria-haspopup="dialog"
-              aria-controls="topbar-feedback-popover"
+              aria-controls="topbar-coffee-popover"
             >
-              <MessageSquare size={16} />
-              <span className="topbar-link-label">Feedback</span>
+              <Coffee size={16} />
+              <span className="topbar-link-label">Buy me a coffee</span>
             </button>
 
-            {feedbackOpen ? (
-              <div id="topbar-feedback-popover" className="topbar-feedback-popover" role="dialog" aria-label="Send feedback">
-                <div className="topbar-feedback-popover-header">
-                  <h2>Feedback</h2>
+            {coffeeOpen ? (
+              <div id="topbar-coffee-popover" className="topbar-coffee-popover" role="dialog" aria-label="Buy me a coffee">
+                <div className="topbar-coffee-popover-header">
+                  <h2>Buy me a coffee</h2>
                 </div>
-                <div className="topbar-feedback-popover-content">
-                  <textarea
-                    className="topbar-feedback-textarea"
-                    value={feedbackMessage}
-                    onChange={(e) => setFeedbackMessage(e.target.value)}
-                    placeholder="What's on your mind? Bugs, ideas, anything."
-                    rows={4}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    className="setlist-action-btn"
-                    disabled={!feedbackMessage.trim() || feedbackSubmitting}
-                    onClick={() => void handleSubmitFeedback()}
-                  >
-                    {feedbackSubmitting ? 'Sending...' : 'Send'}
+                <div className="topbar-coffee-popover-content">
+                  <p>
+                    If Gigboy's useful to you, you can send a coffee via Vipps:
+                    <span className="topbar-coffee-number">{VIPPS_NUMBER}</span>
+                  </p>
+                  <button type="button" className="setlist-action-btn" onClick={() => void handleCopyVippsNumber()}>
+                    Copy number
                   </button>
+                  <p>Or via Buy Me a Coffee:</p>
+                  <a
+                    href="https://buymeacoffee.com/blindpassasjer"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="setlist-action-btn setlist-action-btn--secondary"
+                  >
+                    buymeacoffee.com/blindpassasjer
+                  </a>
                 </div>
               </div>
             ) : null}
@@ -534,9 +521,9 @@ export default function Layout({ children }: Props) {
             <Link
               to="/admin/invites"
               className="topbar-icon-btn"
-              title="Invites (admin)"
-              aria-label="Invites (admin)"
-              aria-current={pathname === '/admin/invites' ? 'page' : undefined}
+              title="Admin"
+              aria-label="Admin"
+              aria-current={pathname.startsWith('/admin/') ? 'page' : undefined}
             >
               <ShieldCheck size={16} />
             </Link>

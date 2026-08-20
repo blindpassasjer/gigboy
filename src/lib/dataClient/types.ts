@@ -30,6 +30,7 @@ export interface DataClient {
   bandPressKitShares: PressKitSharesClient;
   publicPressKits: PublicPressKitsClient;
   adminInvites: AdminInvitesClient;
+  adminUsers: AdminUsersClient;
 }
 
 /** Result of looking up an invite token, mirroring `GET /api/invites/:token`'s success body. */
@@ -88,6 +89,29 @@ export interface AdminInvitesClient {
   create(input: { email?: string; role?: 'member' | 'admin' }): Promise<{ inviteId: string; inviteUrl: string; expiresAt: string }>;
   /** Revokes a pending invite so its link can no longer be used. */
   revoke(id: string): Promise<void>;
+}
+
+/** A user row as returned by `GET /api/admin/users` (admin-only). */
+export interface AdminUserListing {
+  id: string;
+  email: string;
+  username: string | null;
+  fullName: string | null;
+  role: 'member' | 'admin';
+  createdAt: string;
+  /** Resolved quota (admin-assigned, or the default when hasCustomQuota is false). */
+  storageQuotaBytes: number;
+  hasCustomQuota: boolean;
+  /** Total bytes stored across bands this user owns. */
+  usedBytes: number;
+  ownedBandCount: number;
+}
+
+/** Admin-only user listing and storage quota assignment, mounted at `/api/admin/users`. */
+export interface AdminUsersClient {
+  list(): Promise<AdminUserListing[]>;
+  /** Sets a user's storage quota override; pass null to reset to the default. */
+  setQuota(id: string, storageQuotaBytes: number | null): Promise<void>;
 }
 
 export interface BandInvite {

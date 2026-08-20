@@ -20,7 +20,7 @@ interface PublicPressKitPayload {
   pressKitIcon?: string;
   createdAt?: string;
   texts: Array<{ title: string; body: string }>;
-  images: Array<{ title: string; url: string }>;
+  images: Array<{ title: string; url: string; mimeType: string }>;
   videoUrls: string[];
   presaveReleaseName?: string;
   presaveReleaseDate?: string;
@@ -37,7 +37,7 @@ async function fetchPublicPressKit(token: string): Promise<PublicPressKitPayload
     pressKitIcon: kit.icon,
     createdAt: kit.createdAt,
     texts: kit.richText ? [{ title: kit.name, body: kit.richText }] : [],
-    images: images.map((image) => ({ title: image.title, url: image.url })),
+    images: images.map((image) => ({ title: image.title, url: image.url, mimeType: image.mimeType })),
     videoUrls: kit.selectedVideoUrls ?? kit.videoUrls ?? [],
     presaveReleaseName: kit.presaveReleaseName,
     presaveReleaseDate: kit.presaveReleaseDate,
