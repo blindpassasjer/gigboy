@@ -6841,10 +6841,10 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 @keyframes setlist-card-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--song-item-accent) 0%, transparent);
+    box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--song-item-accent) 0%, transparent);
   }
   12% {
-    box-shadow: 0 0 0 .18rem color-mix(in srgb, var(--song-item-accent) 35%, transparent);
+    box-shadow: inset 0 0 0 .18rem color-mix(in srgb, var(--song-item-accent) 35%, transparent);
   }
 }
 
