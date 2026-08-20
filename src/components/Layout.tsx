@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Coffee, Music, Folder, ListMusic, ClipboardList, Newspaper, ShieldCheck } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Coffee, Music, Folder, ListMusic, ClipboardList, Newspaper, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -463,26 +463,35 @@ export default function Layout({ children }: Props) {
             {coffeeOpen ? (
               <div id="topbar-coffee-popover" className="topbar-coffee-popover" role="dialog" aria-label="Buy me a coffee">
                 <div className="topbar-coffee-popover-header">
-                  <h2>Buy me a coffee</h2>
+                  <span className="topbar-coffee-popover-badge" aria-hidden="true">
+                    <Coffee size={16} />
+                  </span>
+                  <div>
+                    <h2>Buy me a coffee</h2>
+                    <p>Support keeps Gigboy running</p>
+                  </div>
                 </div>
                 <div className="topbar-coffee-popover-content">
-                  <p>If Gigboy's useful to you, you can send a coffee via Vipps:</p>
                   <a
                     href="https://qr.vipps.no/box/26128ed0-008f-4b5a-bd8d-9a936f58cf83/pay-in"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="setlist-action-btn"
+                    className="topbar-coffee-option setlist-action-btn setlist-action-btn--accent"
                   >
-                    Pay with Vipps
+                    <span className="topbar-coffee-option-label">Vipps me</span>
+                    <ArrowUpRight size={15} />
                   </a>
-                  <p>Or via Buy Me a Coffee:</p>
+                  <div className="topbar-coffee-popover-divider">
+                    <span>or</span>
+                  </div>
                   <a
                     href="https://buymeacoffee.com/blindpassasjer"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="setlist-action-btn setlist-action-btn--secondary"
+                    className="topbar-coffee-option setlist-action-btn setlist-action-btn--secondary"
                   >
-                    buymeacoffee.com/blindpassasjer
+                    <span className="topbar-coffee-option-label">Buy me a coffee</span>
+                    <ArrowUpRight size={15} />
                   </a>
                 </div>
               </div>

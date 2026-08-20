@@ -501,6 +501,36 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .topbar-coffee-popover {
   width: min(340px, calc(100vw - 1.5rem));
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, #b9752f 16%, transparent), transparent 60%),
+    var(--surface);
+  border-color: color-mix(in srgb, #b9752f 30%, var(--border));
+}
+
+.topbar-coffee-popover-header {
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: .65rem;
+  border-bottom-color: color-mix(in srgb, #b9752f 20%, var(--border));
+}
+
+.topbar-coffee-popover-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #b9752f, #8a5322);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(138, 83, 34, .35);
+}
+
+.topbar-coffee-popover-header p {
+  margin: .15rem 0 0;
+  color: var(--muted);
+  font-size: .78rem;
 }
 
 .topbar-coffee-popover-content p {
@@ -509,12 +539,47 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: .85rem;
 }
 
+.topbar-coffee-option {
+  justify-content: center;
+  gap: .4rem;
+  min-height: 2.3rem;
+  padding: .5rem .9rem;
+  font-size: .82rem;
+  font-weight: 600;
+}
 
-.topbar-coffee-popover-content .setlist-action-btn {
-  align-self: flex-start;
-  min-height: 2rem;
-  padding: .35rem .9rem;
-  font-size: .8rem;
+.topbar-coffee-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-coffee-popover-content .setlist-action-btn.topbar-coffee-option.setlist-action-btn--accent {
+  background: linear-gradient(120deg, #ff5b24, #d6421c);
+  border-color: #d6421c;
+  color: #fff5ef;
+}
+
+.topbar-coffee-popover-content .setlist-action-btn.topbar-coffee-option.setlist-action-btn--accent:hover {
+  background: linear-gradient(120deg, #ff6a37, #e14e28);
+}
+
+.topbar-coffee-popover-divider {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  color: var(--muted);
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.topbar-coffee-popover-divider::before,
+.topbar-coffee-popover-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
 }
 
 .topbar-invites-group {
