@@ -91,10 +91,18 @@ unset once the admin account exists from a previous run.
 
 **Inviting new users** — log in as an admin and open the shield icon in the top bar
 (`/admin/invites`) to generate invite links: optionally pin an invite to one email address,
-choose whether the new account should be an admin or a regular member, and create the link.
-Copy it (it's copied to your clipboard automatically) and share it with the person you're
-inviting — they open it at `/invite/<token>` to set a username and password and create their
-account. Links expire after 7 days and can be revoked from the same page before they're used.
+then create the link. Every invite creates a regular member — there's no admin choice at
+invite time, since band ownership is unconditional (whoever creates a band owns it) and has
+nothing to do with site-wide admin access. Copy the link (it's copied to your clipboard
+automatically) and share it with the person you're inviting — they open it at
+`/invite/<token>` to set a username and password and create their account. Links expire after
+7 days and can be revoked from the same page before they're used.
+
+**Promoting/demoting admins** — on the Users tab (`/admin/users`), each user (other than
+yourself) has a "Make admin" / "Remove admin" button to grant or revoke site-wide admin access
+(inviting users, managing storage quotas, deleting accounts). You can't change your own role
+this way, and the last remaining admin can't be demoted — ask another admin, or promote someone
+else first.
 
 **Managing storage quotas** — the "Users" tab next to Invites (`/admin/users`) lists every
 account with the storage used across bands they own, and lets an admin set (or reset to the

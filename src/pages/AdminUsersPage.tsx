@@ -81,6 +81,21 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleToggleRole = async (user: AdminUserListing) => {
+    const nextRole = user.role === 'admin' ? 'member' : 'admin';
+    setBusyId(user.id);
+    try {
+      await dataClient.adminUsers.setRole(user.id, nextRole);
+      toast.success(nextRole === 'admin' ? `${user.email} is now an admin.` : `${user.email} is now a member.`);
+      await refreshUsers();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update role.';
+      toast.error(message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const handleDeleteUser = async (user: AdminUserListing) => {
     if (deleteConfirmText.trim().toLowerCase() !== user.email.toLowerCase()) return;
     setBusyId(user.id);
@@ -102,7 +117,10 @@ export default function AdminUsersPage() {
     <section className="profile-invites-page">
       <header className="profile-invites-header">
         <h1>Users</h1>
-        <p>All accounts on this instance, with storage used across bands they own and their assigned quota.</p>
+        <p>
+          All accounts on this instance, with storage used across bands they own, their assigned quota, and
+          site-wide admin access (unrelated to band ownership — whoever creates a band owns it, always).
+        </p>
       </header>
 
       <nav className="admin-tabs">
@@ -199,6 +217,16 @@ export default function AdminUsersPage() {
                           Reset to default
                         </button>
                       ) : null}
+                      {!isSelf && (
+                        <button
+                          type="button"
+                          className="setlist-action-btn setlist-action-btn--secondary"
+                          disabled={busy}
+                          onClick={() => void handleToggleRole(user)}
+                        >
+                          {user.role === 'admin' ? 'Remove admin' : 'Make admin'}
+                        </button>
+                      )}
                       {!isSelf && (
                         <button
                           type="button"

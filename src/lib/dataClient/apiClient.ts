@@ -417,6 +417,12 @@ const adminUsersClient: AdminUsersClient = {
       body: JSON.stringify({ storageQuotaBytes }),
     });
   },
+  async setRole(id, role) {
+    await apiFetch<{ id: string; role: 'member' | 'admin' }>(`/admin/users/${id}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    });
+  },
   async remove(id) {
     await apiFetch<Record<string, never>>(`/admin/users/${id}`, { method: 'DELETE' });
   },

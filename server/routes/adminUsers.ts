@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { bands, users } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
@@ -78,6 +78,50 @@ adminUsersRouter.patch('/:id/quota', async (req, res) => {
     });
   } catch (err) {
     console.error('Failed to update user quota:', err);
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+  }
+});
+
+/**
+ * Promotes or demotes a user's site-wide admin role. Separate from band ownership, which is
+ * unconditional (whoever creates a band owns it — see bands.ts) and unaffected by this. Guards
+ * against self-service role changes and against demoting the last remaining admin, since either
+ * would risk locking the instance out of its own admin panel.
+ */
+adminUsersRouter.patch('/:id/role', async (req, res) => {
+  try {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    if (body.role !== 'member' && body.role !== 'admin') {
+      res.status(400).json({ error: 'role must be "member" or "admin".' });
+      return;
+    }
+
+    if (req.params.id === req.userId) {
+      res.status(400).json({ error: 'You cannot change your own admin role. Ask another admin.' });
+      return;
+    }
+
+    if (body.role === 'member') {
+      const otherAdminRows = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.role, 'admin'), ne(users.id, req.params.id)))
+        .limit(1);
+      if (!otherAdminRows[0]) {
+        res.status(400).json({ error: 'At least one admin must remain.' });
+        return;
+      }
+    }
+
+    const [row] = await db.update(users).set({ role: body.role }).where(eq(users.id, req.params.id)).returning();
+    if (!row) {
+      res.status(404).json({ error: 'User not found.' });
+      return;
+    }
+
+    res.json({ id: row.id, role: row.role });
+  } catch (err) {
+    console.error('Failed to update user role:', err);
     res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 });

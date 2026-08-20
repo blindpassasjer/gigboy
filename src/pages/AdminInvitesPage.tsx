@@ -17,7 +17,6 @@ export default function AdminInvitesPage() {
   const [invites, setInvites] = useState<UserInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'member' | 'admin'>('member');
   const [busyCreate, setBusyCreate] = useState(false);
   const [busyRevokeId, setBusyRevokeId] = useState<string | null>(null);
   const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
@@ -44,11 +43,9 @@ export default function AdminInvitesPage() {
     try {
       const result = await dataClient.adminInvites.create({
         email: email.trim() || undefined,
-        role,
       });
       setLastInviteLink(result.inviteUrl);
       setEmail('');
-      setRole('member');
       await refreshInvites();
       try {
         await navigator.clipboard.writeText(result.inviteUrl);
@@ -113,13 +110,6 @@ export default function AdminInvitesPage() {
               placeholder="name@example.com"
               disabled={busyCreate}
             />
-          </label>
-          <label className="share-menu-field">
-            <span>Role</span>
-            <select value={role} onChange={(e) => setRole(e.target.value === 'admin' ? 'admin' : 'member')} disabled={busyCreate}>
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-            </select>
           </label>
           <button type="submit" className="setlist-action-btn" disabled={busyCreate}>
             <UserPlus size={15} /> {busyCreate ? 'Creating link…' : 'Create invite link'}
