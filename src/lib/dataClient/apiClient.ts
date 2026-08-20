@@ -417,6 +417,9 @@ const adminUsersClient: AdminUsersClient = {
       body: JSON.stringify({ storageQuotaBytes }),
     });
   },
+  async remove(id) {
+    await apiFetch<Record<string, never>>(`/admin/users/${id}`, { method: 'DELETE' });
+  },
 };
 
 export const apiClient: DataClient = {

@@ -50,6 +50,33 @@ export async function getBandStorageUsageBytes(bandId: string): Promise<number> 
 }
 
 /**
+ * Every storage key physically backing a band's files: song attachments, recordings, press kit
+ * images (+ thumbs), and band logos (+ thumbs). Used to clean up disk when a band's owner is
+ * deleted (see adminUsers.ts) — the DB rows disappear via FK cascade, but the underlying files
+ * in ATTACHMENTS_DIR don't unless explicitly removed.
+ */
+export async function getBandStorageKeys(bandId: string): Promise<string[]> {
+  const bandSongRows = await db.select({ id: songs.id }).from(songs).where(eq(songs.bandId, bandId));
+  const bandSongIds = bandSongRows.map((row) => row.id);
+
+  const [recordingRows, attachmentRows, imageRows, logoRows] = await Promise.all([
+    db.select({ storageKey: songRecordings.storageKey }).from(songRecordings).where(eq(songRecordings.bandId, bandId)),
+    bandSongIds.length
+      ? db.select({ storageKey: attachments.storageKey }).from(attachments).where(inArray(attachments.songId, bandSongIds))
+      : Promise.resolve([]),
+    db.select({ storageKey: pressKitImages.storageKey, thumbStorageKey: pressKitImages.thumbStorageKey }).from(pressKitImages).where(eq(pressKitImages.bandId, bandId)),
+    db.select({ storageKey: bandLogos.storageKey, thumbStorageKey: bandLogos.thumbStorageKey }).from(bandLogos).where(eq(bandLogos.bandId, bandId)),
+  ]);
+
+  return [
+    ...recordingRows.map((r) => r.storageKey),
+    ...attachmentRows.map((r) => r.storageKey),
+    ...imageRows.flatMap((r) => [r.storageKey, r.thumbStorageKey]),
+    ...logoRows.flatMap((r) => [r.storageKey, r.thumbStorageKey]),
+  ];
+}
+
+/**
  * Enforces the uploading user's own storage quota against the band's total usage. Mirrors the
  * client-side pre-check in SongAttachments.tsx/SongRecorder.tsx (which uses the same
  * user.storageQuotaBytes vs. band-usage comparison) — this is the server-side backstop so the

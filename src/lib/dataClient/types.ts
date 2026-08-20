@@ -112,6 +112,8 @@ export interface AdminUsersClient {
   list(): Promise<AdminUserListing[]>;
   /** Sets a user's storage quota override; pass null to reset to the default. */
   setQuota(id: string, storageQuotaBytes: number | null): Promise<void>;
+  /** Permanently deletes a user, the bands they own, and every file those bands held. */
+  remove(id: string): Promise<void>;
 }
 
 export interface BandInvite {

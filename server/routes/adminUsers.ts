@@ -4,7 +4,8 @@ import { db } from '../db/client.js';
 import { bands, users } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
-import { getBandStorageUsageBytes, resolveStorageQuotaBytes } from '../lib/storageQuota.js';
+import { getBandStorageKeys, getBandStorageUsageBytes, resolveStorageQuotaBytes } from '../lib/storageQuota.js';
+import { localStorageAdapter } from '../storage/localStorageAdapter.js';
 
 /** Admin-only user management (listing + storage quota assignment), mounted at /api/admin/users. */
 export const adminUsersRouter = Router();
@@ -77,6 +78,41 @@ adminUsersRouter.patch('/:id/quota', async (req, res) => {
     });
   } catch (err) {
     console.error('Failed to update user quota:', err);
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+  }
+});
+
+/**
+ * Deletes a user and every file they're solely responsible for: bands they own cascade-delete
+ * in the DB via FK (songs, attachments, recordings, press kit images, logos, invites, etc.),
+ * but the underlying files in ATTACHMENTS_DIR don't disappear on their own — those are removed
+ * here first, before the DB row (and its cascade) goes. Bands the user merely belongs to (not
+ * owns) are untouched; only their membership row is removed.
+ */
+adminUsersRouter.delete('/:id', async (req, res) => {
+  try {
+    if (req.params.id === req.userId) {
+      res.status(400).json({ error: 'Use account deletion in your profile to delete your own account.' });
+      return;
+    }
+
+    const userRows = await db.select({ id: users.id }).from(users).where(eq(users.id, req.params.id)).limit(1);
+    if (!userRows[0]) {
+      res.status(404).json({ error: 'User not found.' });
+      return;
+    }
+
+    const ownedBandRows = await db.select({ id: bands.id }).from(bands).where(eq(bands.ownerId, req.params.id));
+    const keysByBand = await Promise.all(ownedBandRows.map((band) => getBandStorageKeys(band.id)));
+    const allKeys = keysByBand.flat();
+
+    await Promise.all(allKeys.map((key) => localStorageAdapter.delete(key)));
+
+    await db.delete(users).where(eq(users.id, req.params.id));
+
+    res.json({});
+  } catch (err) {
+    console.error('Failed to delete user:', err);
     res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 });

@@ -9617,6 +9617,26 @@ input, select, textarea { font: inherit; color: var(--text); }
   font: inherit;
 }
 
+.profile-invite-card--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.admin-user-delete-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .7rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #e5484d 45%, var(--border));
+  background: color-mix(in srgb, #e5484d 8%, var(--surface));
+}
+
+.admin-user-delete-confirm-actions {
+  display: flex;
+  gap: .5rem;
+}
+
 .profile-invites-header {
   border: 1px solid var(--border);
   border-radius: 14px;
