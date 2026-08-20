@@ -1,39 +1,27 @@
 import { useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { flushSync } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  AudioLines,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
   List,
-  Metronome,
-  PenLine,
-  Play,
-  RotateCcw,
-  SlidersHorizontal,
   X,
-  Undo2,
-  Redo2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import type { LyricNoteStroke, Song } from '../types';
+import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import SongMetaBadges from './SongMetaBadges';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LyricHandNotesOverlay from './LyricHandNotesOverlay';
-import SongMediaPlayer from './SongMediaPlayer';
-import VisualMetronome from './VisualMetronome';
-import VisualTuner from './VisualTuner';
+import ConcertMetronomeFlash from './ConcertMetronomeFlash';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import type { ChordNotation } from '../utils/chordParser';
-import { transposeChord } from '../utils/chordParser';
-import { parseSongMedia } from '../utils/songMedia';
 import { getUserNoteColor } from '../lib/userColors';
 import { extractPinnedLineIds } from '../lib/lineAnchor';
-import toast from '../utils/anchoredToast';
+
+const noop = () => {};
 
 interface ActiveChord {
   chord: string;
@@ -102,7 +90,6 @@ interface Props {
   songNotes?: Record<string, string>;
   bandId?: string;
   canUseMetronome: boolean;
-  onPinTranspose: (song: Song, transpose: number) => Promise<void>;
 }
 
 export default function ConcertModeView({
@@ -112,7 +99,6 @@ export default function ConcertModeView({
   songNotes,
   bandId,
   canUseMetronome,
-  onPinTranspose,
 }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -122,18 +108,12 @@ export default function ConcertModeView({
   const [pageOffsets, setPageOffsets] = useState<number[]>([0]);
   const currentPageCount = pageOffsets.length;
   const [transpose, setTranspose] = useState(0);
-  const [showChords, setShowChords] = useState(true);
-  const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
-  const [chordNotation, setChordNotation] = useState<ChordNotation>('anglo');
+  // Display prefs are fixed in concert mode — they're set up beforehand in SongView.
+  const showChords = true;
+  const chordInstrument: DiagramInstrument = 'guitar';
+  const chordNotation: ChordNotation = 'anglo';
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
-  const [showTopbar, setShowTopbar] = useState(false);
   const [showSongNavigator, setShowSongNavigator] = useState(false);
-  const [showMetronome, setShowMetronome] = useState(false);
-  const [showTuner, setShowTuner] = useState(false);
-  const [showNotes, setShowNotes] = useState(true);
-  const [drawEnabled, setDrawEnabled] = useState(false);
-  const [showMediaPlayer, setShowMediaPlayer] = useState(false);
-  const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -204,9 +184,6 @@ export default function ConcertModeView({
   useLayoutEffect(() => {
     setCurrentPageInSong(targetPageRef.current);
     targetPageRef.current = 0;
-    setShowMediaPlayer(false);
-    setAutoPlayMediaOnOpen(false);
-    setDrawEnabled(false);
     setActiveChord(null);
   }, [currentIndex]);
 
@@ -262,40 +239,12 @@ export default function ConcertModeView({
       observer.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, showChords, transpose, chordNotation, showTopbar]);
+  }, [currentIndex, transpose]);
 
-  // Line currently being drawn on, pinned to single-row layout for the duration of the
-  // gesture so the anchor is captured against the same geometry it'll be replayed against
-  // (see anchorFromClientPoint's doc comment in lib/lineAnchor.ts).
-  const [drawingLineId, setDrawingLineId] = useState<number | null>(null);
-
-  const pinnedLineIds = useMemo(() => {
-    const ids = extractPinnedLineIds(handNotes.visibleNotes);
-    if (drawingLineId != null) ids.add(drawingLineId);
-    return ids;
-  }, [handNotes.visibleNotes, drawingLineId]);
-
-  const handleActiveLineChange = useCallback((lineId: number | null) => {
-    flushSync(() => setDrawingLineId(lineId));
-  }, []);
-
-  const handleStrokesChange = useCallback((strokes: LyricNoteStroke[]) => {
-    handNotes.saveMyNotes(strokes);
-  }, [handNotes]);
-
-  const handleClearNotes = useCallback(async () => {
-    await handNotes.clearMyNotes();
-  }, [handNotes]);
-
-  const handleToggleNotes = useCallback((next: boolean) => {
-    setShowNotes(next);
-    if (!next) setDrawEnabled(false);
-  }, []);
-
-  const handleToggleDraw = useCallback((next: boolean) => {
-    setDrawEnabled(next);
-    if (next && !showNotes) setShowNotes(true);
-  }, [showNotes]);
+  const pinnedLineIds = useMemo(
+    () => extractPinnedLineIds(handNotes.visibleNotes),
+    [handNotes.visibleNotes]
+  );
 
   const [confirmingStop, setConfirmingStop] = useState(false);
   const confirmStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -313,11 +262,6 @@ export default function ConcertModeView({
     if (confirmStopTimeoutRef.current) clearTimeout(confirmStopTimeoutRef.current);
     navigate(backRoute);
   }, [confirmingStop, navigate, backRoute]);
-
-  const handlePinTranspose = useCallback(async () => {
-    if (!activeSong) return;
-    await onPinTranspose(activeSong, transpose);
-  }, [activeSong, transpose, onPinTranspose]);
 
   const goToSong = useCallback((index: number) => {
     targetPageRef.current = 0;
@@ -360,7 +304,6 @@ export default function ConcertModeView({
   }, [goToNextPage, goToPrevPage]);
 
   const handleSurfaceTap = useCallback((e: React.MouseEvent) => {
-    if (drawEnabled) return;
     const target = e.target as HTMLElement;
     if (target.closest('button, a, input, label, select, [role="button"]')) return;
     if (activeChord) {
@@ -368,7 +311,7 @@ export default function ConcertModeView({
       return;
     }
     goToNextPage();
-  }, [drawEnabled, activeChord, goToNextPage]);
+  }, [activeChord, goToNextPage]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -423,22 +366,11 @@ export default function ConcertModeView({
 
   const canGoPrev = currentIndex > 0 || currentPageInSong > 0;
   const canGoNext = currentPageInSong < currentPageCount - 1 || currentIndex < songs.length - 1;
-  const media = currentSong.playbackUrl ? parseSongMedia(currentSong.playbackUrl) : null;
-  const isTransposePinned = currentSong.preferredTranspose === transpose;
   const currentSongNote = songNotes?.[currentSong.id]?.trim() ?? '';
 
   return (
     <section className="concert-mode">
-      <div className={`concert-topbar-toggle-row${showTopbar ? ' concert-topbar-toggle-row--with-topbar' : ''}`}>
-        <button
-          type="button"
-          className="concert-chip-btn concert-topbar-toggle-btn"
-          onClick={() => setShowTopbar((v) => !v)}
-          aria-label={showTopbar ? 'Hide toolbar' : 'Show toolbar'}
-        >
-          <SlidersHorizontal size={14} />
-          {showTopbar ? 'Hide toolbar' : 'Show toolbar'}
-        </button>
+      <div className="concert-topbar-toggle-row">
         {isMultiSong && (
           <button
             type="button"
@@ -460,348 +392,27 @@ export default function ConcertModeView({
           <X size={14} /> {confirmingStop ? 'Tap again to stop' : 'Stop Concert'}
         </button>
       </div>
-      {showTopbar && (
-        <header className="concert-topbar">
-          <div className="concert-topbar-main">
-            <Link to={backRoute} className="back-link concert-back-link"><ArrowLeft size={15} /> Back</Link>
-            {title && <h1>{title}</h1>}
-            <p>
-              {isMultiSong && (
-                <>Song {currentIndex + 1} of {songs.length} · </>
-              )}
-              {currentPageCount > 1 && (
-                <span>Page {currentPageInSong + 1} of {currentPageCount} · </span>
-              )}
-              <span className="concert-shortcut-hint">
-                Use left/right arrows to turn pages
-                {isMultiSong && <>, N for song list</>}
-              </span>
-            </p>
-          </div>
+      <header className="concert-topbar">
+        <div className="concert-topbar-main">
+          <Link to={backRoute} className="back-link concert-back-link"><ArrowLeft size={15} /> Back</Link>
+          {title && <h1>{title}</h1>}
+          <p>
+            {isMultiSong && (
+              <>Song {currentIndex + 1} of {songs.length} · </>
+            )}
+            {currentPageCount > 1 && (
+              <span>Page {currentPageInSong + 1} of {currentPageCount} · </span>
+            )}
+            <span className="concert-shortcut-hint">
+              Use left/right arrows to turn pages
+              {isMultiSong && <>, N for song list</>}
+            </span>
+          </p>
+        </div>
+      </header>
 
-          <div className="song-view-toolbar concert-song-view-toolbar">
-            <section className="song-toolbar-section song-toolbar-section--settings">
-              <div className="song-toolbar-section-head">
-                <h2 className="song-toolbar-section-title"><SlidersHorizontal size={14} /> Settings</h2>
-              </div>
-
-              <div className="song-toolbar-row song-toolbar-row--controls">
-                <div className="transpose-control song-toolbar-controls-group">
-                  <button
-                    onClick={() => setTranspose((value) => value - 1)}
-                    aria-label="Transpose down"
-                    className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="transpose-label song-toolbar-tool-btn song-toolbar-setting-label">
-                    {currentSong.key
-                      ? transpose === 0
-                        ? `Key of ${currentSong.key}`
-                        : `Key of ${transposeChord(currentSong.key, transpose)}`
-                      : transpose === 0
-                        ? 'Original key'
-                        : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
-                  </span>
-                  <button
-                    onClick={() => setTranspose((value) => value + 1)}
-                    aria-label="Transpose up"
-                    className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                  {transpose !== 0 && (
-                    <button
-                      onClick={() => setTranspose(0)}
-                      aria-label="Reset transpose"
-                      className="transpose-btn transpose-btn--reset song-toolbar-tool-btn song-toolbar-setting-btn"
-                      title="Reset to original key"
-                    >
-                      <RotateCcw size={13} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { void handlePinTranspose(); }}
-                    aria-label="Pin current transpose"
-                    className={`transpose-btn transpose-btn--pin song-toolbar-tool-btn song-toolbar-setting-btn${isTransposePinned ? ' transpose-btn--pin-active' : ''}`}
-                    title={isTransposePinned ? 'This transposition is already pinned' : 'Pin this transposition for this song'}
-                  >
-                    {isTransposePinned ? 'Pinned' : 'Pin'}
-                  </button>
-                </div>
-
-                <div className="instrument-toggle song-toolbar-controls-group">
-                  <button
-                    type="button"
-                    className={`instrument-toggle-btn${showChords ? ' instrument-toggle-btn--active' : ''}`}
-                    onClick={() => {
-                      setShowChords((prev) => {
-                        const next = !prev;
-                        if (!next) setActiveChord(null);
-                        return next;
-                      });
-                    }}
-                    aria-label={showChords ? 'Hide chords' : 'Show chords'}
-                    title={showChords ? 'Hide chords' : 'Show chords'}
-                  >
-                    Chords
-                  </button>
-                </div>
-
-                {showChords && (
-                  <>
-                    <div className="instrument-toggle song-toolbar-controls-group">
-                      <button
-                        className={`instrument-toggle-btn${chordInstrument === 'guitar' ? ' instrument-toggle-btn--active' : ''}`}
-                        onClick={() => { setChordInstrument('guitar'); setActiveChord(null); }}
-                      >
-                        Guitar
-                      </button>
-                      <button
-                        className={`instrument-toggle-btn${chordInstrument === 'ukulele' ? ' instrument-toggle-btn--active' : ''}`}
-                        onClick={() => { setChordInstrument('ukulele'); setActiveChord(null); }}
-                      >
-                        Ukulele
-                      </button>
-                      <button
-                        className={`instrument-toggle-btn${chordInstrument === 'piano' ? ' instrument-toggle-btn--active' : ''}`}
-                        onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
-                      >
-                        Piano
-                      </button>
-                    </div>
-
-                    <div className="instrument-toggle song-toolbar-controls-group">
-                      <button
-                        className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
-                        onClick={() => setChordNotation('anglo')}
-                      >
-                        C D E
-                      </button>
-                      <button
-                        className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
-                        onClick={() => setChordNotation('spanish')}
-                      >
-                        Do Re Mi
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </section>
-
-            <section className="song-toolbar-section song-toolbar-section--tools">
-              <div className="song-toolbar-section-head">
-                <h2 className="song-toolbar-section-title"><List size={14} /> Tools</h2>
-              </div>
-
-              <div className="song-toolbar-row song-toolbar-row--tool-switches">
-                <button
-                  type="button"
-                  className={`song-toolbar-tool-btn${showTuner ? ' song-toolbar-tool-btn--active' : ''}`}
-                  onClick={() => setShowTuner((value) => !value)}
-                  title={showTuner ? 'Hide tuner' : 'Show tuner'}
-                  aria-label={showTuner ? 'Hide tuner' : 'Show tuner'}
-                >
-                  <AudioLines size={14} />
-                  Tuner
-                </button>
-
-                <button
-                  type="button"
-                  className={`song-toolbar-tool-btn${showMetronome ? ' song-toolbar-tool-btn--active' : ''}${!canUseMetronome ? ' song-toolbar-tool-btn--locked' : ''}`}
-                  onClick={() => {
-                    if (!canUseMetronome) {
-                      toast.error('The metronome requires a Pro, Crew plan, or a Crew band membership.', { action: { label: 'Upgrade', href: '/upgrade' } });
-                      return;
-                    }
-                    setShowMetronome((value) => !value);
-                  }}
-                  title={!canUseMetronome ? 'Upgrade to Pro, Crew, or join a Crew band to use the metronome' : (showMetronome ? 'Hide metronome' : 'Show metronome')}
-                  aria-label={showMetronome ? 'Hide metronome' : 'Show metronome'}
-                >
-                  <Metronome size={14} />
-                  Metronome
-                </button>
-
-                {user && (
-                  <button
-                    type="button"
-                    className={`song-toolbar-tool-btn${showNotes ? ' song-toolbar-tool-btn--active' : ''}`}
-                    onClick={() => handleToggleNotes(!showNotes)}
-                    title={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
-                    aria-label={showNotes ? 'Hide handwritten notes' : 'Show handwritten notes'}
-                  >
-                    <PenLine size={14} />
-                    Notes
-                  </button>
-                )}
-
-                {media && (
-                  <button
-                    type="button"
-                    className={`song-toolbar-tool-btn${showMediaPlayer ? ' song-toolbar-tool-btn--active' : ''}`}
-                    onClick={() => {
-                      setShowMediaPlayer((value) => {
-                        const next = !value;
-                        if (next) setAutoPlayMediaOnOpen(true);
-                        return next;
-                      });
-                    }}
-                    title={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
-                    aria-label={showMediaPlayer ? 'Hide playback' : 'Open playback and play'}
-                  >
-                    <Play size={14} />
-                    Playback
-                  </button>
-                )}
-              </div>
-
-              {(showTuner || showMetronome || (user && showNotes) || (media && showMediaPlayer && currentSong.playbackUrl)) && (
-                <div className={`song-toolbar-tools-grid concert-toolbar-tools-grid${!showTopbar ? ' song-toolbar-tools-grid--floating' : ''}`}>
-                  {showTuner && (
-                    <div className="song-toolbar-tool-card">
-                      <div className="song-toolbar-tool-card-header">
-                        <span className="song-toolbar-tool-card-title">
-                          <AudioLines size={13} />
-                          Tuner
-                        </span>
-                        <button className="floating-tool-close" onClick={() => setShowTuner(false)} aria-label="Close tuner"><X size={14} /></button>
-                      </div>
-                      <VisualTuner className="song-view-tuner" />
-                    </div>
-                  )}
-
-                  {showMetronome && (
-                    <div className="song-toolbar-tool-card">
-                      <div className="song-toolbar-tool-card-header">
-                        <span className="song-toolbar-tool-card-title">
-                          <Metronome size={13} />
-                          Metronome
-                        </span>
-                        <button className="floating-tool-close" onClick={() => setShowMetronome(false)} aria-label="Close metronome"><X size={14} /></button>
-                      </div>
-                      <VisualMetronome
-                        tempo={currentSong.tempo}
-                        timeSignature={currentSong.timeSignature}
-                        className="song-view-metronome"
-                        screenFlash
-                      />
-                    </div>
-                  )}
-
-                  {user && showNotes && (
-                    <div className="song-toolbar-tool-card song-toolbar-tool-card--notes">
-                      <div className="song-toolbar-tool-card-header">
-                        <span className="song-toolbar-tool-card-title">Handwritten notes</span>
-                        <button className="floating-tool-close" onClick={() => handleToggleNotes(false)} aria-label="Close notes"><X size={14} /></button>
-                      </div>
-                      <div className="song-notes-panel">
-                        <label
-                          className={`toggle-label toggle-label--draw song-notes-draw-toggle${drawEnabled ? ' toggle-label--draw-active' : ''}`}
-                          title="Enable touch drawing"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={drawEnabled}
-                            onChange={(e) => handleToggleDraw(e.target.checked)}
-                          />
-                          Draw
-                        </label>
-
-                        {drawEnabled && (
-                          <>
-                            <button
-                              className="notes-toolbar-btn"
-                              onClick={handNotes.undoStroke}
-                              disabled={!handNotes.canUndo}
-                              title="Undo"
-                              aria-label="Undo"
-                            >
-                              <Undo2 size={12} />
-                            </button>
-                            <button
-                              className="notes-toolbar-btn"
-                              onClick={handNotes.redoStroke}
-                              disabled={!handNotes.canRedo}
-                              title="Redo"
-                              aria-label="Redo"
-                            >
-                              <Redo2 size={12} />
-                            </button>
-                            <button
-                              className="notes-toolbar-btn notes-toolbar-btn--danger"
-                              onClick={() => { void handleClearNotes(); }}
-                              disabled={handNotes.myStrokes.length === 0}
-                              title="Clear my notes"
-                            >
-                              Clear
-                            </button>
-                          </>
-                        )}
-
-                        {handNotes.saveState === 'saving' && (
-                          <span className="notes-save-status notes-save-status--saving">Saving...</span>
-                        )}
-                        {handNotes.saveState === 'saved' && (
-                          <span className="notes-save-status notes-save-status--saved">Saved</span>
-                        )}
-                        {handNotes.saveState === 'error' && (
-                          <span className="notes-save-status notes-save-status--error">Failed to save</span>
-                        )}
-
-                        {handNotes.authors.length > 0 && (
-                          <div className="notes-author-filters">
-                            {handNotes.authors.length > 1 && (
-                              <button
-                                className={`notes-author-chip${handNotes.visibleAuthorIds.length === handNotes.authors.length ? ' notes-author-chip--active' : ''}`}
-                                onClick={handNotes.showAll}
-                                title="Show all users' notes"
-                              >
-                                All
-                              </button>
-                            )}
-                            {handNotes.authors.map((author) => (
-                              <button
-                                key={author.uid}
-                                className={`notes-author-chip${handNotes.visibleAuthorIds.includes(author.uid) ? ' notes-author-chip--on' : ''}`}
-                                onClick={() => handNotes.toggleVisibleAuthor(author.uid)}
-                                title={`Toggle notes by ${author.name}`}
-                              >
-                                {author.avatar ? (
-                                  <span className="notes-author-chip-avatar">{author.avatar}</span>
-                                ) : (
-                                  <span className="notes-author-chip-initials">
-                                    {author.name.slice(0, 1).toUpperCase()}
-                                  </span>
-                                )}
-                                {author.uid === user.id ? 'Me' : author.name}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {media && showMediaPlayer && currentSong.playbackUrl && (
-                    <div className="song-toolbar-tool-card song-toolbar-tool-card--media">
-                      <div className="song-toolbar-tool-card-header">
-                        <span className="song-toolbar-tool-card-title">Playback</span>
-                        <button className="floating-tool-close" onClick={() => setShowMediaPlayer(false)} aria-label="Close playback"><X size={14} /></button>
-                      </div>
-                      <SongMediaPlayer
-                        mediaUrl={currentSong.playbackUrl}
-                        autoPlay={autoPlayMediaOnOpen}
-                        onAutoPlayHandled={() => setAutoPlayMediaOnOpen(false)}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-            </section>
-          </div>
-        </header>
+      {canUseMetronome && (
+        <ConcertMetronomeFlash tempo={currentSong.tempo} timeSignature={currentSong.timeSignature} />
       )}
 
       <div className={`concert-content-wrap${showSongNavigator && isMultiSong ? '' : ' concert-content-wrap--full'}`}>
@@ -865,7 +476,7 @@ export default function ConcertModeView({
                   timeSignature={currentSong.timeSignature}
                   instrument={chordInstrument}
                   hideMetaDirectives
-                  onChordClick={showChords && !drawEnabled
+                  onChordClick={showChords
                     ? (chord, rect) => {
                       setActiveChord((previous) =>
                         previous?.chord === chord && previous.rect.top === rect.top
@@ -877,13 +488,12 @@ export default function ConcertModeView({
                   pinnedLineIds={pinnedLineIds}
                 />
                 <LyricHandNotesOverlay
-                  visible={showNotes}
-                  drawEnabled={drawEnabled}
+                  visible
+                  drawEnabled={false}
                   notes={handNotes.visibleNotes}
                   myStrokes={handNotes.myStrokes}
                   strokeColor={getUserNoteColor(user?.id ?? null)}
-                  onMyStrokesChange={handleStrokesChange}
-                  onActiveLineChange={handleActiveLineChange}
+                  onMyStrokesChange={noop}
                 />
               </div>
             </div>

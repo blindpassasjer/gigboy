@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import BandSetlistConcertPage from './BandSetlistConcertPage';
 import type { Song } from '../types';
@@ -147,8 +147,5 @@ describe('BandSetlistConcertPage notes visibility', () => {
     });
 
     expect(screen.getByTestId('notes-overlay')).toHaveAttribute('data-note-count', '1');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Show toolbar' }));
-    expect(screen.getByRole('button', { name: 'Hide handwritten notes' })).toBeInTheDocument();
   });
 });

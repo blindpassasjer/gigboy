@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Pause, Play, Volume2, VolumeX, Plus, Minus } from 'lucide-react';
+import { parseBeatsPerBar } from '../utils/metronome';
 
 interface Props {
   tempo?: number;
@@ -8,20 +8,9 @@ interface Props {
   className?: string;
   /** When provided, syncs the metronome start/stop to external playback */
   isPlaying?: boolean;
-  /** Pulses a full-viewport edge glow on each beat, for visibility at stage distance */
-  screenFlash?: boolean;
 }
 
-function parseBeatsPerBar(timeSignature?: string): number {
-  if (!timeSignature) return 4;
-  const match = timeSignature.trim().match(/^(\d+)\s*\/\s*\d+$/);
-  if (!match) return 4;
-  const numerator = Number.parseInt(match[1], 10);
-  if (!Number.isFinite(numerator) || numerator < 1) return 4;
-  return Math.min(numerator, 12);
-}
-
-export default function VisualMetronome({ tempo, timeSignature, className = '', isPlaying, screenFlash = false }: Props) {
+export default function VisualMetronome({ tempo, timeSignature, className = '', isPlaying }: Props) {
   const baseBpm = typeof tempo === 'number' && Number.isFinite(tempo) && tempo > 0
     ? Math.round(tempo)
     : null;
@@ -211,16 +200,6 @@ export default function VisualMetronome({ tempo, timeSignature, className = '', 
           />
         ))}
       </div>
-
-      {screenFlash && isRunning &&
-        createPortal(
-          <span
-            key={tick}
-            className={`concert-metronome-flash${activeBeat === 0 ? ' is-downbeat' : ''}`}
-            aria-hidden="true"
-          />,
-          document.body
-        )}
     </div>
   );
 }

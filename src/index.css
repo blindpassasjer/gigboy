@@ -7212,14 +7212,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   margin-top: .65rem;
 }
 
-.concert-topbar-toggle-row--with-topbar {
-  margin-bottom: .4rem;
-}
-
-.concert-topbar-toggle-btn {
-  font-size: .78rem;
-}
-
 .concert-topbar {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -7256,25 +7248,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .concert-shortcut-hint {
   color: color-mix(in srgb, var(--accent) 65%, var(--muted));
-}
-
-.concert-tool-row {
-  display: flex;
-  gap: .55rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.concert-toolbar-tools-grid {
-  margin-top: .2rem;
-}
-
-.concert-topbar .song-toolbar-tool-card {
-  background: color-mix(in srgb, var(--surface) 84%, var(--bg));
-}
-
-.concert-topbar .song-toolbar-tool-card-title {
-  color: var(--text);
 }
 
 /* Floating tools panel — shown when active tools scroll out of view or topbar is hidden */
@@ -8184,10 +8157,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .concert-topbar-toggle-row {
     margin-top: .45rem;
-  }
-
-  .concert-topbar-toggle-row--with-topbar {
-    margin-bottom: .25rem;
   }
 
   .concert-topbar {

@@ -1,9 +1,7 @@
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
-import type { Song } from '../types';
 import ConcertModeView from '../components/ConcertModeView';
-import toast from '../utils/anchoredToast';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type SongPageState = {
@@ -18,7 +16,7 @@ export default function SongConcertPage() {
   const searchParams = new URLSearchParams(location.search);
   const bandIdFromQuery = searchParams.get('bandId')?.trim() || null;
 
-  const { bandSongsByBandId, updateBandSong } = useBands();
+  const { bandSongsByBandId } = useBands();
 
   const inferredBandId = id
     ? (Object.entries(bandSongsByBandId).find(([, bandSongs]) => bandSongs.some((s) => s.id === id))?.[0] ?? null)
@@ -34,17 +32,6 @@ export default function SongConcertPage() {
   const backRoute = pageState?.backTo ?? (id ? `/songs/${id}` : '/');
 
   useDocumentTitle(song ? `${song.title} — Concert Mode` : 'Concert Mode');
-
-  const handlePinTranspose = async (s: Song, transpose: number) => {
-    if (!bandId) return;
-    const nextSong: Song = {
-      ...s,
-      preferredTranspose: transpose,
-      updatedAt: new Date().toISOString(),
-    };
-    const error = await updateBandSong(bandId, nextSong);
-    if (error) toast.error(`Could not save pinned transpose: ${error}`);
-  };
 
   if (!bandId) {
     return <Navigate to="/" replace />;
@@ -66,7 +53,6 @@ export default function SongConcertPage() {
       backRoute={backRoute}
       bandId={bandId}
       canUseMetronome={canUseMetronome}
-      onPinTranspose={handlePinTranspose}
     />
   );
 }

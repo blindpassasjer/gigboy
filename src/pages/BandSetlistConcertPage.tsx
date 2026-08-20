@@ -4,7 +4,6 @@ import { ArrowLeft } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import type { Song } from '../types';
 import ConcertModeView from '../components/ConcertModeView';
-import toast from '../utils/anchoredToast';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function BandSetlistConcertPage() {
@@ -15,7 +14,6 @@ export default function BandSetlistConcertPage() {
     bandSongsByBandId,
     refreshBandSetlists,
     refreshBandSongs,
-    updateBandSong,
   } = useBands();
 
   const bandSetlists = useMemo(() => (bandId ? (bandSetlistsByBandId[bandId] ?? []) : []), [bandId, bandSetlistsByBandId]);
@@ -49,19 +47,6 @@ export default function BandSetlistConcertPage() {
 
   useDocumentTitle(setlist ? `${setlist.name} — Concert Mode` : 'Concert Mode');
 
-  const handlePinTranspose = async (song: Song, transpose: number) => {
-    if (!bandId) return;
-    const nextSong: Song = {
-      ...song,
-      preferredTranspose: transpose,
-      updatedAt: new Date().toISOString(),
-    };
-    const error = await updateBandSong(bandId, nextSong);
-    if (error) {
-      toast.error(`Could not save pinned transpose: ${error}`);
-    }
-  };
-
   if (!setlist) {
     return (
       <div className="not-found">
@@ -88,7 +73,6 @@ export default function BandSetlistConcertPage() {
       songNotes={setlist.songNotes}
       bandId={bandId}
       canUseMetronome={true}
-      onPinTranspose={handlePinTranspose}
     />
   );
 }
