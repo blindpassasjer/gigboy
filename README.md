@@ -10,13 +10,14 @@
 
 <p align="center">
   <a href="#quick-start-self-hosting">Quick start</a> ·
+  <a href="#screenshots">Screenshots</a> ·
   <a href="#features">Features</a> ·
   <a href="SELFHOSTING.md">Self-hosting guide</a> ·
   <a href="#license">License</a>
 </p>
 
 <p align="center">
-  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
+  <img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" />
   <img alt="Self-hosted" src="https://img.shields.io/badge/deployment-self--hosted-informational" />
   <img alt="Docker Compose" src="https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white" />
   <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-5A0FC8" />
@@ -31,6 +32,17 @@ one Docker Compose command, and your band's setlists, recordings, and press kit 
 database, not a startup's.
 
 No subscriptions, no per-seat pricing, no feature paywalls — every account gets full access.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/song-view.png" width="49%" alt="Song view with inline ChordPro chords" />
+  <img src="docs/screenshots/song-view-dark.png" width="49%" alt="Song view in dark mode" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/press-kit.png" width="49%" alt="Press kit editor" />
+  <img src="docs/screenshots/library.png" width="49%" alt="Band song library" />
+</p>
 
 ## Features
 
@@ -131,7 +143,7 @@ Directives use curly braces:
 {end_of_chorus}
 ```
 
-Supported directives: `title`, `subtitle`, `artist`, `start_of_verse`, `end_of_verse`, `start_of_chorus`, `end_of_chorus`, `start_of_bridge`, `end_of_bridge`.
+Supported directives: `title` (or `t`), `subtitle` (or `st`), `artist`, `intro`, `pre_chorus`, `interlude`, `solo`, `outro`, and generic `start_of_<section>` / `end_of_<section>` pairs (e.g. `start_of_verse`/`end_of_verse`, `start_of_chorus`/`end_of_chorus`, `start_of_bridge`/`end_of_bridge`, or any other section name). Tab blocks use `start_of_tab`/`sot` … `end_of_tab`/`eot`.
 
 ## Adding songs
 
@@ -153,8 +165,8 @@ builds and publishes that image, so self-hosters pull instead of building on the
 ```
 src/
   components/     UI components (Layout, Sidebar, SongList, SongView, ChordDisplay, PressKitView, …)
-  context/        SongsContext, SongListsContext, SetlistsContext, BandsContext, AuthContext
-  hooks/          useAudioRecorder, useStorageUsage, useSongRecordings, …
+  context/        AuthContext, BandsContext, DarkModeContext
+  hooks/          useStorageUsage, useSongRecordings, …
   pages/          SongPage, AddSongPage, BandDetailPage, ProfilePage, AdminInvitesPage, AdminUsersPage, TermsPage, PrivacyPage, …
   lib/            dataClient (REST API client), songbookExport (ChordPro export), chunkRecovery, …
   types/          Song, Setlist, SongList, Band, User types
@@ -188,4 +200,4 @@ graphify update .
 
 ## License
 
-MIT
+Apache License 2.0 — see [LICENSE](LICENSE).
