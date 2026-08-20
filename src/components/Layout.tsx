@@ -429,15 +429,6 @@ export default function Layout({ children }: Props) {
 
   const VIPPS_NUMBER = '+47 934 93 144';
 
-  const handleCopyVippsNumber = async () => {
-    try {
-      await navigator.clipboard.writeText(VIPPS_NUMBER);
-      toast.success('Vipps number copied.');
-    } catch {
-      toast.error('Could not copy. Number: ' + VIPPS_NUMBER);
-    }
-  };
-
   return (
     <div className="app-shell" data-library-mode={themedBandId ? 'bands' : 'solo'}>
       <header className="topbar">
@@ -481,9 +472,14 @@ export default function Layout({ children }: Props) {
                     If Gigboy's useful to you, you can send a coffee via Vipps:
                     <span className="topbar-coffee-number">{VIPPS_NUMBER}</span>
                   </p>
-                  <button type="button" className="setlist-action-btn" onClick={() => void handleCopyVippsNumber()}>
-                    Copy number
-                  </button>
+                  <a
+                    href="https://qr.vipps.no/box/26128ed0-008f-4b5a-bd8d-9a936f58cf83/pay-in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="setlist-action-btn"
+                  >
+                    Pay with Vipps
+                  </a>
                   <p>Or via Buy Me a Coffee:</p>
                   <a
                     href="https://buymeacoffee.com/blindpassasjer"
