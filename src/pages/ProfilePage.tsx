@@ -1,11 +1,10 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, LogOut, Sparkles, Trash2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
 import UserAvatar from '../components/UserAvatar';
-import { AVATAR_OPTIONS } from '../lib/avatars';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
 import { dataClient } from '../lib/dataClient';
 import { loadSongRecordings, type SongRecording } from '../lib/songRecordings';
@@ -14,7 +13,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function ProfilePage() {
   useDocumentTitle('Profile');
-  const { user, updateEmailAddress, updateUsername, updateAvatar, updateFullName, updatePassword, deleteAccount, logout } = useAuth();
+  const { user, updateEmailAddress, updateUsername, updateFullName, updatePassword, deleteAccount, logout } = useAuth();
   const {
     bands,
     loading: bandsLoading,
@@ -32,52 +31,20 @@ export default function ProfilePage() {
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
-  const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar ?? AVATAR_OPTIONS[0]);
   const [busyEmail, setBusyEmail] = useState(false);
   const [busyUsername, setBusyUsername] = useState(false);
   const [busyFullName, setBusyFullName] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [busyPassword, setBusyPassword] = useState(false);
-  const [busyAvatar, setBusyAvatar] = useState(false);
   const [busyLogout, setBusyLogout] = useState(false);
   const [busyDeleteAccount, setBusyDeleteAccount] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteStepOneConfirmed, setDeleteStepOneConfirmed] = useState(false);
   const [deleteStepTwoPhrase, setDeleteStepTwoPhrase] = useState('');
-  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
-  const avatarPickerRef = useRef<HTMLDivElement | null>(null);
-  const avatarTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const displayName = useMemo(() => user?.fullName || user?.username || user?.email || 'User', [user?.email, user?.fullName, user?.username]);
   const deletePhraseMatches = deleteStepTwoPhrase.trim().toUpperCase() === 'DELETE MY ACCOUNT';
-
-  useEffect(() => {
-    if (!avatarPickerOpen) return;
-
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (avatarPickerRef.current?.contains(target)) return;
-      if (avatarTriggerRef.current?.contains(target)) return;
-      setAvatarPickerOpen(false);
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setAvatarPickerOpen(false);
-      avatarTriggerRef.current?.focus();
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('touchstart', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [avatarPickerOpen]);
 
   if (!user) {
     return <p className="profile-settings-status">You must be signed in to manage your profile.</p>;
@@ -161,20 +128,6 @@ export default function ProfilePage() {
     setCurrentPassword('');
     setNewPassword('');
     toast.success('Password updated.');
-  };
-
-  const onSelectAvatar = async (avatar: string) => {
-    setSelectedAvatar(avatar);
-    setBusyAvatar(true);
-    const error = await updateAvatar(avatar);
-    setBusyAvatar(false);
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
-    setAvatarPickerOpen(false);
-    toast.success('Avatar updated.');
   };
 
   const onLogout = async () => {
@@ -311,42 +264,7 @@ export default function ProfilePage() {
       )}
       <header className="profile-account-hero">
         <div className="profile-account-hero-main">
-          <div className="profile-avatar-picker" ref={avatarPickerRef}>
-            <button
-              ref={avatarTriggerRef}
-              type="button"
-              className={`profile-avatar-trigger${avatarPickerOpen ? ' is-open' : ''}`}
-              aria-haspopup="dialog"
-              aria-expanded={avatarPickerOpen}
-              aria-controls="avatar-picker-box"
-              onClick={() => setAvatarPickerOpen((open) => !open)}
-            >
-              <UserAvatar avatar={user.avatar} label={displayName} size="lg" />
-              <span className="profile-avatar-trigger-label">Change avatar</span>
-            </button>
-
-            {avatarPickerOpen ? (
-              <div id="avatar-picker-box" className="profile-avatar-popover" role="dialog" aria-label="Choose avatar">
-                <div className="avatar-grid" role="radiogroup" aria-label="Choose avatar">
-                  {AVATAR_OPTIONS.map((avatar) => {
-                    const isSelected = selectedAvatar === avatar;
-                    return (
-                      <button
-                        key={avatar}
-                        type="button"
-                        className={`avatar-choice${isSelected ? ' avatar-choice--active' : ''}`}
-                        onClick={() => { void onSelectAvatar(avatar); }}
-                        aria-pressed={isSelected}
-                        disabled={busyAvatar}
-                      >
-                        <span>{avatar}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-          </div>
+          <UserAvatar label={displayName} size="lg" />
           <div className="profile-account-hero-copy">
             <span className="profile-account-kicker">Account</span>
             <h1>{displayName}</h1>

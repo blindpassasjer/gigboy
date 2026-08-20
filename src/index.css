@@ -509,12 +509,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: .85rem;
 }
 
-.topbar-coffee-number {
-  display: block;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--fg);
-}
 
 .topbar-coffee-popover-content .setlist-action-btn {
   align-self: flex-start;
@@ -3133,6 +3127,47 @@ input, select, textarea { font: inherit; color: var(--text); }
     transform: scale(1);
     opacity: .55;
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+.concert-metronome-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  animation-name: concert-edge-flash;
+  animation-duration: .32s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.concert-metronome-flash.is-downbeat {
+  animation-name: concert-edge-flash-downbeat;
+  animation-duration: .4s;
+}
+
+@keyframes concert-edge-flash {
+  0% {
+    box-shadow: inset 0 0 3rem .4rem color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+@keyframes concert-edge-flash-downbeat {
+  0% {
+    box-shadow: inset 0 0 5rem .7rem color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .concert-metronome-flash {
+    animation: none;
+    display: none;
   }
 }
 
@@ -6798,6 +6833,27 @@ input, select, textarea { font: inherit; color: var(--text); }
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
+.setlist-song-card--pulse {
+  animation-name: setlist-card-pulse;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes setlist-card-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--song-item-accent) 0%, transparent);
+  }
+  12% {
+    box-shadow: 0 0 0 .18rem color-mix(in srgb, var(--song-item-accent) 35%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setlist-song-card--pulse {
+    animation: none;
+  }
+}
+
 .setlist-reorder-btns {
   flex-shrink: 0;
   display: flex;
@@ -8667,66 +8723,6 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: 1rem;
 }
 
-.profile-avatar-picker {
-  position: relative;
-}
-
-.profile-avatar-trigger {
-  border: none;
-  background: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .35rem;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.profile-avatar-trigger .user-avatar {
-  background: none;
-  border: none;
-  font-size: 2.6rem;
-  transition: transform .08s ease, opacity .15s ease;
-}
-
-.profile-avatar-trigger:hover .user-avatar,
-.profile-avatar-trigger:focus-visible .user-avatar,
-.profile-avatar-trigger.is-open .user-avatar {
-  opacity: .8;
-}
-
-.profile-avatar-trigger:active .user-avatar {
-  transform: scale(.97);
-}
-
-.profile-avatar-trigger:focus-visible {
-  outline: none;
-}
-
-.profile-avatar-trigger-label {
-  font-size: .72rem;
-  letter-spacing: .02em;
-}
-
-.profile-avatar-popover {
-  position: absolute;
-  top: calc(100% + .7rem);
-  left: 0;
-  z-index: 15;
-  width: min(22rem, 80vw);
-  padding: .8rem;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
-  background: color-mix(in srgb, var(--surface) 94%, #fff);
-  box-shadow: 0 16px 38px rgba(0,0,0,0.16);
-  box-shadow: 0 16px 38px color-mix(in srgb, #000 16%, transparent);
-}
-
-.profile-avatar-popover .avatar-grid {
-  margin: 0;
-}
-
 .profile-account-hero-copy {
   display: flex;
   flex-direction: column;
@@ -9541,37 +9537,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .profile-settings-link {
   color: var(--muted);
   font-size: .88rem;
-}
-
-.avatar-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: .5rem;
-}
-
-.avatar-choice {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  aspect-ratio: 1 / 1;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 2.4rem;
-  font-size: 1.25rem;
-  transition: border-color .15s, transform .08s, background .15s;
-}
-
-.avatar-choice:hover {
-  border-color: var(--accent);
-}
-
-.avatar-choice--active {
-  border-color: var(--accent);
-  background: var(--chord-bg);
-}
-
-.avatar-choice:disabled {
-  opacity: .6;
-  cursor: not-allowed;
 }
 
 .profile-invites-page {
@@ -10417,16 +10382,6 @@ input, select, textarea { font: inherit; color: var(--text); }
     align-items: stretch;
   }
 
-  .profile-avatar-picker {
-    align-self: center;
-  }
-
-  .profile-avatar-popover {
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(20rem, calc(100vw - 3rem));
-  }
-
   .profile-subscription-overview,
   .profile-limit-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -10448,10 +10403,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 
   .profile-settings-card--wide {
     grid-column: span 1;
-  }
-
-  .avatar-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .bands-header,

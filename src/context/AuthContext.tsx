@@ -23,7 +23,6 @@ interface AuthContextValue {
   completeUsername: (username: string) => Promise<string | null>;
   updateEmailAddress: (email: string) => Promise<string | null>;
   updateUsername: (username: string) => Promise<string | null>;
-  updateAvatar: (avatar: string) => Promise<string | null>;
   updateFullName: (fullName: string) => Promise<string | null>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
   deleteAccount: () => Promise<string | null>;
@@ -77,12 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error;
   }, []);
 
-  const updateAvatarValue = useCallback(async (avatar: string) => {
-    const { user: updatedUser, error } = await dataClient.auth.updateAvatar(avatar);
-    if (updatedUser) setUser(updatedUser);
-    return error;
-  }, []);
-
   const updateFullNameValue = useCallback(async (fullName: string) => {
     const { user: updatedUser, error } = await dataClient.auth.updateFullName(fullName);
     if (updatedUser) setUser(updatedUser);
@@ -126,7 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       completeUsername,
       updateEmailAddress,
       updateUsername: updateUsernameValue,
-      updateAvatar: updateAvatarValue,
       updateFullName: updateFullNameValue,
       updatePassword: updatePasswordValue,
       deleteAccount: deleteAccountValue,
@@ -140,7 +132,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       completeUsername,
       updateEmailAddress,
       updateUsernameValue,
-      updateAvatarValue,
       updateFullNameValue,
       updatePasswordValue,
       deleteAccountValue,

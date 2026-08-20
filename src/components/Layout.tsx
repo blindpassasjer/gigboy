@@ -427,8 +427,6 @@ export default function Layout({ children }: Props) {
     };
   }, [coffeeOpen]);
 
-  const VIPPS_NUMBER = '+47 934 93 144';
-
   return (
     <div className="app-shell" data-library-mode={themedBandId ? 'bands' : 'solo'}>
       <header className="topbar">
@@ -468,10 +466,7 @@ export default function Layout({ children }: Props) {
                   <h2>Buy me a coffee</h2>
                 </div>
                 <div className="topbar-coffee-popover-content">
-                  <p>
-                    If Gigboy's useful to you, you can send a coffee via Vipps:
-                    <span className="topbar-coffee-number">{VIPPS_NUMBER}</span>
-                  </p>
+                  <p>If Gigboy's useful to you, you can send a coffee via Vipps:</p>
                   <a
                     href="https://qr.vipps.no/box/26128ed0-008f-4b5a-bd8d-9a936f58cf83/pay-in"
                     target="_blank"
@@ -531,7 +526,7 @@ export default function Layout({ children }: Props) {
               title={`Open profile (${user.email})`}
               aria-current={pathname === '/profile' ? 'page' : undefined}
             >
-              <UserAvatar avatar={user.avatar} label={user.username ?? user.email} size="sm" />
+              <UserAvatar label={user.fullName || user.username || user.email} size="sm" />
               <span className="topbar-link-label">Profile</span>
             </Link>
           )}

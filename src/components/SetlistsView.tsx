@@ -498,7 +498,10 @@ export default function SetlistsView({
             return (
             <Fragment key={song.id}>
               <li className="setlist-song-item">
-                <div className="setlist-song-card">
+                <div
+                  className={`setlist-song-card${song.tempo ? ' setlist-song-card--pulse' : ''}`}
+                  style={song.tempo ? { animationDuration: `${60000 / song.tempo}ms` } : undefined}
+                >
                   {reorderMode && (
                     <div className="setlist-reorder-btns">
                       <button

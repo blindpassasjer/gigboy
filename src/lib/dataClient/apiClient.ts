@@ -351,16 +351,6 @@ const authClient: AuthClient = {
       return { user: null, error: err instanceof Error ? err.message : 'Failed to update username.' };
     }
   },
-  async updateAvatar(avatar) {
-    try {
-      return await apiFetch<{ user: User | null; error: string | null }>('/auth/me', {
-        method: 'PATCH',
-        body: JSON.stringify({ avatar }),
-      });
-    } catch (err) {
-      return { user: null, error: err instanceof Error ? err.message : 'Failed to update avatar.' };
-    }
-  },
   async updateFullName(fullName) {
     try {
       return await apiFetch<{ user: User | null; error: string | null }>('/auth/me', {

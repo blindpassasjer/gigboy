@@ -1,21 +1,19 @@
 interface UserAvatarProps {
-  avatar?: string | null;
   label: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
-function fallbackInitial(label: string) {
-  const trimmed = label.trim();
-  if (!trimmed) return '?';
-  return trimmed[0]?.toUpperCase() ?? '?';
+function getInitials(label: string) {
+  const parts = label.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function UserAvatar({ avatar, label, size = 'md' }: UserAvatarProps) {
-  const resolved = avatar?.trim() || fallbackInitial(label);
-
+export default function UserAvatar({ label, size = 'md' }: UserAvatarProps) {
   return (
     <span className={`user-avatar user-avatar--${size}`} aria-hidden="true">
-      {resolved}
+      {getInitials(label)}
     </span>
   );
 }

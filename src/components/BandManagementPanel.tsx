@@ -166,13 +166,13 @@ export default function BandManagementPanel({
           const roleLabel = band.ownerId === memberId ? 'owner' : 'member';
           const username = band.memberUsernames[memberId] ?? null;
           const email = band.memberEmails[memberId] ?? 'No email saved';
-          const avatar = band.memberAvatars[memberId] ?? null;
+          const fullName = band.memberFullNames[memberId] ?? null;
           const canRemove = isOwner && memberId !== band.ownerId;
           const isCurrentUser = memberId === user?.id;
 
           return (
             <li key={memberId} className="bands-member-card">
-              <UserAvatar avatar={avatar} label={username ?? email} size="md" />
+              <UserAvatar label={fullName || username || email} size="md" />
               <div className="bands-member-copy">
                 <strong>{username ?? email}</strong>
                 <span>{username ? email : ''}</span>

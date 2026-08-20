@@ -61,7 +61,6 @@ export interface AuthClient {
   logout(): Promise<void>;
   updateEmail(email: string): Promise<{ user: User | null; error: string | null }>;
   updateUsername(username: string): Promise<{ user: User | null; error: string | null }>;
-  updateAvatar(avatar: string): Promise<{ user: User | null; error: string | null }>;
   updateFullName(fullName: string): Promise<{ user: User | null; error: string | null }>;
   /** Requires the current password (re-auth). */
   updatePassword(currentPassword: string, newPassword: string): Promise<{ error: string | null }>;

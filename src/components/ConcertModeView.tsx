@@ -685,6 +685,7 @@ export default function ConcertModeView({
                         tempo={currentSong.tempo}
                         timeSignature={currentSong.timeSignature}
                         className="song-view-metronome"
+                        screenFlash
                       />
                     </div>
                   )}
