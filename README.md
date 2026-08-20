@@ -1,27 +1,72 @@
-# GIGBOY
+<p align="center">
+  <img src="icon.png" width="96" height="96" alt="Gigboy logo" />
+</p>
 
-A web-based songbook and gig-prep tool for musicians and bands, built on **ChordPro**. Self-hosted
-only: Express + Postgres backend, deployed as a single Docker Compose stack. Runs as an
-installable PWA.
+<h1 align="center">Gigboy</h1>
+
+<p align="center">
+  <strong>The songbook and gig-prep app for bands who'd rather own their data than rent it.</strong>
+</p>
+
+<p align="center">
+  <a href="#quick-start-self-hosting">Quick start</a> ·
+  <a href="#features">Features</a> ·
+  <a href="SELFHOSTING.md">Self-hosting guide</a> ·
+  <a href="#license">License</a>
+</p>
+
+<p align="center">
+  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
+  <img alt="Self-hosted" src="https://img.shields.io/badge/deployment-self--hosted-informational" />
+  <img alt="Docker Compose" src="https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white" />
+  <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-5A0FC8" />
+</p>
+
+---
+
+Gigboy is a web app for musicians and bands to write, organize, and rehearse songs from — built
+on the open **ChordPro** format, so nothing you write is ever locked into a proprietary format or
+someone else's server. It's **self-hosted only**: you run it on your own machine, NAS, or VPS with
+one Docker Compose command, and your band's setlists, recordings, and press kit live in your own
+database, not a startup's.
+
+No subscriptions, no per-seat pricing, no feature paywalls — every account gets full access.
 
 ## Features
 
-- **ChordPro rendering** — chords displayed inline above lyrics using `[G]Amazing [C]grace` notation
-- **Transpose** — shift all chords up or down by semitone in real time
-- **Bands** — shared song libraries, songlists, and setlists with per-member roles and invites
-- **Setlists & songlists** — ordered setlists for gigs, plus freeform songlists for organizing your library
-- **Press kits, technical riders, stage plots** — shareable via public links, generated per band, with OG-tag social previews
-- **In-app rehearsal tools** — browser-based audio recorder, visual metronome, visual tuner, and hand-drawn notes overlaid on the song sheet
-- **Attachments** — attach PDFs (up to 20 MB) to a song, e.g. scanned sheet music or lyric sheets; see [src/lib/songAttachments.ts](src/lib/songAttachments.ts)
-- **Band logo upload** — set a band's logo, used across its press kit and public pages
-- **Multi-language** — songs in English, Norwegian, Spanish, Portuguese, French, Italian, German, and more
-- **Add & edit songs** — live ChordPro preview while writing
-- **Search & filter** — full-text search by title/artist/tag, filter by language
-- **Data export** — download your whole songbook (personal + every band you belong to) as plain ChordPro files from account settings, no lock-in
-- **Dark mode** — automatic system preference detection with manual toggle
-- **Offline-capable PWA** — installable, works offline via a service worker; see [chunkRecovery.ts](src/lib/chunkRecovery.ts) for how it recovers from stale-deploy cache issues
-- **Trash & restore** — soft-deleted songs, songlists, setlists, and press kits recover for 30 days before permanent deletion
-- **No plan gating** — every account gets full feature access; there's no paid tier to unlock
+### Write and read songs the way musicians actually think about them
+- **ChordPro rendering** — chords shown inline above lyrics, written as `[G]Amazing [C]grace`
+- **Transpose** — shift every chord up or down by semitone in real time, on stage or in rehearsal
+- **Live preview** while writing — see the rendered sheet as you type
+- **Search & filter** by title, artist, tag, or language — across English, Norwegian, Spanish,
+  Portuguese, French, Italian, German, and more
+
+### Built for bands, not solo users bolted onto a band feature later
+- **Shared song libraries** — every song, songlist, and setlist belongs to the band, with
+  per-member editor/viewer roles and invite links to bring people in
+- **Setlists & songlists** — ordered setlists for the actual gig, freeform songlists for
+  everything else
+- **Trash & restore** — soft-deleted songs, songlists, setlists, and press kits recover for
+  30 days before they're gone for good
+
+### Everything you need before you walk on stage
+- **Press kits, technical riders, stage plots** — build them once, share via a public link, with
+  OG-tag previews that look right when pasted into a booking email or Discord
+- **Band logo upload** — used across the press kit and public pages
+- **Attachments** — PDFs up to 20MB per song (scanned sheet music, lyric sheets, whatever the gig needs)
+
+### Rehearsal tools that live where the songs do
+- **Browser-based audio recorder** — capture a take straight from the song page, no separate app
+- **Visual metronome & tuner** — no more digging for a physical tuner mid-rehearsal
+- **Hand-drawn notes** — sketch directly on the song sheet for reminders that a text note can't capture
+
+### Your data stays yours
+- **Full export, no lock-in** — download every band's entire songbook (songs as plain ChordPro
+  files, plus every recording, press kit image, and technical rider) as a single ZIP, any time,
+  from account settings
+- **Offline-capable PWA** — install it, and it keeps working without a connection
+- **Admin-controlled storage quotas** — self-hosters can cap how much each user's bands are
+  allowed to store, right from the admin dashboard
 
 ## Tech stack
 
@@ -37,18 +82,22 @@ installable PWA.
 
 ## Quick start (self-hosting)
 
-Gigboy is meant to be run via Docker Compose — see **[SELFHOSTING.md](SELFHOSTING.md)** for the
-full setup guide, including the admin account bootstrap and invite-link flow used to add users
-(there's no open self-registration).
+Gigboy ships as a prebuilt Docker image — no build toolchain required on the machine running it,
+which matters if that machine is a NAS or another low-power box. See
+**[SELFHOSTING.md](SELFHOSTING.md)** for the full guide, including the admin account bootstrap
+and invite-link flow used to add users (there's no open self-registration).
 
 ```bash
 cp .env.example .env
 # fill in POSTGRES_PASSWORD, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Open [http://localhost:6168](http://localhost:6168) (or whatever `PORT` you set in `.env`) and log in
-with the admin account you configured.
+with the admin account you configured. From there, generate invite links to bring your bandmates in
+— every new account is a regular member by default; grant admin access to specific people
+afterward from the Users tab if you need to.
 
 ## Local development (without Docker)
 
@@ -95,8 +144,9 @@ Supported directives: `title`, `subtitle`, `artist`, `start_of_verse`, `end_of_v
 
 Deployment is Docker Compose only — see [SELFHOSTING.md](SELFHOSTING.md) for the full guide,
 including backups, updating, and the admin bootstrap/invite flow. There is no separate static
-build/hosting path: the `app` container builds the frontend and serves it alongside the API from
-the same origin.
+build/hosting path: the `app` container serves the built frontend and the API from the same origin.
+A GitHub Actions workflow ([.github/workflows/docker-publish.yml](.github/workflows/docker-publish.yml))
+builds and publishes that image, so self-hosters pull instead of building on their own hardware.
 
 ## Project structure
 
@@ -105,14 +155,14 @@ src/
   components/     UI components (Layout, Sidebar, SongList, SongView, ChordDisplay, PressKitView, …)
   context/        SongsContext, SongListsContext, SetlistsContext, BandsContext, AuthContext
   hooks/          useAudioRecorder, useStorageUsage, useSongRecordings, …
-  pages/          SongPage, AddSongPage, BandDetailPage, ProfilePage, AdminInvitesPage, TermsPage, PrivacyPage, …
+  pages/          SongPage, AddSongPage, BandDetailPage, ProfilePage, AdminInvitesPage, AdminUsersPage, TermsPage, PrivacyPage, …
   lib/            dataClient (REST API client), songbookExport (ChordPro export), chunkRecovery, …
   types/          Song, Setlist, SongList, Band, User types
   utils/          chordParser, languages
 server/
-  routes/         Express route handlers (auth, songs, bands, invites, press kits, …)
+  routes/         Express route handlers (auth, songs, bands, invites, admin users, press kits, …)
   db/             Drizzle schema, migrations, admin bootstrap
-  lib/            Server-side helpers (band logos, hand notes, recordings, press-kit OG tags)
+  lib/            Server-side helpers (band logos, hand notes, recordings, storage quotas, press-kit OG tags)
   middleware/     Session auth, admin gating
 ```
 
