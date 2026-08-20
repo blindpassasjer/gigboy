@@ -674,11 +674,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       ...song,
       id: songId,
       sortOrder: nextSortOrder,
-      ownerId: band.ownerId,
-      collaboratorIds: band.memberIds,
-      collaborationPermissions: Object.fromEntries(
-        band.memberIds.map((memberId) => [memberId, band.memberRoles[memberId] ?? 'viewer'])
-      ),
       updatedAt: new Date().toISOString(),
     };
 
@@ -714,12 +709,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     const nextSong: Song = {
       ...song,
-      ownerId: existingSong.ownerId ?? band.ownerId,
-      collaboratorIds: existingSong.collaboratorIds ?? band.memberIds,
-      collaborationPermissions: existingSong.collaborationPermissions ?? Object.fromEntries(
-        band.memberIds.map((memberId) => [memberId, band.memberRoles[memberId] ?? 'viewer'])
-      ),
-      accessRole: 'owner',
       sortOrder: song.sortOrder ?? existingSong.sortOrder,
       createdAt: existingSong.createdAt ?? song.createdAt,
       updatedAt: new Date().toISOString(),
@@ -869,12 +858,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       name: trimmedName,
       songIds: [],
       sortOrder: currentSongLists.length,
-      ownerId: band.ownerId,
-      collaboratorIds: band.memberIds,
-      collaborationPermissions: Object.fromEntries(
-        band.memberIds.map((memberId) => [memberId, band.memberRoles[memberId] ?? 'viewer'])
-      ),
-      accessRole: 'owner',
     };
 
     try {
@@ -1185,12 +1168,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       sortOrder: currentSetlists.length,
       createdAt: now,
       updatedAt: now,
-      ownerId: band.ownerId,
-      collaboratorIds: band.memberIds,
-      collaborationPermissions: Object.fromEntries(
-        band.memberIds.map((memberId) => [memberId, band.memberRoles[memberId] ?? 'viewer'])
-      ),
-      accessRole: 'owner',
     };
 
     try {
@@ -1562,8 +1539,6 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const draftRider: InputList = {
       id: crypto.randomUUID(),
       name: trimmed,
-      ownerId: band.ownerId,
-      accessRole: 'owner',
       bandName: band.name,
       sortOrder: currentRiders.length,
       createdAt: now,

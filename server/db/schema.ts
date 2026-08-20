@@ -78,8 +78,7 @@ export const songs = pgTable(
   'songs',
   {
     id: text('id').primaryKey(),
-    userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
-    bandId: text('band_id').references(() => bands.id, { onDelete: 'cascade' }),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     artist: text('artist'),
     author: text('author'),
@@ -94,48 +93,37 @@ export const songs = pgTable(
     tempo: integer('tempo'),
     timeSignature: text('time_signature'),
     sortOrder: integer('sort_order'),
-    collaboratorIds: jsonb('collaborator_ids').$type<string[]>(),
-    collaborationPermissions: jsonb('collaboration_permissions').$type<Record<string, string>>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [check('songs_owner_check', sql`num_nonnulls(${table.userId}, ${table.bandId}) = 1`)],
 );
 
 export const songLists = pgTable(
   'song_lists',
   {
     id: text('id').primaryKey(),
-    userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
-    bandId: text('band_id').references(() => bands.id, { onDelete: 'cascade' }),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     songIds: jsonb('song_ids').$type<string[]>().notNull().default([]),
     folderId: text('folder_id'),
     icon: text('icon'),
     sortOrder: integer('sort_order'),
-    collaboratorIds: jsonb('collaborator_ids').$type<string[]>(),
-    collaborationPermissions: jsonb('collaboration_permissions').$type<Record<string, string>>(),
   },
-  (table) => [check('song_lists_owner_check', sql`num_nonnulls(${table.userId}, ${table.bandId}) = 1`)],
 );
 
 export const setlists = pgTable(
   'setlists',
   {
     id: text('id').primaryKey(),
-    userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
-    bandId: text('band_id').references(() => bands.id, { onDelete: 'cascade' }),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     icon: text('icon'),
     songIds: jsonb('song_ids').$type<string[]>().notNull().default([]),
     songNotes: jsonb('song_notes').$type<Record<string, string>>(),
     sortOrder: integer('sort_order'),
-    collaboratorIds: jsonb('collaborator_ids').$type<string[]>(),
-    collaborationPermissions: jsonb('collaboration_permissions').$type<Record<string, string>>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [check('setlists_owner_check', sql`num_nonnulls(${table.userId}, ${table.bandId}) = 1`)],
 );
 
 /** One hand-drawn/typed note document per (song, author) — mirrors src/lib/songHandNotes.ts's Firestore shape. */
@@ -144,9 +132,7 @@ export const handNotes = pgTable(
   {
     id: text('id').primaryKey(),
     songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
-    scopeType: text('scope_type').notNull(),
-    /** bandId when scopeType = 'band', the owning user's id when scopeType = 'user'. */
-    scopeOwnerId: text('scope_owner_id').notNull(),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
     authorUserId: text('author_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     authorName: text('author_name'),
     authorAvatar: text('author_avatar'),
@@ -155,7 +141,6 @@ export const handNotes = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    check('hand_notes_scope_type_check', sql`${table.scopeType} in ('user', 'band')`),
     unique('hand_notes_song_author_unique').on(table.songId, table.authorUserId),
   ],
 );
@@ -166,8 +151,7 @@ export const songRecordings = pgTable(
   {
     id: text('id').primaryKey(),
     songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
-    scopeType: text('scope_type').notNull(),
-    scopeOwnerId: text('scope_owner_id').notNull(),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     storageKey: text('storage_key').notNull(),
     sizeBytes: integer('size_bytes').notNull(),
@@ -179,7 +163,6 @@ export const songRecordings = pgTable(
     recorderAvatar: text('recorder_avatar'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [check('song_recordings_scope_type_check', sql`${table.scopeType} in ('user', 'band')`)],
 );
 
 export const attachments = pgTable('attachments', {
@@ -199,14 +182,12 @@ export const trashItems = pgTable(
   'trash_items',
   {
     id: text('id').primaryKey(),
-    userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
-    bandId: text('band_id').references(() => bands.id, { onDelete: 'cascade' }),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
     itemType: text('item_type').notNull(),
     payload: jsonb('payload').notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }).notNull().defaultNow(),
     purgeAt: timestamp('purge_at', { withTimezone: true }).notNull(),
   },
-  (table) => [check('trash_items_owner_check', sql`num_nonnulls(${table.userId}, ${table.bandId}) = 1`)],
 );
 
 export const bandRiders = pgTable('band_riders', {
@@ -289,27 +270,3 @@ export const feedback = pgTable('feedback', {
   userAgent: text('user_agent'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
-
-/** Personal per-resource collaboration invites (song/songlist/setlist sharing by email) — independent of band membership. */
-export const collaborationInvites = pgTable(
-  'collaboration_invites',
-  {
-    id: text('id').primaryKey(),
-    ownerId: text('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    recipientEmail: text('recipient_email').notNull(),
-    recipientEmailLower: text('recipient_email_lower').notNull(),
-    recipientUserId: text('recipient_user_id').references(() => users.id, { onDelete: 'set null' }),
-    resourceType: text('resource_type').notNull(),
-    resourceId: text('resource_id').notNull(),
-    resourceName: text('resource_name').notNull(),
-    permission: text('permission').notNull(),
-    status: text('status').notNull().default('pending'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    respondedAt: timestamp('responded_at', { withTimezone: true }),
-  },
-  (table) => [
-    check('collaboration_invites_resource_type_check', sql`${table.resourceType} in ('song', 'songlist', 'setlist')`),
-    check('collaboration_invites_permission_check', sql`${table.permission} in ('viewer', 'editor')`),
-    check('collaboration_invites_status_check', sql`${table.status} in ('pending', 'accepted', 'declined', 'revoked')`),
-  ],
-);

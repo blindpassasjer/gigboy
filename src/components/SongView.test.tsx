@@ -6,8 +6,6 @@ import type { Song } from '../types';
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
   location: { state: null as { backTo?: string; backLabel?: string; bandId?: string } | null },
-  deleteSong: vi.fn(),
-  updateSong: vi.fn(),
   updateBandSong: vi.fn(),
   removeSongFromBandLibrary: vi.fn(),
   showConfirmToast: vi.fn(),
@@ -25,21 +23,6 @@ vi.mock('react-router-dom', async () => {
     useLocation: () => mocks.location,
   };
 });
-
-vi.mock('../context/SongsContext', () => ({
-  useSongs: () => ({
-    updateSong: mocks.updateSong,
-    deleteSong: mocks.deleteSong,
-  }),
-}));
-
-vi.mock('../context/SongListsContext', () => ({
-  useSongLists: () => ({
-    songLists: [],
-    addSongToList: vi.fn(),
-    removeSongFromList: vi.fn(),
-  }),
-}));
 
 vi.mock('../context/BandsContext', () => ({
   useBands: () => ({
@@ -75,6 +58,18 @@ vi.mock('../hooks/useSongHandNotes', () => ({
     redoStroke: vi.fn(),
     canUndo: false,
     canRedo: false,
+  }),
+}));
+
+vi.mock('../hooks/useSongRecordings', () => ({
+  useSongRecordings: () => ({
+    recordings: [],
+  }),
+}));
+
+vi.mock('../hooks/useSongAttachments', () => ({
+  useSongAttachments: () => ({
+    attachments: [],
   }),
 }));
 
@@ -141,8 +136,6 @@ describe('SongView actions', () => {
 
   beforeEach(() => {
     mocks.navigate.mockReset();
-    mocks.deleteSong.mockReset();
-    mocks.updateSong.mockReset();
     mocks.updateBandSong.mockReset();
     mocks.removeSongFromBandLibrary.mockReset();
     mocks.showConfirmToast.mockReset();
@@ -170,38 +163,21 @@ describe('SongView actions', () => {
     mocks.showConfirmToast.mockResolvedValue(true);
     mocks.removeSongFromBandLibrary.mockResolvedValue(null);
 
-    render(<SongView song={{ ...baseSong, ownerId: 'user-1', accessRole: 'owner' }} bandId="band-1" />);
+    render(<SongView song={{ ...baseSong }} bandId="band-1" />);
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Delete My Song' })[0]);
 
     await waitFor(() => {
       expect(mocks.removeSongFromBandLibrary).toHaveBeenCalledWith('band-1', 'song-1');
     });
-    expect(mocks.deleteSong).not.toHaveBeenCalled();
     expect(mocks.navigate).toHaveBeenCalledWith('/bands/band-1/library', { state });
-  });
-
-  it('deletes from solo library when not in band context', async () => {
-    const state = { backTo: '/profile', backLabel: 'Profile' };
-    mocks.location.state = state;
-    mocks.showConfirmToast.mockResolvedValue(true);
-
-    render(<SongView song={{ ...baseSong, ownerId: 'user-1', accessRole: 'owner' }} />);
-
-    fireEvent.click(screen.getAllByRole('button', { name: 'Delete My Song' })[0]);
-
-    await waitFor(() => {
-      expect(mocks.deleteSong).toHaveBeenCalledWith('song-1');
-    });
-    expect(mocks.removeSongFromBandLibrary).not.toHaveBeenCalled();
-    expect(mocks.navigate).toHaveBeenCalledWith('/profile', { state });
   });
 
   it('renames band song through band updater', async () => {
     mocks.showPromptToast.mockResolvedValue('Renamed Song');
     mocks.updateBandSong.mockResolvedValue(null);
 
-    render(<SongView song={{ ...baseSong, ownerId: 'user-1', accessRole: 'owner' }} bandId="band-1" />);
+    render(<SongView song={{ ...baseSong }} bandId="band-1" />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Rename My Song' }));
 
@@ -211,6 +187,5 @@ describe('SongView actions', () => {
         expect.objectContaining({ id: 'song-1', title: 'Renamed Song' })
       );
     });
-    expect(mocks.updateSong).not.toHaveBeenCalled();
   });
 });

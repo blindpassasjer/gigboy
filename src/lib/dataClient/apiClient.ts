@@ -5,14 +5,12 @@ import type { TrashListItem } from '../../components/TrashView';
 import type {
   AcceptInviteInput,
   AdminInvitesClient,
-  AttachmentsClient,
   AuthClient,
   BandAttachmentsClient,
   BandInvite,
   BandScopedCrudClient,
   BandsClient,
   BandTrashClient,
-  CrudClient,
   DataClient,
   InviteContext,
   PressKitImage,
@@ -23,7 +21,6 @@ import type {
   PublicPressKitsClient,
   PublicRider,
   PublicRidersClient,
-  TrashClient,
   UserInvite,
 } from './types';
 
@@ -56,36 +53,6 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>;
-}
-
-function createCrudClient<T extends { id: string }>(
-  resource: string,
-  singularKey: string,
-  pluralKey: string
-): CrudClient<T> {
-  return {
-    async list() {
-      const data = await apiFetch<Record<string, T[]>>(`/${resource}`);
-      return data[pluralKey] ?? [];
-    },
-    async create(item: T) {
-      const data = await apiFetch<Record<string, T>>(`/${resource}`, {
-        method: 'POST',
-        body: JSON.stringify(item),
-      });
-      return data[singularKey];
-    },
-    async update(item: T) {
-      const data = await apiFetch<Record<string, T>>(`/${resource}/${item.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(item),
-      });
-      return data[singularKey];
-    },
-    async remove(id: string) {
-      await apiFetch<Record<string, never>>(`/${resource}/${id}`, { method: 'DELETE' });
-    },
-  };
 }
 
 function createBandScopedCrudClient<T extends { id: string }>(
@@ -233,30 +200,6 @@ async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-function createAttachmentsClient(base: (songId: string) => string): AttachmentsClient {
-  return {
-    async list(songId) {
-      const data = await apiFetch<{ attachments: SongAttachment[] }>(base(songId));
-      return data.attachments ?? [];
-    },
-    async upload(songId, file) {
-      const formData = new FormData();
-      formData.append('file', file);
-      const data = await apiUpload<{ attachment: SongAttachment }>(base(songId), formData);
-      return data.attachment;
-    },
-    async rename(songId, attachmentId, name) {
-      await apiFetch<{ attachment: SongAttachment }>(`${base(songId)}/${attachmentId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ name }),
-      });
-    },
-    async remove(songId, attachmentId) {
-      await apiFetch<Record<string, never>>(`${base(songId)}/${attachmentId}`, { method: 'DELETE' });
-    },
-  };
-}
-
 function createBandAttachmentsClient(base: (bandId: string, songId: string) => string): BandAttachmentsClient {
   return {
     async list(bandId, songId) {
@@ -281,7 +224,6 @@ function createBandAttachmentsClient(base: (bandId: string, songId: string) => s
   };
 }
 
-const attachmentsClient = createAttachmentsClient((songId) => `/songs/${songId}/attachments`);
 const bandAttachmentsClient = createBandAttachmentsClient(
   (bandId, songId) => `/bands/${bandId}/songs/${songId}/attachments`
 );
@@ -312,28 +254,6 @@ async function runTrashMutation(action: () => Promise<unknown>, fallbackMessage:
     return err instanceof Error ? err.message : fallbackMessage;
   }
 }
-
-const trashClient: TrashClient = {
-  async list() {
-    const data = await apiFetch<{ items: TrashListItem[] }>('/trash');
-    return data.items ?? [];
-  },
-  restore(trashId) {
-    return runTrashMutation(
-      () => apiFetch(`/trash/${trashId}/restore`, { method: 'POST' }),
-      'Failed to restore item.'
-    );
-  },
-  remove(trashId) {
-    return runTrashMutation(
-      () => apiFetch(`/trash/${trashId}`, { method: 'DELETE' }),
-      'Failed to permanently delete item.'
-    );
-  },
-  empty() {
-    return runTrashMutation(() => apiFetch('/trash', { method: 'DELETE' }), 'Failed to empty trash.');
-  },
-};
 
 const bandTrashClient: BandTrashClient = {
   async list(bandId) {
@@ -486,18 +406,13 @@ const adminInvitesClient: AdminInvitesClient = {
 
 export const apiClient: DataClient = {
   auth: authClient,
-  songs: createCrudClient<Song>('songs', 'song', 'songs'),
-  songLists: createCrudClient<SongList>('song-lists', 'songList', 'songLists'),
-  setlists: createCrudClient<Setlist>('setlists', 'setlist', 'setlists'),
   bands: bandsClient,
   bandSongs: createBandScopedCrudClient<Song>('songs', 'song', 'songs'),
   bandSongLists: createBandScopedCrudClient<SongList>('song-lists', 'songList', 'songLists'),
   bandSetlists: createBandScopedCrudClient<Setlist>('setlists', 'setlist', 'setlists'),
   bandRiders: createBandScopedCrudClient<InputList>('riders', 'rider', 'riders'),
   publicRiders: publicRidersClient,
-  attachments: attachmentsClient,
   bandAttachments: bandAttachmentsClient,
-  trash: trashClient,
   bandTrash: bandTrashClient,
   bandPressKits: createBandScopedCrudClient<PressKit>('press-kits', 'pressKit', 'pressKits'),
   bandPressKitImages: bandPressKitImagesClient,

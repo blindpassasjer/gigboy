@@ -1,6 +1,5 @@
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useSongs } from '../context/SongsContext';
 import { useBands } from '../context/BandsContext';
 import type { Song } from '../types';
 import ConcertModeView from '../components/ConcertModeView';
@@ -19,17 +18,15 @@ export default function SongConcertPage() {
   const searchParams = new URLSearchParams(location.search);
   const bandIdFromQuery = searchParams.get('bandId')?.trim() || null;
 
-  const { songs } = useSongs();
   const { bandSongsByBandId, updateBandSong } = useBands();
-  const { updateSong } = useSongs();
 
   const inferredBandId = id
     ? (Object.entries(bandSongsByBandId).find(([, bandSongs]) => bandSongs.some((s) => s.id === id))?.[0] ?? null)
     : null;
-  const bandId = pageState?.bandId ?? bandIdFromQuery ?? inferredBandId ?? undefined;
+  const bandId = pageState?.bandId ?? bandIdFromQuery ?? inferredBandId ?? null;
 
   const bandSongs = bandId ? (bandSongsByBandId[bandId] ?? []) : [];
-  const song = bandSongs.find((s) => s.id === id) ?? songs.find((s) => s.id === id) ?? null;
+  const song = bandSongs.find((s) => s.id === id) ?? null;
 
   // Self-host has no plan gating — the metronome is always available.
   const canUseMetronome = true;
@@ -39,18 +36,19 @@ export default function SongConcertPage() {
   useDocumentTitle(song ? `${song.title} — Concert Mode` : 'Concert Mode');
 
   const handlePinTranspose = async (s: Song, transpose: number) => {
+    if (!bandId) return;
     const nextSong: Song = {
       ...s,
       preferredTranspose: transpose,
       updatedAt: new Date().toISOString(),
     };
-    if (bandId) {
-      const error = await updateBandSong(bandId, nextSong);
-      if (error) toast.error(`Could not save pinned transpose: ${error}`);
-    } else {
-      await updateSong(nextSong);
-    }
+    const error = await updateBandSong(bandId, nextSong);
+    if (error) toast.error(`Could not save pinned transpose: ${error}`);
   };
+
+  if (!bandId) {
+    return <Navigate to="/" replace />;
+  }
 
   if (!song) {
     return (

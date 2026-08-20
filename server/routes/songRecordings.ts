@@ -13,7 +13,7 @@ import {
   songRecordingToApi,
   streamSongRecording,
 } from '../lib/songRecordings.js';
-import { loadBandSongScope, loadPersonalSongScope, type ResolvedSongScope } from '../lib/songScope.js';
+import { loadBandSongScope, type ResolvedSongScope } from '../lib/songScope.js';
 
 function handleUploadErrors(err: unknown, res: Response): boolean {
   if (!err) return false;
@@ -115,8 +115,7 @@ function buildRecordingsRouter(
           .values({
             id,
             songId: scope.song.id,
-            scopeType: scope.scopeType,
-            scopeOwnerId: scope.scopeOwnerId,
+            bandId: scope.bandId,
             name: typeof body.name === 'string' && body.name.trim() ? body.name.trim() : 'Untitled',
             storageKey,
             sizeBytes: file.size,
@@ -198,12 +197,6 @@ function buildRecordingsRouter(
 
   return router;
 }
-
-export const songRecordingsRouter = Router({ mergeParams: true });
-songRecordingsRouter.use(requireAuth);
-songRecordingsRouter.use(
-  buildRecordingsRouter(loadPersonalSongScope, (req) => `/api/songs/${req.params.songId}/recordings`),
-);
 
 export const bandSongRecordingsRouter = Router({ mergeParams: true });
 bandSongRecordingsRouter.use(requireAuth, requireBandMember);

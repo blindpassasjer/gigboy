@@ -68,10 +68,6 @@ export default function BandTechRiderPanel({
       sortOrder: activeRider.sortOrder,
       createdAt: activeRider.createdAt,
       updatedAt: activeRider.updatedAt,
-      ownerId: activeRider.ownerId,
-      collaboratorIds: activeRider.collaboratorIds,
-      collaborationPermissions: activeRider.collaborationPermissions,
-      accessRole: activeRider.accessRole,
     };
   }, [activeRider]);
 

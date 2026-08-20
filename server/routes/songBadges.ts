@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { and, eq, inArray, or } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { attachments, bandMembers, handNotes, songRecordings, songs } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
@@ -34,18 +34,15 @@ songBadgesRouter.get('/', async (req, res) => {
 
     const memberBandRows = await db.select({ bandId: bandMembers.bandId }).from(bandMembers).where(eq(bandMembers.userId, userId));
     const memberBandIds = memberBandRows.map((row) => row.bandId);
+    if (memberBandIds.length === 0) {
+      res.json({ badges: {} });
+      return;
+    }
 
     const authorizedSongRows = await db
       .select({ id: songs.id })
       .from(songs)
-      .where(
-        and(
-          inArray(songs.id, requestedSongIds),
-          memberBandIds.length
-            ? or(eq(songs.userId, userId), inArray(songs.bandId, memberBandIds))
-            : eq(songs.userId, userId),
-        ),
-      );
+      .where(and(inArray(songs.id, requestedSongIds), inArray(songs.bandId, memberBandIds)));
     const songIds = authorizedSongRows.map((row) => row.id);
     if (songIds.length === 0) {
       res.json({ badges: {} });

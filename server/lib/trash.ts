@@ -26,8 +26,7 @@ export type TrashItemType =
 export const TRASH_RETENTION_DAYS = 30;
 
 export interface TrashScope {
-  userId?: string;
-  bandId?: string;
+  bandId: string;
 }
 
 type TrashRow = typeof trashItems.$inferSelect;
@@ -38,8 +37,7 @@ export async function insertTrashItem(scope: TrashScope, itemType: TrashItemType
   const purgeAt = new Date(deletedAt.getTime() + TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000);
   await db.insert(trashItems).values({
     id: randomUUID(),
-    userId: scope.userId ?? null,
-    bandId: scope.bandId ?? null,
+    bandId: scope.bandId,
     itemType,
     payload,
     deletedAt,
@@ -91,18 +89,6 @@ export async function permanentlyDeleteTrashRow(row: TrashRow): Promise<void> {
   await db.delete(trashItems).where(eq(trashItems.id, row.id));
 }
 
-/** Sweeps (permanently deletes) every expired trash row owned by `userId`. Call at the top of `GET /api/trash`. */
-export async function sweepExpiredPersonalTrash(userId: string): Promise<void> {
-  const now = new Date();
-  const expired = await db
-    .select()
-    .from(trashItems)
-    .where(and(eq(trashItems.userId, userId), lt(trashItems.purgeAt, now)));
-  for (const row of expired) {
-    await permanentlyDeleteTrashRow(row);
-  }
-}
-
 /** Sweeps (permanently deletes) every expired trash row scoped to `bandId`. Call at the top of the band `GET /trash`. */
 export async function sweepExpiredBandTrash(bandId: string): Promise<void> {
   const now = new Date();
@@ -138,12 +124,11 @@ export async function restoreTrashRow(row: TrashRow): Promise<RestoreResult> {
 
   switch (row.itemType) {
     case 'song': {
-      const whereCond = row.userId ? eq(songs.userId, row.userId) : eq(songs.bandId, row.bandId!);
+      const whereCond = eq(songs.bandId, row.bandId!);
       const sortOrder = await nextSortOrder(songs, whereCond);
       await db.insert(songs).values({
         id: (payload.id as string) ?? randomUUID(),
-        userId: row.userId ?? null,
-        bandId: row.bandId ?? null,
+        bandId: row.bandId!,
         title: (payload.title as string) ?? '',
         artist: (payload.artist as string | undefined) ?? null,
         author: (payload.author as string | undefined) ?? null,
@@ -164,12 +149,11 @@ export async function restoreTrashRow(row: TrashRow): Promise<RestoreResult> {
       return { ok: true };
     }
     case 'songlist': {
-      const whereCond = row.userId ? eq(songLists.userId, row.userId) : eq(songLists.bandId, row.bandId!);
+      const whereCond = eq(songLists.bandId, row.bandId!);
       const sortOrder = await nextSortOrder(songLists, whereCond);
       await db.insert(songLists).values({
         id: (payload.id as string) ?? randomUUID(),
-        userId: row.userId ?? null,
-        bandId: row.bandId ?? null,
+        bandId: row.bandId!,
         name: (payload.name as string) ?? '',
         songIds: Array.isArray(payload.songIds) ? (payload.songIds as string[]) : [],
         folderId: (payload.folderId as string | undefined) ?? null,
@@ -179,12 +163,11 @@ export async function restoreTrashRow(row: TrashRow): Promise<RestoreResult> {
       return { ok: true };
     }
     case 'setlist': {
-      const whereCond = row.userId ? eq(setlists.userId, row.userId) : eq(setlists.bandId, row.bandId!);
+      const whereCond = eq(setlists.bandId, row.bandId!);
       const sortOrder = await nextSortOrder(setlists, whereCond);
       await db.insert(setlists).values({
         id: (payload.id as string) ?? randomUUID(),
-        userId: row.userId ?? null,
-        bandId: row.bandId ?? null,
+        bandId: row.bandId!,
         name: (payload.name as string) ?? '',
         icon: (payload.icon as string | undefined) ?? null,
         songIds: Array.isArray(payload.songIds) ? (payload.songIds as string[]) : [],

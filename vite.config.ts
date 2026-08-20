@@ -159,10 +159,15 @@ export default defineConfig(({ command }) => ({
     }),
   ],
   // In Docker + browser VS Code, dev URLs are commonly exposed via a proxy path.
-  // Override with VITE_DEV_BASE if your proxy path differs.
+  // Applies to `build` too so a local `npm run build` + `server:dev` preview (single-origin,
+  // no dev-server API proxy) resolves assets correctly. VSCODE_PROXY_URI is only set inside
+  // the code-server container, so real production builds (e.g. the Docker image) are unaffected
+  // and still fall back to '/'. Override with VITE_DEV_BASE if your proxy path differs.
   base:
     process.env.VITE_BASE ??
-    (command === 'serve' ? (process.env.VITE_DEV_BASE ?? resolveDevBaseFromProxyUri() ?? '/') : '/'),
+    (command === 'serve'
+      ? (process.env.VITE_DEV_BASE ?? resolveDevBaseFromProxyUri() ?? '/')
+      : (resolveDevBaseFromProxyUri() ?? '/')),
   server: {
     allowedHosts: Array.from(
       new Set([

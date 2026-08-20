@@ -24,7 +24,7 @@ export function useSongListBadges(songs: Song[], bandId: string | undefined, cur
   useEffect(() => {
     const pendingSongIds = songs
       .filter((song) => {
-        if (!bandId && !(song.ownerId ?? currentUserId)) return false;
+        if (!bandId && !currentUserId) return false;
         return !fetchedRef.current.has(song.id);
       })
       .map((song) => song.id);

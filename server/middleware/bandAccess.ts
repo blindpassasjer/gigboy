@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { bandMembers } from '../db/schema.js';
+import { bandMembers, bands } from '../db/schema.js';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace -- standard Express request-augmentation pattern
@@ -68,6 +68,30 @@ export async function requireBandEditor(req: Request, res: Response, next: NextF
     next();
   } catch (err) {
     console.error('Band editor check failed:', err);
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+  }
+}
+
+/** Requires the caller to be the owning user of the route's band — stricter than editor. */
+export async function requireBandOwner(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const bandId = bandIdParam(req);
+    if (!bandId) {
+      res.status(404).json({ error: 'Band not found.' });
+      return;
+    }
+    const rows = await db.select({ ownerId: bands.ownerId }).from(bands).where(eq(bands.id, bandId)).limit(1);
+    if (!rows[0]) {
+      res.status(404).json({ error: 'Band not found.' });
+      return;
+    }
+    if (rows[0].ownerId !== req.userId) {
+      res.status(403).json({ error: 'Only the band owner can do this.' });
+      return;
+    }
+    next();
+  } catch (err) {
+    console.error('Band owner check failed:', err);
     res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 }

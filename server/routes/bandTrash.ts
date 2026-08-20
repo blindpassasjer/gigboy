@@ -3,7 +3,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { trashItems } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
-import { requireBandEditor, requireBandMember } from '../middleware/bandAccess.js';
+import { requireBandEditor, requireBandMember, requireBandOwner } from '../middleware/bandAccess.js';
 import {
   permanentlyDeleteTrashRow,
   restoreTrashRow,
@@ -53,7 +53,7 @@ bandTrashRouter.post('/:id/restore', requireBandEditor, async (req, res) => {
   }
 });
 
-bandTrashRouter.delete('/:id', requireBandEditor, async (req, res) => {
+bandTrashRouter.delete('/:id', requireBandOwner, async (req, res) => {
   try {
     const existing = await db
       .select()
@@ -72,7 +72,7 @@ bandTrashRouter.delete('/:id', requireBandEditor, async (req, res) => {
   }
 });
 
-bandTrashRouter.delete('/', requireBandEditor, async (req, res) => {
+bandTrashRouter.delete('/', requireBandOwner, async (req, res) => {
   try {
     const rows = await db.select().from(trashItems).where(eq(trashItems.bandId, req.params.bandId));
     for (const row of rows) {

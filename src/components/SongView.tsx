@@ -37,13 +37,10 @@ import VisualTuner from './VisualTuner';
 import { transposeChord } from '../utils/chordParser';
 import type { ChordNotation } from '../utils/chordParser';
 import { useBands } from '../context/BandsContext';
-import { useSongs } from '../context/SongsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import { useSongRecordings } from '../hooks/useSongRecordings';
 import { useSongAttachments } from '../hooks/useSongAttachments';
-import type { RecordingsScope } from '../lib/songRecordings';
-import type { AttachmentsScope } from '../lib/songAttachments';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import { getUserNoteColor } from '../lib/userColors';
@@ -60,8 +57,8 @@ import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImp
 interface Props {
   song: Song;
   accentColor?: string;
-  /** Present when song is viewed from a band context */
-  bandId?: string;
+  /** All songs are band-owned */
+  bandId: string;
 }
 
 interface ActiveChord {
@@ -90,7 +87,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const updateFromFileInputRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [toolbarVisible, setToolbarVisible] = useState(true);
-  const { updateSong, deleteSong } = useSongs();
   const {
     bands,
     bandSongListsByBandId,
@@ -99,11 +95,11 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     removeSongFromBandSongList,
     removeSongFromBandLibrary,
   } = useBands();
-  const bandSongLists = bandId ? (bandSongListsByBandId[bandId] ?? []) : [];
+  const bandSongLists = bandSongListsByBandId[bandId] ?? [];
   const { user } = useAuth();
   const availableBands = bands ?? [];
-  
-  const band = bandId ? (availableBands.find((b) => b.id === bandId) ?? null) : null;
+
+  const band = availableBands.find((b) => b.id === bandId) ?? null;
 
   // Hand notes state
   const [showNotes, setShowNotes] = useState(false);
@@ -117,20 +113,17 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const [showChordFinder, setShowChordFinder] = useState(false);
   const [autoPlayMediaOnOpen, setAutoPlayMediaOnOpen] = useState(false);
   const media = song.playbackUrl ? parseSongMedia(song.playbackUrl) : null;
-  const canDeleteSong = !song.ownerId || song.accessRole === 'owner';
-  const songPageState = pageState ?? (bandId
-    ? {
-      backTo: `/bands/${bandId}/library`,
-      backLabel: 'Band library',
-      bandId,
-    }
-    : undefined);
+  const canDeleteSong = true;
+  const songPageState = pageState ?? {
+    backTo: `/bands/${bandId}/library`,
+    backLabel: 'Band library',
+    bandId,
+  };
 
   const isBandOwner = Boolean(band && user && band.ownerId === user.id);
 
   const handNotes = useSongHandNotes({
-    ownerId: song.ownerId ?? user?.id ?? null,
-    bandId: bandId ?? null,
+    bandId,
     songId: song.id,
     user,
     enabled: Boolean(user && song.id),
@@ -155,16 +148,12 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
   const hasNotes = handNotes.notes.some((note) => note.strokes.length > 0 || (note.textNotes?.length ?? 0) > 0);
 
-  const recordingsAttachmentsScope: RecordingsScope & AttachmentsScope = bandId
-    ? { type: 'band', bandId }
-    : { type: 'user', ownerId: song.ownerId ?? user?.id ?? '' };
-
   const { recordings } = useSongRecordings({
-    scope: recordingsAttachmentsScope,
+    bandId,
     songId: user ? song.id : '',
   });
   const { attachments } = useSongAttachments({
-    scope: recordingsAttachmentsScope,
+    bandId,
     songId: user ? song.id : '',
   });
   const hasRecordings = recordings.length > 0;
@@ -294,9 +283,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
       title: trimmed,
       updatedAt: new Date().toISOString(),
     };
-    const err = bandId
-      ? await updateBandSong(bandId, nextSong)
-      : await updateSong(nextSong);
+    const err = await updateBandSong(bandId, nextSong);
     if (err) {
       toast.error(`Could not rename song: ${err}`);
     }
@@ -313,20 +300,14 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     });
     if (!confirmed) return;
 
-    if (bandId) {
-      const error = await removeSongFromBandLibrary(bandId, song.id);
-      if (error) {
-        toast.error(error);
-        return;
-      }
-
-      toast.success('Song moved to band trash.');
-      navigate(songPageState?.backTo ?? `/bands/${bandId}/library`, songPageState ? { state: songPageState } : undefined);
+    const error = await removeSongFromBandLibrary(bandId, song.id);
+    if (error) {
+      toast.error(error);
       return;
     }
 
-    await deleteSong(song.id);
-    navigate(songPageState?.backTo ?? '/', songPageState ? { state: songPageState } : undefined);
+    toast.success('Song moved to band trash.');
+    navigate(songPageState.backTo ?? `/bands/${bandId}/library`, { state: songPageState });
   }
 
   async function handlePinTranspose() {
@@ -336,9 +317,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
       updatedAt: new Date().toISOString(),
     };
 
-    const err = bandId
-      ? await updateBandSong(bandId, nextSong)
-      : await updateSong(nextSong);
+    const err = await updateBandSong(bandId, nextSong);
 
     if (err) {
       toast.error(`Could not save pinned transpose: ${err}`);
@@ -358,9 +337,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
       capo: newCapo,
       updatedAt: new Date().toISOString(),
     };
-    const err = bandId
-      ? await updateBandSong(bandId, nextSong)
-      : await updateSong(nextSong);
+    const err = await updateBandSong(bandId, nextSong);
     if (err) toast.error(`Could not update capo: ${err}`);
   }
 
@@ -398,9 +375,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
         updatedAt: new Date().toISOString(),
       };
 
-      const error = bandId
-        ? await updateBandSong(bandId, nextSong)
-        : await updateSong(nextSong);
+      const error = await updateBandSong(bandId, nextSong);
 
       if (error) {
         toast.error(`Could not update song from file: ${error}`);
@@ -892,7 +867,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
           <div className="song-toolbar-row song-toolbar-row--actions">
             <div className="song-actions">
-              {bandId && (
               <div className="add-to-list-wrap" ref={menuRef}>
                 <button
                   className="rec-btn rec-btn--toggle"
@@ -931,7 +905,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   </div>
                 )}
               </div>
-              )}
 
               <button
                 className="song-action-btn song-action-btn--import song-action-btn--labeled"

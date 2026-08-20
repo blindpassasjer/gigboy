@@ -16,7 +16,9 @@ const pg = new EmbeddedPostgres({
 
 const fresh = !fs.existsSync(dataDir);
 
-await pg.initialise();
+if (fresh) {
+  await pg.initialise();
+}
 await pg.start();
 
 if (fresh) {

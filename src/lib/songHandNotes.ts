@@ -2,23 +2,16 @@ import type { LyricNoteDocument } from '../types';
 
 /**
  * Self-host implementation of song hand notes (freehand drawings + typed annotations on song
- * lyrics), talking to `/api/songs/:songId/hand-notes` or `/api/bands/:bandId/songs/:songId/hand-notes`
- * (see server/routes/songHandNotes.ts) instead of Firestore. `subscribeToSongHandNotes` keeps its
+ * lyrics), talking to `/api/bands/:bandId/songs/:songId/hand-notes` (see
+ * server/routes/songHandNotes.ts) instead of Firestore. `subscribeToSongHandNotes` keeps its
  * old onSnapshot-shaped signature (callback in, unsubscribe function out) but is backed by polling
  * instead of a realtime listener, so `useSongHandNotes.ts` doesn't need to change its call site.
  */
 const API_BASE = '/api';
 const POLL_INTERVAL_MS = 4000;
 
-export type SongHandNotesScope =
-  | { type: 'user'; ownerId: string }
-  | { type: 'band'; bandId: string };
-
-function notesUrl(scope: SongHandNotesScope, songId: string): string {
-  if (scope.type === 'band') {
-    return `${API_BASE}/bands/${scope.bandId}/songs/${songId}/hand-notes`;
-  }
-  return `${API_BASE}/songs/${songId}/hand-notes`;
+function notesUrl(bandId: string, songId: string): string {
+  return `${API_BASE}/bands/${bandId}/songs/${songId}/hand-notes`;
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -47,7 +40,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 /** Polls the notes list every 4s (matching the realtime feel `onSnapshot` used to give) and reports changes. */
 export function subscribeToSongHandNotes(
-  scope: SongHandNotesScope,
+  bandId: string,
   songId: string,
   onUpdate: (notes: LyricNoteDocument[]) => void,
   onError?: (error: Error) => void,
@@ -57,7 +50,7 @@ export function subscribeToSongHandNotes(
 
   const poll = async () => {
     try {
-      const data = await apiFetch<{ notes: LyricNoteDocument[] }>(notesUrl(scope, songId));
+      const data = await apiFetch<{ notes: LyricNoteDocument[] }>(notesUrl(bandId, songId));
       if (cancelled) return;
       const notes = (data.notes ?? []).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       const payload = JSON.stringify(notes);
@@ -82,12 +75,12 @@ export function subscribeToSongHandNotes(
 }
 
 export async function saveSongHandNote(params: {
-  scope: SongHandNotesScope;
+  bandId: string;
   songId: string;
   note: LyricNoteDocument;
 }): Promise<void> {
-  const { scope, songId, note } = params;
-  await apiFetch(`${notesUrl(scope, songId)}/me`, {
+  const { bandId, songId, note } = params;
+  await apiFetch(`${notesUrl(bandId, songId)}/me`, {
     method: 'PUT',
     body: JSON.stringify({
       authorName: note.authorName ?? null,
@@ -99,11 +92,11 @@ export async function saveSongHandNote(params: {
 }
 
 export async function deleteSongHandNote(params: {
-  scope: SongHandNotesScope;
+  bandId: string;
   songId: string;
   authorUid: string;
 }): Promise<void> {
-  const { scope, songId, authorUid } = params;
-  const url = `${notesUrl(scope, songId)}/${authorUid}`;
+  const { bandId, songId, authorUid } = params;
+  const url = `${notesUrl(bandId, songId)}/${authorUid}`;
   await apiFetch(url, { method: 'DELETE' });
 }

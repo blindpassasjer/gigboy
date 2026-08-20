@@ -4,9 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { Theme } from '@radix-ui/themes';
 import { useBands } from './context/BandsContext';
 import { DarkModeProvider, useDarkModeContext } from './context/DarkModeContext';
-import { SongsProvider } from './context/SongsContext';
-import { SongListsProvider } from './context/SongListsContext';
-import { SetlistsProvider } from './context/SetlistsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { BandsProvider } from './context/BandsContext';
 import { isDynamicImportFailure, recoverFromDynamicImportFailure, forceReloadAfterChunkFailure } from './lib/chunkRecovery';
@@ -23,11 +20,8 @@ const BandMembersPage = lazy(() => import('./pages/BandMembersPage'));
 const SongPage = lazy(() => import('./pages/SongPage'));
 const SongConcertPage = lazy(() => import('./pages/SongConcertPage'));
 const EditSongPage = lazy(() => import('./pages/EditSongPage'));
-const ProfileInvitesPage = lazy(() => import('./pages/ProfileInvitesPage'));
 const AdminInvitesPage = lazy(() => import('./pages/AdminInvitesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const TrashPage = lazy(() => import('./pages/TrashPage'));
-const ShowcasePage = lazy(() => import('./pages/ShowcasePage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const PublicBandRiderPage = lazy(() => import('./pages/PublicBandRiderPage'));
@@ -136,63 +130,43 @@ function AuthenticatedApp() {
   if (authEnabled && user && !user.username && !isDeletingAccount) return <UsernameSetupPage />;
 
   return (
-    <SongsProvider>
-      <SongListsProvider>
-        <SetlistsProvider>
-            <BandsProvider>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<RootRedirect />} />
-                    <Route path="/bands" element={<RootRedirect />} />
-                    <Route path="/songs/new" element={<AddSongPage />} />
-                    <Route path="/songs/:id" element={<SongPage />} />
-                    <Route path="/songs/:id/concert" element={<SongConcertPage />} />
-                    <Route path="/songs/:id/edit" element={<EditSongPage />} />
-                    <Route path="/bands/:bandId/setlists/:setlistId/concert" element={<BandSetlistConcertPage />} />
-                    <Route path="/bands/:id/settings" element={<BandSettingsPage />} />
-                    <Route path="/bands/:id/members" element={<BandMembersPage />} />
-                    <Route path="/bands/:id/*" element={<BandDetailPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/profile/invites" element={<ProfileInvitesPage />} />
-                    <Route
-                      path="/admin/invites"
-                      element={
-                        <RequireAdmin>
-                          <AdminInvitesPage />
-                        </RequireAdmin>
-                      }
-                    />
-                    <Route path="/trash" element={<TrashPage />} />
-                    <Route path="*" element={<NotFoundPage />} />
-                  </Routes>
-                </Layout>
-              </BandsProvider>
-          </SetlistsProvider>
-      </SongListsProvider>
-    </SongsProvider>
+    <BandsProvider>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="/bands" element={<RootRedirect />} />
+          <Route path="/songs/new" element={<AddSongPage />} />
+          <Route path="/songs/:id" element={<SongPage />} />
+          <Route path="/songs/:id/concert" element={<SongConcertPage />} />
+          <Route path="/songs/:id/edit" element={<EditSongPage />} />
+          <Route path="/bands/:bandId/setlists/:setlistId/concert" element={<BandSetlistConcertPage />} />
+          <Route path="/bands/:id/settings" element={<BandSettingsPage />} />
+          <Route path="/bands/:id/members" element={<BandMembersPage />} />
+          <Route path="/bands/:id/*" element={<BandDetailPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route
+            path="/admin/invites"
+            element={
+              <RequireAdmin>
+                <AdminInvitesPage />
+              </RequireAdmin>
+            }
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Layout>
+    </BandsProvider>
   );
-}
-
-/** Public showcase for signed-out visitors at "/"; signed-in users fall through to their band. */
-function RootLanding() {
-  const { user, loading, authEnabled } = useAuth();
-
-  if (!loading && authEnabled && !user) {
-    return <ShowcasePage />;
-  }
-
-  return <AuthenticatedApp />;
 }
 
 const router = createBrowserRouter([
   { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
   { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
   { path: '/public/press-kit/:token', element: <PublicBandPressKitPage />, errorElement: routerErrorElement },
-  { path: '/showcase', element: <ShowcasePage />, errorElement: routerErrorElement },
   { path: '/terms', element: <TermsPage />, errorElement: routerErrorElement },
   { path: '/privacy', element: <PrivacyPage />, errorElement: routerErrorElement },
   { path: '/invite/:token', element: <AcceptInvitePage />, errorElement: routerErrorElement },
-  { path: '/', element: <RootLanding />, errorElement: routerErrorElement },
+  { path: '/', element: <AuthenticatedApp />, errorElement: routerErrorElement },
   { path: '*', element: <AuthenticatedApp />, errorElement: routerErrorElement },
 ]);
 

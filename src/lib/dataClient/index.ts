@@ -6,4 +6,4 @@ import type { DataClient } from './types';
  */
 export const dataClient: DataClient = apiClient;
 
-export type { AuthClient, CrudClient, DataClient } from './types';
+export type { AuthClient, DataClient } from './types';

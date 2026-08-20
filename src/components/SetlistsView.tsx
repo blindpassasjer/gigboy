@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { ArrowUpDown, ChevronUp, ChevronDown, Trash2, Music, Plus, Search, X, PenLine, Play, FileText, ListMusic } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Song, SongList } from '../types';
-import { useSetlists } from '../context/SetlistsContext';
+import { useBands } from '../context/BandsContext';
 import LanguageBadge from './LanguageBadge';
 import SongMetaBadges from './SongMetaBadges';
 import toast from '../utils/anchoredToast';
@@ -32,14 +32,14 @@ interface Props {
   canDeleteOverride?: boolean;
   /** Whether the current user may rename or change the icon of this setlist (defaults to true) */
   canEdit?: boolean;
-  /** Override the rename handler (skips SetlistsContext) */
+  /** Override the rename handler (skips the default band-scoped rename) */
   onRenameOverride?: (name: string) => void;
-  /** Override the delete handler (skips SetlistsContext) */
+  /** Override the delete handler (skips the default band-scoped delete) */
   onDeleteOverride?: () => void | Promise<void>;
-  /** Override the update-icon handler (skips SetlistsContext) */
+  /** Override the update-icon handler (skips the default band-scoped icon update) */
   onUpdateIconOverride?: (icon: string | undefined) => void;
-  /** Band ID — when set, song links will carry it as navigation state so SongPage can find band songs */
-  bandId?: string;
+  /** Band that owns this setlist — song links carry it as navigation state so SongPage can find band songs */
+  bandId: string;
   autoStartRenameToken?: string | number | null;
   /** Controls the header CSS variant. Use 'bands' inside the bands UI to match the songlist header style. */
   headerVariant?: 'default' | 'bands';
@@ -74,17 +74,15 @@ export default function SetlistsView({
   autoStartRenameToken = null,
   headerVariant = 'default',
 }: Props) {
-  const { renameSetlist, updateSetlistIcon, deleteSetlist, setlists } = useSetlists();
+  const { bandSetlistsByBandId, renameBandSetlist, updateBandSetlistIcon, deleteBandSetlist } = useBands();
   const { pathname } = useLocation();
   const { user } = useAuth();
   const songBadgeCounts = useSongListBadges(songs, bandId, user?.id);
-  const currentSetlist = setlists.find((l) => l.id === setlistId);
+  const currentSetlist = (bandSetlistsByBandId[bandId] ?? []).find((l) => l.id === setlistId);
   const effectiveIcon = setlistIconOverride !== undefined ? setlistIconOverride : currentSetlist?.icon;
-  const canDeleteSetlist = canDeleteOverride !== undefined
-    ? canDeleteOverride
-    : (!currentSetlist?.ownerId || currentSetlist.accessRole === 'owner');
+  const canDeleteSetlist = canDeleteOverride !== undefined ? canDeleteOverride : true;
   const effectiveConcertRoute = concertRoute
-    ?? (bandId ? `/bands/${bandId}/setlists/${setlistId}/concert` : '/bands');
+    ?? `/bands/${bandId}/setlists/${setlistId}/concert`;
   const [reorderMode, setReorderMode] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(setlistName);
@@ -277,7 +275,8 @@ export default function SetlistsView({
     });
     if (!confirmed) return;
 
-    deleteSetlist(setlistId);
+    const error = await deleteBandSetlist(bandId, setlistId);
+    if (error) toast.error(error);
   };
 
   const handleRenameCommit = () => {
@@ -286,7 +285,9 @@ export default function SetlistsView({
       if (onRenameOverride) {
         onRenameOverride(trimmed);
       } else {
-        renameSetlist(setlistId, trimmed);
+        void renameBandSetlist(bandId, setlistId, trimmed).then((error) => {
+          if (error) toast.error(error);
+        });
       }
     }
     setRenameValue(setlistName);
@@ -358,7 +359,7 @@ export default function SetlistsView({
                               if (onUpdateIconOverride) {
                                 onUpdateIconOverride(undefined);
                               } else {
-                                updateSetlistIcon(setlistId, undefined);
+                                void updateBandSetlistIcon(bandId, setlistId, undefined);
                               }
                               setIconDraft('');
                               setShowIconEditor(false);
@@ -380,7 +381,7 @@ export default function SetlistsView({
                                   if (onUpdateIconOverride) {
                                     onUpdateIconOverride(icon);
                                   } else {
-                                    updateSetlistIcon(setlistId, icon);
+                                    void updateBandSetlistIcon(bandId, setlistId, icon);
                                   }
                                   setIconDraft(emoji);
                                   setShowIconEditor(false);
@@ -400,7 +401,7 @@ export default function SetlistsView({
                             if (onUpdateIconOverride) {
                               onUpdateIconOverride(undefined);
                             } else {
-                              updateSetlistIcon(setlistId, undefined);
+                              void updateBandSetlistIcon(bandId, setlistId, undefined);
                             }
                             setIconDraft('');
                             setShowIconEditor(false);
@@ -524,7 +525,7 @@ export default function SetlistsView({
 
                   <Link
                     to={`/songs/${song.id}`}
-                    state={{ backTo: pathname, backLabel: setlistName, ...(bandId ? { bandId } : {}) }}
+                    state={{ backTo: pathname, backLabel: setlistName, bandId }}
                     className="setlist-song-link"
                   >
                     <div className="setlist-song-info">

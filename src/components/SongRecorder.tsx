@@ -4,7 +4,7 @@ import { useSongRecordings } from '../hooks/useSongRecordings';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
-import type { RecordingsScope, SongRecording } from '../lib/songRecordings';
+import type { SongRecording } from '../lib/songRecordings';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { markReloadUnsafe } from '../lib/reloadGuard';
 
@@ -13,8 +13,8 @@ const WAVEFORM_SAMPLES = 100;
 interface Props {
   song: Song;
   user: User;
-  /** Present when viewing a band song — recordings are stored under the band */
-  bandId?: string;
+  /** All songs are band-owned — recordings are stored under this band */
+  bandId: string;
 }
 
 type RecorderState = 'idle' | 'recording' | 'preview';
@@ -220,12 +220,11 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
 interface SavedPlayerProps {
   recording: SongRecording;
   currentUserId: string;
-  isBandContext: boolean;
   onDelete: (r: SongRecording) => void;
   onRename: (r: SongRecording, newName: string) => void;
 }
 
-function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRename }: SavedPlayerProps) {
+function SavedPlayer({ recording, currentUserId, onDelete, onRename }: SavedPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -279,8 +278,8 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
     onDelete(recording);
   }
 
-  const canRename = !isBandContext || recording.recorder?.userId === currentUserId;
-  const canDelete = !isBandContext || recording.recorder?.userId === currentUserId;
+  const canRename = recording.recorder?.userId === currentUserId;
+  const canDelete = recording.recorder?.userId === currentUserId;
 
   return (
     <li className="audio-player audio-player--saved">
@@ -344,7 +343,7 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
           </span>
         </div>
 
-        {isBandContext && recording.recorder && (
+        {recording.recorder && (
           <RecorderAvatar
             avatar={recording.recorder.avatar}
             name={recording.recorder.displayName}
@@ -401,14 +400,8 @@ function SavedPlayer({ recording, currentUserId, isBandContext, onDelete, onRena
 }
 
 export default function SongRecorder({ song, user, bandId }: Props) {
-  const isBandContext = Boolean(bandId);
-
-  const scope: RecordingsScope = bandId
-    ? { type: 'band', bandId }
-    : { type: 'user', ownerId: song.ownerId ?? user.id };
-
   const { recordings, loading, uploading, uploadError, uploadRecording, deleteRecording, renameRecording } = useSongRecordings({
-    scope,
+    bandId,
     songId: song.id,
   });
   const storageQuotaBytes = user.storageQuotaBytes;
@@ -762,7 +755,6 @@ export default function SongRecorder({ song, user, bandId }: Props) {
                 key={rec.id}
                 recording={rec}
                 currentUserId={user.id}
-                isBandContext={isBandContext}
                 onDelete={deleteRecording}
                 onRename={renameRecording}
               />

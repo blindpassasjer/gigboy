@@ -2,9 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Music, Newspaper, Plus, Trash2, X, ChevronsUpDown } from 'lucide-react';
-import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
-import { useSongs } from '../context/SongsContext';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
@@ -56,8 +54,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     const candidate = (state as { bandId?: unknown }).bandId;
     return typeof candidate === 'string' && candidate.trim() ? candidate : null;
   })();
-  const { songs } = useSongs();
-  const { clearActiveSelection } = useSongLists();
   const { user } = useAuth();
 
   const {
@@ -241,9 +237,11 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     refreshBandSongs,
   ]);
 
-  const clearGlobalSelection = () => {
-    clearActiveSelection();
-  };
+  // No-op: the personal songlist/setlist "active selection" concept was removed along with
+  // the personal contexts. Band-scoped pages resolve selection from the route, not a global
+  // context value, so there's nothing left to clear here — this is kept as a stable call site
+  // for the many navigation handlers below.
+  const clearGlobalSelection = () => {};
 
   const commitBand = async () => {
     const name = draftName.trim();
@@ -371,7 +369,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     ));
   };
 
-  const findSongById = (songId: string) => songs.find((entry) => entry.id === songId);
+  const findSongById = (songId: string) => (
+    Object.values(bandSongsByBandId).flat().find((entry) => entry.id === songId)
+  );
 
   const ensureBandLibraryHasSong = async (bandId: string, songId: string) => {
     const alreadyInLibrary = (bandSongsByBandId[bandId] ?? []).some((song) => song.id === songId);

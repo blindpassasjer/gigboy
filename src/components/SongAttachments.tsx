@@ -5,15 +5,15 @@ import { useBands } from '../context/BandsContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
-import type { AttachmentsScope, SongAttachment } from '../lib/songAttachments';
+import type { SongAttachment } from '../lib/songAttachments';
 import { ATTACHMENT_ACCEPTED_MIME_TYPE, ATTACHMENT_MAX_SIZE_BYTES } from '../lib/songAttachments';
 import { showConfirmToast } from '../utils/toastDialogs';
 
 interface Props {
   song: Song;
   user: User;
-  /** Present when viewing a band song — attachments are stored under the band */
-  bandId?: string;
+  /** All songs are band-owned — attachments are stored under this band */
+  bandId: string;
 }
 
 function formatFileSize(bytes: number): string {
@@ -24,13 +24,12 @@ function formatFileSize(bytes: number): string {
 interface AttachmentRowProps {
   attachment: SongAttachment;
   currentUserId: string;
-  isBandContext: boolean;
   onDelete: (a: SongAttachment) => void;
   onRename: (a: SongAttachment, newName: string) => void;
 }
 
 
-function AttachmentRow({ attachment, currentUserId, isBandContext, onDelete, onRename }: AttachmentRowProps) {
+function AttachmentRow({ attachment, currentUserId, onDelete, onRename }: AttachmentRowProps) {
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -61,7 +60,7 @@ function AttachmentRow({ attachment, currentUserId, isBandContext, onDelete, onR
     onDelete(attachment);
   }
 
-  const canManage = !isBandContext || attachment.uploader?.userId === currentUserId;
+  const canManage = attachment.uploader?.userId === currentUserId;
 
   return (
     <li className="attachment-row">
@@ -155,14 +154,8 @@ function AttachmentRow({ attachment, currentUserId, isBandContext, onDelete, onR
 }
 
 export default function SongAttachments({ song, user, bandId }: Props) {
-  const isBandContext = Boolean(bandId);
-
-  const scope: AttachmentsScope = bandId
-    ? { type: 'band', bandId }
-    : { type: 'user', ownerId: song.ownerId ?? user.id };
-
   const { attachments, loading, uploading, uploadError, uploadAttachment, deleteAttachment, renameAttachment } = useSongAttachments({
-    scope,
+    bandId,
     songId: song.id,
   });
   const { refreshBandTrash } = useBands();
@@ -232,10 +225,9 @@ export default function SongAttachments({ song, user, bandId }: Props) {
                 key={attachment.id}
                 attachment={attachment}
                 currentUserId={user.id}
-                isBandContext={isBandContext}
                 onDelete={(a) => {
                   void deleteAttachment(a).then(() => {
-                    if (bandId) void refreshBandTrash(bandId);
+                    void refreshBandTrash(bandId);
                   });
                 }}
                 onRename={renameAttachment}

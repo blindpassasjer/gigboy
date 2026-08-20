@@ -4,7 +4,6 @@ import toast from '../utils/anchoredToast';
 import { FolderInput, Plus, Search, Settings, Upload, X } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
-import { useSongs } from '../context/SongsContext';
 import SongList from '../components/SongList';
 import SetlistsView from '../components/SetlistsView';
 import BandTechRiderPanel from '../components/BandTechRiderPanel';
@@ -21,7 +20,6 @@ export default function BandDetailPage() {
   const { pathname, state } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { addSong } = useSongs();
   const {
     bands,
     bandSongsByBandId,
@@ -256,11 +254,6 @@ export default function BandDetailPage() {
           createdAt: now,
           updatedAt: now,
         };
-
-        const saveError = await addSong(song);
-        if (saveError) {
-          throw new Error(saveError);
-        }
 
         const linkError = await addSongToBandLibrary(band.id, song);
         if (linkError) {

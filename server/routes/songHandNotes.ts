@@ -6,9 +6,9 @@ import { handNotes } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
 import { requireBandMember } from '../middleware/bandAccess.js';
 import { handNoteToApi } from '../lib/handNotes.js';
-import { loadBandSongScope, loadPersonalSongScope, type ResolvedSongScope } from '../lib/songScope.js';
+import { loadBandSongScope, type ResolvedSongScope } from '../lib/songScope.js';
 
-/** Shared GET/PUT/DELETE handlers, mounted twice below for the personal and band-scoped song paths. */
+/** Shared GET/PUT/DELETE handlers, mounted below for the band-scoped song path. */
 function buildHandNotesRouter(loadScope: (req: Request, res: Response) => Promise<ResolvedSongScope | null>) {
   const router = Router({ mergeParams: true });
 
@@ -41,8 +41,7 @@ function buildHandNotesRouter(loadScope: (req: Request, res: Response) => Promis
         .values({
           id: crypto.randomUUID(),
           songId: scope.song.id,
-          scopeType: scope.scopeType,
-          scopeOwnerId: scope.scopeOwnerId,
+          bandId: scope.bandId,
           authorUserId: req.userId!,
           authorName: typeof body.authorName === 'string' ? body.authorName : null,
           authorAvatar: typeof body.authorAvatar === 'string' ? body.authorAvatar : null,
@@ -105,10 +104,6 @@ function buildHandNotesRouter(loadScope: (req: Request, res: Response) => Promis
 
   return router;
 }
-
-export const songHandNotesRouter = Router({ mergeParams: true });
-songHandNotesRouter.use(requireAuth);
-songHandNotesRouter.use(buildHandNotesRouter(loadPersonalSongScope));
 
 export const bandSongHandNotesRouter = Router({ mergeParams: true });
 bandSongHandNotesRouter.use(requireAuth, requireBandMember);

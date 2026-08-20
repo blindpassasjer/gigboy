@@ -5,35 +5,6 @@ export interface SongListCategory {
 }
 
 export type CollaborationPermission = 'viewer' | 'editor';
-export type CollaborationRole = 'owner' | CollaborationPermission;
-
-export type ShareResourceType = 'song' | 'songlist' | 'setlist';
-
-export interface CollaborationMetadata {
-  ownerId?: string;
-  collaboratorIds?: string[];
-  collaborationPermissions?: Record<string, CollaborationPermission>;
-  accessRole?: CollaborationRole;
-}
-
-export interface CollaborationInvite {
-  id: string;
-  ownerId: string;
-  ownerEmail: string;
-  ownerFullName?: string;
-  recipientUsername?: string;
-  recipientUsernameLower?: string;
-  recipientEmail: string;
-  recipientEmailLower: string;
-  recipientUid?: string;
-  resourceType: ShareResourceType;
-  resourceId: string;
-  resourceName: string;
-  permission: CollaborationPermission;
-  status: 'pending' | 'accepted' | 'declined' | 'revoked';
-  createdAt: string;
-  respondedAt?: string;
-}
 
 export interface Band {
   id: string;
@@ -54,7 +25,7 @@ export interface Band {
   updatedAt?: string;
 }
 
-export interface SongList extends CollaborationMetadata {
+export interface SongList {
   id: string;
   name: string;
   songIds: string[];
@@ -63,7 +34,7 @@ export interface SongList extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export interface Setlist extends CollaborationMetadata {
+export interface Setlist {
   id: string;
   name: string;
   icon?: string;
@@ -100,7 +71,7 @@ export interface StageplotItem {
   noChannel?: boolean;
 }
 
-export interface Stageplot extends CollaborationMetadata {
+export interface Stageplot {
   id: string;
   name: string;
   icon?: string;
@@ -114,7 +85,7 @@ export interface Stageplot extends CollaborationMetadata {
   sortOrder?: number;
 }
 
-export interface InputList extends CollaborationMetadata {
+export interface InputList {
   id: string;
   name: string;
   icon?: string;
@@ -169,7 +140,7 @@ export type Language =
   | 'la'
   | string;
 
-export interface Song extends CollaborationMetadata {
+export interface Song {
   id: string;
   title: string;
   artist?: string;

@@ -99,20 +99,6 @@ function LoginHero() {
           </li>
         ))}
       </ul>
-      <p className="login-hero-pricing">
-        Free to get started &mdash; paid plans unlock more.
-      </p>
-      <div className="login-founder">
-        <img
-          src="/founder.jpg"
-          alt="Sebastian, founder of GIGBOY, playing guitar"
-          className="login-founder-photo"
-        />
-        <p className="login-founder-copy">
-          After 20+ years touring Europe as a musician, I built the tool I always wished existed
-          &mdash; made by a musician, for musicians.
-        </p>
-      </div>
     </aside>
   );
 }
@@ -294,7 +280,6 @@ export default function LoginPage() {
           <footer className="footer">
             From Norway {'<3'} with chords
             <span className="footer-links">
-              <Link to="/showcase">See it in action</Link>
               <Link to="/terms">Terms</Link>
               <Link to="/privacy">Privacy</Link>
             </span>

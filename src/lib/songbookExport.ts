@@ -10,9 +10,6 @@ export interface PressKitImageAsset {
 }
 
 export interface SongbookExportInput {
-  songs: Song[];
-  songLists: SongList[];
-  setlists: Setlist[];
   bands: Band[];
   bandSongsByBandId: Record<string, Song[]>;
   bandSongListsByBandId: Record<string, SongList[]>;
@@ -20,8 +17,6 @@ export interface SongbookExportInput {
   bandInputListsByBandId: Record<string, InputList[]>;
   bandPressKitsByBandId: Record<string, PressKit[]>;
   bandPressKitImagesByBandId: Record<string, PressKitImageAsset[]>;
-  /** Recordings for the user's personal songs, keyed by song ID. */
-  personalRecordingsBySongId: Record<string, SongRecording[]>;
   /** Recordings for band songs, keyed by band ID then song ID. */
   bandRecordingsBySongId: Record<string, Record<string, SongRecording[]>>;
 }
@@ -208,22 +203,14 @@ async function addRecordingsFolder(
 }
 
 /**
- * Bundles everything a user owns — personal library plus every band they
- * belong to — into a single ZIP, so nothing is locked into gigboy's own
- * storage. Songs export as plain ChordPro/text files; recordings, press kit
- * images, technical riders, and press kits export as their native files.
+ * Bundles every band a user belongs to into a single ZIP, so nothing is
+ * locked into gigboy's own storage. Songs export as plain ChordPro/text
+ * files; recordings, press kit images, technical riders, and press kits
+ * export as their native files.
  */
 export async function buildSongbookExportZip(input: SongbookExportInput): Promise<Blob> {
   const zip = new JSZip();
   const generatedAt = new Date().toISOString();
-
-  const personal = zip.folder('personal');
-  if (personal) {
-    addSongsFolder(personal, input.songs);
-    addSongListsFolder(personal, input.songLists, input.songs);
-    addSetlistsFolder(personal, input.setlists, input.songs);
-    await addRecordingsFolder(personal, input.songs, input.personalRecordingsBySongId);
-  }
 
   await Promise.all(input.bands.map(async (band) => {
     const bandSongs = input.bandSongsByBandId[band.id] ?? [];

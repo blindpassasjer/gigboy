@@ -4,7 +4,6 @@ import {
   deleteSongHandNote,
   saveSongHandNote,
   subscribeToSongHandNotes,
-  type SongHandNotesScope,
 } from '../lib/songHandNotes';
 import { getUserNoteColor } from '../lib/userColors';
 import type {
@@ -19,8 +18,7 @@ function displayNameForUser(user: User) {
 }
 
 export function useSongHandNotes(params: {
-  ownerId: string | null;
-  bandId?: string | null;
+  bandId: string | null;
   songId: string;
   user: User | null;
   enabled: boolean;
@@ -28,13 +26,8 @@ export function useSongHandNotes(params: {
   /** When true, only the current user's notes are visible by default (others can be toggled on) */
   defaultToCurrentUser?: boolean;
 }) {
-  const { ownerId, bandId, songId, user, enabled, isOwner = false, defaultToCurrentUser = false } = params;
+  const { bandId, songId, user, enabled, isOwner = false, defaultToCurrentUser = false } = params;
   const userId = user?.id ?? null;
-  const scope = useMemo<SongHandNotesScope | null>(() => {
-    if (bandId) return { type: 'band', bandId };
-    if (ownerId) return { type: 'user', ownerId };
-    return null;
-  }, [bandId, ownerId]);
 
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState<LyricNoteDocument[]>([]);
@@ -66,17 +59,17 @@ export function useSongHandNotes(params: {
 
     hasManualVisibilitySelectionRef.current = false;
     setVisibleAuthorIds([]);
-  }, [enabled, ownerId, bandId, songId, userId]);
+  }, [enabled, bandId, songId, userId]);
 
   useEffect(() => {
-    if (!enabled || !scope) {
+    if (!enabled || !bandId) {
       setNotes([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const unsubscribe = subscribeToSongHandNotes(scope, songId, (loaded) => {
+    const unsubscribe = subscribeToSongHandNotes(bandId, songId, (loaded) => {
       setNotes(loaded);
       setLoading(false);
     });
@@ -85,7 +78,7 @@ export function useSongHandNotes(params: {
       unsubscribe();
       setLoading(false);
     };
-  }, [enabled, scope, songId]);
+  }, [enabled, bandId, songId]);
 
   useEffect(() => {
     if (!userId) {
@@ -163,7 +156,7 @@ export function useSongHandNotes(params: {
   }, [myNote?.strokes]);
 
   const persistStrokes = useCallback(async (strokes: LyricNoteStroke[]) => {
-    if (!scope || !userId || !user) return;
+    if (!bandId || !userId || !user) return;
 
     // Normalize all strokes to user's assigned color
     const userColor = getUserNoteColor(userId);
@@ -195,7 +188,7 @@ export function useSongHandNotes(params: {
 
     setSaveState('saving');
     try {
-      await saveSongHandNote({ scope, songId, note: nextNote });
+      await saveSongHandNote({ bandId, songId, note: nextNote });
       setSaveState('saved');
       window.setTimeout(() => {
         setSaveState((current) => (current === 'saved' ? 'idle' : current));
@@ -204,7 +197,7 @@ export function useSongHandNotes(params: {
       console.error('Failed to save song hand notes.', error);
       setSaveState('error');
     }
-  }, [scope, songId, user, userId]);
+  }, [bandId, songId, user, userId]);
 
   const saveMyNotes = useCallback(async (strokes: LyricNoteStroke[]) => {
     setUndoStack((prev) => [...prev, myStrokesRef.current].slice(-50));
@@ -233,7 +226,7 @@ export function useSongHandNotes(params: {
   }, [persistStrokes]);
 
   const saveMyTextNotes = useCallback(async (textNotes: LyricTextNote[]) => {
-    if (!scope || !userId || !user) return;
+    if (!bandId || !userId || !user) return;
 
     const userColor = getUserNoteColor(userId);
     const normalizedStrokes = (myNote?.strokes ?? []).map((stroke) => ({
@@ -263,7 +256,7 @@ export function useSongHandNotes(params: {
 
     setSaveState('saving');
     try {
-      await saveSongHandNote({ scope, songId, note: nextNote });
+      await saveSongHandNote({ bandId, songId, note: nextNote });
       setSaveState('saved');
       window.setTimeout(() => {
         setSaveState((current) => (current === 'saved' ? 'idle' : current));
@@ -272,10 +265,10 @@ export function useSongHandNotes(params: {
       console.error('Failed to save song text notes.', error);
       setSaveState('error');
     }
-  }, [myNote, scope, songId, user, userId]);
+  }, [myNote, bandId, songId, user, userId]);
 
   const clearMyNotes = useCallback(async () => {
-    if (!scope || !userId) return;
+    if (!bandId || !userId) return;
 
     setUndoStack((prev) => [...prev, myStrokesRef.current].slice(-50));
     setRedoStack([]);
@@ -285,7 +278,7 @@ export function useSongHandNotes(params: {
     setSaveState('saving');
 
     try {
-      await deleteSongHandNote({ scope, songId, authorUid: userId });
+      await deleteSongHandNote({ bandId, songId, authorUid: userId });
       setSaveState('saved');
       window.setTimeout(() => {
         setSaveState((current) => (current === 'saved' ? 'idle' : current));
@@ -295,21 +288,21 @@ export function useSongHandNotes(params: {
       setNotes(previousNotes);
       setSaveState('error');
     }
-  }, [notes, scope, songId, userId]);
+  }, [notes, bandId, songId, userId]);
 
   const deleteNotesByAuthor = useCallback(async (authorUid: string) => {
-    if (!scope || !isOwner || authorUid === userId) return;
+    if (!bandId || !isOwner || authorUid === userId) return;
 
     const previousNotes = notes;
     setNotes((prev) => prev.filter((entry) => entry.authorUid !== authorUid));
 
     try {
-      await deleteSongHandNote({ scope, songId, authorUid });
+      await deleteSongHandNote({ bandId, songId, authorUid });
     } catch (error) {
       console.error('Failed to delete notes by author.', error);
       setNotes(previousNotes);
     }
-  }, [notes, scope, songId, isOwner, userId]);
+  }, [notes, bandId, songId, isOwner, userId]);
 
   const showAll = useCallback(() => {
     hasManualVisibilitySelectionRef.current = true;

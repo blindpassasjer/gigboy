@@ -21,7 +21,3 @@ export interface SongAttachment {
   createdAt: string;
   uploader?: UploaderIdentity;
 }
-
-export type AttachmentsScope =
-  | { type: 'user'; ownerId: string }
-  | { type: 'band'; bandId: string };

@@ -4,43 +4,39 @@ import {
   loadSongRecordings,
   uploadSongRecording,
   type RecorderIdentity,
-  type RecordingsScope,
   type SongRecording,
   renameSongRecording,
 } from '../lib/songRecordings';
 
 interface Params {
-  scope: RecordingsScope;
+  bandId: string;
   songId: string;
 }
 
-export function useSongRecordings({ scope, songId }: Params) {
+export function useSongRecordings({ bandId, songId }: Params) {
   const [recordings, setRecordings] = useState<SongRecording[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const scopeKey = scope.type === 'band' ? `band:${scope.bandId}` : `user:${scope.ownerId}`;
-
   useEffect(() => {
-    if (!songId) {
+    if (!songId || !bandId) {
       setRecordings([]);
       return;
     }
     setLoading(true);
-    loadSongRecordings(scope, songId)
+    loadSongRecordings(bandId, songId)
       .then(setRecordings)
       .catch((err) => console.error('Failed to load recordings', err))
       .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeKey, songId]);
+  }, [bandId, songId]);
 
   const uploadRecording = useCallback(
     async (blob: Blob, name: string, durationMs: number, recorder: RecorderIdentity, waveformBars?: number[]) => {
       setUploading(true);
       setUploadError(null);
       try {
-        const rec = await uploadSongRecording(scope, songId, blob, name, durationMs, recorder, waveformBars);
+        const rec = await uploadSongRecording(bandId, songId, blob, name, durationMs, recorder, waveformBars);
         setRecordings((prev) => [rec, ...prev]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to save recording';
@@ -51,14 +47,13 @@ export function useSongRecordings({ scope, songId }: Params) {
         setUploading(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scopeKey, songId],
+    [bandId, songId],
   );
 
   const renameRecording = useCallback(
     async (recording: SongRecording, newName: string) => {
       try {
-        await renameSongRecording(scope, songId, recording, newName);
+        await renameSongRecording(bandId, songId, recording, newName);
         setRecordings((prev) =>
           prev.map((r) => (r.id === recording.id ? { ...r, name: newName } : r)),
         );
@@ -66,21 +61,19 @@ export function useSongRecordings({ scope, songId }: Params) {
         console.error('Failed to rename recording', err);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scopeKey, songId],
+    [bandId, songId],
   );
 
   const deleteRecording = useCallback(
     async (recording: SongRecording) => {
       try {
-        await deleteSongRecording(scope, songId, recording);
+        await deleteSongRecording(bandId, songId, recording);
         setRecordings((prev) => prev.filter((r) => r.id !== recording.id));
       } catch (err) {
         console.error('Failed to delete recording', err);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scopeKey, songId],
+    [bandId, songId],
   );
 
   return { recordings, loading, uploading, uploadError, uploadRecording, deleteRecording, renameRecording };

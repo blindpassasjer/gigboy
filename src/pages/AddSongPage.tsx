@@ -1,6 +1,4 @@
-import { useLocation } from 'react-router-dom';
-import { useSongs } from '../context/SongsContext';
-import { useSongLists } from '../context/SongListsContext';
+import { useLocation, Navigate } from 'react-router-dom';
 import { useBands } from '../context/BandsContext';
 import AddSongForm from '../components/AddSongForm';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -17,8 +15,6 @@ type AddSongScopeState = {
 export default function AddSongPage() {
   useDocumentTitle('Add Song');
   const location = useLocation();
-  const { addSong } = useSongs();
-  const { categories, songLists, activeSongListId, addSongToList } = useSongLists();
   const {
     bands,
     bandSongListsByBandId,
@@ -33,45 +29,30 @@ export default function AddSongPage() {
     && bands.some((band) => band.id === requestedScope.bandId);
   const activeBandId = hasScopedBand ? requestedScope?.bandId ?? null : null;
 
-  const categoryNameById = new Map(categories.map((category) => [category.id, category.name]));
-  const songListOptions = activeBandId
-    ? (bandSongListsByBandId[activeBandId] ?? []).map((list) => ({
-      id: list.id,
-      label: list.name,
-    }))
-    : songLists.map((list) => {
-      const categoryName = list.folderId ? categoryNameById.get(list.folderId) : undefined;
-      return {
-        id: list.id,
-        label: categoryName ? `${categoryName} / ${list.name}` : list.name,
-      };
-    });
+  if (!activeBandId) {
+    return <Navigate to="/" replace />;
+  }
 
-  const initialSongListId = activeBandId
-    ? (pageState?.initialSongListId ?? '')
-    : (activeSongListId ?? '');
-  const songPageState = activeBandId
-    ? {
-      backTo: `/bands/${activeBandId}/library`,
-      backLabel: 'Band library',
-      bandId: activeBandId,
-    }
-    : undefined;
+  const bandId: string = activeBandId;
+
+  const songListOptions = (bandSongListsByBandId[bandId] ?? []).map((list) => ({
+    id: list.id,
+    label: list.name,
+  }));
+
+  const initialSongListId = pageState?.initialSongListId ?? '';
+  const songPageState = {
+    backTo: `/bands/${bandId}/library`,
+    backLabel: 'Band library',
+    bandId,
+  };
 
   async function handleAdd(song: Song): Promise<string | null> {
-    if (activeBandId) {
-      return addSongToBandLibrary(activeBandId, song);
-    }
-
-    return addSong(song);
+    return addSongToBandLibrary(bandId, song);
   }
 
   function handleSongListChange(songListId: string, _previousSongListId: string, songId: string) {
-    if (activeBandId) {
-      void addSongToBandSongList(activeBandId, songListId, songId);
-      return;
-    }
-    addSongToList(songListId, songId);
+    void addSongToBandSongList(bandId, songListId, songId);
   }
 
   return (

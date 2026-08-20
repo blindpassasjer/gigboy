@@ -57,6 +57,13 @@
       "when": 1787118338725,
       "tag": "0007_harsh_mandroid",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787167686284,
+      "tag": "0008_thick_betty_ross",
+      "breakpoints": true
     }
   ]
 }

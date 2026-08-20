@@ -17,21 +17,14 @@ export interface SongRecording {
   waveformBars?: number[];
 }
 
-export type RecordingsScope =
-  | { type: 'user'; ownerId: string }
-  | { type: 'band'; bandId: string };
-
 /**
- * Song recordings, talking to `/api/songs/:songId/recordings` or
- * `/api/bands/:bandId/songs/:songId/recordings` (see server/routes/songRecordings.ts).
+ * Song recordings, talking to `/api/bands/:bandId/songs/:songId/recordings`
+ * (see server/routes/songRecordings.ts).
  */
 const API_BASE = '/api';
 
-function recordingsUrl(scope: RecordingsScope, songId: string): string {
-  if (scope.type === 'band') {
-    return `${API_BASE}/bands/${scope.bandId}/songs/${songId}/recordings`;
-  }
-  return `${API_BASE}/songs/${songId}/recordings`;
+function recordingsUrl(bandId: string, songId: string): string {
+  return `${API_BASE}/bands/${bandId}/songs/${songId}/recordings`;
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -58,15 +51,15 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function loadSongRecordings(
-  scope: RecordingsScope,
+  bandId: string,
   songId: string,
 ): Promise<SongRecording[]> {
-  const data = await apiFetch<{ recordings: SongRecording[] }>(recordingsUrl(scope, songId));
+  const data = await apiFetch<{ recordings: SongRecording[] }>(recordingsUrl(bandId, songId));
   return data.recordings ?? [];
 }
 
 export async function uploadSongRecording(
-  scope: RecordingsScope,
+  bandId: string,
   songId: string,
   blob: Blob,
   name: string,
@@ -84,7 +77,7 @@ export async function uploadSongRecording(
     formData.append('waveformBars', JSON.stringify(waveformBars));
   }
 
-  const data = await apiFetch<{ recording: SongRecording }>(recordingsUrl(scope, songId), {
+  const data = await apiFetch<{ recording: SongRecording }>(recordingsUrl(bandId, songId), {
     method: 'POST',
     body: formData,
   });
@@ -92,20 +85,20 @@ export async function uploadSongRecording(
 }
 
 export async function deleteSongRecording(
-  scope: RecordingsScope,
+  bandId: string,
   songId: string,
   recording: SongRecording,
 ): Promise<void> {
-  await apiFetch(`${recordingsUrl(scope, songId)}/${recording.id}`, { method: 'DELETE' });
+  await apiFetch(`${recordingsUrl(bandId, songId)}/${recording.id}`, { method: 'DELETE' });
 }
 
 export async function renameSongRecording(
-  scope: RecordingsScope,
+  bandId: string,
   songId: string,
   recording: SongRecording,
   newName: string,
 ): Promise<void> {
-  await apiFetch(`${recordingsUrl(scope, songId)}/${recording.id}`, {
+  await apiFetch(`${recordingsUrl(bandId, songId)}/${recording.id}`, {
     method: 'PATCH',
     body: JSON.stringify({ name: newName }),
   });

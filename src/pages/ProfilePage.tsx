@@ -4,9 +4,6 @@ import { Download, LogOut, Sparkles, Trash2 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
-import { useSongs } from '../context/SongsContext';
-import { useSongLists } from '../context/SongListsContext';
-import { useSetlists } from '../context/SetlistsContext';
 import UserAvatar from '../components/UserAvatar';
 import { AVATAR_OPTIONS } from '../lib/avatars';
 import { normalizeUsername, validateUsername } from '../lib/userProfiles';
@@ -31,9 +28,6 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [newBandName, setNewBandName] = useState('');
   const [busyCreateBand, setBusyCreateBand] = useState(false);
-  const { songs } = useSongs();
-  const { songLists } = useSongLists();
-  const { setlists } = useSetlists();
   const [busyExport, setBusyExport] = useState(false);
   const [email, setEmail] = useState(user?.email ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
@@ -224,15 +218,6 @@ export default function ProfilePage() {
   const handleExportData = async () => {
     setBusyExport(true);
     try {
-      const personalRecordingsBySongId: Record<string, SongRecording[]> = {};
-      await Promise.all(songs.map(async (song) => {
-        try {
-          personalRecordingsBySongId[song.id] = await loadSongRecordings({ type: 'user', ownerId: user.id }, song.id);
-        } catch {
-          personalRecordingsBySongId[song.id] = [];
-        }
-      }));
-
       const bandRecordingsBySongId: Record<string, Record<string, SongRecording[]>> = {};
       const bandPressKitImagesByBandId: Record<string, PressKitImageAsset[]> = {};
       await Promise.all(bands.map(async (band) => {
@@ -240,7 +225,7 @@ export default function ProfilePage() {
         const recordingsBySongId: Record<string, SongRecording[]> = {};
         await Promise.all(bandSongs.map(async (song) => {
           try {
-            recordingsBySongId[song.id] = await loadSongRecordings({ type: 'band', bandId: band.id }, song.id);
+            recordingsBySongId[song.id] = await loadSongRecordings(band.id, song.id);
           } catch {
             recordingsBySongId[song.id] = [];
           }
@@ -258,9 +243,6 @@ export default function ProfilePage() {
       }));
 
       const blob = await buildSongbookExportZip({
-        songs,
-        songLists,
-        setlists,
         bands,
         bandSongsByBandId,
         bandSongListsByBandId,
@@ -268,7 +250,6 @@ export default function ProfilePage() {
         bandInputListsByBandId,
         bandPressKitsByBandId,
         bandPressKitImagesByBandId,
-        personalRecordingsBySongId,
         bandRecordingsBySongId,
       });
       triggerSongbookExportDownload(blob);
@@ -467,7 +448,7 @@ export default function ProfilePage() {
           <div className="profile-section-heading">
             <div>
               <h2>Export your data</h2>
-              <p className="profile-settings-muted">Download your whole songbook — personal songs plus every band you belong to — as plain ChordPro files. Yours to keep, no matter what.</p>
+              <p className="profile-settings-muted">Download your whole songbook — every band you belong to — as plain ChordPro files. Yours to keep, no matter what.</p>
             </div>
           </div>
           <button

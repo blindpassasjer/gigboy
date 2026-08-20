@@ -144,7 +144,6 @@ export default function ConcertModeView({
   const isMultiSong = songs.length > 1;
   const activeSong = songs[currentIndex] ?? null;
   const handNotes = useSongHandNotes({
-    ownerId: activeSong?.ownerId ?? user?.id ?? null,
     bandId: bandId ?? null,
     songId: activeSong?.id ?? '',
     user,

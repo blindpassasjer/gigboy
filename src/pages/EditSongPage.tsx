@@ -1,7 +1,5 @@
-import { useLocation, useParams, Link } from 'react-router-dom';
+import { useLocation, useParams, Link, Navigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useSongs } from '../context/SongsContext';
-import { useSongLists } from '../context/SongListsContext';
 import { useBands } from '../context/BandsContext';
 import AddSongForm from '../components/AddSongForm';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -16,41 +14,30 @@ type SongPageState = {
 export default function EditSongPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
-  const { songs, updateSong } = useSongs();
-  const { categories, songLists, activeSongListId, addSongToList, removeSongFromList } = useSongLists();
   const { bandSongsByBandId, bandSongListsByBandId, addSongToBandSongList, removeSongFromBandSongList, updateBandSong } = useBands();
   const pageState = location.state as SongPageState | null;
-  const bandId = pageState?.bandId;
-  const bandSongs = bandId ? (bandSongsByBandId[bandId] ?? []) : [];
-  const song = bandSongs.find((s) => s.id === id) ?? songs.find((s) => s.id === id);
+  const scopedBandId = pageState?.bandId ?? null;
+  const bandSongs = scopedBandId ? (bandSongsByBandId[scopedBandId] ?? []) : [];
+  const song = bandSongs.find((s) => s.id === id);
 
   useDocumentTitle(song ? `Edit ${song.title}` : 'Edit Song');
 
-  const categoryNameById = new Map(categories.map((category) => [category.id, category.name]));
-  const songListOptions = (bandId
-    ? (bandSongListsByBandId[bandId] ?? []).map((list) => ({
-      id: list.id,
-      label: list.name,
-    }))
-    : songLists.map((list) => {
-    const categoryName = list.folderId ? categoryNameById.get(list.folderId) : undefined;
-    return {
-      id: list.id,
-      label: categoryName ? `${categoryName} / ${list.name}` : list.name,
-    };
+  if (!scopedBandId) {
+    return <Navigate to="/" replace />;
+  }
+
+  const bandId: string = scopedBandId;
+
+  const songListOptions = (bandSongListsByBandId[bandId] ?? []).map((list) => ({
+    id: list.id,
+    label: list.name,
   }));
 
   const initialSongListId =
-    (bandId
-      ? (bandSongListsByBandId[bandId] ?? []).find((list) => (song ? list.songIds.includes(song.id) : false))?.id
-      : (activeSongListId ?? songLists.find((list) => (song ? list.songIds.includes(song.id) : false))?.id)) ??
-    '';
+    (bandSongListsByBandId[bandId] ?? []).find((list) => (song ? list.songIds.includes(song.id) : false))?.id ?? '';
 
   async function handleSave(updatedSong: Song): Promise<string | null> {
-    if (bandId) {
-      return updateBandSong(bandId, updatedSong);
-    }
-    return updateSong(updatedSong);
+    return updateBandSong(bandId, updatedSong);
   }
 
   if (!song) {
@@ -72,20 +59,11 @@ export default function EditSongPage() {
         songListOptions={songListOptions}
         initialSongListId={initialSongListId}
         onSongListChange={(nextSongListId, previousSongListId, songId) => {
-          if (bandId) {
-            if (previousSongListId && previousSongListId !== nextSongListId) {
-              void removeSongFromBandSongList(bandId, previousSongListId, songId);
-            }
-            if (nextSongListId) {
-              void addSongToBandSongList(bandId, nextSongListId, songId);
-            }
-            return;
-          }
           if (previousSongListId && previousSongListId !== nextSongListId) {
-            removeSongFromList(previousSongListId, songId);
+            void removeSongFromBandSongList(bandId, previousSongListId, songId);
           }
           if (nextSongListId) {
-            addSongToList(nextSongListId, songId);
+            void addSongToBandSongList(bandId, nextSongListId, songId);
           }
         }}
         songPageState={pageState ?? undefined}
