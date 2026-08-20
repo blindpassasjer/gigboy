@@ -15,6 +15,7 @@ services:
       retries: 10
 
   app:
+    image: ghcr.io/blindpassasjer/gigboy:latest
     build: .
     restart: unless-stopped
     depends_on:

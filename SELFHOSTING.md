@@ -42,8 +42,19 @@ uploaded files.
 5. Bring the stack up:
 
    ```sh
-   docker compose up -d --build
+   docker compose pull
+   docker compose up -d
    ```
+
+   This pulls the prebuilt `app` image from GHCR instead of compiling it on your device. On a
+   NAS or other low-power hardware, building the image in place (`--build`) runs a full
+   Node/Vite/TypeScript build inside the container and can spike CPU/RAM enough to make the
+   Docker engine or container manager UI become unresponsive — pulling the prebuilt image
+   avoids that entirely. Only use `--build` if you're developing locally on a machine with
+   plenty of RAM, or have modified the source and want to build your own image.
+
+   The GHCR package (`ghcr.io/blindpassasjer/gigboy`) is public, so `docker compose pull`
+   works with no login on the NAS.
 
    Docker Compose auto-loads `.env` from the project directory — no `--env-file` flag needed,
    whether you're using the CLI or a GUI container tool (Synology/QNAP/UGREEN-style Docker
@@ -121,7 +132,8 @@ to 20MB — Express itself already accepts them.
 
 ```sh
 git pull
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Migrations run automatically on startup, so new schema changes are applied before the app
