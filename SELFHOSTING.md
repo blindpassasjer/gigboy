@@ -118,10 +118,19 @@ bind-mounted host folders next to your `docker-compose.yml`, not named Docker vo
 survive `docker compose down` and container restarts/rebuilds; they're only removed if you
 delete the `data/` folder yourself.
 
-Note: Postgres runs as an unprivileged user inside its container, so `./data/postgres` needs to
-be writable by that user. If the `postgres` container fails to start with a permissions error on
-first run, fix ownership on the host, e.g. `sudo chown -R 999:999 ./data/postgres` (999 is the
-default `postgres` UID/GID in the `postgres:16-alpine` image).
+Note: Postgres runs as the `PUID`/`PGID` set in `.env` (defaults to `999:999`, the built-in
+`postgres` user), and `./data/postgres` needs to be owned by that same UID/GID on the host —
+Compose creates the folder on first run, but as `root`, so Postgres will fail to start with a
+permissions error unless you fix ownership first:
+
+```sh
+mkdir -p data/postgres data/attachments
+chown -R 999:999 data/postgres   # or your custom PUID:PGID if you changed it in .env
+```
+
+If you'd rather Postgres's files be owned by your own host user (so you can browse/back them up
+without `sudo`), set `PUID`/`PGID` in `.env` to your `id -u`/`id -g` and `chown` accordingly
+before the first `docker compose up`.
 
 ## Backing up
 

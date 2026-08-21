@@ -123,7 +123,11 @@ interface BandsContextValue {
   updateBandSong: (bandId: string, song: Song) => Promise<string | null>;
   removeSongFromBandLibrary: (bandId: string, songId: string) => Promise<string | null>;
   moveBandSong: (bandId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
-  addBandSongList: (bandId: string, name: string) => Promise<{ songListId: string | null; error: string | null }>;
+  addBandSongList: (
+    bandId: string,
+    name: string,
+    initial?: { songIds?: string[]; icon?: string },
+  ) => Promise<{ songListId: string | null; error: string | null }>;
   renameBandSongList: (bandId: string, songListId: string, name: string) => Promise<string | null>;
   updateBandSongListIcon: (bandId: string, songListId: string, icon?: string) => Promise<string | null>;
   updateBandLibraryAppearance: (bandId: string, appearance: { icon?: string; color?: string }) => Promise<string | null>;
@@ -132,7 +136,11 @@ interface BandsContextValue {
   addSongToBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
   removeSongFromBandSongList: (bandId: string, songListId: string, songId: string) => Promise<string | null>;
   moveSongInBandSongList: (bandId: string, songListId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
-  addBandSetlist: (bandId: string, name: string) => Promise<{ setlistId: string | null; error: string | null }>;
+  addBandSetlist: (
+    bandId: string,
+    name: string,
+    initial?: { songIds?: string[]; songNotes?: Record<string, string>; icon?: string },
+  ) => Promise<{ setlistId: string | null; error: string | null }>;
   renameBandSetlist: (bandId: string, setlistId: string, name: string) => Promise<string | null>;
   updateBandSetlistIcon: (bandId: string, setlistId: string, icon?: string) => Promise<string | null>;
   deleteBandSetlist: (bandId: string, setlistId: string) => Promise<string | null>;
@@ -144,7 +152,17 @@ interface BandsContextValue {
   deleteBandPressKit: (bandId: string, kitId: string) => Promise<string | null>;
   renameBandPressKit: (bandId: string, kitId: string, name: string) => Promise<string | null>;
   updateBandPressKitIcon: (bandId: string, kitId: string, icon?: string) => Promise<string | null>;
-  addBandInputList: (bandId: string, name: string) => Promise<{ riderId: string | null; error: string | null }>;
+  addBandInputList: (
+    bandId: string,
+    name: string,
+    initial?: {
+      icon?: string;
+      hospitalityNotes?: string;
+      logisticsNotes?: string;
+      items?: StageplotItem[];
+      drawingLayers?: SongHandNoteDocument[];
+    },
+  ) => Promise<{ riderId: string | null; error: string | null }>;
   renameBandInputList: (bandId: string, riderId: string, name: string) => Promise<string | null>;
   updateBandInputListIcon: (bandId: string, riderId: string, icon?: string) => Promise<string | null>;
   setBandInputListPublicShare: (bandId: string, riderId: string, enabled: boolean) => Promise<string | null>;
@@ -832,7 +850,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandSongsByBandId, bands, userId]);
 
-  const addBandSongList = useCallback(async (bandId: string, name: string) => {
+  const addBandSongList = useCallback(async (
+    bandId: string,
+    name: string,
+    initial?: { songIds?: string[]; icon?: string },
+  ) => {
     if (!userId) {
       return { songListId: null, error: 'Band songlists require a signed-in account.' };
     }
@@ -857,7 +879,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const nextSongList: SongList = {
       id: songListId,
       name: trimmedName,
-      songIds: [],
+      songIds: initial?.songIds ?? [],
+      icon: initial?.icon,
       sortOrder: currentSongLists.length,
     };
 
@@ -1138,7 +1161,11 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandSongListsByBandId, bands, userId]);
 
-  const addBandSetlist = useCallback(async (bandId: string, name: string) => {
+  const addBandSetlist = useCallback(async (
+    bandId: string,
+    name: string,
+    initial?: { songIds?: string[]; songNotes?: Record<string, string>; icon?: string },
+  ) => {
     if (!userId) {
       return { setlistId: null, error: 'Band setlists require a signed-in account.' };
     }
@@ -1165,7 +1192,9 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const nextSetlist: Setlist = {
       id: setlistId,
       name: trimmedName,
-      songIds: [],
+      icon: initial?.icon,
+      songIds: initial?.songIds ?? [],
+      songNotes: initial?.songNotes,
       sortOrder: currentSetlists.length,
       createdAt: now,
       updatedAt: now,
@@ -1520,7 +1549,17 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandSetlistsByBandId, bands, userId]);
 
-  const addBandInputList = useCallback(async (bandId: string, name: string) => {
+  const addBandInputList = useCallback(async (
+    bandId: string,
+    name: string,
+    initial?: {
+      icon?: string;
+      hospitalityNotes?: string;
+      logisticsNotes?: string;
+      items?: StageplotItem[];
+      drawingLayers?: SongHandNoteDocument[];
+    },
+  ) => {
     if (!userId || !user?.email) {
       return { riderId: null, error: 'Band riders require cloud sync.' };
     }
@@ -1540,7 +1579,12 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     const draftRider: InputList = {
       id: generateId(),
       name: trimmed,
+      icon: initial?.icon,
       bandName: band.name,
+      hospitalityNotes: initial?.hospitalityNotes,
+      logisticsNotes: initial?.logisticsNotes,
+      items: initial?.items,
+      drawingLayers: initial?.drawingLayers,
       sortOrder: currentRiders.length,
       createdAt: now,
       updatedAt: now,

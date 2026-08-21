@@ -54,6 +54,88 @@ function setlistToManifest(setlist: Setlist, songs: Song[]): string {
   return [`Setlist: ${setlist.name}`, '', ...lines].join('\n');
 }
 
+/** Portable song reference: songs are matched by title+artist on import, since IDs don't carry across accounts/instances. */
+function songRef(song: Song, note?: string): { title: string; artist: string | null; note?: string } {
+  return note !== undefined
+    ? { title: song.title, artist: song.artist ?? null, note }
+    : { title: song.title, artist: song.artist ?? null };
+}
+
+function songListToJson(list: SongList, songs: Song[], generatedAt: string): string {
+  const songById = new Map(songs.map((song) => [song.id, song]));
+  const refs = list.songIds
+    .map((id) => songById.get(id))
+    .filter((song): song is Song => Boolean(song))
+    .map((song) => songRef(song));
+  return JSON.stringify({
+    type: 'gigboy.songlist',
+    version: 1,
+    exportedAt: generatedAt,
+    name: list.name,
+    icon: list.icon ?? null,
+    songs: refs,
+  }, null, 2);
+}
+
+function setlistToJson(setlist: Setlist, songs: Song[], generatedAt: string): string {
+  const songById = new Map(songs.map((song) => [song.id, song]));
+  const refs = setlist.songIds
+    .map((id) => songById.get(id))
+    .filter((song): song is Song => Boolean(song))
+    .map((song) => songRef(song, setlist.songNotes?.[song.id]));
+  return JSON.stringify({
+    type: 'gigboy.setlist',
+    version: 1,
+    exportedAt: generatedAt,
+    name: setlist.name,
+    icon: setlist.icon ?? null,
+    songs: refs,
+  }, null, 2);
+}
+
+function riderToJson(rider: InputList, generatedAt: string): string {
+  return JSON.stringify({
+    type: 'gigboy.technicalRider',
+    version: 1,
+    exportedAt: generatedAt,
+    name: rider.name,
+    icon: rider.icon ?? null,
+    hospitalityNotes: rider.hospitalityNotes ?? null,
+    logisticsNotes: rider.logisticsNotes ?? null,
+    items: rider.items ?? [],
+    drawingLayers: rider.drawingLayers ?? [],
+  }, null, 2);
+}
+
+function pressKitToJson(
+  kit: PressKit,
+  imagesById: Map<string, PressKitImageAsset>,
+  generatedAt: string,
+): string {
+  const images = kit.imageIds
+    .map((id) => imagesById.get(id))
+    .filter((img): img is PressKitImageAsset => Boolean(img))
+    .map((img) => ({
+      title: img.title,
+      filename: `${sanitizeFileName(img.title)}.${extensionFromImageMimeType(img.mimeType)}`,
+    }));
+  return JSON.stringify({
+    type: 'gigboy.pressKit',
+    version: 1,
+    exportedAt: generatedAt,
+    name: kit.name,
+    icon: kit.icon ?? null,
+    richText: kit.richText,
+    images,
+    videoUrls: kit.videoUrls ?? [],
+    selectedVideoUrls: kit.selectedVideoUrls ?? [],
+    presaveReleaseName: kit.presaveReleaseName ?? null,
+    presaveReleaseDate: kit.presaveReleaseDate ?? null,
+    presaveUrls: kit.presaveUrls ?? [],
+    selectedPresaveUrls: kit.selectedPresaveUrls ?? [],
+  }, null, 2);
+}
+
 function addSongsFolder(zip: JSZip, songs: Song[]) {
   if (songs.length === 0) return;
   const folder = zip.folder('songs');
@@ -70,27 +152,33 @@ function addSongsFolder(zip: JSZip, songs: Song[]) {
   });
 }
 
-function addSongListsFolder(zip: JSZip, songLists: SongList[], songs: Song[]) {
+function addSongListsFolder(zip: JSZip, songLists: SongList[], songs: Song[], generatedAt: string) {
   if (songLists.length === 0) return;
   const folder = zip.folder('songlists');
   songLists.forEach((list) => {
-    folder?.file(`${sanitizeFileName(list.name)}.txt`, songListToManifest(list, songs));
+    const baseName = sanitizeFileName(list.name);
+    folder?.file(`${baseName}.txt`, songListToManifest(list, songs));
+    folder?.file(`${baseName}.json`, songListToJson(list, songs, generatedAt));
   });
 }
 
-function addSetlistsFolder(zip: JSZip, setlists: Setlist[], songs: Song[]) {
+function addSetlistsFolder(zip: JSZip, setlists: Setlist[], songs: Song[], generatedAt: string) {
   if (setlists.length === 0) return;
   const folder = zip.folder('setlists');
   setlists.forEach((setlist) => {
-    folder?.file(`${sanitizeFileName(setlist.name)}.txt`, setlistToManifest(setlist, songs));
+    const baseName = sanitizeFileName(setlist.name);
+    folder?.file(`${baseName}.txt`, setlistToManifest(setlist, songs));
+    folder?.file(`${baseName}.json`, setlistToJson(setlist, songs, generatedAt));
   });
 }
 
-function addInputListsFolder(zip: JSZip, riders: InputList[]) {
+function addInputListsFolder(zip: JSZip, riders: InputList[], generatedAt: string) {
   if (riders.length === 0) return;
   const folder = zip.folder('technical-riders');
   riders.forEach((rider) => {
-    folder?.file(`${sanitizeFileName(rider.name)}.txt`, riderAsText(rider));
+    const baseName = sanitizeFileName(rider.name);
+    folder?.file(`${baseName}.txt`, riderAsText(rider));
+    folder?.file(`${baseName}.json`, riderToJson(rider, generatedAt));
   });
 }
 
@@ -117,13 +205,19 @@ async function addPressKitImagesFolder(zip: JSZip, images: PressKitImageAsset[])
   }
 }
 
-function addPressKitsFolder(zip: JSZip, kits: PressKit[], imagesById: Map<string, PressKitImageAsset>) {
+function addPressKitsFolder(
+  zip: JSZip,
+  kits: PressKit[],
+  imagesById: Map<string, PressKitImageAsset>,
+  generatedAt: string,
+) {
   if (kits.length === 0) return;
   const folder = zip.folder('press-kits');
   kits.forEach((kit) => {
     const kitFolder = folder?.folder(sanitizeFileName(kit.name));
     if (!kitFolder) return;
     if (kit.richText) kitFolder.file('content.html', kit.richText);
+    kitFolder.file('kit.json', pressKitToJson(kit, imagesById, generatedAt));
     const attachedImageNames = kit.imageIds
       .map((id) => imagesById.get(id)?.title)
       .filter((title): title is string => Boolean(title));
@@ -234,11 +328,11 @@ export async function buildSongbookExportZip(input: SongbookExportInput): Promis
     const bandFolder = zip.folder(`bands/${sanitizeFileName(band.name)}`);
     if (!bandFolder) return;
     addSongsFolder(bandFolder, bandSongs);
-    addSongListsFolder(bandFolder, bandSongLists, bandSongs);
-    addSetlistsFolder(bandFolder, bandSetlists, bandSongs);
-    addInputListsFolder(bandFolder, bandRiders);
+    addSongListsFolder(bandFolder, bandSongLists, bandSongs, generatedAt);
+    addSetlistsFolder(bandFolder, bandSetlists, bandSongs, generatedAt);
+    addInputListsFolder(bandFolder, bandRiders, generatedAt);
     const imagesById = new Map(bandImages.map((img) => [img.id, img]));
-    addPressKitsFolder(bandFolder, bandPressKits, imagesById);
+    addPressKitsFolder(bandFolder, bandPressKits, imagesById, generatedAt);
     await addPressKitImagesFolder(bandFolder, bandImages);
     await addRecordingsFolder(bandFolder, bandSongs, bandRecordings);
   }));
@@ -250,9 +344,10 @@ export async function buildSongbookExportZip(input: SongbookExportInput): Promis
       `Generated: ${generatedAt}`,
       '',
       'Each song is a plain ChordPro (.cho) file — chords in [brackets] above the lyrics they belong to.',
-      'Songlists and setlists are exported as plain text order manifests referencing the song titles.',
+      'Songlists, setlists, technical riders, and press kits each ship as a human-readable .txt/.html',
+      'file AND a matching .json file — the .json can be re-imported into gigboy from that item\'s',
+      'page (Songlists, Setlists, Riders, Press Kits); the .txt/.html is just for reading by eye.',
       'Recordings are exported as their original audio files, grouped by song.',
-      'Technical riders are exported as plain text; press kits include their write-up (content.html) and attached image names.',
       'Press kit images live in each band\'s images/ folder.',
       'This archive is portable: the .cho files can be opened by any ChordPro-compatible app.',
     ].join('\n')

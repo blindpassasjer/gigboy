@@ -989,6 +989,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               notes={handNotes.visibleNotes}
               myTextNotes={handNotes.myTextNotes}
               myAuthorUid={user.id}
+              myNotesVisible={handNotes.visibleNotes.some((n) => n.authorUid === user.id)}
               noteColor={getUserNoteColor(user.id)}
               onMyTextNotesChange={handleTextNotesChange}
             />

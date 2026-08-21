@@ -12,6 +12,7 @@ interface Props {
   notes: LyricNoteDocument[];
   myTextNotes: LyricTextNote[];
   myAuthorUid: string;
+  myNotesVisible: boolean;
   noteColor: string;
   onMyTextNotesChange: (textNotes: LyricTextNote[]) => void;
 }
@@ -35,6 +36,7 @@ export default function SongTextNotesOverlay({
   notes,
   myTextNotes,
   myAuthorUid,
+  myNotesVisible,
   noteColor,
   onMyTextNotesChange,
 }: Props) {
@@ -265,7 +267,7 @@ export default function SongTextNotesOverlay({
       })}
 
       {/* Current user's committed text notes */}
-      {myTextNotes.map((note) => {
+      {myNotesVisible && myTextNotes.map((note) => {
         const isEditing = editingId === note.id;
         const isDragging = draggingId === note.id;
         const displayAnchor = isDragging && dragPosition ? dragPosition.anchor : note;

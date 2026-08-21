@@ -102,6 +102,8 @@ and invite-link flow used to add users (there's no open self-registration).
 ```bash
 cp .env.example .env
 # fill in POSTGRES_PASSWORD, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+mkdir -p data/postgres data/attachments
+chown -R 999:999 data/postgres   # match PUID/PGID in .env if you changed them
 docker compose pull
 docker compose up -d
 ```
