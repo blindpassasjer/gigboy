@@ -392,7 +392,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   color: var(--muted);
 }
 
-.topbar-nav a,
+.topbar-nav > a,
 .topbar-invites-trigger,
 .topbar-coffee-trigger {
   display: flex;
@@ -443,8 +443,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: linear-gradient(135deg, var(--accent), #1f9d55);
 }
 
-.topbar-nav a:hover,
-.topbar-nav a.active,
+.topbar-nav > a:hover,
+.topbar-nav > a.active,
 .topbar-invites-trigger:hover,
 .topbar-invites-trigger.active,
 .topbar-coffee-trigger:hover,
@@ -2006,7 +2006,7 @@ input, select, textarea { font: inherit; color: var(--text); }
     gap: .6rem;
   }
 
-  .topbar-nav a,
+  .topbar-nav > a,
   .topbar-invites-trigger,
   .topbar-coffee-trigger {
     padding: .35rem .6rem;
@@ -7967,7 +7967,7 @@ input, select, textarea { font: inherit; color: var(--text); }
     font-size: .72rem;
   }
 
-  .topbar-nav a,
+  .topbar-nav > a,
   .topbar-invites-trigger,
   .topbar-coffee-trigger {
     padding: .3rem .55rem;
@@ -8153,7 +8153,7 @@ input, select, textarea { font: inherit; color: var(--text); }
     gap: .35rem;
   }
 
-  .topbar-nav a,
+  .topbar-nav > a,
   .topbar-invites-trigger,
   .topbar-coffee-trigger,
   .topbar-icon-btn,
@@ -8496,7 +8496,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   a:hover,
   .song-card:hover,
   .song-preview-card:hover,
-  .topbar-nav a:hover,
+  .topbar-nav > a:hover,
   .topbar-icon-btn:hover,
   .topbar-sidebar-toggle:hover,
   .sidebar-list-item-btn:hover,
