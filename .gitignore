@@ -18,6 +18,7 @@ dist-server
 .env.local
 .pgdata
 .attachments
+/data
 config/firebase/*.json
 
 # Editor directories and files

@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: gigboy
     volumes:
-      - gigboy-postgres-data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gigboy -d gigboy"]
       interval: 5s
@@ -31,10 +31,6 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     volumes:
-      - gigboy-attachments-data:/data/attachments
+      - ./data/attachments:/data/attachments
     ports:
       - "${PORT:-6168}:${PORT:-6168}"
-
-volumes:
-  gigboy-postgres-data:
-  gigboy-attachments-data:

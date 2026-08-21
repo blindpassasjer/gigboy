@@ -112,30 +112,31 @@ server-side.
 
 ## Data persistence
 
-Postgres data lives in the named Docker volume `gigboy-postgres-data`, and uploaded song
-attachments live in `gigboy-attachments-data` (mounted at `/data/attachments` in the `app`
-container). Both survive `docker compose down` and container restarts/rebuilds. They're only
-removed if you explicitly run `docker compose down -v` or `docker volume rm <name>`.
+Postgres data lives in `./data/postgres`, and uploaded song attachments live in
+`./data/attachments` (mounted at `/data/attachments` in the `app` container) — both are
+bind-mounted host folders next to your `docker-compose.yml`, not named Docker volumes. Both
+survive `docker compose down` and container restarts/rebuilds; they're only removed if you
+delete the `data/` folder yourself.
+
+Note: Postgres runs as an unprivileged user inside its container, so `./data/postgres` needs to
+be writable by that user. If the `postgres` container fails to start with a permissions error on
+first run, fix ownership on the host, e.g. `sudo chown -R 999:999 ./data/postgres` (999 is the
+default `postgres` UID/GID in the `postgres:16-alpine` image).
 
 ## Backing up
 
-Back up both volumes — the database and the attachment files are separate stores:
+Back up both folders — the database and the attachment files are separate stores:
 
 ```sh
 docker compose exec postgres pg_dump -U gigboy gigboy > backup.sql
-docker run --rm -v gigboy_gigboy-attachments-data:/data -v "$PWD":/backup alpine \
-  tar czf /backup/attachments-backup.tar.gz -C /data .
+tar czf attachments-backup.tar.gz -C data/attachments .
 ```
 
-(The volume name may be prefixed differently depending on your Compose project name — run
-`docker volume ls` to confirm the exact name if the command above doesn't find it.)
-
-To restore into fresh volumes:
+To restore:
 
 ```sh
 cat backup.sql | docker compose exec -T postgres psql -U gigboy gigboy
-docker run --rm -v gigboy_gigboy-attachments-data:/data -v "$PWD":/backup alpine \
-  tar xzf /backup/attachments-backup.tar.gz -C /data
+tar xzf attachments-backup.tar.gz -C data/attachments
 ```
 
 If you put a reverse proxy in front of the container (not part of the default Compose setup,
