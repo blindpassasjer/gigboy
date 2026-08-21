@@ -14,6 +14,8 @@ import { dataClient } from '../lib/dataClient';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
+import { parseImportedSongListFile, SONGLIST_JSON_IMPORT_ACCEPT } from '../utils/songListImport';
+import { parseImportedSetlistFile, SETLIST_JSON_IMPORT_ACCEPT } from '../utils/setlistImport';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function BandDetailPage() {
@@ -116,6 +118,10 @@ export default function BandDetailPage() {
     : null;
   const importInputRef = useRef<HTMLInputElement>(null);
   const [isImportingSongs, setIsImportingSongs] = useState(false);
+  const songListImportInputRef = useRef<HTMLInputElement>(null);
+  const [isImportingSongList, setIsImportingSongList] = useState(false);
+  const setlistImportInputRef = useRef<HTMLInputElement>(null);
+  const [isImportingSetlist, setIsImportingSetlist] = useState(false);
   const [showBandPicker, setShowBandPicker] = useState(false);
   const [bandPickerQuery, setBandPickerQuery] = useState('');
   const songsById = useMemo(() => new Map(bandSongs.map((song) => [song.id, song])), [bandSongs]);
@@ -292,6 +298,91 @@ export default function BandDetailPage() {
     }
   };
 
+  const handleImportSongListMerge = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file || !activeBandSongList) return;
+    if (!canEditBand) {
+      toast.error('You do not have permission to edit this songlist.');
+      return;
+    }
+
+    setIsImportingSongList(true);
+    try {
+      const draft = await parseImportedSongListFile(file);
+      const existingIds = new Set(activeBandSongList.songIds);
+      let addedCount = 0;
+      let alreadyPresentCount = 0;
+      let unmatchedCount = 0;
+
+      for (const ref of draft.songs) {
+        const match = bandSongs.find((song) => (
+          song.title.trim().toLowerCase() === ref.title.trim().toLowerCase()
+          && (song.artist ?? '').trim().toLowerCase() === (ref.artist ?? '').trim().toLowerCase()
+        ));
+        if (!match) { unmatchedCount += 1; continue; }
+        if (existingIds.has(match.id)) { alreadyPresentCount += 1; continue; }
+        const error = await addSongToBandSongList(band.id, activeBandSongList.id, match.id);
+        if (error) { toast.error(error); continue; }
+        existingIds.add(match.id);
+        addedCount += 1;
+      }
+
+      const parts = [`${addedCount} song${addedCount === 1 ? '' : 's'} added`];
+      if (alreadyPresentCount > 0) parts.push(`${alreadyPresentCount} already in this songlist`);
+      if (unmatchedCount > 0) parts.push(`${unmatchedCount} not found in this band's library`);
+      toast.success(`Imported "${draft.name}" — ${parts.join(', ')}.`, { duration: 8000 });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to import songlist.', { duration: 8000 });
+    } finally {
+      setIsImportingSongList(false);
+      if (songListImportInputRef.current) songListImportInputRef.current.value = '';
+    }
+  };
+
+  const handleImportSetlistMerge = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file || !activeBandSetlist) return;
+    if (!canEditBand) {
+      toast.error('You do not have permission to edit this setlist.');
+      return;
+    }
+
+    setIsImportingSetlist(true);
+    try {
+      const draft = await parseImportedSetlistFile(file);
+      const existingIds = new Set(activeBandSetlist.songIds);
+      let addedCount = 0;
+      let alreadyPresentCount = 0;
+      let unmatchedCount = 0;
+
+      for (const ref of draft.songs) {
+        const match = bandSongs.find((song) => (
+          song.title.trim().toLowerCase() === ref.title.trim().toLowerCase()
+          && (song.artist ?? '').trim().toLowerCase() === (ref.artist ?? '').trim().toLowerCase()
+        ));
+        if (!match) { unmatchedCount += 1; continue; }
+        if (existingIds.has(match.id)) { alreadyPresentCount += 1; continue; }
+        const error = await addSongToBandSetlist(band.id, activeBandSetlist.id, match.id);
+        if (error) { toast.error(error); continue; }
+        if (ref.note) {
+          await updateSongNoteInBandSetlist(band.id, activeBandSetlist.id, match.id, ref.note);
+        }
+        existingIds.add(match.id);
+        addedCount += 1;
+      }
+
+      const parts = [`${addedCount} song${addedCount === 1 ? '' : 's'} added`];
+      if (alreadyPresentCount > 0) parts.push(`${alreadyPresentCount} already in this setlist`);
+      if (unmatchedCount > 0) parts.push(`${unmatchedCount} not found in this band's library`);
+      toast.success(`Imported "${draft.name}" — ${parts.join(', ')}.`, { duration: 8000 });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to import setlist.', { duration: 8000 });
+    } finally {
+      setIsImportingSetlist(false);
+      if (setlistImportInputRef.current) setlistImportInputRef.current.value = '';
+    }
+  };
+
   const handleRenameBand = async (name: string) => {
     const error = await renameBand(band.id, name);
     if (error) {
@@ -354,6 +445,13 @@ export default function BandDetailPage() {
 
     return (
       <section className="bands-page bands-page--library">
+        <input
+          ref={songListImportInputRef}
+          type="file"
+          accept={SONGLIST_JSON_IMPORT_ACCEPT}
+          onChange={(event) => { void handleImportSongListMerge(event.target.files); }}
+          style={{ display: 'none' }}
+        />
         <SongList
           songs={songListSongs}
           listName={activeBandSongList.name}
@@ -362,6 +460,18 @@ export default function BandDetailPage() {
           headerVariant="bands"
           allSongs={bandSongs}
           pickerSourceNote="Showing songs from this band's library."
+          headerActions={canEditBand ? (
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => songListImportInputRef.current?.click()}
+              title={isImportingSongList ? 'Importing songlist…' : 'Import songlist from file'}
+              aria-label="Import songlist from file"
+              disabled={isImportingSongList}
+            >
+              <Upload size={14} />
+            </button>
+          ) : undefined}
           onAddSong={async (songId) => {
             const error = await addSongToBandSongList(band.id, activeBandSongList.id, songId);
             if (error) {
@@ -416,6 +526,13 @@ export default function BandDetailPage() {
 
     return (
       <section className="bands-page bands-page--library">
+        <input
+          ref={setlistImportInputRef}
+          type="file"
+          accept={SETLIST_JSON_IMPORT_ACCEPT}
+          onChange={(event) => { void handleImportSetlistMerge(event.target.files); }}
+          style={{ display: 'none' }}
+        />
         <SetlistsView
           headerVariant="bands"
           setlistId={activeBandSetlist.id}
@@ -429,6 +546,18 @@ export default function BandDetailPage() {
           canDeleteOverride={canEditBand}
           canEdit={canEditBand}
           concertRoute={`/bands/${band.id}/setlists/${activeBandSetlist.id}/concert`}
+          extraActions={canEditBand ? (
+            <button
+              type="button"
+              className="setlist-action-btn setlist-action-btn--secondary"
+              onClick={() => setlistImportInputRef.current?.click()}
+              title={isImportingSetlist ? 'Importing setlist…' : 'Import setlist from file'}
+              aria-label="Import setlist from file"
+              disabled={isImportingSetlist}
+            >
+              <Upload size={14} />
+            </button>
+          ) : undefined}
           onRenameOverride={canEditBand ? async (name) => {
             const error = await renameBandSetlist(band.id, activeBandSetlist.id, name);
             if (error) {

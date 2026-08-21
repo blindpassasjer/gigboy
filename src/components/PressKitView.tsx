@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useEditor, useEditorState, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Link2Off, Download, Trash2, PenLine, Newspaper, X, ArrowDownToLine, GripVertical, Copy } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Link2Off, Download, Upload, Trash2, PenLine, Newspaper, X, ArrowDownToLine, GripVertical, Copy } from 'lucide-react';
+import { parseImportedPressKitFile, findPressKitJsonFile } from '../utils/pressKitImport';
 import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { dataClient } from '../lib/dataClient';
@@ -559,6 +560,93 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     await savePresaveState(presaveUrls, nextSelected);
   };
 
+  const pressKitImportInputRef = useRef<HTMLInputElement | null>(null);
+  const [isImportingPressKit, setIsImportingPressKit] = useState(false);
+
+  const handleImportPressKit = async (files: FileList | null) => {
+    const fileArray = Array.from(files ?? []);
+    const jsonFile = findPressKitJsonFile(fileArray);
+    if (!jsonFile) {
+      toast.error('Select the kit.json file from a gigboy press kit export (optionally along with its images).', { duration: 8000 });
+      return;
+    }
+
+    setIsImportingPressKit(true);
+    try {
+      const draft = await parseImportedPressKitFile(jsonFile);
+      const imageFiles = fileArray.filter((file) => file !== jsonFile);
+
+      const uploadedAssets: PressKitImageAsset[] = [];
+      let unmatchedImageCount = 0;
+      for (const ref of draft.images) {
+        const match = imageFiles.find((file) => file.name.toLowerCase() === ref.filename.toLowerCase());
+        if (!match) { unmatchedImageCount += 1; continue; }
+        const thumbBlob = await createWebpThumbnail(match);
+        if (!thumbBlob) { unmatchedImageCount += 1; continue; }
+        const uploaded = await dataClient.bandPressKitImages.upload(bandId, match, thumbBlob);
+        uploadedAssets.push(uploaded);
+      }
+
+      if (draft.richText) {
+        editor?.commands.setContent(draft.richText, { emitUpdate: false });
+        await saveRichText(draft.richText);
+      }
+
+      if (uploadedAssets.length > 0) {
+        const newIds = uploadedAssets.map((asset) => asset.id);
+        const nextImageIds = [...new Set([...kitImageIds, ...newIds])];
+        setImageAssets((current) => [...uploadedAssets, ...current.filter((a) => !newIds.includes(a.id))]);
+        setKitImageIds(nextImageIds);
+        await dataClient.bandPressKits.update(bandId, { ...kit, imageIds: nextImageIds });
+      }
+
+      if (draft.videoUrls.length > 0) {
+        const nextUrls = [...new Set([...videoUrls, ...draft.videoUrls])];
+        const nextSelected = [...new Set([...selectedVideoUrls, ...draft.selectedVideoUrls])];
+        await saveVideoState(nextUrls, nextSelected);
+      }
+
+      if (draft.presaveUrls.length > 0) {
+        const nextUrls = [...new Set([...presaveUrls, ...draft.presaveUrls])];
+        const nextSelected = [...new Set([...selectedPresaveUrls, ...draft.selectedPresaveUrls])];
+        await savePresaveState(nextUrls, nextSelected);
+      }
+
+      if (draft.presaveReleaseName || draft.presaveReleaseDate) {
+        const nextName = draft.presaveReleaseName ?? presaveReleaseName;
+        const nextDate = draft.presaveReleaseDate ?? presaveReleaseDate;
+        await savePresaveMeta(nextName, nextDate);
+        setPresaveReleaseName(nextName);
+        setPresaveReleaseDate(nextDate);
+      }
+
+      if (draft.icon && onUpdateIcon) {
+        await onUpdateIcon(draft.icon);
+      }
+
+      await refreshBandPressKits(bandId);
+
+      const summaryParts: string[] = [];
+      if (draft.richText) summaryParts.push('text updated');
+      if (uploadedAssets.length > 0) summaryParts.push(`${uploadedAssets.length} image${uploadedAssets.length === 1 ? '' : 's'} added`);
+      if (draft.videoUrls.length > 0) summaryParts.push(`${draft.videoUrls.length} video link${draft.videoUrls.length === 1 ? '' : 's'} merged`);
+      if (draft.presaveUrls.length > 0) summaryParts.push(`${draft.presaveUrls.length} presave link${draft.presaveUrls.length === 1 ? '' : 's'} merged`);
+      toast.success(`Imported "${draft.name}"${summaryParts.length > 0 ? ` — ${summaryParts.join(', ')}` : ''}.`);
+
+      if (unmatchedImageCount > 0) {
+        toast.error(
+          `${unmatchedImageCount} image${unmatchedImageCount === 1 ? '' : 's'} not selected — re-upload from the images/ folder if needed.`,
+          { duration: 8000 },
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to import press kit.', { duration: 8000 });
+    } finally {
+      setIsImportingPressKit(false);
+      if (pressKitImportInputRef.current) pressKitImportInputRef.current.value = '';
+    }
+  };
+
   const [busyDownload, setBusyDownload] = useState(false);
 
   const imageAssetsById = new Map(imageAssets.map((img) => [img.id, img]));
@@ -646,6 +734,14 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
 
   return (
     <section className="bands-page bands-page--library">
+      <input
+        ref={pressKitImportInputRef}
+        type="file"
+        accept="application/json,.json,image/*"
+        multiple
+        onChange={(event) => { void handleImportPressKit(event.target.files); }}
+        style={{ display: 'none' }}
+      />
       <div className="setlist-shell">
         <div className="list-sticky-header">
           <header className="page-section-header bands-header resource-header">
@@ -773,6 +869,18 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
               >
                 <Download size={14} />
               </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  className="setlist-action-btn setlist-action-btn--secondary"
+                  onClick={() => pressKitImportInputRef.current?.click()}
+                  disabled={isImportingPressKit}
+                  title={isImportingPressKit ? 'Importing press kit…' : 'Import press kit from file'}
+                  aria-label="Import press kit from file"
+                >
+                  <Upload size={14} />
+                </button>
+              )}
               {canEdit && (
                 <button
                   type="button"

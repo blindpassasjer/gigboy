@@ -1,18 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Music, Newspaper, Plus, Trash2, Upload, X, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Music, Newspaper, Plus, Trash2, X, ChevronsUpDown } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
-import { parseImportedSongListFile, SONGLIST_JSON_IMPORT_ACCEPT } from '../utils/songListImport';
-import { parseImportedSetlistFile, SETLIST_JSON_IMPORT_ACCEPT } from '../utils/setlistImport';
-import { parseImportedRiderFile, RIDER_JSON_IMPORT_ACCEPT } from '../utils/riderImport';
-import { parseImportedPressKitFile, findPressKitJsonFile } from '../utils/pressKitImport';
-import { createWebpThumbnail } from '../utils/imageThumbnail';
-import { dataClient } from '../lib/dataClient';
-import type { PressKit, SongHandNoteDocument } from '../types';
 
 function formatStorageBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) {
@@ -90,18 +83,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const [addingBand, setAddingBand] = useState(false);
   const [addingBandSongListId, setAddingBandSongListId] = useState<string | null>(null);
-  const [songListImportBandId, setSongListImportBandId] = useState<string | null>(null);
-  const [isImportingSongList, setIsImportingSongList] = useState(false);
-  const songListImportInputRef = useRef<HTMLInputElement>(null);
-  const [setlistImportBandId, setSetlistImportBandId] = useState<string | null>(null);
-  const [isImportingSetlist, setIsImportingSetlist] = useState(false);
-  const setlistImportInputRef = useRef<HTMLInputElement>(null);
-  const [riderImportBandId, setRiderImportBandId] = useState<string | null>(null);
-  const [isImportingRider, setIsImportingRider] = useState(false);
-  const riderImportInputRef = useRef<HTMLInputElement>(null);
-  const [pressKitImportBandId, setPressKitImportBandId] = useState<string | null>(null);
-  const [isImportingPressKit, setIsImportingPressKit] = useState(false);
-  const pressKitImportInputRef = useRef<HTMLInputElement>(null);
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
   const [addingBandInputListId, setAddingBandInputListId] = useState<string | null>(null);
   const [addingBandPressKitId, setAddingBandPressKitId] = useState<string | null>(null);
@@ -297,54 +278,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     }
   };
 
-  const handleImportSongList = async (files: FileList | null) => {
-    const bandId = songListImportBandId;
-    const file = files?.[0];
-    if (!bandId || !file) return;
-
-    setIsImportingSongList(true);
-    try {
-      const draft = await parseImportedSongListFile(file);
-      const bandSongs = bandSongsByBandId[bandId] ?? [];
-      const matchedIds: string[] = [];
-      let unmatchedCount = 0;
-      draft.songs.forEach((ref) => {
-        const match = bandSongs.find((song) => (
-          song.title.trim().toLowerCase() === ref.title.trim().toLowerCase()
-          && (song.artist ?? '').trim().toLowerCase() === (ref.artist ?? '').trim().toLowerCase()
-        ));
-        if (match) matchedIds.push(match.id);
-        else unmatchedCount += 1;
-      });
-
-      const result = await addBandSongList(bandId, draft.name, { songIds: matchedIds, icon: draft.icon });
-      if (!result.songListId) {
-        toast.error(result.error ?? 'Failed to import songlist.', { duration: 8000 });
-        return;
-      }
-
-      if (unmatchedCount > 0) {
-        toast.success(
-          `Imported "${draft.name}" — ${matchedIds.length} of ${draft.songs.length} songs matched. `
-          + `${unmatchedCount} song${unmatchedCount === 1 ? '' : 's'} not found in this band's library.`,
-          { duration: 8000 },
-        );
-      } else {
-        toast.success(`Imported "${draft.name}" with ${matchedIds.length} song${matchedIds.length === 1 ? '' : 's'}.`);
-      }
-
-      clearGlobalSelection();
-      navigate(`/bands/${bandId}/songlists/${result.songListId}`);
-      onNavigate?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to import songlist.', { duration: 8000 });
-    } finally {
-      setIsImportingSongList(false);
-      setSongListImportBandId(null);
-      if (songListImportInputRef.current) songListImportInputRef.current.value = '';
-    }
-  };
-
   const commitBandSetlist = async (bandId: string) => {
     const name = draftName.trim();
     setDraftName('');
@@ -358,59 +291,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       onNavigate?.();
     } else if (result.error) {
       toast.error(result.error, { duration: 8000 });
-    }
-  };
-
-  const handleImportSetlist = async (files: FileList | null) => {
-    const bandId = setlistImportBandId;
-    const file = files?.[0];
-    if (!bandId || !file) return;
-
-    setIsImportingSetlist(true);
-    try {
-      const draft = await parseImportedSetlistFile(file);
-      const bandSongs = bandSongsByBandId[bandId] ?? [];
-      const matchedIds: string[] = [];
-      const songNotes: Record<string, string> = {};
-      let unmatchedCount = 0;
-      draft.songs.forEach((ref) => {
-        const match = bandSongs.find((song) => (
-          song.title.trim().toLowerCase() === ref.title.trim().toLowerCase()
-          && (song.artist ?? '').trim().toLowerCase() === (ref.artist ?? '').trim().toLowerCase()
-        ));
-        if (match) {
-          matchedIds.push(match.id);
-          if (ref.note) songNotes[match.id] = ref.note;
-        } else {
-          unmatchedCount += 1;
-        }
-      });
-
-      const result = await addBandSetlist(bandId, draft.name, { songIds: matchedIds, songNotes, icon: draft.icon });
-      if (!result.setlistId) {
-        toast.error(result.error ?? 'Failed to import setlist.', { duration: 8000 });
-        return;
-      }
-
-      if (unmatchedCount > 0) {
-        toast.success(
-          `Imported "${draft.name}" — ${matchedIds.length} of ${draft.songs.length} songs matched. `
-          + `${unmatchedCount} song${unmatchedCount === 1 ? '' : 's'} not found in this band's library.`,
-          { duration: 8000 },
-        );
-      } else {
-        toast.success(`Imported "${draft.name}" with ${matchedIds.length} song${matchedIds.length === 1 ? '' : 's'}.`);
-      }
-
-      clearGlobalSelection();
-      navigate(`/bands/${bandId}/setlists/${result.setlistId}`);
-      onNavigate?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to import setlist.', { duration: 8000 });
-    } finally {
-      setIsImportingSetlist(false);
-      setSetlistImportBandId(null);
-      if (setlistImportInputRef.current) setlistImportInputRef.current.value = '';
     }
   };
 
@@ -445,119 +325,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       clearGlobalSelection();
       navigate(`/bands/${bandId}/riders/${result.riderId}`);
       onNavigate?.();
-    }
-  };
-
-  const handleImportRider = async (files: FileList | null) => {
-    const bandId = riderImportBandId;
-    const file = files?.[0];
-    if (!bandId || !file) return;
-
-    setIsImportingRider(true);
-    try {
-      const draft = await parseImportedRiderFile(file);
-      const result = await addBandInputList(bandId, draft.name, {
-        icon: draft.icon,
-        hospitalityNotes: draft.hospitalityNotes,
-        logisticsNotes: draft.logisticsNotes,
-        items: draft.items,
-        drawingLayers: draft.drawingLayers as SongHandNoteDocument[] | undefined,
-      });
-
-      if (!result.riderId) {
-        toast.error(result.error ?? 'Failed to import technical rider.', { duration: 8000 });
-        return;
-      }
-
-      toast.success(`Imported "${draft.name}".`);
-      clearGlobalSelection();
-      navigate(`/bands/${bandId}/riders/${result.riderId}`);
-      onNavigate?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to import technical rider.', { duration: 8000 });
-    } finally {
-      setIsImportingRider(false);
-      setRiderImportBandId(null);
-      if (riderImportInputRef.current) riderImportInputRef.current.value = '';
-    }
-  };
-
-  const handleImportPressKit = async (files: FileList | null) => {
-    const bandId = pressKitImportBandId;
-    const fileArray = Array.from(files ?? []);
-    const jsonFile = findPressKitJsonFile(fileArray);
-    if (!bandId) return;
-    if (!jsonFile) {
-      toast.error('Select the kit.json file from a gigboy press kit export (optionally along with its images).', { duration: 8000 });
-      return;
-    }
-
-    setIsImportingPressKit(true);
-    try {
-      const draft = await parseImportedPressKitFile(jsonFile);
-      const imageFiles = fileArray.filter((file) => file !== jsonFile);
-
-      const uploadedImageIds: string[] = [];
-      let unmatchedImageCount = 0;
-      for (const ref of draft.images) {
-        const match = imageFiles.find((file) => file.name.toLowerCase() === ref.filename.toLowerCase());
-        if (!match) {
-          unmatchedImageCount += 1;
-          continue;
-        }
-        const thumbBlob = await createWebpThumbnail(match);
-        if (!thumbBlob) {
-          unmatchedImageCount += 1;
-          continue;
-        }
-        const uploaded = await dataClient.bandPressKitImages.upload(bandId, match, thumbBlob);
-        uploadedImageIds.push(uploaded.id);
-      }
-
-      const created = await addBandPressKit(bandId, draft.name);
-      if (!created.kitId) {
-        toast.error(created.error ?? 'Failed to import press kit.', { duration: 8000 });
-        return;
-      }
-
-      const updatedKit: PressKit = {
-        id: created.kitId,
-        name: draft.name,
-        icon: draft.icon,
-        richText: draft.richText,
-        imageIds: uploadedImageIds,
-        videoUrls: draft.videoUrls,
-        selectedVideoUrls: draft.selectedVideoUrls,
-        presaveReleaseName: draft.presaveReleaseName,
-        presaveReleaseDate: draft.presaveReleaseDate,
-        presaveUrls: draft.presaveUrls,
-        selectedPresaveUrls: draft.selectedPresaveUrls,
-      };
-      await dataClient.bandPressKits.update(bandId, updatedKit);
-      await refreshBandPressKits(bandId);
-
-      if (draft.images.length === 0) {
-        toast.success(`Imported "${draft.name}".`);
-      } else if (unmatchedImageCount > 0) {
-        toast.success(
-          `Imported "${draft.name}" — ${uploadedImageIds.length} of ${draft.images.length} images included. `
-          + `${unmatchedImageCount} image${unmatchedImageCount === 1 ? '' : 's'} not selected — re-upload from the images/ folder if needed.`,
-          { duration: 8000 },
-        );
-      } else {
-        toast.success(`Imported "${draft.name}" with ${uploadedImageIds.length} image${uploadedImageIds.length === 1 ? '' : 's'}.`);
-      }
-
-      setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== bandId));
-      clearGlobalSelection();
-      navigate(`/bands/${bandId}/press-kit/${created.kitId}`);
-      onNavigate?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to import press kit.', { duration: 8000 });
-    } finally {
-      setIsImportingPressKit(false);
-      setPressKitImportBandId(null);
-      if (pressKitImportInputRef.current) pressKitImportInputRef.current.value = '';
     }
   };
 
@@ -671,36 +438,6 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
           )}
         </div>
       </div>
-      <input
-        ref={songListImportInputRef}
-        type="file"
-        accept={SONGLIST_JSON_IMPORT_ACCEPT}
-        onChange={(event) => { void handleImportSongList(event.target.files); }}
-        style={{ display: 'none' }}
-      />
-      <input
-        ref={setlistImportInputRef}
-        type="file"
-        accept={SETLIST_JSON_IMPORT_ACCEPT}
-        onChange={(event) => { void handleImportSetlist(event.target.files); }}
-        style={{ display: 'none' }}
-      />
-      <input
-        ref={riderImportInputRef}
-        type="file"
-        accept={RIDER_JSON_IMPORT_ACCEPT}
-        onChange={(event) => { void handleImportRider(event.target.files); }}
-        style={{ display: 'none' }}
-      />
-      <input
-        ref={pressKitImportInputRef}
-        type="file"
-        accept="application/json,.json,image/*"
-        multiple
-        onChange={(event) => { void handleImportPressKit(event.target.files); }}
-        style={{ display: 'none' }}
-      />
-
       <div className="sidebar-mode-switcher" ref={bandSwitcherRef}>
         <div className="sidebar-band-switcher">
         <button
@@ -915,34 +652,19 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     {isBandSonglistsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     <span className="sidebar-section-title">Songlists</span>
                   </button>
-                  <div className="sidebar-header-actions">
-                    <button
-                      type="button"
-                      className="sidebar-icon-btn"
-                      title={isImportingSongList ? 'Importing songlist…' : 'Import songlist from file'}
-                      aria-label="Import songlist from file"
-                      disabled={isImportingSongList}
-                      onClick={() => {
-                        setSongListImportBandId(band.id);
-                        songListImportInputRef.current?.click();
-                      }}
-                    >
-                      <Upload size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="sidebar-icon-btn"
-                      title="New band songlist"
-                      aria-label="Create new band songlist"
-                      onClick={() => {
-                        setCollapsedBandSonglistIds((prev) => prev.filter((entry) => entry !== band.id));
-                        setAddingBandSongListId(band.id);
-                        setDraftName('');
-                      }}
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New band songlist"
+                    aria-label="Create new band songlist"
+                    onClick={() => {
+                      setCollapsedBandSonglistIds((prev) => prev.filter((entry) => entry !== band.id));
+                      setAddingBandSongListId(band.id);
+                      setDraftName('');
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
 
                 {isBandSonglistsExpanded(band.id) && (
@@ -997,34 +719,19 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     {isBandSetlistsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     <span className="sidebar-section-title">Setlists</span>
                   </button>
-                  <div className="sidebar-header-actions">
-                    <button
-                      type="button"
-                      className="sidebar-icon-btn"
-                      title={isImportingSetlist ? 'Importing setlist…' : 'Import setlist from file'}
-                      aria-label="Import setlist from file"
-                      disabled={isImportingSetlist}
-                      onClick={() => {
-                        setSetlistImportBandId(band.id);
-                        setlistImportInputRef.current?.click();
-                      }}
-                    >
-                      <Upload size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="sidebar-icon-btn"
-                      title="New band setlist"
-                      aria-label="Create new band setlist"
-                      onClick={() => {
-                        setCollapsedBandSetlistIds((prev) => prev.filter((entry) => entry !== band.id));
-                        setAddingBandSetlistId(band.id);
-                        setDraftName('');
-                      }}
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New band setlist"
+                    aria-label="Create new band setlist"
+                    onClick={() => {
+                      setCollapsedBandSetlistIds((prev) => prev.filter((entry) => entry !== band.id));
+                      setAddingBandSetlistId(band.id);
+                      setDraftName('');
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
 
                 {isBandSetlistsExpanded(band.id) && (
@@ -1079,34 +786,19 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     {isBandInputListsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     <span className="sidebar-section-title">Technical Riders</span>
                   </button>
-                  <div className="sidebar-header-actions">
-                    <button
-                      type="button"
-                      className="sidebar-icon-btn"
-                      title={isImportingRider ? 'Importing rider…' : 'Import technical rider from file'}
-                      aria-label="Import technical rider from file"
-                      disabled={isImportingRider}
-                      onClick={() => {
-                        setRiderImportBandId(band.id);
-                        riderImportInputRef.current?.click();
-                      }}
-                    >
-                      <Upload size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="sidebar-icon-btn"
-                      title="New technical rider"
-                      aria-label="Create new technical rider"
-                      onClick={() => {
-                        setCollapsedBandInputListIds((prev) => prev.filter((id) => id !== band.id));
-                        setAddingBandInputListId(band.id);
-                        setDraftName('');
-                      }}
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New technical rider"
+                    aria-label="Create new technical rider"
+                    onClick={() => {
+                      setCollapsedBandInputListIds((prev) => prev.filter((id) => id !== band.id));
+                      setAddingBandInputListId(band.id);
+                      setDraftName('');
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
 
                 {isBandInputListsExpanded(band.id) && (
@@ -1156,34 +848,19 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                     {isBandPressKitsExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     <span className="sidebar-section-title">Press Kits</span>
                   </button>
-                  <div className="sidebar-header-actions">
-                    <button
-                      type="button"
-                      className="sidebar-icon-btn"
-                      title={isImportingPressKit ? 'Importing press kit…' : 'Import press kit from file'}
-                      aria-label="Import press kit from file"
-                      disabled={isImportingPressKit}
-                      onClick={() => {
-                        setPressKitImportBandId(band.id);
-                        pressKitImportInputRef.current?.click();
-                      }}
-                    >
-                      <Upload size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="sidebar-icon-btn"
-                      title="New press kit"
-                      aria-label="Create new press kit"
-                      onClick={() => {
-                        setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));
-                        setAddingBandPressKitId(band.id);
-                        setDraftName('');
-                      }}
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New press kit"
+                    aria-label="Create new press kit"
+                    onClick={() => {
+                      setCollapsedBandPressKitIds((prev) => prev.filter((id) => id !== band.id));
+                      setAddingBandPressKitId(band.id);
+                      setDraftName('');
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
 
                 {isBandPressKitsExpanded(band.id) && (

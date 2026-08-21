@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ClipboardList, Download, Link2, Link2Off, PenLine, Trash2 } from 'lucide-react';
+import { ClipboardList, Download, Link2, Link2Off, PenLine, Trash2, Upload } from 'lucide-react';
+import { parseImportedRiderFile, RIDER_JSON_IMPORT_ACCEPT } from '../utils/riderImport';
 import toast from '../utils/anchoredToast';
 import type { InputList, Stageplot } from '../types';
 import StageplotEditor from './StageplotEditor';
@@ -46,6 +47,8 @@ export default function BandTechRiderPanel({
   const iconPickerRef = useRef<HTMLDivElement | null>(null);
   const iconTriggerRef = useRef<HTMLButtonElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const riderImportInputRef = useRef<HTMLInputElement | null>(null);
+  const [isImportingRider, setIsImportingRider] = useState(false);
   const toolbarPortalRef = useCallback((el: HTMLDivElement | null) => {
     setToolbarPortalTarget(el);
   }, []);
@@ -234,8 +237,55 @@ export default function BandTechRiderPanel({
     toast.success('Public link disabled.');
   };
 
+  const handleImportRider = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file || !activeRider) return;
+
+    setIsImportingRider(true);
+    try {
+      const draft = await parseImportedRiderFile(file);
+
+      const contentError = await updateBandInputListContent({
+        bandId,
+        riderId: activeRider.id,
+        hospitalityNotes: draft.hospitalityNotes ?? '',
+        logisticsNotes: draft.logisticsNotes ?? '',
+      });
+      if (contentError) { toast.error(contentError); return; }
+
+      if (draft.items || draft.drawingLayers) {
+        const stageplotError = await updateBandInputListStageplotContent({
+          bandId,
+          riderId: activeRider.id,
+          items: draft.items ?? activeRider.items ?? [],
+          drawingLayers: (draft.drawingLayers as typeof activeRider.drawingLayers) ?? activeRider.drawingLayers ?? [],
+        });
+        if (stageplotError) { toast.error(stageplotError); return; }
+      }
+
+      if (draft.icon) {
+        const iconError = await updateBandInputListIcon(bandId, activeRider.id, draft.icon);
+        if (iconError) toast.error(iconError);
+      }
+
+      toast.success(`Imported "${draft.name}" into this rider.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to import technical rider.');
+    } finally {
+      setIsImportingRider(false);
+      if (riderImportInputRef.current) riderImportInputRef.current.value = '';
+    }
+  };
+
   return (
     <section className="bands-page bands-page--library">
+      <input
+        ref={riderImportInputRef}
+        type="file"
+        accept={RIDER_JSON_IMPORT_ACCEPT}
+        onChange={(event) => { void handleImportRider(event.target.files); }}
+        style={{ display: 'none' }}
+      />
       <div className="setlist-shell">
 
         <div className="list-sticky-header">
@@ -360,6 +410,18 @@ export default function BandTechRiderPanel({
                     <Link2 size={14} /> Share
                   </button>
                 )
+              ) : null}
+              {canEdit && activeRider ? (
+                <button
+                  type="button"
+                  className="setlist-action-btn setlist-action-btn--secondary"
+                  onClick={() => riderImportInputRef.current?.click()}
+                  disabled={isImportingRider}
+                  title={isImportingRider ? 'Importing rider…' : 'Import rider from file'}
+                  aria-label="Import rider from file"
+                >
+                  <Upload size={14} />
+                </button>
               ) : null}
               {activeRider ? (
                 <button

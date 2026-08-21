@@ -108,6 +108,23 @@ docker compose pull
 docker compose up -d
 ```
 
+`.env.example`:
+
+```bash
+PUID=999
+PGID=999
+
+POSTGRES_PASSWORD=change-me
+DATABASE_URL=postgres://gigboy:change-me@postgres:5432/gigboy
+SESSION_SECRET=          # openssl rand -hex 32
+PORT=6168
+COOKIE_SECURE=false      # set true once a reverse proxy terminates HTTPS
+
+# Optional: set both to bootstrap an initial admin account on first run
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+```
+
 Open [http://localhost:6168](http://localhost:6168) (or whatever `PORT` you set in `.env`) and log in
 with the admin account you configured. From there, generate invite links to bring your bandmates in
 — every new account is a regular member by default; grant admin access to specific people
@@ -186,11 +203,8 @@ Draft Terms of Service and Privacy Policy live at [src/pages/TermsPage.tsx](src/
 
 ## Before going public
 
-- [ ] Fill in and legally review `/terms` and `/privacy`
 - [ ] Set a strong `SESSION_SECRET` and `POSTGRES_PASSWORD` in `.env` (see [SELFHOSTING.md](SELFHOSTING.md))
 - [ ] Put a reverse proxy with real HTTPS in front of the container and set `COOKIE_SECURE=true`
-- [ ] Rotate any credentials embedded in local git remotes/config before adding collaborators or CI
-- [ ] Test the offline/PWA experience end-to-end (load, go offline, reopen) before promoting it to gigging musicians
 
 ## Codebase knowledge graph
 
