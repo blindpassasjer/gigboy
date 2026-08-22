@@ -3197,11 +3197,27 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: color-mix(in srgb, var(--surface) 82%, var(--bg));
 }
 
+:root {
+  --metronome-dot-glow: .5rem;
+  --metronome-dot-glow-opacity: 40%;
+  --metronome-dot-glow-downbeat: .75rem;
+  --metronome-dot-glow-opacity-downbeat: 45%;
+}
+
+/* Stage mode: the toolbar dot needs to catch the eye under bright/colored stage
+   light the same way the edge flash does. */
+[data-theme="stage"] {
+  --metronome-dot-glow: .9rem;
+  --metronome-dot-glow-opacity: 70%;
+  --metronome-dot-glow-downbeat: 1.3rem;
+  --metronome-dot-glow-opacity-downbeat: 85%;
+}
+
 @keyframes metronome-flash {
   0% {
     transform: scale(1.35);
     opacity: 1;
-    box-shadow: 0 0 0 .5rem color-mix(in srgb, var(--accent) 40%, transparent);
+    box-shadow: 0 0 0 var(--metronome-dot-glow) color-mix(in srgb, var(--accent) var(--metronome-dot-glow-opacity), transparent);
   }
 
   100% {
@@ -3215,7 +3231,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   0% {
     transform: scale(1.55);
     opacity: 1;
-    box-shadow: 0 0 0 .75rem color-mix(in srgb, var(--accent) 45%, transparent);
+    box-shadow: 0 0 0 var(--metronome-dot-glow-downbeat) color-mix(in srgb, var(--accent) var(--metronome-dot-glow-opacity-downbeat), transparent);
   }
 
   100% {
@@ -6960,6 +6976,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
+:root {
+  --setlist-pulse-spread: .3rem;
+  --setlist-pulse-opacity: 50%;
+}
+
+/* Stage mode: widen and brighten the ring so the "up next" pulse reads from
+   across the stage, not just up close. */
+[data-theme="stage"] {
+  --setlist-pulse-spread: .6rem;
+  --setlist-pulse-opacity: 75%;
+}
+
 .setlist-song-card--pulse {
   animation-name: setlist-card-pulse;
   animation-timing-function: ease-out;
@@ -6971,7 +6999,7 @@ input, select, textarea { font: inherit; color: var(--text); }
     box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--song-item-accent) 0%, transparent);
   }
   12% {
-    box-shadow: inset 0 0 0 .18rem color-mix(in srgb, var(--song-item-accent) 35%, transparent);
+    box-shadow: inset 0 0 0 var(--setlist-pulse-spread) color-mix(in srgb, var(--song-item-accent) var(--setlist-pulse-opacity), transparent);
   }
 }
 
