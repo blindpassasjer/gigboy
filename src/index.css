@@ -3225,6 +3225,26 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 }
 
+:root {
+  --metronome-flash-blur: 4rem;
+  --metronome-flash-spread: .5rem;
+  --metronome-flash-opacity: 65%;
+  --metronome-flash-blur-downbeat: 6rem;
+  --metronome-flash-spread-downbeat: .8rem;
+  --metronome-flash-opacity-downbeat: 80%;
+}
+
+/* Stage mode needs the beat to register in peripheral vision under bright/colored
+   stage light, so push the edge glow noticeably wider and more opaque than indoors. */
+[data-theme="stage"] {
+  --metronome-flash-blur: 7rem;
+  --metronome-flash-spread: 1rem;
+  --metronome-flash-opacity: 85%;
+  --metronome-flash-blur-downbeat: 10rem;
+  --metronome-flash-spread-downbeat: 1.4rem;
+  --metronome-flash-opacity-downbeat: 95%;
+}
+
 .concert-metronome-flash {
   position: fixed;
   inset: 0;
@@ -3243,7 +3263,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 @keyframes concert-edge-flash {
   0% {
-    box-shadow: inset 0 0 3rem .4rem color-mix(in srgb, var(--accent) 55%, transparent);
+    box-shadow: inset 0 0 var(--metronome-flash-blur) var(--metronome-flash-spread) color-mix(in srgb, var(--accent) var(--metronome-flash-opacity), transparent);
   }
   100% {
     box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
@@ -3252,7 +3272,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 @keyframes concert-edge-flash-downbeat {
   0% {
-    box-shadow: inset 0 0 5rem .7rem color-mix(in srgb, var(--accent) 70%, transparent);
+    box-shadow: inset 0 0 var(--metronome-flash-blur-downbeat) var(--metronome-flash-spread-downbeat) color-mix(in srgb, var(--accent) var(--metronome-flash-opacity-downbeat), transparent);
   }
   100% {
     box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
