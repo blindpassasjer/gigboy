@@ -2,23 +2,29 @@ import { useCallback, useEffect, useState } from 'react';
 
 const KEY = 'gigboy-dark-mode';
 
-function getInitial(): boolean {
-  if (typeof window === 'undefined') return false;
+export type ThemeMode = 'light' | 'dark' | 'stage';
+
+const MODES: ThemeMode[] = ['light', 'dark', 'stage'];
+
+function getInitial(): ThemeMode {
+  if (typeof window === 'undefined') return 'light';
   const stored = localStorage.getItem(KEY);
-  if (stored !== null) return stored === 'true';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (stored === 'light' || stored === 'dark' || stored === 'stage') return stored;
+  // Legacy boolean values from before stage mode existed.
+  if (stored === 'true') return 'dark';
+  if (stored === 'false') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 export function useDarkMode() {
-  const [dark, setDark] = useState(getInitial);
+  const [mode, setMode] = useState<ThemeMode>(getInitial);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
-    const nextTheme = dark ? 'dark' : 'light';
     root.classList.add('theme-switching');
-    if (root.getAttribute('data-theme') !== nextTheme) {
-      root.setAttribute('data-theme', nextTheme);
+    if (root.getAttribute('data-theme') !== mode) {
+      root.setAttribute('data-theme', mode);
     }
 
     // Keep transition suppression for two frames so style recalc + paint settle first.
@@ -29,13 +35,13 @@ export function useDarkMode() {
     });
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem(KEY, String(dark));
+      localStorage.setItem(KEY, mode);
     }
-  }, [dark]);
+  }, [mode]);
 
-  const toggle = useCallback(() => {
-    setDark((v) => !v);
+  const cycle = useCallback(() => {
+    setMode((current) => MODES[(MODES.indexOf(current) + 1) % MODES.length]);
   }, []);
 
-  return { dark, toggle };
+  return { mode, setMode, cycle, dark: mode !== 'light' };
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Maximize2, Minimize2, Coffee, Music, Folder, ListMusic, ClipboardList, Newspaper, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Lightbulb, Maximize2, Minimize2, Coffee, Music, Folder, ListMusic, ClipboardList, Newspaper, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -82,7 +82,7 @@ export default function Layout({ children }: Props) {
     if (typeof window === 'undefined') return true;
     return !window.matchMedia('(max-width: 900px)').matches;
   });
-  const { dark, toggle: toggleDark } = useDarkModeContext();
+  const { dark, mode, cycle: cycleTheme } = useDarkModeContext();
   const mainContentRef = useRef<HTMLElement>(null);
   const scrollPositions = useRef<Map<string, number>>(new Map());
   const swipeRef = useRef<{ x: number; y: number; fromEdge: boolean } | null>(null);
@@ -499,13 +499,25 @@ export default function Layout({ children }: Props) {
           </div>
           <button
             type="button"
-            onClick={toggleDark}
+            onClick={cycleTheme}
             className="topbar-icon-btn"
-            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={
+              mode === 'light'
+                ? 'Switch to dark mode'
+                : mode === 'dark'
+                  ? 'Switch to stage mode'
+                  : 'Switch to light mode'
+            }
+            aria-label={
+              mode === 'light'
+                ? 'Switch to dark mode'
+                : mode === 'dark'
+                  ? 'Switch to stage mode'
+                  : 'Switch to light mode'
+            }
             aria-pressed={dark}
           >
-            {dark ? <Sun size={16} /> : <Moon size={16} />}
+            {mode === 'light' ? <Sun size={16} /> : mode === 'dark' ? <Moon size={16} /> : <Lightbulb size={16} />}
           </button>
           <button
             type="button"

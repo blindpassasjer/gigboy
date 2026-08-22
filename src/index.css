@@ -70,6 +70,34 @@
   --shadow-lg:  0 8px 32px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3);
 }
 
+/* Stage mode: max-contrast palette for reading a tablet under harsh/colored stage
+   lighting or direct glare. Pure black background (no mid-gray to wash out), a
+   brighter-than-usual muted tone (normal dark-mode muted grays disappear under
+   glare), and an amber accent that stays distinguishable from red/blue stage gels. */
+[data-theme="stage"] {
+  --bg:         #000000;
+  --surface:    #0a0a0a;
+  --border:     #565656;
+  --text:       #ffffff;
+  --muted:      #c9c9c9;
+  --accent:     #ffd60a;
+  --accent-h:   #ffe066;
+  --accent-contrast: #000000;
+  --bands-hue:  #ffd60a;
+  --bands-hue-soft: #332b00;
+  --bands-hue-contrast: #000000;
+  --danger:     #ff453a;
+  --notes-draw: #32ff7e;
+  --chord:      #ffd60a;
+  --chord-bg:   #332b00;
+  --sidebar-accent: var(--text);
+  --sidebar-hover-bg: #1a1a1a;
+  --sidebar-active-bg: #262626;
+  --shadow:     0 1px 3px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.45);
+  --shadow-md:  0 4px 16px rgba(0,0,0,.6), 0 1px 4px rgba(0,0,0,.5);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,.7), 0 2px 8px rgba(0,0,0,.55);
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -775,7 +803,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   --chord-bg: var(--bands-hue-soft);
 }
 
-[data-theme="dark"] [data-library-mode="bands"] .topbar {
+[data-theme="dark"] [data-library-mode="bands"] .topbar,
+[data-theme="stage"] [data-library-mode="bands"] .topbar {
   --accent-h: color-mix(in srgb, var(--bands-hue) 90%, #fff);
 }
 
@@ -793,7 +822,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   --chord-bg: var(--bands-hue-soft);
 }
 
-[data-theme="dark"] .main-content--band {
+[data-theme="dark"] .main-content--band,
+[data-theme="stage"] .main-content--band {
   --accent-h: color-mix(in srgb, var(--bands-hue) 90%, #fff);
 }
 
@@ -4685,6 +4715,18 @@ input, select, textarea { font: inherit; color: var(--text); }
 [data-theme="dark"] .section-outro      { border-color: #6b3245; background: #3a1e26; color: #f28aa8; }
 [data-theme="dark"] .section-tab        { border-color: #2a5566; background: #16303a; color: #7ed4f0; }
 
+/* Stage mode: near-black backgrounds with brighter, more saturated text/borders than
+   the dark theme so section labels stay legible under glare and colored stage washes. */
+[data-theme="stage"] .section-intro      { border-color: #7a5218; background: #1f1508; color: #ffb84d; }
+[data-theme="stage"] .section-verse      { border-color: #1f6b5c; background: #071f1a; color: #4de8cc; }
+[data-theme="stage"] .section-chorus     { border-color: #1f6b3e; background: #08210f; color: #6dffa0; }
+[data-theme="stage"] .section-bridge     { border-color: #7a4318; background: #1f1006; color: #ff9d52; }
+[data-theme="stage"] .section-prechorus  { border-color: #1d5580; background: #071522; color: #6ec8ff; }
+[data-theme="stage"] .section-interlude  { border-color: #4a3980; background: #150f22; color: #c9b3ff; }
+[data-theme="stage"] .section-solo       { border-color: #806b1a; background: #221c07; color: #ffe066; }
+[data-theme="stage"] .section-outro      { border-color: #802f47; background: #220b12; color: #ff8fb0; }
+[data-theme="stage"] .section-tab        { border-color: #1d5f70; background: #06181c; color: #7fe0ff; }
+
 .toolbar-chord-bracket {
   color: var(--accent);
   font-family: var(--font-mono);
@@ -7722,16 +7764,19 @@ input, select, textarea { font: inherit; color: var(--text); }
   text-overflow: ellipsis;
 }
 
-[data-theme="dark"] .concert-song-jump.active {
+[data-theme="dark"] .concert-song-jump.active,
+[data-theme="stage"] .concert-song-jump.active {
   border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
   background: color-mix(in srgb, var(--accent) 24%, var(--surface));
 }
 
-[data-theme="dark"] .concert-song-jump.played {
+[data-theme="dark"] .concert-song-jump.played,
+[data-theme="stage"] .concert-song-jump.played {
   opacity: .8;
 }
 
-[data-theme="dark"] .concert-song-jump-main small {
+[data-theme="dark"] .concert-song-jump-main small,
+[data-theme="stage"] .concert-song-jump-main small {
   color: color-mix(in srgb, var(--text) 72%, var(--muted));
 }
 

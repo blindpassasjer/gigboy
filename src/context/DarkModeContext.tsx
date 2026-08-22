@@ -2,10 +2,13 @@
 import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useDarkMode } from '../hooks/useDarkMode';
+import type { ThemeMode } from '../hooks/useDarkMode';
 
 type DarkModeContextValue = {
+  mode: ThemeMode;
+  setMode: (mode: ThemeMode) => void;
+  cycle: () => void;
   dark: boolean;
-  toggle: () => void;
 };
 
 const DarkModeContext = createContext<DarkModeContextValue | undefined>(undefined);
