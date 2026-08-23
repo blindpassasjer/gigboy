@@ -475,27 +475,26 @@ export default function Layout({ children }: Props) {
                   </div>
                 </div>
                 <div className="topbar-coffee-popover-content">
-                  <a
-                    href="https://qr.vipps.no/box/26128ed0-008f-4b5a-bd8d-9a936f58cf83/pay-in"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="topbar-coffee-option setlist-action-btn setlist-action-btn--accent"
-                  >
-                    <span className="topbar-coffee-option-label">Vipps me</span>
-                    <ArrowUpRight size={15} />
-                  </a>
-                  <div className="topbar-coffee-popover-divider">
-                    <span>or</span>
+                  <div className="topbar-coffee-options">
+                    <a
+                      href="https://qr.vipps.no/box/26128ed0-008f-4b5a-bd8d-9a936f58cf83/pay-in"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="topbar-coffee-option setlist-action-btn setlist-action-btn--accent"
+                    >
+                      <span className="topbar-coffee-option-label">Vipps me</span>
+                      <ArrowUpRight size={15} />
+                    </a>
+                    <a
+                      href="https://buymeacoffee.com/blindpassasjer"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="topbar-coffee-option setlist-action-btn setlist-action-btn--secondary"
+                    >
+                      <span className="topbar-coffee-option-label">Buy me a coffee</span>
+                      <ArrowUpRight size={15} />
+                    </a>
                   </div>
-                  <a
-                    href="https://buymeacoffee.com/blindpassasjer"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="topbar-coffee-option setlist-action-btn setlist-action-btn--secondary"
-                  >
-                    <span className="topbar-coffee-option-label">Buy me a coffee</span>
-                    <ArrowUpRight size={15} />
-                  </a>
                 </div>
               </div>
             ) : null}

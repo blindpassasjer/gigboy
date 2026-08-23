@@ -564,12 +564,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-size: .85rem;
 }
 
+.topbar-coffee-options {
+  display: flex;
+  gap: .6rem;
+}
+
 .topbar-coffee-option {
+  flex: 1;
   justify-content: center;
   gap: .4rem;
-  min-height: 2.3rem;
-  padding: .5rem .9rem;
-  font-size: .82rem;
+  min-height: 3rem;
+  padding: .75rem .9rem;
+  font-size: .85rem;
   font-weight: 600;
 }
 
@@ -587,24 +593,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .topbar-coffee-popover-content .setlist-action-btn.topbar-coffee-option.setlist-action-btn--accent:hover {
   background: linear-gradient(120deg, #ff6a37, #e14e28);
-}
-
-.topbar-coffee-popover-divider {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  color: var(--muted);
-  font-size: .72rem;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.topbar-coffee-popover-divider::before,
-.topbar-coffee-popover-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
 }
 
 .topbar-invites-group {
@@ -5932,6 +5920,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   min-width: var(--sidebar-width);
   box-shadow: var(--shadow);
   border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
