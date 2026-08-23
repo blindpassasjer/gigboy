@@ -542,17 +542,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-bottom-color: color-mix(in srgb, #b9752f 20%, var(--border));
 }
 
-.topbar-coffee-popover-badge {
+.topbar-coffee-popover-avatar {
   flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 2.6rem;
+  height: 2.6rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #b9752f, #8a5322);
-  color: #fff;
+  object-fit: cover;
   box-shadow: 0 4px 10px rgba(138, 83, 34, .35);
+  border: 2px solid color-mix(in srgb, #b9752f 55%, transparent);
 }
 
 .topbar-coffee-popover-header p {

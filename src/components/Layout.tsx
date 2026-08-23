@@ -463,9 +463,12 @@ export default function Layout({ children }: Props) {
             {coffeeOpen ? (
               <div id="topbar-coffee-popover" className="topbar-coffee-popover" role="dialog" aria-label="Buy me a coffee">
                 <div className="topbar-coffee-popover-header">
-                  <span className="topbar-coffee-popover-badge" aria-hidden="true">
-                    <Coffee size={16} />
-                  </span>
+                  <img
+                    src="/assets/developer.jpg"
+                    alt=""
+                    className="topbar-coffee-popover-avatar"
+                    aria-hidden="true"
+                  />
                   <div>
                     <h2>Buy me a coffee</h2>
                     <p>Support keeps Gigboy running</p>
