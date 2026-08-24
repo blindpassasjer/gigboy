@@ -198,6 +198,7 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
   if (payload.images.length > 0) {
     const imagesFolder = root.folder('images');
     const failedDownloads: string[] = [];
+    const usedNames = new Set<string>();
 
     await Promise.all(payload.images.map(async (image) => {
       try {
@@ -205,7 +206,14 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const bytes = await response.arrayBuffer();
         const extension = extensionFromImageMimeType(image.mimeType);
-        imagesFolder?.file(`${sanitizeFileName(image.title)}.${extension}`, bytes);
+        let fileName = `${sanitizeFileName(image.title)}.${extension}`;
+        let counter = 2;
+        while (usedNames.has(fileName)) {
+          fileName = `${sanitizeFileName(image.title)}-${counter}.${extension}`;
+          counter += 1;
+        }
+        usedNames.add(fileName);
+        imagesFolder?.file(fileName, bytes);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         failedDownloads.push(`${image.title}: ${image.url} (${message})`);

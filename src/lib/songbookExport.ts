@@ -186,6 +186,7 @@ async function addPressKitImagesFolder(zip: JSZip, images: PressKitImageAsset[])
   if (images.length === 0) return;
   const folder = zip.folder('images');
   const failedDownloads: string[] = [];
+  const usedNames = new Set<string>();
 
   await Promise.all(images.map(async (image) => {
     try {
@@ -193,7 +194,14 @@ async function addPressKitImagesFolder(zip: JSZip, images: PressKitImageAsset[])
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const bytes = await response.arrayBuffer();
       const extension = extensionFromImageMimeType(image.mimeType);
-      folder?.file(`${sanitizeFileName(image.title)}.${extension}`, bytes);
+      let fileName = `${sanitizeFileName(image.title)}.${extension}`;
+      let counter = 2;
+      while (usedNames.has(fileName)) {
+        fileName = `${sanitizeFileName(image.title)}-${counter}.${extension}`;
+        counter += 1;
+      }
+      usedNames.add(fileName);
+      folder?.file(fileName, bytes);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       failedDownloads.push(`${image.title}: ${image.url} (${message})`);
