@@ -1016,6 +1016,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   animation-iteration-count: infinite;
 }
 
+.song-meta-badge--pulse {
+  animation-name: tempo-badge-pulse;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
 @keyframes tempo-pulse {
   0%, 100% {
     opacity: .25;
@@ -1027,8 +1033,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 }
 
+@keyframes tempo-badge-pulse {
+  0%, 100% {
+    box-shadow: inset 0 0 0 0 color-mix(in srgb, currentColor 0%, transparent);
+  }
+  12% {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, currentColor 55%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .tempo-pulse-dot {
+  .tempo-pulse-dot,
+  .song-meta-badge--pulse {
     animation: none;
     opacity: 1;
   }
@@ -6986,39 +7002,6 @@ input, select, textarea { font: inherit; color: var(--text); }
 .setlist-song-card.drop-target {
   border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
-}
-
-:root {
-  --setlist-pulse-spread: .3rem;
-  --setlist-pulse-opacity: 50%;
-}
-
-/* Stage mode: widen and brighten the ring so the "up next" pulse reads from
-   across the stage, not just up close. */
-[data-theme="stage"] {
-  --setlist-pulse-spread: .6rem;
-  --setlist-pulse-opacity: 75%;
-}
-
-.setlist-song-card--pulse {
-  animation-name: setlist-card-pulse;
-  animation-timing-function: ease-out;
-  animation-iteration-count: infinite;
-}
-
-@keyframes setlist-card-pulse {
-  0%, 100% {
-    box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--song-item-accent) 0%, transparent);
-  }
-  12% {
-    box-shadow: inset 0 0 0 var(--setlist-pulse-spread) color-mix(in srgb, var(--song-item-accent) var(--setlist-pulse-opacity), transparent);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .setlist-song-card--pulse {
-    animation: none;
-  }
 }
 
 .setlist-reorder-btns {
