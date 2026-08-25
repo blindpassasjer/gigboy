@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>GIGBOY</title>
+    <!--
+      GitHub Pages has no server-side rewrites, so a direct/refreshed load of a deep link
+      (e.g. /gigboy/songs/123) 404s. This is the standard "spa-github-pages" redirect trick:
+      encode the real path into a query string and bounce to the app root, where the inline
+      script in index.html decodes it back with history.replaceState before React Router
+      ever sees the URL. Only relevant to the static demo build — self-hosted Gigboy runs
+      behind Express, which never hits this file.
+    -->
+    <script>
+      var pathSegmentsToKeep = 1; // keep the "/gigboy" repo-name segment
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?p=' +
+        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

@@ -31,3 +31,4 @@ config/firebase/*.json
 *.njsproj
 *.sln
 *.sw?
+dist-demo/

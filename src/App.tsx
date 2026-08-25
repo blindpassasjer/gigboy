@@ -168,16 +168,21 @@ function AuthenticatedApp() {
   );
 }
 
-const router = createBrowserRouter([
-  { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
-  { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
-  { path: '/public/press-kit/:token', element: <PublicBandPressKitPage />, errorElement: routerErrorElement },
-  { path: '/terms', element: <TermsPage />, errorElement: routerErrorElement },
-  { path: '/privacy', element: <PrivacyPage />, errorElement: routerErrorElement },
-  { path: '/invite/:token', element: <AcceptInvitePage />, errorElement: routerErrorElement },
-  { path: '/', element: <AuthenticatedApp />, errorElement: routerErrorElement },
-  { path: '*', element: <AuthenticatedApp />, errorElement: routerErrorElement },
-]);
+const router = createBrowserRouter(
+  [
+    { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
+    { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
+    { path: '/public/press-kit/:token', element: <PublicBandPressKitPage />, errorElement: routerErrorElement },
+    { path: '/terms', element: <TermsPage />, errorElement: routerErrorElement },
+    { path: '/privacy', element: <PrivacyPage />, errorElement: routerErrorElement },
+    { path: '/invite/:token', element: <AcceptInvitePage />, errorElement: routerErrorElement },
+    { path: '/', element: <AuthenticatedApp />, errorElement: routerErrorElement },
+    { path: '*', element: <AuthenticatedApp />, errorElement: routerErrorElement },
+  ],
+  // GitHub Pages serves the demo from a repo subpath (e.g. /gigboy/) rather than the
+  // domain root; BASE_URL is set from vite.config.ts's `base`, '/' for every other build.
+  { basename: import.meta.env.BASE_URL }
+);
 
 function AppContent() {
   const { dark } = useDarkModeContext();

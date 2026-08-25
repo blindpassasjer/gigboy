@@ -9,6 +9,9 @@ import BrandMark from './BrandMark';
 import { useDarkModeContext } from '../context/DarkModeContext';
 import toast from '../utils/anchoredToast';
 import UserAvatar from './UserAvatar';
+import { isDemoMode } from '../lib/demo/demoMode';
+
+const DEMO_BANNER_HEIGHT = 36;
 
 interface Props {
   children: ReactNode;
@@ -428,7 +431,27 @@ export default function Layout({ children }: Props) {
   }, [coffeeOpen]);
 
   return (
-    <div className="app-shell" data-library-mode={themedBandId ? 'bands' : 'solo'}>
+    <>
+      {isDemoMode ? (
+        <div className="demo-banner" style={{ height: DEMO_BANNER_HEIGHT }}>
+          <span>
+            You're viewing a live demo with sample data — nothing leaves your browser.
+          </span>
+          <a
+            href="https://github.com/blindpassasjer/gigboy"
+            target="_blank"
+            rel="noreferrer"
+            className="demo-banner-link"
+          >
+            Self-host your own <ArrowUpRight size={13} />
+          </a>
+        </div>
+      ) : null}
+      <div
+        className="app-shell"
+        data-library-mode={themedBandId ? 'bands' : 'solo'}
+        style={isDemoMode ? { height: `calc(100dvh - ${DEMO_BANNER_HEIGHT}px)` } : undefined}
+      >
       <header className="topbar">
         <button
           type="button"
@@ -609,6 +632,7 @@ export default function Layout({ children }: Props) {
         </main>
         {renderContextFab()}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

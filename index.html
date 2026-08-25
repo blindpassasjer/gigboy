@@ -64,6 +64,25 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      Decodes the "?p=" redirect written by public/404.html (see its comment) back into a
+      real path before React Router mounts. A harmless no-op outside the GitHub Pages demo,
+      where there's never a "?p=" param to find.
+    -->
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var redirectedPath = params.get('p');
+        if (redirectedPath === null) return;
+        var restoredQuery = params.get('q');
+        var newUrl =
+          window.location.pathname.replace(/\/$/, '') +
+          '/' + redirectedPath.replace(/~and~/g, '&') +
+          (restoredQuery ? '?' + restoredQuery.replace(/~and~/g, '&') : '') +
+          window.location.hash;
+        window.history.replaceState(null, '', newUrl);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

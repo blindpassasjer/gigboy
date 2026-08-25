@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { isDemoMode } from '../lib/demo/demoMode';
+import { getStorageUsage } from '../lib/demo/demoStore';
 
 // Self-host has no plan tiers; storage quota is a raw per-user/per-band value.
 // This is the old `crew` tier's figure, used only when no explicit quota is set.
@@ -24,6 +26,7 @@ interface StorageUsageResponse {
 }
 
 async function fetchStorageUsage(bandId?: string | null): Promise<StorageUsageResponse> {
+  if (isDemoMode) return getStorageUsage();
   const url = bandId ? `/api/storage-usage?bandId=${encodeURIComponent(bandId)}` : '/api/storage-usage';
   const response = await fetch(url, { credentials: 'include' });
   if (!response.ok) {

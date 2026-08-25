@@ -1,4 +1,6 @@
 import type { LyricNoteDocument } from '../types';
+import { isDemoMode } from './demo/demoMode';
+import * as demoStore from './demo/demoStore';
 
 /**
  * Self-host implementation of song hand notes (freehand drawings + typed annotations on song
@@ -45,6 +47,16 @@ export function subscribeToSongHandNotes(
   onUpdate: (notes: LyricNoteDocument[]) => void,
   onError?: (error: Error) => void,
 ): () => void {
+  if (isDemoMode) {
+    let cancelled = false;
+    void demoStore.delay(demoStore.listHandNotes(bandId, songId)).then((notes) => {
+      if (!cancelled) onUpdate(notes);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }
+
   let cancelled = false;
   let lastPayload = '';
 
@@ -80,6 +92,9 @@ export async function saveSongHandNote(params: {
   note: LyricNoteDocument;
 }): Promise<void> {
   const { bandId, songId, note } = params;
+  if (isDemoMode) {
+    return demoStore.delay(demoStore.saveHandNote(bandId, songId, note)).then(() => undefined);
+  }
   await apiFetch(`${notesUrl(bandId, songId)}/me`, {
     method: 'PUT',
     body: JSON.stringify({
@@ -97,6 +112,9 @@ export async function deleteSongHandNote(params: {
   authorUid: string;
 }): Promise<void> {
   const { bandId, songId, authorUid } = params;
+  if (isDemoMode) {
+    return demoStore.delay(demoStore.deleteHandNote(bandId, songId, authorUid)).then(() => undefined);
+  }
   const url = `${notesUrl(bandId, songId)}/${authorUid}`;
   await apiFetch(url, { method: 'DELETE' });
 }

@@ -1,3 +1,6 @@
+import { isDemoMode } from './demo/demoMode';
+import * as demoStore from './demo/demoStore';
+
 export interface RecorderIdentity {
   userId: string;
   displayName: string;
@@ -54,6 +57,7 @@ export async function loadSongRecordings(
   bandId: string,
   songId: string,
 ): Promise<SongRecording[]> {
+  if (isDemoMode) return demoStore.delay(demoStore.listRecordings(bandId, songId));
   const data = await apiFetch<{ recordings: SongRecording[] }>(recordingsUrl(bandId, songId));
   return data.recordings ?? [];
 }
@@ -68,6 +72,7 @@ export async function uploadSongRecording(
   waveformBars?: number[],
 ): Promise<SongRecording> {
   void recorder; // recorder identity is derived server-side from the session (matches uploader pattern elsewhere)
+  if (isDemoMode) return demoStore.delay(demoStore.addRecording(bandId, songId, blob, name, durationMs, waveformBars));
   const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
   const formData = new FormData();
   formData.append('file', blob, `${name || 'recording'}.${ext}`);
@@ -89,6 +94,7 @@ export async function deleteSongRecording(
   songId: string,
   recording: SongRecording,
 ): Promise<void> {
+  if (isDemoMode) return demoStore.delay(demoStore.removeRecording(bandId, songId, recording.id)).then(() => undefined);
   await apiFetch(`${recordingsUrl(bandId, songId)}/${recording.id}`, { method: 'DELETE' });
 }
 
@@ -98,6 +104,9 @@ export async function renameSongRecording(
   recording: SongRecording,
   newName: string,
 ): Promise<void> {
+  if (isDemoMode) {
+    return demoStore.delay(demoStore.renameRecording(bandId, songId, recording.id, newName)).then(() => undefined);
+  }
   await apiFetch(`${recordingsUrl(bandId, songId)}/${recording.id}`, {
     method: 'PATCH',
     body: JSON.stringify({ name: newName }),

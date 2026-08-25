@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://blindpassasjer.github.io/gigboy/"><strong>Live demo</strong></a> ·
   <a href="#quick-start-self-hosting">Quick start</a> ·
   <a href="#screenshots">Screenshots</a> ·
   <a href="#features">Features</a> ·
@@ -32,6 +33,17 @@ one Docker Compose command, and your band's setlists, recordings, and press kit 
 database, not a startup's.
 
 No subscriptions, no per-seat pricing, no feature paywalls — every account gets full access.
+
+## Live demo
+
+**[blindpassasjer.github.io/gigboy](https://blindpassasjer.github.io/gigboy/)** — a static build
+that runs entirely in your browser with seeded sample data, no backend involved. It's how the app
+behaves once you're logged in, minus real accounts: click around, add/edit songs, try transpose,
+the metronome and tuner, hand-drawn notes, and audio recording. Nothing you do there leaves your
+browser or touches a real database — logging out (or deleting the demo account) just resets the
+sample data. Deployed automatically from this repo by
+[.github/workflows/deploy-demo.yml](.github/workflows/deploy-demo.yml); the real product is
+self-hosted only (see below).
 
 ## Screenshots
 

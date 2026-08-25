@@ -204,6 +204,32 @@ a:hover { text-decoration: underline; }
 button { cursor: pointer; font: inherit; border: none; background: none; }
 input, select, textarea { font: inherit; color: var(--text); }
 
+/* ─── Demo banner ───────────────────────────────────────────────────────────── */
+/* Only rendered when the static demo build (VITE_DEMO=true) is running. */
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  padding: 0 1rem;
+  text-align: center;
+  flex-wrap: wrap;
+}
+
+.demo-banner-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.demo-banner-link:hover { text-decoration: underline; }
+
 /* ─── App Shell ─────────────────────────────────────────────────────────────── */
 /* Fixed-height shell keeps the sidebar + main-content inside the viewport on wide screens. */
 .app-shell {

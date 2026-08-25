@@ -1,4 +1,6 @@
 import type { Band } from '../types';
+import { isDemoMode } from './demo/demoMode';
+import * as demoStore from './demo/demoStore';
 
 /** A band logo asset, self-host's equivalent of PressKitImage but for the logo asset library. */
 export interface BandLogoAsset {
@@ -42,11 +44,13 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function listBandLogos(bandId: string): Promise<BandLogoAsset[]> {
+  if (isDemoMode) return demoStore.delay(demoStore.listBandLogos(bandId));
   const data = await apiFetch<{ logos: BandLogoAsset[] }>(`/bands/${bandId}/logos`);
   return data.logos ?? [];
 }
 
 export async function uploadBandLogoAsset(bandId: string, file: File): Promise<BandLogoAsset> {
+  if (isDemoMode) return demoStore.delay(demoStore.addBandLogo(bandId, file));
   const formData = new FormData();
   formData.append('file', file);
   const data = await apiFetch<{ logo: BandLogoAsset }>(`/bands/${bandId}/logos`, {
@@ -57,11 +61,13 @@ export async function uploadBandLogoAsset(bandId: string, file: File): Promise<B
 }
 
 export async function removeBandLogoAsset(bandId: string, logoId: string): Promise<void> {
+  if (isDemoMode) return demoStore.delay(demoStore.removeBandLogo(bandId, logoId)).then(() => undefined);
   await apiFetch<Record<string, never>>(`/bands/${bandId}/logos/${logoId}`, { method: 'DELETE' });
 }
 
 /** Sets (or, with `logoId: null`, clears) the band's currently-selected logo. */
 export async function selectBandLogo(bandId: string, logoId: string | null): Promise<Band> {
+  if (isDemoMode) return demoStore.delay(demoStore.selectBandLogo(bandId, logoId));
   const data = await apiFetch<{ band: Band }>(`/bands/${bandId}/logos/selected`, {
     method: 'PUT',
     body: JSON.stringify({ logoId }),
