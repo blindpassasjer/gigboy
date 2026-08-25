@@ -25,15 +25,21 @@ export default function SongMetaBadges({ song, counts, pulseTempo = false }: Pro
         <span
           className={`song-meta-badge${pulseTempo ? ' song-meta-badge--pulse' : ''}`}
           title={`Tempo: ${song.tempo} BPM`}
-          style={pulseTempo ? { animationDuration: `${60000 / song.tempo}ms` } : undefined}
         >
           <Gauge size={11} /> {song.tempo}
           {pulseTempo && (
-            <span
-              className="tempo-pulse-dot"
-              style={{ animationDuration: `${60000 / song.tempo}ms` }}
-              aria-hidden="true"
-            />
+            <>
+              <span
+                className="tempo-pulse-ring"
+                style={{ animationDuration: `${60000 / song.tempo}ms` }}
+                aria-hidden="true"
+              />
+              <span
+                className="tempo-pulse-dot"
+                style={{ animationDuration: `${60000 / song.tempo}ms` }}
+                aria-hidden="true"
+              />
+            </>
           )}
         </span>
       ) : null}
