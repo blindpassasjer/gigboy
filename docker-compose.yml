@@ -29,6 +29,8 @@ services:
       PORT: ${PORT:-6168}
       NODE_ENV: production
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       OPERATOR_NAME: ${OPERATOR_NAME:-}

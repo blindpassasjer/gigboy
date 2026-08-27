@@ -1,15 +1,17 @@
 import { Router } from 'express';
+import type { Request } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { pressKitShares } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
 import { requireBandEditor, requireBandMember } from '../middleware/bandAccess.js';
 import { loadBandPressKit } from './bandPressKits.js';
+import { resolveOrigin } from '../lib/http.js';
 
 type ShareRow = typeof pressKitShares.$inferSelect;
 
-function shareToApi(req: { protocol: string; get(name: string): string | undefined }, row: ShareRow) {
-  const origin = `${req.protocol}://${req.get('host')}`;
+function shareToApi(req: Request, row: ShareRow) {
+  const origin = resolveOrigin(req);
   return {
     token: row.token,
     publicUrl: `${origin}/public/press-kit/${row.token}`,

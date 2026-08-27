@@ -75,6 +75,8 @@ export async function streamBandLogoFile(
     return;
   }
   res.setHeader('Content-Type', mimeType);
+  res.setHeader('Content-Disposition', 'inline');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Content-Length', String(file.sizeBytes));
   file.stream.pipe(res);
 }

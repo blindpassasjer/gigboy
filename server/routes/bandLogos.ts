@@ -17,6 +17,7 @@ import {
 } from '../lib/bandLogos.js';
 import { toBandApi } from '../lib/band.js';
 import { assertUploadWithinQuota } from '../lib/storageQuota.js';
+import { imageBytesMatchMime } from '../lib/imageSniff.js';
 
 /** Reads :bandId via a widened Request type — route handlers on '/' otherwise infer params as {}. */
 function bandIdFromReq(req: Request): string {
@@ -92,6 +93,11 @@ bandLogosRouter.post(
       }
       if (!BAND_LOGO_ACCEPTED_MIME_TYPES.includes(file.mimetype)) {
         res.status(400).json({ error: 'Only JPEG, PNG, WebP, or GIF images are accepted.' });
+        return;
+      }
+      // Multer only sees the client-declared Content-Type; verify the actual bytes match.
+      if (!imageBytesMatchMime(file.buffer, file.mimetype)) {
+        res.status(400).json({ error: 'File contents do not match a supported image format.' });
         return;
       }
 

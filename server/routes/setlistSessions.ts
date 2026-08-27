@@ -87,6 +87,16 @@ bandSetlistSessionRouter.get('/stream', async (req, res) => {
   if (!(await verifySetlist(req, res))) return;
   const { setlistId } = routeParams(req);
 
+  const room = getRoom(setlistId);
+
+  // Cap concurrent streams per user per room so a single account can't exhaust memory/sockets.
+  const MAX_STREAMS_PER_USER = 5;
+  const existingForUser = [...room.subs].filter((s) => s.userId === req.userId).length;
+  if (existingForUser >= MAX_STREAMS_PER_USER) {
+    res.status(429).json({ error: 'Too many open sessions for this setlist.' });
+    return;
+  }
+
   res.set({
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
@@ -95,7 +105,6 @@ bandSetlistSessionRouter.get('/stream', async (req, res) => {
   });
   res.flushHeaders?.();
 
-  const room = getRoom(setlistId);
   const sub: Subscriber = { res, userId: req.userId! };
   room.subs.add(sub);
 

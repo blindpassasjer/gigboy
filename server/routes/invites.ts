@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
-import { eq, or } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { users, sessions, userInvites } from '../db/schema.js';
 import {
@@ -11,9 +11,15 @@ import {
 } from '../middleware/session.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import { toPublicUser } from '../lib/user.js';
+import { resolveOrigin } from '../lib/http.js';
 
 const BCRYPT_ROUNDS = 12;
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days, matches band invites
+
+const UNIQUE_VIOLATION = '23505';
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: string }).code === UNIQUE_VIOLATION;
+}
 
 /** Admin-only invite management, mounted at /api/admin/invites. */
 export const adminInvitesRouter = Router();
@@ -36,7 +42,7 @@ adminInvitesRouter.post('/', async (req, res) => {
       expiresAt,
     });
 
-    const origin = `${req.protocol}://${req.get('host')}`;
+    const origin = resolveOrigin(req);
     res.json({
       inviteId: id,
       inviteUrl: `${origin}/invite/${id}`,
@@ -162,36 +168,46 @@ publicInvitesRouter.post('/:token/accept', async (req, res) => {
     }
 
     const emailLower = email.trim().toLowerCase();
-    const existing = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(or(eq(users.emailLower, emailLower), eq(users.username, username.trim())))
-      .limit(1);
-    if (existing.length > 0) {
-      res.json({ user: null, error: 'An account with this email or username already exists.' });
-      return;
-    }
-
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const id = crypto.randomUUID();
 
-    const [row] = await db
-      .insert(users)
-      .values({
-        id,
-        email: email.trim(),
-        emailLower,
-        username: username.trim(),
-        passwordHash,
-        fullName: typeof fullName === 'string' && fullName.trim() ? fullName.trim() : null,
-        role: invite.role === 'admin' ? 'admin' : 'member',
-      })
-      .returning();
-
-    await db
+    // Atomically claim the invite: only one concurrent request can flip it from pending.
+    const [claimed] = await db
       .update(userInvites)
       .set({ status: 'accepted', acceptedUserId: id })
-      .where(eq(userInvites.id, invite.id));
+      .where(and(eq(userInvites.id, invite.id), eq(userInvites.status, 'pending')))
+      .returning();
+    if (!claimed) {
+      res.status(410).json({ error: 'This invite is no longer valid.' });
+      return;
+    }
+
+    let row;
+    try {
+      [row] = await db
+        .insert(users)
+        .values({
+          id,
+          email: email.trim(),
+          emailLower,
+          username: username.trim(),
+          passwordHash,
+          fullName: typeof fullName === 'string' && fullName.trim() ? fullName.trim() : null,
+          role: invite.role === 'admin' ? 'admin' : 'member',
+        })
+        .returning();
+    } catch (insertErr) {
+      // Release the invite so the user can retry with a different email/username.
+      await db
+        .update(userInvites)
+        .set({ status: 'pending', acceptedUserId: null })
+        .where(eq(userInvites.id, invite.id));
+      if (isUniqueViolation(insertErr)) {
+        res.json({ user: null, error: 'An account with this email or username already exists.' });
+        return;
+      }
+      throw insertErr;
+    }
 
     const token = generateSessionToken();
     const expiresAt = sessionExpiry();

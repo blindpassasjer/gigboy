@@ -82,6 +82,17 @@ uploaded files.
    in `.env` once you've put a reverse proxy in front of the container that terminates
    real HTTPS.
 
+   **When you do put a reverse proxy in front**, also set two more variables in `.env`:
+   - `PUBLIC_ORIGIN` — the canonical public URL of the instance, e.g.
+     `https://gigboy.example.com` (scheme + host, no trailing slash). This is used to build
+     invite links, press-kit share URLs and social-preview tags. Without it those URLs are
+     derived from the incoming `Host` header, which a client can forge.
+   - `TRUST_PROXY` — set to `1` for a single proxy hop (or a subnet/list per Express's
+     "trust proxy" docs). The auth rate limiter keys on the client IP; behind a proxy with
+     this left at its default (`false`) every request looks like it comes from the proxy, so
+     one abuser trips the limit for everyone. Leave it `false` when the container is exposed
+     directly — setting `1` without a real proxy lets clients spoof their IP.
+
 ## Admin account and invites
 
 Gigboy has no open self-registration. The first account is bootstrapped from environment

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { eq } from 'drizzle-orm';
+import { and, eq, lt, ne } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { sessions } from '../db/schema.js';
 
@@ -62,6 +62,29 @@ export async function attachSession(req: Request, _res: Response, next: NextFunc
     console.error('Session lookup failed:', err);
     next();
   }
+}
+
+/**
+ * Deletes every session for `userId` except `keepToken`. Called after a password change (and
+ * other credential changes) so a stolen/leaked session can't outlive the user's remediation.
+ * Pass `keepToken = null` to revoke all of them.
+ */
+export async function revokeOtherSessions(userId: string, keepToken: string | null): Promise<void> {
+  const condition = keepToken
+    ? and(eq(sessions.userId, userId), ne(sessions.token, keepToken))
+    : eq(sessions.userId, userId);
+  await db.delete(sessions).where(condition);
+}
+
+/** Periodically purges expired session rows so the table doesn't grow unbounded. */
+export function startSessionCleanup(): void {
+  const runOnce = () => {
+    db.delete(sessions)
+      .where(lt(sessions.expiresAt, new Date()))
+      .catch((err) => console.error('Session cleanup failed:', err));
+  };
+  runOnce();
+  setInterval(runOnce, 6 * 60 * 60 * 1000).unref();
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {

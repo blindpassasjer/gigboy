@@ -16,6 +16,7 @@ import {
 } from '../lib/pressKitImages.js';
 import { insertTrashItem } from '../lib/trash.js';
 import { assertUploadWithinQuota } from '../lib/storageQuota.js';
+import { imageBytesMatchMime } from '../lib/imageSniff.js';
 
 function downloadUrlBase(req: Request): string {
   return `/api/bands/${bandIdFromReq(req)}/press-kit-images`;
@@ -102,6 +103,15 @@ bandPressKitImagesRouter.post(
       }
       if (thumb.mimetype !== PRESS_KIT_IMAGE_THUMB_MIME_TYPE) {
         res.status(400).json({ error: 'Thumbnail must be a WebP image.' });
+        return;
+      }
+      // Multer only sees the client-declared Content-Type; verify the actual bytes match.
+      if (!imageBytesMatchMime(file.buffer, file.mimetype)) {
+        res.status(400).json({ error: 'File contents do not match a supported image format.' });
+        return;
+      }
+      if (!imageBytesMatchMime(thumb.buffer, PRESS_KIT_IMAGE_THUMB_MIME_TYPE)) {
+        res.status(400).json({ error: 'Thumbnail contents are not a valid WebP image.' });
         return;
       }
 

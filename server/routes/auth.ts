@@ -10,8 +10,13 @@ import {
   clearSessionCookie,
   getSessionToken,
   requireAuth,
+  revokeOtherSessions,
 } from '../middleware/session.js';
 import { toPublicUser } from '../lib/user.js';
+
+// A valid-looking bcrypt hash of a random string, compared against on the "no such user" login
+// path so response timing doesn't reveal whether an email is registered.
+const DUMMY_BCRYPT_HASH = '$2b$12$prhAtXV2Zu8T7dLYsqf0Du.LazNI20TWv/eaXn0/gzNSKEQE/AcxK';
 
 const UNIQUE_VIOLATION = '23505';
 function isUniqueViolation(err: unknown): boolean {
@@ -36,6 +41,8 @@ authRouter.post('/login', async (req, res) => {
     const row = rows[0];
 
     if (!row) {
+      // Spend comparable time to a real bcrypt check so timing doesn't leak account existence.
+      await bcrypt.compare(password, DUMMY_BCRYPT_HASH);
       res.json({ user: null, error: 'Invalid email or password.' });
       return;
     }
@@ -175,6 +182,8 @@ authRouter.post('/password', requireAuth, async (req, res) => {
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
     await db.update(users).set({ passwordHash }).where(eq(users.id, req.userId!));
+    // Invalidate every other session for this user so a leaked/stolen one can't survive the change.
+    await revokeOtherSessions(req.userId!, getSessionToken(req));
     res.json({ error: null });
   } catch (err) {
     console.error('Password update failed:', err);

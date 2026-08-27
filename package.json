@@ -47,6 +47,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2",
+    "@electric-sql/pglite": "^0.5.8",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/bcrypt": "^5.0.2",

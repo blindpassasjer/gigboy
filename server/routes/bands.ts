@@ -5,6 +5,7 @@ import { bandInvites, bandMembers, bands } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
 import { requireBandEditor, requireBandMember } from '../middleware/bandAccess.js';
 import { toBandApi } from '../lib/band.js';
+import { resolveOrigin } from '../lib/http.js';
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -115,7 +116,7 @@ bandsRouter.post('/:id/invite-link', requireBandEditor, async (req, res) => {
       expiresAt,
     });
 
-    const origin = `${req.protocol}://${req.get('host')}`;
+    const origin = resolveOrigin(req);
     res.json({
       inviteId: id,
       inviteUrl: `${origin}/profile/invites?bandInvite=${id}`,

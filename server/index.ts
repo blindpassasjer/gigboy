@@ -3,7 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { attachSession } from './middleware/session.js';
+import { attachSession, startSessionCleanup } from './middleware/session.js';
+import { securityHeaders } from './middleware/securityHeaders.js';
+import { resolveOrigin } from './lib/http.js';
 import { getPublicPressKitData } from './routes/publicPressKits.js';
 import { renderPressKitOgHtml } from './lib/pressKitOg.js';
 import { authRateLimit } from './middleware/rateLimit.js';
@@ -53,6 +55,21 @@ const DIST_DIR = path.resolve(__dirname, '../dist');
 
 const app = express();
 app.disable('x-powered-by');
+
+// Behind a reverse proxy (the documented Docker deployment), the client IP the rate limiter keys
+// on lives in X-Forwarded-For, not the socket. TRUST_PROXY controls how many proxy hops to trust:
+// a number, 'true'/'false', or a subnet list (see Express "trust proxy" docs). Defaults to
+// 'false' (container exposed directly) — set TRUST_PROXY=1 when a reverse proxy sits in front,
+// otherwise X-Forwarded-For would be attacker-spoofable and the rate limiter bypassable.
+const trustProxyRaw = process.env.TRUST_PROXY ?? 'false';
+const trustProxy =
+  trustProxyRaw === 'true' ? true
+  : trustProxyRaw === 'false' ? false
+  : /^\d+$/.test(trustProxyRaw) ? Number(trustProxyRaw)
+  : trustProxyRaw;
+app.set('trust proxy', trustProxy);
+
+app.use(securityHeaders);
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser(process.env.SESSION_SECRET));
 app.use(attachSession);
@@ -121,7 +138,7 @@ app.get('/press-kit/:token', async (req, res, next) => {
       next();
       return;
     }
-    const origin = `${req.protocol}://${req.get('host')}`;
+    const origin = resolveOrigin(req);
     const html = renderPressKitOgHtml(cachedIndexHtml, data, req.originalUrl ? `${origin}${req.originalUrl}` : origin, origin);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
@@ -141,6 +158,8 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Something went wrong. Please try again.' });
 });
+
+startSessionCleanup();
 
 app.listen(PORT, () => {
   console.log(`Gigboy self-host server listening on port ${PORT}`);
