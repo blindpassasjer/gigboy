@@ -71,6 +71,41 @@
       "when": 1787222030253,
       "tag": "0009_concerned_millenium_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787819370876,
+      "tag": "0010_fair_speedball",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787820127897,
+      "tag": "0011_pink_puma",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787821067469,
+      "tag": "0012_uneven_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1787821465247,
+      "tag": "0013_colossal_silvermane",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1787824775655,
+      "tag": "0014_worthless_lake",
+      "breakpoints": true
     }
   ]
 }

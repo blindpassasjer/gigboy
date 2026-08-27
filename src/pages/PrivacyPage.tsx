@@ -1,17 +1,25 @@
 import { Link } from 'react-router-dom';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useInstanceConfig } from '../hooks/useInstanceConfig';
+
+const LAST_UPDATED = 'July 16, 2026';
 
 export default function PrivacyPage() {
   useDocumentTitle('Privacy Policy');
+  const config = useInstanceConfig();
+
+  const contact = config?.operatorContactEmail?.trim()
+    || 'the contact address published by the operator of this instance';
+
   return (
     <section className="legal-page">
       <Link to="/" className="back-link">← Back</Link>
       <h1>Privacy Policy</h1>
-      <p className="legal-updated">Last updated: July 16, 2026</p>
+      <p className="legal-updated">Last updated: {LAST_UPDATED}</p>
 
       <p>
-        This Privacy Policy explains what data GIGBOY ("we", "us") collects when you
-        use the Service, and how it's used.
+        This Privacy Policy explains what data this Gigboy deployment ("we", "us")
+        collects when you use the Service, and how it's used.
       </p>
 
       <h2>1. Data we collect</h2>
@@ -30,7 +38,7 @@ export default function PrivacyPage() {
 
       <h2>3. Where your data lives</h2>
       <p>
-        GIGBOY is self-hosted: account data and your song/setlist content are stored in
+        Gigboy is self-hosted: account data and your song/setlist content are stored in
         this deployment's own database and file storage, run by whoever operates this
         instance — not by a third-party SaaS provider.
       </p>
@@ -55,7 +63,7 @@ export default function PrivacyPage() {
         You can delete your account at any time, which permanently removes your
         profile and any bands you own. If you're in the EU/EEA/UK, you also have the
         right to access, correct, or request erasure of your personal data, and to
-        object to or restrict certain processing — contact us at sebastian@manriquez.no to
+        object to or restrict certain processing — contact {contact} to
         exercise these rights beyond what's self-service in the app.
       </p>
 
@@ -73,7 +81,7 @@ export default function PrivacyPage() {
       <p>We may update this policy from time to time; material changes will be noted here.</p>
 
       <h2>9. Contact</h2>
-      <p>Questions about this policy or your data: sebastian@manriquez.no.</p>
+      <p>Questions about this policy or your data: {contact}.</p>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { Request } from 'express';
 import { and, eq } from 'drizzle-orm';
 import type { PgTableWithColumns, PgColumn } from 'drizzle-orm/pg-core';
 import { db } from '../db/client.js';
@@ -17,6 +18,28 @@ interface BandCrudConfig<Row extends Record<string, unknown>, Api> {
   itemType: TrashItemType;
   toApi: (row: Row) => Api;
   fromBody: (body: Record<string, unknown>, id: string, bandId: string) => Record<string, unknown>;
+  /**
+   * Optional side effect run after a successful create or update (e.g. record a revision
+   * snapshot). Failures here are logged but never fail the write.
+   */
+  afterWrite?: (ctx: {
+    kind: 'create' | 'update';
+    row: Row;
+    prevRow: Row | null;
+    req: Request;
+  }) => Promise<void>;
+}
+
+async function runAfterWrite<Row extends Record<string, unknown>>(
+  afterWrite: BandCrudConfig<Row, unknown>['afterWrite'],
+  ctx: { kind: 'create' | 'update'; row: Row; prevRow: Row | null; req: Request },
+): Promise<void> {
+  if (!afterWrite) return;
+  try {
+    await afterWrite(ctx);
+  } catch (err) {
+    console.error('afterWrite hook failed:', err);
+  }
 }
 
 /**
@@ -27,7 +50,7 @@ interface BandCrudConfig<Row extends Record<string, unknown>, Api> {
 export function buildBandCrudRouter<Row extends { bandId: string | null }, Api>(
   config: BandCrudConfig<Row, Api>,
 ) {
-  const { table, idColumn, bandIdColumn, resourceKey, pluralKey, itemType, toApi, fromBody } = config;
+  const { table, idColumn, bandIdColumn, resourceKey, pluralKey, itemType, toApi, fromBody, afterWrite } = config;
   const router = Router({ mergeParams: true });
   router.use(requireAuth);
 
@@ -52,6 +75,11 @@ export function buildBandCrudRouter<Row extends { bandId: string | null }, Api>(
         res.status(400).json({ error: 'id is required.' });
         return;
       }
+      const prior = (await db
+        .select()
+        .from(table)
+        .where(and(eq(idColumn, id), eq(bandIdColumn, req.params.bandId)))
+        .limit(1)) as Row[];
       const values = fromBody(body, id, req.params.bandId);
       const [row] = (await db
         .insert(table)
@@ -59,6 +87,12 @@ export function buildBandCrudRouter<Row extends { bandId: string | null }, Api>(
         .onConflictDoUpdate({ target: idColumn, set: values })
         .returning()) as Row[];
       res.json({ [resourceKey]: toApi(row) });
+      await runAfterWrite(afterWrite, {
+        kind: prior[0] ? 'update' : 'create',
+        row,
+        prevRow: prior[0] ?? null,
+        req,
+      });
     } catch (err) {
       console.error(`Failed to save band ${resourceKey}:`, err);
       res.status(500).json({ error: 'Something went wrong. Please try again.' });
@@ -83,6 +117,7 @@ export function buildBandCrudRouter<Row extends { bandId: string | null }, Api>(
         .where(eq(idColumn, req.params.id))
         .returning()) as Row[];
       res.json({ [resourceKey]: toApi(row) });
+      await runAfterWrite(afterWrite, { kind: 'update', row, prevRow: existing[0], req });
     } catch (err) {
       console.error(`Failed to update band ${resourceKey}:`, err);
       res.status(500).json({ error: 'Something went wrong. Please try again.' });

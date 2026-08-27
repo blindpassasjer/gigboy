@@ -102,6 +102,43 @@ export const songs = pgTable(
   },
 );
 
+/**
+ * Per-member overrides for a song. Today just a personal transpose offset (e.g. a horn
+ * player reading in a different key than the shared chart's `songs.preferred_transpose`).
+ * One row per (song, user); absence means "use the band default".
+ */
+export const songMemberPrefs = pgTable(
+  'song_member_prefs',
+  {
+    songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
+    transpose: integer('transpose').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.songId, table.userId] })],
+);
+
+/**
+ * Append-only edit history for a song. Each row is a full snapshot of the editable fields
+ * as they stood after a save. Newest row = current state. Rapid successive saves by the
+ * same editor are coalesced (see server/lib/songRevisions.ts) and the list is capped per
+ * song, so this stays text-only and small.
+ */
+export const songRevisions = pgTable(
+  'song_revisions',
+  {
+    id: text('id').primaryKey(),
+    songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
+    editorUserId: text('editor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    editorDisplayName: text('editor_display_name'),
+    editorAvatar: text('editor_avatar'),
+    snapshot: jsonb('snapshot').$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+);
+
 export const songLists = pgTable(
   'song_lists',
   {
@@ -169,6 +206,51 @@ export const songRecordings = pgTable(
   },
 );
 
+/**
+ * Per-band chord voicing overrides — the fingering a band actually plays for a given chord
+ * name, replacing the built-in diagram in `src/data/{guitar,ukulele}Chords.ts` (and filling
+ * gaps where there's no built-in). `frets` uses the same shape as those tables: one entry
+ * per string, `-1` muted, `0` open, otherwise the fret number.
+ */
+export const bandChordVoicings = pgTable(
+  'band_chord_voicings',
+  {
+    id: text('id').primaryKey(),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
+    instrument: text('instrument').notNull(),
+    chordName: text('chord_name').notNull(),
+    frets: jsonb('frets').$type<number[]>().notNull(),
+    createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('band_chord_voicings_band_instrument_chord_unique').on(table.bandId, table.instrument, table.chordName),
+    check('band_chord_voicings_instrument_check', sql`${table.instrument} in ('guitar', 'ukulele')`),
+  ],
+);
+
+/**
+ * Comments on a song recording — either a general note (`atMs` null) or one pinned to a
+ * moment in the take (`atMs` set). Any band member can post; edit/delete is author-only
+ * (or a band editor). `songId`/`bandId` are denormalized for cheap auth scoping.
+ */
+export const recordingComments = pgTable(
+  'recording_comments',
+  {
+    id: text('id').primaryKey(),
+    recordingId: text('recording_id').notNull().references(() => songRecordings.id, { onDelete: 'cascade' }),
+    songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
+    authorUserId: text('author_user_id').references(() => users.id, { onDelete: 'set null' }),
+    authorDisplayName: text('author_display_name'),
+    authorAvatar: text('author_avatar'),
+    atMs: integer('at_ms'),
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+);
+
 export const attachments = pgTable('attachments', {
   id: text('id').primaryKey(),
   songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
@@ -193,6 +275,21 @@ export const trashItems = pgTable(
     purgeAt: timestamp('purge_at', { withTimezone: true }).notNull(),
   },
 );
+
+/**
+ * Ephemeral "now playing" state for a live setlist run — one row per setlist. The host's
+ * Concert Mode pushes song/page/transpose here; followers' screens read it. Only the
+ * position fields matter; the live subscriber list + current host are tracked in-process
+ * (see server/routes/setlistSessions.ts), not here.
+ */
+export const setlistSessions = pgTable('setlist_sessions', {
+  setlistId: text('setlist_id').primaryKey().references(() => setlists.id, { onDelete: 'cascade' }),
+  bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
+  songIndex: integer('song_index').notNull().default(0),
+  pageIndex: integer('page_index').notNull().default(0),
+  transpose: integer('transpose').notNull().default(0),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const bandRiders = pgTable('band_riders', {
   id: text('id').primaryKey(),

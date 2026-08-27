@@ -60,8 +60,12 @@ self-hosted only (see below).
 
 ### Write and read songs the way musicians actually think about them
 - **ChordPro rendering** — chords shown inline above lyrics, written as `[G]Amazing [C]grace`
-- **Transpose** — shift every chord up or down by semitone in real time, on stage or in rehearsal
+- **Transpose** — shift every chord up or down by semitone in real time, on stage or in rehearsal;
+  pin a shared band default per song, or a personal offset just for you (the horn player reads in Eb)
 - **Live preview** while writing — see the rendered sheet as you type
+- **Import** from ChordPro, OnSong, and pasted Ultimate Guitar / Chordify / CifraClub charts —
+  drop in loose files or a whole `.zip` backup and Gigboy converts them to ChordPro
+- **Print / PDF export** — a setlist as a single large-type sheet, or the full charts one song per page
 - **Search & filter** by title, artist, tag, or language — across English, Norwegian, Spanish,
   Portuguese, French, Italian, German, and more
 
@@ -70,8 +74,12 @@ self-hosted only (see below).
   per-member editor/viewer roles and invite links to bring people in
 - **Setlists & songlists** — ordered setlists for the actual gig, freeform songlists for
   everything else
+- **Now-playing sync** — one device leads Concert Mode and the whole band's screens follow
+  to the same song, page, and transpose
 - **Trash & restore** — soft-deleted songs, songlists, setlists, and press kits recover for
   30 days before they're gone for good
+- **Edit history** — every save is snapshotted; see who changed which line, diff any two
+  versions, and restore an older one
 
 ### Everything you need before you walk on stage
 - **Press kits, technical riders, stage plots** — build them once, share via a public link, with
@@ -80,9 +88,12 @@ self-hosted only (see below).
 - **Attachments** — PDFs up to 20MB per song (scanned sheet music, lyric sheets, whatever the gig needs)
 
 ### Rehearsal tools that live where the songs do
-- **Browser-based audio recorder** — capture a take straight from the song page, no separate app
+- **Browser-based audio recorder** — capture a take straight from the song page, no separate app;
+  leave timestamped comments on a take ("fix the turnaround at 1:12") that jump the player to that spot
 - **Visual metronome & tuner** — no more digging for a physical tuner mid-rehearsal
 - **Hand-drawn notes** — sketch directly on the song sheet for reminders that a text note can't capture
+- **Custom chord voicings** — pin the fingering your band actually plays for a chord; it replaces
+  the built-in diagram everywhere, including Concert Mode
 
 ### Your data stays yours
 - **Full export, no lock-in** — download every band's entire songbook (songs as plain ChordPro
@@ -211,12 +222,13 @@ server/
 
 ## Legal pages
 
-Draft Terms of Service and Privacy Policy live at [src/pages/TermsPage.tsx](src/pages/TermsPage.tsx) and [src/pages/PrivacyPage.tsx](src/pages/PrivacyPage.tsx) (routes `/terms` and `/privacy`). They're templates with bracketed placeholders — fill those in and get them reviewed before relying on them, especially the copyright section (users store song lyrics/chords, which are often copyrighted material) and GDPR compliance if you have EU/EEA users.
+Draft Terms of Service and Privacy Policy live at [src/pages/TermsPage.tsx](src/pages/TermsPage.tsx) and [src/pages/PrivacyPage.tsx](src/pages/PrivacyPage.tsx) (routes `/terms` and `/privacy`). Operator-specific details (name, contact address, governing-law jurisdiction) are pulled from the optional `OPERATOR_NAME`, `OPERATOR_CONTACT_EMAIL`, and `OPERATOR_JURISDICTION` environment variables (see [.env.example](.env.example)) — set them for your instance, otherwise the pages fall back to generic wording. Get the text reviewed before relying on it, especially the copyright section (users store song lyrics/chords, which are often copyrighted material) and GDPR compliance if you have EU/EEA users.
 
 ## Before going public
 
 - [ ] Set a strong `SESSION_SECRET` and `POSTGRES_PASSWORD` in `.env` (see [SELFHOSTING.md](SELFHOSTING.md))
 - [ ] Put a reverse proxy with real HTTPS in front of the container and set `COOKIE_SECURE=true`
+- [ ] Set `OPERATOR_NAME`, `OPERATOR_CONTACT_EMAIL`, and `OPERATOR_JURISDICTION` so the `/terms` and `/privacy` pages name your instance's operator
 
 ## Codebase knowledge graph
 

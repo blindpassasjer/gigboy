@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { GUITAR_CHORDS } from '../data/guitarChords';
 import { UKULELE_CHORDS } from '../data/ukuleleChords';
+import { normalizeChordForLookup } from '../utils/chordLookup';
 
 export type DiagramInstrument = 'guitar' | 'piano' | 'ukulele';
 
@@ -11,63 +12,72 @@ interface Props {
   instrument: DiagramInstrument;
   anchorRect: DOMRect;
   onClose: () => void;
+  /** Band's custom fingering for this chord (fret-per-string), overriding the built-in. */
+  voicingOverride?: number[];
+  /** When true, show the "Edit voicing" control (guitar/ukulele only). */
+  canEditVoicing?: boolean;
+  /** Persist a custom voicing for this chord. */
+  onSaveVoicing?: (frets: number[]) => void | Promise<void>;
+  /** Remove the custom voicing, reverting to the built-in. */
+  onResetVoicing?: () => void | Promise<void>;
+}
+
+const STRINGS_FOR_INSTRUMENT: Record<'guitar' | 'ukulele', string[]> = {
+  guitar: ['E', 'A', 'D', 'G', 'B', 'e'],
+  ukulele: ['G', 'C', 'E', 'A'],
+};
+
+function fretLabel(value: number): string {
+  if (value === -1) return '✕';
+  if (value === 0) return 'O';
+  return String(value);
+}
+
+function VoicingEditor({
+  instrument,
+  value,
+  onChange,
+}: {
+  instrument: 'guitar' | 'ukulele';
+  value: number[];
+  onChange: (next: number[]) => void;
+}) {
+  const labels = STRINGS_FOR_INSTRUMENT[instrument];
+  const setString = (i: number, next: number) => {
+    const copy = [...value];
+    copy[i] = next;
+    onChange(copy);
+  };
+  return (
+    <div className="voicing-editor" role="group" aria-label="Edit chord voicing">
+      {labels.map((label, i) => {
+        const current = value[i] ?? -1;
+        return (
+          <div key={i} className="voicing-editor-string">
+            <span className="voicing-editor-label">{label}</span>
+            <button
+              type="button"
+              aria-label={`Lower ${label} string`}
+              onClick={() => setString(i, Math.max(-1, current - 1))}
+            >
+              −
+            </button>
+            <span className="voicing-editor-value">{fretLabel(current)}</span>
+            <button
+              type="button"
+              aria-label={`Raise ${label} string`}
+              onClick={() => setString(i, Math.min(15, current + 1))}
+            >
+              +
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const ROOT_LOOKUP_ALIAS: Record<string, string> = {
-  C: 'C',
-  'C#': 'C#',
-  Db: 'C#',
-  D: 'D',
-  'D#': 'D#',
-  Eb: 'D#',
-  E: 'E',
-  F: 'F',
-  'F#': 'F#',
-  Gb: 'F#',
-  G: 'G',
-  'G#': 'G#',
-  Ab: 'G#',
-  A: 'A',
-  'A#': 'A#',
-  Bb: 'A#',
-  B: 'B',
-};
-
-function normalizeQualityForLookup(suffix: string): string {
-  const compact = suffix.replace(/\s+/g, '');
-  const lower = compact.toLowerCase();
-
-  if (!compact) return '';
-
-  // Treat common major aliases as plain major triads when no 7th is present.
-  if (compact === 'M' || lower === 'maj') return '';
-
-  if (compact === 'M7' || compact === 'Δ7' || lower === 'maj7' || lower === 'ma7') return 'maj7';
-  if (lower === 'm7' || lower === 'min7' || lower === 'mi7' || compact === '-7') return 'm7';
-  if (lower === 'm' || lower === 'min' || lower === 'mi' || compact === '-') return 'm';
-  if (lower === 'sus') return 'sus4';
-
-  // Already canonical in our current lookup set.
-  if (lower === '7' || lower === 'sus2' || lower === 'sus4' || lower === 'maj7' || lower === 'm7' || lower === 'm') {
-    return lower;
-  }
-
-  return compact;
-}
-
-function normalizeForLookup(chord: string): string {
-  const base = chord.split('/')[0].trim().replace(/♯/g, '#').replace(/♭/g, 'b');
-  const match = base.match(/^([A-Ga-g])([#b]?)(.*)$/);
-  if (!match) return base;
-
-  const root = `${match[1].toUpperCase()}${match[2]}`;
-  const normalizedRoot = ROOT_LOOKUP_ALIAS[root] ?? root;
-  const normalizedQuality = normalizeQualityForLookup(match[3] ?? '');
-
-  return `${normalizedRoot}${normalizedQuality}`;
-}
 
 const ROOT_MAP: Record<string, number> = {
   C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4,
@@ -468,11 +478,21 @@ function PianoDiagram({ activeNotes }: { activeNotes: Set<number> }) {
 
 // ─── Popup ────────────────────────────────────────────────────────────────────
 
-export default function ChordDiagram({ chord, instrument, anchorRect, onClose }: Props) {
+export default function ChordDiagram({
+  chord,
+  instrument,
+  anchorRect,
+  onClose,
+  voicingOverride,
+  canEditVoicing = false,
+  onSaveVoicing,
+  onResetVoicing,
+}: Props) {
   const popupRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ top: anchorRect.bottom + 8, left: anchorRect.left + anchorRect.width / 2 });
   const [showInversions, setShowInversions] = useState(false);
   const [inversionIndex, setInversionIndex] = useState(0);
+  const [editingVoicing, setEditingVoicing] = useState<number[] | null>(null);
 
   // Auto-position: flip above if popup would overflow viewport bottom
   useLayoutEffect(() => {
@@ -506,11 +526,15 @@ export default function ChordDiagram({ chord, instrument, anchorRect, onClose }:
   useEffect(() => {
     setShowInversions(false);
     setInversionIndex(0);
+    setEditingVoicing(null);
   }, [chord]);
 
-  const normalized = normalizeForLookup(chord);
-  const guitarFrets = GUITAR_CHORDS[normalized];
-  const ukuleleFrets = UKULELE_CHORDS[normalized];
+  const normalized = normalizeChordForLookup(chord);
+  const fretInstrument = instrument === 'ukulele' ? 'ukulele' : 'guitar';
+  const guitarFrets = (instrument === 'guitar' ? voicingOverride : undefined) ?? GUITAR_CHORDS[normalized];
+  const ukuleleFrets = (instrument === 'ukulele' ? voicingOverride : undefined) ?? UKULELE_CHORDS[normalized];
+  const stringCount = fretInstrument === 'ukulele' ? 4 : 6;
+  const canEditThisVoicing = canEditVoicing && instrument !== 'piano' && Boolean(onSaveVoicing);
   const chordModel = useMemo(() => parseChordModel(chord), [chord]);
   const triadIntervals = useMemo(() => chordModel?.triadIntervals ?? [], [chordModel]);
   const inversionSteps = Math.max(1, triadIntervals.length);
@@ -544,14 +568,74 @@ export default function ChordDiagram({ chord, instrument, anchorRect, onClose }:
         </button>
       </div>
 
-      {instrument === 'guitar' ? (
-        guitarFrets
-          ? <GuitarDiagram frets={guitarFrets} />
-          : <p className="chord-diagram-unavailable">No diagram for {chord}</p>
-      ) : instrument === 'ukulele' ? (
-        ukuleleFrets
-          ? <UkuleleDiagram frets={ukuleleFrets} />
-          : <p className="chord-diagram-unavailable">No ukulele diagram for {chord}</p>
+      {instrument === 'guitar' || instrument === 'ukulele' ? (
+        (() => {
+          const frets = instrument === 'guitar' ? guitarFrets : ukuleleFrets;
+          const Diagram = instrument === 'guitar' ? GuitarDiagram : UkuleleDiagram;
+          return (
+            <>
+              {editingVoicing ? (
+                <Diagram frets={editingVoicing} />
+              ) : frets ? (
+                <Diagram frets={frets} />
+              ) : (
+                <p className="chord-diagram-unavailable">No {instrument === 'ukulele' ? 'ukulele ' : ''}diagram for {chord}</p>
+              )}
+
+              {voicingOverride && !editingVoicing && (
+                <p className="chord-diagram-hint">Custom band voicing</p>
+              )}
+
+              {editingVoicing && (
+                <VoicingEditor
+                  instrument={fretInstrument}
+                  value={editingVoicing}
+                  onChange={setEditingVoicing}
+                />
+              )}
+
+              {canEditThisVoicing && (
+                <div className="chord-diagram-voicing-actions">
+                  {editingVoicing ? (
+                    <>
+                      <button
+                        type="button"
+                        className="piano-inversion-btn"
+                        onClick={() => {
+                          void Promise.resolve(onSaveVoicing?.(editingVoicing)).then(() => setEditingVoicing(null));
+                        }}
+                      >
+                        Save
+                      </button>
+                      <button type="button" className="piano-inversion-btn" onClick={() => setEditingVoicing(null)}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="piano-inversion-btn"
+                        onClick={() => setEditingVoicing(frets ? [...frets] : Array(stringCount).fill(-1))}
+                      >
+                        Edit voicing
+                      </button>
+                      {voicingOverride && onResetVoicing && (
+                        <button
+                          type="button"
+                          className="piano-inversion-btn"
+                          onClick={() => { void onResetVoicing(); }}
+                        >
+                          Reset to default
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()
       ) : (
         chordModel && triadIntervals.length > 0 ? (
           <>

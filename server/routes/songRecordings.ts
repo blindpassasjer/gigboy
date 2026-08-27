@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import type { NextFunction, Request, Response } from 'express';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { songRecordings, users } from '../db/schema.js';
+import { recordingComments, songRecordings, users } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
 import { requireBandMember } from '../middleware/bandAccess.js';
 import { localStorageAdapter } from '../storage/localStorageAdapter.js';
@@ -60,7 +60,22 @@ function buildRecordingsRouter(
         .from(songRecordings)
         .where(eq(songRecordings.songId, scope.song.id))
         .orderBy(desc(songRecordings.createdAt));
-      res.json({ recordings: rows.map((row) => songRecordingToApi(row, urlBase(req))) });
+
+      const commentCounts: Record<string, number> = {};
+      if (rows.length > 0) {
+        const commentRows = await db
+          .select({ recordingId: recordingComments.recordingId })
+          .from(recordingComments)
+          .where(inArray(recordingComments.recordingId, rows.map((r) => r.id)));
+        for (const c of commentRows) commentCounts[c.recordingId] = (commentCounts[c.recordingId] ?? 0) + 1;
+      }
+
+      res.json({
+        recordings: rows.map((row) => ({
+          ...songRecordingToApi(row, urlBase(req)),
+          commentCount: commentCounts[row.id] ?? 0,
+        })),
+      });
     } catch (err) {
       console.error('Failed to list song recordings:', err);
       res.status(500).json({ error: 'Something went wrong. Please try again.' });

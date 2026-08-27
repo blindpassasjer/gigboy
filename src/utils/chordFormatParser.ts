@@ -31,6 +31,7 @@ const SOURCE_MATCHERS: Array<{ label: string; pattern: RegExp }> = [
   { label: 'Chordify', pattern: /(?:^|\n)\|\s*[A-G][^\n]*\|/i },
   { label: 'Songsterr', pattern: /(?:songsterr|songsteer|^(?:e|B|G|D|A|E)\|[-0-9hHpPbBrRsSxX~vV/\\()[\]{}*|:.\s]+)/im },
   { label: 'GuitarTuna', pattern: /(?:guitartuna|\bkey\s+[A-G][#b]?(?:m|maj|min|sus|dim|aug|add)?\d*\b.*\bcapo\s+\d+)/i },
+  { label: 'OnSong', pattern: /(?:^|\n)\s*(?:flow|onsong)\s*:/i },
   { label: 'CCLI SongSelect', pattern: /(?:songselect|ccli\s+song\s*#)/i },
   { label: 'LaCuerda', pattern: /(?:la\s*cuerda|lacuerda(?:\.net)?|\btono\s*:|\bestribillo\b)/i },
   { label: 'Cifra Club', pattern: /(?:cifra\s*club|cifraclub|\btom\s*:|capotraste\s+na)/i },
@@ -246,7 +247,9 @@ function isMetadataNoise(line: string): boolean {
     || /^ccli\s+song\s*#/i.test(trimmed)
     || /^copyright\b/i.test(trimmed)
     || /^transpos(e|ition)\b/i.test(trimmed)
-    || /^tuning\b/i.test(trimmed);
+    || /^tuning\b/i.test(trimmed)
+    // OnSong metadata directives we don't model (Flow = section order, Time = time signature).
+    || /^(?:flow|time|duration|number|book|midi|topic|ccli|copyright|restrictions)\s*:/i.test(trimmed);
 }
 
 function lineStartsContent(line: string): boolean {

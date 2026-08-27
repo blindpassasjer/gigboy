@@ -18,6 +18,8 @@ export interface SongRecording {
   createdAt: string;
   recorder?: RecorderIdentity;
   waveformBars?: number[];
+  /** Number of comments on this take (from the list endpoint). */
+  commentCount?: number;
 }
 
 /**

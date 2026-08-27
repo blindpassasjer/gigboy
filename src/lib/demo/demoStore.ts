@@ -55,7 +55,37 @@ interface DemoState {
   attachments: Record<string, SongAttachment[]>;
   recordings: Record<string, SongRecording[]>;
   handNotes: Record<string, LyricNoteDocument[]>;
+  /** Per-song personal transpose override for the demo user, keyed by song id. */
+  songTranspose: Record<string, number>;
+  /** Per-band chord voicing overrides. */
+  chordVoicings: Array<{ instrument: 'guitar' | 'ukulele'; chordName: string; frets: number[] }>;
+  /** Append-only song edit history, keyed by song id (newest last). */
+  songRevisions: Record<string, DemoSongRevision[]>;
+  /** Comments on recordings, keyed by recording id. */
+  recordingComments: Record<string, DemoRecordingComment[]>;
   trash: TrashEntry[];
+}
+
+export interface DemoRecordingComment {
+  id: string;
+  recordingId: string;
+  authorUserId: string | null;
+  authorDisplayName: string | null;
+  authorAvatar: string | null;
+  atMs: number | null;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DemoSongRevision {
+  id: string;
+  createdAt: string;
+  editorUserId: string | null;
+  editorDisplayName: string | null;
+  editorAvatar: string | null;
+  snapshot: Record<string, unknown>;
+  changed: string[];
 }
 
 const now = () => new Date().toISOString();
@@ -315,6 +345,10 @@ function seed(): DemoState {
     attachments: {},
     recordings: {},
     handNotes: {},
+    songTranspose: {},
+    chordVoicings: [],
+    songRevisions: {},
+    recordingComments: {},
     trash: [],
   };
 }
@@ -417,7 +451,23 @@ function makeCrud<T extends { id: string }>(
   };
 }
 
-export const songsCrud = makeCrud<Song>('songs', 'song', (s) => s.title);
+const rawSongsCrud = makeCrud<Song>('songs', 'song', (s) => s.title);
+
+/** Song CRUD that also records edit-history revisions (mirrors the server's afterWrite hook). */
+export const songsCrud = {
+  ...rawSongsCrud,
+  create(bandId: string, item: Song): Song {
+    const created = rawSongsCrud.create(bandId, item);
+    recordDemoSongRevision(created);
+    return created;
+  },
+  update(bandId: string, item: Song): Song {
+    const updated = rawSongsCrud.update(bandId, item);
+    recordDemoSongRevision(updated);
+    return updated;
+  },
+};
+
 export const songListsCrud = makeCrud<SongList>('songLists', 'songlist', (s) => s.name);
 export const setlistsCrud = makeCrud<Setlist>('setlists', 'setlist', (s) => s.name);
 export const ridersCrud = makeCrud<InputList>('riders', 'technicalRider', (r) => r.name);
@@ -681,7 +731,10 @@ export function selectBandLogo(bandId: string, logoId: string | null): Band {
 
 export function listRecordings(bandId: string, songId: string): SongRecording[] {
   assertBand(bandId);
-  return state.recordings[songId] ?? [];
+  return (state.recordings[songId] ?? []).map((rec) => ({
+    ...rec,
+    commentCount: (state.recordingComments?.[rec.id] ?? []).length,
+  }));
 }
 
 export function addRecording(
@@ -744,6 +797,192 @@ export function deleteHandNote(bandId: string, songId: string, authorUid: string
   assertBand(bandId);
   state.handNotes[songId] = (state.handNotes[songId] ?? []).filter((n) => n.authorUid !== authorUid);
   persist();
+}
+
+// ---- Recording comments ----
+
+export function listRecordingComments(recordingId: string): DemoRecordingComment[] {
+  return [...(state.recordingComments?.[recordingId] ?? [])];
+}
+
+export function addRecordingComment(
+  recordingId: string,
+  input: { body: string; atMs: number | null },
+): DemoRecordingComment {
+  if (!state.recordingComments) state.recordingComments = {};
+  const comment: DemoRecordingComment = {
+    id: genId('rc'),
+    recordingId,
+    authorUserId: state.user.id,
+    authorDisplayName: state.user.fullName || state.user.username || null,
+    authorAvatar: state.user.avatar ?? null,
+    atMs: input.atMs,
+    body: input.body,
+    createdAt: now(),
+    updatedAt: now(),
+  };
+  state.recordingComments[recordingId] = [...(state.recordingComments[recordingId] ?? []), comment];
+  persist();
+  return comment;
+}
+
+export function deleteRecordingComment(recordingId: string, commentId: string): void {
+  state.recordingComments[recordingId] = (state.recordingComments?.[recordingId] ?? []).filter(
+    (c) => c.id !== commentId,
+  );
+  persist();
+}
+
+// ---- Per-member transpose ----
+
+export function getSongTranspose(bandId: string, songId: string): number | null {
+  assertBand(bandId);
+  const value = state.songTranspose?.[songId];
+  return typeof value === 'number' ? value : null;
+}
+
+export function setSongTranspose(bandId: string, songId: string, transpose: number): number {
+  assertBand(bandId);
+  if (!state.songTranspose) state.songTranspose = {};
+  state.songTranspose[songId] = transpose;
+  persist();
+  return transpose;
+}
+
+export function clearSongTranspose(bandId: string, songId: string): void {
+  assertBand(bandId);
+  if (state.songTranspose) delete state.songTranspose[songId];
+  persist();
+}
+
+export function listBandTransposePrefs(bandId: string): Record<string, number> {
+  assertBand(bandId);
+  return { ...(state.songTranspose ?? {}) };
+}
+
+// ---- Band chord voicings ----
+
+type DemoChordVoicing = { instrument: 'guitar' | 'ukulele'; chordName: string; frets: number[] };
+
+export function listChordVoicings(bandId: string): DemoChordVoicing[] {
+  assertBand(bandId);
+  return [...(state.chordVoicings ?? [])];
+}
+
+export function saveChordVoicing(
+  bandId: string,
+  instrument: 'guitar' | 'ukulele',
+  chordName: string,
+  frets: number[],
+): DemoChordVoicing {
+  assertBand(bandId);
+  if (!state.chordVoicings) state.chordVoicings = [];
+  const entry: DemoChordVoicing = { instrument, chordName, frets };
+  const idx = state.chordVoicings.findIndex(
+    (v) => v.instrument === instrument && v.chordName === chordName,
+  );
+  if (idx === -1) state.chordVoicings.push(entry);
+  else state.chordVoicings[idx] = entry;
+  persist();
+  return entry;
+}
+
+export function deleteChordVoicing(
+  bandId: string,
+  instrument: 'guitar' | 'ukulele',
+  chordName: string,
+): void {
+  assertBand(bandId);
+  state.chordVoicings = (state.chordVoicings ?? []).filter(
+    (v) => !(v.instrument === instrument && v.chordName === chordName),
+  );
+  persist();
+}
+
+// ---- Song revisions (edit history) ----
+
+const REVISION_FIELDS: Array<[keyof Song, string]> = [
+  ['title', 'Title'], ['artist', 'Artist'], ['author', 'Author'], ['language', 'Language'],
+  ['secondaryLanguages', 'Languages'], ['tags', 'Tags'], ['chordpro', 'Lyrics & chords'],
+  ['capo', 'Capo'], ['key', 'Key'], ['tempo', 'Tempo'], ['timeSignature', 'Time signature'],
+];
+const REVISION_COALESCE_MS = 10 * 60 * 1000;
+const REVISION_CAP = 100;
+
+function songSnapshot(song: Song): Record<string, unknown> {
+  const snap: Record<string, unknown> = {};
+  const record = song as unknown as Record<string, unknown>;
+  for (const [key] of REVISION_FIELDS) snap[key] = record[key] ?? null;
+  return snap;
+}
+
+function normalizeSnapVal(value: unknown): string {
+  if (Array.isArray(value)) return JSON.stringify([...value].sort());
+  return JSON.stringify(value ?? null);
+}
+
+function snapshotChanged(prev: Record<string, unknown> | null, next: Record<string, unknown>): string[] {
+  if (!prev) return ['Created'];
+  return REVISION_FIELDS
+    .filter(([key]) => normalizeSnapVal(prev[key]) !== normalizeSnapVal(next[key]))
+    .map(([, label]) => label);
+}
+
+function recordDemoSongRevision(song: Song): void {
+  if (!state.songRevisions) state.songRevisions = {};
+  const list = state.songRevisions[song.id] ?? [];
+  const snapshot = songSnapshot(song);
+  const latest = list[list.length - 1];
+
+  if (latest && REVISION_FIELDS.every(([k]) => normalizeSnapVal(latest.snapshot[k]) === normalizeSnapVal(snapshot[k]))) {
+    return;
+  }
+
+  const changed = snapshotChanged(latest ? latest.snapshot : null, snapshot);
+  const nowMs = Date.now();
+  const canCoalesce = latest && nowMs - new Date(latest.createdAt).getTime() < REVISION_COALESCE_MS;
+
+  if (canCoalesce) {
+    latest.snapshot = snapshot;
+    latest.createdAt = now();
+    latest.changed = snapshotChanged(list[list.length - 2]?.snapshot ?? null, snapshot);
+  } else {
+    list.push({
+      id: genId('rev'),
+      createdAt: now(),
+      editorUserId: state.user.id,
+      editorDisplayName: state.user.fullName || state.user.username || null,
+      editorAvatar: state.user.avatar ?? null,
+      snapshot,
+      changed,
+    });
+  }
+  if (list.length > REVISION_CAP) list.splice(0, list.length - REVISION_CAP);
+  state.songRevisions[song.id] = list;
+  persist();
+}
+
+export function listSongRevisions(bandId: string, songId: string): DemoSongRevision[] {
+  assertBand(bandId);
+  return [...(state.songRevisions?.[songId] ?? [])].reverse();
+}
+
+export function getSongRevision(bandId: string, songId: string, id: string): DemoSongRevision | null {
+  assertBand(bandId);
+  return (state.songRevisions?.[songId] ?? []).find((r) => r.id === id) ?? null;
+}
+
+export function restoreSongRevision(bandId: string, songId: string, id: string): Song {
+  assertBand(bandId);
+  const revision = getSongRevision(bandId, songId, id);
+  if (!revision) throw new Error('Revision not found.');
+  const songs = state.songs;
+  const idx = songs.findIndex((s) => s.id === songId);
+  if (idx === -1) throw new Error('Song not found.');
+  songs[idx] = { ...songs[idx], ...(revision.snapshot as Partial<Song>), updatedAt: now() };
+  recordDemoSongRevision(songs[idx]);
+  persist();
+  return songs[idx];
 }
 
 // ---- Storage usage ----

@@ -39,7 +39,12 @@ uploaded files.
 4. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` — see [Admin account and invites](#admin-account-and-invites)
    below. Set both, or leave both unset if an admin already exists from a previous run.
 
-5. Bring the stack up:
+5. (Optional, recommended before sharing the instance widely) Set `OPERATOR_NAME`,
+   `OPERATOR_CONTACT_EMAIL`, and `OPERATOR_JURISDICTION` in `.env`. These fill in the
+   operator name, contact address, and governing-law jurisdiction on the built-in
+   `/terms` and `/privacy` pages; unset values fall back to generic wording.
+
+6. Bring the stack up:
 
    ```sh
    docker compose pull
@@ -65,7 +70,7 @@ uploaded files.
    (via `docker-entrypoint.sh`) before starting the server — so `docker compose up` is always
    enough, including on first run and after upgrades that add new migrations.
 
-6. Open `http://localhost:6168` (or whatever `PORT` you set) and log in as the admin account
+7. Open `http://localhost:6168` (or whatever `PORT` you set) and log in as the admin account
    you configured in step 4. There is no open self-registration — every other account is
    created by an admin generating an invite link (see below).
 
@@ -151,6 +156,12 @@ tar xzf attachments-backup.tar.gz -C data/attachments
 If you put a reverse proxy in front of the container (not part of the default Compose setup,
 which exposes `PORT` directly), make sure its own request body size limit allows uploads up
 to 20MB — Express itself already accepts them.
+
+The setlist "now playing" sync uses Server-Sent Events on
+`/api/bands/*/setlists/*/session/stream`. If your proxy buffers responses (nginx does by
+default), followers' screens will lag or not update — disable buffering for that path, e.g.
+nginx `proxy_buffering off;` (Gigboy already sends `X-Accel-Buffering: no`, which nginx
+honours) and make sure the proxy read timeout is longer than the 25s keepalive.
 
 ## Updating
 

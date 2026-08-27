@@ -1,6 +1,7 @@
 import { songs } from '../db/schema.js';
 import { buildBandCrudRouter } from './bandResources.js';
 import { removeNullish } from '../lib/serialize.js';
+import { recordSongRevision } from '../lib/songRevisions.js';
 
 type SongRow = typeof songs.$inferSelect;
 
@@ -58,4 +59,7 @@ export const bandSongsRouter = buildBandCrudRouter({
   itemType: 'song',
   toApi,
   fromBody,
+  afterWrite: async ({ row, req }) => {
+    await recordSongRevision({ songRow: row as SongRow, editorUserId: req.userId ?? null });
+  },
 });

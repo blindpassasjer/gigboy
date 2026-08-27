@@ -137,6 +137,31 @@ Verso:
     expect(parsed.chordpro).toContain('[C]Para bailar la [F]bamba');
   });
 
+  it('parses an OnSong-style file: header metadata, Flow line, and colon section labels', () => {
+    const parsed = parsePastedSong(`Amazing Grace
+John Newton
+Key: G
+Tempo: 70
+Capo: 0
+Flow: Verse 1, Chorus, Verse 2
+
+Verse 1:
+[G]Amazing [C]grace how [G]sweet the sound
+
+Chorus:
+That [D]saved a [G]wretch like me`);
+
+    expect(parsed.title).toBe('Amazing Grace');
+    expect(parsed.artist).toBe('John Newton');
+    expect(parsed.key).toBe('G');
+    expect(parsed.tempo).toBe(70);
+    expect(parsed.detectedSource).toBe('OnSong');
+    expect(parsed.chordpro).toContain('{start_of_verse: Verse 1}');
+    expect(parsed.chordpro).toContain('{start_of_chorus: Chorus}');
+    expect(parsed.chordpro).toContain('[G]Amazing [C]grace');
+    expect(parsed.chordpro).not.toContain('Flow:');
+  });
+
   it('parses Cifra Club-style portuguese metadata and section labels', () => {
     const parsed = parsePastedSong(`Tempo Perdido
 Legião Urbana

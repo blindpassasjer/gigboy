@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import ConcertModeView from '../components/ConcertModeView';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useBandTransposePrefs } from '../hooks/useBandTransposePrefs';
 
 type SongPageState = {
   backTo?: string;
@@ -31,6 +32,8 @@ export default function SongConcertPage() {
 
   const backRoute = pageState?.backTo ?? (id ? `/songs/${id}` : '/');
 
+  const transposeBySongId = useBandTransposePrefs(bandId);
+
   useDocumentTitle(song ? `${song.title} — Concert Mode` : 'Concert Mode');
 
   if (!bandId) {
@@ -53,6 +56,7 @@ export default function SongConcertPage() {
       backRoute={backRoute}
       bandId={bandId}
       canUseMetronome={canUseMetronome}
+      transposeBySongId={transposeBySongId}
     />
   );
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Play, Pause, Trash2, Save, X, Pencil, Check, Upload } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, Trash2, Save, X, Pencil, Check, Upload, MessageSquare } from 'lucide-react';
 import { useSongRecordings } from '../hooks/useSongRecordings';
+import { useRecordingComments } from '../hooks/useRecordingComments';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import type { Song } from '../types';
 import type { User } from '../context/AuthContext';
@@ -221,14 +222,31 @@ function WaveformProgress({ audioUrl, progress, onSeek, ariaLabel, className, wa
 interface SavedPlayerProps {
   recording: SongRecording;
   currentUserId: string;
+  bandId: string;
+  songId: string;
   onDelete: (r: SongRecording) => void;
   onRename: (r: SongRecording, newName: string) => void;
 }
 
-function SavedPlayer({ recording, currentUserId, onDelete, onRename }: SavedPlayerProps) {
+function SavedPlayer({ recording, currentUserId, bandId, songId, onDelete, onRename }: SavedPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showComments, setShowComments] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  const durationMs = recording.durationMs;
+  const seekToMs = (ms: number) => {
+    const el = audioRef.current;
+    if (el) el.currentTime = ms / 1000;
+  };
+
+  const comments = useRecordingComments({
+    bandId,
+    songId,
+    recordingId: recording.id,
+    enabled: showComments,
+  });
+  const commentCount = comments.comments.length || recording.commentCount || 0;
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -307,14 +325,29 @@ function SavedPlayer({ recording, currentUserId, onDelete, onRename }: SavedPlay
           {isPlaying ? <Pause size={14} /> : <Play size={14} />}
         </button>
 
-        <WaveformProgress
-          audioUrl={recording.downloadUrl}
-          progress={progress}
-          onSeek={handleSeek}
-          ariaLabel="Seek"
-          className="recorder-preview-bar"
-          waveformBars={recording.waveformBars}
-        />
+        <div className="recorder-waveform-wrap">
+          <WaveformProgress
+            audioUrl={recording.downloadUrl}
+            progress={progress}
+            onSeek={handleSeek}
+            ariaLabel="Seek"
+            className="recorder-preview-bar"
+            waveformBars={recording.waveformBars}
+          />
+          {durationMs > 0 && comments.comments.map((comment) => (
+            comment.atMs === null ? null : (
+              <button
+                key={comment.id}
+                type="button"
+                className="recording-comment-marker"
+                style={{ left: `${Math.min(100, (comment.atMs / durationMs) * 100)}%` }}
+                title={`${formatTime(comment.atMs)} — ${comment.body}`}
+                aria-label={`Jump to comment at ${formatTime(comment.atMs)}`}
+                onClick={() => seekToMs(comment.atMs!)}
+              />
+            )
+          ))}
+        </div>
 
         <span className="recorder-elapsed" title="Duration">
           {formatTime(progress * recording.durationMs)} / {formatTime(recording.durationMs)}
@@ -396,7 +429,124 @@ function SavedPlayer({ recording, currentUserId, onDelete, onRename }: SavedPlay
           </button>
         )}
       </div>
+
+      <button
+        type="button"
+        className={`recording-comments-toggle${showComments ? ' recording-comments-toggle--open' : ''}`}
+        onClick={() => setShowComments((v) => !v)}
+      >
+        <MessageSquare size={13} />
+        {commentCount > 0 ? `${commentCount} comment${commentCount === 1 ? '' : 's'}` : 'Comments'}
+      </button>
+
+      {showComments && (
+        <RecordingCommentsSection
+          comments={comments}
+          currentUserId={currentUserId}
+          currentPlayheadMs={progress * durationMs}
+          onSeek={seekToMs}
+        />
+      )}
     </li>
+  );
+}
+
+interface RecordingCommentsSectionProps {
+  comments: ReturnType<typeof useRecordingComments>;
+  currentUserId: string;
+  currentPlayheadMs: number;
+  onSeek: (ms: number) => void;
+}
+
+function RecordingCommentsSection({
+  comments,
+  currentUserId,
+  currentPlayheadMs,
+  onSeek,
+}: RecordingCommentsSectionProps) {
+  const [draft, setDraft] = useState('');
+  const [pinToTime, setPinToTime] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    const body = draft.trim();
+    if (!body || submitting) return;
+    setSubmitting(true);
+    try {
+      await comments.add(body, pinToTime ? Math.round(currentPlayheadMs) : null);
+      setDraft('');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="recording-comments">
+      {comments.loading ? (
+        <p className="recording-comments-empty">Loading…</p>
+      ) : comments.error ? (
+        <p className="recording-comments-empty">{comments.error}</p>
+      ) : comments.comments.length === 0 ? (
+        <p className="recording-comments-empty">No comments yet.</p>
+      ) : (
+        <ul className="recording-comments-list">
+          {comments.comments.map((comment) => (
+            <li key={comment.id} className="recording-comment">
+              <div className="recording-comment-head">
+                {comment.atMs !== null && (
+                  <button
+                    type="button"
+                    className="recording-comment-timestamp"
+                    onClick={() => onSeek(comment.atMs!)}
+                  >
+                    {formatTime(comment.atMs)}
+                  </button>
+                )}
+                <strong>{comment.authorDisplayName || 'Someone'}</strong>
+                {comment.authorUserId === currentUserId && (
+                  <button
+                    type="button"
+                    className="recording-comment-delete"
+                    onClick={() => { void comments.remove(comment.id); }}
+                    aria-label="Delete comment"
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+              <p className="recording-comment-body">{comment.body}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="recording-comment-form">
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Add a note about this take…"
+          rows={2}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              void submit();
+            }
+          }}
+        />
+        <label className="recording-comment-pin">
+          <input type="checkbox" checked={pinToTime} onChange={(e) => setPinToTime(e.target.checked)} />
+          Pin to {formatTime(currentPlayheadMs)}
+        </label>
+        <button
+          type="button"
+          className="setlist-action-btn setlist-action-btn--secondary"
+          onClick={() => { void submit(); }}
+          disabled={!draft.trim() || submitting}
+        >
+          {submitting ? 'Posting…' : 'Post'}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -761,6 +911,8 @@ export default function SongRecorder({ song, user, bandId }: Props) {
                 key={rec.id}
                 recording={rec}
                 currentUserId={user.id}
+                bandId={bandId}
+                songId={song.id}
                 onDelete={deleteRecording}
                 onRename={renameRecording}
               />

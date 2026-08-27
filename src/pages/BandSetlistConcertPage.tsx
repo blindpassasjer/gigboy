@@ -5,6 +5,9 @@ import { useBands } from '../context/BandsContext';
 import type { Song } from '../types';
 import ConcertModeView from '../components/ConcertModeView';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useBandTransposePrefs } from '../hooks/useBandTransposePrefs';
+import { useSetlistSession } from '../hooks/useSetlistSession';
+import { useAuth } from '../context/AuthContext';
 
 export default function BandSetlistConcertPage() {
   const navigate = useNavigate();
@@ -45,6 +48,10 @@ export default function BandSetlistConcertPage() {
     ? `/bands/${bandId}/setlists/${setlistId}`
     : `/bands`;
 
+  const transposeBySongId = useBandTransposePrefs(bandId);
+  const { user } = useAuth();
+  const session = useSetlistSession({ bandId, setlistId, currentUserId: user?.id });
+
   useDocumentTitle(setlist ? `${setlist.name} — Concert Mode` : 'Concert Mode');
 
   if (!setlist) {
@@ -73,6 +80,8 @@ export default function BandSetlistConcertPage() {
       songNotes={setlist.songNotes}
       bandId={bandId}
       canUseMetronome={true}
+      transposeBySongId={transposeBySongId}
+      session={session}
     />
   );
 }

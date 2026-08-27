@@ -1,24 +1,34 @@
 import { Link } from 'react-router-dom';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useInstanceConfig } from '../hooks/useInstanceConfig';
+
+const LAST_UPDATED = 'July 16, 2026';
 
 export default function TermsPage() {
   useDocumentTitle('Terms of Service');
+  const config = useInstanceConfig();
+
+  const operator = config?.operatorName?.trim() || 'the operator of this Gigboy instance';
+  const contact = config?.operatorContactEmail?.trim()
+    || 'the contact address published by the operator of this instance';
+  const jurisdiction = config?.operatorJurisdiction?.trim() || null;
+
   return (
     <section className="legal-page">
       <Link to="/" className="back-link">← Back</Link>
       <h1>Terms of Service</h1>
-      <p className="legal-updated">Last updated: July 16, 2026</p>
+      <p className="legal-updated">Last updated: {LAST_UPDATED}</p>
 
       <p>
-        These Terms of Service ("Terms") govern your use of GIGBOY (the "Service"),
-        operated by Sebastian Manriquez ("we", "us"). By creating an
-        account or using the Service, you agree to these Terms.
+        These Terms of Service ("Terms") govern your use of this Gigboy deployment (the
+        "Service"), operated by {operator} ("we", "us"). By creating an account or using
+        the Service, you agree to these Terms.
       </p>
 
       <h2>1. The Service</h2>
       <p>
-        GIGBOY is a ChordPro-based songbook, setlist, and gig-preparation tool for
-        musicians and bands. GIGBOY is self-hosted and free to use, with no paid
+        Gigboy is a ChordPro-based songbook, setlist, and gig-preparation tool for
+        musicians and bands. Gigboy is self-hosted and free to use, with no paid
         plans, subscriptions, or usage limits.
       </p>
 
@@ -48,7 +58,7 @@ export default function TermsPage() {
 
       <h2>4. No fees</h2>
       <p>
-        GIGBOY is free to use. There are no paid plans, subscriptions, or billing of
+        Gigboy is free to use. There are no paid plans, subscriptions, or billing of
         any kind.
       </p>
 
@@ -83,12 +93,13 @@ export default function TermsPage() {
 
       <h2>9. Governing law</h2>
       <p>
-        These Terms are governed by the laws of Norway, without
-        regard to conflict-of-law principles.
+        {jurisdiction
+          ? `These Terms are governed by the laws of ${jurisdiction}, without regard to conflict-of-law principles.`
+          : "These Terms are governed by the laws of the operator's jurisdiction, without regard to conflict-of-law principles."}
       </p>
 
       <h2>10. Contact</h2>
-      <p>Questions about these Terms: sebastian@manriquez.no.</p>
+      <p>Questions about these Terms: {contact}.</p>
     </section>
   );
 }

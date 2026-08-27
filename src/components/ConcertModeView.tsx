@@ -14,6 +14,8 @@ import LanguageBadge from './LanguageBadge';
 import SongMetaBadges from './SongMetaBadges';
 import ChordDisplay from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
+import { useBandChordVoicings } from '../hooks/useBandChordVoicings';
+import type { useSetlistSession } from '../hooks/useSetlistSession';
 import LyricHandNotesOverlay from './LyricHandNotesOverlay';
 import ConcertMetronomeFlash from './ConcertMetronomeFlash';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
@@ -90,6 +92,12 @@ interface Props {
   songNotes?: Record<string, string>;
   bandId?: string;
   canUseMetronome: boolean;
+  /** Current user's personal transpose overrides, keyed by song id. Takes precedence over
+   * each song's shared `preferredTranspose`. */
+  transposeBySongId?: Record<string, number>;
+  /** Shared "now playing" session (setlist mode only). When leading, local navigation is
+   * broadcast; when following, position is driven by the leader. */
+  session?: ReturnType<typeof useSetlistSession>;
 }
 
 export default function ConcertModeView({
@@ -99,6 +107,8 @@ export default function ConcertModeView({
   songNotes,
   bandId,
   canUseMetronome,
+  transposeBySongId,
+  session,
 }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -114,6 +124,7 @@ export default function ConcertModeView({
   const chordNotation: ChordNotation = 'anglo';
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [showSongNavigator, setShowSongNavigator] = useState(false);
+  const chordVoicings = useBandChordVoicings(bandId, false);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -188,8 +199,27 @@ export default function ConcertModeView({
   }, [currentIndex]);
 
   useEffect(() => {
-    setTranspose(activeSong?.preferredTranspose ?? 0);
-  }, [activeSong?.id, activeSong?.preferredTranspose]);
+    const personal = activeSong ? transposeBySongId?.[activeSong.id] : undefined;
+    setTranspose(personal ?? activeSong?.preferredTranspose ?? 0);
+  }, [activeSong?.id, activeSong?.preferredTranspose, activeSong, transposeBySongId]);
+
+  // Follow mode: the leader's position drives this screen.
+  const sessionMode = session?.mode ?? 'solo';
+  const sessionState = session?.state ?? null;
+  useEffect(() => {
+    if (sessionMode !== 'follow' || !sessionState) return;
+    targetPageRef.current = sessionState.pageIndex;
+    setCurrentIndex(Math.min(Math.max(sessionState.songIndex, 0), Math.max(0, songs.length - 1)));
+    setCurrentPageInSong(sessionState.pageIndex);
+    setTranspose(sessionState.transpose);
+  }, [sessionMode, sessionState, songs.length]);
+
+  // Lead mode: broadcast local navigation to followers.
+  const sessionPush = session?.push;
+  useEffect(() => {
+    if (sessionMode !== 'lead' || !sessionPush) return;
+    sessionPush({ songIndex: currentIndex, pageIndex: currentPageInSong, transpose });
+  }, [sessionMode, sessionPush, currentIndex, currentPageInSong, transpose]);
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -382,6 +412,25 @@ export default function ConcertModeView({
             {showSongNavigator ? 'Hide songs' : 'Show songs'}
           </button>
         )}
+        {session && (
+          <div className="concert-session-toggle" role="group" aria-label="Setlist sync">
+            {(['solo', 'follow', 'lead'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={session.mode === m ? 'is-active' : ''}
+                onClick={() => session.setMode(m)}
+                title={
+                  m === 'solo' ? 'Navigate on your own'
+                    : m === 'follow' ? "Follow the leader's screen"
+                      : 'Lead — your navigation drives everyone'
+                }
+              >
+                {m === 'solo' ? 'Solo' : m === 'follow' ? 'Follow' : 'Lead'}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           type="button"
           className="concert-chip-btn concert-chip-btn--danger"
@@ -392,6 +441,7 @@ export default function ConcertModeView({
           <X size={14} /> {confirmingStop ? 'Tap again to stop' : 'Stop Concert'}
         </button>
       </div>
+      {session?.error && <p className="concert-session-error">{session.error}</p>}
       <header className="concert-topbar">
         <div className="concert-topbar-main">
           <Link to={backRoute} className="back-link concert-back-link"><ArrowLeft size={15} /> Back</Link>
@@ -575,6 +625,7 @@ export default function ConcertModeView({
           instrument={chordInstrument}
           anchorRect={activeChord.rect}
           onClose={() => setActiveChord(null)}
+          voicingOverride={chordVoicings.overrideFor('guitar', activeChord.chord)}
         />
       )}
     </section>

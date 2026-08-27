@@ -1,6 +1,6 @@
 import { Fragment, useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowUpDown, ChevronUp, ChevronDown, Trash2, Music, Plus, Search, X, PenLine, Play, FileText, ListMusic } from 'lucide-react';
+import { ArrowUpDown, ChevronUp, ChevronDown, Trash2, Music, Plus, Search, X, PenLine, Play, Printer, FileText, ListMusic } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Song, SongList } from '../types';
 import { useBands } from '../context/BandsContext';
@@ -449,6 +449,16 @@ export default function SetlistsView({
               >
                 <Play size={14} />
               </button>
+            )}
+            {songs.length > 0 && (
+              <Link
+                className="setlist-action-btn setlist-action-btn--secondary"
+                to={`/bands/${bandId}/setlists/${setlistId}/print`}
+                title={`Print / export ${setlistName} as PDF`}
+                aria-label={`Print ${setlistName}`}
+              >
+                <Printer size={14} />
+              </Link>
             )}
             {extraActions}
             <button

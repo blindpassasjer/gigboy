@@ -27,6 +27,12 @@ import { bandSongRecordingsRouter } from './routes/songRecordings.js';
 import { bandLogosRouter } from './routes/bandLogos.js';
 import { storageUsageRouter } from './routes/storageUsage.js';
 import { songBadgesRouter } from './routes/songBadges.js';
+import { configRouter } from './routes/config.js';
+import { bandSongTransposeRouter, bandSongPrefsRouter } from './routes/songMemberPrefs.js';
+import { bandChordVoicingsRouter } from './routes/bandChordVoicings.js';
+import { bandSongRevisionsRouter } from './routes/songRevisions.js';
+import { recordingCommentsRouter } from './routes/recordingComments.js';
+import { bandSetlistSessionRouter } from './routes/setlistSessions.js';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is required.');
@@ -51,6 +57,7 @@ app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser(process.env.SESSION_SECRET));
 app.use(attachSession);
 
+app.use('/api/config', configRouter);
 app.use('/api/auth', authRateLimit, authRouter);
 app.use('/api/admin/invites', adminInvitesRouter);
 app.use('/api/admin/users', adminUsersRouter);
@@ -59,9 +66,15 @@ app.use('/api/storage-usage', storageUsageRouter);
 app.use('/api/song-badges', songBadgesRouter);
 app.use('/api/bands/:bandId/songs/:songId/attachments', bandAttachmentsRouter);
 app.use('/api/bands/:bandId/songs/:songId/hand-notes', bandSongHandNotesRouter);
+app.use('/api/bands/:bandId/songs/:songId/recordings/:recordingId/comments', recordingCommentsRouter);
 app.use('/api/bands/:bandId/songs/:songId/recordings', bandSongRecordingsRouter);
+app.use('/api/bands/:bandId/songs/:songId/transpose', bandSongTransposeRouter);
+app.use('/api/bands/:bandId/songs/:songId/revisions', bandSongRevisionsRouter);
+app.use('/api/bands/:bandId/song-prefs', bandSongPrefsRouter);
 app.use('/api/bands/:bandId/songs', bandSongsRouter);
+app.use('/api/bands/:bandId/chord-voicings', bandChordVoicingsRouter);
 app.use('/api/bands/:bandId/song-lists', bandSongListsRouter);
+app.use('/api/bands/:bandId/setlists/:setlistId/session', bandSetlistSessionRouter);
 app.use('/api/bands/:bandId/setlists', bandSetlistsRouter);
 app.use('/api/bands/:bandId/riders', bandRidersRouter);
 app.use('/api/bands/:bandId/press-kit-images', bandPressKitImagesRouter);

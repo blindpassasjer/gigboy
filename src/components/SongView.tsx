@@ -22,6 +22,7 @@ import {
   AudioLines,
   Metronome,
   Search,
+  History,
   X,
   Undo2,
   Redo2,
@@ -41,6 +42,9 @@ import { useAuth } from '../context/AuthContext';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
 import { useSongRecordings } from '../hooks/useSongRecordings';
 import { useSongAttachments } from '../hooks/useSongAttachments';
+import { useSongTranspose } from '../hooks/useSongTranspose';
+import { useBandChordVoicings } from '../hooks/useBandChordVoicings';
+import SongHistoryPanel from './SongHistoryPanel';
 import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import { getUserNoteColor } from '../lib/userColors';
@@ -87,10 +91,12 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const updateFromFileInputRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [toolbarVisible, setToolbarVisible] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
   const {
     bands,
     bandSongListsByBandId,
     updateBandSong,
+    refreshBandSongs,
     addSongToBandSongList,
     removeSongFromBandSongList,
     removeSongFromBandLibrary,
@@ -100,6 +106,17 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const availableBands = bands ?? [];
 
   const band = availableBands.find((b) => b.id === bandId) ?? null;
+  const canEditBand = !user || !band ? true : band.memberRoles?.[user.id] !== 'viewer';
+
+  const {
+    myTranspose,
+    seed: transposeSeed,
+    pinForMe: pinTransposeForMe,
+    clearMine: clearMyTransposePref,
+    scopeOf: transposeScopeOf,
+  } = useSongTranspose({ bandId, songId: song.id, bandDefault: song.preferredTranspose });
+
+  const chordVoicings = useBandChordVoicings(bandId, canEditBand);
 
   // Hand notes state
   const [showNotes, setShowNotes] = useState(false);
@@ -241,11 +258,13 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setDrawEnabled(false);
     setTypeEnabled(false);
     setShowChordFinder(false);
+    setShowHistory(false);
   }, [song.id]);
 
+  // Seed the live transpose from the resolved personal-or-band value (see useSongTranspose).
   useEffect(() => {
-    setTranspose(song.preferredTranspose ?? 0);
-  }, [song.id, song.preferredTranspose]);
+    setTranspose(transposeSeed.value);
+  }, [transposeSeed]);
 
   const handleChordClick = useCallback((chord: string, rect: DOMRect, element: HTMLElement) => {
     setActiveChord(prev =>
@@ -320,15 +339,37 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     const err = await updateBandSong(bandId, nextSong);
 
     if (err) {
-      toast.error(`Could not save pinned transpose: ${err}`);
+      toast.error(`Could not save band default: ${err}`);
       return;
     }
 
     toast.success(
       transpose === 0
-        ? 'Pinned to original key for this song.'
-        : `Pinned ${transpose > 0 ? '+' : ''}${transpose} semitones for this song.`
+        ? 'Band default set to the original key.'
+        : `Band default set to ${transpose > 0 ? '+' : ''}${transpose} semitones.`
     );
+  }
+
+  async function handlePinTransposeForMe() {
+    try {
+      await pinTransposeForMe(transpose);
+      toast.success(
+        transpose === 0
+          ? 'Your transpose for this song is now the original key.'
+          : `Pinned ${transpose > 0 ? '+' : ''}${transpose} semitones for you.`
+      );
+    } catch (err) {
+      toast.error(`Could not save your transpose: ${err instanceof Error ? err.message : err}`);
+    }
+  }
+
+  async function handleClearMyTranspose() {
+    try {
+      await clearMyTransposePref();
+      toast.success('Reverted to the band default transpose.');
+    } catch (err) {
+      toast.error(`Could not clear your transpose: ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   async function handleUpdateCapo(newCapo: number) {
@@ -425,7 +466,9 @@ export default function SongView({ song, accentColor, bandId }: Props) {
       '--song-header-accent': accentColor,
     } as CSSProperties)
     : undefined;
-  const isTransposePinned = song.preferredTranspose === transpose;
+  const transposeScope = transposeScopeOf(transpose);
+  const isBandDefaultTranspose = (song.preferredTranspose ?? 0) === transpose;
+  const isPinnedForMe = myTranspose !== null && myTranspose === transpose;
 
   return (
     <div className="song-view">
@@ -475,6 +518,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                     : transpose === 0
                       ? 'Original key'
                       : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
+                  {transposeScope === 'personal' && <span className="transpose-scope-tag"> · yours</span>}
+                  {transposeScope === 'band' && <span className="transpose-scope-tag"> · band</span>}
                 </span>
                 <button
                   onClick={() => setTranspose((t) => t + 1)}
@@ -494,13 +539,33 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   </button>
                 )}
                 <button
-                  onClick={() => { void handlePinTranspose(); }}
-                  aria-label="Pin current transpose"
-                  className={`transpose-btn transpose-btn--pin song-toolbar-tool-btn song-toolbar-setting-btn${isTransposePinned ? ' transpose-btn--pin-active' : ''}`}
-                  title={isTransposePinned ? 'This transposition is already pinned' : 'Pin this transposition for this song'}
+                  onClick={() => { void handlePinTransposeForMe(); }}
+                  aria-label="Pin this transpose for me"
+                  className={`transpose-btn transpose-btn--pin song-toolbar-tool-btn song-toolbar-setting-btn${isPinnedForMe ? ' transpose-btn--pin-active' : ''}`}
+                  title={isPinnedForMe ? 'This is your pinned transpose for this song' : 'Pin this transpose just for you'}
                 >
-                  {isTransposePinned ? 'Pinned' : 'Pin'}
+                  {isPinnedForMe ? 'Pinned for me' : 'Pin for me'}
                 </button>
+                {myTranspose !== null && (
+                  <button
+                    onClick={() => { void handleClearMyTranspose(); }}
+                    aria-label="Use the band default transpose"
+                    className="transpose-btn transpose-btn--reset song-toolbar-tool-btn song-toolbar-setting-btn"
+                    title="Clear your personal transpose and use the band default"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                )}
+                {canEditBand && (
+                  <button
+                    onClick={() => { void handlePinTranspose(); }}
+                    aria-label="Set band default transpose"
+                    className={`transpose-btn transpose-btn--pin song-toolbar-tool-btn song-toolbar-setting-btn${isBandDefaultTranspose ? ' transpose-btn--pin-active' : ''}`}
+                    title={isBandDefaultTranspose ? 'This is already the band default' : 'Set this transpose as the shared band default'}
+                  >
+                    {isBandDefaultTranspose ? 'Band default' : 'Set band default'}
+                  </button>
+                )}
               </div>
 
               <div className="transpose-control song-toolbar-controls-group">
@@ -664,9 +729,22 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                 <Search size={14} />
                 Chord finder
               </button>
+
+              {user && (
+                <button
+                  type="button"
+                  className={`song-toolbar-tool-btn${showHistory ? ' song-toolbar-tool-btn--active' : ''}`}
+                  onClick={() => setShowHistory((prev) => !prev)}
+                  title={showHistory ? 'Hide edit history' : 'Show edit history'}
+                  aria-label={showHistory ? 'Hide edit history' : 'Show edit history'}
+                >
+                  <History size={14} />
+                  History
+                </button>
+              )}
             </div>
 
-            {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes) || (user && showRecorder) || (user && showAttachments) || showChordFinder) && (
+            {(showMetronome || showTuner || (media && showMediaPlayer && song.playbackUrl) || (user && showNotes) || (user && showRecorder) || (user && showAttachments) || showChordFinder || (user && showHistory)) && (
               <div className={`song-toolbar-tools-grid${!toolbarVisible ? ' song-toolbar-tools-grid--floating' : ''}`}>
                 {showTuner && (
                   <div className="song-toolbar-tool-card">
@@ -861,6 +939,24 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                     <ChordFinder />
                   </div>
                 )}
+
+                {user && showHistory && (
+                  <div className="song-toolbar-tool-card song-toolbar-tool-card--history">
+                    <div className="song-toolbar-tool-card-header">
+                      <span className="song-toolbar-tool-card-title">
+                        <History size={13} />
+                        Edit history
+                      </span>
+                      <button className="floating-tool-close" onClick={() => setShowHistory(false)} aria-label="Close edit history"><X size={14} /></button>
+                    </div>
+                    <SongHistoryPanel
+                      bandId={bandId}
+                      song={song}
+                      canRestore={canEditBand}
+                      onRestored={() => { void refreshBandSongs(bandId); }}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -1003,6 +1099,22 @@ export default function SongView({ song, accentColor, bandId }: Props) {
           instrument={chordInstrument}
           anchorRect={activeChord.rect}
           onClose={() => setActiveChord(null)}
+          voicingOverride={
+            chordInstrument === 'piano'
+              ? undefined
+              : chordVoicings.overrideFor(chordInstrument, activeChord.chord)
+          }
+          canEditVoicing={chordInstrument !== 'piano' && chordVoicings.canEdit}
+          onSaveVoicing={
+            chordInstrument === 'piano'
+              ? undefined
+              : (frets) => chordVoicings.save(chordInstrument, activeChord.chord, frets)
+          }
+          onResetVoicing={
+            chordInstrument === 'piano'
+              ? undefined
+              : () => chordVoicings.remove(chordInstrument, activeChord.chord)
+          }
         />
       )}
 

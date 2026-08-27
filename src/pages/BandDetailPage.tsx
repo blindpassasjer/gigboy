@@ -13,7 +13,7 @@ import PressKitView from '../components/PressKitView';
 import { dataClient } from '../lib/dataClient';
 import type { Song } from '../types';
 import { showConfirmToast } from '../utils/toastDialogs';
-import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
+import { expandSongImportSelection, SONG_IMPORT_ACCEPT } from '../utils/songImport';
 import { parseImportedSongListFile, SONGLIST_JSON_IMPORT_ACCEPT } from '../utils/songListImport';
 import { parseImportedSetlistFile, SETLIST_JSON_IMPORT_ACCEPT } from '../utils/setlistImport';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -241,23 +241,27 @@ export default function BandDetailPage() {
 
     setIsImportingSongs(true);
 
+    // Loose song files and .zip archives (e.g. a Songbook Pro / OnSong backup) both flatten
+    // to a list of parsed drafts; per-entry parse failures are collected, not fatal.
+    const { items, errors: parseErrors } = await expandSongImportSelection(files);
+    const failedFiles: string[] = parseErrors.map((entry) => entry.name);
+
     const results = await Promise.allSettled(
-      Array.from(files).map(async (file) => {
-        const imported = await parseImportedSongFile(file);
+      items.map(async ({ draft }) => {
         const now = new Date().toISOString();
         const song: Song = {
           id: generateId(),
-          title: imported.title,
-          artist: imported.artist,
-          author: imported.author,
-          language: imported.language ?? 'en',
-          secondaryLanguages: imported.secondaryLanguages,
-          tags: imported.tags,
-          key: imported.key,
-          capo: imported.capo,
-          tempo: imported.tempo,
-          timeSignature: imported.timeSignature,
-          chordpro: imported.chordpro,
+          title: draft.title,
+          artist: draft.artist,
+          author: draft.author,
+          language: draft.language ?? 'en',
+          secondaryLanguages: draft.secondaryLanguages,
+          tags: draft.tags,
+          key: draft.key,
+          capo: draft.capo,
+          tempo: draft.tempo,
+          timeSignature: draft.timeSignature,
+          chordpro: draft.chordpro,
           createdAt: now,
           updatedAt: now,
         };
@@ -270,12 +274,11 @@ export default function BandDetailPage() {
     );
 
     let importedCount = 0;
-    const failedFiles: string[] = [];
     results.forEach((result, index) => {
       if (result.status === 'fulfilled') {
         importedCount += 1;
       } else {
-        failedFiles.push(files[index].name);
+        failedFiles.push(items[index].name);
       }
     });
 
@@ -683,7 +686,7 @@ export default function BandDetailPage() {
       <input
         ref={importInputRef}
         type="file"
-        accept={SONG_TEXT_IMPORT_ACCEPT}
+        accept={SONG_IMPORT_ACCEPT}
         multiple
         onChange={(event) => {
           void handleImportSongs(event.target.files);
@@ -715,8 +718,8 @@ export default function BandDetailPage() {
                 type="button"
                 className="setlist-action-btn setlist-action-btn--secondary"
                 onClick={() => importInputRef.current?.click()}
-                title={isImportingSongs ? 'Importing songs…' : 'Import local song files'}
-                aria-label={isImportingSongs ? 'Importing songs' : 'Import local song files'}
+                title={isImportingSongs ? 'Importing songs…' : 'Import song files or a .zip backup (ChordPro, OnSong, Ultimate Guitar…)'}
+                aria-label={isImportingSongs ? 'Importing songs' : 'Import song files or a zip backup'}
                 disabled={isImportingSongs}
               >
                 <Upload size={14} />
