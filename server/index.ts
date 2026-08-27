@@ -29,7 +29,6 @@ import { bandSongRecordingsRouter } from './routes/songRecordings.js';
 import { bandLogosRouter } from './routes/bandLogos.js';
 import { storageUsageRouter } from './routes/storageUsage.js';
 import { songBadgesRouter } from './routes/songBadges.js';
-import { configRouter } from './routes/config.js';
 import { bandSongTransposeRouter, bandSongPrefsRouter } from './routes/songMemberPrefs.js';
 import { bandChordVoicingsRouter } from './routes/bandChordVoicings.js';
 import { bandSongRevisionsRouter } from './routes/songRevisions.js';
@@ -74,7 +73,6 @@ app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser(process.env.SESSION_SECRET));
 app.use(attachSession);
 
-app.use('/api/config', configRouter);
 app.use('/api/auth', authRateLimit, authRouter);
 app.use('/api/admin/invites', adminInvitesRouter);
 app.use('/api/admin/users', adminUsersRouter);

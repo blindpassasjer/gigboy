@@ -209,7 +209,7 @@ src/
   components/     UI components (Layout, Sidebar, SongList, SongView, ChordDisplay, PressKitView, …)
   context/        AuthContext, BandsContext, DarkModeContext
   hooks/          useStorageUsage, useSongRecordings, …
-  pages/          SongPage, AddSongPage, BandDetailPage, ProfilePage, AdminInvitesPage, AdminUsersPage, TermsPage, PrivacyPage, …
+  pages/          SongPage, AddSongPage, BandDetailPage, ProfilePage, AdminInvitesPage, AdminUsersPage, …
   lib/            dataClient (REST API client), songbookExport (ChordPro export), chunkRecovery, …
   types/          Song, Setlist, SongList, Band, User types
   utils/          chordParser, languages
@@ -220,15 +220,10 @@ server/
   middleware/     Session auth, admin gating
 ```
 
-## Legal pages
-
-Draft Terms of Service and Privacy Policy live at [src/pages/TermsPage.tsx](src/pages/TermsPage.tsx) and [src/pages/PrivacyPage.tsx](src/pages/PrivacyPage.tsx) (routes `/terms` and `/privacy`). Operator-specific details (name, contact address, governing-law jurisdiction) are pulled from the optional `OPERATOR_NAME`, `OPERATOR_CONTACT_EMAIL`, and `OPERATOR_JURISDICTION` environment variables (see [.env.example](.env.example)) — set them for your instance, otherwise the pages fall back to generic wording. Get the text reviewed before relying on it, especially the copyright section (users store song lyrics/chords, which are often copyrighted material) and GDPR compliance if you have EU/EEA users.
-
 ## Before going public
 
 - [ ] Set a strong `SESSION_SECRET` and `POSTGRES_PASSWORD` in `.env` (see [SELFHOSTING.md](SELFHOSTING.md))
 - [ ] Put a reverse proxy with real HTTPS in front of the container and set `COOKIE_SECURE=true`
-- [ ] Set `OPERATOR_NAME`, `OPERATOR_CONTACT_EMAIL`, and `OPERATOR_JURISDICTION` so the `/terms` and `/privacy` pages name your instance's operator
 
 ## Codebase knowledge graph
 

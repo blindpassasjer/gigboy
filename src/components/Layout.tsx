@@ -624,10 +624,6 @@ export default function Layout({ children }: Props) {
           {children}
           <footer className="footer">
             From Norway {'<3'} with chords
-            <span className="footer-links">
-              <Link to="/terms">Terms</Link>
-              <Link to="/privacy">Privacy</Link>
-            </span>
           </footer>
         </main>
         {renderContextFab()}

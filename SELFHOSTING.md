@@ -39,12 +39,7 @@ uploaded files.
 4. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` — see [Admin account and invites](#admin-account-and-invites)
    below. Set both, or leave both unset if an admin already exists from a previous run.
 
-5. (Optional, recommended before sharing the instance widely) Set `OPERATOR_NAME`,
-   `OPERATOR_CONTACT_EMAIL`, and `OPERATOR_JURISDICTION` in `.env`. These fill in the
-   operator name, contact address, and governing-law jurisdiction on the built-in
-   `/terms` and `/privacy` pages; unset values fall back to generic wording.
-
-6. Bring the stack up:
+5. Bring the stack up:
 
    ```sh
    docker compose pull
@@ -70,7 +65,7 @@ uploaded files.
    (via `docker-entrypoint.sh`) before starting the server — so `docker compose up` is always
    enough, including on first run and after upgrades that add new migrations.
 
-7. Open `http://localhost:6168` (or whatever `PORT` you set) and log in as the admin account
+6. Open `http://localhost:6168` (or whatever `PORT` you set) and log in as the admin account
    you configured in step 4. There is no open self-registration — every other account is
    created by an admin generating an invite link (see below).
 

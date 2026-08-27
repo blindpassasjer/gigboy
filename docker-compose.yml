@@ -33,9 +33,6 @@ services:
       TRUST_PROXY: ${TRUST_PROXY:-false}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-      OPERATOR_NAME: ${OPERATOR_NAME:-}
-      OPERATOR_CONTACT_EMAIL: ${OPERATOR_CONTACT_EMAIL:-}
-      OPERATOR_JURISDICTION: ${OPERATOR_JURISDICTION:-}
     volumes:
       - ./data/attachments:/data/attachments
     ports:

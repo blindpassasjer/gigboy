@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardList, Piano, Activity, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -279,10 +279,6 @@ export default function LoginPage() {
 
           <footer className="footer">
             From Norway {'<3'} with chords
-            <span className="footer-links">
-              <Link to="/terms">Terms</Link>
-              <Link to="/privacy">Privacy</Link>
-            </span>
           </footer>
         </div>
       </div>

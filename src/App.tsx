@@ -24,8 +24,6 @@ const EditSongPage = lazy(() => import('./pages/EditSongPage'));
 const AdminInvitesPage = lazy(() => import('./pages/AdminInvitesPage'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const TermsPage = lazy(() => import('./pages/TermsPage'));
-const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const PublicBandRiderPage = lazy(() => import('./pages/PublicBandRiderPage'));
 const PublicBandPressKitPage = lazy(() => import('./pages/PublicBandPressKitPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
@@ -175,8 +173,6 @@ const router = createBrowserRouter(
     { path: '/public/bands/:bandId/:bandName/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
     { path: '/public/bands/:bandId/riders/:riderId', element: <PublicBandRiderPage />, errorElement: routerErrorElement },
     { path: '/public/press-kit/:token', element: <PublicBandPressKitPage />, errorElement: routerErrorElement },
-    { path: '/terms', element: <TermsPage />, errorElement: routerErrorElement },
-    { path: '/privacy', element: <PrivacyPage />, errorElement: routerErrorElement },
     { path: '/invite/:token', element: <AcceptInvitePage />, errorElement: routerErrorElement },
     { path: '/', element: <AuthenticatedApp />, errorElement: routerErrorElement },
     { path: '*', element: <AuthenticatedApp />, errorElement: routerErrorElement },
