@@ -116,17 +116,6 @@ export default defineConfig(({ command }) => ({
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*$/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
-              },
-            },
-          },
-          {
             urlPattern: /\/api\//,
             handler: 'NetworkFirst',
             options: {
