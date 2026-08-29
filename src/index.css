@@ -2787,31 +2787,23 @@ input, select, textarea { font: inherit; color: var(--text); }
   border-color: transparent;
 }
 .song-view-header .song-toolbar-row--controls .transpose-btn--pin {
-  margin-left: .15rem;
-  padding-left: .55rem;
-  border-left: 1px solid color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
-  border-radius: 0;
-}
-
-.transpose-band-menu {
-  position: relative;
-  display: inline-flex;
-}
-.transpose-band-menu > button {
-  border: 1px solid color-mix(in srgb, var(--song-header-accent, var(--accent)) 28%, var(--song-item-border, var(--border)));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--song-header-accent, var(--accent)) 14%, var(--song-item-bg, var(--surface)));
+  color: color-mix(in srgb, var(--song-header-accent) 56%, var(--song-item-text));
 }
-.transpose-band-menu-dropdown {
-  right: auto;
-  left: 0;
-}
-.transpose-band-menu-dropdown .list-dropdown-item:disabled {
-  opacity: .55;
+.song-view-header .song-toolbar-row--controls .transpose-btn--pin:disabled {
   cursor: default;
 }
-.transpose-band-menu-dropdown .list-dropdown-item:disabled:hover {
-  background: transparent;
+.song-view-header .song-toolbar-row--controls .transpose-btn--pin-active,
+.song-view-header .song-toolbar-row--controls .transpose-btn--pin-active:hover {
+  background: color-mix(in srgb, var(--song-header-accent) 84%, black);
+  color: var(--song-item-accent-contrast, var(--accent-contrast));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 16%, transparent);
+}
+.song-view-header .song-toolbar-row--controls .transpose-pin-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: .25rem .15rem;
+  background: color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
 }
 
 .song-view-header .song-toolbar-row--controls .instrument-toggle {
