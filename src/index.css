@@ -2064,6 +2064,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: transparent;
 }
 
+.song-view .song-action-btn--history {
+  border-color: transparent;
+  background: transparent;
+}
+
+.song-view .song-action-btn--history:hover,
+.song-view .song-action-btn--history.song-action-btn--active {
+  color: var(--accent);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
 @media (min-width: 901px) and (max-width: 1200px) {
   :root {
     --sidebar-width: 240px;
@@ -2291,7 +2303,8 @@ input, select, textarea { font: inherit; color: var(--text); }
   font-weight: 700;
 }
 
-.song-toolbar-tool-card--media {
+.song-toolbar-tool-card--media,
+.song-toolbar-tool-card--history {
   grid-column: 1 / -1;
 }
 
@@ -2778,6 +2791,27 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding-left: .55rem;
   border-left: 1px solid color-mix(in srgb, var(--song-header-accent) 28%, var(--song-item-border));
   border-radius: 0;
+}
+
+.transpose-band-menu {
+  position: relative;
+  display: inline-flex;
+}
+.transpose-band-menu > button {
+  border: 1px solid color-mix(in srgb, var(--song-header-accent, var(--accent)) 28%, var(--song-item-border, var(--border)));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--song-header-accent, var(--accent)) 14%, var(--song-item-bg, var(--surface)));
+}
+.transpose-band-menu-dropdown {
+  right: auto;
+  left: 0;
+}
+.transpose-band-menu-dropdown .list-dropdown-item:disabled {
+  opacity: .55;
+  cursor: default;
+}
+.transpose-band-menu-dropdown .list-dropdown-item:disabled:hover {
+  background: transparent;
 }
 
 .song-view-header .song-toolbar-row--controls .instrument-toggle {
