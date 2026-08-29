@@ -8,16 +8,17 @@ import {
 interface Params {
   bandId: string;
   songId: string;
-  /** The song's shared `preferredTranspose` (band default), if any. */
+  /** The song's stored `preferredTranspose`, used only as the seed when the member has
+   *  no saved override of their own. */
   bandDefault: number | null | undefined;
 }
 
-export type TransposeScope = 'personal' | 'band' | 'none';
+export type TransposeScope = 'personal' | 'none';
 
 /**
  * Resolves the transpose a member should see for a song: their personal override if set,
- * otherwise the band default, otherwise the original key. Also exposes the mutators for
- * pinning / clearing the personal override.
+ * otherwise the song's stored fallback, otherwise the original key. Also exposes the
+ * mutators for saving / clearing the personal override.
  *
  * The component keeps owning the live `transpose` value (so the +/- buttons stay snappy);
  * this hook just seeds it and reports which scope the current value matches.
@@ -73,14 +74,11 @@ export function useSongTranspose({ bandId, songId, bandDefault }: Params) {
     setSeed({ value: normalizedDefault, token: tokenRef.current });
   }, [bandId, songId, normalizedDefault]);
 
-  /** Which stored scope a given live transpose value corresponds to. */
+  /** Whether a given live transpose value matches the member's saved override. */
   const scopeOf = useCallback(
-    (current: number): TransposeScope => {
-      if (myTranspose !== null && current === myTranspose) return 'personal';
-      if (current === normalizedDefault && current !== 0) return 'band';
-      return 'none';
-    },
-    [myTranspose, normalizedDefault],
+    (current: number): TransposeScope =>
+      myTranspose !== null && current === myTranspose ? 'personal' : 'none',
+    [myTranspose],
   );
 
   return { myTranspose, resolved, seed, pinForMe, clearMine, scopeOf };

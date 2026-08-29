@@ -61,8 +61,8 @@ self-hosted only (see below).
 ### Write and read songs the way musicians actually think about them
 - **ChordPro rendering** — chords shown inline above lyrics, written as `[G]Amazing [C]grace`
 - **Transpose** — shift every chord up or down by semitone in real time, on stage or in rehearsal;
-  save it against the song just for you (the horn player reads in Eb) with the person button, or —
-  if you can edit the band — set a shared band default with the group button
+  whatever you set sticks to that song for you next time (the horn player reads in Eb), and each
+  bandmate keeps their own
 - **Live preview** while writing — see the rendered sheet as you type
 - **Import** from ChordPro, OnSong, and pasted Ultimate Guitar / Chordify / CifraClub charts —
   drop in loose files or a whole `.zip` backup and Gigboy converts them to ChordPro

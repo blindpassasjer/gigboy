@@ -26,8 +26,6 @@ import {
   X,
   Undo2,
   Redo2,
-  User,
-  Users,
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { LyricNoteStroke, Song, LyricTextNote } from '../types';
@@ -263,11 +261,30 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setShowHistory(false);
   }, [song.id]);
 
-  // Seed the live transpose from the resolved personal-or-band value (see useSongTranspose).
-  // Also fires when the member clears their personal pin (clearMine bumps the seed token).
+  // Set while the member is working the +/- controls, so the auto-save effect below only
+  // persists deliberate adjustments and never the initial seed.
+  const transposeInteractedRef = useRef(false);
+
+  // Seed the live transpose from the member's saved override for this song (or the song's
+  // stored fallback / original key). Also fires when they reset (clearMine bumps the token).
   useEffect(() => {
+    transposeInteractedRef.current = false;
     setTranspose(transposeSeed.value);
   }, [transposeSeed]);
+
+  // Transpose is per-member and sticky: whatever the member dials in is saved for them,
+  // debounced so a run of +/- taps is one write. No explicit "save" button.
+  useEffect(() => {
+    if (!transposeInteractedRef.current) return;
+    if (myTranspose === transpose) return;
+    const id = setTimeout(() => { void pinTransposeForMe(transpose); }, 800);
+    return () => clearTimeout(id);
+  }, [transpose, myTranspose, pinTransposeForMe]);
+
+  const adjustTranspose = useCallback((next: (t: number) => number) => {
+    transposeInteractedRef.current = true;
+    setTranspose(next);
+  }, []);
 
   const handleChordClick = useCallback((chord: string, rect: DOMRect, element: HTMLElement) => {
     setActiveChord(prev =>
@@ -332,46 +349,13 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     navigate(songPageState.backTo ?? `/bands/${bandId}/library`, { state: songPageState });
   }
 
-  async function handlePinTranspose() {
-    const nextSong: Song = {
-      ...song,
-      preferredTranspose: transpose,
-      updatedAt: new Date().toISOString(),
-    };
-
-    const err = await updateBandSong(bandId, nextSong);
-
-    if (err) {
-      toast.error(`Could not save band default: ${err}`);
-      return;
-    }
-
-    toast.success(
-      transpose === 0
-        ? 'Band default set to the original key.'
-        : `Band default set to ${transpose > 0 ? '+' : ''}${transpose} semitones.`
-    );
-  }
-
-  async function handlePinTransposeForMe() {
-    try {
-      await pinTransposeForMe(transpose);
-      toast.success(
-        transpose === 0
-          ? 'Your transpose for this song is now the original key.'
-          : `Pinned ${transpose > 0 ? '+' : ''}${transpose} semitones for you.`
-      );
-    } catch (err) {
-      toast.error(`Could not save your transpose: ${err instanceof Error ? err.message : err}`);
-    }
-  }
-
-  async function handleClearMyTranspose() {
+  async function handleResetTranspose() {
+    transposeInteractedRef.current = false;
+    setTranspose(0);
     try {
       await clearMyTransposePref();
-      toast.success('Reverted to the band default transpose.');
     } catch (err) {
-      toast.error(`Could not clear your transpose: ${err instanceof Error ? err.message : err}`);
+      toast.error(`Could not reset your transpose: ${err instanceof Error ? err.message : err}`);
     }
   }
 
@@ -469,9 +453,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
       '--song-header-accent': accentColor,
     } as CSSProperties)
     : undefined;
-  const transposeScope = transposeScopeOf(transpose);
-  const isBandDefaultTranspose = (song.preferredTranspose ?? 0) === transpose;
-  const isPinnedForMe = myTranspose !== null && myTranspose === transpose;
+  const transposeIsSaved = transposeScopeOf(transpose) === 'personal';
+  const canResetTranspose = transpose !== 0 || myTranspose !== null;
 
   return (
     <div className="song-view">
@@ -507,7 +490,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
             <div className="song-toolbar-row song-toolbar-row--controls">
               <div className="transpose-control song-toolbar-controls-group">
                 <button
-                  onClick={() => setTranspose((t) => t - 1)}
+                  onClick={() => adjustTranspose((t) => t - 1)}
                   aria-label="Transpose down"
                   className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
                 >
@@ -521,48 +504,23 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                     : transpose === 0
                       ? 'Original key'
                       : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
-                  {transposeScope === 'personal' && <span className="transpose-scope-tag"> · yours</span>}
-                  {transposeScope === 'band' && <span className="transpose-scope-tag"> · band</span>}
+                  {transposeIsSaved && <span className="transpose-scope-tag"> · saved</span>}
                 </span>
                 <button
-                  onClick={() => setTranspose((t) => t + 1)}
+                  onClick={() => adjustTranspose((t) => t + 1)}
                   aria-label="Transpose up"
                   className="transpose-btn song-toolbar-tool-btn song-toolbar-setting-btn"
                 >
                   <ChevronUp size={16} />
                 </button>
-                {transpose !== 0 && (
+                {canResetTranspose && (
                   <button
-                    onClick={() => setTranspose(0)}
+                    onClick={() => { void handleResetTranspose(); }}
                     aria-label="Reset to original key"
                     className="transpose-btn transpose-btn--reset song-toolbar-tool-btn song-toolbar-setting-btn"
                     title="Reset to original key"
                   >
                     <RotateCcw size={13} />
-                  </button>
-                )}
-
-                <span className="transpose-pin-divider" aria-hidden="true" />
-
-                <button
-                  onClick={() => { void (isPinnedForMe ? handleClearMyTranspose() : handlePinTransposeForMe()); }}
-                  aria-label={isPinnedForMe ? 'Clear your saved transpose' : 'Save this transpose for you'}
-                  aria-pressed={isPinnedForMe}
-                  className={`transpose-btn transpose-btn--pin song-toolbar-tool-btn song-toolbar-setting-btn${isPinnedForMe ? ' transpose-btn--pin-active' : ''}`}
-                  title={isPinnedForMe ? 'Your saved transpose for this song — tap to clear' : 'Save this transpose just for you'}
-                >
-                  <User size={15} />
-                </button>
-                {canEditBand && (
-                  <button
-                    onClick={() => { void handlePinTranspose(); }}
-                    aria-label="Set the shared band default transpose"
-                    aria-pressed={isBandDefaultTranspose}
-                    disabled={isBandDefaultTranspose}
-                    className={`transpose-btn transpose-btn--pin song-toolbar-tool-btn song-toolbar-setting-btn${isBandDefaultTranspose ? ' transpose-btn--pin-active' : ''}`}
-                    title={isBandDefaultTranspose ? 'This is the shared band default' : 'Set this as the shared band default'}
-                  >
-                    <Users size={15} />
                   </button>
                 )}
               </div>
