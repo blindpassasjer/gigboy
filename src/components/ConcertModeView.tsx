@@ -92,8 +92,8 @@ interface Props {
   songNotes?: Record<string, string>;
   bandId?: string;
   canUseMetronome: boolean;
-  /** Current user's personal transpose overrides, keyed by song id. Takes precedence over
-   * each song's shared `preferredTranspose`. */
+  /** Current user's personal transpose overrides, keyed by song id. Used when solo or
+   * leading; ignored while following, where the leader's transpose applies to everyone. */
   transposeBySongId?: Record<string, number>;
   /** Shared "now playing" session (setlist mode only). When leading, local navigation is
    * broadcast; when following, position is driven by the leader. */
@@ -198,14 +198,19 @@ export default function ConcertModeView({
     setActiveChord(null);
   }, [currentIndex]);
 
-  useEffect(() => {
-    const personal = activeSong ? transposeBySongId?.[activeSong.id] : undefined;
-    setTranspose(personal ?? activeSong?.preferredTranspose ?? 0);
-  }, [activeSong?.id, activeSong?.preferredTranspose, activeSong, transposeBySongId]);
-
-  // Follow mode: the leader's position drives this screen.
   const sessionMode = session?.mode ?? 'solo';
   const sessionState = session?.state ?? null;
+
+  // Seed the transpose from this member's own saved value for the song. Skipped while
+  // following — there the leader's transpose is applied to everyone (see the effect below),
+  // and it's restored from personal prefs once the session ends and the mode flips back.
+  useEffect(() => {
+    if (sessionMode === 'follow') return;
+    const personal = activeSong ? transposeBySongId?.[activeSong.id] : undefined;
+    setTranspose(personal ?? activeSong?.preferredTranspose ?? 0);
+  }, [activeSong?.id, activeSong?.preferredTranspose, activeSong, transposeBySongId, sessionMode]);
+
+  // Follow mode: the leader's position — and transpose — drive this screen.
   useEffect(() => {
     if (sessionMode !== 'follow' || !sessionState) return;
     targetPageRef.current = sessionState.pageIndex;
