@@ -172,9 +172,11 @@ publicInvitesRouter.post('/:token/accept', async (req, res) => {
     const id = crypto.randomUUID();
 
     // Atomically claim the invite: only one concurrent request can flip it from pending.
+    // acceptedUserId is left null here — the user row doesn't exist yet, and setting it now
+    // would violate the accepted_user_id -> users.id foreign key. It's filled in after insert.
     const [claimed] = await db
       .update(userInvites)
-      .set({ status: 'accepted', acceptedUserId: id })
+      .set({ status: 'accepted' })
       .where(and(eq(userInvites.id, invite.id), eq(userInvites.status, 'pending')))
       .returning();
     if (!claimed) {
@@ -208,6 +210,12 @@ publicInvitesRouter.post('/:token/accept', async (req, res) => {
       }
       throw insertErr;
     }
+
+    // Now that the user row exists, link it back to the invite.
+    await db
+      .update(userInvites)
+      .set({ acceptedUserId: id })
+      .where(eq(userInvites.id, invite.id));
 
     const token = generateSessionToken();
     const expiresAt = sessionExpiry();
