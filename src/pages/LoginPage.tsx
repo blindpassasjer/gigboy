@@ -1,56 +1,43 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
-import { Music2, ListMusic, Users, MonitorSpeaker, Mic2, Newspaper, ClipboardList, Piano, Activity, type LucideIcon } from 'lucide-react';
+import { Music2, ListMusic, Users, MonitorSpeaker, Newspaper, Activity, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
+const REPO_URL = 'https://github.com/blindpassasjer/gigboy';
 
 const LOGIN_FEATURES: { icon: LucideIcon; title: string; description: string }[] = [
   {
     icon: Music2,
     title: 'Song library',
-    description: 'Chord charts, tabs, lyrics, and hand notes — everything for your songs.',
+    description: 'Chord charts, tabs, lyrics, and hand notes in one place.',
   },
   {
     icon: ListMusic,
     title: 'Setlists',
-    description: 'Build sets in seconds. Rehearsal and concert modes included.',
+    description: 'Build sets fast, with rehearsal and concert modes.',
   },
   {
     icon: Users,
     title: 'Band collaboration',
-    description: 'A shared workspace for every member of your band.',
+    description: 'A shared workspace for every member of the band.',
   },
   {
     icon: MonitorSpeaker,
     title: 'Stage plots & riders',
-    description: 'Professional stage diagrams and tech riders, ready to send.',
+    description: 'Stage diagrams, tech riders, and input lists.',
   },
   {
     icon: Newspaper,
     title: 'Press kits',
-    description: 'Rich band bio, photos, and assets — share via a single link.',
-  },
-  {
-    icon: ClipboardList,
-    title: 'Input lists',
-    description: 'Build and share stage input lists with your FOH engineer.',
-  },
-  {
-    icon: Piano,
-    title: 'Chord diagrams',
-    description: 'Tap any chord for instant guitar and piano fingerings.',
+    description: 'Band bio, photos, and assets behind a single link.',
   },
   {
     icon: Activity,
     title: 'Tuner & metronome',
-    description: 'Built-in chromatic tuner and visual metronome — no extra apps.',
-  },
-  {
-    icon: Mic2,
-    title: 'Rehearsal recordings',
-    description: 'Record and replay run-throughs without leaving the app.',
+    description: 'Chromatic tuner, metronome, and rehearsal recordings.',
   },
 ];
 
@@ -86,9 +73,10 @@ function LoginHero() {
       <div className="login-brand login-brand--hero">
         <BrandMark size={90} />
       </div>
-      <h1 className="login-hero-title">Your songs, your stage.</h1>
+      <h1 className="login-hero-title">A workspace for working bands.</h1>
       <p className="login-hero-copy">
-        Everything a working band needs — from rehearsal to the headline slot — in one shared workspace.
+        Gigboy is a free, open-source tool for organising songs, setlists, and everything else
+        a band brings to the stage. This is a self-hosted instance — accounts are invite-only.
       </p>
       <ul className="login-feature-list">
         {LOGIN_FEATURES.map(({ icon: Icon, title, description }) => (
@@ -99,6 +87,12 @@ function LoginHero() {
           </li>
         ))}
       </ul>
+      <a className="login-hero-source" href={REPO_URL} target="_blank" rel="noreferrer">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
+        </svg>
+        Source on GitHub
+      </a>
     </aside>
   );
 }

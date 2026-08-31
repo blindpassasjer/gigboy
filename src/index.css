@@ -5671,6 +5671,22 @@ input, select, textarea { font: inherit; color: var(--text); }
   line-height: 1.4;
 }
 
+.login-hero-source {
+  margin-top: .35rem;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-hero-source:hover {
+  color: var(--text);
+}
+
 .login-card {
   background: color-mix(in srgb, var(--surface) 96%, #ffffff);
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
