@@ -38,7 +38,7 @@ export const localStorageAdapter: StorageAdapter = {
     await fsp.writeFile(filePath, data);
   },
 
-  async read(key) {
+  async read(key, range) {
     const filePath = resolveKeyPath(key);
     let stat: fs.Stats;
     try {
@@ -47,7 +47,9 @@ export const localStorageAdapter: StorageAdapter = {
       return null;
     }
     return {
-      stream: fs.createReadStream(filePath),
+      stream: range
+        ? fs.createReadStream(filePath, { start: range.start, end: range.end })
+        : fs.createReadStream(filePath),
       contentType: guessContentType(key),
       sizeBytes: stat.size,
     };

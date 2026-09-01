@@ -5,6 +5,14 @@
  */
 export interface StorageAdapter {
   save(key: string, data: Buffer, contentType: string): Promise<void>;
-  read(key: string): Promise<{ stream: NodeJS.ReadableStream; contentType: string; sizeBytes: number } | null>;
+  /**
+   * Reads a stored object. Pass `range` (inclusive byte offsets) to stream only that
+   * slice — used to answer HTTP Range requests so `<audio>`/`<video>` playback can seek
+   * (Safari refuses to play media served without range support).
+   */
+  read(
+    key: string,
+    range?: { start: number; end: number },
+  ): Promise<{ stream: NodeJS.ReadableStream; contentType: string; sizeBytes: number } | null>;
   delete(key: string): Promise<void>;
 }

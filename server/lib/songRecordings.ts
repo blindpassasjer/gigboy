@@ -1,4 +1,4 @@
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import multer from 'multer';
 import type { songRecordings } from '../db/schema.js';
 import type { localStorageAdapter } from '../storage/localStorageAdapter.js';
@@ -70,18 +70,82 @@ export function songRecordingToApi(row: SongRecordingRow, urlBase: string) {
   });
 }
 
-/** Streams a stored recording to the response, or 404s. */
+/**
+ * Parses an HTTP `Range` header for a single byte range. Returns null when absent or
+ * not a form we serve (multi-range, non-`bytes` unit); returns 'unsatisfiable' when the
+ * range falls outside the file so the caller can answer 416.
+ */
+function parseByteRange(header: string | undefined, size: number): { start: number; end: number } | null | 'unsatisfiable' {
+  if (!header) return null;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+  if (!match) return null;
+  const [, rawStart, rawEnd] = match;
+  if (rawStart === '' && rawEnd === '') return null;
+
+  let start: number;
+  let end: number;
+  if (rawStart === '') {
+    // Suffix range: last N bytes.
+    const suffix = Number(rawEnd);
+    if (suffix <= 0) return 'unsatisfiable';
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  } else {
+    start = Number(rawStart);
+    end = rawEnd === '' ? size - 1 : Math.min(Number(rawEnd), size - 1);
+  }
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) {
+    return 'unsatisfiable';
+  }
+  return { start, end };
+}
+
+/** Streams a stored recording to the response, honouring HTTP Range requests, or 404s. */
 export async function streamSongRecording(
+  req: Request,
   res: Response,
   storageAdapter: typeof localStorageAdapter,
   row: SongRecordingRow,
 ): Promise<void> {
-  const file = await storageAdapter.read(row.storageKey);
-  if (!file) {
+  const head = await storageAdapter.read(row.storageKey);
+  if (!head) {
     res.status(404).json({ error: 'Recording file not found.' });
     return;
   }
+  const size = head.sizeBytes;
+  // We only needed the size here; discard the unread stream.
+  (head.stream as NodeJS.ReadableStream & { destroy?: () => void }).destroy?.();
+
   res.setHeader('Content-Type', row.mimeType);
-  res.setHeader('Content-Length', String(file.sizeBytes));
-  file.stream.pipe(res);
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
+
+  const range = parseByteRange(req.headers.range, size);
+  if (range === 'unsatisfiable') {
+    res.setHeader('Content-Range', `bytes */${size}`);
+    res.status(416).end();
+    return;
+  }
+
+  if (range) {
+    const slice = await storageAdapter.read(row.storageKey, range);
+    if (!slice) {
+      res.status(404).json({ error: 'Recording file not found.' });
+      return;
+    }
+    res.status(206);
+    res.setHeader('Content-Range', `bytes ${range.start}-${range.end}/${size}`);
+    res.setHeader('Content-Length', String(range.end - range.start + 1));
+    slice.stream.pipe(res);
+    return;
+  }
+
+  const full = await storageAdapter.read(row.storageKey);
+  if (!full) {
+    res.status(404).json({ error: 'Recording file not found.' });
+    return;
+  }
+  res.setHeader('Content-Length', String(size));
+  full.stream.pipe(res);
 }

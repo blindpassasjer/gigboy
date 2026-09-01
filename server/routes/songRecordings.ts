@@ -210,7 +210,7 @@ function buildRecordingsRouter(
       if (!scope) return;
       const recording = await loadRecording(req, res, scope.song.id);
       if (!recording) return;
-      await streamSongRecording(res, localStorageAdapter, recording);
+      await streamSongRecording(req, res, localStorageAdapter, recording);
     } catch (err) {
       console.error('Failed to download song recording:', err);
       res.status(500).json({ error: 'Something went wrong. Please try again.' });
