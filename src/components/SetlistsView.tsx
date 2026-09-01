@@ -22,6 +22,8 @@ interface Props {
   onMoveSong: (songId: string, beforeSongId: string | null) => void;
   onRemoveSong: (songId: string) => void;
   onAddSong: (songId: string) => void | Promise<void>;
+  /** Add multiple songs in a single operation (used when adding a whole songlist) */
+  onAddSongs?: (songIds: string[]) => void | Promise<void>;
   onUpdateSongNote?: (songId: string, note: string) => void | Promise<void>;
   extraActions?: ReactNode;
   /** Override the concert mode URL (defaults to /bands/:bandId/setlists/:id/concert when bandId is present) */
@@ -61,6 +63,7 @@ export default function SetlistsView({
   onMoveSong,
   onRemoveSong,
   onAddSong,
+  onAddSongs,
   onUpdateSongNote,
   extraActions,
   concertRoute,
@@ -218,8 +221,12 @@ export default function SetlistsView({
 
     setAddingSongListId(sourceSongListId);
     try {
-      for (const songId of songIds) {
-        await Promise.resolve(onAddSong(songId));
+      if (onAddSongs) {
+        await Promise.resolve(onAddSongs(songIds));
+      } else {
+        for (const songId of songIds) {
+          await Promise.resolve(onAddSong(songId));
+        }
       }
     } finally {
       setAddingSongListId((current) => (current === sourceSongListId ? null : current));

@@ -46,6 +46,7 @@ export default function BandDetailPage() {
     updateBandSetlistIcon,
     deleteBandSetlist,
     addSongToBandSetlist,
+    addSongsToBandSetlist,
     moveSongInBandSetlist,
     removeSongFromBandSetlist,
     updateSongNoteInBandSetlist,
@@ -583,6 +584,12 @@ export default function BandDetailPage() {
           }}
           onAddSong={async (songId) => {
             const error = await addSongToBandSetlist(band.id, activeBandSetlist.id, songId);
+            if (error) {
+              toast.error(error);
+            }
+          }}
+          onAddSongs={async (songIds) => {
+            const error = await addSongsToBandSetlist(band.id, activeBandSetlist.id, songIds);
             if (error) {
               toast.error(error);
             }

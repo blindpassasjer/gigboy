@@ -145,6 +145,7 @@ interface BandsContextValue {
   updateBandSetlistIcon: (bandId: string, setlistId: string, icon?: string) => Promise<string | null>;
   deleteBandSetlist: (bandId: string, setlistId: string) => Promise<string | null>;
   addSongToBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
+  addSongsToBandSetlist: (bandId: string, setlistId: string, songIds: string[]) => Promise<string | null>;
   removeSongFromBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
   moveSongInBandSetlist: (bandId: string, setlistId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
   updateSongNoteInBandSetlist: (bandId: string, setlistId: string, songId: string, note: string) => Promise<string | null>;
@@ -1395,6 +1396,57 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     }
   }, [bandSetlistsByBandId, bands, userId]);
 
+  const addSongsToBandSetlist = useCallback(async (bandId: string, setlistId: string, songIds: string[]) => {
+    if (!userId) {
+      return 'Band setlists require a signed-in account.';
+    }
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const isMember = band.memberIds.includes(userId);
+    if (!isMember) return 'You do not have permission to edit this band.';
+
+    const now = new Date().toISOString();
+    const previousSetlists = bandSetlistsByBandId[bandId] ?? [];
+    const targetSetlist = previousSetlists.find((setlist) => setlist.id === setlistId);
+    if (!targetSetlist) return 'Setlist not found.';
+
+    const existing = new Set(targetSetlist.songIds);
+    const additions: string[] = [];
+    for (const songId of songIds) {
+      if (existing.has(songId)) continue;
+      existing.add(songId);
+      additions.push(songId);
+    }
+    if (additions.length === 0) return null;
+
+    const nextSetlist = {
+      ...targetSetlist,
+      songIds: [...targetSetlist.songIds, ...additions],
+      updatedAt: now,
+    };
+    const nextSetlists = previousSetlists.map((setlist) => (
+      setlist.id === setlistId ? nextSetlist : setlist
+    ));
+
+    setBandSetlistsByBandId((prev) => ({
+      ...prev,
+      [bandId]: nextSetlists,
+    }));
+
+    try {
+      await dataClient.bandSetlists.update(bandId, nextSetlist);
+      return null;
+    } catch (error) {
+      setBandSetlistsByBandId((prev) => ({
+        ...prev,
+        [bandId]: previousSetlists,
+      }));
+      return error instanceof Error ? error.message : 'Failed to update band setlist.';
+    }
+  }, [bandSetlistsByBandId, bands, userId]);
+
   const removeSongFromBandSetlist = useCallback(async (bandId: string, setlistId: string, songId: string) => {
     if (!userId) {
       return 'Band setlists require a signed-in account.';
@@ -1983,6 +2035,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateBandSetlistIcon,
     deleteBandSetlist,
     addSongToBandSetlist,
+    addSongsToBandSetlist,
     removeSongFromBandSetlist,
     moveSongInBandSetlist,
     updateSongNoteInBandSetlist,
@@ -2005,6 +2058,7 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     addBandInputList,
     bandInputListsByBandId,
     addSongToBandSetlist,
+    addSongsToBandSetlist,
     addSongToBandSongList,
     addSongToBandLibrary,
     updateBandSong,
