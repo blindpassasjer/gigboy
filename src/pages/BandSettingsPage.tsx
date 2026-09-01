@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import BandManagementPanel from '../components/BandManagementPanel';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { listBandLogos, removeBandLogoAsset, selectBandLogo } from '../lib/bandLogos';
+import { saveBlob } from '../lib/download';
 
 const LOGO_CARD_MIN_WIDTH_PX = 130;
 const LOGO_GRID_GAP_PX = 10;
@@ -25,12 +26,7 @@ function inferImageExtension(url: string, mimeType: string): string {
 }
 
 function triggerBlobDownload(blob: Blob, filename: string): void {
-  const blobUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = blobUrl;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(blobUrl);
+  void saveBlob(blob, filename);
 }
 
 interface LogoAsset {

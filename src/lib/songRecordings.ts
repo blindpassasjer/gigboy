@@ -1,5 +1,6 @@
 import { isDemoMode } from './demo/demoMode';
 import * as demoStore from './demo/demoStore';
+import { extensionForRecordingMime } from './webAudio';
 
 export interface RecorderIdentity {
   userId: string;
@@ -75,7 +76,7 @@ export async function uploadSongRecording(
 ): Promise<SongRecording> {
   void recorder; // recorder identity is derived server-side from the session (matches uploader pattern elsewhere)
   if (isDemoMode) return demoStore.delay(demoStore.addRecording(bandId, songId, blob, name, durationMs, waveformBars));
-  const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
+  const ext = extensionForRecordingMime(blob.type || 'audio/webm');
   const formData = new FormData();
   formData.append('file', blob, `${name || 'recording'}.${ext}`);
   formData.append('name', name);

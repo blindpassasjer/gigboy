@@ -116,7 +116,15 @@ export default defineConfig(({ command }) => ({
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
-            urlPattern: /\/api\//,
+            // Cache regular JSON API GETs, but never the SSE session stream (an infinite
+            // text/event-stream Workbox would try to clone and buffer) or recording
+            // downloads (Range / 206 partial responses must not be cached or reassembled
+            // by the service worker). Both misbehave badly in the installed PWA.
+            urlPattern: ({ url, request }) =>
+              url.pathname.startsWith('/api/')
+              && request.method === 'GET'
+              && !url.pathname.endsWith('/session/stream')
+              && !/\/recordings\/[^/]+\/download$/.test(url.pathname),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',

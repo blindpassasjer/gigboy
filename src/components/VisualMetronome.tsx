@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pause, Play, Volume2, VolumeX, Plus, Minus } from 'lucide-react';
 import { parseBeatsPerBar } from '../utils/metronome';
+import { createResumedAudioContext, resumeAudioContext } from '../lib/webAudio';
 
 interface Props {
   tempo?: number;
@@ -27,13 +28,25 @@ export default function VisualMetronome({ tempo, timeSignature, className = '', 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
+  // The click sound is scheduled from a setInterval tick, which is not a user gesture —
+  // Safari would create the AudioContext there in the suspended state and never play.
+  // Create (and resume) it from the button press that turns sound on / starts the beat.
+  function primeAudio() {
+    if (!audioCtxRef.current) {
+      void createResumedAudioContext()
+        .then((ctx) => { audioCtxRef.current = ctx; })
+        .catch(() => {});
+    } else {
+      resumeAudioContext(audioCtxRef.current);
+    }
+  }
+
   function playClick(isDownbeat: boolean) {
     if (!soundEnabled) return;
     try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContext();
-      }
       const ctx = audioCtxRef.current;
+      if (!ctx) return;
+      resumeAudioContext(ctx);
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -123,7 +136,7 @@ export default function VisualMetronome({ tempo, timeSignature, className = '', 
       <button
         type="button"
         className="visual-metronome-toggle"
-        onClick={() => setIsRunning((value) => !value)}
+        onClick={() => { primeAudio(); setIsRunning((value) => !value); }}
         aria-label={isRunning ? 'Pause visual metronome' : 'Start visual metronome'}
         title={isRunning ? 'Pause metronome' : 'Start metronome'}
       >
@@ -133,7 +146,7 @@ export default function VisualMetronome({ tempo, timeSignature, className = '', 
       <button
         type="button"
         className={`visual-metronome-sound${soundEnabled ? ' is-active' : ''}`}
-        onClick={() => setSoundEnabled((v) => !v)}
+        onClick={() => { primeAudio(); setSoundEnabled((v) => !v); }}
         aria-label={soundEnabled ? 'Disable metronome sound' : 'Enable metronome sound'}
         title={soundEnabled ? 'Sound on' : 'Sound off'}
       >

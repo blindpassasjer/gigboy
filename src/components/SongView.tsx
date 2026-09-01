@@ -49,6 +49,7 @@ import { buildSongSurfaceStyle } from '../utils/songColorStyles';
 import { showConfirmToast, showPromptToast } from '../utils/toastDialogs';
 import { getUserNoteColor } from '../lib/userColors';
 import { extractPinnedLineIds } from '../lib/lineAnchor';
+import { saveBlob } from '../lib/download';
 import LyricHandNotesOverlay from './LyricHandNotesOverlay';
 import SongTextNotesOverlay from './SongTextNotesOverlay';
 import SongMediaPlayer from './SongMediaPlayer';
@@ -438,13 +439,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     lines.push('');
     lines.push(song.chordpro);
     const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
     const slug = song.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'song';
-    a.href = url;
-    a.download = `${slug}.chordpro`;
-    a.click();
-    URL.revokeObjectURL(url);
+    void saveBlob(blob, `${slug}.chordpro`);
   }
 
   const headerStyle = accentColor

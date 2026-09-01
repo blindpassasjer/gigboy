@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { readStoredString, writeStoredString } from '../lib/safeStorage';
 
 const KEY = 'gigboy-dark-mode';
 
@@ -8,7 +9,7 @@ const MODES: ThemeMode[] = ['light', 'dark', 'stage'];
 
 function getInitial(): ThemeMode {
   if (typeof window === 'undefined') return 'light';
-  const stored = localStorage.getItem(KEY);
+  const stored = readStoredString(KEY);
   if (stored === 'light' || stored === 'dark' || stored === 'stage') return stored;
   // Legacy boolean values from before stage mode existed.
   if (stored === 'true') return 'dark';
@@ -34,9 +35,7 @@ export function useDarkMode() {
       });
     });
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(KEY, mode);
-    }
+    writeStoredString(KEY, mode);
   }, [mode]);
 
   const cycle = useCallback(() => {

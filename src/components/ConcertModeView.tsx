@@ -159,6 +159,7 @@ export default function ConcertModeView({
     let cancelled = false;
 
     const acquire = async () => {
+      if (sentinel) return;
       try {
         const lock = await navigator.wakeLock.request('screen');
         if (cancelled) {
@@ -166,6 +167,11 @@ export default function ConcertModeView({
           return;
         }
         sentinel = lock;
+        // The browser auto-releases on tab-hide without firing our code; this keeps the
+        // ref honest so onVisibilityChange knows it needs to re-acquire.
+        lock.addEventListener('release', () => {
+          if (sentinel === lock) sentinel = null;
+        });
       } catch {
         // Wake lock can be denied (e.g. low battery, unsupported context) — ignore.
       }
@@ -174,7 +180,7 @@ export default function ConcertModeView({
     void acquire();
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !sentinel) {
+      if (document.visibilityState === 'visible') {
         void acquire();
       }
     };

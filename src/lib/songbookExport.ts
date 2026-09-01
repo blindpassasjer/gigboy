@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import type { Band, InputList, PressKit, Setlist, Song, SongList } from '../types';
 import type { SongRecording } from './songRecordings';
 import { extensionFromImageMimeType, riderAsText, sanitizeFileName } from './pressKitZip';
+import { saveBlob } from './download';
 
 export interface PressKitImageAsset {
   id: string;
@@ -365,14 +366,5 @@ export async function buildSongbookExportZip(input: SongbookExportInput): Promis
 }
 
 export function triggerSongbookExportDownload(blob: Blob): void {
-  const blobUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = blobUrl;
-  anchor.download = `gigboy-export-${new Date().toISOString().slice(0, 10)}.zip`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  // Defer revocation so Safari/Firefox have started the download before the
-  // blob URL is invalidated; revoking synchronously can truncate the download.
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 0);
+  void saveBlob(blob, `gigboy-export-${new Date().toISOString().slice(0, 10)}.zip`);
 }

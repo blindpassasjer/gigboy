@@ -10,6 +10,7 @@ import { dataClient } from '../lib/dataClient';
 import { loadSongRecordings, type SongRecording } from '../lib/songRecordings';
 import { buildSongbookExportZip, triggerSongbookExportDownload, type PressKitImageAsset } from '../lib/songbookExport';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { writeStoredString } from '../lib/safeStorage';
 
 export default function ProfilePage() {
   useDocumentTitle('Profile');
@@ -222,9 +223,7 @@ export default function ProfilePage() {
     const result = await createBand(name, undefined, undefined);
     setBusyCreateBand(false);
     if (result.bandId) {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('gigboy-active-band-id', result.bandId);
-      }
+      writeStoredString('gigboy-active-band-id', result.bandId);
       navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
     } else if (result.error) {
       toast.error(result.error);

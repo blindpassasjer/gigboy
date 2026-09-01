@@ -23,6 +23,7 @@ import { parseChordPro } from '../utils/chordParser';
 import { SONGLIST_ICON_OPTIONS } from '../lib/iconOptions';
 import { useSongListBadges } from '../hooks/useSongListBadges';
 import { useAuth } from '../context/AuthContext';
+import { readStoredString, writeStoredString } from '../lib/safeStorage';
 
 type SortBy =
   | 'name-asc'
@@ -36,11 +37,7 @@ type SortBy =
 const SORT_OPTIONS: SortBy[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'language', 'date-asc', 'date-desc'];
 
 function getInitialSortBy(): SortBy {
-  if (typeof window === 'undefined') {
-    return 'name-asc';
-  }
-
-  const stored = window.localStorage.getItem('gigboy-sort-by');
+  const stored = readStoredString('gigboy-sort-by');
   if (!stored) {
     return 'name-asc';
   }
@@ -118,17 +115,17 @@ export default function SongList({
   const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(
-    () => (localStorage.getItem('gigboy-view-mode') === 'cards' ? 'cards' : 'list')
+    () => (readStoredString('gigboy-view-mode') === 'cards' ? 'cards' : 'list')
   );
   const [sortBy, setSortBy] = useState<SortBy>(() => getInitialSortBy());
 
   function handleSetViewMode(mode: 'list' | 'cards') {
-    localStorage.setItem('gigboy-view-mode', mode);
+    writeStoredString('gigboy-view-mode', mode);
     setViewMode(mode);
   }
 
   function handleSetSortBy(sort: SortBy) {
-    localStorage.setItem('gigboy-sort-by', sort);
+    writeStoredString('gigboy-sort-by', sort);
     setSortBy(sort);
   }
   const [showSongPicker, setShowSongPicker] = useState(false);

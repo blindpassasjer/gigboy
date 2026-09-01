@@ -5,6 +5,28 @@
 /* ─── Reset & tokens ────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* GIGBOY's theme is built entirely on CSS color-mix(), which needs Safari/iOS 16.2+,
+   Chrome 111+, Firefox 113+. On anything older the app renders nearly unstyled, so show
+   a plain notice instead. Uses only ancient CSS properties so it survives on old engines. */
+#legacy-browser-notice { display: none; }
+@supports not (background: color-mix(in srgb, red, blue)) {
+  #legacy-browser-notice {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2147483647;
+    background: #1a1a1a;
+    color: #fff;
+    font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 14px 18px;
+    text-align: center;
+    border-bottom: 3px solid #1a6fc4;
+  }
+  #legacy-browser-notice a { color: #7cc0ff; }
+}
+
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
@@ -872,6 +894,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   position: fixed;
   inset: calc(var(--topbar-height) + var(--safe-top)) 0 0;
   background: rgba(26, 26, 26, .4);
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   z-index: 89;
 }
@@ -5608,6 +5631,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid transparent;
   border-radius: 24px;
   box-shadow: var(--shadow-md);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: clamp(1.4rem, 2.3vw, 2.3rem);
   display: flex;
@@ -8202,6 +8226,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   border: 1px solid var(--border);
   border-radius: 16px;
   background: color-mix(in srgb, var(--surface) 94%, transparent);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: 0 10px 34px rgba(0, 0, 0, .18);
   z-index: 13;

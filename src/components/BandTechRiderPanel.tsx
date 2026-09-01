@@ -9,6 +9,7 @@ import { useBands } from '../context/BandsContext';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
+import { saveBlob } from '../lib/download';
 import { generatePressKitZip } from '../lib/pressKitZip';
 
 interface Props {
@@ -218,12 +219,7 @@ export default function BandTechRiderPanel({
         images: [],
         generatedAt: new Date().toISOString(),
       });
-      const blobUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = blobUrl;
-      anchor.download = `${slugifyFileName(activeRider.name)}-technical-rider.zip`;
-      anchor.click();
-      URL.revokeObjectURL(blobUrl);
+      await saveBlob(blob, `${slugifyFileName(activeRider.name)}-technical-rider.zip`);
     } catch {
       toast.error('Failed to generate ZIP.');
     } finally {

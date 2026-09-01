@@ -116,6 +116,14 @@ self-hosted only (see below).
 | lucide-react | Icons |
 | Web MediaRecorder API | In-browser audio recording |
 
+## Browser support
+
+Gigboy targets current evergreen browsers. The minimum is **Safari 16.2 / iOS 16.2**,
+**Chrome 111**, or **Firefox 113** — the UI is built on CSS `color-mix()` and older engines
+render it unstyled (they get a "please update" notice instead). Audio recording, the
+metronome and the tuner use the Web Audio and MediaRecorder APIs; on iOS those require the
+page to be served over HTTPS.
+
 ## Quick start (self-hosting)
 
 Gigboy ships as a prebuilt Docker image — no build toolchain required on the machine running it,

@@ -272,8 +272,14 @@ export default function Layout({ children }: Props) {
     );
   };
 
+  // iOS Safari implements the Fullscreen API for <video> only, so requestFullscreen is
+  // absent on the document element there — the button would be a dead no-op. Only show it
+  // where fullscreen actually works.
+  const fullscreenSupported = typeof document !== 'undefined'
+    && typeof document.documentElement.requestFullscreen === 'function';
+
   const toggleFullscreen = async () => {
-    if (typeof document === 'undefined') return;
+    if (!fullscreenSupported) return;
 
     try {
       if (document.fullscreenElement) {
@@ -544,16 +550,18 @@ export default function Layout({ children }: Props) {
           >
             {mode === 'light' ? <Sun size={16} /> : mode === 'dark' ? <Moon size={16} /> : <Lightbulb size={16} />}
           </button>
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className="topbar-icon-btn"
-            title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            aria-pressed={isFullscreen}
-          >
-            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-          </button>
+          {fullscreenSupported && (
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="topbar-icon-btn"
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              aria-pressed={isFullscreen}
+            >
+              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+          )}
           {user?.role === 'admin' && (
             <Link
               to="/admin/invites"

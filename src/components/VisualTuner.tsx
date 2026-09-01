@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { getMicrophoneUnavailableReason } from '../lib/mediaAccess';
+import { createResumedAudioContext } from '../lib/webAudio';
 
 interface Props {
   className?: string;
@@ -123,7 +124,14 @@ export default function VisualTuner({ className = '' }: Props) {
           return;
         }
 
-        const context = new AudioContext();
+        // Created after the getUserMedia await, so on Safari it starts suspended and
+        // getFloatTimeDomainData would only ever see silence — resume explicitly.
+        const context = await createResumedAudioContext();
+        if (cancelled) {
+          void context.close();
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
         const source = context.createMediaStreamSource(stream);
         const analyser = context.createAnalyser();
         analyser.fftSize = 2048;

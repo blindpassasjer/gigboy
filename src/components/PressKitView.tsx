@@ -9,6 +9,7 @@ import { showConfirmToast } from '../utils/toastDialogs';
 import { dataClient } from '../lib/dataClient';
 import type { PressKitImage, PressKitShare } from '../lib/dataClient/types';
 import { generatePressKitZip } from '../lib/pressKitZip';
+import { saveBlob } from '../lib/download';
 import { PRESSKIT_ICON_OPTIONS } from '../lib/iconOptions';
 import { createWebpThumbnail } from '../utils/imageThumbnail';
 import type { PressKit } from '../types';
@@ -35,12 +36,7 @@ function inferImageExtension(url: string, mimeType: string): string {
 }
 
 function triggerBlobDownload(blob: Blob, filename: string): void {
-  const blobUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = blobUrl;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(blobUrl);
+  void saveBlob(blob, filename);
 }
 
 interface Props {

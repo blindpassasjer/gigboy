@@ -5,6 +5,7 @@ import DOMPurify from 'dompurify';
 import BrandMark from '../components/BrandMark';
 import { dataClient } from '../lib/dataClient';
 import { generatePressKitZip } from '../lib/pressKitZip';
+import { saveBlob } from '../lib/download';
 import { parsePressKitMedia, detectPresavePlatformLabel } from '../utils/pressKitMedia';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
@@ -81,12 +82,7 @@ function escapeHtml(raw: string): string {
 }
 
 function triggerBlobDownload(blob: Blob, filename: string): void {
-  const blobUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = blobUrl;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(blobUrl);
+  void saveBlob(blob, filename);
 }
 
 function inferImageExtension(url: string, mimeType: string): string {

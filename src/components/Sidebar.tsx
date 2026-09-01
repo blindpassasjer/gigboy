@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Music, Newspaper, Plus, Trash2, X, ChevronsUpDown } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
+import { readStoredString, writeStoredString } from '../lib/safeStorage';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
 
@@ -95,10 +96,9 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [collapsedBandInputListIds, setCollapsedBandInputListIds] = useState<string[]>([]);
   const [collapsedBandPressKitIds, setCollapsedBandPressKitIds] = useState<string[]>([]);
   const sidebarMode = 'bands' as const;
-  const [activeBandId, setActiveBandId] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    try { return window.localStorage.getItem('gigboy-active-band-id'); } catch { return null; }
-  });
+  const [activeBandId, setActiveBandId] = useState<string | null>(
+    () => readStoredString('gigboy-active-band-id'),
+  );
   const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const [storagePopupOpen, setStoragePopupOpen] = useState(false);
@@ -117,7 +117,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     if (activeBandId && visibleBands.some((b) => b.id === activeBandId)) return;
     const firstId = (visibleBands[0] ?? bands[0]).id;
     setActiveBandId(firstId);
-    if (typeof window !== 'undefined') window.localStorage.setItem('gigboy-active-band-id', firstId);
+    writeStoredString('gigboy-active-band-id', firstId);
   }, [visibleBands, bands, activeBandId]);
 
   // Close band switcher on outside click
@@ -147,9 +147,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   useEffect(() => {
     if (!stateBandId) return;
     setActiveBandId((current) => (current === stateBandId ? current : stateBandId));
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('gigboy-active-band-id', stateBandId);
-    }
+    writeStoredString('gigboy-active-band-id', stateBandId);
   }, [stateBandId]);
 
   useEffect(() => {
@@ -252,9 +250,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       if (result.bandId) {
         // First band is free, navigate directly to it
         setActiveBandId(result.bandId);
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem('gigboy-active-band-id', result.bandId);
-        }
+        writeStoredString('gigboy-active-band-id', result.bandId);
         clearGlobalSelection();
         navigate(`/bands/${result.bandId}/library`, { state: { bandId: result.bandId } });
         onNavigate?.();
@@ -476,7 +472,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   onClick={() => {
                     clearGlobalSelection();
                     setActiveBandId(band.id);
-                    if (typeof window !== 'undefined') window.localStorage.setItem('gigboy-active-band-id', band.id);
+                    writeStoredString('gigboy-active-band-id', band.id);
                     setBandSwitcherOpen(false);
                     navigate(`/bands/${band.id}/library`);
                     onNavigate?.();

@@ -9,6 +9,7 @@ import type { SongRecording } from '../lib/songRecordings';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { markReloadUnsafe } from '../lib/reloadGuard';
 import { getMicrophoneUnavailableReason } from '../lib/mediaAccess';
+import { createResumedAudioContext, pickRecordingMimeType } from '../lib/webAudio';
 
 const WAVEFORM_SAMPLES = 100;
 
@@ -629,7 +630,7 @@ export default function SongRecorder({ song, user, bandId }: Props) {
         },
       });
 
-      const ctx = new AudioContext({ sampleRate: 48000 });
+      const ctx = await createResumedAudioContext({ sampleRate: 48000 });
       const source = ctx.createMediaStreamSource(stream);
 
       const hpf = ctx.createBiquadFilter();
@@ -651,11 +652,14 @@ export default function SongRecorder({ song, user, bandId }: Props) {
       streamRef.current = stream;
       audioCtxRef.current = ctx;
 
-      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
-
-      const recorder = new MediaRecorder(dest.stream, { mimeType: mime });
+      // Safari's MediaRecorder only produces MP4/AAC — it cannot make WebM at all, and
+      // passing an unsupported mimeType throws. Negotiate a format the browser can
+      // actually record (or let it pick its own and read it back).
+      const preferredMime = pickRecordingMimeType();
+      const recorder = preferredMime
+        ? new MediaRecorder(dest.stream, { mimeType: preferredMime })
+        : new MediaRecorder(dest.stream);
+      const mime = recorder.mimeType || preferredMime || 'audio/webm';
       chunksRef.current = [];
 
       recorder.ondataavailable = (e) => {
@@ -664,7 +668,10 @@ export default function SongRecorder({ song, user, bandId }: Props) {
 
       recorder.onstop = () => {
         const durationMs = Date.now() - elapsedStartRef.current;
-        const blob = new Blob(chunksRef.current, { type: mime });
+        // Prefer the recorder's own reported type (most accurate after recording); fall
+        // back to the negotiated one. Strip codec params for a clean, server-accepted mime.
+        const recordedMime = (recorder.mimeType || mime).split(';')[0].trim() || 'audio/webm';
+        const blob = new Blob(chunksRef.current, { type: recordedMime });
         const url = URL.createObjectURL(blob);
         setPreviewUrl(url);
         setPreviewBlob(blob);
