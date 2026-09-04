@@ -28,6 +28,12 @@ interface BandCrudConfig<Row extends Record<string, unknown>, Api> {
     prevRow: Row | null;
     req: Request;
   }) => Promise<void>;
+  /**
+   * Optional side effect run before a row is deleted (e.g. clean up child files that a DB-level
+   * cascade would otherwise strand on disk). Runs after the row is snapshotted to trash but
+   * before the delete itself; a failure is logged but never blocks the delete.
+   */
+  beforeDelete?: (ctx: { row: Row; req: Request }) => Promise<void>;
 }
 
 async function runAfterWrite<Row extends Record<string, unknown>>(
@@ -50,7 +56,8 @@ async function runAfterWrite<Row extends Record<string, unknown>>(
 export function buildBandCrudRouter<Row extends { bandId: string | null }, Api>(
   config: BandCrudConfig<Row, Api>,
 ) {
-  const { table, idColumn, bandIdColumn, resourceKey, pluralKey, itemType, toApi, fromBody, afterWrite } = config;
+  const { table, idColumn, bandIdColumn, resourceKey, pluralKey, itemType, toApi, fromBody, afterWrite, beforeDelete } =
+    config;
   const router = Router({ mergeParams: true });
   router.use(requireAuth);
 
@@ -148,6 +155,13 @@ export function buildBandCrudRouter<Row extends { bandId: string | null }, Api>(
         return;
       }
       await insertTrashItem({ bandId: req.params.bandId }, itemType, toApi(existing[0]));
+      if (beforeDelete) {
+        try {
+          await beforeDelete({ row: existing[0], req });
+        } catch (err) {
+          console.error(`beforeDelete hook failed for band ${resourceKey}:`, err);
+        }
+      }
       await db.delete(table).where(eq(idColumn, req.params.id));
       res.json({});
     } catch (err) {

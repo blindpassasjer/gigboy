@@ -113,6 +113,11 @@ async function nextSortOrder(
 
 export type RestoreResult = { ok: true } | { ok: false; status: number; error: string };
 
+const UNIQUE_VIOLATION = '23505';
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: string }).code === UNIQUE_VIOLATION;
+}
+
 /**
  * Re-inserts a trashed row into its live table from `row.payload`, appending to the end of its
  * scope's sort order (recomputing nothing else — siblings are assumed already contiguous, matching
@@ -122,6 +127,19 @@ export type RestoreResult = { ok: true } | { ok: false; status: number; error: s
 export async function restoreTrashRow(row: TrashRow): Promise<RestoreResult> {
   const payload = row.payload as Record<string, unknown>;
 
+  try {
+    return await restoreTrashRowUnchecked(row, payload);
+  } catch (err) {
+    // The item's original id may already be back in use (a double-restore, or an id that was
+    // reissued elsewhere) — surface that as a normal restore failure instead of a 500.
+    if (isUniqueViolation(err)) {
+      return { ok: false, status: 409, error: 'This item already exists — it may already have been restored.' };
+    }
+    throw err;
+  }
+}
+
+async function restoreTrashRowUnchecked(row: TrashRow, payload: Record<string, unknown>): Promise<RestoreResult> {
   switch (row.itemType) {
     case 'song': {
       const whereCond = eq(songs.bandId, row.bandId!);
@@ -216,7 +234,11 @@ export async function restoreTrashRow(row: TrashRow): Promise<RestoreResult> {
       if (!songId) {
         return { ok: false, status: 500, error: 'Trashed attachment is missing its parent song reference.' };
       }
-      const parentSong = await db.select({ id: songs.id }).from(songs).where(eq(songs.id, songId)).limit(1);
+      const parentSong = await db
+        .select({ id: songs.id })
+        .from(songs)
+        .where(and(eq(songs.id, songId), eq(songs.bandId, row.bandId!)))
+        .limit(1);
       if (!parentSong[0]) {
         return {
           ok: false,

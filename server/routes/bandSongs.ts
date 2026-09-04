@@ -2,6 +2,7 @@ import { songs } from '../db/schema.js';
 import { buildBandCrudRouter } from './bandResources.js';
 import { removeNullish } from '../lib/serialize.js';
 import { recordSongRevision } from '../lib/songRevisions.js';
+import { deleteSongFiles } from '../lib/songFiles.js';
 
 type SongRow = typeof songs.$inferSelect;
 
@@ -61,5 +62,10 @@ export const bandSongsRouter = buildBandCrudRouter({
   fromBody,
   afterWrite: async ({ row, req }) => {
     await recordSongRevision({ songRow: row as SongRow, editorUserId: req.userId ?? null });
+  },
+  // song_recordings/attachments cascade-delete their DB rows with the song; their files don't
+  // clean up on their own (see deleteSongFiles). Query them before the row — and its cascade — is gone.
+  beforeDelete: async ({ row }) => {
+    await deleteSongFiles((row as SongRow).id);
   },
 });

@@ -4,7 +4,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { attachments, songs, users } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
-import { requireBandMember } from '../middleware/bandAccess.js';
+import { requireBandEditor, requireBandMember } from '../middleware/bandAccess.js';
 import { localStorageAdapter } from '../storage/localStorageAdapter.js';
 import {
   ATTACHMENT_ACCEPTED_MIME_TYPE,
@@ -90,6 +90,7 @@ bandAttachmentsRouter.get('/', async (req, res) => {
 
 bandAttachmentsRouter.post(
   '/',
+  requireBandEditor,
   (req: Request, res: Response, next: NextFunction) => {
     attachmentUpload.single('file')(req, res, (err) => {
       if (handleUploadErrors(err, res)) return;
