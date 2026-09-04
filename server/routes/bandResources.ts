@@ -75,6 +75,18 @@ export function buildBandCrudRouter<Row extends { bandId: string | null }, Api>(
         res.status(400).json({ error: 'id is required.' });
         return;
       }
+      // The upsert below keys on the primary `id` alone, so a caller supplying an id that
+      // already belongs to another band would otherwise clobber (and reassign) that row.
+      // Reject that here — editor role only authorizes writes within the caller's own band.
+      const conflicting = (await db
+        .select({ existingBandId: bandIdColumn })
+        .from(table)
+        .where(eq(idColumn, id))
+        .limit(1)) as { existingBandId: string | null }[];
+      if (conflicting[0] && conflicting[0].existingBandId !== req.params.bandId) {
+        res.status(409).json({ error: `That ${resourceKey} id is already in use.` });
+        return;
+      }
       const prior = (await db
         .select()
         .from(table)

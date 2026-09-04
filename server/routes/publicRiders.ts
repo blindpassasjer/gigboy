@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { bandRiders, bands } from '../db/schema.js';
 import { removeNullish } from '../lib/serialize.js';
+import { publicBandLogoUrl } from './publicAssets.js';
 
 export const publicRidersRouter = Router({ mergeParams: true });
 
@@ -36,7 +37,7 @@ publicRidersRouter.get('/bands/:bandId/riders/:id', async (req, res) => {
       updatedAt: row.rider.updatedAt?.toISOString(),
     });
 
-    res.json({ rider, bandName: row.bandName, bandLogo: row.bandLogo });
+    res.json({ rider, bandName: row.bandName, bandLogo: publicBandLogoUrl(bandId, row.bandLogo) });
   } catch (err) {
     console.error('Failed to load public rider:', err);
     res.status(500).json({ error: 'Something went wrong. Please try again.' });

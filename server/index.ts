@@ -24,6 +24,7 @@ import { bandPressKitsRouter } from './routes/bandPressKits.js';
 import { bandPressKitImagesRouter } from './routes/bandPressKitImages.js';
 import { bandPressKitSharesRouter } from './routes/bandPressKitShares.js';
 import { publicPressKitsRouter } from './routes/publicPressKits.js';
+import { publicAssetsRouter } from './routes/publicAssets.js';
 import { bandSongHandNotesRouter } from './routes/songHandNotes.js';
 import { bandSongRecordingsRouter } from './routes/songRecordings.js';
 import { bandLogosRouter } from './routes/bandLogos.js';
@@ -100,6 +101,7 @@ app.use('/api/bands/:bandId/press-kits', bandPressKitsRouter);
 app.use('/api/bands/:bandId/trash', bandTrashRouter);
 app.use('/api/public', publicRidersRouter);
 app.use('/api/public', publicPressKitsRouter);
+app.use('/api/public', publicAssetsRouter);
 app.use('/api/bands', bandsRouter);
 
 app.use((req, res, next) => {
@@ -121,11 +123,11 @@ try {
 
 /**
  * Ports functions/public/press-kit/[token].ts's Cloudflare HTMLRewriter-based OG-tag injection to
- * Express: intercepts `GET /press-kit/:token`, looks up the press kit in-process, and rewrites
+ * Express: intercepts `GET /public/press-kit/:token`, looks up the press kit in-process, and rewrites
  * index.html's meta tags before falling through to the normal SPA response. Must be mounted before
  * express.static/the SPA fallback below. Falls through (does not 404) if no press kit is found.
  */
-app.get('/press-kit/:token', async (req, res, next) => {
+app.get('/public/press-kit/:token', async (req, res, next) => {
   if (!cachedIndexHtml) {
     next();
     return;

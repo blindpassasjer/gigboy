@@ -4,6 +4,7 @@ import { db } from '../db/client.js';
 import { bands, pressKitImages, pressKitShares, pressKits } from '../db/schema.js';
 import { pressKitImageToApi } from '../lib/pressKitImages.js';
 import { pressKitToApi } from './bandPressKits.js';
+import { publicBandLogoUrl } from './publicAssets.js';
 
 export interface PublicPressKitData {
   kit: ReturnType<typeof pressKitToApi>;
@@ -36,7 +37,8 @@ export async function getPublicPressKitData(token: string): Promise<PublicPressK
   if (!row) return null;
 
   const imageIds = Array.isArray(row.kit.imageIds) ? row.kit.imageIds : [];
-  const downloadUrlBase = `/api/bands/${row.kit.bandId}/press-kit-images`;
+  // Token-scoped public route (publicAssets.ts) — the /api/bands/... image router is auth-gated.
+  const downloadUrlBase = `/api/public/press-kits/${token}/images`;
   let images: ReturnType<typeof pressKitImageToApi>[] = [];
   if (imageIds.length > 0) {
     const imageRows = await db
@@ -53,7 +55,7 @@ export async function getPublicPressKitData(token: string): Promise<PublicPressK
   return {
     kit: pressKitToApi(row.kit),
     bandName: row.bandName,
-    bandLogo: row.bandLogo,
+    bandLogo: publicBandLogoUrl(row.kit.bandId, row.bandLogo),
     images,
   };
 }
