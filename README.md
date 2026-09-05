@@ -229,11 +229,6 @@ server/
   middleware/     Session auth, admin gating
 ```
 
-## Before going public
-
-- [ ] Set a strong `SESSION_SECRET` and `POSTGRES_PASSWORD` in `.env` (see [SELFHOSTING.md](SELFHOSTING.md))
-- [ ] Put a reverse proxy with real HTTPS in front of the container and set `COOKIE_SECURE=true`
-
 ## Codebase knowledge graph
 
 `graphify-out/graph.json` is a generated knowledge graph of this codebase (symbols/functions/components as nodes, relationships as edges), used by AI coding assistants to navigate the project faster than blind file search. Regenerate it after code changes with:
