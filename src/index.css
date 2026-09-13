@@ -3406,6 +3406,25 @@ input, select, textarea { font: inherit; color: var(--text); }
   text-align: center;
 }
 
+.chord-diagram-voicing-mismatch {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.chord-diagram-rename-input {
+  margin-top: var(--space-xs);
+  width: 100%;
+  padding: var(--space-2xs) var(--space-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--text-xs);
+}
+
 /* ─── Song edit history ────────────────────────────────────────────────────── */
 .song-history-empty {
   font-size: var(--text-sm);

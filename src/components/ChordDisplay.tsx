@@ -5,6 +5,17 @@ import type { ParsedLine } from '../types';
 import type { DiagramInstrument } from './ChordDiagram';
 import TabDisplay from './TabDisplay';
 
+/**
+ * Identifies exactly which chord instance was clicked, so a rename can rewrite that one
+ * occurrence in the song's chordpro source (via `replaceChordOccurrence`) instead of every
+ * chord sharing the same name. `sourceLine` is the raw line index from `parseChordPro`;
+ * `occurrenceIndex` counts chord-bearing segments before it on that line.
+ */
+export interface ChordOccurrence {
+  sourceLine: number;
+  occurrenceIndex: number;
+}
+
 interface Props {
   chordpro: string;
   transpose?: number;
@@ -13,7 +24,7 @@ interface Props {
   bpm?: number;
   timeSignature?: string;
   instrument?: DiagramInstrument;
-  onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement) => void;
+  onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement, occurrence: ChordOccurrence) => void;
   /**
    * Ids of lines that have a note anchored somewhere on them. These lines are kept from
    * wrapping (and scroll horizontally instead) so a hand-drawn note anchored across several
@@ -102,7 +113,7 @@ interface LineRendererProps {
   notation: ChordNotation;
   bpm?: number;
   timeSignature?: string;
-  onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement) => void;
+  onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement, occurrence: ChordOccurrence) => void;
   pinnedLineIds?: Set<number>;
   hideMetaDirectives?: boolean;
 }
@@ -187,32 +198,42 @@ function LineRenderer({
       className={`chord-line ${hasChords ? 'chord-line--has-chords' : ''} ${isChordOnly ? 'chord-line--chord-only' : ''} ${isPinned ? 'chord-line--pinned' : ''}`}
       data-line-id={line.lineId}
     >
-      {segments.map((seg, idx) => (
-        <span key={idx} className="chord-segment">
-          {hasChords && (
-            <span className="chord-name">
-              {seg.chord ? (
-                onChordClick ? (
-                  <button
-                    className="chord-name-btn"
-                    onClick={(e) => {
-                      const el = e.currentTarget as HTMLElement;
-                      onChordClick(transposeChord(seg.chord, transpose), el.getBoundingClientRect(), el);
-                    }}
-                  >
-                    {convertChordNotation(transposeChord(seg.chord, transpose), notation)}
-                  </button>
-                ) : (
-                  convertChordNotation(transposeChord(seg.chord, transpose), notation)
-                )
-              ) : (
-                <>&nbsp;</>
+      {(() => {
+        let chordOccurrenceIndex = 0;
+        return segments.map((seg, idx) => {
+          const occurrenceIndex = chordOccurrenceIndex;
+          if (seg.chord) chordOccurrenceIndex++;
+          return (
+            <span key={idx} className="chord-segment">
+              {hasChords && (
+                <span className="chord-name">
+                  {seg.chord ? (
+                    onChordClick ? (
+                      <button
+                        className="chord-name-btn"
+                        onClick={(e) => {
+                          const el = e.currentTarget as HTMLElement;
+                          onChordClick(transposeChord(seg.chord, transpose), el.getBoundingClientRect(), el, {
+                            sourceLine: line.sourceLine ?? -1,
+                            occurrenceIndex,
+                          });
+                        }}
+                      >
+                        {convertChordNotation(transposeChord(seg.chord, transpose), notation)}
+                      </button>
+                    ) : (
+                      convertChordNotation(transposeChord(seg.chord, transpose), notation)
+                    )
+                  ) : (
+                    <>&nbsp;</>
+                  )}
+                </span>
               )}
+              <span className="lyric-text">{seg.lyric || (showChords && seg.chord ? ' ' : '')}</span>
             </span>
-          )}
-          <span className="lyric-text">{seg.lyric || (showChords && seg.chord ? ' ' : '')}</span>
-        </span>
-      ))}
+          );
+        });
+      })()}
     </div>
   );
 }

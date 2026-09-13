@@ -160,6 +160,10 @@ export interface Song {
   tempo?: number;
   timeSignature?: string;
   sortOrder?: number;
+  /** Free-form, user-editable date for the song itself (written/learned/last performed),
+   * as YYYY-MM-DD — distinct from `createdAt`/`updatedAt`, which track this record's own
+   * history in gigboy rather than anything about the song. */
+  date?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -280,6 +284,12 @@ export interface ParsedLine {
    * used as the anchor target for hand-drawn/text notes. Set by ChordDisplay, not the parser.
    */
   lineId?: number;
+  /**
+   * Index of this line within the original chordpro text's `split('\n')`, so a chord
+   * occurrence found while rendering can be traced back to an exact source line for
+   * a targeted rewrite (e.g. renaming a single chord instance in place).
+   */
+  sourceLine?: number;
 }
 
 export interface ChordSegment {

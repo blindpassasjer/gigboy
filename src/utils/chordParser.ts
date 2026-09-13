@@ -37,10 +37,10 @@ function findNextChordBracket(str: string): { start: number; end: number; chord:
 }
 
 /** Parse a single ChordPro line into a structured representation. */
-function parseLine(raw: string): ParsedLine {
+function parseLine(raw: string, sourceLine: number): ParsedLine {
   const trimmed = raw.trim();
 
-  if (trimmed === '') return { type: 'empty', raw };
+  if (trimmed === '') return { type: 'empty', raw, sourceLine };
 
   // ChordPro directive: {title: My Song} or {chorus}
   const dirMatch = trimmed.match(DIRECTIVE_RE);
@@ -48,7 +48,7 @@ function parseLine(raw: string): ParsedLine {
     const directive = dirMatch[1].trim().toLowerCase();
     const directiveValue = dirMatch[2]?.trim();
     if (directiveValue || KNOWN_VALUELESS_DIRECTIVES.has(directive)) {
-      return { type: 'directive', directive, directiveValue, raw };
+      return { type: 'directive', directive, directiveValue, raw, sourceLine };
     }
     // Not a recognized directive — fall through and treat as a lyric line.
   }
@@ -81,7 +81,7 @@ function parseLine(raw: string): ParsedLine {
     segments.push({ chord: pendingChord, lyric: '' });
   }
 
-  return { type: 'chord-lyric', segments, raw };
+  return { type: 'chord-lyric', segments, raw, sourceLine };
 }
 
 const SECTION_START_RE = /^\{start_of_(\w+)(?::([^}]*))?\}$/;
@@ -156,7 +156,7 @@ export function parseChordPro(text: string): ParsedLine[] {
       // End-of-section directives that escaped grouping — drop them
       if (trimmed.match(SECTION_END_RE)) { i++; continue; }
 
-      result.push(parseLine(rawLines[i]));
+      result.push(parseLine(rawLines[i], i));
       i++;
     }
 
@@ -201,6 +201,42 @@ function transposeNote(note: string, semitones: number): string {
   const idx = scale.indexOf(normalized);
   if (idx === -1) return note;
   return scale[((idx + semitones) % 12 + 12) % 12];
+}
+
+/**
+ * Rewrites a single chord occurrence in place within chordpro source text, leaving every
+ * other occurrence of the same (or any other) chord untouched. `sourceLine`/`occurrenceIndex`
+ * identify the target the same way `ChordDisplay` does: the raw line index from
+ * `parseChordPro`, and how many chord-bearing segments precede it on that line.
+ */
+export function replaceChordOccurrence(
+  chordproText: string,
+  sourceLine: number,
+  occurrenceIndex: number,
+  newChord: string,
+): string {
+  const rawLines = chordproText.split('\n');
+  const line = rawLines[sourceLine];
+  if (line === undefined) return chordproText;
+
+  let idx = 0;
+  let seen = 0;
+  while (idx < line.length) {
+    const bracketIdx = line.indexOf('[', idx);
+    if (bracketIdx === -1) break;
+    const closeIdx = line.indexOf(']', bracketIdx);
+    if (closeIdx === -1) break;
+    const content = line.slice(bracketIdx + 1, closeIdx);
+    if (isChordLike(content)) {
+      if (seen === occurrenceIndex) {
+        rawLines[sourceLine] = line.slice(0, bracketIdx + 1) + newChord + line.slice(closeIdx);
+        return rawLines.join('\n');
+      }
+      seen++;
+    }
+    idx = closeIdx + 1;
+  }
+  return chordproText;
 }
 
 export function transposeChord(chord: string, semitones: number): string {

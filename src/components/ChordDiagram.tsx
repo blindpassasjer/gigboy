@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { GUITAR_CHORDS } from '../data/guitarChords';
 import { UKULELE_CHORDS } from '../data/ukuleleChords';
 import { normalizeChordForLookup } from '../utils/chordLookup';
+import { checkVoicingAgainstChordName } from '../utils/chordVoicingCheck';
 
 export type DiagramInstrument = 'guitar' | 'piano' | 'ukulele';
 
@@ -20,6 +21,13 @@ interface Props {
   onSaveVoicing?: (frets: number[]) => void | Promise<void>;
   /** Remove the custom voicing, reverting to the built-in. */
   onResetVoicing?: () => void | Promise<void>;
+  /**
+   * Rewrite just this one chord occurrence in the song to a new chord name, when the edited
+   * voicing's notes no longer match `chord` (e.g. a G shape edited into a G add9 shape).
+   * Only offered when the caller knows which single occurrence was clicked (see
+   * `ChordOccurrence` in ChordDisplay); other instances of `chord` are left untouched.
+   */
+  onRenameOccurrence?: (newChordName: string, frets: number[]) => void | Promise<void>;
 }
 
 const STRINGS_FOR_INSTRUMENT: Record<'guitar' | 'ukulele', string[]> = {
@@ -487,12 +495,14 @@ export default function ChordDiagram({
   canEditVoicing = false,
   onSaveVoicing,
   onResetVoicing,
+  onRenameOccurrence,
 }: Props) {
   const popupRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ top: anchorRect.bottom + 8, left: anchorRect.left + anchorRect.width / 2 });
   const [showInversions, setShowInversions] = useState(false);
   const [inversionIndex, setInversionIndex] = useState(0);
   const [editingVoicing, setEditingVoicing] = useState<number[] | null>(null);
+  const [mismatch, setMismatch] = useState<{ suggestedName?: string; renameInput: string } | null>(null);
 
   // Auto-position: flip above if popup would overflow viewport bottom
   useLayoutEffect(() => {
@@ -527,6 +537,7 @@ export default function ChordDiagram({
     setShowInversions(false);
     setInversionIndex(0);
     setEditingVoicing(null);
+    setMismatch(null);
   }, [chord]);
 
   const normalized = normalizeChordForLookup(chord);
@@ -546,6 +557,32 @@ export default function ChordDiagram({
   }, [chordModel, triadIntervals, effectiveInversion]);
 
   const activePianoNotes = useMemo(() => new Set(pianoNotes), [pianoNotes]);
+
+  const handleSaveClick = () => {
+    if (!editingVoicing) return;
+    const check = checkVoicingAgainstChordName(fretInstrument, chord, editingVoicing);
+    if (check.matches || !onRenameOccurrence) {
+      void Promise.resolve(onSaveVoicing?.(editingVoicing)).then(() => setEditingVoicing(null));
+      return;
+    }
+    setMismatch({ suggestedName: check.suggestedName, renameInput: check.suggestedName ?? '' });
+  };
+
+  const confirmRename = () => {
+    if (!editingVoicing || !mismatch?.renameInput.trim()) return;
+    void Promise.resolve(onRenameOccurrence?.(mismatch.renameInput.trim(), editingVoicing)).then(() => {
+      setMismatch(null);
+      setEditingVoicing(null);
+    });
+  };
+
+  const saveUnderOriginalName = () => {
+    if (!editingVoicing) return;
+    void Promise.resolve(onSaveVoicing?.(editingVoicing)).then(() => {
+      setMismatch(null);
+      setEditingVoicing(null);
+    });
+  };
 
   useEffect(() => {
     if (!showInversions) {
@@ -590,21 +627,47 @@ export default function ChordDiagram({
                 <VoicingEditor
                   instrument={fretInstrument}
                   value={editingVoicing}
-                  onChange={setEditingVoicing}
+                  onChange={(next) => { setEditingVoicing(next); setMismatch(null); }}
                 />
               )}
 
-              {canEditThisVoicing && (
+              {mismatch && (
+                <div className="chord-diagram-voicing-mismatch">
+                  <p className="chord-diagram-hint">
+                    That's not a {chord} anymore{mismatch.suggestedName ? ` — it matches ${mismatch.suggestedName}` : ''}.
+                    Rename just this chord?
+                  </p>
+                  <input
+                    type="text"
+                    value={mismatch.renameInput}
+                    onChange={(e) => setMismatch({ ...mismatch, renameInput: e.target.value })}
+                    aria-label="New chord name"
+                    className="chord-diagram-rename-input"
+                  />
+                  <div className="chord-diagram-voicing-actions">
+                    <button
+                      type="button"
+                      className="piano-inversion-btn"
+                      disabled={!mismatch.renameInput.trim()}
+                      onClick={confirmRename}
+                    >
+                      Rename here
+                    </button>
+                    <button type="button" className="piano-inversion-btn" onClick={saveUnderOriginalName}>
+                      Save as {chord} anyway
+                    </button>
+                    <button type="button" className="piano-inversion-btn" onClick={() => setMismatch(null)}>
+                      Back
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {canEditThisVoicing && !mismatch && (
                 <div className="chord-diagram-voicing-actions">
                   {editingVoicing ? (
                     <>
-                      <button
-                        type="button"
-                        className="piano-inversion-btn"
-                        onClick={() => {
-                          void Promise.resolve(onSaveVoicing?.(editingVoicing)).then(() => setEditingVoicing(null));
-                        }}
-                      >
+                      <button type="button" className="piano-inversion-btn" onClick={handleSaveClick}>
                         Save
                       </button>
                       <button type="button" className="piano-inversion-btn" onClick={() => setEditingVoicing(null)}>

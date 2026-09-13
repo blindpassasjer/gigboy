@@ -29,13 +29,13 @@ import {
 } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import type { LyricNoteStroke, Song, LyricTextNote } from '../types';
-import ChordDisplay from './ChordDisplay';
+import ChordDisplay, { type ChordOccurrence } from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
 import SongMetaBadges from './SongMetaBadges';
 import VisualMetronome from './VisualMetronome';
 import VisualTuner from './VisualTuner';
-import { transposeChord } from '../utils/chordParser';
+import { transposeChord, replaceChordOccurrence } from '../utils/chordParser';
 import type { ChordNotation } from '../utils/chordParser';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
@@ -70,6 +70,7 @@ interface ActiveChord {
   chord: string;
   rect: DOMRect;
   element: HTMLElement;
+  occurrence: ChordOccurrence;
 }
 
 type SongPageState = {
@@ -287,11 +288,36 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setTranspose(next);
   }, []);
 
-  const handleChordClick = useCallback((chord: string, rect: DOMRect, element: HTMLElement) => {
-    setActiveChord(prev =>
-      prev?.chord === chord && prev.element === element ? null : { chord, rect, element }
-    );
-  }, []);
+  const handleChordClick = useCallback(
+    (chord: string, rect: DOMRect, element: HTMLElement, occurrence: ChordOccurrence) => {
+      setActiveChord(prev =>
+        prev?.chord === chord && prev.element === element ? null : { chord, rect, element, occurrence }
+      );
+    },
+    [],
+  );
+
+  const handleRenameChordOccurrence = useCallback(
+    async (newChordName: string, frets: number[]) => {
+      if (!activeChord || chordInstrument === 'piano') return;
+      await chordVoicings.save(chordInstrument, newChordName, frets);
+      const rawNewChord = transposeChord(newChordName, -transpose);
+      const nextChordpro = replaceChordOccurrence(
+        song.chordpro,
+        activeChord.occurrence.sourceLine,
+        activeChord.occurrence.occurrenceIndex,
+        rawNewChord,
+      );
+      const err = await updateBandSong(bandId, {
+        ...song,
+        chordpro: nextChordpro,
+        updatedAt: new Date().toISOString(),
+      });
+      if (err) toast.error(`Could not rename chord: ${err}`);
+      setActiveChord(null);
+    },
+    [activeChord, chordInstrument, chordVoicings, transpose, song, bandId, updateBandSong],
+  );
 
   useEffect(() => {
     if (!activeChord) return;
@@ -1069,6 +1095,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
               ? undefined
               : () => chordVoicings.remove(chordInstrument, activeChord.chord)
           }
+          onRenameOccurrence={chordInstrument === 'piano' ? undefined : handleRenameChordOccurrence}
         />
       )}
 
