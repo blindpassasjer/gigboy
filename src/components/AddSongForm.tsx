@@ -56,6 +56,7 @@ type SongFormValues = {
   key: string;
   tempo: string;
   timeSignature: string;
+  date: string;
   chordpro: string;
   songListId: string;
 };
@@ -80,6 +81,7 @@ export default function AddSongForm({
   const [key, setKey] = useState(initialSong?.key ?? '');
 const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(initialSong.tempo) : '');
   const [timeSignature, setTimeSignature] = useState(initialSong?.timeSignature ?? '');
+  const [date, setDate] = useState(initialSong?.date ?? '');
   const [chordpro, setChordpro] = useState(initialSong?.chordpro ?? '');
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
   const [parseStatus, setParseStatus] = useState<string | null>(null);
@@ -123,6 +125,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     key: initialSong?.key ?? '',
     tempo: initialSong?.tempo !== undefined ? String(initialSong.tempo) : '',
     timeSignature: initialSong?.timeSignature ?? '',
+    date: initialSong?.date ?? '',
     chordpro: initialSong?.chordpro ?? '',
     songListId: initialSongListId ?? '',
   }), [
@@ -136,6 +139,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     initialSong?.key,
     initialSong?.tempo,
     initialSong?.timeSignature,
+    initialSong?.date,
     initialSong?.chordpro,
     initialSongListId,
   ]);
@@ -156,6 +160,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     key,
     tempo,
     timeSignature,
+    date,
     chordpro,
     songListId,
   }), [
@@ -168,6 +173,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     key,
     tempo,
     timeSignature,
+    date,
     chordpro,
     songListId,
   ]);
@@ -194,6 +200,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
       || formValues.key !== lastSavedValues.key
       || formValues.tempo !== lastSavedValues.tempo
       || formValues.timeSignature !== lastSavedValues.timeSignature
+      || formValues.date !== lastSavedValues.date
       || formValues.chordpro !== lastSavedValues.chordpro
       || formValues.songListId !== lastSavedValues.songListId;
   }, [formValues, lastSavedValues]);
@@ -235,6 +242,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
       key: values.key.trim() || undefined,
       tempo: values.tempo && !Number.isNaN(parseInt(values.tempo, 10)) ? parseInt(values.tempo, 10) : undefined,
       timeSignature: values.timeSignature.trim() || undefined,
+      date: values.date.trim() || undefined,
       chordpro: values.chordpro.trim(),
       createdAt: initialSong?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -343,6 +351,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     setKey(values.key);
     setTempo(values.tempo);
     setTimeSignature(values.timeSignature);
+    setDate(values.date);
     setChordpro(values.chordpro);
     setSongListId(values.songListId);
   }
@@ -603,6 +612,10 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
                 <div className="form-field">
                   <label>Time Signature</label>
                   <input value={timeSignature} onChange={(e) => setTimeSignature(e.target.value)} placeholder="4/4" maxLength={7} />
+                </div>
+                <div className="form-field">
+                  <label>Date</label>
+                  <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                 </div>
               </div>
 

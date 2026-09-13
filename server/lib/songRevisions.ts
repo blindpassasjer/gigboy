@@ -18,6 +18,7 @@ const SNAPSHOT_FIELDS: Array<{ key: keyof SongRow; label: string }> = [
   { key: 'key', label: 'Key' },
   { key: 'tempo', label: 'Tempo' },
   { key: 'timeSignature', label: 'Time signature' },
+  { key: 'date', label: 'Date' },
 ];
 
 const MAX_REVISIONS_PER_SONG = 100;

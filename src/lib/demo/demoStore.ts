@@ -931,6 +931,7 @@ const REVISION_FIELDS: Array<[keyof Song, string]> = [
   ['title', 'Title'], ['artist', 'Artist'], ['author', 'Author'], ['language', 'Language'],
   ['secondaryLanguages', 'Languages'], ['tags', 'Tags'], ['chordpro', 'Lyrics & chords'],
   ['capo', 'Capo'], ['key', 'Key'], ['tempo', 'Tempo'], ['timeSignature', 'Time signature'],
+  ['date', 'Date'],
 ];
 const REVISION_COALESCE_MS = 10 * 60 * 1000;
 const REVISION_CAP = 100;

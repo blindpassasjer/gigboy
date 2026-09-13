@@ -23,6 +23,7 @@ export function toApi(row: SongRow) {
     tempo: row.tempo,
     timeSignature: row.timeSignature,
     sortOrder: row.sortOrder,
+    date: row.date,
     createdAt: row.createdAt?.toISOString(),
     updatedAt: row.updatedAt?.toISOString(),
   });
@@ -47,6 +48,7 @@ function fromBody(body: Record<string, unknown>, id: string, bandId: string) {
     tempo: (body.tempo as number | undefined) ?? null,
     timeSignature: (body.timeSignature as string | undefined) ?? null,
     sortOrder: (body.sortOrder as number | undefined) ?? null,
+    date: (body.date as string | undefined) ?? null,
     updatedAt: new Date(),
   };
 }

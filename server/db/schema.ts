@@ -97,6 +97,10 @@ export const songs = pgTable(
     tempo: integer('tempo'),
     timeSignature: text('time_signature'),
     sortOrder: integer('sort_order'),
+    /** Free-form, user-editable date for the song itself (e.g. when it was written, learned,
+     * or last performed) — distinct from `createdAt`/`updatedAt`, which track this row's
+     * own history in gigboy. Stored as plain YYYY-MM-DD text, not a timestamp. */
+    date: text('date'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
