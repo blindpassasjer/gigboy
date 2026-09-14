@@ -22,9 +22,10 @@ interface Props {
   /** Remove the custom voicing, reverting to the built-in. */
   onResetVoicing?: () => void | Promise<void>;
   /**
-   * Rewrite just this one chord occurrence in the song to a new chord name, when the edited
-   * voicing's notes no longer match `chord` (e.g. a G shape edited into a G add9 shape).
-   * Only offered when the caller knows which single occurrence was clicked (see
+   * Rewrite just this one chord occurrence in the song to a new chord name. Called
+   * automatically, as the voicing is edited, whenever the edited notes stop matching `chord`
+   * but exactly match another known chord shape (e.g. a G shape edited into a G add9 shape) —
+   * only offered when the caller knows which single occurrence was clicked (see
    * `ChordOccurrence` in ChordDisplay); other instances of `chord` are left untouched.
    */
   onRenameOccurrence?: (newChordName: string, frets: number[]) => void | Promise<void>;
@@ -502,7 +503,10 @@ export default function ChordDiagram({
   const [showInversions, setShowInversions] = useState(false);
   const [inversionIndex, setInversionIndex] = useState(0);
   const [editingVoicing, setEditingVoicing] = useState<number[] | null>(null);
-  const [mismatch, setMismatch] = useState<{ suggestedName?: string; renameInput: string } | null>(null);
+  /** Tracks a chord name we just renamed *this* occurrence to, so the reset-on-`chord`-change
+   * effect below doesn't mistake our own rename for the user picking a different chord and
+   * close the editor mid-edit. */
+  const lastRenamedToRef = useRef<string | null>(null);
 
   // Auto-position: flip above if popup would overflow viewport bottom
   useLayoutEffect(() => {
@@ -534,10 +538,13 @@ export default function ChordDiagram({
   }, [onClose]);
 
   useEffect(() => {
+    if (lastRenamedToRef.current === chord) {
+      lastRenamedToRef.current = null;
+      return;
+    }
     setShowInversions(false);
     setInversionIndex(0);
     setEditingVoicing(null);
-    setMismatch(null);
   }, [chord]);
 
   const normalized = normalizeChordForLookup(chord);
@@ -567,30 +574,15 @@ export default function ChordDiagram({
       ? liveVoicingCheck.suggestedName
       : chord;
 
-  const handleSaveClick = () => {
-    if (!editingVoicing) return;
-    const check = checkVoicingAgainstChordName(fretInstrument, chord, editingVoicing);
-    if (check.matches || !onRenameOccurrence) {
-      void Promise.resolve(onSaveVoicing?.(editingVoicing)).then(() => setEditingVoicing(null));
+  const handleVoicingChange = (next: number[]) => {
+    setEditingVoicing(next);
+    const check = checkVoicingAgainstChordName(fretInstrument, chord, next);
+    if (!check.matches && check.suggestedName && onRenameOccurrence) {
+      lastRenamedToRef.current = check.suggestedName;
+      void onRenameOccurrence(check.suggestedName, next);
       return;
     }
-    setMismatch({ suggestedName: check.suggestedName, renameInput: check.suggestedName ?? '' });
-  };
-
-  const confirmRename = () => {
-    if (!editingVoicing || !mismatch?.renameInput.trim()) return;
-    void Promise.resolve(onRenameOccurrence?.(mismatch.renameInput.trim(), editingVoicing)).then(() => {
-      setMismatch(null);
-      setEditingVoicing(null);
-    });
-  };
-
-  const saveUnderOriginalName = () => {
-    if (!editingVoicing) return;
-    void Promise.resolve(onSaveVoicing?.(editingVoicing)).then(() => {
-      setMismatch(null);
-      setEditingVoicing(null);
-    });
+    void onSaveVoicing?.(next);
   };
 
   useEffect(() => {
@@ -632,57 +624,24 @@ export default function ChordDiagram({
                 <p className="chord-diagram-hint">Custom band voicing</p>
               )}
 
+              {editingVoicing && displayedChordName !== chord && (
+                <p className="chord-diagram-hint">Renamed to {displayedChordName}</p>
+              )}
+
               {editingVoicing && (
                 <VoicingEditor
                   instrument={fretInstrument}
                   value={editingVoicing}
-                  onChange={(next) => { setEditingVoicing(next); setMismatch(null); }}
+                  onChange={handleVoicingChange}
                 />
               )}
 
-              {mismatch && (
-                <div className="chord-diagram-voicing-mismatch">
-                  <p className="chord-diagram-hint">
-                    That's not a {chord} anymore{mismatch.suggestedName ? ` — it matches ${mismatch.suggestedName}` : ''}.
-                    Rename just this chord?
-                  </p>
-                  <input
-                    type="text"
-                    value={mismatch.renameInput}
-                    onChange={(e) => setMismatch({ ...mismatch, renameInput: e.target.value })}
-                    aria-label="New chord name"
-                    className="chord-diagram-rename-input"
-                  />
-                  <div className="chord-diagram-voicing-actions">
-                    <button
-                      type="button"
-                      className="piano-inversion-btn"
-                      disabled={!mismatch.renameInput.trim()}
-                      onClick={confirmRename}
-                    >
-                      Rename here
-                    </button>
-                    <button type="button" className="piano-inversion-btn" onClick={saveUnderOriginalName}>
-                      Save as {chord} anyway
-                    </button>
-                    <button type="button" className="piano-inversion-btn" onClick={() => setMismatch(null)}>
-                      Back
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {canEditThisVoicing && !mismatch && (
+              {canEditThisVoicing && (
                 <div className="chord-diagram-voicing-actions">
                   {editingVoicing ? (
-                    <>
-                      <button type="button" className="piano-inversion-btn" onClick={handleSaveClick}>
-                        Save
-                      </button>
-                      <button type="button" className="piano-inversion-btn" onClick={() => setEditingVoicing(null)}>
-                        Cancel
-                      </button>
-                    </>
+                    <button type="button" className="piano-inversion-btn" onClick={() => setEditingVoicing(null)}>
+                      Done
+                    </button>
                   ) : (
                     <>
                       <button

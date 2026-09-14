@@ -313,8 +313,11 @@ export default function SongView({ song, accentColor, bandId }: Props) {
         chordpro: nextChordpro,
         updatedAt: new Date().toISOString(),
       });
-      if (err) toast.error(`Could not rename chord: ${err}`);
-      setActiveChord(null);
+      if (err) {
+        toast.error(`Could not rename chord: ${err}`);
+        return;
+      }
+      setActiveChord(prev => (prev ? { ...prev, chord: newChordName } : prev));
     },
     [activeChord, chordInstrument, chordVoicings, transpose, song, bandId, updateBandSong],
   );
