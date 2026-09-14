@@ -558,6 +558,15 @@ export default function ChordDiagram({
 
   const activePianoNotes = useMemo(() => new Set(pianoNotes), [pianoNotes]);
 
+  const liveVoicingCheck = useMemo(
+    () => (editingVoicing ? checkVoicingAgainstChordName(fretInstrument, chord, editingVoicing) : null),
+    [editingVoicing, fretInstrument, chord],
+  );
+  const displayedChordName =
+    liveVoicingCheck && !liveVoicingCheck.matches && liveVoicingCheck.suggestedName
+      ? liveVoicingCheck.suggestedName
+      : chord;
+
   const handleSaveClick = () => {
     if (!editingVoicing) return;
     const check = checkVoicingAgainstChordName(fretInstrument, chord, editingVoicing);
@@ -599,7 +608,7 @@ export default function ChordDiagram({
       style={{ top: pos.top, left: pos.left, transform: 'translateX(-50%)' }}
     >
       <div className="chord-diagram-header">
-        <span className="chord-diagram-name">{chord}</span>
+        <span className="chord-diagram-name">{displayedChordName}</span>
         <button className="chord-diagram-close" onClick={onClose} aria-label="Close diagram">
           <X size={13} />
         </button>
