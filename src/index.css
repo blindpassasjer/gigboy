@@ -5787,7 +5787,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-lg) var(--space-xl) var(--space-sm);
+  padding: 1.5rem var(--space-xl) var(--space-sm);
   position: sticky;
   top: 0;
   background: var(--surface);
