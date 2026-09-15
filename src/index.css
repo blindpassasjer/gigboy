@@ -5772,8 +5772,9 @@ input, select, textarea { font: inherit; color: var(--text); }
   width: var(--sidebar-width);
   background: var(--surface);
   min-width: var(--sidebar-width);
-  box-shadow: var(--shadow);
+  border-top: 1px solid var(--border);
   border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
