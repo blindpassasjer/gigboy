@@ -2111,16 +2111,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-toolbar-row--tool-switches {
   gap: var(--space-sm);
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-@media (max-width: 900px) {
-  .song-toolbar-row--tool-switches {
-    flex-wrap: wrap;
-    overflow-x: visible;
-  }
+  flex-wrap: wrap;
 }
 
 .song-toolbar-controls-group {

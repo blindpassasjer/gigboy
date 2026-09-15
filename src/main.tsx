@@ -35,12 +35,24 @@ async function setupPwa() {
   // registerType is 'autoUpdate', so a new SW can take control of this tab
   // silently in the background (no onNeedRefresh prompt) while it's still
   // running old JS. cleanupOutdatedCaches then removes the old chunk files,
-  // so any later lazy import of a not-yet-loaded route 404s. Reload as soon
-  // as a new SW takes control so the tab never lingers on stale JS.
+  // so any later lazy import of a not-yet-loaded route 404s. Reload once a
+  // new SW takes over from a SW that was already controlling this tab, so
+  // it never lingers on stale JS.
+  //
+  // The very first controllerchange this tab ever sees (controller was null
+  // beforehand) just means a freshly-installed SW is claiming this page for
+  // the first time — the page was already running current JS, so there's
+  // nothing stale to recover from and reloading would just be a pointless
+  // flash on every first visit / cold cache.
   if ('serviceWorker' in navigator) {
+    let sawInitialClaim = Boolean(navigator.serviceWorker.controller)
     let reloadedForNewController = false
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (reloadedForNewController) return
+      if (!sawInitialClaim) {
+        sawInitialClaim = true
+        return
+      }
       reloadedForNewController = true
       reloadWhenSafe(() => window.location.reload())
     })
