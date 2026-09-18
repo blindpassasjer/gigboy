@@ -15,6 +15,7 @@ import { parsePastedSong } from '../utils/chordFormatParser';
 import { extractTabBlocks } from '../utils/tabParser';
 import { parseSongMedia } from '../utils/songMedia';
 import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
+import { formatDuration, parseDuration } from '../utils/duration';
 
 interface Props {
   onSave: (song: Song) => Promise<string | null>;
@@ -57,6 +58,8 @@ type SongFormValues = {
   tempo: string;
   timeSignature: string;
   date: string;
+  /** Play length as entered by the user, e.g. "3:45". */
+  duration: string;
   chordpro: string;
   songListId: string;
 };
@@ -82,6 +85,9 @@ export default function AddSongForm({
 const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(initialSong.tempo) : '');
   const [timeSignature, setTimeSignature] = useState(initialSong?.timeSignature ?? '');
   const [date, setDate] = useState(initialSong?.date ?? '');
+  const [duration, setDuration] = useState(
+    initialSong?.durationSeconds !== undefined ? formatDuration(initialSong.durationSeconds) : '',
+  );
   const [chordpro, setChordpro] = useState(initialSong?.chordpro ?? '');
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
   const [parseStatus, setParseStatus] = useState<string | null>(null);
@@ -126,6 +132,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     tempo: initialSong?.tempo !== undefined ? String(initialSong.tempo) : '',
     timeSignature: initialSong?.timeSignature ?? '',
     date: initialSong?.date ?? '',
+    duration: initialSong?.durationSeconds !== undefined ? formatDuration(initialSong.durationSeconds) : '',
     chordpro: initialSong?.chordpro ?? '',
     songListId: initialSongListId ?? '',
   }), [
@@ -140,6 +147,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     initialSong?.tempo,
     initialSong?.timeSignature,
     initialSong?.date,
+    initialSong?.durationSeconds,
     initialSong?.chordpro,
     initialSongListId,
   ]);
@@ -161,6 +169,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     tempo,
     timeSignature,
     date,
+    duration,
     chordpro,
     songListId,
   }), [
@@ -174,6 +183,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     tempo,
     timeSignature,
     date,
+    duration,
     chordpro,
     songListId,
   ]);
@@ -201,6 +211,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
       || formValues.tempo !== lastSavedValues.tempo
       || formValues.timeSignature !== lastSavedValues.timeSignature
       || formValues.date !== lastSavedValues.date
+      || formValues.duration !== lastSavedValues.duration
       || formValues.chordpro !== lastSavedValues.chordpro
       || formValues.songListId !== lastSavedValues.songListId;
   }, [formValues, lastSavedValues]);
@@ -243,6 +254,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
       tempo: values.tempo && !Number.isNaN(parseInt(values.tempo, 10)) ? parseInt(values.tempo, 10) : undefined,
       timeSignature: values.timeSignature.trim() || undefined,
       date: values.date.trim() || undefined,
+      durationSeconds: parseDuration(values.duration),
       chordpro: values.chordpro.trim(),
       createdAt: initialSong?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -352,6 +364,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     setTempo(values.tempo);
     setTimeSignature(values.timeSignature);
     setDate(values.date);
+    setDuration(values.duration);
     setChordpro(values.chordpro);
     setSongListId(values.songListId);
   }
@@ -616,6 +629,10 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
                 <div className="form-field">
                   <label>Date</label>
                   <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                </div>
+                <div className="form-field">
+                  <label>Duration</label>
+                  <input value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="3:45" maxLength={6} />
                 </div>
               </div>
 

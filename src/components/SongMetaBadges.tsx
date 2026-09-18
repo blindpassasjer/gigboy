@@ -1,6 +1,7 @@
-import { Gauge, KeyRound, StickyNote, Paperclip, Mic, Calendar } from 'lucide-react';
+import { Gauge, KeyRound, StickyNote, Paperclip, Mic, Calendar, Clock } from 'lucide-react';
 import type { Song } from '../types';
 import type { SongBadgeCounts } from '../hooks/useSongListBadges';
+import { formatDuration } from '../utils/duration';
 
 interface Props {
   song: Song;
@@ -10,7 +11,8 @@ interface Props {
 
 export default function SongMetaBadges({ song, counts, pulseTempo = false }: Props) {
   const hasAny =
-    song.tempo || song.key || song.date || (counts && (counts.notes > 0 || counts.attachments > 0 || counts.recordings > 0));
+    song.tempo || song.key || song.date || song.durationSeconds
+    || (counts && (counts.notes > 0 || counts.attachments > 0 || counts.recordings > 0));
 
   if (!hasAny) return null;
 
@@ -26,6 +28,11 @@ export default function SongMetaBadges({ song, counts, pulseTempo = false }: Pro
           <Calendar size={11} /> {song.date}
         </span>
       )}
+      {song.durationSeconds ? (
+        <span className="song-meta-badge" title={`Duration: ${formatDuration(song.durationSeconds)}`}>
+          <Clock size={11} /> {formatDuration(song.durationSeconds)}
+        </span>
+      ) : null}
       {song.tempo ? (
         <span
           className={`song-meta-badge${pulseTempo ? ' song-meta-badge--pulse' : ''}`}

@@ -164,6 +164,8 @@ export interface Song {
    * as YYYY-MM-DD — distinct from `createdAt`/`updatedAt`, which track this record's own
    * history in gigboy rather than anything about the song. */
   date?: string;
+  /** Play length in seconds, used to estimate a setlist's total duration. */
+  durationSeconds?: number;
   createdAt?: string;
   updatedAt?: string;
 }

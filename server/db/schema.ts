@@ -101,6 +101,8 @@ export const songs = pgTable(
      * or last performed) — distinct from `createdAt`/`updatedAt`, which track this row's
      * own history in gigboy. Stored as plain YYYY-MM-DD text, not a timestamp. */
     date: text('date'),
+    /** Play length in seconds, used to estimate a setlist's total duration. */
+    durationSeconds: integer('duration_seconds'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

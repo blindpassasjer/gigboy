@@ -6,6 +6,7 @@ import type { Song } from '../types';
 import ChordDisplay from '../components/ChordDisplay';
 import LanguageBadge from '../components/LanguageBadge';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { formatDuration } from '../utils/duration';
 
 type PrintLayout = 'sheet' | 'charts';
 
@@ -15,6 +16,7 @@ function songMetaLine(song: Song): string {
   if (song.capo && song.capo > 0) parts.push(`Capo ${song.capo}`);
   if (song.tempo) parts.push(`${song.tempo} BPM`);
   if (song.timeSignature) parts.push(song.timeSignature);
+  if (song.durationSeconds) parts.push(formatDuration(song.durationSeconds));
   return parts.join(' · ');
 }
 
@@ -50,6 +52,10 @@ export default function BandSetlistPrintPage() {
       .map((songId) => songsById.get(songId))
       .filter((song): song is Song => Boolean(song)),
     [setlist?.songIds, songsById],
+  );
+  const totalDurationSeconds = useMemo(
+    () => setlistSongs.reduce((sum, song) => sum + (song.durationSeconds ?? 0), 0),
+    [setlistSongs],
   );
 
   useEffect(() => {
@@ -110,6 +116,7 @@ export default function BandSetlistPrintPage() {
           <h1>{setlist.name}</h1>
           <p className="setlist-print-count">
             {setlistSongs.length} song{setlistSongs.length === 1 ? '' : 's'}
+            {totalDurationSeconds > 0 && ` · ${formatDuration(totalDurationSeconds)}`}
           </p>
         </header>
 

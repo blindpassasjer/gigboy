@@ -127,7 +127,7 @@ function seedRiderItems(): StageplotItem[] {
 }
 
 function seedSongs(): Song[] {
-  const songs: Array<Pick<Song, 'title' | 'artist' | 'language' | 'key' | 'tempo' | 'timeSignature' | 'chordpro'>> = [
+  const songs: Array<Pick<Song, 'title' | 'artist' | 'language' | 'key' | 'tempo' | 'timeSignature' | 'durationSeconds' | 'chordpro'>> = [
     {
       title: 'Amazing Grace',
       artist: 'Traditional',
@@ -135,6 +135,7 @@ function seedSongs(): Song[] {
       key: 'G',
       tempo: 72,
       timeSignature: '3/4',
+      durationSeconds: 258,
       chordpro: `{title: Amazing Grace}
 {artist: Traditional}
 {key: G}
@@ -161,6 +162,7 @@ The [Em]hour I [D]first be[G]lieved
       key: 'Dm',
       tempo: 84,
       timeSignature: '3/4',
+      durationSeconds: 195,
       chordpro: `{title: Scarborough Fair}
 {artist: Traditional}
 {key: Dm}
@@ -187,6 +189,7 @@ Tell her to [Dm]make me a [C]cambric [Dm]shirt
       key: 'Am',
       tempo: 120,
       timeSignature: '6/8',
+      durationSeconds: 271,
       chordpro: `{title: House of the Rising Sun}
 {artist: Traditional}
 {key: Am}
@@ -213,6 +216,7 @@ Down [Am]in New Or[E7]leans [Am]
       key: 'D',
       tempo: 100,
       timeSignature: '4/4',
+      durationSeconds: 143,
       chordpro: `{title: Auld Lang Syne}
 {artist: Robert Burns}
 {key: D}
@@ -239,6 +243,7 @@ For [A]auld lang [D]syne
       key: 'C',
       tempo: 66,
       timeSignature: '4/4',
+      durationSeconds: 224,
       chordpro: `{title: Danny Boy}
 {artist: Traditional (Irish)}
 {key: C}
@@ -258,6 +263,7 @@ The [C]summer's [F]gone, and [C]all the [Am]roses [D]falling
       key: 'C',
       tempo: 96,
       timeSignature: '4/4',
+      durationSeconds: 168,
       chordpro: `{title: Wildwood Flower}
 {artist: The Carter Family}
 {key: C}
@@ -931,7 +937,7 @@ const REVISION_FIELDS: Array<[keyof Song, string]> = [
   ['title', 'Title'], ['artist', 'Artist'], ['author', 'Author'], ['language', 'Language'],
   ['secondaryLanguages', 'Languages'], ['tags', 'Tags'], ['chordpro', 'Lyrics & chords'],
   ['capo', 'Capo'], ['key', 'Key'], ['tempo', 'Tempo'], ['timeSignature', 'Time signature'],
-  ['date', 'Date'],
+  ['date', 'Date'], ['durationSeconds', 'Duration'],
 ];
 const REVISION_COALESCE_MS = 10 * 60 * 1000;
 const REVISION_CAP = 100;

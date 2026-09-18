@@ -24,6 +24,7 @@ export function toApi(row: SongRow) {
     timeSignature: row.timeSignature,
     sortOrder: row.sortOrder,
     date: row.date,
+    durationSeconds: row.durationSeconds,
     createdAt: row.createdAt?.toISOString(),
     updatedAt: row.updatedAt?.toISOString(),
   });
@@ -49,6 +50,7 @@ function fromBody(body: Record<string, unknown>, id: string, bandId: string) {
     timeSignature: (body.timeSignature as string | undefined) ?? null,
     sortOrder: (body.sortOrder as number | undefined) ?? null,
     date: (body.date as string | undefined) ?? null,
+    durationSeconds: (body.durationSeconds as number | undefined) ?? null,
     updatedAt: new Date(),
   };
 }

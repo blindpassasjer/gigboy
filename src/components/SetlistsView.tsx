@@ -11,6 +11,7 @@ import { showConfirmToast } from '../utils/toastDialogs';
 import { SETLIST_ICON_OPTIONS } from '../lib/iconOptions';
 import { useSongListBadges } from '../hooks/useSongListBadges';
 import { useAuth } from '../context/AuthContext';
+import { formatDuration } from '../utils/duration';
 
 interface Props {
   setlistId: string;
@@ -113,6 +114,11 @@ export default function SetlistsView({
     setEditingSongNoteId(null);
     setSongNoteDraft('');
   }, [setlistId]);
+
+  const totalDurationSeconds = useMemo(
+    () => songs.reduce((sum, song) => sum + (song.durationSeconds ?? 0), 0),
+    [songs],
+  );
 
   const availableSongs = useMemo(() => {
     const songIdsInSetlist = new Set(songs.map((song) => song.id));
@@ -436,6 +442,7 @@ export default function SetlistsView({
             )}
             <p className="song-list-summary setlist-song-count">
               {songs.length} song{songs.length === 1 ? '' : 's'}
+              {totalDurationSeconds > 0 && ` · ${formatDuration(totalDurationSeconds)}`}
             </p>
           </div>
           <div className="resource-header-actions">
