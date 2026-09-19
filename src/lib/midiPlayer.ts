@@ -51,10 +51,18 @@ function getSampler(Tone: ToneModule): Promise<any> {
   return samplerPromise;
 }
 
-/** Kick off sampler loading in the background without playing anything. */
+/**
+ * Warm the browser's HTTP cache for the sample files without touching Web Audio.
+ * Must NOT construct the Tone.Sampler here: that lazily creates the AudioContext,
+ * and Safari/iOS require the context to be created (or at least resumed) from inside
+ * a user gesture — see webAudio.ts. The Sampler itself is built lazily in playTab().
+ */
 export async function preloadSampler(): Promise<void> {
-  const Tone = await getTone();
-  await getSampler(Tone);
+  await Promise.all(
+    Object.values(SAMPLE_URLS).map((file) =>
+      fetch(`${BASE_URL}${file}`).catch(() => {}),
+    ),
+  );
 }
 
 /**
@@ -72,6 +80,9 @@ export async function playTab(
   transposeSemitones = 0,
 ): Promise<number> {
   const Tone = await getTone();
+  // Must resume/create the AudioContext before building the Sampler, so the Sampler's
+  // toDestination() call attaches to an already-running context on Safari/iOS instead
+  // of lazily creating a new suspended one.
   await Tone.start();
 
   const sampler = await getSampler(Tone);
