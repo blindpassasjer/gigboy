@@ -12,6 +12,9 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 - Songs can have a duration (`3:45`); a setlist's header and its print sheet now show
   the total duration as the sum of its songs' lengths.
 
+### Fixed
+- The sort dropdown on the song list no longer overlaps its own text in Safari.
+
 ## [0.1.3] - 2026-09-09
 
 Tooling only. No changes to features or data.
