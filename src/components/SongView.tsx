@@ -37,6 +37,7 @@ import VisualMetronome from './VisualMetronome';
 import VisualTuner from './VisualTuner';
 import { transposeChord, replaceChordOccurrence } from '../utils/chordParser';
 import type { ChordNotation } from '../utils/chordParser';
+import { readStoredString, writeStoredString } from '../lib/safeStorage';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { useSongHandNotes } from '../hooks/useSongHandNotes';
@@ -79,13 +80,23 @@ type SongPageState = {
   bandId?: string;
 };
 
+function notationStorageKey(songId: string): string {
+  return `gigboy-song-notation-${songId}`;
+}
+
 export default function SongView({ song, accentColor, bandId }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const pageState = location.state as SongPageState | null;
   const [transpose, setTranspose] = useState(0);
   const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
-  const [chordNotation, setChordNotation] = useState<ChordNotation>('anglo');
+  const [chordNotation, setChordNotationState] = useState<ChordNotation>(
+    () => (readStoredString(notationStorageKey(song.id)) as ChordNotation | null) ?? 'anglo',
+  );
+  const setChordNotation = useCallback((next: ChordNotation) => {
+    setChordNotationState(next);
+    writeStoredString(notationStorageKey(song.id), next);
+  }, [song.id]);
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const [updatingFromFile, setUpdatingFromFile] = useState(false);
@@ -260,6 +271,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     setTypeEnabled(false);
     setShowChordFinder(false);
     setShowHistory(false);
+    setChordNotationState((readStoredString(notationStorageKey(song.id)) as ChordNotation | null) ?? 'anglo');
   }, [song.id]);
 
   // Set while the member is working the +/- controls, so the auto-save effect below only

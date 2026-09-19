@@ -12,7 +12,8 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 - Songs can have a duration (`3:45`); a setlist's header and its print sheet now show
   the total duration as the sum of its songs' lengths.
 - A song's Settings panel has a toggle to show chords as letter names (C D E) or
-  solfège (Do Re Mi); the chord diagram popup now respects it too.
+  solfège (Do Re Mi); the chord diagram popup respects it too, and the choice is
+  remembered per song.
 
 ### Fixed
 - The sort dropdown on the song list no longer overlaps its own text in Safari.
