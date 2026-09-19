@@ -1,4 +1,19 @@
 /**
+ * True on phones/tablets, where a "download" is only reachable through the OS share
+ * sheet (Save to Files, AirDrop, etc). On desktop this is false even when the browser
+ * technically supports `navigator.share({ files })` — Chrome/Edge on Windows do, and
+ * routing the plain Download button through the native share flyout there is
+ * surprising and easy to dismiss without ever saving the file (the bug this guards
+ * against: desktop users clicking Download and having nothing visibly happen).
+ */
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const uaData = (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData;
+  if (uaData) return Boolean(uaData.mobile);
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+/**
  * Save a generated Blob to the user's device.
  *
  * iOS Safari has only partial support for the `<a download>` attribute on blob URLs —
@@ -13,7 +28,7 @@ export async function saveBlob(blob: Blob, filename: string): Promise<void> {
     ? new File([blob], filename, { type: blob.type || 'application/octet-stream' })
     : null;
 
-  if (file && typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
+  if (file && isMobileDevice() && typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: filename });
       return;

@@ -17,6 +17,11 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ### Fixed
 - The sort dropdown on the song list no longer overlaps its own text in Safari.
+- The Download button (song ChordPro export, press kit/rider ZIPs, etc.) no longer
+  routes through the OS share sheet on desktop Windows/Edge/Chrome, which supports
+  file sharing but made the button look broken — nothing visibly saved unless you
+  picked a share target. It's now reserved for actual phones/tablets; desktop always
+  saves the file directly.
 - The transpose control no longer shows a redundant "(saved)" tag, and its reset
   button now only appears when the song is actually transposed away from its
   original key.
