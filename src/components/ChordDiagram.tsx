@@ -5,6 +5,7 @@ import { GUITAR_CHORDS } from '../data/guitarChords';
 import { UKULELE_CHORDS } from '../data/ukuleleChords';
 import { normalizeChordForLookup } from '../utils/chordLookup';
 import { checkVoicingAgainstChordName } from '../utils/chordVoicingCheck';
+import { convertChordNotation, type ChordNotation } from '../utils/chordParser';
 
 export type DiagramInstrument = 'guitar' | 'piano' | 'ukulele';
 
@@ -13,6 +14,8 @@ interface Props {
   instrument: DiagramInstrument;
   anchorRect: DOMRect;
   onClose: () => void;
+  /** Display notation for chord names (letter names vs. solfège). Defaults to 'anglo'. */
+  notation?: ChordNotation;
   /** Band's custom fingering for this chord (fret-per-string), overriding the built-in. */
   voicingOverride?: number[];
   /** When true, show the "Edit voicing" control (guitar/ukulele only). */
@@ -492,6 +495,7 @@ export default function ChordDiagram({
   instrument,
   anchorRect,
   onClose,
+  notation = 'anglo',
   voicingOverride,
   canEditVoicing = false,
   onSaveVoicing,
@@ -569,10 +573,13 @@ export default function ChordDiagram({
     () => (editingVoicing ? checkVoicingAgainstChordName(fretInstrument, chord, editingVoicing) : null),
     [editingVoicing, fretInstrument, chord],
   );
-  const displayedChordName =
+  const displayedChordName = convertChordNotation(
     liveVoicingCheck && !liveVoicingCheck.matches && liveVoicingCheck.suggestedName
       ? liveVoicingCheck.suggestedName
-      : chord;
+      : chord,
+    notation,
+  );
+  const displayedChord = convertChordNotation(chord, notation);
 
   const handleVoicingChange = (next: number[]) => {
     setEditingVoicing(next);
@@ -617,7 +624,7 @@ export default function ChordDiagram({
               ) : frets ? (
                 <Diagram frets={frets} />
               ) : (
-                <p className="chord-diagram-unavailable">No {instrument === 'ukulele' ? 'ukulele ' : ''}diagram for {chord}</p>
+                <p className="chord-diagram-unavailable">No {instrument === 'ukulele' ? 'ukulele ' : ''}diagram for {displayedChord}</p>
               )}
 
               {voicingOverride && !editingVoicing && (
@@ -702,7 +709,7 @@ export default function ChordDiagram({
             </p>
           </>
         ) : (
-          <p className="chord-diagram-unavailable">No piano diagram for {chord}</p>
+          <p className="chord-diagram-unavailable">No piano diagram for {displayedChord}</p>
         )
       )}
     </div>,

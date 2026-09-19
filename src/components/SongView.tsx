@@ -1095,6 +1095,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
           chord={activeChord.chord}
           instrument={chordInstrument}
           anchorRect={activeChord.rect}
+          notation={chordNotation}
           onClose={() => setActiveChord(null)}
           voicingOverride={
             chordInstrument === 'piano'
