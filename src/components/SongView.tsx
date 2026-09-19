@@ -85,7 +85,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const pageState = location.state as SongPageState | null;
   const [transpose, setTranspose] = useState(0);
   const [chordInstrument, setChordInstrument] = useState<DiagramInstrument>('guitar');
-  const chordNotation: ChordNotation = 'anglo';
+  const [chordNotation, setChordNotation] = useState<ChordNotation>('anglo');
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const [updatingFromFile, setUpdatingFromFile] = useState(false);
@@ -115,7 +115,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     seed: transposeSeed,
     pinForMe: pinTransposeForMe,
     clearMine: clearMyTransposePref,
-    scopeOf: transposeScopeOf,
   } = useSongTranspose({ bandId, songId: song.id, bandDefault: song.preferredTranspose });
 
   const chordVoicings = useBandChordVoicings(bandId, canEditBand);
@@ -478,8 +477,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
       '--song-header-accent': accentColor,
     } as CSSProperties)
     : undefined;
-  const transposeIsSaved = transposeScopeOf(transpose) === 'personal';
-  const canResetTranspose = transpose !== 0 || myTranspose !== null;
+  const canResetTranspose = transpose !== 0;
 
   return (
     <div className="song-view">
@@ -529,7 +527,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                     : transpose === 0
                       ? 'Original key'
                       : `${transpose > 0 ? '+' : ''}${transpose} semitones`}
-                  {transposeIsSaved && <span className="transpose-scope-tag"> (saved)</span>}
                 </span>
                 <button
                   onClick={() => adjustTranspose((t) => t + 1)}
@@ -588,6 +585,23 @@ export default function SongView({ song, accentColor, bandId }: Props) {
                   onClick={() => { setChordInstrument('piano'); setActiveChord(null); }}
                 >
                   Piano
+                </button>
+              </div>
+
+              <div className="instrument-toggle song-toolbar-controls-group">
+                <button
+                  className={`instrument-toggle-btn${chordNotation === 'anglo' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => setChordNotation('anglo')}
+                  aria-label="Use letter chord names"
+                >
+                  C D E
+                </button>
+                <button
+                  className={`instrument-toggle-btn${chordNotation === 'spanish' ? ' instrument-toggle-btn--active' : ''}`}
+                  onClick={() => setChordNotation('spanish')}
+                  aria-label="Use solfège chord names"
+                >
+                  Do Re Mi
                 </button>
               </div>
             </div>

@@ -11,9 +11,14 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 ### Added
 - Songs can have a duration (`3:45`); a setlist's header and its print sheet now show
   the total duration as the sum of its songs' lengths.
+- A song's Settings panel has a toggle to show chords as letter names (C D E) or
+  solfège (Do Re Mi).
 
 ### Fixed
 - The sort dropdown on the song list no longer overlaps its own text in Safari.
+- The transpose control no longer shows a redundant "(saved)" tag, and its reset
+  button now only appears when the song is actually transposed away from its
+  original key.
 - The tab player now produces sound in production: the Content Security Policy had no
   `worker-src`, so it fell back to `script-src` (no `blob:`), and browsers were silently
   blocking the Worker Tone.js uses to schedule audio. Also stopped building the Web Audio
