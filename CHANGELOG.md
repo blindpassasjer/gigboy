@@ -14,8 +14,11 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ### Fixed
 - The sort dropdown on the song list no longer overlaps its own text in Safari.
-- The tab player now produces sound: it was building its Web Audio sampler outside
-  of the Play button's click gesture, which Safari/iOS leave permanently suspended.
+- The tab player now produces sound in production: the Content Security Policy had no
+  `worker-src`, so it fell back to `script-src` (no `blob:`), and browsers were silently
+  blocking the Worker Tone.js uses to schedule audio. Also stopped building the Web Audio
+  sampler outside the Play button's click gesture, which Safari/iOS leave permanently
+  suspended.
 
 ## [0.1.3] - 2026-09-09
 

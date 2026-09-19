@@ -21,6 +21,10 @@ export function securityHeaders(_req: Request, res: Response, next: NextFunction
       // index.html ships one first-party inline bootstrap snippet (the ?p= redirect decoder),
       // hence 'unsafe-inline' for scripts; the app loads no third-party script origins.
       "script-src 'self' 'unsafe-inline'",
+      // Tone.js schedules audio via a Worker constructed from a blob: URL; without this,
+      // worker-src falls back to script-src (no blob:) and the browser blocks it outright,
+      // silently killing tab/tuner/metronome playback.
+      "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "media-src 'self' blob:",
