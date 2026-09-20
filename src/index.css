@@ -597,17 +597,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .topbar-coffee-popover {
   width: min(340px, calc(100vw - 1.5rem));
-  background:
-    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, #b9752f 16%, transparent), transparent 60%),
-    var(--surface);
-  border-color: color-mix(in srgb, #b9752f 30%, var(--border));
 }
 
 .topbar-coffee-popover-header {
   align-items: flex-start;
   justify-content: flex-start;
   gap: var(--space-md);
-  border-bottom-color: color-mix(in srgb, #b9752f 20%, var(--border));
 }
 
 .topbar-coffee-popover-avatar {
