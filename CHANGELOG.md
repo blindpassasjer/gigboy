@@ -16,6 +16,9 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
   remembered per song.
 
 ### Fixed
+- The stage plot editor no longer grows uncomfortably tall on very wide screens
+  (e.g. 4K monitors) — its 16:9 stage now caps at a sensible max width instead
+  of scaling to fill the whole column.
 - The sort dropdown on the song list no longer overlaps its own text in Safari.
 - The Download button (song ChordPro export, press kit/rider ZIPs, etc.) no longer
   routes through the OS share sheet on desktop Windows/Edge/Chrome, which supports

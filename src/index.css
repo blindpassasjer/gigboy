@@ -10668,7 +10668,10 @@ input, select, textarea { font: inherit; color: var(--text); }
   container-type: inline-size;
   position: relative;
   width: 100%;
-  max-width: 100%;
+  /* Cap the width so the fixed 16:9 aspect ratio can't scale the box taller
+     than the viewport on very wide screens (e.g. 4K), where the content
+     column would otherwise stretch to fill all available width. */
+  max-width: 900px;
   /* Fixed aspect ratio (rather than a viewport-height-based min-height) so the
      box's width:height proportions never change across screen sizes — only its
      overall scale does. Items are positioned by x/y percentage of this box, so
@@ -10677,7 +10680,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   aspect-ratio: 16 / 9;
   min-width: 0;
   flex: none;
-  margin-inline: 0;
+  margin-inline: auto;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   background:
