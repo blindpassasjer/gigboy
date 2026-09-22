@@ -124,6 +124,7 @@ export default function ConcertModeView({
   const chordNotation: ChordNotation = 'anglo';
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
   const [showSongNavigator, setShowSongNavigator] = useState(false);
+  const [topbarVisible, setTopbarVisible] = useState(true);
   const chordVoicings = useBandChordVoicings(bandId, false);
 
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -131,6 +132,7 @@ export default function ConcertModeView({
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
   const targetPageRef = useRef(0);
   const contentScrollHeightRef = useRef(0);
+  const topbarHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isMultiSong = songs.length > 1;
   const activeSong = songs[currentIndex] ?? null;
@@ -386,6 +388,32 @@ export default function ConcertModeView({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [goToNextPage, goToPrevPage, isMultiSong]);
 
+  // Auto-hide the topbar during performance to reclaim vertical space; any
+  // pointer/keyboard activity brings it back and restarts the hide timer.
+  useEffect(() => {
+    const scheduleHide = () => {
+      if (topbarHideTimerRef.current) clearTimeout(topbarHideTimerRef.current);
+      topbarHideTimerRef.current = setTimeout(() => setTopbarVisible(false), 4000);
+    };
+
+    const wake = () => {
+      setTopbarVisible(true);
+      scheduleHide();
+    };
+
+    scheduleHide();
+    window.addEventListener('mousemove', wake);
+    window.addEventListener('touchstart', wake);
+    window.addEventListener('keydown', wake);
+
+    return () => {
+      if (topbarHideTimerRef.current) clearTimeout(topbarHideTimerRef.current);
+      window.removeEventListener('mousemove', wake);
+      window.removeEventListener('touchstart', wake);
+      window.removeEventListener('keydown', wake);
+    };
+  }, []);
+
   if (songs.length === 0) {
     return (
       <div className="not-found">
@@ -453,7 +481,7 @@ export default function ConcertModeView({
         </button>
       </div>
       {session?.error && <p className="concert-session-error">{session.error}</p>}
-      <header className="concert-topbar">
+      <header className={`concert-topbar${topbarVisible ? '' : ' concert-topbar--hidden'}`}>
         <div className="concert-topbar-main">
           <Link to={backRoute} className="back-link concert-back-link"><ArrowLeft size={15} /> Back</Link>
           {title && <h1>{title}</h1>}

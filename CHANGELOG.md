@@ -8,6 +8,11 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
+### Changed
+- Concert mode's topbar is more compact and now auto-hides after a few seconds
+  of inactivity (any tap, click, or key press brings it back), reclaiming
+  screen space for the song itself.
+
 ### Added
 - Songs can have a duration (`3:45`); a setlist's header and its print sheet now show
   the total duration as the sum of its songs' lengths.

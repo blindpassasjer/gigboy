@@ -7097,11 +7097,24 @@ input, select, textarea { font: inherit; color: var(--text); }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl) var(--space-xl);
+  padding: var(--space-sm) var(--space-lg);
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-2xs);
+  transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.2s ease, padding 0.2s ease, margin 0.2s ease;
+  max-height: 6rem;
+  overflow: hidden;
+}
+
+.concert-topbar--hidden {
+  opacity: 0;
+  transform: translateY(-0.5rem);
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
+  pointer-events: none;
 }
 
 .concert-back-link {
@@ -8060,7 +8073,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .concert-topbar {
-    padding: var(--space-lg);
+    padding: var(--space-sm) var(--space-md);
   }
 
   .concert-topbar-main p {
