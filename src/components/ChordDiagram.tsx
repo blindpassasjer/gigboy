@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { GUITAR_CHORDS } from '../data/guitarChords';
 import { UKULELE_CHORDS } from '../data/ukuleleChords';
-import { normalizeChordForLookup } from '../utils/chordLookup';
+import { normalizeChordForLookup, normalizeChordBassForLookup } from '../utils/chordLookup';
 import { checkVoicingAgainstChordName } from '../utils/chordVoicingCheck';
 import { convertChordNotation, type ChordNotation } from '../utils/chordParser';
 
@@ -552,9 +552,15 @@ export default function ChordDiagram({
   }, [chord]);
 
   const normalized = normalizeChordForLookup(chord);
+  const bassNote = normalizeChordBassForLookup(chord);
+  const slashKey = bassNote ? `${normalized}/${bassNote}` : undefined;
   const fretInstrument = instrument === 'ukulele' ? 'ukulele' : 'guitar';
-  const guitarFrets = (instrument === 'guitar' ? voicingOverride : undefined) ?? GUITAR_CHORDS[normalized];
-  const ukuleleFrets = (instrument === 'ukulele' ? voicingOverride : undefined) ?? UKULELE_CHORDS[normalized];
+  const guitarFrets = (instrument === 'guitar' ? voicingOverride : undefined)
+    ?? (slashKey ? GUITAR_CHORDS[slashKey] : undefined)
+    ?? GUITAR_CHORDS[normalized];
+  const ukuleleFrets = (instrument === 'ukulele' ? voicingOverride : undefined)
+    ?? (slashKey ? UKULELE_CHORDS[slashKey] : undefined)
+    ?? UKULELE_CHORDS[normalized];
   const stringCount = fretInstrument === 'ukulele' ? 4 : 6;
   const canEditThisVoicing = canEditVoicing && instrument !== 'piano' && Boolean(onSaveVoicing);
   const chordModel = useMemo(() => parseChordModel(chord), [chord]);

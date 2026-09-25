@@ -19,8 +19,13 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 - A song's Settings panel has a toggle to show chords as letter names (C D E) or
   solfège (Do Re Mi); the chord diagram popup respects it too, and the choice is
   remembered per song.
+- The chord diagram popup now shows the correct alternate-bass fingering for common
+  slash chords (e.g. `D/F#`, `G/B`, `C/G`) instead of falling back to the plain chord's
+  shape.
 
 ### Fixed
+- Pasting a song with no title/artist header no longer mistakes the first line or two
+  of lyrics for the title and artist.
 - The stage plot editor no longer grows uncomfortably tall on very wide screens
   (e.g. 4K monitors) — its 16:9 stage now caps at a sensible max width instead
   of scaling to fill the whole column.

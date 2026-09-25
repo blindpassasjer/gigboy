@@ -162,6 +162,25 @@ That [D]saved a [G]wretch like me`);
     expect(parsed.chordpro).not.toContain('Flow:');
   });
 
+  it('does not guess a title/artist out of lyrics pasted with no header', () => {
+    const parsed = parsePastedSong(`Amazing grace how sweet the sound
+That saved a wretch like me
+I once was lost but now am found
+Was blind but now I see`);
+
+    expect(parsed.title).toBeUndefined();
+    expect(parsed.artist).toBeUndefined();
+    expect(parsed.chordpro).toContain('Amazing grace how sweet the sound');
+  });
+
+  it('still guesses a lone title line immediately followed by chorded content', () => {
+    const parsed = parsePastedSong(`Amazing Grace
+[G]Amazing [C]grace how [G]sweet the sound`);
+
+    expect(parsed.title).toBe('Amazing Grace');
+    expect(parsed.artist).toBeUndefined();
+  });
+
   it('parses Cifra Club-style portuguese metadata and section labels', () => {
     const parsed = parsePastedSong(`Tempo Perdido
 Legião Urbana

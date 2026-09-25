@@ -47,3 +47,18 @@ export function normalizeChordForLookup(chord: string): string {
 
   return `${normalizedRoot}${normalizedQuality}`;
 }
+
+/**
+ * Normalizes just the bass note of a slash chord (e.g. "D/F#" → "F#"), for looking up a
+ * bass-specific diagram entry (e.g. `GUITAR_CHORDS['D/F#']`). Returns undefined when the
+ * chord has no slash bass.
+ */
+export function normalizeChordBassForLookup(chord: string): string | undefined {
+  const parts = chord.split('/');
+  if (parts.length < 2) return undefined;
+  const bassRaw = parts[1].trim().replace(/♯/g, '#').replace(/♭/g, 'b');
+  const match = bassRaw.match(/^([A-Ga-g])([#b]?)/);
+  if (!match) return undefined;
+  const root = `${match[1].toUpperCase()}${match[2]}`;
+  return ROOT_LOOKUP_ALIAS[root] ?? root;
+}

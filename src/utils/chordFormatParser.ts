@@ -287,19 +287,26 @@ function parseLeadingMetadata(lines: string[], guessTitleArtist: boolean): {
     return { startIndex };
   }
 
+  // Tracks a run of consecutive plain lines guessed as title/artist with nothing
+  // (blank line, metadata, or real content) between them. A song pasted with no
+  // header at all is just consecutive lyric lines — if a *third* one shows up
+  // immediately after we've guessed both title and artist, the "header" was
+  // actually the first two lines of the song, and we undo the guess.
+  let plainGuessRun = 0;
+  let firstPlainGuessIndex: number | undefined;
+
   while (startIndex < lines.length) {
     const current = lines[startIndex]?.trim() ?? '';
 
     if (!current) {
       startIndex += 1;
-      if (title || artist || key || capo || tempo || author) {
-        continue;
-      }
+      plainGuessRun = 0;
       continue;
     }
 
     if (isMetadataNoise(current)) {
       startIndex += 1;
+      plainGuessRun = 0;
       continue;
     }
 
@@ -311,19 +318,32 @@ function parseLeadingMetadata(lines: string[], guessTitleArtist: boolean): {
       capo = parsedMetadata.capo ?? capo;
       tempo = parsedMetadata.tempo ?? tempo;
       startIndex += 1;
+      plainGuessRun = 0;
       continue;
     }
 
     if (guessTitleArtist && !title && !lineStartsContent(current) && current.length <= 90) {
       title = current;
+      if (plainGuessRun === 0) firstPlainGuessIndex = startIndex;
+      plainGuessRun += 1;
       startIndex += 1;
       continue;
     }
 
     if (guessTitleArtist && !artist && !lineStartsContent(current) && current.length <= 80) {
       artist = current.replace(/^by\s+/i, '').trim();
+      plainGuessRun += 1;
       startIndex += 1;
       continue;
+    }
+
+    if (guessTitleArtist && title && artist && plainGuessRun >= 2 && !lineStartsContent(current)) {
+      // A third consecutive plain line: this isn't a title/artist header, it's
+      // just lyrics pasted without one. Undo the guess and let it all fall
+      // through to the song body.
+      title = undefined;
+      artist = undefined;
+      startIndex = firstPlainGuessIndex ?? startIndex;
     }
 
     break;
