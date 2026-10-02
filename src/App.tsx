@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, type ReactElement } from 'react';
-import { createBrowserRouter, RouterProvider, Routes, Route, Navigate, useRouteError } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Routes, Route, Navigate, useLocation, useRouteError } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Theme } from '@radix-ui/themes';
 import { useBands } from './context/BandsContext';
@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { BandsProvider } from './context/BandsContext';
 import { isDynamicImportFailure, recoverFromDynamicImportFailure, forceReloadAfterChunkFailure } from './lib/chunkRecovery';
 import { Button } from './components/ui/Button';
+import { getPendingBandInvite, savePendingBandInvite } from './lib/pendingBandInvite';
 
 const Layout = lazy(() => import('./components/Layout'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -84,9 +85,21 @@ function RouterErrorFallback() {
 
 const routerErrorElement = <RouterErrorFallback />;
 
+/** Pulls a band invite id out of `/band-invite/:id` or legacy `/profile/invites?bandInvite=:id`. */
+function bandInviteIdFromLocation(pathname: string, search: string): string | null {
+  const match = pathname.match(/\/band-invite\/([^/]+)\/?$/);
+  if (match) return match[1];
+  if (pathname.endsWith('/profile/invites')) return new URLSearchParams(search).get('bandInvite');
+  return null;
+}
+
 /** Redirects to the last active band's library, or profile if no active band. */
 function RootRedirect() {
   const { bands, loading } = useBands();
+
+  // A band invite opened before the user had an account/session: resume it now.
+  const pendingInvite = getPendingBandInvite();
+  if (pendingInvite) return <Navigate to={`/band-invite/${pendingInvite}`} replace />;
 
   if (loading) {
     return <div className="app-status">Loading Gigboy…</div>;
@@ -123,6 +136,15 @@ function RequireAdmin({ children }: { children: ReactElement }) {
 
 function AuthenticatedApp() {
   const { user, loading, authEnabled, isDeletingAccount } = useAuth();
+  const location = useLocation();
+
+  // Remember a band invite opened while signed out, so it survives login or account creation.
+  useEffect(() => {
+    if (loading || user) return;
+    const inviteId = bandInviteIdFromLocation(location.pathname, location.search);
+    if (!inviteId) return;
+    savePendingBandInvite(inviteId);
+  }, [loading, user, location.pathname, location.search]);
 
   if (loading) {
     return <div className="app-status">Loading Gigboy…</div>;

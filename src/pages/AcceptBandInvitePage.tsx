@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { useBands } from '../context/BandsContext';
+import { clearPendingBandInvite } from '../lib/pendingBandInvite';
 import { dataClient } from '../lib/dataClient';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
@@ -16,6 +17,10 @@ export default function AcceptBandInvitePage() {
   const inviteId = paramId ?? searchParams.get('bandInvite') ?? '';
   const navigate = useNavigate();
   const { refreshBands } = useBands();
+  // Once the user is here the stashed invite is consumed; don't bounce them back on later visits.
+  useEffect(() => {
+    clearPendingBandInvite();
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
