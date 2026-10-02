@@ -247,6 +247,13 @@ export default function LoginPage() {
         <div className="login-card">
           <h1 className="login-title">Sign in</h1>
 
+          {/band-invite\/|bandInvite=/.test(`${location.pathname}${location.search}`) && (
+            <p className="login-description">
+              Sign in to join the band. No account yet? Ask your server admin for an account
+              invite link, open it, and the band invite will be picked up afterwards.
+            </p>
+          )}
+
           {isDemoMode && (
             <p className="login-demo-note">
               This is a live demo — any email and password will sign you in against

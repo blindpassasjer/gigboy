@@ -46,6 +46,8 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 - A band invite opened by someone without an account (or signed out) is remembered through
   login or account creation, so new users land on the "Join band" page instead of an empty
   app with no library.
+- The account-invite page now has an "Already have an account? Sign in" link, and the sign-in
+  page explains what to do when opened from a band invite link.
 - Pasting a song with no title/artist header no longer mistakes the first line or two
   of lyrics for the title and artist.
 - The stage plot editor no longer grows uncomfortably tall on very wide screens

@@ -205,6 +205,10 @@ export default function AcceptInvitePage() {
           </Button>
         </form>
 
+        <p className="login-description">
+          Already have an account? <Link to="/">Sign in</Link>
+        </p>
+
         <footer className="footer">From Norway {'<3'} with chords</footer>
       </div>
     </div>
