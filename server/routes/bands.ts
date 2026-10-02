@@ -119,7 +119,7 @@ bandsRouter.post('/:id/invite-link', requireBandEditor, async (req, res) => {
     const origin = resolveOrigin(req);
     res.json({
       inviteId: id,
-      inviteUrl: `${origin}/profile/invites?bandInvite=${id}`,
+      inviteUrl: `${origin}/band-invite/${id}`,
       expiresAt: expiresAt.toISOString(),
     });
   } catch (err) {

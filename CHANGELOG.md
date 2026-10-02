@@ -30,12 +30,19 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
   slash chords (e.g. `D/F#`, `G/B`, `C/G`) instead of falling back to the plain chord's
   shape.
 
+- Songs can have a custom language: choosing "Other" in the song form reveals a text
+  field (e.g. "Swahili"), shown as typed instead of an uppercased code.
+
 ### Changed
 - Concert mode's topbar is more compact and now auto-hides after a few seconds
   of inactivity (any tap, click, or key press brings it back), reclaiming
   screen space for the song itself.
 
 ### Fixed
+- Band invite links no longer 404. They pointed at `/profile/invites`, a page that
+  didn't exist, and nothing in the app accepted band invites. Links now open
+  `/band-invite/<id>` with a "Join band" button that adds you to the band and opens it
+  (old `/profile/invites?bandInvite=` links keep working).
 - Pasting a song with no title/artist header no longer mistakes the first line or two
   of lyrics for the title and artist.
 - The stage plot editor no longer grows uncomfortably tall on very wide screens

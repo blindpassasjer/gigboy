@@ -260,7 +260,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
       artist: values.artist.trim() || undefined,
       author: values.author.trim() || undefined,
       playbackUrl: values.playbackUrl.trim() || undefined,
-      language: values.language,
+      language: values.language.trim() || 'other',
       tags: values.tags.split(',').map((t) => t.trim()).filter(Boolean),
       key: values.key.trim() || undefined,
       tempo: values.tempo && !Number.isNaN(parseInt(values.tempo, 10)) ? parseInt(values.tempo, 10) : undefined,
@@ -629,12 +629,24 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
               <div className="form-row">
                 <div className="form-field">
                   <label>Language</label>
-                  <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                  <select
+                    value={language in LANGUAGE_NAMES ? language : 'other'}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  >
                     {Object.entries(LANGUAGE_NAMES).map(([code, name]) => (
                       <option key={code} value={code}>{name}</option>
                     ))}
                     <option value="other">Other</option>
                   </select>
+                  {!(language in LANGUAGE_NAMES) && (
+                    <input
+                      value={language === 'other' ? '' : language}
+                      onChange={(e) => setLanguage(e.target.value || 'other')}
+                      placeholder="Custom language, e.g. Swahili"
+                      maxLength={40}
+                      aria-label="Custom language"
+                    />
+                  )}
                 </div>
                 <div className="form-field">
                   <label>Key</label>

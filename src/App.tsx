@@ -11,6 +11,7 @@ import { Button } from './components/ui/Button';
 
 const Layout = lazy(() => import('./components/Layout'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const AcceptBandInvitePage = lazy(() => import('./pages/AcceptBandInvitePage'));
 const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage'));
 const UsernameSetupPage = lazy(() => import('./pages/UsernameSetupPage'));
 const AddSongPage = lazy(() => import('./pages/AddSongPage'));
@@ -145,6 +146,8 @@ function AuthenticatedApp() {
           <Route path="/bands/:id/settings" element={<BandSettingsPage />} />
           <Route path="/bands/:id/members" element={<BandMembersPage />} />
           <Route path="/bands/:id/*" element={<BandDetailPage />} />
+          <Route path="/band-invite/:inviteId" element={<AcceptBandInvitePage />} />
+          <Route path="/profile/invites" element={<AcceptBandInvitePage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route
             path="/admin/invites"

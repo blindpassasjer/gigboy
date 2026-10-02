@@ -10,7 +10,9 @@ export const LANGUAGE_NAMES: Record<string, string> = {
 };
 
 export function languageName(code: string): string {
-  return LANGUAGE_NAMES[code] ?? code.toUpperCase();
+  if (code in LANGUAGE_NAMES) return LANGUAGE_NAMES[code];
+  // Custom free-text languages are shown as typed; short codes are uppercased.
+  return code.length <= 3 ? code.toUpperCase() : code;
 }
 
 export const LANGUAGE_ABBR: Record<string, string> = {
