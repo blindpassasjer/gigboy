@@ -3,6 +3,7 @@
  * Samples: https://github.com/nbrosowsky/tonejs-instruments (MIT), self-hosted in /guitar-acoustic/
  */
 import { parseTabLines } from '../utils/tabParser';
+import { strumNotes, type StrumBar } from '../utils/strumParser';
 
 type ToneModule = typeof import('tone');
 
@@ -90,6 +91,7 @@ export async function playTab(
   const transport = Tone.getTransport();
   transport.stop();
   transport.cancel();
+  transport.loop = false;
   transport.bpm.value = bpm;
 
   const events = parseTabLines(tabLines);
@@ -126,5 +128,88 @@ export function stopPlayback(): void {
     const transport = Tone.getTransport();
     transport.stop();
     transport.cancel();
+    transport.loop = false;
   });
+}
+
+export interface PlayStrumOptions {
+  bars: StrumBar[];
+  /** Fret per string, low E → high e (-1 = not played), as in GUITAR_CHORDS. */
+  frets: number[];
+  bpm?: number;
+  beatsPerBar?: number;
+  transposeSemitones?: number;
+  /** Repeat the whole pattern seamlessly until stopPlayback() is called. */
+  loop?: boolean;
+  /** Called (audio-synced) as each slot sounds, so the UI can highlight it. */
+  onSlot?: (bar: number, slot: number) => void;
+}
+
+/** Seconds between the first and last string of one strum, so it sounds raked, not blocked. */
+const STRING_STAGGER = 0.014;
+
+/**
+ * Play a strumming pattern over one chord voicing. Must be called from a user gesture.
+ * Each bar spans `beatsPerBar` beats, divided evenly among that bar's slots.
+ * @returns Pattern length in milliseconds (plus a release tail unless looping), or 0 if empty.
+ */
+export async function playStrum({
+  bars,
+  frets,
+  bpm = 100,
+  beatsPerBar = 4,
+  transposeSemitones = 0,
+  loop = false,
+  onSlot,
+}: PlayStrumOptions): Promise<number> {
+  const Tone = await getTone();
+  await Tone.start();
+  const sampler = await getSampler(Tone);
+
+  const transport = Tone.getTransport();
+  transport.stop();
+  transport.cancel();
+  transport.bpm.value = bpm;
+
+  const barSeconds = beatsPerBar * (60 / bpm);
+  let any = false;
+
+  bars.forEach((bar, barIndex) => {
+    const slotSeconds = barSeconds / bar.length;
+    bar.forEach((slot, slotIndex) => {
+      const at = barIndex * barSeconds + slotIndex * slotSeconds;
+      const notes = strumNotes(frets, slot, transposeSemitones);
+      if (onSlot) {
+        transport.schedule((t) => {
+          Tone.getDraw().schedule(() => onSlot(barIndex, slotIndex), t);
+        }, at);
+      }
+      if (!slot.stroke || notes.length === 0) return;
+      any = true;
+      const velocity = slot.muted ? 0.25 : slot.accent ? 1 : slot.stroke === 'U' ? 0.55 : 0.75;
+      const duration = slot.muted ? 0.06 : Math.max(slotSeconds * 2, 0.4);
+      transport.schedule((t) => {
+        notes.forEach((midi, i) => {
+          sampler.triggerAttackRelease(
+            Tone.Frequency(midi, 'midi').toFrequency(),
+            duration,
+            t + i * STRING_STAGGER,
+            velocity,
+          );
+        });
+      }, at);
+    });
+  });
+
+  if (!any) return 0;
+
+  const patternSeconds = bars.length * barSeconds;
+  transport.loop = loop;
+  if (loop) {
+    transport.loopStart = 0;
+    transport.loopEnd = patternSeconds;
+  }
+  transport.start();
+
+  return patternSeconds * 1000 + (loop ? 0 : 1500);
 }

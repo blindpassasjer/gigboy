@@ -13,6 +13,9 @@ import TabSequencerModal from './TabSequencerModal';
 import { LANGUAGE_NAMES } from '../utils/languages';
 import { parsePastedSong } from '../utils/chordFormatParser';
 import { extractTabBlocks } from '../utils/tabParser';
+import StrumEditorModal from './StrumEditorModal';
+import StrumDisplay from './StrumDisplay';
+import { extractStrumBlocks, replaceNthStrumBlock, serializeStrumBar, uniqueChords, type StrumBlock } from '../utils/strumParser';
 import { parseSongMedia } from '../utils/songMedia';
 import { parseImportedSongFile, SONG_TEXT_IMPORT_ACCEPT } from '../utils/songImport';
 import { formatDuration, parseDuration } from '../utils/duration';
@@ -104,6 +107,15 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
   const saveGenerationRef = useRef(0);
   const tabBlocks = useMemo(() => extractTabBlocks(chordpro), [chordpro]);
   const [editingTabIdx, setEditingTabIdx] = useState<number | null>(null);
+  const strumBlocks = useMemo(() => extractStrumBlocks(chordpro), [chordpro]);
+  const songChords = useMemo(() => uniqueChords(chordpro), [chordpro]);
+  const [editingStrumIdx, setEditingStrumIdx] = useState<number | null>(null);
+
+  function handleEditStrumInsert(block: StrumBlock) {
+    if (editingStrumIdx === null) return;
+    setChordpro(prev => replaceNthStrumBlock(prev, editingStrumIdx, block));
+    setEditingStrumIdx(null);
+  }
 
   function replaceNthTabBlock(source: string, index: number, newTabLines: string[]): string {
     let count = 0;
@@ -560,6 +572,16 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
         tempo={tempo ? parseInt(tempo, 10) : undefined}
       />
     )}
+    {editingStrumIdx !== null && (
+      <StrumEditorModal
+        initial={strumBlocks[editingStrumIdx]}
+        chords={songChords}
+        tempo={tempo ? parseInt(tempo, 10) : undefined}
+        timeSignature={timeSignature.trim() || undefined}
+        onInsert={handleEditStrumInsert}
+        onClose={() => setEditingStrumIdx(null)}
+      />
+    )}
     <div className="add-song-page">
       <h1>{mode === 'edit' ? 'Edit Song' : 'Add Song'}</h1>
       <form onSubmit={mode === 'edit' ? (e) => e.preventDefault() : handleSubmit} className="add-song-form">
@@ -749,6 +771,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
               value={chordpro}
               onChange={handleChordproChange}
               tempo={tempo ? parseInt(tempo, 10) : undefined}
+              timeSignature={timeSignature.trim() || undefined}
               songKey={key || undefined}
             />
           )}
@@ -783,6 +806,21 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
                       bpm={tempo ? parseInt(tempo, 10) : undefined}
                       timeSignature={timeSignature.trim() || undefined}
                       onEdit={() => setEditingTabIdx(idx)}
+                    />
+                  ))}
+                </div>
+              )}
+              {strumBlocks.length > 0 && (
+                <div className="tab-editor-guides">
+                  {strumBlocks.map((block, idx) => (
+                    <StrumDisplay
+                      key={`strum-guide-${idx}`}
+                      strumLines={block.bars.map(serializeStrumBar)}
+                      label={block.label}
+                      chords={songChords}
+                      bpm={tempo ? parseInt(tempo, 10) : undefined}
+                      timeSignature={timeSignature.trim() || undefined}
+                      onEdit={() => setEditingStrumIdx(idx)}
                     />
                   ))}
                 </div>

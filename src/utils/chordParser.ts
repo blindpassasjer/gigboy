@@ -103,8 +103,24 @@ function consumeTabBlock(rawLines: string[], startI: number): { tabLines: string
   return { tabLines, nextI: i };
 }
 
+/** Consume a {start_of_strum}...{end_of_strum} block starting at i+1. Returns the pattern lines and new i. */
+function consumeStrumBlock(rawLines: string[], startI: number): { strumLines: string[]; nextI: number } {
+  const strumLines: string[] = [];
+  let i = startI + 1;
+  while (i < rawLines.length) {
+    const inner = rawLines[i].trim().toLowerCase();
+    if (inner === '{end_of_strum}') { i++; break; }
+    // Missing {end_of_strum}: stop at the next directive or at a line that clearly isn't
+    // a strum pattern (e.g. lyrics) instead of swallowing the rest of the song.
+    if (/^\{[^}]*\}$/.test(inner) || /[^dux.+\-|\s]/i.test(inner)) break;
+    strumLines.push(rawLines[i]);
+    i++;
+  }
+  return { strumLines, nextI: i };
+}
+
 /** Parse full ChordPro text into an array of lines.
- * Tab blocks are collapsed into 'tab' lines.
+ * Tab and strum blocks are collapsed into 'tab' / 'strum' lines.
  * Section blocks (start_of_* / end_of_*) are grouped into 'section' lines with nested content. */
 export function parseChordPro(text: string): ParsedLine[] {
   const rawLines = text.split('\n');
@@ -124,9 +140,19 @@ export function parseChordPro(text: string): ParsedLine[] {
         continue;
       }
 
-      // Section block — but not tab (handled above)
+      // Strum block
+      const strumMatch = trimmed.match(SECTION_START_RE);
+      if (strumMatch && strumMatch[1] === 'strum') {
+        const strumLabel = rawLines[i].trim().match(SECTION_START_RE)?.[2]?.trim() || undefined;
+        const { strumLines, nextI } = consumeStrumBlock(rawLines, i);
+        result.push({ type: 'strum', strumLines, strumLabel, raw: '' });
+        i = nextI;
+        continue;
+      }
+
+      // Section block — but not tab/strum (handled above)
       const sectionMatch = trimmed.match(SECTION_START_RE);
-      if (sectionMatch && sectionMatch[1] !== 'tab') {
+      if (sectionMatch && sectionMatch[1] !== 'tab' && sectionMatch[1] !== 'strum') {
         const sectionType = sectionMatch[1];
         // Re-match against the untouched line to preserve the label's original casing.
         const sectionLabel = rawLines[i].trim().match(SECTION_START_RE)?.[2]?.trim() || undefined;

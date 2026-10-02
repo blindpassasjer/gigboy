@@ -4,6 +4,8 @@ import type { ChordNotation } from '../utils/chordParser';
 import type { ParsedLine } from '../types';
 import type { DiagramInstrument } from './ChordDiagram';
 import TabDisplay from './TabDisplay';
+import StrumDisplay from './StrumDisplay';
+import { uniqueChords } from '../utils/strumParser';
 
 /**
  * Identifies exactly which chord instance was clicked, so a rename can rewrite that one
@@ -51,6 +53,7 @@ export default function ChordDisplay({
   hideMetaDirectives = false,
 }: Props) {
   const lines = useMemo(() => assignLineIds(parseChordPro(chordpro)), [chordpro]);
+  const strumChords = useMemo(() => uniqueChords(chordpro), [chordpro]);
 
   return (
     <div className="chord-display">
@@ -63,6 +66,7 @@ export default function ChordDisplay({
           notation={notation}
           bpm={bpm}
           timeSignature={timeSignature}
+          strumChords={strumChords}
           onChordClick={onChordClick}
           pinnedLineIds={pinnedLineIds}
           hideMetaDirectives={hideMetaDirectives}
@@ -113,6 +117,7 @@ interface LineRendererProps {
   notation: ChordNotation;
   bpm?: number;
   timeSignature?: string;
+  strumChords?: string[];
   onChordClick?: (chord: string, rect: DOMRect, element: HTMLElement, occurrence: ChordOccurrence) => void;
   pinnedLineIds?: Set<number>;
   hideMetaDirectives?: boolean;
@@ -125,6 +130,7 @@ function LineRenderer({
   notation,
   bpm,
   timeSignature,
+  strumChords,
   onChordClick,
   pinnedLineIds,
   hideMetaDirectives,
@@ -137,6 +143,19 @@ function LineRenderer({
     return (
       <TabDisplay
         tabLines={line.tabLines ?? []}
+        transpose={transpose}
+        bpm={bpm}
+        timeSignature={timeSignature}
+      />
+    );
+  }
+
+  if (line.type === 'strum') {
+    return (
+      <StrumDisplay
+        strumLines={line.strumLines ?? []}
+        label={line.strumLabel}
+        chords={strumChords}
         transpose={transpose}
         bpm={bpm}
         timeSignature={timeSignature}
@@ -158,6 +177,7 @@ function LineRenderer({
             notation={notation}
             bpm={bpm}
             timeSignature={timeSignature}
+            strumChords={strumChords}
             onChordClick={onChordClick}
             pinnedLineIds={pinnedLineIds}
             hideMetaDirectives={hideMetaDirectives}

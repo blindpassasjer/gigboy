@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { Music2, Repeat2, GitBranch, ArrowRight, Guitar } from 'lucide-react';
+import { Music2, Repeat2, GitBranch, ArrowRight, Guitar, ArrowDownUp } from 'lucide-react';
 import TabSequencerModal from './TabSequencerModal';
+import StrumEditorModal from './StrumEditorModal';
+import { serializeStrumBlock, uniqueChords, type StrumBlock } from '../utils/strumParser';
 import ChordFinderModal from './ChordFinderModal';
 import ChordSearchPanel from './ChordSearchPanel';
 import { extractRecentChords } from '../utils/chordNames';
@@ -12,6 +14,7 @@ interface Props {
   value: string;
   onChange: (value: string) => void;
   tempo?: number;
+  timeSignature?: string;
   /** Song key, e.g. "G" or "Am" — used to surface likely diatonic chords. */
   songKey?: string;
 }
@@ -81,8 +84,9 @@ function insertSection(
   }
 }
 
-export default function ChordProToolbar({ textareaRef, value, onChange, tempo, songKey }: Props) {
+export default function ChordProToolbar({ textareaRef, value, onChange, tempo, timeSignature, songKey }: Props) {
   const [showTabSequencer, setShowTabSequencer] = useState(false);
+  const [showStrumEditor, setShowStrumEditor] = useState(false);
   const [showChordFinder, setShowChordFinder] = useState(false);
   const [showChordPopover, setShowChordPopover] = useState(false);
   const chordWrapRef = useRef<HTMLDivElement>(null);
@@ -92,6 +96,7 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo, s
   const pendingCursorRef = useRef(0);
 
   const recentChords = useMemo(() => extractRecentChords(value), [value]);
+  const songChords = useMemo(() => uniqueChords(value), [value]);
   const keyChords = useMemo(() => (songKey ? diatonicChords(songKey) : []), [songKey]);
 
   useEffect(() => {
@@ -140,6 +145,29 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo, s
     });
   }
 
+  function handleInsertStrum() {
+    if (!textareaRef.current) return;
+    pendingCursorRef.current = textareaRef.current.selectionStart;
+    setShowStrumEditor(true);
+  }
+
+  function handleStrumInsert(strum: StrumBlock) {
+    setShowStrumEditor(false);
+    if (!textareaRef.current) return;
+    const textarea = textareaRef.current;
+    const start = pendingCursorRef.current;
+    const before = value.slice(0, start);
+    const after = value.slice(start);
+    const prefix = before.length > 0 && !before.endsWith('\n') ? '\n' : '';
+    const block = `${prefix}${serializeStrumBlock(strum)}\n`;
+    onChange(before + block + after);
+    const newPos = start + block.length;
+    requestAnimationFrame(() => {
+      textarea.focus({ preventScroll: true });
+      textarea.setSelectionRange(newPos, newPos);
+    });
+  }
+
   function handleChordInsert(chordName: string) {
     if (!textareaRef.current) return;
     insertChordAtSelection(textareaRef.current, chordName, value, onChange);
@@ -154,6 +182,15 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo, s
         onInsert={handleTabSequencerInsert}
         onClose={() => setShowTabSequencer(false)}
         tempo={tempo}
+      />
+    )}
+    {showStrumEditor && (
+      <StrumEditorModal
+        chords={songChords}
+        tempo={tempo}
+        timeSignature={timeSignature}
+        onInsert={handleStrumInsert}
+        onClose={() => setShowStrumEditor(false)}
       />
     )}
     {showChordFinder && (
@@ -219,6 +256,21 @@ export default function ChordProToolbar({ textareaRef, value, onChange, tempo, s
         >
           <Guitar size={13} />
           Insert Tab
+        </button>
+      </div>
+
+      <div className="toolbar-divider" />
+
+      <div className="toolbar-group">
+        <span className="toolbar-label">Strum</span>
+        <button
+          type="button"
+          className="toolbar-btn toolbar-btn--section section-tab"
+          onClick={handleInsertStrum}
+          title="Insert strumming pattern"
+        >
+          <ArrowDownUp size={13} />
+          Insert Strum
         </button>
       </div>
     </div>

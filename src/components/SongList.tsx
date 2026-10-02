@@ -14,16 +14,26 @@ import {
   Trash2,
   ListMinus,
   Folder,
+  SlidersHorizontal,
 } from 'lucide-react';
 import type { Song } from '../types';
 import LanguageBadge from './LanguageBadge';
 import SongMetaBadges from './SongMetaBadges';
 import { languageName } from '../utils/languages';
+import SongFilterPanel from './SongFilterPanel';
+import {
+  EMPTY_SONG_FILTERS,
+  countActiveFilters,
+  getFilterOptions,
+  matchesSongFilters,
+  parseStoredFilters,
+} from '../utils/songFilters';
+import type { SongFilters } from '../utils/songFilters';
 import { parseChordPro } from '../utils/chordParser';
 import { SONGLIST_ICON_OPTIONS } from '../lib/iconOptions';
 import { useSongListBadges } from '../hooks/useSongListBadges';
 import { useAuth } from '../context/AuthContext';
-import { readStoredString, writeStoredString } from '../lib/safeStorage';
+import { readStoredString, removeStoredString, writeStoredString } from '../lib/safeStorage';
 
 type SortBy =
   | 'name-asc'
@@ -118,6 +128,28 @@ export default function SongList({
     () => (readStoredString('gigboy-view-mode') === 'cards' ? 'cards' : 'list')
   );
   const [sortBy, setSortBy] = useState<SortBy>(() => getInitialSortBy());
+  // Filters are remembered per list: a key/BPM filter on one band's songs would be confusing on another's.
+  const filtersStorageKey = `gigboy-song-filters:${pathname}`;
+  const [filters, setFilters] = useState<SongFilters>(() => parseStoredFilters(readStoredString(filtersStorageKey)));
+  const [showFilters, setShowFilters] = useState(() => countActiveFilters(filters) > 0);
+  const filtersKeyRef = useRef(filtersStorageKey);
+
+  useEffect(() => {
+    if (filtersKeyRef.current === filtersStorageKey) return;
+    filtersKeyRef.current = filtersStorageKey;
+    setFilters(parseStoredFilters(readStoredString(filtersStorageKey)));
+  }, [filtersStorageKey]);
+
+  useEffect(() => {
+    if (filtersKeyRef.current !== filtersStorageKey) return;
+    if (countActiveFilters(filters) === 0) removeStoredString(filtersStorageKey);
+    else writeStoredString(filtersStorageKey, JSON.stringify(filters));
+  }, [filters, filtersStorageKey]);
+  const activeFilterCount = countActiveFilters(filters);
+
+  const filterOptions = useMemo(() => {
+    return getFilterOptions(songs, languageName);
+  }, [songs]);
 
   function handleSetViewMode(mode: 'list' | 'cards') {
     writeStoredString('gigboy-view-mode', mode);
@@ -130,6 +162,8 @@ export default function SongList({
   }
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const [pickerFilters, setPickerFilters] = useState<SongFilters>(EMPTY_SONG_FILTERS);
+  const [showPickerFilters, setShowPickerFilters] = useState(false);
   const [showListAppearanceEditor, setShowListAppearanceEditor] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(listName ?? '');
@@ -161,15 +195,18 @@ export default function SongList({
 
   const filteredAvailableSongs = useMemo(() => {
     const normalizedQuery = pickerQuery.trim().toLowerCase();
-    if (!normalizedQuery) return availableSongs;
 
     return availableSongs.filter((song) => {
+      if (!matchesSongFilters(song, pickerFilters)) return false;
+      if (!normalizedQuery) return true;
       const inTitle = song.title.toLowerCase().includes(normalizedQuery);
       const inArtist = (song.artist ?? '').toLowerCase().includes(normalizedQuery);
       const inTags = (song.tags ?? []).some((tag) => tag.toLowerCase().includes(normalizedQuery));
       return inTitle || inArtist || inTags;
     });
-  }, [availableSongs, pickerQuery]);
+  }, [availableSongs, pickerQuery, pickerFilters]);
+  const pickerFilterOptions = useMemo(() => getFilterOptions(availableSongs, languageName), [availableSongs]);
+  const pickerActiveFilterCount = countActiveFilters(pickerFilters);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -180,7 +217,7 @@ export default function SongList({
         (s.artist ?? '').toLowerCase().includes(q) ||
         (s.tags ?? []).some((t) => t.toLowerCase().includes(q)) ||
         languageName(s.language).toLowerCase().includes(q);
-      return matchesQuery;
+      return matchesQuery && matchesSongFilters(s, filters);
     });
 
     const sorted = [...base];
@@ -208,7 +245,7 @@ export default function SongList({
       sorted.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || a.title.localeCompare(b.title));
     }
     return sorted;
-  }, [songs, query, sortBy]);
+  }, [songs, query, sortBy, filters]);
 
   const songPreviews = useMemo(
     () => Object.fromEntries(filtered.map((song) => [song.id, getSongPreview(song)])),
@@ -280,6 +317,8 @@ export default function SongList({
 
   const openSongPicker = () => {
     setPickerQuery('');
+    setPickerFilters(EMPTY_SONG_FILTERS);
+    setShowPickerFilters(false);
     setShowSongPicker(true);
   };
 
@@ -502,7 +541,28 @@ export default function SongList({
             <option value="date-asc">Date added (oldest first)</option>
           </select>
         </div>
+        {(filterOptions.languages.length > 1 || filterOptions.keys.length > 0 || filterOptions.hasTempo) && (
+          <button
+            type="button"
+            className={`song-filter-toggle${activeFilterCount > 0 ? ' active' : ''}`}
+            onClick={() => setShowFilters((v) => !v)}
+            aria-expanded={showFilters}
+            aria-controls="song-filter-panel"
+          >
+            <SlidersHorizontal size={14} />
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+          </button>
+        )}
       </div>
+      {showFilters && (
+        <SongFilterPanel
+          id="song-filter-panel"
+          songs={songs}
+          filters={filters}
+          onChange={setFilters}
+          resultCount={filtered.length}
+        />
+      )}
       </div>{/* end song-list-sticky */}
 
       <div className="song-list-results">
@@ -682,11 +742,32 @@ export default function SongList({
                 onChange={(event) => setPickerQuery(event.target.value)}
                 placeholder="Search by title, artist, or tag"
               />
+              {(pickerFilterOptions.languages.length > 1 || pickerFilterOptions.keys.length > 0 || pickerFilterOptions.hasTempo) && (
+                <button
+                  type="button"
+                  className={`song-filter-toggle song-filter-toggle--compact${pickerActiveFilterCount > 0 ? ' active' : ''}`}
+                  onClick={() => setShowPickerFilters((v) => !v)}
+                  aria-expanded={showPickerFilters}
+                  aria-label={`Filters${pickerActiveFilterCount > 0 ? ` (${pickerActiveFilterCount} active)` : ''}`}
+                >
+                  <SlidersHorizontal size={14} />
+                  {pickerActiveFilterCount > 0 && pickerActiveFilterCount}
+                </button>
+              )}
             </div>
+            {showPickerFilters && (
+              <SongFilterPanel
+                className="song-filter-panel--picker"
+                songs={availableSongs}
+                filters={pickerFilters}
+                onChange={setPickerFilters}
+                resultCount={filteredAvailableSongs.length}
+              />
+            )}
 
             <div className="song-picker-results" role="list">
               {filteredAvailableSongs.length === 0 ? (
-                <p className="song-picker-empty">No songs available to add.</p>
+                <p className="song-picker-empty">{pickerActiveFilterCount > 0 || pickerQuery.trim() ? 'No songs match.' : 'No songs available to add.'}</p>
               ) : (
                 filteredAvailableSongs.map((song) => (
                   <div

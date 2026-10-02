@@ -8,12 +8,19 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
-### Changed
-- Concert mode's topbar is more compact and now auto-hides after a few seconds
-  of inactivity (any tap, click, or key press brings it back), reclaiming
-  screen space for the song itself.
-
 ### Added
+- Strumming patterns: a `{start_of_strum}…{end_of_strum}` block (one bar per
+  line, e.g. `D . D U . U D U`) renders as arrows over a beat count, can be
+  played back over any chord in the song (with loop and a moving highlight),
+  and is authored with the new "Insert Strum" editor (presets, accents, muted
+  strokes, multi-bar). Existing blocks are editable from the song form.
+- Song lists can be filtered by language, key and BPM. A "Filters" button next to
+  the sort dropdown opens chip groups built from what's actually in the list
+  (secondary languages count, keys are normalized so `Bb` = `A#` and sorted
+  musically, BPM is grouped into Slow/Mid/Upbeat/Fast). Filters combine with the
+  search, are remembered per list, and songs missing a key or BPM are hidden
+  while those filters are active. The "Add songs" picker has the same filters.
+
 - Songs can have a duration (`3:45`); a setlist's header and its print sheet now show
   the total duration as the sum of its songs' lengths.
 - A song's Settings panel has a toggle to show chords as letter names (C D E) or
@@ -22,6 +29,11 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 - The chord diagram popup now shows the correct alternate-bass fingering for common
   slash chords (e.g. `D/F#`, `G/B`, `C/G`) instead of falling back to the plain chord's
   shape.
+
+### Changed
+- Concert mode's topbar is more compact and now auto-hides after a few seconds
+  of inactivity (any tap, click, or key press brings it back), reclaiming
+  screen space for the song itself.
 
 ### Fixed
 - Pasting a song with no title/artist header no longer mistakes the first line or two

@@ -1232,6 +1232,90 @@ input, select, textarea { font: inherit; color: var(--text); }
   padding: 0 var(--space-2xl);
 }
 
+.song-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.song-filter-toggle.active { border-color: var(--accent); color: var(--accent); }
+
+.song-filter-toggle--compact {
+  position: absolute;
+  right: 1.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: var(--space-xs) var(--space-md);
+  border: 0;
+  background: transparent;
+}
+
+.song-filter-panel--picker {
+  margin: 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  padding: var(--space-md) var(--space-xl);
+  background: var(--bg);
+}
+
+.song-filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: var(--space-sm) var(--space-2xl) 0;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.song-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.song-filter-label {
+  min-width: 4.5rem;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.song-filter-chip {
+  padding: var(--space-3xs) var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.song-filter-chip[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.song-filter-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.song-filter-clear {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: inherit;
+}
+@media (max-width: 640px) {
+  .song-filter-panel { margin-inline: calc(1rem + var(--safe-left)) calc(1rem + var(--safe-right)); }
+}
+
 .color-swatch-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -6982,7 +7066,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 
 .song-picker-search {
   width: 100%;
-  padding: var(--space-md) var(--space-lg) var(--space-md) var(--space-3xl);
+  padding: var(--space-md) var(--space-4xl) var(--space-md) var(--space-3xl);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
@@ -11558,3 +11642,117 @@ input.stageplot-legend-number:focus {
   color: var(--muted);
   padding: var(--space-2xs) var(--space-2xs);
 }
+
+/* ─── Strumming patterns ─────────────────────────────────────────────────────── */
+.strum-block {
+  margin: var(--space-lg) 0;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.strum-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: var(--space-2xs);
+}
+
+.strum-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: var(--space-md) var(--space-xl);
+  overflow-x: auto;
+}
+.strum-block:not(:has(.strum-controls)) .strum-bars { border-radius: var(--radius-sm); }
+
+.strum-bar {
+  display: grid;
+  gap: 2px;
+}
+
+.strum-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.strum-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 400;
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  transition: background .1s, color .1s;
+}
+.strum-slot--up { color: var(--muted); }
+.strum-slot--accent { font-weight: 900; color: var(--accent); }
+.strum-slot--muted { color: var(--muted); font-size: 1.1rem; }
+.strum-slot--rest { color: var(--border); }
+.strum-slot--active { background: var(--accent); color: var(--accent-contrast); }
+
+.strum-count {
+  font-size: var(--text-2xs);
+  color: var(--muted);
+  min-height: 1em;
+  user-select: none;
+}
+.strum-count--beat { color: var(--text); font-weight: 700; }
+
+.strum-empty {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.strum-chord-select {
+  border: none;
+  border-left: 1px solid #d8d2f0;
+  background: var(--chord-bg);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 0 var(--space-md);
+  cursor: pointer;
+}
+
+/* Editor */
+.strum-editor-body { display: flex; flex-direction: column; gap: var(--space-lg); }
+.strum-editor-row { display: flex; flex-wrap: wrap; gap: var(--space-lg); }
+.strum-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+.strum-editor-presets { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.strum-preset-btn {
+  padding: var(--space-2xs) var(--space-md);
+  font-size: var(--text-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.strum-preset-btn:hover { background: var(--chord-bg); color: var(--accent); }
+.strum-editor-bar { overflow-x: auto; }
+.strum-slot--button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+}
+.strum-slot--button:hover { background: var(--chord-bg); }
+.strum-slot--button.strum-slot--active { background: var(--accent); }
+.strum-modal { width: min(98vw, 640px); }
