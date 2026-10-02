@@ -39,6 +39,8 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
   screen space for the song itself.
 
 ### Fixed
+- Uploading a band logo in Band Settings now shows the new logo (and adds it to
+  the logo library) immediately instead of needing a page refresh.
 - Band invite links no longer 404. They pointed at `/profile/invites`, a page that
   didn't exist, and nothing in the app accepted band invites. Links now open
   `/band-invite/<id>` with a "Join band" button that adds you to the band and opens it

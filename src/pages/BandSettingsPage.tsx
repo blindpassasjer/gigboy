@@ -84,6 +84,13 @@ export default function BandSettingsPage() {
   }, [band?.id]);
 
   const bandId = band?.id ?? null;
+  const bandLogo = band?.logo;
+
+  // Logo changes made elsewhere (e.g. an upload via updateBandLogo) land in the
+  // bands context; mirror them here so the UI doesn't need a page refresh.
+  useEffect(() => {
+    setLogo(bandLogo);
+  }, [bandLogo]);
   const isOwner = band?.ownerId === user?.id;
   const canEditBand = isOwner;
 
@@ -123,6 +130,8 @@ export default function BandSettingsPage() {
     };
   }, [band, canEditBand, name, description, renameBand, updateBandDescription]);
 
+  const [logoAssetsVersion, setLogoAssetsVersion] = useState(0);
+
   useEffect(() => {
     if (!bandId) return;
     let mounted = true;
@@ -151,7 +160,7 @@ export default function BandSettingsPage() {
     return () => {
       mounted = false;
     };
-  }, [bandId]);
+  }, [bandId, logoAssetsVersion]);
 
   const currentLogoAsset = logo
     ? { id: 'current-band-logo', title: 'Current logo', url: logo, thumbUrl: logo }
@@ -272,6 +281,7 @@ export default function BandSettingsPage() {
     if (logoError) {
       toast.error(logoError);
     } else {
+      setLogoAssetsVersion((v) => v + 1);
       toast.success('Logo uploaded.');
     }
   };
