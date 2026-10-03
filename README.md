@@ -91,6 +91,9 @@ via `VITE_DEV_ORIGIN` in [package.json](package.json), or the port with `PORT=�
 ### Everything you need before you walk on stage
 - **Press kits, technical riders, stage plots** — build them once, share via a public link, with
   OG-tag previews that look right when pasted into a booking email or Discord
+- **Concert Mode** — a stripped-down, phone-first performance view: one-line song header, text
+  size controls, paged or continuous scrolling with hands-free autoscroll, a silent BPM pulse,
+  and a settings cog for the rest (all remembered per device)
 - **Band logo upload** — used across the press kit and public pages
 - **Attachments** — PDFs up to 20MB per song (scanned sheet music, lyric sheets, whatever the gig needs)
 

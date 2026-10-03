@@ -33,10 +33,18 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 - Songs can have a custom language: choosing "Other" in the song form reveals a text
   field (e.g. "Swahili"), shown as typed instead of an uppercased code.
 
+- Concert mode has a settings cog in the song header with toggles for pagination,
+  autoscroll, and the BPM pulse, plus the setlist sync mode (Solo / Follow / Lead).
+  Autoscroll switches to continuous scrolling with an adjustable speed, a play/pause
+  button, tap-to-pause, and manual scrolling takes over. Settings are remembered per device.
+- Concert mode has text size controls (70–160%) in the bottom bar.
+
 ### Changed
-- Concert mode's topbar is more compact and now auto-hides after a few seconds
-  of inactivity (any tap, click, or key press brings it back), reclaiming
-  screen space for the song itself.
+- Concert mode gives the song far more room on phones: the top bar (back link, page
+  counter, keyboard hint) is gone, and the song header is a single line
+  (`3/8 Title · Artist`, plus capo) with Stop, song list and settings buttons on its right.
+  Language, time signature, badges and tags are no longer shown during performance.
+- Concert mode's Stop button is now a red stop icon (still tap-twice to confirm).
 
 ### Fixed
 - Uploading a band logo in Band Settings now shows the new logo (and adds it to
