@@ -470,6 +470,18 @@ export default function ConcertModeView({
             ))}
           </div>
         )}
+        {session && session.mode !== 'solo' && (
+          <span className="concert-session-leader" role="status">
+            {session.host ? (
+              <>
+                <span className="concert-session-leader-avatar" aria-hidden="true">
+                  {session.host.avatar || session.host.name.slice(0, 1).toUpperCase()}
+                </span>
+                {session.isHost ? "You're leading" : `${session.host.name} is leading`}
+              </>
+            ) : session.isHost ? "You're leading" : 'Nobody is leading yet'}
+          </span>
+        )}
         <button
           type="button"
           className="concert-chip-btn concert-chip-btn--danger"

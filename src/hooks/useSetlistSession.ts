@@ -78,6 +78,7 @@ export function useSetlistSession({ bandId, setlistId, currentUserId }: Params) 
     /** Leader's position while following; also reflects your own pushes while leading. */
     state: mode === 'solo' ? null : state,
     isHost,
+    host: mode === 'solo' ? null : state?.host ?? null,
     isFollowing: mode === 'follow',
     error,
     push,

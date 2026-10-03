@@ -1,10 +1,17 @@
 import { isDemoMode } from './demo/demoMode';
 
+export interface SetlistSessionHost {
+  id: string;
+  name: string;
+  avatar: string | null;
+}
+
 export interface SetlistSessionState {
   songIndex: number;
   pageIndex: number;
   transpose: number;
   hostUserId: string | null;
+  host: SetlistSessionHost | null;
 }
 
 export type SessionPatch = Partial<Pick<SetlistSessionState, 'songIndex' | 'pageIndex' | 'transpose'>>;
@@ -49,7 +56,7 @@ function demoReadState(setlistId: string): SetlistSessionState {
   } catch {
     // ignore
   }
-  return { songIndex: 0, pageIndex: 0, transpose: 0, hostUserId: null };
+  return { songIndex: 0, pageIndex: 0, transpose: 0, hostUserId: null, host: null };
 }
 
 function demoWriteState(setlistId: string, state: SetlistSessionState): void {
@@ -96,7 +103,7 @@ export function subscribeSetlistSession(
 
 export async function claimSetlistHost(bandId: string, setlistId: string): Promise<SetlistSessionState> {
   if (isDemoMode) {
-    const next = { ...demoReadState(setlistId), hostUserId: DEMO_HOST_ID };
+    const next = { ...demoReadState(setlistId), hostUserId: DEMO_HOST_ID, host: { id: DEMO_HOST_ID, name: 'Demo bandmate', avatar: null } };
     demoWriteState(setlistId, next);
     demoChannel(setlistId)?.postMessage(next);
     return next;
@@ -108,7 +115,7 @@ export async function releaseSetlistHost(bandId: string, setlistId: string): Pro
   if (isDemoMode) {
     const current = demoReadState(setlistId);
     if (current.hostUserId === DEMO_HOST_ID) {
-      const next = { ...current, hostUserId: null };
+      const next = { ...current, hostUserId: null, host: null };
       demoWriteState(setlistId, next);
       demoChannel(setlistId)?.postMessage(next);
     }
@@ -123,7 +130,7 @@ export async function pushSetlistSession(
   patch: SessionPatch,
 ): Promise<void> {
   if (isDemoMode) {
-    const next = { ...demoReadState(setlistId), ...patch, hostUserId: DEMO_HOST_ID };
+    const next = { ...demoReadState(setlistId), ...patch, hostUserId: DEMO_HOST_ID, host: { id: DEMO_HOST_ID, name: 'Demo bandmate', avatar: null } };
     demoWriteState(setlistId, next);
     demoChannel(setlistId)?.postMessage(next);
     return;

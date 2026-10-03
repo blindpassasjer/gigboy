@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { setlistSessions, setlists } from '../db/schema.js';
+import { setlistSessions, setlists, users } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
 import { requireBandMember } from '../middleware/bandAccess.js';
 
@@ -14,6 +14,7 @@ interface Subscriber {
 interface Room {
   subs: Set<Subscriber>;
   hostUserId: string | null;
+  host: SessionHost | null;
 }
 
 /** In-process per-setlist rooms. Fine for a single self-host container; not shared across replicas. */
@@ -22,7 +23,7 @@ const rooms = new Map<string, Room>();
 function getRoom(setlistId: string): Room {
   let room = rooms.get(setlistId);
   if (!room) {
-    room = { subs: new Set(), hostUserId: null };
+    room = { subs: new Set(), hostUserId: null, host: null };
     rooms.set(setlistId, room);
   }
   return room;
@@ -33,6 +34,24 @@ interface SessionState {
   pageIndex: number;
   transpose: number;
   hostUserId: string | null;
+  host: SessionHost | null;
+}
+
+interface SessionHost {
+  id: string;
+  name: string;
+  avatar: string | null;
+}
+
+async function loadHost(userId: string | null): Promise<SessionHost | null> {
+  if (!userId) return null;
+  const [row] = await db
+    .select({ username: users.username, fullName: users.fullName, avatar: users.avatar })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!row) return null;
+  return { id: userId, name: row.fullName?.trim() || row.username, avatar: row.avatar ?? null };
 }
 
 function routeParams(req: Request): { bandId: string; setlistId: string } {
@@ -46,6 +65,7 @@ async function loadState(setlistId: string, hostUserId: string | null): Promise<
     pageIndex: row?.pageIndex ?? 0,
     transpose: row?.transpose ?? 0,
     hostUserId,
+    host: await loadHost(hostUserId),
   };
 }
 
@@ -117,6 +137,7 @@ bandSetlistSessionRouter.get('/stream', async (req, res) => {
     room.subs.delete(sub);
     if (room.hostUserId === sub.userId && ![...room.subs].some((s) => s.userId === sub.userId)) {
       room.hostUserId = null;
+      room.host = null;
       void loadState(setlistId, null).then((state) => broadcast(setlistId, state));
     }
     if (room.subs.size === 0) rooms.delete(setlistId);
@@ -128,10 +149,14 @@ bandSetlistSessionRouter.post('/claim', async (req, res) => {
   const { setlistId } = routeParams(req);
   const room = getRoom(setlistId);
   if (room.hostUserId && room.hostUserId !== req.userId) {
-    res.status(409).json({ error: 'Someone else is already leading this setlist.' });
+    const host = await loadHost(room.hostUserId);
+    res.status(409).json({
+      error: host ? `${host.name} is already leading this setlist.` : 'Someone else is already leading this setlist.',
+    });
     return;
   }
   room.hostUserId = req.userId!;
+  room.host = await loadHost(room.hostUserId);
   const state = await loadState(setlistId, room.hostUserId);
   broadcast(setlistId, state);
   res.json(state);
@@ -143,6 +168,7 @@ bandSetlistSessionRouter.post('/release', async (req, res) => {
   const room = getRoom(setlistId);
   if (room.hostUserId === req.userId) {
     room.hostUserId = null;
+    room.host = null;
     broadcast(setlistId, await loadState(setlistId, null));
   }
   res.json({});
@@ -176,7 +202,7 @@ bandSetlistSessionRouter.post('/', async (req, res) => {
     .values({ setlistId, bandId, ...next, updatedAt: new Date() })
     .onConflictDoUpdate({ target: setlistSessions.setlistId, set: { ...next, updatedAt: new Date() } });
 
-  const state: SessionState = { ...next, hostUserId: room.hostUserId };
+  const state: SessionState = { ...next, hostUserId: room.hostUserId, host: room.host };
   broadcast(setlistId, state);
   res.json(state);
 });
