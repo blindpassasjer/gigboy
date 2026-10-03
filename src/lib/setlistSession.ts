@@ -49,14 +49,22 @@ function demoStorageKey(setlistId: string): string {
   return `gigboy-demo-setlist-session:${setlistId}`;
 }
 
+const DEMO_FAKE_LEADER: SetlistSessionHost = { id: 'demo-fake-leader', name: 'Sample Bandmate', avatar: '🥁' };
+const DEMO_SELF: SetlistSessionHost = { id: DEMO_HOST_ID, name: 'Demo Musician', avatar: null };
+
+/** In demo mode a fake bandmate leads whenever nobody has claimed lead, so the leader indicator is visible. */
+function withDemoLeader(state: SetlistSessionState): SetlistSessionState {
+  return state.hostUserId ? state : { ...state, hostUserId: DEMO_FAKE_LEADER.id, host: DEMO_FAKE_LEADER };
+}
+
 function demoReadState(setlistId: string): SetlistSessionState {
   try {
     const raw = localStorage.getItem(demoStorageKey(setlistId));
-    if (raw) return JSON.parse(raw) as SetlistSessionState;
+    if (raw) return withDemoLeader(JSON.parse(raw) as SetlistSessionState);
   } catch {
     // ignore
   }
-  return { songIndex: 0, pageIndex: 0, transpose: 0, hostUserId: null, host: null };
+  return withDemoLeader({ songIndex: 0, pageIndex: 0, transpose: 0, hostUserId: null, host: null });
 }
 
 function demoWriteState(setlistId: string, state: SetlistSessionState): void {
@@ -82,7 +90,7 @@ export function subscribeSetlistSession(
   if (isDemoMode) {
     onState(demoReadState(setlistId));
     const channel = demoChannel(setlistId);
-    const handler = (event: MessageEvent) => onState(event.data as SetlistSessionState);
+    const handler = (event: MessageEvent) => onState(withDemoLeader(event.data as SetlistSessionState));
     channel?.addEventListener('message', handler);
     return () => {
       channel?.removeEventListener('message', handler);
@@ -103,7 +111,7 @@ export function subscribeSetlistSession(
 
 export async function claimSetlistHost(bandId: string, setlistId: string): Promise<SetlistSessionState> {
   if (isDemoMode) {
-    const next = { ...demoReadState(setlistId), hostUserId: DEMO_HOST_ID, host: { id: DEMO_HOST_ID, name: 'Demo bandmate', avatar: null } };
+    const next = { ...demoReadState(setlistId), hostUserId: DEMO_HOST_ID, host: DEMO_SELF };
     demoWriteState(setlistId, next);
     demoChannel(setlistId)?.postMessage(next);
     return next;
@@ -115,7 +123,7 @@ export async function releaseSetlistHost(bandId: string, setlistId: string): Pro
   if (isDemoMode) {
     const current = demoReadState(setlistId);
     if (current.hostUserId === DEMO_HOST_ID) {
-      const next = { ...current, hostUserId: null, host: null };
+      const next = withDemoLeader({ ...current, hostUserId: null, host: null });
       demoWriteState(setlistId, next);
       demoChannel(setlistId)?.postMessage(next);
     }
@@ -130,7 +138,7 @@ export async function pushSetlistSession(
   patch: SessionPatch,
 ): Promise<void> {
   if (isDemoMode) {
-    const next = { ...demoReadState(setlistId), ...patch, hostUserId: DEMO_HOST_ID, host: { id: DEMO_HOST_ID, name: 'Demo bandmate', avatar: null } };
+    const next = { ...demoReadState(setlistId), ...patch, hostUserId: DEMO_HOST_ID, host: DEMO_SELF };
     demoWriteState(setlistId, next);
     demoChannel(setlistId)?.postMessage(next);
     return;
