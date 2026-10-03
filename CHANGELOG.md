@@ -8,6 +8,8 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-03
+
 ### Added
 - Strumming patterns: a `{start_of_strum}…{end_of_strum}` block (one bar per
   line, e.g. `D . D U . U D U`) renders as arrows over a beat count, can be
