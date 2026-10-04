@@ -238,7 +238,7 @@ const bandPressKitImagesClient: PressKitImagesClient = {
   async upload(bandId, file, thumbnail) {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('thumb', thumbnail, 'thumbnail.webp');
+    formData.append('thumb', thumbnail, `thumbnail.${thumbnail.type === 'image/png' ? 'png' : thumbnail.type === 'image/jpeg' ? 'jpg' : 'webp'}`);
     const data = await apiUpload<{ image: PressKitImage }>(`/bands/${bandId}/press-kit-images`, formData);
     return data.image;
   },

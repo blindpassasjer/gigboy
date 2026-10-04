@@ -9,7 +9,8 @@ import { localStorageAdapter } from '../storage/localStorageAdapter.js';
 import {
   extensionForImageMimeType,
   PRESS_KIT_IMAGE_ACCEPTED_MIME_TYPES,
-  PRESS_KIT_IMAGE_THUMB_MIME_TYPE,
+  PRESS_KIT_IMAGE_THUMB_ACCEPTED_MIME_TYPES,
+  thumbMimeTypeForStorageKey,
   pressKitImageToApi,
   pressKitImageUpload,
   streamPressKitImageFile,
@@ -39,7 +40,7 @@ function handleUploadErrors(err: unknown, res: Response): boolean {
     return true;
   }
   if (asAny.message === 'INVALID_THUMB_TYPE') {
-    res.status(400).json({ error: 'Thumbnail must be a WebP image.' });
+    res.status(400).json({ error: 'Thumbnail must be a WebP, PNG, or JPEG image.' });
     return true;
   }
   console.error('Press kit image upload failed:', err);
@@ -101,8 +102,8 @@ bandPressKitImagesRouter.post(
         res.status(400).json({ error: 'Only JPEG, PNG, WebP, or GIF images are accepted.' });
         return;
       }
-      if (thumb.mimetype !== PRESS_KIT_IMAGE_THUMB_MIME_TYPE) {
-        res.status(400).json({ error: 'Thumbnail must be a WebP image.' });
+      if (!PRESS_KIT_IMAGE_THUMB_ACCEPTED_MIME_TYPES.includes(thumb.mimetype)) {
+        res.status(400).json({ error: 'Thumbnail must be a WebP, PNG, or JPEG image.' });
         return;
       }
       // Multer only sees the client-declared Content-Type; verify the actual bytes match.
@@ -110,8 +111,8 @@ bandPressKitImagesRouter.post(
         res.status(400).json({ error: 'File contents do not match a supported image format.' });
         return;
       }
-      if (!imageBytesMatchMime(thumb.buffer, PRESS_KIT_IMAGE_THUMB_MIME_TYPE)) {
-        res.status(400).json({ error: 'Thumbnail contents are not a valid WebP image.' });
+      if (!imageBytesMatchMime(thumb.buffer, thumb.mimetype)) {
+        res.status(400).json({ error: 'Thumbnail contents are not a valid image.' });
         return;
       }
 
@@ -124,7 +125,7 @@ bandPressKitImagesRouter.post(
       const id = crypto.randomUUID();
       const ext = extensionForImageMimeType(file.mimetype);
       const storageKey = `${bandId}/press-kit/${id}.${ext}`;
-      const thumbStorageKey = `${bandId}/press-kit/${id}-thumb.webp`;
+      const thumbStorageKey = `${bandId}/press-kit/${id}-thumb.${extensionForImageMimeType(thumb.mimetype)}`;
       await localStorageAdapter.save(storageKey, file.buffer, file.mimetype);
       await localStorageAdapter.save(thumbStorageKey, thumb.buffer, thumb.mimetype);
 
@@ -207,7 +208,7 @@ bandPressKitImagesRouter.get('/:id/thumb', async (req, res) => {
   try {
     const image = await loadImage(req, res);
     if (!image) return;
-    await streamPressKitImageFile(res, localStorageAdapter, image.thumbStorageKey, PRESS_KIT_IMAGE_THUMB_MIME_TYPE);
+    await streamPressKitImageFile(res, localStorageAdapter, image.thumbStorageKey, thumbMimeTypeForStorageKey(image.thumbStorageKey));
   } catch (err) {
     console.error('Failed to download press kit image thumbnail:', err);
     res.status(500).json({ error: 'Something went wrong. Please try again.' });

@@ -8,6 +8,15 @@ import { removeNullish } from './serialize.js';
 export const PRESS_KIT_IMAGE_MAX_SIZE_BYTES = 10 * 1024 * 1024;
 export const PRESS_KIT_IMAGE_ACCEPTED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 export const PRESS_KIT_IMAGE_THUMB_MIME_TYPE = 'image/webp';
+/** Safari can't encode WebP from a canvas and falls back to PNG, so thumbnails may also be PNG or JPEG. */
+export const PRESS_KIT_IMAGE_THUMB_ACCEPTED_MIME_TYPES = ['image/webp', 'image/png', 'image/jpeg'];
+
+/** Mime type of a stored thumbnail, derived from its storage key's extension (legacy keys are .webp). */
+export function thumbMimeTypeForStorageKey(storageKey: string): string {
+  if (storageKey.endsWith('.png')) return 'image/png';
+  if (storageKey.endsWith('.jpg')) return 'image/jpeg';
+  return PRESS_KIT_IMAGE_THUMB_MIME_TYPE;
+}
 
 type PressKitImageRow = typeof pressKitImages.$inferSelect;
 
@@ -22,7 +31,7 @@ export const pressKitImageUpload = multer({
         return;
       }
     } else if (file.fieldname === 'thumb') {
-      if (file.mimetype !== PRESS_KIT_IMAGE_THUMB_MIME_TYPE) {
+      if (!PRESS_KIT_IMAGE_THUMB_ACCEPTED_MIME_TYPES.includes(file.mimetype)) {
         cb(new Error('INVALID_THUMB_TYPE'));
         return;
       }

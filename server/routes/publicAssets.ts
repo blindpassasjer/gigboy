@@ -3,7 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { bandLogos, bandRiders, bands, pressKitImages, pressKitShares, pressKits } from '../db/schema.js';
 import { localStorageAdapter } from '../storage/localStorageAdapter.js';
-import { PRESS_KIT_IMAGE_THUMB_MIME_TYPE, streamPressKitImageFile } from '../lib/pressKitImages.js';
+import { streamPressKitImageFile, thumbMimeTypeForStorageKey } from '../lib/pressKitImages.js';
 import { streamBandLogoFile } from '../lib/bandLogos.js';
 
 /**
@@ -66,7 +66,7 @@ publicAssetsRouter.get('/press-kits/:token/images/:id/thumb', async (req, res) =
       res.status(404).json({ error: 'Not found.' });
       return;
     }
-    await streamPressKitImageFile(res, localStorageAdapter, image.thumbStorageKey, PRESS_KIT_IMAGE_THUMB_MIME_TYPE);
+    await streamPressKitImageFile(res, localStorageAdapter, image.thumbStorageKey, thumbMimeTypeForStorageKey(image.thumbStorageKey));
   } catch (err) {
     console.error('Failed to serve public press kit image thumbnail:', err);
     res.status(500).json({ error: 'Something went wrong. Please try again.' });
