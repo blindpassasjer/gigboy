@@ -11,7 +11,8 @@ import type { PressKitImage, PressKitShare } from '../lib/dataClient/types';
 import { generatePressKitZip } from '../lib/pressKitZip';
 import { saveBlob } from '../lib/download';
 import { PRESSKIT_ICON_OPTIONS } from '../lib/iconOptions';
-import { createWebpThumbnail } from '../utils/imageThumbnail';
+import { createWebpThumbnail, toUploadableImage } from '../utils/imageThumbnail';
+import { copyText } from '../utils/copyText';
 import type { PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
 import { parsePressKitMedia, detectPresavePlatformLabel, normalizePresaveUrl } from '../utils/pressKitMedia';
@@ -271,7 +272,12 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     setBusyUpload(true);
     try {
       const uploaded: PressKitImageAsset[] = [];
-      for (const file of accepted) {
+      for (const original of accepted) {
+        const file = await toUploadableImage(original);
+        if (!file) {
+          toast.error(`Could not process "${original.name}" — skipped.`);
+          continue;
+        }
         const thumbBlob = await createWebpThumbnail(file);
         if (!thumbBlob) {
           toast.error(`Could not process "${file.name}" — skipped.`);
@@ -454,12 +460,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
   };
 
   const handleCopyUrl = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Link copied.');
-    } catch {
-      toast.error(`Failed to copy. Copy this link: ${url}`);
-    }
+    if (await copyText(url)) toast.success('Link copied.');
+    else toast.error(`Failed to copy. Copy this link: ${url}`);
   };
 
   // ── Presaves / upcoming release ─────────────────────────────────────────
@@ -659,8 +661,8 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     try {
       const result = await dataClient.bandPressKitShares.create(bandId, kit.id);
       setActiveShare(result);
-      await navigator.clipboard.writeText(result.publicUrl);
-      toast.success('Public link copied to clipboard.');
+      if (await copyText(result.publicUrl)) toast.success('Public link copied to clipboard.');
+      else toast.success('Public link created. Use "Copy link" to copy it.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to create share link.');
     } finally {
@@ -830,7 +832,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
                   <button
                     type="button"
                     className="btn btn--accent"
-                    onClick={() => { void navigator.clipboard.writeText(activeShare.publicUrl).then(() => toast.success('Link copied.')); }}
+                    onClick={() => { void handleCopyUrl(activeShare.publicUrl); }}
                     title="Copy public link"
                   >
                     <Link2 size={14} /> Copy link

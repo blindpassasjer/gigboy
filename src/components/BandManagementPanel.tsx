@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { copyText } from '../utils/copyText';
 import { Copy, Share2, UserPlus } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
@@ -59,12 +60,8 @@ export default function BandManagementPanel({
 
       setLastInviteLink(result.inviteUrl);
       setLastInviteLinkExpiresAt(result.expiresAt ?? null);
-      try {
-        await navigator.clipboard.writeText(result.inviteUrl);
-        toast.success('Invite link copied to clipboard.');
-      } catch {
-        toast.success('Invite link created. Copy it from the field below.');
-      }
+      if (await copyText(result.inviteUrl)) toast.success('Invite link copied to clipboard.');
+      else toast.success('Invite link created. Copy it from the field below.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create invite link.';
       toast.error(message);
@@ -75,12 +72,8 @@ export default function BandManagementPanel({
 
   const handleCopyInviteLink = async () => {
     if (!lastInviteLink) return;
-    try {
-      await navigator.clipboard.writeText(lastInviteLink);
-      toast.success('Invite link copied to clipboard.');
-    } catch {
-      toast.error('Could not copy the link. Select and copy it manually.');
-    }
+    if (await copyText(lastInviteLink)) toast.success('Invite link copied to clipboard.');
+    else toast.error('Could not copy the link. Select and copy it manually.');
   };
 
   const handleShareInviteLink = async () => {

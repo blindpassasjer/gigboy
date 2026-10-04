@@ -25,6 +25,7 @@ import { useAuth } from './AuthContext';
 import { moveIdBefore } from '../utils/arrayUtils';
 import { dataClient } from '../lib/dataClient';
 import { selectBandLogo, uploadBandLogoAsset } from '../lib/bandLogos';
+import { toUploadableImage } from '../utils/imageThumbnail';
 import { compareBands } from '../lib/bandUtils';
 
 /** Strip keys with undefined values so the API doesn't choke on them. */
@@ -614,7 +615,12 @@ export function BandsProvider({ children }: { children: ReactNode }) {
         setBands((prev) => prev.map((entry) => (entry.id === bandId ? { ...entry, logo: updated.logo } : entry)).sort(compareBands));
         return null;
       }
-      const asset = await uploadBandLogoAsset(bandId, file);
+      const uploadable = await toUploadableImage(file);
+      if (!uploadable) {
+        setBands(previousBands);
+        return 'Could not read that image. Try a JPEG or PNG.';
+      }
+      const asset = await uploadBandLogoAsset(bandId, uploadable);
       const updated = await selectBandLogo(bandId, asset.id);
       setBands((prev) => prev.map((entry) => (entry.id === bandId ? { ...entry, logo: updated.logo } : entry)).sort(compareBands));
       return null;

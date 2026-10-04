@@ -74,3 +74,28 @@ export async function createWebpThumbnail(
     canvas.toBlob((blob) => resolve(blob), 'image/webp', quality);
   });
 }
+
+const UPLOADABLE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+/**
+ * Returns `file` unchanged when the server accepts its type; otherwise (e.g. iPhone HEIC/HEIF,
+ * which Safari can decode but the server can't store) re-encodes it as JPEG via a canvas.
+ * Returns null if the browser can't decode it.
+ */
+export async function toUploadableImage(file: File): Promise<File | null> {
+  if (UPLOADABLE_IMAGE_TYPES.includes(file.type)) return file;
+  const bitmap = typeof createImageBitmap === 'function'
+    ? await createImageBitmap(file).catch(() => null)
+    : null;
+  if (!bitmap) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const context = canvas.getContext('2d');
+  if (!context) { bitmap.close(); return null; }
+  context.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+  if (!blob) return null;
+  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+}
