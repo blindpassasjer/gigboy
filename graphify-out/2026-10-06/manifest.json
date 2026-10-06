@@ -5,13 +5,13 @@
     "semantic_hash": "767b2e9abe6452170cdc399ca052cfbc"
   },
   "/workspaces/gigboy/package.json": {
-    "mtime": 1791323279.1703026,
-    "ast_hash": "35e0a487d39d54b22bb7650560d65baa",
+    "mtime": 1787828200.4798625,
+    "ast_hash": "88de0c83f3647f6763a3e0fd2d679093",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/vite.config.ts": {
-    "mtime": 1788891148.1313355,
-    "ast_hash": "e059b0dc4ad049562b41069c84cbabb0",
+    "mtime": 1787166400.606526,
+    "ast_hash": "4723852b5543b9952f69818c44bff0b6",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/tsconfig.json": {
@@ -25,23 +25,23 @@
     "semantic_hash": "46290d23536d08b04cf32014f62895c2"
   },
   "/workspaces/gigboy/src/vite-env.d.ts": {
-    "mtime": 1788801890.4250648,
-    "ast_hash": "d30ca3c6a66c2be50bc623728890448d",
-    "semantic_hash": ""
+    "mtime": 1777921348.7544632,
+    "ast_hash": "11ecfcbd6f7344db8ce9e9ae76e70a6c",
+    "semantic_hash": "11ecfcbd6f7344db8ce9e9ae76e70a6c"
   },
   "/workspaces/gigboy/src/App.tsx": {
-    "mtime": 1791321725.803475,
-    "ast_hash": "a99b7240d65c8c2a0b8ad46f0d6acffe",
+    "mtime": 1787819039.081535,
+    "ast_hash": "756adbae3d2b3478adf6188ad5ee4fc7",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/main.tsx": {
-    "mtime": 1789499756.0808997,
-    "ast_hash": "7e10035815cdab3f1dd51d26c37e7ebe",
+    "mtime": 1785849850.815757,
+    "ast_hash": "19cd6c94bc9b2b36ddfb3d65a2154031",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/utils/chordFormatParser.ts": {
-    "mtime": 1790322436.5922978,
-    "ast_hash": "c63ec8e212f7fea56925fe8eb859d52f",
+    "mtime": 1787819205.7263994,
+    "ast_hash": "ddf835467319ba4d4e5e7b1f4b672705",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/utils/tabParser.ts": {
@@ -60,8 +60,8 @@
     "semantic_hash": "853a188bfa3e817d721fd61ccd8f5b78"
   },
   "/workspaces/gigboy/src/utils/chordParser.ts": {
-    "mtime": 1790933342.4297075,
-    "ast_hash": "7a1eac6cbcd0b832e6cf092efa420f55",
+    "mtime": 1786266618.365314,
+    "ast_hash": "48a62610c1a670dbe202636f5b630cce",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/utils/publicShare.ts": {
@@ -75,9 +75,9 @@
     "semantic_hash": "d5c01bdc0ffba069ed3aa0c54ce7a50f"
   },
   "/workspaces/gigboy/src/utils/anchoredToast.tsx": {
-    "mtime": 1788811094.8162658,
-    "ast_hash": "d6edf6de7cf0098193d934624c6442a2",
-    "semantic_hash": ""
+    "mtime": 1778347589.1988878,
+    "ast_hash": "a705e3a83725c97a73131f39bbf01b2c",
+    "semantic_hash": "a705e3a83725c97a73131f39bbf01b2c"
   },
   "/workspaces/gigboy/src/utils/songColorStyles.ts": {
     "mtime": 1785242771.7712722,
@@ -85,19 +85,19 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/utils/toastDialogs.tsx": {
-    "mtime": 1788811094.81701,
-    "ast_hash": "e67ee1e10a025f0bccf07d53f94ce3ff",
-    "semantic_hash": ""
+    "mtime": 1777921348.7024643,
+    "ast_hash": "edc23c5f54d941173ef70fe1b6ef126e",
+    "semantic_hash": "edc23c5f54d941173ef70fe1b6ef126e"
   },
   "/workspaces/gigboy/src/utils/chordFormatParser.test.ts": {
-    "mtime": 1790322446.9752977,
-    "ast_hash": "67647eb1602a6a5bd7618af513bc1ed9",
+    "mtime": 1787819251.5255377,
+    "ast_hash": "3a3aaca2f63bc63ec95f7d19c8f8f126",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/utils/imageThumbnail.ts": {
-    "mtime": 1791137804.1811507,
-    "ast_hash": "4fd88473149fc4835024c8e1c4005d25",
-    "semantic_hash": ""
+    "mtime": 1778274101.1712613,
+    "ast_hash": "b77ed6e86864b47127b384058e38ce72",
+    "semantic_hash": "b77ed6e86864b47127b384058e38ce72"
   },
   "/workspaces/gigboy/src/utils/songImport.ts": {
     "mtime": 1787819188.110731,
@@ -115,23 +115,23 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/utils/languages.ts": {
-    "mtime": 1790933752.4340909,
-    "ast_hash": "1250c361a8cb50393f8bc59a18127be1",
+    "mtime": 1787161034.0329003,
+    "ast_hash": "708632432a1a7efa99d57f877ab534ce",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/ChordFinder.tsx": {
-    "mtime": 1788811094.8036573,
-    "ast_hash": "f464b83d081d331c107a959fc3705147",
+    "mtime": 1784407951.4027314,
+    "ast_hash": "36d5dfc81c648ff5c691544256d80123",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/AddSongForm.tsx": {
-    "mtime": 1791322261.8292756,
-    "ast_hash": "ca860721dc494fa1e9ae23e20a2ce0fe",
+    "mtime": 1787199714.4170675,
+    "ast_hash": "759cf20d45231100cf27fc8315026ef9",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/Layout.tsx": {
-    "mtime": 1788876725.1184769,
-    "ast_hash": "01b9ef5f156944caf69e4408749b57a5",
+    "mtime": 1787658495.8430235,
+    "ast_hash": "0efc3788e4be5d60f8b813400c01e9cd",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/LanguageBadge.tsx": {
@@ -145,38 +145,38 @@
     "semantic_hash": "d06480150bdc52717538a90b9b55c726"
   },
   "/workspaces/gigboy/src/components/SongRecorder.tsx": {
-    "mtime": 1788876725.1241653,
-    "ast_hash": "13c0e5393b76ce9f5519219a2c454e2c",
+    "mtime": 1787824663.1855476,
+    "ast_hash": "390e771a733485cd5bc9862783ec4139",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/ChordDisplay.tsx": {
-    "mtime": 1790933390.9709783,
-    "ast_hash": "918e4a67677d6b45e17618acc90d3869",
+    "mtime": 1785668288.516642,
+    "ast_hash": "d4248d9ebc56c8ba43a8b9d2a0f1f3d5",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/SongView.tsx": {
-    "mtime": 1791322261.8343084,
-    "ast_hash": "64240d370985a22c0b1260a8d5b98cb4",
+    "mtime": 1787821317.7953122,
+    "ast_hash": "e6badd70d6ff240e52d06272e1433e7f",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/SetlistsView.tsx": {
-    "mtime": 1789753788.1193452,
-    "ast_hash": "aa56a1de1268669ff25abda093360f2d",
+    "mtime": 1787819039.081535,
+    "ast_hash": "d2ef806d73c960eb1ac052fb658f1646",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/VisualTuner.tsx": {
-    "mtime": 1788295161.8582056,
-    "ast_hash": "0fafc7f971a3877f03615f36a980c588",
+    "mtime": 1787201210.2208111,
+    "ast_hash": "4071d7c8df4e3bb8ecb737159508c7e2",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/SongView.test.tsx": {
-    "mtime": 1791322013.8217874,
-    "ast_hash": "66581de87f4ef3bf43ae7c37efca4526",
+    "mtime": 1787172871.497783,
+    "ast_hash": "7eae78937c25f3da64797a21ef1e20c7",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/TrashView.tsx": {
-    "mtime": 1791321725.8052125,
-    "ast_hash": "48a38de81850c8017e3b39ca917e67b7",
+    "mtime": 1784378987.1127613,
+    "ast_hash": "1a93b770a17eda8809d01055910b734a",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/SongMediaPlayer.tsx": {
@@ -185,28 +185,28 @@
     "semantic_hash": "704480aeab86aebf9d2fe2c9c05fef5d"
   },
   "/workspaces/gigboy/src/components/BandManagementPanel.tsx": {
-    "mtime": 1791137812.2004633,
-    "ast_hash": "c8dbfb73088c02b611e94eeb022b0605",
+    "mtime": 1787251934.6624153,
+    "ast_hash": "9e9b824eb6abe5fdb48815005867e13c",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/TabDisplay.tsx": {
-    "mtime": 1791322261.835572,
-    "ast_hash": "5c09d6bb7f616280d0380d3ad1986292",
+    "mtime": 1782133165.9250398,
+    "ast_hash": "e0615ee67fb081bf78d459784c243002",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/StageplotEditor.tsx": {
-    "mtime": 1788876725.1318777,
-    "ast_hash": "4b0388c92d6537d58b3adbc52dee8f49",
+    "mtime": 1787199718.1969972,
+    "ast_hash": "f03b9c0393cb6b59c9056020bd10d82e",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/SongList.tsx": {
-    "mtime": 1790933122.3959768,
-    "ast_hash": "30bb279d5d46ab86877e31ceaaf34527",
+    "mtime": 1785066124.9498825,
+    "ast_hash": "4883b00b6f71099523eec88a9ba59ee2",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/VisualMetronome.tsx": {
-    "mtime": 1788295190.5979683,
-    "ast_hash": "66095e6db40db23bb5868a7534c1aa47",
+    "mtime": 1787253376.562927,
+    "ast_hash": "dcd359c17f29db991fc6716998bfb37c",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/UserAvatar.tsx": {
@@ -215,8 +215,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/InputListEditor.tsx": {
-    "mtime": 1788876725.1686816,
-    "ast_hash": "03a1fcc80961538a5f56463670abe5ab",
+    "mtime": 1786087512.9634495,
+    "ast_hash": "08fdfb490d9127ad5d2617c56ae46938",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/BrandMark.tsx": {
@@ -225,18 +225,18 @@
     "semantic_hash": "29c24d69b19a4ea643bb01c122805dbb"
   },
   "/workspaces/gigboy/src/components/PressKitView.tsx": {
-    "mtime": 1791322832.4851224,
-    "ast_hash": "c5c9487c7f4d83e88b0fc948201aef11",
+    "mtime": 1787291996.7264762,
+    "ast_hash": "c76673b3072e830b4273b70bca28249c",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/BandTechRiderPanel.tsx": {
-    "mtime": 1791321725.8039758,
-    "ast_hash": "9c10b69c6ee2bc002f274c9bd8e824bc",
+    "mtime": 1787291883.244603,
+    "ast_hash": "51f3e5ad9be0d2a4910bf3e797704b9b",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/ChordDiagram.tsx": {
-    "mtime": 1790322406.947207,
-    "ast_hash": "f1ed46bc71e56b046947279599ec5d4d",
+    "mtime": 1787820613.3564632,
+    "ast_hash": "eba119fc9948a6078522d9936da2a086",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/SongHandNotesOverlay.tsx": {
@@ -250,18 +250,18 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/Sidebar.tsx": {
-    "mtime": 1791321725.804877,
-    "ast_hash": "b099132319c4ba8db5d4ddc868f3cc27",
+    "mtime": 1787291804.0940847,
+    "ast_hash": "b084c2365d520b4cfe6c523c98b0cb46",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/ChordProToolbar.tsx": {
-    "mtime": 1790933433.9377027,
-    "ast_hash": "8a5c31caace965ad0a6e5d59dc87eaf5",
+    "mtime": 1784451091.2411244,
+    "ast_hash": "5652221ecacdd6bde1d9aa96e81e7b79",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/types/index.ts": {
-    "mtime": 1791321725.8208506,
-    "ast_hash": "018ae70a55b0da43d01024cc75fb560e",
+    "mtime": 1787172265.5454862,
+    "ast_hash": "07689f1f85a31dcac9905c9f1c02bf5f",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/BandSetlistConcertPage.test.tsx": {
@@ -270,8 +270,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/BandMembersPage.tsx": {
-    "mtime": 1788876725.1968527,
-    "ast_hash": "263e131c7aed6b2c3c64e8d671c00151",
+    "mtime": 1786265039.863835,
+    "ast_hash": "596d5882e59a8c57dfde5475ffa724f0",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/EditSongPage.tsx": {
@@ -280,23 +280,23 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/BandSetlistConcertPage.tsx": {
-    "mtime": 1788876725.1636822,
-    "ast_hash": "079f2a257bc5d01fda3e73a23dea32c3",
+    "mtime": 1787824967.2198784,
+    "ast_hash": "93e454525fc82b5b7f02c8ce6fba08ba",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/BandSettingsPage.tsx": {
-    "mtime": 1790935279.9335563,
-    "ast_hash": "6abd3d04307efaafeff0b7abd7ee2063",
+    "mtime": 1787159416.395104,
+    "ast_hash": "f16e0aaac0a9638d24f975a498d2a5b4",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/UsernameSetupPage.tsx": {
-    "mtime": 1788811094.8145316,
-    "ast_hash": "d96516f7df2ceeccb5c4086b31438fd6",
+    "mtime": 1786265006.0404973,
+    "ast_hash": "091e5630b0bec3a87ef6e9a955e15242",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/PublicBandPressKitPage.tsx": {
-    "mtime": 1791322832.4838235,
-    "ast_hash": "01a70c307dffd7522981040ba855a6dc",
+    "mtime": 1787222380.8693743,
+    "ast_hash": "491faf47c312b4ef9c58c90ec6b2d7fc",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/AddSongPage.tsx": {
@@ -310,8 +310,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/LoginPage.tsx": {
-    "mtime": 1790935121.439351,
-    "ast_hash": "d09e2abd08397c34967773be076c617b",
+    "mtime": 1787166069.489231,
+    "ast_hash": "73eb39b3135e49ba2231404ce5990895",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/PublicBandRiderPage.tsx": {
@@ -320,13 +320,13 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/ProfilePage.tsx": {
-    "mtime": 1791322853.3050315,
-    "ast_hash": "486bb786d874f9d28b4bf452d00ac519",
+    "mtime": 1787251795.781066,
+    "ast_hash": "006293a757ac3403d061742ff951aafd",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/BandDetailPage.tsx": {
-    "mtime": 1791321871.7478936,
-    "ast_hash": "039336e9f040db23703e3466b5d37d0d",
+    "mtime": 1787819239.9697552,
+    "ast_hash": "934c2659e75e2e8566f278500d47a1cd",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/test/setup.ts": {
@@ -350,8 +350,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/hooks/useDarkMode.ts": {
-    "mtime": 1788295279.1464312,
-    "ast_hash": "6f8e011a2839540fe95db970ae150907",
+    "mtime": 1787399799.0078309,
+    "ast_hash": "a4dd62d6e14df089a644f634123473eb",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/context/DarkModeContext.tsx": {
@@ -365,18 +365,18 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/context/BandsContext.tsx": {
-    "mtime": 1791321725.8057218,
-    "ast_hash": "0f2c01bfa6e2aa87814166066e4f9b9d",
+    "mtime": 1787289538.4686377,
+    "ast_hash": "cba05e4c543234620386c4e01a780d9f",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/pressKitZip.ts": {
-    "mtime": 1791322832.4829814,
-    "ast_hash": "04603aeac0b0a7141b5b8cc1d4733854",
+    "mtime": 1787552947.763599,
+    "ast_hash": "297d5259c0f85fd9f09004b9165145d3",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/songRecordings.ts": {
-    "mtime": 1788295139.6149673,
-    "ast_hash": "38602ec92b8fc54fe7aacfcfb2e45b32",
+    "mtime": 1787824542.543799,
+    "ast_hash": "80d355131b9ee7fcf3dc0bb2935e9b61",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/iconOptions.ts": {
@@ -420,8 +420,8 @@
     "semantic_hash": "b9b90447c6df34a95428edc38a99132d"
   },
   "/workspaces/gigboy/src/lib/midiPlayer.ts": {
-    "mtime": 1790933355.0758832,
-    "ast_hash": "07da8aa7694743e2d8f54b3708eed683",
+    "mtime": 1780988242.0211596,
+    "ast_hash": "222c99756eaf4fdbc153c1051d8fcf27",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/userProfiles.ts": {
@@ -475,8 +475,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/ConcertModeView.tsx": {
-    "mtime": 1791049379.7342803,
-    "ast_hash": "843707a8c3fdefa0ce9b1550f72a00f3",
+    "mtime": 1787824953.0441425,
+    "ast_hash": "c5211bcedffd2c1ab34de0039cba82ae",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/data/ukuleleChords.ts": {
@@ -484,9 +484,19 @@
     "ast_hash": "5707053f66892a61903d14005c561145",
     "semantic_hash": ""
   },
+  "/workspaces/gigboy/src/pages/PrivacyPage.tsx": {
+    "mtime": 1787819039.089535,
+    "ast_hash": "52efab2bb5a440302028247a39c98f9c",
+    "semantic_hash": ""
+  },
   "/workspaces/gigboy/src/pages/SongConcertPage.tsx": {
     "mtime": 1787819600.7951853,
     "ast_hash": "63d477959b4e81c030cadd00ab57be3f",
+    "semantic_hash": ""
+  },
+  "/workspaces/gigboy/src/pages/TermsPage.tsx": {
+    "mtime": 1787819039.089535,
+    "ast_hash": "19988a622f6d20e599ff15b1c2fc3156",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/hooks/useSongAttachments.ts": {
@@ -505,8 +515,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/songbookExport.ts": {
-    "mtime": 1791322840.4438598,
-    "ast_hash": "89dbe79e57a54440de4ee86680c6a98a",
+    "mtime": 1787552956.1154404,
+    "ast_hash": "6d8adbf5f4b8fc81dcbf859b73fbc905",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/lineAnchor.ts": {
@@ -540,13 +550,13 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/index.html": {
-    "mtime": 1788295573.9256155,
-    "ast_hash": "a6ef9b444847a33791a69ecb8febef1c",
+    "mtime": 1787658551.2779927,
+    "ast_hash": "dc50bd641f28e939a69e03f097735224",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/README.md": {
-    "mtime": 1791323279.1766133,
-    "ast_hash": "0f5b815d7559baaed3d6147c23f3a4b9",
+    "mtime": 1787825073.4698985,
+    "ast_hash": "3ba53a72195b5098467617151b0c25fe",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/public/robots.txt": {
@@ -890,8 +900,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/SongMetaBadges.tsx": {
-    "mtime": 1791321725.8052125,
-    "ast_hash": "b68fdab671fdce28443ec1aeae1736a5",
+    "mtime": 1787687579.9028342,
+    "ast_hash": "d58a072800421cfd66ee4ee68a2c7bd5",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/ConcertMetronomeFlash.tsx": {
@@ -900,23 +910,23 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/AcceptInvitePage.tsx": {
-    "mtime": 1790935121.4297793,
-    "ast_hash": "3d9447ac613f1e384817c535e5603e7a",
+    "mtime": 1787118773.5642872,
+    "ast_hash": "831ce801bde602e825e05fe0e9a5e69f",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/AdminInvitesPage.tsx": {
-    "mtime": 1788876725.1776354,
-    "ast_hash": "ff082e74087bbf2177ff10fca3ce25ec",
+    "mtime": 1787225723.9293568,
+    "ast_hash": "782b73972757c54bebab2ad2191d9514",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/NotFoundPage.tsx": {
-    "mtime": 1788811094.8134947,
-    "ast_hash": "a832440065f293001e7b9cb95df76b88",
+    "mtime": 1786264970.3451967,
+    "ast_hash": "03ad5c64d147d49316ffdf8a0c32a788",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/AdminUsersPage.tsx": {
-    "mtime": 1788876725.1924825,
-    "ast_hash": "c19a5ca07e07af97613c0b3b57b1013d",
+    "mtime": 1787225790.8520937,
+    "ast_hash": "7aaf660b6e2fb5c17888c8040aa9e197",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/hooks/useSongListBadges.ts": {
@@ -950,13 +960,13 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/dataClient/types.ts": {
-    "mtime": 1791321725.8152769,
-    "ast_hash": "7b8051e28400cc743d27a234a7f9988b",
+    "mtime": 1787251815.1886957,
+    "ast_hash": "666e6071d28b1bd7669cfa3ec39f054b",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/dataClient/apiClient.ts": {
-    "mtime": 1791321725.8129752,
-    "ast_hash": "34c2f3349819fe18210c75b60d7262be",
+    "mtime": 1787251822.5365553,
+    "ast_hash": "9baa0f7cc19b258f1bbc1c9720e3849b",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/dataClient/index.ts": {
@@ -1085,8 +1095,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/index.ts": {
-    "mtime": 1791321725.8027923,
-    "ast_hash": "1ec3dcf686896b8316b6bca291add7ae",
+    "mtime": 1787826460.7039752,
+    "ast_hash": "bbc70259439980ef6e85b6ad62c34264",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/middleware/session.ts": {
@@ -1125,8 +1135,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/db/schema.ts": {
-    "mtime": 1791321725.8024726,
-    "ast_hash": "886b90f751d9d13f6860a4bab85a0b56",
+    "mtime": 1787824770.3395488,
+    "ast_hash": "6f0f7cceea83fe1f4be79a31ae9c2be2",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/db/migrations/0009_concerned_millenium_guard.sql": {
@@ -1225,8 +1235,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/db/migrations/meta/_journal.json": {
-    "mtime": 1791321725.7954445,
-    "ast_hash": "ca2b2e9bac5a8328f1be48cd2d87a47a",
+    "mtime": 1787824775.6514497,
+    "ast_hash": "2cc59007c05b40e25be68555d20288b4",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/db/migrations/meta/0002_snapshot.json": {
@@ -1240,8 +1250,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/publicRiders.ts": {
-    "mtime": 1788504717.8754487,
-    "ast_hash": "f28c2af014cd6afe0327aca0321eaa8b",
+    "mtime": 1786998562.8199742,
+    "ast_hash": "163693476e8bbf7e2dbf2ce5272e128d",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/songHandNotes.ts": {
@@ -1250,8 +1260,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/invites.ts": {
-    "mtime": 1788158733.612538,
-    "ast_hash": "1a808ed58b08c51852e4fa47c1a64cd3",
+    "mtime": 1787826345.0261347,
+    "ast_hash": "ccca67b817463432ff8b7d0f763ba78e",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandSetlists.ts": {
@@ -1265,8 +1275,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandResources.ts": {
-    "mtime": 1788541394.4022238,
-    "ast_hash": "ee872bce8c8cd3bd47246ddc8f2a4258",
+    "mtime": 1787821043.9604282,
+    "ast_hash": "134717bc284bf9d36c6e4e0bb30b7dfb",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/songBadges.ts": {
@@ -1285,23 +1295,23 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/songRecordings.ts": {
-    "mtime": 1788294040.2173915,
-    "ast_hash": "a1c14cd4efa44822abcb07f14cb996f5",
+    "mtime": 1787821494.024176,
+    "ast_hash": "320788dbc8bb117275f59d260f8826b0",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandPressKitImages.ts": {
-    "mtime": 1791137675.2328434,
-    "ast_hash": "c5f7c95b0a49fb73fa4e0e5692877b7f",
+    "mtime": 1787826228.1323175,
+    "ast_hash": "cd34f426f8670bb71bc72e1a5ab09df6",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bands.ts": {
-    "mtime": 1790933789.642334,
-    "ast_hash": "b9dd394b07acfaca683fa8839b6e3c0d",
+    "mtime": 1787826351.8340075,
+    "ast_hash": "63070745149cd587bc26106e6bdec541",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandAttachments.ts": {
-    "mtime": 1788541410.8371623,
-    "ast_hash": "981b1c5a836777c454fb41c177be0001",
+    "mtime": 1787222092.9428568,
+    "ast_hash": "ad0e6a7e0e56043df760e5ab4b2b55f6",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandRiders.ts": {
@@ -1310,8 +1320,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandSongs.ts": {
-    "mtime": 1789753788.1182876,
-    "ast_hash": "c29e8e7e87579ed4402fe6414e199deb",
+    "mtime": 1787821103.7593114,
+    "ast_hash": "4101a9b7a524f86f97c7bc3e65ec2af4",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandLogos.ts": {
@@ -1325,13 +1335,13 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/publicPressKits.ts": {
-    "mtime": 1791321725.803475,
-    "ast_hash": "16145603efb843cd14c5f16ca6171e2c",
+    "mtime": 1787118183.747465,
+    "ast_hash": "1f790ccb694590a2fec1ed3c0ce59e7e",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandPressKits.ts": {
-    "mtime": 1791321725.8032882,
-    "ast_hash": "4ad877240256304c4d70f8948a8f49c3",
+    "mtime": 1787059063.1408014,
+    "ast_hash": "199add7731d1e854ae4529b1ae7ecdfb",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandPressKitShares.ts": {
@@ -1340,13 +1350,13 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/storage/localStorageAdapter.ts": {
-    "mtime": 1788294014.1074073,
-    "ast_hash": "14e57bca588d8996fa7abdb53a5ad3c6",
+    "mtime": 1787058970.034557,
+    "ast_hash": "fdd84bad0b59239ac218b0363209478d",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/storage/StorageAdapter.ts": {
-    "mtime": 1788294008.5084188,
-    "ast_hash": "f3892a4e5cb7bd888a32815c435586c7",
+    "mtime": 1787042578.4791496,
+    "ast_hash": "44ab334efed07e493d631df5cf690717",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/lib/pressKitOg.ts": {
@@ -1360,8 +1370,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/lib/songRecordings.ts": {
-    "mtime": 1788294066.307884,
-    "ast_hash": "1bffacf01e9108a39494f461d1b71fd2",
+    "mtime": 1787117633.349804,
+    "ast_hash": "2f991bf05711bce35deb486e6fa15971",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/lib/songScope.ts": {
@@ -1370,8 +1380,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/lib/pressKitImages.ts": {
-    "mtime": 1791137675.2320127,
-    "ast_hash": "a996d3ab82486011f804dd36e7909d8a",
+    "mtime": 1787826210.920639,
+    "ast_hash": "99ec4700c6d72955eff201abe03e418d",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/lib/handNotes.ts": {
@@ -1400,8 +1410,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/lib/trash.ts": {
-    "mtime": 1791321725.8030696,
-    "ast_hash": "bf207af10b1e92da5145a133b2b78562",
+    "mtime": 1787167724.4528892,
+    "ast_hash": "dc8be8bb17783ad41154cae75476d3de",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/lib/serialize.ts": {
@@ -1410,13 +1420,13 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/SELFHOSTING.md": {
-    "mtime": 1791323279.1780272,
-    "ast_hash": "b3b3f6aa7b7e4f7608aa45199cb250ad",
+    "mtime": 1787826476.423682,
+    "ast_hash": "4a3dadb9051d7d300a5258d853127b71",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/docker-compose.yml": {
-    "mtime": 1787859912.2462163,
-    "ast_hash": "ac795fd391fc9db30c9b7544cc289c92",
+    "mtime": 1787826464.0679126,
+    "ast_hash": "cf77290914472a2159b14eeab05b7f1e",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/.github/workflows/docker-publish.yml": {
@@ -1745,13 +1755,13 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/components/SongHistoryPanel.tsx": {
-    "mtime": 1788876725.2128108,
-    "ast_hash": "53f0ba092fd8c1fe74f62e0fef5ea84e",
+    "mtime": 1787821272.2201638,
+    "ast_hash": "e2e0aad7a4f3b758ada6bb132735bfae",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/pages/BandSetlistPrintPage.tsx": {
-    "mtime": 1789753788.1243272,
-    "ast_hash": "b6447207a9ed4e6b0a7d7845a0ff257c",
+    "mtime": 1787818954.6391242,
+    "ast_hash": "a83b3a75996159c111490a5ff93eee1b",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/hooks/useBandChordVoicings.ts": {
@@ -1760,13 +1770,13 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/hooks/useSetlistSession.ts": {
-    "mtime": 1791014058.3451898,
-    "ast_hash": "ce9b0874d939ec4e8ea899e5e1d2d0bd",
+    "mtime": 1787825011.8750463,
+    "ast_hash": "13e78470836f6efb2a551f4ed0ab7b4e",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/hooks/useSongTranspose.ts": {
-    "mtime": 1788029975.0849817,
-    "ast_hash": "d533a6bcb4fbb0165e123292a41c8d41",
+    "mtime": 1787819474.709473,
+    "ast_hash": "061015b9396109869d5023ea1cbfbcdf",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/hooks/useRecordingComments.ts": {
@@ -1779,6 +1789,11 @@
     "ast_hash": "d2154d02e5107948858a05c04aa1f6f4",
     "semantic_hash": ""
   },
+  "/workspaces/gigboy/src/hooks/useInstanceConfig.ts": {
+    "mtime": 1787818781.4463835,
+    "ast_hash": "7c951f4cc214db589f2024f5b036b59d",
+    "semantic_hash": ""
+  },
   "/workspaces/gigboy/src/lib/songRevisions.ts": {
     "mtime": 1787821216.4372063,
     "ast_hash": "a3c84aa59643b76abedffc17c94c2021",
@@ -1787,6 +1802,11 @@
   "/workspaces/gigboy/src/lib/songMemberPrefs.ts": {
     "mtime": 1787819438.4341276,
     "ast_hash": "a1502ece0f054c112b7d223e2b8c7139",
+    "semantic_hash": ""
+  },
+  "/workspaces/gigboy/src/lib/instanceConfig.ts": {
+    "mtime": 1787818776.4544773,
+    "ast_hash": "72811a1024a3bd28bddef36fd47f02cc",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/bandChordVoicings.ts": {
@@ -1800,13 +1820,13 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/setlistSession.ts": {
-    "mtime": 1791014907.2490273,
-    "ast_hash": "32e0770eb0de681564ce5f097597fe72",
+    "mtime": 1787824869.333703,
+    "ast_hash": "c010f115b6b513b89c020974e297c125",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/dataClient/demoClient.ts": {
-    "mtime": 1791321725.8139951,
-    "ast_hash": "c2c3f51913848fe764db8b35a375a21c",
+    "mtime": 1787658387.8610299,
+    "ast_hash": "c96339b9c9b5f5388181c63a9e2d1a83",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/demo/demoMode.ts": {
@@ -1815,8 +1835,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/lib/demo/demoStore.ts": {
-    "mtime": 1791321831.0966024,
-    "ast_hash": "89a340367d28211bb6634a8fc987d062",
+    "mtime": 1787824581.9870627,
+    "ast_hash": "ec9dd02ece041f4d0ee7ca50a45d1be8",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/utils/riderImport.ts": {
@@ -1825,8 +1845,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/utils/chordLookup.ts": {
-    "mtime": 1790322398.4155018,
-    "ast_hash": "e27e3b52735e460ff74c2a4fd9b9a145",
+    "mtime": 1787820593.408835,
+    "ast_hash": "bf1c63cc70a29d9e9d7fb613498039b5",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/src/utils/textDiff.test.ts": {
@@ -1865,8 +1885,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/middleware/securityHeaders.ts": {
-    "mtime": 1789828986.432575,
-    "ast_hash": "8f51760222465714401e3a3267a7e196",
+    "mtime": 1787826187.3890784,
+    "ast_hash": "f08d553043b8c5da5e7b27334a97dccf",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/db/migrations/0013_colossal_silvermane.sql": {
@@ -1935,8 +1955,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/setlistSessions.ts": {
-    "mtime": 1791014093.218495,
-    "ast_hash": "1225c3dcccc4c22ee0d004102fe1415d",
+    "mtime": 1787826389.9372962,
+    "ast_hash": "8623eb1e0539f856ace650a1ec857245",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/routes/bandChordVoicings.ts": {
@@ -1949,9 +1969,14 @@
     "ast_hash": "93ab9b4e55f508eb9fcdac7a909b039d",
     "semantic_hash": ""
   },
+  "/workspaces/gigboy/server/routes/config.ts": {
+    "mtime": 1787818761.7267544,
+    "ast_hash": "99755db5763b76be8f04e5b2e03b6a95",
+    "semantic_hash": ""
+  },
   "/workspaces/gigboy/server/lib/songRevisions.ts": {
-    "mtime": 1789753788.1182876,
-    "ast_hash": "ae77be7a5ec75447a3bafac6f2f8ece9",
+    "mtime": 1787821093.3435059,
+    "ast_hash": "2e9d40625ffa6b83bf00af6cbb19858e",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/server/lib/imageSniff.ts": {
@@ -1965,8 +1990,8 @@
     "semantic_hash": ""
   },
   "/workspaces/gigboy/.github/workflows/deploy-demo.yml": {
-    "mtime": 1788863040.1021628,
-    "ast_hash": "0a478968e492fcffa97fe722972497db",
+    "mtime": 1787658571.6136143,
+    "ast_hash": "a4554678657daf13474604f8dd942b64",
     "semantic_hash": ""
   },
   "/workspaces/gigboy/public/404.html": {
@@ -2002,226 +2027,6 @@
   "/workspaces/gigboy/public/assets/developer.jpg": {
     "mtime": 1786546043.5804677,
     "ast_hash": "79eed7747395c1422d92e449e5365c84",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/components/StrumEditorModal.tsx": {
-    "mtime": 1790933420.8237948,
-    "ast_hash": "0dde9ba806a5171a2f7cfff344dff03a",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/components/StrumDisplay.tsx": {
-    "mtime": 1790933390.9697537,
-    "ast_hash": "2ba63d02f6ba0e7c1bb655f7f69e2332",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/components/SongFilterPanel.tsx": {
-    "mtime": 1790933105.4851317,
-    "ast_hash": "00f54c90ee53195bf6f9727c7ae858b0",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/components/GigsCalendar.tsx": {
-    "mtime": 1791322320.920661,
-    "ast_hash": "4153a084b4e13f17291ff2248d84dee5",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/components/AddToMenu.test.tsx": {
-    "mtime": 1791322148.5394247,
-    "ast_hash": "3439cba41aa765834e50f35dc5b4e042",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/components/AddToMenu.tsx": {
-    "mtime": 1791322949.849112,
-    "ast_hash": "a23b84eddab545ddfd8e7dd49b1ef040",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/components/SongMetaBadges.test.tsx": {
-    "mtime": 1791320560.3226123,
-    "ast_hash": "d363ac65e4c8b6cd6ef3d5f3f50eb30e",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/components/GigsCalendar.test.tsx": {
-    "mtime": 1791319751.5025148,
-    "ast_hash": "9f86c00ef471d267fcdfcd9c1662f2b2",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/components/ui/Button.tsx": {
-    "mtime": 1788811094.8071642,
-    "ast_hash": "ffae65e4ea849b37615f4e04460f066a",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/pages/AcceptBandInvitePage.tsx": {
-    "mtime": 1790934711.2416523,
-    "ast_hash": "6a7559f7a90bc68e0d7ab9c3c5641033",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/pages/BandGigsPage.tsx": {
-    "mtime": 1791322320.9185913,
-    "ast_hash": "d457bed7e68a73d59f7942f8fc7fb983",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/context/BandsContext.setlistSongs.test.tsx": {
-    "mtime": 1788293193.4863791,
-    "ast_hash": "dd04ccd107e4fb8a9efe98548d1b9d35",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/lib/webAudio.ts": {
-    "mtime": 1788295099.3345313,
-    "ast_hash": "86f937047d36a9f8d2308ebafe53d01f",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/lib/appOrigin.ts": {
-    "mtime": 1791321831.097025,
-    "ast_hash": "f998fbe79e522359fc574b20e7df5f85",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/lib/songbookExport.test.ts": {
-    "mtime": 1791322876.298567,
-    "ast_hash": "3ea6c1687f22a6a911a344cd093b146f",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/lib/download.ts": {
-    "mtime": 1789853166.1980066,
-    "ast_hash": "5dafd9a9d437391989e591db30f75631",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/lib/safeStorage.ts": {
-    "mtime": 1788295266.0325701,
-    "ast_hash": "c5ba0d88ad211f3f3b4bdb8bcab6b312",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/lib/webAudio.test.ts": {
-    "mtime": 1788295746.6185982,
-    "ast_hash": "3881d44fd0883be00387c4c580c62299",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/lib/pendingBandInvite.ts": {
-    "mtime": 1790934710.8977041,
-    "ast_hash": "350110d00f1c696141b96c16cba83a5f",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/lib/demo/demoSeedData.ts": {
-    "mtime": 1791322763.591412,
-    "ast_hash": "138328b20ad141738f640c9d2eb67bfe",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/lib/demo/demoSeedData.test.ts": {
-    "mtime": 1791321231.911703,
-    "ast_hash": "1dca78329c12c8498120bd6d6370595b",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/utils/strumParser.ts": {
-    "mtime": 1790933471.3440673,
-    "ast_hash": "917dccabc83a9825fab3b084b9c09d83",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/utils/copyText.ts": {
-    "mtime": 1791137804.1811507,
-    "ast_hash": "5ec60b3ca5ee34e6c00584667da5f8a0",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/utils/chordVoicingCheck.ts": {
-    "mtime": 1789310608.4726927,
-    "ast_hash": "2bf4e3360b71af76e56c8aef25ec813d",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/utils/strumParser.test.ts": {
-    "mtime": 1790933341.1853852,
-    "ast_hash": "8d87e3aabdbc06f4fbf76c3e1057471a",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/utils/duration.ts": {
-    "mtime": 1789753687.5384703,
-    "ast_hash": "6ccbc5b5c90e3828242a8f659db9cd0b",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/src/utils/songFilters.ts": {
-    "mtime": 1790933092.3001068,
-    "ast_hash": "a9e8cf0a72ea2e1c1015ac92f989a7a8",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/db/migrations/0016_gray_jasper_sitwell.sql": {
-    "mtime": 1789753621.2699983,
-    "ast_hash": "f105f3756cf3db997a9f9235ed8943c4",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/db/migrations/0017_right_psylocke.sql": {
-    "mtime": 1791321041.7924201,
-    "ast_hash": "a0815ddd9d84b686b463dd96dcac5e77",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/db/migrations/0015_yielding_kingpin.sql": {
-    "mtime": 1789311311.371611,
-    "ast_hash": "386b790c24a849036c6dfe5aa1ffe094",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/db/migrations/meta/0017_snapshot.json": {
-    "mtime": 1791321041.7924201,
-    "ast_hash": "e3bd0b9adec14e627774996828d7ea7a",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/db/migrations/meta/0015_snapshot.json": {
-    "mtime": 1789311311.371611,
-    "ast_hash": "959db0e67b1890dee84d25669a35eef1",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/db/migrations/meta/0016_snapshot.json": {
-    "mtime": 1789753621.2683878,
-    "ast_hash": "6f4ad014914cc5e86986ef17a89198aa",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/routes/publicCalendar.ts": {
-    "mtime": 1791321831.0955186,
-    "ast_hash": "bc60fc7d8dd3752ab45782988e0ac6db",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/routes/bandCalendarFeed.ts": {
-    "mtime": 1791320985.2021394,
-    "ast_hash": "00cbed12ed761d486fc84cad6e5b0d32",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/routes/bandTours.ts": {
-    "mtime": 1791319425.3179693,
-    "ast_hash": "b8926d9a8551daea9d15df912e216b84",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/routes/gigs.calendar.test.ts": {
-    "mtime": 1791321831.0994837,
-    "ast_hash": "5cb0696eb2d101de9d2ae2642a8733c1",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/routes/bandGigs.ts": {
-    "mtime": 1791321831.09442,
-    "ast_hash": "79c1581e97b820e8aa9d343d05c4803d",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/routes/publicAssets.ts": {
-    "mtime": 1791137675.2338946,
-    "ast_hash": "c6c5bc62c99e0dde7c540f65ba01842e",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/lib/songRecordings.stream.test.ts": {
-    "mtime": 1788294146.7418053,
-    "ast_hash": "b52943a74983d0a529f68d000477aac3",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/lib/songFiles.ts": {
-    "mtime": 1788541380.9694083,
-    "ast_hash": "a77e28d14026bac36fadd4a1406a68b9",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/lib/ics.ts": {
-    "mtime": 1791318063.2382452,
-    "ast_hash": "56e00e9bb6f211720ab1ade4ca5daded",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/server/lib/ics.test.ts": {
-    "mtime": 1791318678.397503,
-    "ast_hash": "1e7d63ba8a2672b69a1fab06cd32ec75",
-    "semantic_hash": ""
-  },
-  "/workspaces/gigboy/CHANGELOG.md": {
-    "mtime": 1791323287.7622216,
-    "ast_hash": "facb165a8b9764a59e05f28bb5f1216e",
     "semantic_hash": ""
   }
 }

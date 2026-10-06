@@ -1,16 +1,16 @@
-# Graph Report - gigboy  (2026-10-06)
+# Graph Report - gigboy  (2026-08-27)
 
 ## Corpus Check
-- 355 files · ~385,243 words
+- 316 files · ~338,566 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 11308 nodes · 15510 edges · 598 communities (551 shown, 47 thin omitted)
+- 9800 nodes · 13494 edges · 537 communities (490 shown, 47 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 36 edges (avg confidence: 0.69)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ee8f035f`
+- Built from commit: `70321e5e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -547,83 +547,20 @@
 - [[_COMMUNITY_Community 534|Community 534]]
 - [[_COMMUNITY_Community 535|Community 535]]
 - [[_COMMUNITY_Community 536|Community 536]]
-- [[_COMMUNITY_Community 537|Community 537]]
-- [[_COMMUNITY_Community 538|Community 538]]
-- [[_COMMUNITY_Community 539|Community 539]]
-- [[_COMMUNITY_Community 540|Community 540]]
-- [[_COMMUNITY_Community 541|Community 541]]
-- [[_COMMUNITY_Community 542|Community 542]]
-- [[_COMMUNITY_Community 543|Community 543]]
-- [[_COMMUNITY_Community 544|Community 544]]
-- [[_COMMUNITY_Community 545|Community 545]]
-- [[_COMMUNITY_Community 546|Community 546]]
-- [[_COMMUNITY_Community 547|Community 547]]
-- [[_COMMUNITY_Community 548|Community 548]]
-- [[_COMMUNITY_Community 549|Community 549]]
-- [[_COMMUNITY_Community 550|Community 550]]
-- [[_COMMUNITY_Community 551|Community 551]]
-- [[_COMMUNITY_Community 552|Community 552]]
-- [[_COMMUNITY_Community 553|Community 553]]
-- [[_COMMUNITY_Community 554|Community 554]]
-- [[_COMMUNITY_Community 555|Community 555]]
-- [[_COMMUNITY_Community 556|Community 556]]
-- [[_COMMUNITY_Community 557|Community 557]]
-- [[_COMMUNITY_Community 558|Community 558]]
-- [[_COMMUNITY_Community 559|Community 559]]
-- [[_COMMUNITY_Community 560|Community 560]]
-- [[_COMMUNITY_Community 561|Community 561]]
-- [[_COMMUNITY_Community 562|Community 562]]
-- [[_COMMUNITY_Community 563|Community 563]]
-- [[_COMMUNITY_Community 564|Community 564]]
-- [[_COMMUNITY_Community 565|Community 565]]
-- [[_COMMUNITY_Community 566|Community 566]]
-- [[_COMMUNITY_Community 567|Community 567]]
-- [[_COMMUNITY_Community 568|Community 568]]
-- [[_COMMUNITY_Community 569|Community 569]]
-- [[_COMMUNITY_Community 570|Community 570]]
-- [[_COMMUNITY_Community 571|Community 571]]
-- [[_COMMUNITY_Community 572|Community 572]]
-- [[_COMMUNITY_Community 573|Community 573]]
-- [[_COMMUNITY_Community 574|Community 574]]
-- [[_COMMUNITY_Community 575|Community 575]]
-- [[_COMMUNITY_Community 576|Community 576]]
-- [[_COMMUNITY_Community 577|Community 577]]
-- [[_COMMUNITY_Community 578|Community 578]]
-- [[_COMMUNITY_Community 579|Community 579]]
-- [[_COMMUNITY_Community 580|Community 580]]
-- [[_COMMUNITY_Community 581|Community 581]]
-- [[_COMMUNITY_Community 582|Community 582]]
-- [[_COMMUNITY_Community 583|Community 583]]
-- [[_COMMUNITY_Community 584|Community 584]]
-- [[_COMMUNITY_Community 585|Community 585]]
-- [[_COMMUNITY_Community 586|Community 586]]
-- [[_COMMUNITY_Community 587|Community 587]]
-- [[_COMMUNITY_Community 588|Community 588]]
-- [[_COMMUNITY_Community 589|Community 589]]
-- [[_COMMUNITY_Community 590|Community 590]]
-- [[_COMMUNITY_Community 591|Community 591]]
-- [[_COMMUNITY_Community 592|Community 592]]
-- [[_COMMUNITY_Community 593|Community 593]]
-- [[_COMMUNITY_Community 594|Community 594]]
-- [[_COMMUNITY_Community 595|Community 595]]
-- [[_COMMUNITY_Community 596|Community 596]]
-- [[_COMMUNITY_Community 597|Community 597]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `useAuth()` - 74 edges
-2. `useBands()` - 62 edges
-3. `firebase-admin` - 59 edges
-4. `SongsContext` - 57 edges
+1. `useAuth()` - 72 edges
+2. `firebase-admin` - 59 edges
+3. `SongsContext` - 57 edges
+4. `useBands()` - 56 edges
 5. `getFirestoreDocument()` - 47 edges
-6. `useDocumentTitle()` - 45 edges
-7. `Song` - 43 edges
-8. `covered_lines` - 43 edges
-9. `num_statements` - 43 edges
-10. `percent_covered` - 43 edges
+6. `covered_lines` - 43 edges
+7. `num_statements` - 43 edges
+8. `percent_covered` - 43 edges
+9. `percent_covered_display` - 43 edges
+10. `missing_lines` - 43 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `GIGBOY Documentation` --references--> `SongsContext`  [EXTRACTED]
-  README.md → src/context/SongsContext.ts
 - `GIGBOY Documentation` --references--> `chordParser`  [EXTRACTED]
   README.md → src/utils/chordParser.ts
 - `Firebase Setup Guide` --references--> `firebase-admin`  [EXTRACTED]
@@ -632,12 +569,14 @@
   server/lib/bandLogos.ts → package.json
 - `GIGBOY` --calls--> `Main Entry Point`  [EXTRACTED]
   index.html → src/main.tsx
+- `GIGBOY Documentation` --references--> `SongsContext`  [EXTRACTED]
+  README.md → src/context/SongsContext.ts
 
-## Communities (598 total, 47 thin omitted)
+## Communities (537 total, 47 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.13
-Nodes (39): firebase-admin, Firebase Setup Guide, Firestore Rules, HealthPayload, onRequestGet(), base64UrlEncodeBytes(), base64UrlEncodeJson(), decodeBase64ToBytes() (+31 more)
+Cohesion: 0.15
+Nodes (37): firebase-admin, Firebase Setup Guide, Firestore Rules, HealthPayload, onRequestGet(), base64UrlEncodeBytes(), base64UrlEncodeJson(), countFirestoreDocumentsByField() (+29 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.06
@@ -653,31 +592,31 @@ Nodes (28): devDependencies, @capacitor/cli, @cloudflare/workers-types, drizzle-
 
 ### Community 4 - "Community 4"
 Cohesion: 0.11
-Nodes (19): BLACK_PCS, ChordDiagram(), ChordModel, containsStandaloneNumber(), getFullIntervals(), getTriadIntervals(), inversionLabel(), normalizeForLookup() (+11 more)
+Nodes (18): BLACK_PCS, ChordDiagram(), ChordModel, containsStandaloneNumber(), getFullIntervals(), getTriadIntervals(), inversionLabel(), normalizeForLookup() (+10 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.11
 Nodes (31): convertUGTabBlocks(), decodeHtmlEntities(), detectLikelySource(), extractChordValue(), extractFirstInteger(), extractMetadata(), getSectionType(), htmlToChordPro() (+23 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.04
-Nodes (73): BandTechRiderPanel(), Props, EquipmentTableEditorProps, Props, CLICK_ADD_OFFSETS, CUSTOM_ITEM_TEMPLATE, LegendItemRow(), LegendItemRowProps (+65 more)
+Cohesion: 0.03
+Nodes (84): EquipmentTableEditorProps, Props, ActiveStrokeState, drawStroke(), Props, TwoFingerScrollState, ActiveStrokeState, Props (+76 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.11
-Nodes (24): Data, onRequestPost(), Data, onRequest(), onRequestPost(), Data, onRequestPost(), Data (+16 more)
+Cohesion: 0.09
+Nodes (26): Data, onRequestPost(), Data, onRequest(), onRequestPost(), Data, onRequest(), onRequestPost() (+18 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.09
-Nodes (30): Data, Env, onRequest(), RATE_LIMIT_RULES, onRequestPost(), b64urlDecode(), clearCookie(), fromHex() (+22 more)
+Cohesion: 0.13
+Nodes (21): Data, Env, onRequest(), RATE_LIMIT_RULES, onRequestPost(), b64urlDecode(), clearCookie(), fromHex() (+13 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.04
-Nodes (84): canEditSetlist(), getRole(), readLocal(), setlistFromDoc(), SetlistsContext, SetlistsContextValue, SetlistsProvider(), useSetlists() (+76 more)
+Cohesion: 0.05
+Nodes (64): canEditSetlist(), getRole(), readLocal(), setlistFromDoc(), SetlistsContext, SetlistsContextValue, SetlistsProvider(), canEditSongList() (+56 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.11
-Nodes (33): computeWaveformPeaks(), computeWaveformPeaksFromBlob(), downsampleBars(), formatDateTime(), formatFileSize(), formatTime(), Props, RecorderAvatar() (+25 more)
+Cohesion: 0.08
+Nodes (41): computeWaveformPeaks(), computeWaveformPeaksFromBlob(), downsampleBars(), formatDateTime(), formatFileSize(), formatTime(), Props, RecorderAvatar() (+33 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.04
@@ -688,16 +627,16 @@ Cohesion: 0.50
 Nodes (3): CheckoutResultPage(), CONFETTI, CheckoutResultPage
 
 ### Community 13 - "Community 13"
-Cohesion: 0.13
-Nodes (21): Data, onRequest(), onRequestPost(), Data, onRequestPost(), Data, Data, onRequest() (+13 more)
+Cohesion: 0.11
+Nodes (23): Data, onRequest(), onRequestPost(), Data, onRequestPost(), Data, onRequestPost(), Data (+15 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.05
-Nodes (42): BandsContext, BandsContextValue, BandsProvider(), BandTrashItem, hasMigrationMarker(), migrationMarkerKey(), normalizeBand(), normalizeBandSetlist() (+34 more)
+Cohesion: 0.06
+Nodes (36): BandsContext, BandsContextValue, BandTrashItem, hasMigrationMarker(), migrationMarkerKey(), normalizeBand(), normalizeBandSetlist(), normalizeBandSong() (+28 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.09
-Nodes (29): BASE_MEMBER_LIMIT, getStripeClient(), mapStripeStatus(), planAndExtraMembersFromSubscription(), PlanTier, planTierFromPriceId(), STORAGE_QUOTA, SubscriptionStatus (+21 more)
+Cohesion: 0.10
+Nodes (30): setFirestoreDocument(), BASE_MEMBER_LIMIT, getStripeClient(), mapStripeStatus(), planAndExtraMembersFromSubscription(), PlanTier, planTierFromPriceId(), STORAGE_QUOTA (+22 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.04
@@ -708,12 +647,12 @@ Cohesion: 0.11
 Nodes (18): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleResolution, noEmit (+10 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.07
-Nodes (39): Props, TabDisplay(), CellValue, Grid, makeEmptyGrid(), Props, STRING_LABELS, tabLinesToGrid() (+31 more)
+Cohesion: 0.06
+Nodes (39): Props, Props, TabDisplay(), CellValue, Grid, makeEmptyGrid(), Props, STRING_LABELS (+31 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.06
-Nodes (38): bandRiders, setlists, tours, removeNullish(), insertTrashItem(), TrashItemType, attachmentsBelongToBand(), bandGigsRouter (+30 more)
+Cohesion: 0.08
+Nodes (26): handNotes, setlists, songLists, HandNoteRow, handNoteToApi(), removeNullish(), insertTrashItem(), TrashItemType (+18 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.04
@@ -724,44 +663,44 @@ Cohesion: 0.07
 Nodes (29): 1. Enable Firebase Authentication, 1. Get Your Firebase Service Account Key, 2. Publish Firestore Rules, 2. Set Up Local Environment Variables, 3. Confirm Required Collections Exist, 3. Verify Setup Locally, 4. Verify Health and Invite Flow, 5. Optional but Recommended Hardening (+21 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.13
-Nodes (29): BAND_SUBCOLLECTIONS, Data, deleteBandCollectionWithNested(), deleteCollectionDocs(), deleteUserLegacyCollections(), onRequest(), onRequestPost(), USER_LEGACY_SUBCOLLECTIONS (+21 more)
+Cohesion: 0.16
+Nodes (25): BAND_SUBCOLLECTIONS, Data, deleteBandCollectionWithNested(), deleteCollectionDocs(), deleteUserLegacyCollections(), onRequest(), onRequestPost(), USER_LEGACY_SUBCOLLECTIONS (+17 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.05
 Nodes (44): folder_id, icon, id, name, song_ids, song_notes, sort_order, updated_at (+36 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.04
-Nodes (91): BandManagementPanel(), BandManagementPanelProps, BrandMarkProps, GitHubIcon(), fallbackInitial(), getInitials(), UserAvatar(), UserAvatarProps (+83 more)
+Cohesion: 0.08
+Nodes (46): BrandMarkProps, GitHubIcon(), fallbackInitial(), getInitials(), UserAvatar(), UserAvatarProps, AuthContext, AuthContextValue (+38 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.05
 Nodes (42): 1. Color Palette, 2. Typography, 3. Logo Usage, 4. Voice & Tone, 5. Imagery Guidelines, 6. Design Components, Accessibility, AI Image Generation (+34 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.11
-Nodes (28): PlanGate(), Props, Props, useOptionalBands(), computeBandPlan(), isBandPlanActive(), isPlanActive(), PLAN_ORDER (+20 more)
+Cohesion: 0.06
+Nodes (47): PlanGate(), Props, formatStorageBytes(), InlineInputProps, PLAN_TIER_ICON, Props, Props, useOptionalBands() (+39 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.08
 Nodes (36): format_context(), format_result(), main(), Format a single search result for display, Format contextual recommendations for display., BM25, calculate_pattern_break(), detect_domain() (+28 more)
 
 ### Community 28 - "Community 28"
-Cohesion: 0.13
-Nodes (18): extensionFromImageMimeType(), extensionFromUrl(), riderAsText(), sanitizeFileName(), addGigsFolder(), addInputListsFolder(), addPressKitImagesFolder(), addPressKitsFolder() (+10 more)
+Cohesion: 0.05
+Nodes (52): buildHeaders(), ActivePressKitShare, ApiHeaders, buildHeaders(), createPressKitShare(), CreateShareInput, disablePressKitShare(), fetchPublicPressKit() (+44 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.11
-Nodes (15): Props, insertAtCursor(), insertSection(), Props, Section, SECTIONS, insertChordAtSelection(), diatonicChords() (+7 more)
+Nodes (15): Props, insertAtCursor(), insertSection(), Props, Section, SECTIONS, insertChordAtSelection(), extractRecentChords() (+7 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.06
-Nodes (29): BLACK_PCS, ChordFinderProps, DEFAULT_GUITAR_STRINGS, DEFAULT_STRINGS, DEFAULT_UKE_STRINGS, GUITAR_PC_LOOKUP, GuitarFretboardProps, identifyByIntervals() (+21 more)
+Cohesion: 0.08
+Nodes (23): BLACK_PCS, ChordFinderProps, DEFAULT_GUITAR_STRINGS, DEFAULT_STRINGS, DEFAULT_UKE_STRINGS, GUITAR_PC_LOOKUP, GuitarFretboardProps, identifyByIntervals() (+15 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.07
-Nodes (39): Adding songs, Before going public, Browser support, Built for bands, not solo users bolted onto a band feature later, ChordPro format, Cloudflare Pages (recommended when using `/api/*`), Cloudflare Workers (static-only), Codebase knowledge graph (+31 more)
+Cohesion: 0.08
+Nodes (38): Adding songs, Before going public, Built for bands, not solo users bolted onto a band feature later, ChordPro format, Cloudflare Pages (recommended when using `/api/*`), Cloudflare Workers (static-only), Codebase knowledge graph, code:bash (cp .env.example .env) (+30 more)
 
 ### Community 32 - "Community 32"
 Cohesion: 0.05
@@ -792,16 +731,16 @@ Cohesion: 0.33
 Nodes (10): ALLOWED_STATUSES, buildSnapshot(), createCredential(), extractBandItems(), findSubscriptionForBand(), isActive(), main(), mapStatus() (+2 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.04
-Nodes (76): DiagramInstrument, ActiveChord, ConcertModeView(), Props, ActiveStrokeState, drawStroke(), Props, TwoFingerScrollState (+68 more)
+Cohesion: 0.05
+Nodes (68): chordParser, DiagramInstrument, LineRenderer(), LineRendererProps, METADATA_DIRECTIVES, Props, SECTION_LABELS, ActiveChord (+60 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.08
-Nodes (39): Layout(), formatStorageBytes(), InlineInputProps, PLAN_TIER_ICON, Props, Sidebar(), SidebarItemIcon(), AttachmentRow() (+31 more)
+Cohesion: 0.06
+Nodes (43): Props, SongFormValues, chordproField, { container }, initialSong, onSave, randomUuidSpy, router (+35 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.06
-Nodes (49): BandDetailPage(), BandDetailPage, AnchoredToastOptions, dismissOnNextInteraction(), showAnchoredToast(), toast, toastCardStyle, parseFrontmatter() (+41 more)
+Cohesion: 0.07
+Nodes (38): BandTechRiderPanel(), Props, Stageplot, parseFrontmatter(), parseSongFile(), BandPublicResourceType, buildBandPublicShareUrl(), slugifyPublicSegment() (+30 more)
 
 ### Community 42 - "Community 42"
 Cohesion: 0.47
@@ -816,16 +755,16 @@ Cohesion: 0.22
 Nodes (8): background_color, description, display, icons, name, short_name, start_url, theme_color
 
 ### Community 45 - "Community 45"
-Cohesion: 0.06
-Nodes (60): Props, ShareMenu(), ShareMenuProps, InviteNotificationsState, useInviteNotifications(), ApiHeaders, buildHeaders(), declineBandInvite() (+52 more)
+Cohesion: 0.04
+Nodes (104): BandManagementPanel(), BandManagementPanelProps, Layout(), Props, Props, SetlistsView(), ShareMenu(), ShareMenuProps (+96 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.05
-Nodes (47): CLUBS, CONTACTS, demoImage(), demoLogo(), drumKit(), EXTRA_SONGS, FESTIVALS, FIRST_NAMES (+39 more)
+Cohesion: 0.13
+Nodes (27): AttachmentRow(), AttachmentRowProps, formatFileSize(), Props, SongAttachments(), useSetlists(), useAttachmentsTrash(), Params (+19 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.04
-Nodes (71): PressKitImageAsset, PressKitView(), Props, triggerBlobDownload(), Props, TrashListItem, adminInvitesClient, adminUsersClient (+63 more)
+Cohesion: 0.05
+Nodes (54): PressKitImageAsset, PressKitView(), Props, Props, TrashListItem, adminInvitesClient, adminUsersClient, apiClient (+46 more)
 
 ### Community 48 - "Community 48"
 Cohesion: 0.25
@@ -849,7 +788,7 @@ Nodes (41): name, notNull, primaryKey, type, name, notNull, primaryKey, type (+3
 
 ### Community 53 - "Community 53"
 Cohesion: 0.10
-Nodes (21): scripts, backfill:presskit-thumbs, build, build:demo, build:pages, db:generate, db:migrate, deploy (+13 more)
+Nodes (20): scripts, backfill:presskit-thumbs, build, build:demo, build:pages, db:generate, db:migrate, deploy (+12 more)
 
 ### Community 54 - "Community 54"
 Cohesion: 0.08
@@ -864,8 +803,8 @@ Cohesion: 0.15
 Nodes (11): __dirname, generateIcons(), publicDir, sizes, svgPath, sharp, sharp, buildThumbnail() (+3 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.28
-Nodes (6): devOrigin, resolveAllowedHostFromProxyUri(), resolveDevBaseFromProxyUri(), resolveProxyUri(), VENDOR_CHUNK_RULES, { version: APP_VERSION }
+Cohesion: 0.47
+Nodes (4): resolveAllowedHostFromProxyUri(), resolveDevBaseFromProxyUri(), resolveProxyUri(), VENDOR_CHUNK_RULES
 
 ### Community 58 - "Community 58"
 Cohesion: 0.60
@@ -892,8 +831,8 @@ Cohesion: 0.50
 Nodes (4): firestore, rules, storage, rules
 
 ### Community 77 - "Community 77"
-Cohesion: 0.07
-Nodes (35): AddSongForm(), Props, SongFormValues, Props, Props, StrumBarGrid(), CYCLE, DEFAULT_CHORDS (+27 more)
+Cohesion: 0.24
+Nodes (5): Props, GUITAR_CHORDS, UKULELE_CHORDS, ALL_CHORD_NAMES, suggestChordNames()
 
 ### Community 78 - "Community 78"
 Cohesion: 0.06
@@ -904,8 +843,8 @@ Cohesion: 0.25
 Nodes (7): engines, node, license, name, private, type, version
 
 ### Community 80 - "Community 80"
-Cohesion: 0.06
-Nodes (35): drawing_layers, hospitality_notes, items, logistics_notes, public_share_enabled, sort_order, default, name (+27 more)
+Cohesion: 0.47
+Nodes (4): Data, normalize(), onRequest(), onRequestPost()
 
 ### Community 81 - "Community 81"
 Cohesion: 0.60
@@ -957,15 +896,15 @@ Nodes (31): name, notNull, primaryKey, type, avatar, email, email_lower, full_na
 
 ### Community 94 - "Community 94"
 Cohesion: 0.06
-Nodes (31): name, size_bytes, song_id, uploader_avatar, uploader_display_name, uploader_user_id, name, notNull (+23 more)
+Nodes (31): name, song_id, storage_key, uploader_avatar, uploader_display_name, uploader_user_id, name, notNull (+23 more)
 
 ### Community 95 - "Community 95"
 Cohesion: 0.10
-Nodes (23): pressKitImages, pressKits, extensionForImageMimeType(), PRESS_KIT_IMAGE_ACCEPTED_MIME_TYPES, PRESS_KIT_IMAGE_THUMB_ACCEPTED_MIME_TYPES, PressKitImageRow, pressKitImageToApi(), pressKitImageUpload (+15 more)
+Nodes (24): pressKitImages, pressKits, extensionForImageMimeType(), PRESS_KIT_IMAGE_ACCEPTED_MIME_TYPES, PressKitImageRow, pressKitImageToApi(), pressKitImageUpload, streamPressKitImageFile() (+16 more)
 
 ### Community 96 - "Community 96"
-Cohesion: 0.05
-Nodes (40): attachments, bandMembers, calendarFeeds, feedback, handNotes, recordingComments, songMemberPrefs, songRecordings (+32 more)
+Cohesion: 0.09
+Nodes (32): db, pool, recordingComments, songRevisions, songs, normalize(), recordSongRevision(), RevisionRow (+24 more)
 
 ### Community 97 - "Community 97"
 Cohesion: 0.07
@@ -988,8 +927,8 @@ Cohesion: 0.07
 Nodes (29): drawing_layers, hospitality_notes, items, logistics_notes, public_share_enabled, default, name, notNull (+21 more)
 
 ### Community 102 - "Community 102"
-Cohesion: 0.07
-Nodes (45): bootstrapAdmin(), main(), db, pool, sessions, userInvites, users, assertUploadWithinQuota() (+37 more)
+Cohesion: 0.09
+Nodes (26): sessions, userInvites, attachSession(), clearSessionCookie(), generateSessionToken(), getSessionToken(), Request, requireAuth() (+18 more)
 
 ### Community 103 - "Community 103"
 Cohesion: 0.07
@@ -1001,7 +940,7 @@ Nodes (26): Banner Design Tasks, Brand Identity Tasks, code:block1 (1. brand →
 
 ### Community 105 - "Community 105"
 Cohesion: 0.07
-Nodes (27): created_by, mime_type, storage_key, thumb_size_bytes, thumb_storage_key, name, notNull, primaryKey (+19 more)
+Nodes (27): created_by, mime_type, size_bytes, thumb_size_bytes, thumb_storage_key, name, notNull, primaryKey (+19 more)
 
 ### Community 106 - "Community 106"
 Cohesion: 0.07
@@ -1016,8 +955,8 @@ Cohesion: 0.07
 Nodes (27): description, icon, logo, owner_id, updated_at, name, notNull, primaryKey (+19 more)
 
 ### Community 109 - "Community 109"
-Cohesion: 0.08
-Nodes (26): created_by, size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, name, notNull, primaryKey (+18 more)
+Cohesion: 0.07
+Nodes (27): created_by, mime_type, storage_key, thumb_size_bytes, thumb_storage_key, name, notNull, primaryKey (+19 more)
 
 ### Community 110 - "Community 110"
 Cohesion: 0.07
@@ -1052,12 +991,12 @@ Cohesion: 0.08
 Nodes (26): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+18 more)
 
 ### Community 118 - "Community 118"
-Cohesion: 0.07
-Nodes (27): mime_type, name, uploader_avatar, uploader_display_name, uploader_user_id, default, name, notNull (+19 more)
+Cohesion: 0.08
+Nodes (26): name, size_bytes, uploader_avatar, uploader_display_name, uploader_user_id, name, notNull, primaryKey (+18 more)
 
 ### Community 119 - "Community 119"
-Cohesion: 0.09
-Nodes (24): escapeHtml(), renderPressKitOgHtml(), replaceMetaContent(), replaceTitle(), stripHtml(), authRateLimit(), Bucket, buckets (+16 more)
+Cohesion: 0.07
+Nodes (29): pressKitShares, resolveOrigin(), authRateLimit(), Bucket, buckets, now, securityHeaders(), startSessionCleanup() (+21 more)
 
 ### Community 120 - "Community 120"
 Cohesion: 0.06
@@ -1068,20 +1007,20 @@ Cohesion: 0.08
 Nodes (24): Apparel, Business Card, Car/Sedan, CIP Deliverable Guide, Core Identity, Digital Assets, Email Signature, Envelope (+16 more)
 
 ### Community 122 - "Community 122"
-Cohesion: 0.08
-Nodes (28): bandInvites, bandLogos, bands, Band, BandRow, toBandApi(), BAND_LOGO_ACCEPTED_MIME_TYPES, BandLogoRow (+20 more)
+Cohesion: 0.13
+Nodes (17): bandLogos, BAND_LOGO_ACCEPTED_MIME_TYPES, BandLogoRow, bandLogoToApi(), bandLogoUpload, createLogoThumbnail(), extensionForImageMimeType(), streamBandLogoFile() (+9 more)
 
 ### Community 123 - "Community 123"
 Cohesion: 0.12
 Nodes (13): main(), Add custom font families.          Args:             fonts: Dict of font_type: [, Add custom spacing values.          Args:             spacing: Dict of name: val, Add custom breakpoints.          Args:             breakpoints: Dict of name: wi, Add plugin requirements.          Args:             plugins: List of plugin name, Get plugin recommendations based on configuration.          Returns:, Generate configuration file content.          Returns:             Configuration, Generate Tailwind CSS configuration files. (+5 more)
 
 ### Community 124 - "Community 124"
-Cohesion: 0.08
-Nodes (24): song_ids, song_notes, sort_order, updated_at, columns, default, name, notNull (+16 more)
+Cohesion: 0.09
+Nodes (23): icon, song_ids, song_notes, sort_order, name, notNull, primaryKey, type (+15 more)
 
 ### Community 125 - "Community 125"
 Cohesion: 0.09
-Nodes (23): name, song_ids, song_notes, sort_order, name, notNull, primaryKey, type (+15 more)
+Nodes (23): icon, song_ids, song_notes, sort_order, name, notNull, primaryKey, type (+15 more)
 
 ### Community 126 - "Community 126"
 Cohesion: 0.12
@@ -1096,8 +1035,8 @@ Cohesion: 0.09
 Nodes (23): id, inviter_id, role, status, name, notNull, primaryKey, type (+15 more)
 
 ### Community 129 - "Community 129"
-Cohesion: 0.12
-Nodes (18): name, notNull, primaryKey, type, band_id, joined_at, user_id, default (+10 more)
+Cohesion: 0.09
+Nodes (23): name, notNull, primaryKey, type, band_id, joined_at, name, user_id (+15 more)
 
 ### Community 130 - "Community 130"
 Cohesion: 0.09
@@ -1140,8 +1079,8 @@ Cohesion: 0.09
 Nodes (22): created_at, created_by, kit_id, token, default, name, notNull, primaryKey (+14 more)
 
 ### Community 140 - "Community 140"
-Cohesion: 0.06
-Nodes (31): name, song_id, storage_key, uploader_avatar, uploader_display_name, uploader_user_id, name, notNull (+23 more)
+Cohesion: 0.07
+Nodes (27): mime_type, song_id, uploader_avatar, uploader_display_name, uploader_user_id, default, name, notNull (+19 more)
 
 ### Community 141 - "Community 141"
 Cohesion: 0.07
@@ -1160,32 +1099,32 @@ Cohesion: 0.17
 Nodes (12): setlists_owner_check, checkConstraints, compositePrimaryKeys, indexes, isRLSEnabled, name, policies, schema (+4 more)
 
 ### Community 145 - "Community 145"
-Cohesion: 0.10
-Nodes (21): description, icon, logo, owner_id, name, notNull, primaryKey, type (+13 more)
+Cohesion: 0.09
+Nodes (22): description, logo, owner_id, updated_at, name, notNull, primaryKey, type (+14 more)
 
 ### Community 146 - "Community 146"
+Cohesion: 0.09
+Nodes (22): description, logo, owner_id, updated_at, name, notNull, primaryKey, type (+14 more)
+
+### Community 147 - "Community 147"
 Cohesion: 0.07
 Nodes (27): description, icon, logo, owner_id, updated_at, name, notNull, primaryKey (+19 more)
 
-### Community 147 - "Community 147"
+### Community 148 - "Community 148"
+Cohesion: 0.07
+Nodes (27): mime_type, size_bytes, thumb_size_bytes, thumb_storage_key, title, default, name, notNull (+19 more)
+
+### Community 149 - "Community 149"
+Cohesion: 0.06
+Nodes (31): name, song_id, storage_key, uploader_avatar, uploader_display_name, uploader_user_id, name, notNull (+23 more)
+
+### Community 150 - "Community 150"
 Cohesion: 0.06
 Nodes (32): description, icon, logo, name, owner_id, updated_at, name, notNull (+24 more)
 
-### Community 148 - "Community 148"
+### Community 151 - "Community 151"
 Cohesion: 0.08
 Nodes (26): size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, title, columns, name, notNull (+18 more)
-
-### Community 149 - "Community 149"
-Cohesion: 0.07
-Nodes (27): mime_type, song_id, uploader_avatar, uploader_display_name, uploader_user_id, default, name, notNull (+19 more)
-
-### Community 150 - "Community 150"
-Cohesion: 0.07
-Nodes (27): description, icon, logo, owner_id, updated_at, name, notNull, primaryKey (+19 more)
-
-### Community 151 - "Community 151"
-Cohesion: 0.07
-Nodes (27): mime_type, size_bytes, thumb_size_bytes, thumb_storage_key, title, default, name, notNull (+19 more)
 
 ### Community 152 - "Community 152"
 Cohesion: 0.10
@@ -1197,11 +1136,11 @@ Nodes (21): email, message, page, user_agent, name, notNull, primaryKey, type (+
 
 ### Community 154 - "Community 154"
 Cohesion: 0.10
-Nodes (21): TestShadcnInstaller.test_add_components_already_installed, TestShadcnInstaller.test_add_components_no_config, TestShadcnInstaller.test_get_installed_components_empty, TestShadcnInstaller.test_get_installed_components_no_config, functions, excluded_lines, executed_lines, missing_lines (+13 more)
+Nodes (21): TestShadcnInstaller.test_add_components_already_installed, TestShadcnInstaller.test_check_shadcn_config_exists, TestShadcnInstaller.test_get_installed_components_with_files, TestShadcnInstaller.test_init_default_project_root, functions, excluded_lines, executed_lines, missing_lines (+13 more)
 
 ### Community 155 - "Community 155"
-Cohesion: 0.15
-Nodes (13): extensionForAudioMimeType(), parseByteRange(), RECORDING_ACCEPTED_MIME_TYPES, recordingUpload, SongRecordingRow, songRecordingToApi(), adapter, CONTENT (+5 more)
+Cohesion: 0.08
+Nodes (30): bootstrapAdmin(), main(), songRecordings, users, extensionForAudioMimeType(), RECORDING_ACCEPTED_MIME_TYPES, recordingUpload, SongRecordingRow (+22 more)
 
 ### Community 156 - "Community 156"
 Cohesion: 0.10
@@ -1285,7 +1224,7 @@ Nodes (18): songs_user_id_users_id_fk, checkConstraints, compositePrimaryKeys, f
 
 ### Community 176 - "Community 176"
 Cohesion: 0.11
-Nodes (18): name, notNull, primaryKey, type, band_id, joined_at, role, default (+10 more)
+Nodes (18): joined_at, role, user_id, default, name, notNull, primaryKey, type (+10 more)
 
 ### Community 177 - "Community 177"
 Cohesion: 0.11
@@ -1425,7 +1364,7 @@ Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo
 
 ### Community 211 - "Community 211"
 Cohesion: 0.12
-Nodes (17): created_at, token, user_id, default, name, notNull, primaryKey, type (+9 more)
+Nodes (17): created_at, expires_at, token, default, name, notNull, primaryKey, type (+9 more)
 
 ### Community 212 - "Community 212"
 Cohesion: 0.33
@@ -1433,7 +1372,7 @@ Nodes (6): updated_at, default, name, notNull, primaryKey, type
 
 ### Community 213 - "Community 213"
 Cohesion: 0.12
-Nodes (17): expires_at, inviter_id, status, name, notNull, primaryKey, type, name (+9 more)
+Nodes (17): name, notNull, primaryKey, type, band_id, inviter_id, status, name (+9 more)
 
 ### Community 214 - "Community 214"
 Cohesion: 0.12
@@ -1512,8 +1451,8 @@ Cohesion: 0.12
 Nodes (17): setlists_band_id_bands_id_fk, setlists_user_id_users_id_fk, foreignKeys, columnsFrom, columnsTo, name, onDelete, onUpdate (+9 more)
 
 ### Community 233 - "Community 233"
-Cohesion: 0.08
-Nodes (26): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+18 more)
+Cohesion: 0.12
+Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
 
 ### Community 234 - "Community 234"
 Cohesion: 0.09
@@ -1596,8 +1535,8 @@ Cohesion: 0.13
 Nodes (17): main, ShadcnInstaller.check_shadcn_config, ShadcnInstaller.get_installed_components, excluded_lines, executed_lines, missing_lines, summary, functions (+9 more)
 
 ### Community 254 - "Community 254"
-Cohesion: 0.17
-Nodes (8): AttachmentRow, attachmentToApi(), attachmentUpload, sanitizeFilenameForHeader(), streamAttachment(), UploaderIdentitySnapshot, bandAttachmentsRouter, id
+Cohesion: 0.09
+Nodes (21): attachments, trashItems, AttachmentRow, attachmentToApi(), attachmentUpload, sanitizeFilenameForHeader(), streamAttachment(), UploaderIdentitySnapshot (+13 more)
 
 ### Community 255 - "Community 255"
 Cohesion: 0.14
@@ -1648,8 +1587,8 @@ Cohesion: 0.12
 Nodes (16): compilerOptions, esModuleInterop, lib, module, moduleResolution, noFallthroughCasesInSwitch, noUnusedLocals, noUnusedParameters (+8 more)
 
 ### Community 267 - "Community 267"
-Cohesion: 0.10
-Nodes (21): TailwindConfigGenerator.add_breakpoints, TailwindConfigGenerator.add_colors, TailwindConfigGenerator.add_plugins, TailwindConfigGenerator._generate_typescript, functions, excluded_lines, executed_lines, missing_lines (+13 more)
+Cohesion: 0.12
+Nodes (16): TailwindConfigGenerator.add_breakpoints, TailwindConfigGenerator.add_fonts, TailwindConfigGenerator.__init__, functions, excluded_lines, executed_lines, missing_lines, summary (+8 more)
 
 ### Community 268 - "Community 268"
 Cohesion: 0.13
@@ -1676,8 +1615,8 @@ Cohesion: 0.13
 Nodes (15): columns, name, name, value, band_members_role_check, band_members_band_id_user_id_pk, checkConstraints, compositePrimaryKeys (+7 more)
 
 ### Community 274 - "Community 274"
-Cohesion: 0.06
-Nodes (35): drawing_layers, hospitality_notes, items, logistics_notes, public_share_enabled, sort_order, default, name (+27 more)
+Cohesion: 0.13
+Nodes (14): dialect, id, prevId, checkConstraints, compositePrimaryKeys, indexes, isRLSEnabled, name (+6 more)
 
 ### Community 275 - "Community 275"
 Cohesion: 0.13
@@ -1837,23 +1776,23 @@ Nodes (11): TailwindConfigGenerator, tailwind_config_gen.py, classes, excluded_l
 
 ### Community 314 - "Community 314"
 Cohesion: 0.18
-Nodes (11): ShadcnInstaller.add_all_components, TestShadcnInstaller.test_init_default_project_root, excluded_lines, executed_lines, missing_lines, summary, covered_lines, excluded_lines (+3 more)
+Nodes (11): ShadcnInstaller.add_all_components, TailwindConfigGenerator.write_config, excluded_lines, executed_lines, missing_lines, summary, covered_lines, excluded_lines (+3 more)
 
 ### Community 315 - "Community 315"
 Cohesion: 0.18
-Nodes (11): ShadcnInstaller.add_components, TailwindConfigGenerator.__init__, excluded_lines, executed_lines, missing_lines, summary, excluded_lines, excluded_lines (+3 more)
+Nodes (11): ShadcnInstaller.add_components, TailwindConfigGenerator.add_spacing, excluded_lines, executed_lines, missing_lines, summary, excluded_lines, excluded_lines (+3 more)
 
 ### Community 316 - "Community 316"
 Cohesion: 0.18
-Nodes (11): ShadcnInstaller.__init__, TailwindConfigGenerator.generate_config_string, excluded_lines, executed_lines, missing_lines, summary, percent_covered, excluded_lines (+3 more)
+Nodes (11): ShadcnInstaller.__init__, TailwindConfigGenerator._generate_typescript, excluded_lines, executed_lines, missing_lines, summary, percent_covered, excluded_lines (+3 more)
 
 ### Community 317 - "Community 317"
 Cohesion: 0.18
-Nodes (11): ShadcnInstaller.list_installed, TailwindConfigGenerator._default_content_paths, excluded_lines, executed_lines, missing_lines, summary, num_statements, excluded_lines (+3 more)
+Nodes (11): ShadcnInstaller.list_installed, TailwindConfigGenerator._generate_javascript, excluded_lines, executed_lines, missing_lines, summary, num_statements, excluded_lines (+3 more)
 
 ### Community 318 - "Community 318"
-Cohesion: 0.06
-Nodes (35): drawing_layers, hospitality_notes, items, logistics_notes, public_share_enabled, sort_order, default, name (+27 more)
+Cohesion: 0.31
+Nodes (9): asImageEntries(), asStringArray(), asTextEntries(), asVideoEntries(), cleanString(), Data, onRequestPost(), PressKitImageEntry (+1 more)
 
 ### Community 319 - "Community 319"
 Cohesion: 0.29
@@ -1944,16 +1883,16 @@ Cohesion: 0.33
 Nodes (5): References (Knowledge Base), Routing, Slides, Subcommands, When to Use
 
 ### Community 343 - "Community 343"
-Cohesion: 0.06
-Nodes (26): createPressKitShare(), DemoChordVoicing, DemoRecordingComment, DemoSongRevision, DemoState, disablePressKitShare(), getPressKitShare(), getPublicPressKit() (+18 more)
+Cohesion: 0.07
+Nodes (20): DemoChordVoicing, DemoRecordingComment, DemoSongRevision, DemoState, load(), pressKitsCrud, pressKitShares, rawSongsCrud (+12 more)
 
 ### Community 344 - "Community 344"
-Cohesion: 0.07
-Nodes (39): bandChordVoicings, pressKitShares, songLists, trashItems, resolveOrigin(), isUniqueViolation(), nameForTrashPayload(), nextSortOrder() (+31 more)
+Cohesion: 0.09
+Nodes (24): bandChordVoicings, bandInvites, bandMembers, bandRiders, bands, feedback, songMemberPrefs, Band (+16 more)
 
 ### Community 345 - "Community 345"
-Cohesion: 0.11
-Nodes (27): assertBand(), clearSongTranspose(), deleteChordVoicing(), deleteHandNote(), deleteRecordingComment(), disableCalendarFeed(), emptyTrash(), getSongRevision() (+19 more)
+Cohesion: 0.10
+Nodes (27): assertBand(), clearSongTranspose(), createPressKitShare(), deleteChordVoicing(), deleteHandNote(), deleteRecordingComment(), disablePressKitShare(), emptyTrash() (+19 more)
 
 ### Community 346 - "Community 346"
 Cohesion: 0.07
@@ -1964,32 +1903,32 @@ Cohesion: 0.07
 Nodes (27): description, icon, logo, owner_id, updated_at, name, notNull, primaryKey (+19 more)
 
 ### Community 348 - "Community 348"
-Cohesion: 0.08
-Nodes (26): name, notNull, primaryKey, type, chord_name, created_by, frets, id (+18 more)
+Cohesion: 0.07
+Nodes (27): name, notNull, primaryKey, type, chord_name, created_by, frets, instrument (+19 more)
 
 ### Community 349 - "Community 349"
 Cohesion: 0.07
-Nodes (27): mime_type, size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, default, name, notNull (+19 more)
+Nodes (27): id, mime_type, size_bytes, thumb_size_bytes, thumb_storage_key, name, notNull, primaryKey (+19 more)
 
 ### Community 350 - "Community 350"
 Cohesion: 0.07
-Nodes (27): name, notNull, primaryKey, type, chord_name, created_by, frets, instrument (+19 more)
+Nodes (27): name, notNull, primaryKey, type, chord_name, frets, id, instrument (+19 more)
 
 ### Community 351 - "Community 351"
 Cohesion: 0.07
 Nodes (27): mime_type, song_id, uploader_avatar, uploader_display_name, uploader_user_id, default, name, notNull (+19 more)
 
 ### Community 352 - "Community 352"
-Cohesion: 0.08
-Nodes (26): name, notNull, primaryKey, type, chord_name, created_by, frets, id (+18 more)
+Cohesion: 0.07
+Nodes (27): name, notNull, primaryKey, type, chord_name, created_by, frets, instrument (+19 more)
 
 ### Community 353 - "Community 353"
 Cohesion: 0.07
-Nodes (27): mime_type, size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, default, name, notNull (+19 more)
+Nodes (27): created_at, size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, default, name, notNull (+19 more)
 
 ### Community 354 - "Community 354"
-Cohesion: 0.08
-Nodes (26): name, song_id, uploader_avatar, uploader_display_name, uploader_user_id, name, notNull, primaryKey (+18 more)
+Cohesion: 0.07
+Nodes (27): mime_type, song_id, uploader_avatar, uploader_display_name, uploader_user_id, default, name, notNull (+19 more)
 
 ### Community 355 - "Community 355"
 Cohesion: 0.07
@@ -2008,8 +1947,8 @@ Cohesion: 0.33
 Nodes (6): code:html (<div class="flex flex-row">Row (default)</div>), code:html (<div class="flex justify-start">Start</div>), code:html (<div class="flex items-start">Start</div>), code:html (<div class="flex gap-4">All sides</div>), code:html (<div class="flex flex-wrap">Wrap</div>), Flexbox
 
 ### Community 359 - "Community 359"
-Cohesion: 0.12
-Nodes (21): chordParser, ChordOccurrence, LineRenderer(), LineRendererProps, METADATA_DIRECTIVES, Props, SECTION_LABELS, ChordSegment (+13 more)
+Cohesion: 0.50
+Nodes (3): Data, onRequest(), onRequestPost()
 
 ### Community 360 - "Community 360"
 Cohesion: 0.40
@@ -2049,15 +1988,15 @@ Nodes (5): tags, name, notNull, primaryKey, type
 
 ### Community 369 - "Community 369"
 Cohesion: 0.07
-Nodes (27): id, mime_type, size_bytes, thumb_size_bytes, thumb_storage_key, name, notNull, primaryKey (+19 more)
+Nodes (27): mime_type, size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, default, name, notNull (+19 more)
 
 ### Community 370 - "Community 370"
 Cohesion: 0.40
 Nodes (5): name, notNull, primaryKey, type, chordpro
 
 ### Community 371 - "Community 371"
-Cohesion: 0.05
-Nodes (59): LanguageBadge(), Props, Props, SetlistsView(), Props, SongFilterPanel(), getInitialSortBy(), getSongPreview() (+51 more)
+Cohesion: 0.13
+Nodes (21): LanguageBadge(), Props, getSongPreview(), normalizeEmojiIcon(), Props, SORT_OPTIONS, SORT_OPTIONS_NO_CUSTOM, SORT_OPTIONS_WITH_CUSTOM (+13 more)
 
 ### Community 372 - "Community 372"
 Cohesion: 0.08
@@ -2072,28 +2011,28 @@ Cohesion: 0.08
 Nodes (26): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+18 more)
 
 ### Community 375 - "Community 375"
-Cohesion: 0.07
-Nodes (27): description, icon, logo, owner_id, updated_at, name, notNull, primaryKey (+19 more)
+Cohesion: 0.08
+Nodes (26): description, icon, logo, name, owner_id, name, notNull, primaryKey (+18 more)
 
 ### Community 376 - "Community 376"
 Cohesion: 0.08
-Nodes (26): name, song_id, uploader_avatar, uploader_display_name, uploader_user_id, name, notNull, primaryKey (+18 more)
+Nodes (26): song_id, storage_key, uploader_avatar, uploader_display_name, uploader_user_id, columns, name, notNull (+18 more)
 
 ### Community 377 - "Community 377"
 Cohesion: 0.08
 Nodes (26): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+18 more)
 
 ### Community 378 - "Community 378"
-Cohesion: 0.07
-Nodes (27): created_at, size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, default, name, notNull (+19 more)
+Cohesion: 0.08
+Nodes (26): created_by, size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, name, notNull, primaryKey (+18 more)
 
 ### Community 379 - "Community 379"
 Cohesion: 0.08
 Nodes (26): description, icon, logo, name, owner_id, name, notNull, primaryKey (+18 more)
 
 ### Community 380 - "Community 380"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
+Cohesion: 0.08
+Nodes (26): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+18 more)
 
 ### Community 381 - "Community 381"
 Cohesion: 0.40
@@ -2104,8 +2043,8 @@ Cohesion: 0.40
 Nodes (5): TailwindConfigGenerator.add_color_palette, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 383 - "Community 383"
-Cohesion: 0.07
-Nodes (27): description, icon, logo, owner_id, updated_at, name, notNull, primaryKey (+19 more)
+Cohesion: 0.08
+Nodes (26): description, icon, logo, name, owner_id, name, notNull, primaryKey (+18 more)
 
 ### Community 384 - "Community 384"
 Cohesion: 0.08
@@ -2116,8 +2055,8 @@ Cohesion: 0.40
 Nodes (5): TailwindConfigGenerator._base_config, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 386 - "Community 386"
-Cohesion: 0.07
-Nodes (27): name, notNull, primaryKey, type, chord_name, created_by, frets, instrument (+19 more)
+Cohesion: 0.40
+Nodes (5): TailwindConfigGenerator._default_content_paths, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 387 - "Community 387"
 Cohesion: 0.40
@@ -2128,8 +2067,8 @@ Cohesion: 0.40
 Nodes (5): TailwindConfigGenerator._format_plugins, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 389 - "Community 389"
-Cohesion: 0.07
-Nodes (27): created_at, size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, default, name, notNull (+19 more)
+Cohesion: 0.40
+Nodes (5): TailwindConfigGenerator.generate_config_string, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 390 - "Community 390"
 Cohesion: 0.40
@@ -2156,16 +2095,16 @@ Cohesion: 0.40
 Nodes (5): TestShadcnInstaller.test_add_components_no_components, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 396 - "Community 396"
-Cohesion: 0.07
-Nodes (27): mime_type, song_id, uploader_avatar, uploader_display_name, uploader_user_id, default, name, notNull (+19 more)
+Cohesion: 0.40
+Nodes (5): TestShadcnInstaller.test_add_components_no_config, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 397 - "Community 397"
 Cohesion: 0.40
 Nodes (5): TestShadcnInstaller.test_check_shadcn_config_not_exists, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 398 - "Community 398"
-Cohesion: 0.07
-Nodes (27): name, notNull, primaryKey, type, chord_name, created_by, frets, instrument (+19 more)
+Cohesion: 0.40
+Nodes (5): TestShadcnInstaller.test_get_installed_components_empty, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 399 - "Community 399"
 Cohesion: 0.40
@@ -2173,7 +2112,7 @@ Nodes (5): TestShadcnInstaller.test_init_custom_project_root, excluded_lines, ex
 
 ### Community 400 - "Community 400"
 Cohesion: 0.08
-Nodes (26): song_id, storage_key, uploader_avatar, uploader_display_name, uploader_user_id, columns, name, notNull (+18 more)
+Nodes (26): id, song_id, uploader_avatar, uploader_display_name, uploader_user_id, name, notNull, primaryKey (+18 more)
 
 ### Community 401 - "Community 401"
 Cohesion: 0.40
@@ -2253,7 +2192,7 @@ Nodes (23): name, notNull, primaryKey, type, band_id, joined_at, role, user_id (
 
 ### Community 456 - "Community 456"
 Cohesion: 0.09
-Nodes (22): expires_at, id, inviter_id, status, name, notNull, primaryKey, type (+14 more)
+Nodes (23): created_at, expires_at, inviter_id, status, default, name, notNull, primaryKey (+15 more)
 
 ### Community 457 - "Community 457"
 Cohesion: 0.09
@@ -2269,7 +2208,7 @@ Nodes (23): created_at, expires_at, inviter_id, status, default, name, notNull, 
 
 ### Community 460 - "Community 460"
 Cohesion: 0.09
-Nodes (23): created_at, expires_at, inviter_id, status, default, name, notNull, primaryKey (+15 more)
+Nodes (22): expires_at, id, inviter_id, status, name, notNull, primaryKey, type (+14 more)
 
 ### Community 461 - "Community 461"
 Cohesion: 0.10
@@ -2280,8 +2219,8 @@ Cohesion: 0.15
 Nodes (13): Props, base(), loadSongRevisions(), restoreSongRevision(), SongRevision, diffLines(), DiffOp, displayValue() (+5 more)
 
 ### Community 463 - "Community 463"
-Cohesion: 0.10
-Nodes (19): setlistSessions, { bandId, setlistId }, bandSetlistSessionRouter, body, broadcast(), keepAlive, loadHost(), loadState() (+11 more)
+Cohesion: 0.11
+Nodes (16): setlistSessions, { bandId, setlistId }, bandSetlistSessionRouter, body, broadcast(), keepAlive, Room, rooms (+8 more)
 
 ### Community 464 - "Community 464"
 Cohesion: 0.11
@@ -2352,8 +2291,8 @@ Cohesion: 0.11
 Nodes (18): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, bands_owner_id_users_id_fk (+10 more)
 
 ### Community 481 - "Community 481"
-Cohesion: 0.22
-Nodes (19): Params, SessionMode, apiFetch(), claimSetlistHost(), DEMO_FAKE_LEADER, DEMO_SELF, DEMO_SESSION_HOST_ID, demoChannel() (+11 more)
+Cohesion: 0.29
+Nodes (15): Params, SessionMode, apiFetch(), claimSetlistHost(), DEMO_SESSION_HOST_ID, demoChannel(), demoReadState(), demoStorageKey() (+7 more)
 
 ### Community 482 - "Community 482"
 Cohesion: 0.12
@@ -2400,8 +2339,8 @@ Cohesion: 0.12
 Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
 
 ### Community 493 - "Community 493"
-Cohesion: 0.08
-Nodes (26): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+18 more)
+Cohesion: 0.12
+Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
 
 ### Community 494 - "Community 494"
 Cohesion: 0.12
@@ -2456,8 +2395,8 @@ Cohesion: 0.14
 Nodes (15): app, client, db, follower, h, leader, listener, openStream() (+7 more)
 
 ### Community 507 - "Community 507"
-Cohesion: 0.14
-Nodes (15): BandChordVoicings, ChordVoicing, deleteBandChordVoicing(), loadBandChordVoicings(), saveBandChordVoicing(), VoicingInstrument, normalizeChordForLookup(), normalizeQualityForLookup() (+7 more)
+Cohesion: 0.21
+Nodes (9): BandChordVoicings, ChordVoicing, deleteBandChordVoicing(), loadBandChordVoicings(), saveBandChordVoicing(), VoicingInstrument, normalizeChordForLookup(), normalizeQualityForLookup() (+1 more)
 
 ### Community 508 - "Community 508"
 Cohesion: 0.13
@@ -2508,40 +2447,40 @@ Cohesion: 0.17
 Nodes (12): name, value, band_invites_status_check, checkConstraints, compositePrimaryKeys, indexes, isRLSEnabled, name (+4 more)
 
 ### Community 520 - "Community 520"
-Cohesion: 0.19
-Nodes (18): addAttachment(), addBandLogo(), addPressKitImage(), addRecording(), addRecordingComment(), createCalendarFeed(), demoFeed(), genId() (+10 more)
+Cohesion: 0.36
+Nodes (11): addAttachment(), addBandLogo(), addPressKitImage(), addRecording(), addRecordingComment(), genId(), now(), purgeDate() (+3 more)
 
 ### Community 521 - "Community 521"
-Cohesion: 0.12
-Nodes (16): press_kit_shares_status_check, dialect, id, name, value, prevId, checkConstraints, compositePrimaryKeys (+8 more)
+Cohesion: 0.18
+Nodes (11): press_kit_shares_status_check, name, value, checkConstraints, compositePrimaryKeys, indexes, name, policies (+3 more)
 
 ### Community 522 - "Community 522"
 Cohesion: 0.18
 Nodes (11): press_kit_shares_status_check, name, value, checkConstraints, compositePrimaryKeys, indexes, name, policies (+3 more)
 
 ### Community 523 - "Community 523"
-Cohesion: 0.07
-Nodes (27): id, mime_type, size_bytes, thumb_size_bytes, thumb_storage_key, name, notNull, primaryKey (+19 more)
+Cohesion: 0.18
+Nodes (9): attachmentCounts, badges, memberBandIds, noteCounts, recordingCounts, requestedSongIds, SongBadgeCounts, songBadgesRouter (+1 more)
 
 ### Community 524 - "Community 524"
-Cohesion: 0.07
-Nodes (27): name, notNull, primaryKey, type, chord_name, created_by, frets, instrument (+19 more)
+Cohesion: 0.33
+Nodes (7): DarkModeContext, DarkModeContextValue, DarkModeProvider(), getInitial(), MODES, ThemeMode, useDarkMode()
 
 ### Community 525 - "Community 525"
 Cohesion: 0.42
 Nodes (6): Params, addRecordingComment(), base(), deleteRecordingComment(), loadRecordingComments(), RecordingComment
 
 ### Community 526 - "Community 526"
-Cohesion: 0.11
-Nodes (18): getStorageUsage(), Params, TransposeScope, useSongTranspose(), fetchStorageUsage(), isPaidPlanActive(), resolveBandQuotaBytes(), resolveUserQuotaBytes() (+10 more)
+Cohesion: 0.31
+Nodes (6): Params, TransposeScope, clearMyTranspose(), loadBandTransposePrefs(), loadMyTranspose(), saveMyTranspose()
 
 ### Community 527 - "Community 527"
 Cohesion: 0.38
 Nodes (6): fileNameToName(), findPressKitJsonFile(), ImportedPressKitDraft, ImportedPressKitImageRef, parseImportedPressKitFile(), stringArray()
 
 ### Community 528 - "Community 528"
-Cohesion: 0.07
-Nodes (27): created_at, size_bytes, storage_key, thumb_size_bytes, thumb_storage_key, default, name, notNull (+19 more)
+Cohesion: 0.40
+Nodes (5): getSongRevision(), recordDemoSongRevision(), restoreSongRevision(), snapshotChanged(), songSnapshot()
 
 ### Community 529 - "Community 529"
 Cohesion: 0.40
@@ -2560,283 +2499,39 @@ Cohesion: 0.40
 Nodes (5): title, name, notNull, primaryKey, type
 
 ### Community 533 - "Community 533"
-Cohesion: 0.07
-Nodes (27): mime_type, song_id, uploader_avatar, uploader_display_name, uploader_user_id, default, name, notNull (+19 more)
+Cohesion: 0.40
+Nodes (5): TailwindConfigGenerator.add_colors, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 534 - "Community 534"
-Cohesion: 0.08
-Nodes (26): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+18 more)
+Cohesion: 0.40
+Nodes (5): TailwindConfigGenerator.add_plugins, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 535 - "Community 535"
 Cohesion: 0.40
 Nodes (5): TestShadcnInstaller.test_add_components_with_overwrite, excluded_lines, executed_lines, missing_lines, summary
 
 ### Community 536 - "Community 536"
-Cohesion: 0.08
-Nodes (26): description, icon, logo, name, owner_id, name, notNull, primaryKey (+18 more)
-
-### Community 537 - "Community 537"
-Cohesion: 0.08
-Nodes (26): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+18 more)
-
-### Community 538 - "Community 538"
-Cohesion: 0.08
-Nodes (26): description, icon, logo, name, owner_id, name, notNull, primaryKey (+18 more)
-
-### Community 539 - "Community 539"
-Cohesion: 0.08
-Nodes (26): song_id, storage_key, uploader_avatar, uploader_display_name, uploader_user_id, columns, name, notNull (+18 more)
-
-### Community 540 - "Community 540"
-Cohesion: 0.08
-Nodes (26): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+18 more)
-
-### Community 541 - "Community 541"
-Cohesion: 0.08
-Nodes (26): description, icon, logo, name, owner_id, name, notNull, primaryKey (+18 more)
-
-### Community 542 - "Community 542"
-Cohesion: 0.09
-Nodes (23): name, notNull, primaryKey, type, band_id, joined_at, role, user_id (+15 more)
-
-### Community 543 - "Community 543"
-Cohesion: 0.09
-Nodes (23): name, notNull, primaryKey, type, band_id, joined_at, role, user_id (+15 more)
-
-### Community 544 - "Community 544"
-Cohesion: 0.09
-Nodes (23): created_at, expires_at, inviter_id, status, default, name, notNull, primaryKey (+15 more)
-
-### Community 545 - "Community 545"
-Cohesion: 0.09
-Nodes (23): name, notNull, primaryKey, type, band_id, joined_at, role, user_id (+15 more)
-
-### Community 546 - "Community 546"
-Cohesion: 0.09
-Nodes (22): expires_at, id, inviter_id, status, name, notNull, primaryKey, type (+14 more)
-
-### Community 547 - "Community 547"
-Cohesion: 0.09
-Nodes (22): expires_at, id, inviter_id, status, name, notNull, primaryKey, type (+14 more)
-
-### Community 548 - "Community 548"
-Cohesion: 0.10
-Nodes (20): [0.1.0] - 2026-09-07, [0.1.1] - 2026-09-08, [0.1.2] - 2026-09-08, [0.1.3] - 2026-09-09, [0.2.0] - 2026-10-03, [0.3.0] - 2026-10-06, Added, Added (+12 more)
-
-### Community 549 - "Community 549"
-Cohesion: 0.12
-Nodes (17): gigs, buildIcs(), escapeText(), IcsEvent, base, BS, ics, lines (+9 more)
-
-### Community 550 - "Community 550"
-Cohesion: 0.11
-Nodes (18): dialect, id, prevId, checkConstraints, compositePrimaryKeys, indexes, isRLSEnabled, name (+10 more)
-
-### Community 551 - "Community 551"
-Cohesion: 0.11
-Nodes (18): dialect, id, prevId, checkConstraints, compositePrimaryKeys, indexes, isRLSEnabled, name (+10 more)
-
-### Community 552 - "Community 552"
-Cohesion: 0.11
-Nodes (18): dialect, id, prevId, checkConstraints, compositePrimaryKeys, indexes, isRLSEnabled, name (+10 more)
-
-### Community 553 - "Community 553"
-Cohesion: 0.11
-Nodes (18): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, band_riders_band_id_bands_id_fk (+10 more)
-
-### Community 554 - "Community 554"
-Cohesion: 0.11
-Nodes (18): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, bands_owner_id_users_id_fk (+10 more)
-
-### Community 555 - "Community 555"
-Cohesion: 0.11
-Nodes (18): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, band_riders_band_id_bands_id_fk (+10 more)
-
-### Community 556 - "Community 556"
-Cohesion: 0.11
-Nodes (18): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, bands_owner_id_users_id_fk (+10 more)
-
-### Community 557 - "Community 557"
-Cohesion: 0.11
-Nodes (18): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, band_riders_band_id_bands_id_fk (+10 more)
-
-### Community 558 - "Community 558"
-Cohesion: 0.11
-Nodes (18): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, bands_owner_id_users_id_fk (+10 more)
-
-### Community 559 - "Community 559"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 560 - "Community 560"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 561 - "Community 561"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 562 - "Community 562"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 563 - "Community 563"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 564 - "Community 564"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 565 - "Community 565"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 566 - "Community 566"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 567 - "Community 567"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 568 - "Community 568"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 569 - "Community 569"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 570 - "Community 570"
-Cohesion: 0.12
-Nodes (17): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columnsFrom (+9 more)
-
-### Community 571 - "Community 571"
-Cohesion: 0.13
-Nodes (11): dayKey(), GigsCalendar(), MONTH_FORMAT, Props, cells, gigs, next, onMonthChange (+3 more)
-
-### Community 572 - "Community 572"
-Cohesion: 0.21
-Nodes (14): songRevisions, normalize(), recordSongRevision(), RevisionRow, SNAPSHOT_FIELDS, snapshotFromSongRow(), snapshotsEqual(), songRevisionToApi() (+6 more)
-
-### Community 573 - "Community 573"
-Cohesion: 0.15
-Nodes (13): ActivePressKitShare, ApiHeaders, buildHeaders(), createPressKitShare(), CreateShareInput, fetchPublicPressKit(), PublicPressKitPayload, PressKitDate (+5 more)
-
-### Community 574 - "Community 574"
-Cohesion: 0.12
-Nodes (16): columns, name, nullsNotDistinct, name, value, band_chord_voicings_instrument_check, checkConstraints, compositePrimaryKeys (+8 more)
-
-### Community 575 - "Community 575"
-Cohesion: 0.12
-Nodes (16): columns, name, nullsNotDistinct, name, value, band_chord_voicings_instrument_check, checkConstraints, compositePrimaryKeys (+8 more)
-
-### Community 576 - "Community 576"
-Cohesion: 0.12
-Nodes (16): columns, name, nullsNotDistinct, name, value, band_chord_voicings_instrument_check, checkConstraints, compositePrimaryKeys (+8 more)
-
-### Community 577 - "Community 577"
-Cohesion: 0.15
-Nodes (14): app, BS, call(), client, db, dir, future(), gig (+6 more)
-
-### Community 578 - "Community 578"
-Cohesion: 0.13
-Nodes (15): columns, name, name, value, band_members_role_check, band_members_band_id_user_id_pk, checkConstraints, compositePrimaryKeys (+7 more)
-
-### Community 579 - "Community 579"
-Cohesion: 0.13
-Nodes (15): columns, name, name, value, band_members_role_check, band_members_band_id_user_id_pk, checkConstraints, compositePrimaryKeys (+7 more)
-
-### Community 580 - "Community 580"
-Cohesion: 0.13
-Nodes (15): columns, name, name, value, band_members_role_check, band_members_band_id_user_id_pk, checkConstraints, compositePrimaryKeys (+7 more)
-
-### Community 581 - "Community 581"
-Cohesion: 0.22
-Nodes (11): PublicTourDate, generatePressKitZip(), ALLOWED_RICH_TEXT_TAGS, escapeHtml(), inferImageExtension(), PublicBandPressKitPage(), PublicPressKitPayload, sanitizePressKitHtml() (+3 more)
-
-### Community 582 - "Community 582"
-Cohesion: 0.18
-Nodes (11): pressKitDateLine(), band, dates, empty, gig, json, kit, readBlob() (+3 more)
-
-### Community 583 - "Community 583"
-Cohesion: 0.17
-Nodes (12): name, value, band_invites_status_check, checkConstraints, compositePrimaryKeys, indexes, isRLSEnabled, name (+4 more)
-
-### Community 584 - "Community 584"
-Cohesion: 0.17
-Nodes (12): name, value, band_invites_status_check, checkConstraints, compositePrimaryKeys, indexes, isRLSEnabled, name (+4 more)
-
-### Community 585 - "Community 585"
-Cohesion: 0.17
-Nodes (12): name, value, band_invites_status_check, checkConstraints, compositePrimaryKeys, indexes, isRLSEnabled, name (+4 more)
-
-### Community 586 - "Community 586"
-Cohesion: 0.27
-Nodes (11): detectPresavePlatformLabel(), normalizePresaveUrl(), normalizeUrl(), parsePressKitMedia(), parseSoundcloud(), parseSpotify(), parseVimeo(), parseYoutube() (+3 more)
-
-### Community 587 - "Community 587"
-Cohesion: 0.29
-Nodes (8): makeTourSpec(), tourKey(), load(), resetDemoStore(), seed(), seedCoreGigs(), seedRiderItems(), seedSongs()
-
-### Community 588 - "Community 588"
-Cohesion: 0.29
-Nodes (6): chordproField, { container }, initialSong, onSave, randomUuidSpy, router
-
-### Community 589 - "Community 589"
-Cohesion: 0.29
-Nodes (3): AddToSection, Props, m
-
-### Community 590 - "Community 590"
-Cohesion: 0.48
-Nodes (6): Data, isValidEmail(), isValidUsername(), normalizeEmail(), onRequestPost(), resourceCollectionForType()
-
-### Community 591 - "Community 591"
 Cohesion: 0.40
-Nodes (5): GIGBOY, Main Entry Point, Offline Page, GIGBOY Documentation, useAudioRecorder
-
-### Community 592 - "Community 592"
-Cohesion: 0.40
-Nodes (5): TailwindConfigGenerator.add_fonts, excluded_lines, executed_lines, missing_lines, summary
-
-### Community 593 - "Community 593"
-Cohesion: 0.40
-Nodes (5): TailwindConfigGenerator.add_spacing, excluded_lines, executed_lines, missing_lines, summary
-
-### Community 594 - "Community 594"
-Cohesion: 0.40
-Nodes (5): TailwindConfigGenerator._generate_javascript, excluded_lines, executed_lines, missing_lines, summary
-
-### Community 595 - "Community 595"
-Cohesion: 0.40
-Nodes (5): TailwindConfigGenerator.write_config, excluded_lines, executed_lines, missing_lines, summary
-
-### Community 596 - "Community 596"
-Cohesion: 0.40
-Nodes (5): TestShadcnInstaller.test_check_shadcn_config_exists, excluded_lines, executed_lines, missing_lines, summary
-
-### Community 597 - "Community 597"
-Cohesion: 0.40
-Nodes (5): TestShadcnInstaller.test_get_installed_components_with_files, excluded_lines, executed_lines, missing_lines, summary
+Nodes (5): TestShadcnInstaller.test_get_installed_components_no_config, excluded_lines, executed_lines, missing_lines, summary
 
 ## Knowledge Gaps
-- **6935 isolated node(s):** `name`, `private`, `version`, `license`, `type` (+6930 more)
+- **5889 isolated node(s):** `name`, `private`, `version`, `license`, `type` (+5884 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **47 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `firebase-admin` connect `Community 0` to `Community 3`, `Community 7`, `Community 8`, `Community 13`, `Community 590`, `Community 15`, `Community 22`?**
-  _High betweenness centrality (0.002) - this node is a cross-community bridge._
 - **Why does `createLogoThumbnail()` connect `Community 122` to `Community 56`?**
-  _High betweenness centrality (0.002) - this node is a cross-community bridge._
+  _High betweenness centrality (0.003) - this node is a cross-community bridge._
 - **Why does `sharp` connect `Community 56` to `Community 2`, `Community 122`?**
+  _High betweenness centrality (0.003) - this node is a cross-community bridge._
+- **Why does `devDependencies` connect `Community 3` to `Community 56`, `Community 0`, `Community 79`?**
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
 - **What connects `name`, `private`, `version` to the rest of the system?**
-  _7138 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _6092 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.1289198606271777 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.145748987854251 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.05877551020408163 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
