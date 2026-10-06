@@ -197,7 +197,12 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandInputListsByBandId, setBandInputListsByBandId] = useState<Record<string, InputList[]>>({});
   const [bandPressKitsByBandId, setBandPressKitsByBandId] = useState<Record<string, PressKit[]>>({});
   const [bandTrashByBandId, setBandTrashByBandId] = useState<Record<string, TrashListItem[]>>({});
-  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  // The first fetch for a user only starts in an effect, so `fetching` alone is
+  // false on the first render after sign-in; treat that gap as loading too, or
+  // the root redirect sees "no bands" and lands on the profile page.
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
+  const loading = fetching || (Boolean(userId) && loadedUserId !== userId);
 
   const refreshBands = useCallback(async () => {
     if (!userId) {
@@ -217,18 +222,21 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBandInputListsByBandId({});
       setBandPressKitsByBandId({});
       setBandTrashByBandId({});
-      setLoading(false);
+      setFetching(false);
+      setLoadedUserId(null);
       return;
     }
 
     // Self-host has no realtime subscriptions: fetch once via the API-backed dataClient.
-    setLoading(true);
+    setFetching(true);
     void dataClient.bands.list().then((nextBands) => {
       setBands(nextBands);
-      setLoading(false);
+      setFetching(false);
+      setLoadedUserId(userId);
     }).catch((error) => {
       console.error('Failed to load bands.', error);
-      setLoading(false);
+      setFetching(false);
+      setLoadedUserId(userId);
     });
   }, [refreshBands, userId]);
 

@@ -809,7 +809,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
               {tabBlocks.length > 0 && (
                 <div className="tab-editor-guides">
                   <p className="form-hint tab-guide-hint">
-                    Tab beat guide ({timeSignature.trim() || '4/4'}): bars start with <strong>|</strong>, beats are numbered.
+                    Tab preview: bars start with <strong>|</strong>.
                   </p>
                   {tabBlocks.map((block, idx) => (
                     <TabDisplay

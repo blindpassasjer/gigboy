@@ -8,6 +8,17 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
+### Changed
+- The demo account's Scarborough Fair and House of the Rising Sun now include tab
+  blocks.
+- Press kit text, presave and video inputs use the same background as other
+  inputs in the app.
+- The song form's tab hint no longer claims beats are numbered.
+
+### Fixed
+- Opening the app no longer lands on the profile page first; it goes to the
+  library (profile only when there are no bands yet).
+
 ## [0.2.0] - 2026-10-03
 
 ### Added

@@ -11450,7 +11450,7 @@ input.stageplot-legend-number:focus {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   min-height: 200px;
-  background: var(--surface);
+  background: var(--bg);
 }
 
 .press-kit-body-columns {
@@ -11515,7 +11515,7 @@ input.stageplot-legend-number:focus {
   padding: var(--space-sm) var(--space-lg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface);
+  background: var(--bg);
   color: var(--text);
   outline: none;
   transition: border-color .15s, box-shadow .15s, background .15s;
