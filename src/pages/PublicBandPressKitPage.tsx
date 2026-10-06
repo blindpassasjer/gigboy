@@ -4,6 +4,7 @@ import { Download, ArrowDownToLine, Copy } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import BrandMark from '../components/BrandMark';
 import { dataClient } from '../lib/dataClient';
+import type { PublicTourDate } from '../lib/dataClient/types';
 import { generatePressKitZip } from '../lib/pressKitZip';
 import { saveBlob } from '../lib/download';
 import { parsePressKitMedia, detectPresavePlatformLabel } from '../utils/pressKitMedia';
@@ -26,12 +27,13 @@ interface PublicPressKitPayload {
   presaveReleaseName?: string;
   presaveReleaseDate?: string;
   presaveUrls: string[];
+  tourDates: PublicTourDate[];
 }
 
 async function fetchPublicPressKit(token: string): Promise<PublicPressKitPayload> {
   const result = await dataClient.publicPressKits.get(token);
   if (!result) throw new Error('Press kit not found.');
-  const { kit, bandName, bandLogo, images } = result;
+  const { kit, bandName, bandLogo, images, tourDates } = result;
   return {
     bandName,
     bandLogo: bandLogo ?? undefined,
@@ -43,7 +45,26 @@ async function fetchPublicPressKit(token: string): Promise<PublicPressKitPayload
     presaveReleaseName: kit.presaveReleaseName,
     presaveReleaseDate: kit.presaveReleaseDate,
     presaveUrls: kit.selectedPresaveUrls ?? kit.presaveUrls ?? [],
+    tourDates: tourDates ?? [],
   };
+}
+
+/** "Sat 14 Nov 2026, 20:00" in the gig's own timezone, falling back to the viewer's if that zone is unknown. */
+function formatTourDate(date: PublicTourDate): string {
+  const when = new Date(date.startsAt);
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  };
+  try {
+    return when.toLocaleString(undefined, { ...options, timeZone: date.timezone ?? undefined });
+  } catch {
+    return when.toLocaleString(undefined, options);
+  }
 }
 
 function slugifyFileName(value: string): string {
@@ -173,6 +194,7 @@ export default function PublicBandPressKitPage() {
         presaveReleaseName: payload.presaveReleaseName,
         presaveReleaseDate: payload.presaveReleaseDate,
         presaveUrls: payload.presaveUrls,
+        tourDates: payload.tourDates,
         generatedAt: new Date().toISOString(),
       });
       triggerBlobDownload(blob, `${slugifyFileName(payload.bandName)}-press-kit.zip`);
@@ -235,6 +257,18 @@ export default function PublicBandPressKitPage() {
   const hasImages = payload.images.length > 0;
   const hasVideos = payload.videoUrls.length > 0;
   const hasPresaves = payload.presaveUrls.length > 0;
+  const hasDates = payload.tourDates.length > 0;
+  // Group by tour (dates arrive soonest-first), with single gigs that have no tour under "Other dates". When all
+  // dates share one label there's nothing to separate, so no heading is shown.
+  const dateGroups = (() => {
+    const groups = new Map<string, PublicTourDate[]>();
+    for (const date of payload.tourDates) {
+      const label = date.tourName ?? 'Other dates';
+      groups.set(label, [...(groups.get(label) ?? []), date]);
+    }
+    const single = groups.size === 1;
+    return [...groups].map(([label, dates]) => ({ label: single ? null : label, dates }));
+  })();
 
   return (
     <main className="public-setlist-page public-presskit-page">
@@ -294,6 +328,30 @@ export default function PublicBandPressKitPage() {
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {hasDates && (
+          <section className="public-presskit-videos-section public-presskit-dates-section">
+            <h2 className="public-presskit-section-heading">Upcoming dates</h2>
+            {dateGroups.map((group) => (
+              <div key={group.label ?? 'ungrouped'}>
+                {group.label && <p className="public-presskit-date-tour">{group.label}</p>}
+                <ul className="public-presskit-dates">
+                  {group.dates.map((date) => (
+                    <li key={date.id} className="public-presskit-date">
+                      <span className="public-presskit-date-when">{formatTourDate(date)}</span>
+                      <span className="public-presskit-date-title">{date.title}</span>
+                      {(date.venue || date.address) && (
+                        <span className="public-presskit-date-where">
+                          {[date.venue, date.address].filter(Boolean).join(', ')}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </section>
         )}
 
@@ -430,7 +488,7 @@ export default function PublicBandPressKitPage() {
           </section>
         )}
 
-        {!hasTexts && !hasImages && !hasVideos && !hasPresaves && (
+        {!hasTexts && !hasImages && !hasVideos && !hasPresaves && !hasDates && (
           <p className="public-setlist-status">This press kit has no content yet.</p>
         )}
       </div>

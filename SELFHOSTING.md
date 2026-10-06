@@ -80,7 +80,8 @@ uploaded files.
    **When you do put a reverse proxy in front**, also set two more variables in `.env`:
    - `PUBLIC_ORIGIN` — the canonical public URL of the instance, e.g.
      `https://gigboy.example.com` (scheme + host, no trailing slash). This is used to build
-     invite links, press-kit share URLs and social-preview tags. Without it those URLs are
+     invite links, press-kit share URLs and social-preview tags. (Calendar subscription links
+     don't need it: they're built from the address the page is opened at.) Without it those URLs are
      derived from the incoming `Host` header, which a client can forge.
    - `TRUST_PROXY` — set to `1` for a single proxy hop (or a subnet/list per Express's
      "trust proxy" docs). The auth rate limiter keys on the client IP; behind a proxy with

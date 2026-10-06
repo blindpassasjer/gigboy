@@ -4,11 +4,13 @@ import { db } from '../db/client.js';
 import {
   attachments,
   bandRiders,
+  gigs,
   pressKitImages,
   pressKits,
   setlists,
   songLists,
   songs,
+  tours,
   trashItems,
 } from '../db/schema.js';
 import { localStorageAdapter } from '../storage/localStorageAdapter.js';
@@ -18,6 +20,8 @@ export type TrashItemType =
   | 'song'
   | 'songlist'
   | 'setlist'
+  | 'gig'
+  | 'tour'
   | 'technicalRider'
   | 'attachment'
   | 'pressKit'
@@ -53,6 +57,8 @@ export function nameForTrashPayload(itemType: string, payload: unknown): string 
     const attachment = (p.attachment ?? {}) as Record<string, unknown>;
     return typeof attachment.name === 'string' ? attachment.name : 'Attachment';
   }
+  if (itemType === 'gig') return typeof p.title === 'string' ? p.title : 'Untitled gig';
+  if (itemType === 'tour') return typeof p.name === 'string' ? p.name : 'Untitled tour';
   if (itemType === 'pressKit') return typeof p.name === 'string' ? p.name : 'Untitled press kit';
   if (itemType === 'pressKitImage') return typeof p.title === 'string' ? p.title : 'Untitled image';
   return typeof p.name === 'string' ? p.name : 'Untitled';
@@ -196,6 +202,48 @@ async function restoreTrashRowUnchecked(row: TrashRow, payload: Record<string, u
       });
       return { ok: true };
     }
+    case 'tour': {
+      const whereCond = eq(tours.bandId, row.bandId!);
+      const sortOrder = await nextSortOrder(tours, whereCond);
+      await db.insert(tours).values({
+        id: (payload.id as string) ?? randomUUID(),
+        bandId: row.bandId!,
+        name: (payload.name as string) ?? '',
+        icon: (payload.icon as string | undefined) ?? null,
+        sortOrder,
+        createdAt: payload.createdAt ? new Date(payload.createdAt as string) : new Date(),
+        updatedAt: new Date(),
+      });
+      return { ok: true };
+    }
+    case 'gig': {
+      await db.insert(gigs).values({
+        id: (payload.id as string) ?? randomUUID(),
+        bandId: row.bandId!,
+        // The tour may have been deleted since; the gig comes back ungrouped rather than failing the FK.
+        tourId: null,
+        title: (payload.title as string) ?? '',
+        startsAt: new Date(payload.startsAt as string),
+        endsAt: payload.endsAt ? new Date(payload.endsAt as string) : null,
+        getInAt: payload.getInAt ? new Date(payload.getInAt as string) : null,
+        soundCheckAt: payload.soundCheckAt ? new Date(payload.soundCheckAt as string) : null,
+        timezone: (payload.timezone as string | undefined) ?? null,
+        venue: (payload.venue as string | undefined) ?? null,
+        address: (payload.address as string | undefined) ?? null,
+        contactName: (payload.contactName as string | undefined) ?? null,
+        contactPhone: (payload.contactPhone as string | undefined) ?? null,
+        contactEmail: (payload.contactEmail as string | undefined) ?? null,
+        notes: (payload.notes as string | undefined) ?? null,
+        // Attachments may have been deleted since, and an FK to a missing row would fail the restore.
+        setlistId: null,
+        pressKitId: null,
+        riderId: null,
+        status: (payload.status as string) ?? 'confirmed',
+        createdAt: payload.createdAt ? new Date(payload.createdAt as string) : new Date(),
+        updatedAt: new Date(),
+      });
+      return { ok: true };
+    }
     case 'technicalRider': {
       if (!row.bandId) {
         return { ok: false, status: 500, error: 'Riders can only be restored within a band.' };
@@ -280,6 +328,8 @@ async function restoreTrashRowUnchecked(row: TrashRow, payload: Record<string, u
         selectedPresaveUrls: Array.isArray(payload.selectedPresaveUrls)
           ? (payload.selectedPresaveUrls as string[])
           : [],
+        // Gigs may have been deleted since; the ids are just a filter, not an FK.
+        gigIds: Array.isArray(payload.gigIds) ? (payload.gigIds as string[]) : [],
         createdAt: payload.createdAt ? new Date(payload.createdAt as string) : new Date(),
         createdBy: (payload.createdBy as string | undefined) ?? null,
       });

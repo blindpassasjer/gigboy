@@ -28,9 +28,12 @@ vi.mock('../context/BandsContext', () => ({
   useBands: () => ({
     bands: [],
     bandSongListsByBandId: {},
+    bandSetlistsByBandId: {},
     updateBandSong: mocks.updateBandSong,
     addSongToBandSongList: vi.fn(),
     removeSongFromBandSongList: vi.fn(),
+    addSongToBandSetlist: vi.fn(),
+    removeSongFromBandSetlist: vi.fn(),
     removeSongFromBandLibrary: mocks.removeSongFromBandLibrary,
   }),
 }));

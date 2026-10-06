@@ -8,7 +8,47 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-06
+
+### Added
+- **Gigs and tours.** Each band has a Tours section in the sidebar: an "All gigs" page
+  and one page per tour. A gig has a title, date, on-stage / end time, get-in and
+  sound-check times, venue and address, a contact person (name, phone, email), notes,
+  a status (confirmed, tentative or cancelled), and optionally an attached setlist,
+  technical rider and press kit. The gigs page shows a calendar by default (with a
+  "+N more" for busy days), or cards, or a list; the choice is remembered. Past gigs
+  move into a collapsible Archive. A search box matches title, venue, contact, notes
+  and attachment names. Deleting a gig or tour goes to the trash like everything else.
+- **Calendar subscription.** Every band member (viewers too) can create a personal,
+  private link to the band's gigs and add it to Google, Apple or Outlook calendar. Each
+  event carries the schedule, contact and attachment names. The link is tied to the
+  member and stops working if they leave the band; "New link" revokes the old one. The
+  link uses whatever address the app is opened at. It covers the last 12 months plus
+  everything upcoming. Not available in the demo, which has no server.
+- **Tour dates on press kits.** In a press kit, tick the gigs to list, a whole tour at
+  a time or one by one from the tour's expandable list. The shared page shows an
+  "Upcoming dates" list grouped by tour, with only the title, date, venue and address
+  of confirmed, upcoming gigs; contacts, schedules and notes are never published.
+  The same dates go into the kit's ZIP download as `upcoming-dates.txt`.
+- **"Add to" menu on a song** replaces the Songlists button: one dropdown with both
+  songlists and setlists, ticking the ones the song is already in. It opens upward
+  when there's more room above.
+- A **Tabs** badge on songs that contain tablature, in the library, setlists and the
+  song page.
+- **Sidebar counts**: tours show their number of gigs, technical riders their number of
+  inputs (position-only markers aren't counted) and press kits their number of photos.
+- **Resizable sidebar** (desktop): drag its edge, double-click to fit the longest name,
+  or use the arrow keys on the handle. The width is remembered, and names that are cut
+  off show their full text on hover.
+
 ### Changed
+- "Export everything" now includes each band's gigs and tours (a readable `gigs.txt` and
+  a full `gigs.json`), and each press kit's JSON records which gigs it lists. Gigs can't
+  be re-imported yet.
+- The demo account is much fuller: more songs, songlists, setlists, technical riders with
+  proper stage plots, three press kits with pictures, a band logo, and gigs through 2030
+  across five yearly tours. Press kit and rider share links now work in the demo too
+  (in the same browser).
 - The demo account's Scarborough Fair and House of the Rising Sun now include tab
   blocks.
 - Press kit text, presave and video inputs use the same background as other
@@ -16,8 +56,14 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 - The song form's tab hint no longer claims beats are numbered.
 
 ### Fixed
+- A long sidebar can scroll again.
+- Playing a tab now follows the song's tempo; it previously ignored tempo changes.
 - Opening the app no longer lands on the profile page first; it goes to the
   library (profile only when there are no bands yet).
+
+### Database
+- Migration `0017` adds the `tours`, `gigs` and `calendar_feeds` tables and a `gig_ids`
+  column on `press_kits`. It runs automatically on startup; nothing existing is changed.
 
 ## [0.2.0] - 2026-10-03
 

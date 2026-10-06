@@ -24,6 +24,10 @@ import { bandPressKitsRouter } from './routes/bandPressKits.js';
 import { bandPressKitImagesRouter } from './routes/bandPressKitImages.js';
 import { bandPressKitSharesRouter } from './routes/bandPressKitShares.js';
 import { publicPressKitsRouter } from './routes/publicPressKits.js';
+import { bandGigsRouter } from './routes/bandGigs.js';
+import { bandToursRouter } from './routes/bandTours.js';
+import { bandCalendarFeedRouter } from './routes/bandCalendarFeed.js';
+import { publicCalendarRouter } from './routes/publicCalendar.js';
 import { publicAssetsRouter } from './routes/publicAssets.js';
 import { bandSongHandNotesRouter } from './routes/songHandNotes.js';
 import { bandSongRecordingsRouter } from './routes/songRecordings.js';
@@ -93,6 +97,9 @@ app.use('/api/bands/:bandId/song-lists', bandSongListsRouter);
 app.use('/api/bands/:bandId/setlists/:setlistId/session', bandSetlistSessionRouter);
 app.use('/api/bands/:bandId/setlists', bandSetlistsRouter);
 app.use('/api/bands/:bandId/riders', bandRidersRouter);
+app.use('/api/bands/:bandId/gigs', bandGigsRouter);
+app.use('/api/bands/:bandId/tours', bandToursRouter);
+app.use('/api/bands/:bandId/calendar-feed', bandCalendarFeedRouter);
 app.use('/api/bands/:bandId/press-kit-images', bandPressKitImagesRouter);
 app.use('/api/bands/:bandId/logos', bandLogosRouter);
 // Mounted before bandPressKitsRouter so its more specific /:id/share(/disable) routes are tried first.
@@ -101,6 +108,7 @@ app.use('/api/bands/:bandId/press-kits', bandPressKitsRouter);
 app.use('/api/bands/:bandId/trash', bandTrashRouter);
 app.use('/api/public', publicRidersRouter);
 app.use('/api/public', publicPressKitsRouter);
+app.use('/api/public', publicCalendarRouter);
 app.use('/api/public', publicAssetsRouter);
 app.use('/api/bands', bandsRouter);
 

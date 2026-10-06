@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useEditor, useEditorState, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Link2Off, Download, Upload, Trash2, PenLine, Newspaper, X, ArrowDownToLine, GripVertical, Copy } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo, Link2, Link2Off, Download, Upload, Trash2, PenLine, Newspaper, X, ArrowDownToLine, GripVertical, Copy, ChevronDown, ChevronRight } from 'lucide-react';
 import { parseImportedPressKitFile, findPressKitJsonFile } from '../utils/pressKitImport';
 import toast from '../utils/anchoredToast';
 import { showConfirmToast } from '../utils/toastDialogs';
@@ -13,7 +13,7 @@ import { saveBlob } from '../lib/download';
 import { PRESSKIT_ICON_OPTIONS } from '../lib/iconOptions';
 import { createWebpThumbnail, toUploadableImage } from '../utils/imageThumbnail';
 import { copyText } from '../utils/copyText';
-import type { PressKit } from '../types';
+import type { Gig, PressKit } from '../types';
 import { useBands } from '../context/BandsContext';
 import { parsePressKitMedia, detectPresavePlatformLabel, normalizePresaveUrl } from '../utils/pressKitMedia';
 
@@ -59,7 +59,7 @@ function normalizeEmojiIcon(value: string): string | undefined {
 }
 
 export default function PressKitView({ bandId, bandName, kit, canEdit, userId, userEmail, onDelete, onRename, onUpdateIcon }: Props) {
-  const { deleteBandPressKit, refreshBandPressKits, refreshBandTrash, updateBandLogo } = useBands();
+  const { deleteBandPressKit, refreshBandPressKits, refreshBandTrash, updateBandLogo, bandToursByBandId, refreshBandTours } = useBands();
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(kit.name);
@@ -464,6 +464,93 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
     else toast.error(`Failed to copy. Copy this link: ${url}`);
   };
 
+  // ── Tour dates (gigs picked to be listed on the shared kit) ─────────────
+  const bandTours = useMemo(() => bandToursByBandId[bandId] ?? [], [bandToursByBandId, bandId]);
+  const [gigIds, setGigIds] = useState<string[]>(kit.gigIds ?? []);
+  const [bandGigs, setBandGigs] = useState<Gig[]>([]);
+  const [expandedTourIds, setExpandedTourIds] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    setGigIds(kit.gigIds ?? []);
+  }, [kit.id, kit.gigIds]);
+
+  useEffect(() => {
+    if (bandToursByBandId[bandId] === undefined) void refreshBandTours(bandId).catch(() => {});
+  }, [bandId, bandToursByBandId, refreshBandTours]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void dataClient.bandGigs.list(bandId).then((gigs) => {
+      if (!cancelled) setBandGigs(gigs);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [bandId]);
+
+  /**
+   * Upcoming gigs (plus any already picked, so a past one can still be unticked) grouped under their tour,
+   * soonest first; gigs without a tour go in a trailing "No tour" group.
+   */
+  const tourGroups = useMemo(() => {
+    const nowMs = Date.now();
+    const visible = bandGigs
+      .filter((g) => new Date(g.startsAt).getTime() >= nowMs || gigIds.includes(g.id))
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+    const groups = bandTours
+      .map((tour) => ({ id: tour.id, name: `${tour.icon ? `${tour.icon} ` : ''}${tour.name}`, gigs: visible.filter((g) => g.tourId === tour.id) }))
+      .filter((group) => group.gigs.length > 0);
+    const loose = visible.filter((g) => !g.tourId || !bandTours.some((t) => t.id === g.tourId));
+    if (loose.length > 0) groups.push({ id: '__none__', name: 'No tour', gigs: loose });
+    return groups;
+  }, [bandGigs, bandTours, gigIds]);
+
+  // Tours that already contain a picked gig start expanded; after that the user's own toggles win.
+  const expanded = expandedTourIds ?? tourGroups.filter((g) => g.gigs.some((gig) => gigIds.includes(gig.id))).map((g) => g.id);
+  const toggleExpanded = (groupId: string) =>
+    setExpandedTourIds(expanded.includes(groupId) ? expanded.filter((id) => id !== groupId) : [...expanded, groupId]);
+
+  /** Only confirmed, upcoming gigs are ever shown publicly, so those are the ones a "whole tour" tick selects. */
+  const isListable = (gig: Gig) => gig.status === 'confirmed' && new Date(gig.startsAt).getTime() >= Date.now();
+
+  const saveGigIds = async (next: string[]) => {
+    if (!canEdit) return;
+    const previous = gigIds;
+    setGigIds(next);
+    try {
+      await dataClient.bandPressKits.update(bandId, { ...kit, gigIds: next });
+      // Refresh so later saves (which spread `kit`) don't write back the old list.
+      await refreshBandPressKits(bandId);
+    } catch {
+      setGigIds(previous);
+      toast.error('Failed to save tour dates.');
+    }
+  };
+
+  /** What the shared page shows: picked gigs that are confirmed and upcoming, soonest first. */
+  const publicDates = useMemo(() => {
+    const tourNameById = new Map(bandTours.map((t) => [t.id, t.name]));
+    return bandGigs
+      .filter((g) => gigIds.includes(g.id) && g.status === 'confirmed' && new Date(g.startsAt).getTime() >= Date.now())
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+      .map((g) => ({
+        title: g.title,
+        startsAt: g.startsAt,
+        timezone: g.timezone ?? null,
+        venue: g.venue ?? null,
+        address: g.address ?? null,
+        tourName: (g.tourId && tourNameById.get(g.tourId)) || null,
+      }));
+  }, [bandGigs, bandTours, gigIds]);
+
+  const toggleGig = (gigId: string, selected: boolean) =>
+    saveGigIds(selected ? Array.from(new Set([...gigIds, gigId])) : gigIds.filter((id) => id !== gigId));
+
+  /** Ticking a tour lists all its confirmed, upcoming gigs; unticking removes every gig of the tour from the kit. */
+  const toggleGroup = (gigs: Gig[], selected: boolean) => {
+    const groupIds = new Set(gigs.map((g) => g.id));
+    const rest = gigIds.filter((id) => !groupIds.has(id));
+    return saveGigIds(selected ? [...rest, ...gigs.filter(isListable).map((g) => g.id)] : rest);
+  };
+
   // ── Presaves / upcoming release ─────────────────────────────────────────
   const [presaveReleaseName, setPresaveReleaseName] = useState(kit.presaveReleaseName ?? '');
   const [presaveReleaseDate, setPresaveReleaseDate] = useState(kit.presaveReleaseDate ?? '');
@@ -704,6 +791,7 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
         presaveReleaseName,
         presaveReleaseDate,
         presaveUrls,
+        tourDates: publicDates,
         generatedAt: new Date().toISOString(),
       });
       const blobUrl = URL.createObjectURL(blob);
@@ -924,6 +1012,88 @@ export default function PressKitView({ bandId, bandName, kit, canEdit, userId, u
               )}
               <div className="press-kit-editor-wrap">
                 <EditorContent editor={editor} className="press-kit-editor" />
+              </div>
+            </section>
+          </div>
+
+          <div className="press-kit-section-card">
+            <section className="press-kit-videos-section">
+              <header className="press-kit-section-header">
+                <p className="press-kit-section-title">Tour dates</p>
+                {canEdit && (
+                  <p className="press-kit-section-hint">
+                    Tick the gigs to list on the shared press kit — a tour ticks all its gigs, or open it and pick individual
+                    ones. Only confirmed, upcoming gigs are shown, with just the title, date and venue.
+                  </p>
+                )}
+              </header>
+              <div className="setlist-notes-editor">
+                {tourGroups.length === 0 ? (
+                  <p className="bands-status">No upcoming gigs yet. Add some under Tours in the sidebar.</p>
+                ) : (
+                  <ul className="press-kit-tour-list">
+                    {tourGroups.map((group) => {
+                      const listable = group.gigs.filter(isListable);
+                      const picked = group.gigs.filter((g) => gigIds.includes(g.id));
+                      const allPicked = listable.length > 0 && listable.every((g) => gigIds.includes(g.id));
+                      const isOpen = expanded.includes(group.id);
+                      return (
+                        <li key={group.id} className="press-kit-tour-group">
+                          <div className="press-kit-tour-item">
+                            <button
+                              type="button"
+                              className="title-rename-btn"
+                              aria-expanded={isOpen}
+                              aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${group.name}`}
+                              onClick={() => toggleExpanded(group.id)}
+                            >
+                              {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </button>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={allPicked}
+                                ref={(el) => { if (el) el.indeterminate = picked.length > 0 && !allPicked; }}
+                                disabled={!canEdit || (listable.length === 0 && picked.length === 0)}
+                                onChange={(e) => { void toggleGroup(group.gigs, e.target.checked); }}
+                              />
+                              <span>{group.name}</span>
+                            </label>
+                            <span className="press-kit-section-hint">{picked.length} of {group.gigs.length} listed</span>
+                          </div>
+                          {isOpen && (
+                            <ul className="press-kit-tour-list press-kit-tour-gigs">
+                              {group.gigs.map((gig) => {
+                                const hidden = !isListable(gig);
+                                return (
+                                  <li key={gig.id} className="press-kit-tour-item">
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={gigIds.includes(gig.id)}
+                                        disabled={!canEdit || (hidden && !gigIds.includes(gig.id))}
+                                        onChange={(e) => { void toggleGig(gig.id, e.target.checked); }}
+                                      />
+                                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {new Date(gig.startsAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        {' · '}{gig.title}
+                                      </span>
+                                    </label>
+                                    {hidden && (
+                                      <span className="press-kit-section-hint">
+                                        not shown ({gig.status !== 'confirmed' ? gig.status : 'past'})
+                                      </span>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </section>
           </div>

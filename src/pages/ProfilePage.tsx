@@ -10,6 +10,7 @@ import { dataClient } from '../lib/dataClient';
 import { loadSongRecordings, type SongRecording } from '../lib/songRecordings';
 import { buildSongbookExportZip, triggerSongbookExportDownload, type PressKitImageAsset } from '../lib/songbookExport';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import type { Gig, Tour } from '../types';
 import { writeStoredString } from '../lib/safeStorage';
 
 export default function ProfilePage() {
@@ -174,6 +175,8 @@ export default function ProfilePage() {
     try {
       const bandRecordingsBySongId: Record<string, Record<string, SongRecording[]>> = {};
       const bandPressKitImagesByBandId: Record<string, PressKitImageAsset[]> = {};
+      const bandToursByBandId: Record<string, Tour[]> = {};
+      const bandGigsByBandId: Record<string, Gig[]> = {};
       await Promise.all(bands.map(async (band) => {
         const bandSongs = bandSongsByBandId[band.id] ?? [];
         const recordingsBySongId: Record<string, SongRecording[]> = {};
@@ -185,6 +188,17 @@ export default function ProfilePage() {
           }
         }));
         bandRecordingsBySongId[band.id] = recordingsBySongId;
+
+        // Gigs and tours aren't cached for every band (only the ones opened this session), so fetch them here.
+        try {
+          [bandToursByBandId[band.id], bandGigsByBandId[band.id]] = await Promise.all([
+            dataClient.bandTours.list(band.id),
+            dataClient.bandGigs.list(band.id),
+          ]);
+        } catch {
+          bandToursByBandId[band.id] = [];
+          bandGigsByBandId[band.id] = [];
+        }
 
         try {
           const images = await dataClient.bandPressKitImages.list(band.id);
@@ -203,6 +217,8 @@ export default function ProfilePage() {
         bandSetlistsByBandId,
         bandInputListsByBandId,
         bandPressKitsByBandId,
+        bandToursByBandId,
+        bandGigsByBandId,
         bandPressKitImagesByBandId,
         bandRecordingsBySongId,
       });

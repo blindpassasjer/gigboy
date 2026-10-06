@@ -1,4 +1,4 @@
-import type { InputList, PressKit, Setlist, Song, SongList } from '../../types';
+import type { Gig, InputList, PressKit, Setlist, Song, SongList, Tour } from '../../types';
 import type {
   AdminInvitesClient,
   AdminUsersClient,
@@ -7,6 +7,7 @@ import type {
   BandScopedCrudClient,
   BandsClient,
   BandTrashClient,
+  CalendarFeedClient,
   DataClient,
   PressKitImagesClient,
   PressKitSharesClient,
@@ -139,6 +140,13 @@ const bandPressKitImagesClient: PressKitImagesClient = {
   remove: (bandId, imageId) => delay(store.removePressKitImage(bandId, imageId)).then(() => undefined),
 };
 
+const calendarFeedClient: CalendarFeedClient = {
+  get: (bandId) => delay(store.getCalendarFeed(bandId)),
+  create: (bandId) => delay(store.createCalendarFeed(bandId)),
+  regenerate: (bandId) => delay(store.regenerateCalendarFeed(bandId)),
+  disable: (bandId) => delay(store.disableCalendarFeed(bandId)).then(() => undefined),
+};
+
 const bandPressKitSharesClient: PressKitSharesClient = {
   get: (bandId, kitId) => delay(store.getPressKitShare(bandId, kitId)),
   create: (bandId, kitId) => delay(store.createPressKitShare(bandId, kitId)),
@@ -177,6 +185,9 @@ export const demoClient: DataClient = {
   bandSongLists: crudClient<SongList>(store.songListsCrud),
   bandSetlists: crudClient<Setlist>(store.setlistsCrud),
   bandRiders: crudClient<InputList>(store.ridersCrud),
+  bandTours: crudClient<Tour>(store.toursCrud),
+  bandGigs: crudClient<Gig>(store.gigsCrud),
+  calendarFeed: calendarFeedClient,
   publicRiders: publicRidersClient,
   bandAttachments: bandAttachmentsClient,
   bandTrash: bandTrashClient,

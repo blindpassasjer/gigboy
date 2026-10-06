@@ -81,6 +81,11 @@ via `VITE_DEV_ORIGIN` in [package.json](package.json), or the port with `PORT=�
   per-member editor/viewer roles and invite links to bring people in
 - **Setlists & songlists** — ordered setlists for the actual gig, freeform songlists for
   everything else
+- **Gigs & tours** — keep every show in one place: date, get-in and sound-check times, venue, a
+  contact person, and the setlist, technical rider and press kit for that gig. See them as a
+  calendar, cards or a list, group them into tours, and let old gigs fall into an archive
+- **Calendar subscription** — each member gets a private link that keeps Google, Apple or Outlook
+  calendar up to date with the band's gigs, including the schedule and contact
 - **Now-playing sync** — one device leads Concert Mode and the whole band's screens follow
   to the same song, page, and transpose
 - **Trash & restore** — soft-deleted songs, songlists, setlists, and press kits recover for
@@ -90,7 +95,8 @@ via `VITE_DEV_ORIGIN` in [package.json](package.json), or the port with `PORT=�
 
 ### Everything you need before you walk on stage
 - **Press kits, technical riders, stage plots** — build them once, share via a public link, with
-  OG-tag previews that look right when pasted into a booking email or Discord
+  OG-tag previews that look right when pasted into a booking email or Discord; pick the upcoming
+  gigs a press kit lists and they appear as dates on its shared page
 - **Concert Mode** — a stripped-down, phone-first performance view: one-line song header, text
   size controls, paged or continuous scrolling with hands-free autoscroll, a silent BPM pulse,
   and a settings cog for the rest (all remembered per device)
@@ -107,7 +113,7 @@ via `VITE_DEV_ORIGIN` in [package.json](package.json), or the port with `PORT=�
 
 ### Your data stays yours
 - **Full export, no lock-in** — download every band's entire songbook (songs as plain ChordPro
-  files, plus every recording, press kit image, and technical rider) as a single ZIP, any time,
+  files, plus every recording, press kit image, technical rider, and gig) as a single ZIP, any time,
   from account settings
 - **Offline-capable PWA** — install it, and it keeps working without a connection
 - **Admin-controlled storage quotas** — self-hosters can cap how much each user's bands are

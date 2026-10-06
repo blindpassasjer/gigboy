@@ -1,21 +1,43 @@
 import type {
   Band,
+  Gig,
   InputList,
   PressKit,
   Setlist,
   Song,
   SongList,
   StageplotItem,
+  Tour,
   LyricNoteDocument,
 } from '../../types';
 import type { User } from '../../context/AuthContext';
 import type { SongAttachment } from '../songAttachments';
 import type { TrashListItem } from '../../components/TrashView';
-import type { PressKitImage } from '../dataClient/types';
+import type { PressKitImage, PublicTourDate } from '../dataClient/types';
+import { appOrigin } from '../appOrigin';
+import { generateId } from '../uuid';
+import {
+  EXTRA_SONGS,
+  PRESS_KIT_SPECS,
+  RIDER_SPECS,
+  STANDARD_PLOT,
+  SETLIST_SPECS,
+  SONGLIST_SPECS,
+  demoImage,
+  demoLogo,
+  generateGigs,
+  makeTourSpec,
+  tourKey,
+  type ImageKind,
+  type TourKind,
+  type TourSpec,
+} from './demoSeedData';
 import type { BandLogoAsset } from '../bandLogos';
 import type { SongRecording } from '../songRecordings';
 
 const STORAGE_KEY = 'gigboy-demo-store';
+/** Bump when the seeded sample data changes, so returning visitors get the new content. */
+const SEED_VERSION = 5;
 const SESSION_KEY = 'gigboy-demo-session';
 const DEMO_USER_ID = 'demo-user';
 const DEMO_BAND_ID = 'demo-band';
@@ -52,9 +74,12 @@ export function delay<T>(value: T, ms = 220): Promise<T> {
 }
 
 let nextId = 1000;
+// The counter restarts on every page load, but ids are persisted in localStorage — without a per-load salt an item
+// created in a later session could reuse an id that's already in the saved store.
+const idSalt = Math.random().toString(36).slice(2, 6);
 function genId(prefix: string): string {
   nextId += 1;
-  return `${prefix}-${nextId}`;
+  return `${prefix}-${idSalt}${nextId}`;
 }
 
 interface TrashEntry {
@@ -69,12 +94,17 @@ interface TrashEntry {
 }
 
 interface DemoState {
+  seedVersion?: number;
+  /** Public press-kit share links. Persisted with the rest of the demo so a link opened in a new tab still resolves. */
+  pressKitShares?: Array<{ kitId: string; token: string }>;
   user: User;
   band: Band;
   songs: Song[];
   songLists: SongList[];
   setlists: Setlist[];
   riders: InputList[];
+  tours: Tour[];
+  gigs: Gig[];
   pressKits: PressKit[];
   pressKitImages: PressKitImage[];
   bandLogos: BandLogoAsset[];
@@ -115,15 +145,17 @@ export interface DemoSongRevision {
 }
 
 const now = () => new Date().toISOString();
+/** An ISO time `daysAhead` days from now at the given local hour/minute, so the seeded gig is always upcoming. */
+function gigTime(daysAhead: number, hour: number, minute: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
 const purgeDate = () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
 function seedRiderItems(): StageplotItem[] {
-  return [
-    { id: genId('sp'), kind: 'vocalMic', label: 'Lead Vox', x: 0.5, y: 0.75, channel: '1', description: 'SM58, boom stand' },
-    { id: genId('sp'), kind: 'guitarAmp', label: 'Guitar', x: 0.25, y: 0.6, channel: '2', description: 'Miked amp, SM57' },
-    { id: genId('sp'), kind: 'bassAmp', label: 'Bass', x: 0.75, y: 0.6, channel: '3', description: 'DI + amp mic' },
-    { id: genId('sp'), kind: 'drumKit', label: 'Drums', x: 0.5, y: 0.35, channel: '4-9', description: 'Full kit, standard mic package' },
-  ];
+  return STANDARD_PLOT.map((item) => ({ ...item, id: genId('sp') }));
 }
 
 function seedSongs(): Song[] {
@@ -296,7 +328,7 @@ And the [C]pale and the [F]leader and [C]eyes look like [G7]blue
     },
   ];
 
-  return songs.map((song, i) => ({
+  return [...songs, ...EXTRA_SONGS].map((song, i) => ({
     id: genId('song'),
     sortOrder: i,
     createdAt: now(),
@@ -304,6 +336,141 @@ And the [C]pale and the [F]leader and [C]eyes look like [G7]blue
     tags: i === 0 ? ['hymn', 'set-opener'] : undefined,
     ...song,
   }));
+}
+
+/** Stable id for a generated tour, derived from its key (e.g. "festival-2028"). */
+const tourIdFor = (key: string) => `tour-${key}`;
+
+/** The five hand-written gigs near "now", so the app always has something upcoming, past, tentative and cancelled. */
+function seedCoreGigs(refs: { setlistId?: string; riderId?: string; pressKitId?: string }): Array<{ kind: TourKind; gig: Gig }> {
+  const { setlistId, riderId, pressKitId } = refs;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const common = { timezone, createdAt: now(), updatedAt: now() };
+  const gigs: Gig[] = (() => {
+  return [
+    {
+      id: genId('gig'),
+      title: 'Saturday Night at The Corner Pub',
+      startsAt: gigTime(7, 21, 0),
+      endsAt: gigTime(7, 23, 30),
+      getInAt: gigTime(7, 17, 0),
+      soundCheckAt: gigTime(7, 18, 30),
+      venue: 'The Corner Pub',
+      address: '1 Sample Street',
+      contactName: 'Sam Ortega (venue manager)',
+      contactPhone: '+47 400 00 001',
+      contactEmail: 'sam@cornerpub.example',
+      notes: 'Park in the back alley. Two sets of 45 minutes. Drinks on the house.',
+      setlistId,
+      riderId,
+      pressKitId,
+      status: 'confirmed',
+      ...common,
+    },
+    {
+      id: genId('gig'),
+      title: 'Riverside Folk Festival',
+      startsAt: gigTime(21, 15, 30),
+      endsAt: gigTime(21, 16, 30),
+      getInAt: gigTime(21, 12, 0),
+      soundCheckAt: gigTime(21, 13, 45),
+      venue: 'Riverside Park, Main Stage',
+      address: 'Festival Grounds, Gate B',
+      contactName: 'Priya Nair (stage manager)',
+      contactPhone: '+47 400 00 002',
+      contactEmail: 'stage@riversidefolk.example',
+      notes: '60-minute slot, no encore. Backline provided: drums, bass amp. Crew passes at Gate B.',
+      setlistId,
+      riderId,
+      pressKitId,
+      status: 'confirmed',
+      ...common,
+    },
+    {
+      id: genId('gig'),
+      title: 'Wedding: Anna & Jonas',
+      startsAt: gigTime(35, 19, 0),
+      endsAt: gigTime(35, 22, 0),
+      getInAt: gigTime(35, 16, 0),
+      soundCheckAt: gigTime(35, 17, 15),
+      venue: 'Hillview Manor',
+      address: '12 Orchard Lane',
+      contactName: 'Anna Berg (bride)',
+      contactPhone: '+47 400 00 003',
+      contactEmail: 'anna@example.com',
+      notes: 'First dance song TBC. Acoustic set only, quiet during dinner. Dress: smart casual.',
+      setlistId,
+      status: 'tentative',
+      ...common,
+    },
+    {
+      id: genId('gig'),
+      title: 'Listening Room Session',
+      startsAt: gigTime(49, 20, 0),
+      endsAt: gigTime(49, 21, 30),
+      getInAt: gigTime(49, 18, 30),
+      soundCheckAt: gigTime(49, 19, 15),
+      venue: 'The Listening Room',
+      address: '8 Vinyl Street',
+      contactName: 'Lars Holm (promoter)',
+      contactPhone: '+47 400 00 004',
+      contactEmail: 'lars@listeningroom.example',
+      notes: 'Cancelled by the venue — roof repairs. Promoter will offer a new date in spring.',
+      pressKitId,
+      status: 'cancelled',
+      ...common,
+    },
+    {
+      id: genId('gig'),
+      title: 'Harbour Brewery Opening Night',
+      startsAt: gigTime(-14, 20, 30),
+      endsAt: gigTime(-14, 22, 30),
+      getInAt: gigTime(-14, 17, 30),
+      soundCheckAt: gigTime(-14, 19, 0),
+      venue: 'Harbour Brewery',
+      address: '3 Dockside Road',
+      contactName: 'Mia Lund (events)',
+      contactPhone: '+47 400 00 005',
+      contactEmail: 'events@harbourbrewery.example',
+      notes: 'Played two sets. Good crowd, invoice sent.',
+      setlistId,
+      riderId,
+      status: 'confirmed',
+      ...common,
+    },
+  ];
+  })();
+  const kindByTitle: Record<string, TourKind> = {
+    'Saturday Night at The Corner Pub': 'club',
+    'Riverside Folk Festival': 'festival',
+    'Wedding: Anna & Jonas': 'private',
+    'Listening Room Session': 'club',
+    'Harbour Brewery Opening Night': 'club',
+  };
+  return gigs.map((gig) => ({
+    kind: kindByTitle[gig.title] ?? 'club',
+    gig,
+  }));
+}
+
+function seedPressKitImages(): Record<ImageKind, PressKitImage> {
+  const kinds: ImageKind[] = ['stage', 'crowd', 'portrait', 'poster', 'venue', 'landscape'];
+  const entries = kinds.map((kind) => {
+    const img = demoImage(kind);
+    const image: PressKitImage = {
+      id: genId('pkimg'),
+      title: img.title,
+      url: img.url,
+      thumbUrl: img.url,
+      mimeType: 'image/svg+xml',
+      sizeBytes: img.sizeBytes,
+      thumbSizeBytes: img.sizeBytes,
+      createdAt: now(),
+      createdBy: DEMO_USER_ID,
+    };
+    return [kind, image] as const;
+  });
+  return Object.fromEntries(entries) as Record<ImageKind, PressKitImage>;
 }
 
 function seed(): DemoState {
@@ -318,12 +485,27 @@ function seed(): DemoState {
   };
 
   const songs = seedSongs();
+  const songIdByTitle = new Map(songs.map((song) => [song.title, song.id]));
+  const idsFor = (titles: string[]) => titles.map((t) => songIdByTitle.get(t)).filter((id): id is string => Boolean(id));
+
+  const logo = demoLogo();
+  const logoAsset: BandLogoAsset = {
+    id: genId('logo'),
+    url: logo.url,
+    thumbUrl: logo.url,
+    mimeType: 'image/svg+xml',
+    sizeBytes: logo.sizeBytes,
+    thumbSizeBytes: logo.sizeBytes,
+    createdAt: now(),
+    createdBy: DEMO_USER_ID,
+  };
 
   const band: Band = {
     id: DEMO_BAND_ID,
     name: 'The Gigboy Demo Band',
     description: 'A sample band so you can see how Gigboy feels before you self-host it.',
     icon: '🎸',
+    logo: logoAsset.url,
     ownerId: DEMO_USER_ID,
     memberIds: [DEMO_USER_ID, OTHER_MEMBER_ID],
     memberRoles: { [DEMO_USER_ID]: 'editor', [OTHER_MEMBER_ID]: 'editor' },
@@ -337,6 +519,13 @@ function seed(): DemoState {
 
   const songLists: SongList[] = [
     { id: genId('sl'), name: 'Full Songbook', songIds: songs.map((s) => s.id), sortOrder: 0 },
+    ...SONGLIST_SPECS.map((spec, i) => ({
+      id: genId('sl'),
+      name: spec.name,
+      icon: spec.icon,
+      songIds: idsFor(spec.titles),
+      sortOrder: i + 1,
+    })),
   ];
 
   const setlists: Setlist[] = [
@@ -349,6 +538,21 @@ function seed(): DemoState {
       updatedAt: now(),
       sortOrder: 0,
     },
+    ...SETLIST_SPECS.map((spec, i): Setlist => ({
+      id: genId('setlist'),
+      name: spec.name,
+      icon: spec.icon,
+      songIds: idsFor(spec.titles),
+      songNotes: Object.fromEntries(
+        Object.entries(spec.notes ?? {}).flatMap(([title, note]) => {
+          const id = songIdByTitle.get(title);
+          return id ? [[id, note]] : [];
+        }),
+      ),
+      createdAt: now(),
+      updatedAt: now(),
+      sortOrder: i + 1,
+    })),
   ];
 
   const riders: InputList[] = [
@@ -364,34 +568,131 @@ function seed(): DemoState {
       updatedAt: now(),
       sortOrder: 0,
     },
+    ...RIDER_SPECS.map((spec, i): InputList => ({
+      id: genId('rider'),
+      name: spec.name,
+      icon: spec.icon,
+      items: spec.items.map((item) => ({ ...item, id: genId('sp') })),
+      hospitalityNotes: spec.hospitalityNotes,
+      logisticsNotes: spec.logisticsNotes,
+      publicShareEnabled: i === 0,
+      bandName: band.name,
+      createdAt: now(),
+      updatedAt: now(),
+      sortOrder: i + 1,
+    })),
   ];
 
+  // Tours: one per year, from the generated schedule plus the hand-written core gigs.
+  const generated = generateGigs(new Date());
+  const core = seedCoreGigs({});
+  const tourSpecs = new Map<string, TourSpec>(generated.tours.map((t) => [t.key, t]));
+  for (const { gig } of core) {
+    const year = new Date(gig.startsAt).getFullYear();
+    if (!tourSpecs.has(tourKey(year))) tourSpecs.set(tourKey(year), makeTourSpec(year));
+  }
+  const tours: Tour[] = [...tourSpecs.values()]
+    .sort((a, b) => a.year - b.year)
+    .map((spec, i) => ({
+      id: tourIdFor(spec.key),
+      name: spec.name,
+      icon: spec.icon,
+      sortOrder: i,
+      createdAt: now(),
+      updatedAt: now(),
+    }));
+  const thisYear = new Date().getFullYear();
+  const images = seedPressKitImages();
+  const pressKitImages = Object.values(images);
+
+  const baseKit = {
+    videoUrls: [] as string[],
+    selectedVideoUrls: [] as string[],
+    presaveUrls: [] as string[],
+    selectedPresaveUrls: [] as string[],
+    createdAt: now(),
+  };
   const pressKits: PressKit[] = [
     {
+      ...baseKit,
       id: genId('presskit'),
       name: 'Electronic Press Kit',
       richText:
         '<p>The Gigboy Demo Band is a traditional folk outfit playing timeless songs with modern warmth. ' +
         'Available for weddings, festivals, and listening rooms.</p>',
-      imageIds: [],
-      videoUrls: [],
-      selectedVideoUrls: [],
-      presaveUrls: [],
-      selectedPresaveUrls: [],
-      createdAt: now(),
+      imageIds: [images.portrait.id, images.stage.id, images.crowd.id],
     },
+    ...PRESS_KIT_SPECS.map((spec): PressKit => ({
+      ...baseKit,
+      id: genId('presskit'),
+      name: spec.name,
+      icon: spec.icon,
+      richText: spec.richText,
+      imageIds: spec.images.map((kind) => images[kind].id),
+    })),
   ];
 
+  // Gigs: core gigs near today plus the generated schedule through 2030, each pointing at real setlists/riders/kits by name.
+  const idByName = (list: Array<{ id: string; name: string }>, name: string) => list.find((x) => x.name === name)?.id;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const coreGigs = seedCoreGigs({
+    setlistId: setlists[0].id,
+    riderId: riders[0].id,
+    pressKitId: pressKits[0].id,
+  }).map(({ gig }) => ({ ...gig, tourId: tourIdFor(tourKey(new Date(gig.startsAt).getFullYear())) }));
+  const generatedGigs: Gig[] = generated.gigs.map((g) => ({
+    id: genId('gig'),
+    tourId: tourIdFor(g.tourKey),
+    title: g.title,
+    startsAt: g.startsAt,
+    endsAt: g.endsAt,
+    getInAt: g.getInAt,
+    soundCheckAt: g.soundCheckAt,
+    timezone,
+    venue: g.venue,
+    address: g.address,
+    contactName: g.contactName,
+    contactPhone: g.contactPhone,
+    contactEmail: g.contactEmail,
+    notes: g.notes,
+    setlistId: idByName(setlists, g.setlist),
+    riderId: idByName(riders, g.rider),
+    pressKitId: idByName(pressKits, g.kit),
+    status: g.status,
+    createdAt: now(),
+    updatedAt: now(),
+  }));
+  const gigs = [...coreGigs, ...generatedGigs];
+
+  // A booking kit lists the near future — this year's and next year's confirmed, upcoming, non-private gigs —
+  // not five years of dates. (The Electronic Press Kit lists them too; the wedding kit lists none.)
+  const nearTourIds = new Set(
+    [...tourSpecs.values()].filter((t) => t.year >= thisYear && t.year <= thisYear + 1).map((t) => tourIdFor(t.key)),
+  );
+  const nowMs = Date.now();
+  const publicGigIds = gigs
+    .filter((g) => g.tourId && nearTourIds.has(g.tourId) && g.status === 'confirmed' && !g.title.startsWith('Wedding:'))
+    .filter((g) => new Date(g.startsAt).getTime() >= nowMs)
+    .map((g) => g.id);
+  pressKits[0].gigIds = publicGigIds;
+  PRESS_KIT_SPECS.forEach((spec, i) => {
+    pressKits[i + 1].gigIds = spec.listDates ? publicGigIds : [];
+  });
+
   return {
+    seedVersion: SEED_VERSION,
+    pressKitShares: [],
     user,
     band,
     songs,
     songLists,
     setlists,
     riders,
+    tours,
+    gigs,
     pressKits,
-    pressKitImages: [],
-    bandLogos: [],
+    pressKitImages,
+    bandLogos: [logoAsset],
     attachments: {},
     recordings: {},
     handNotes: {},
@@ -411,6 +712,9 @@ function load(): DemoState {
     if (!raw) return seed();
     const parsed = JSON.parse(raw) as DemoState;
     if (!parsed?.user || !parsed?.band) return seed();
+    // The demo's sample content grows over time; a store saved by an older version is re-seeded.
+    if (parsed.seedVersion !== SEED_VERSION) return seed();
+    parsed.pressKitShares ??= [];
     return parsed;
   } catch {
     return seed();
@@ -453,7 +757,7 @@ export function listBands(): Band[] {
 // ---- Generic band-scoped CRUD (songs / songLists / setlists / riders / pressKits) ----
 
 function makeCrud<T extends { id: string }>(
-  key: 'songs' | 'songLists' | 'setlists' | 'riders' | 'pressKits',
+  key: 'songs' | 'songLists' | 'setlists' | 'riders' | 'tours' | 'gigs' | 'pressKits',
   itemType: TrashListItem['itemType'],
   nameOf: (item: T) => string
 ) {
@@ -521,6 +825,18 @@ export const songsCrud = {
 export const songListsCrud = makeCrud<SongList>('songLists', 'songlist', (s) => s.name);
 export const setlistsCrud = makeCrud<Setlist>('setlists', 'setlist', (s) => s.name);
 export const ridersCrud = makeCrud<InputList>('riders', 'technicalRider', (r) => r.name);
+const rawToursCrud = makeCrud<Tour>('tours', 'tour', (t) => t.name);
+
+/** Tour CRUD that also ungroups the tour's gigs on delete (mirrors the server's ON DELETE SET NULL). */
+export const toursCrud = {
+  ...rawToursCrud,
+  remove(bandId: string, id: string): void {
+    rawToursCrud.remove(bandId, id);
+    for (const g of state.gigs) if (g.tourId === id) delete g.tourId;
+    persist();
+  },
+};
+export const gigsCrud = makeCrud<Gig>('gigs', 'gig', (g) => g.title);
 export const pressKitsCrud = makeCrud<PressKit>('pressKits', 'pressKit', (p) => p.name);
 
 // ---- Attachments ----
@@ -592,6 +908,8 @@ function crudListFor(itemType: TrashEntry['itemType']): { list: unknown[] } | nu
     songlist: 'songLists',
     setlist: 'setlists',
     technicalRider: 'riders',
+    gig: 'gigs',
+    tour: 'tours',
     pressKit: 'pressKits',
   };
   const key = map[itemType];
@@ -683,42 +1001,96 @@ export function removePressKitImage(bandId: string, imageId: string): void {
   persist();
 }
 
+// ---- Calendar feed (per-member iCal subscription) ----
+
+// The demo has no server to serve a real .ics, so the URL is a placeholder that shows the UI flow.
+let calendarFeedToken: string | null = null;
+
+function demoFeed(token: string): { token: string; feedUrl: string } {
+  return { token, feedUrl: `${window.location.origin}/api/public/calendar/${token}.ics` };
+}
+
+export function getCalendarFeed(bandId: string): { token: string; feedUrl: string } | null {
+  assertBand(bandId);
+  return calendarFeedToken ? demoFeed(calendarFeedToken) : null;
+}
+
+export function createCalendarFeed(bandId: string): { token: string; feedUrl: string } {
+  assertBand(bandId);
+  calendarFeedToken ??= genId('feed');
+  return demoFeed(calendarFeedToken);
+}
+
+export function regenerateCalendarFeed(bandId: string): { token: string; feedUrl: string } {
+  assertBand(bandId);
+  calendarFeedToken = genId('feed');
+  return demoFeed(calendarFeedToken);
+}
+
+export function disableCalendarFeed(bandId: string): void {
+  assertBand(bandId);
+  calendarFeedToken = null;
+}
+
 // ---- Press kit shares ----
 
-interface ShareRecord {
-  kitId: string;
-  token: string;
+const shareUrl = (token: string) => `${appOrigin()}/public/press-kit/${token}`;
+
+function shares(): Array<{ kitId: string; token: string }> {
+  return (state.pressKitShares ??= []);
 }
-const pressKitShares: ShareRecord[] = [];
 
 export function getPressKitShare(bandId: string, kitId: string): { token: string; publicUrl: string } | null {
   assertBand(bandId);
-  const share = pressKitShares.find((s) => s.kitId === kitId);
-  if (!share) return null;
-  return { token: share.token, publicUrl: `${window.location.origin}${window.location.pathname}#/public/press-kit/${share.token}` };
+  const share = shares().find((s) => s.kitId === kitId);
+  return share ? { token: share.token, publicUrl: shareUrl(share.token) } : null;
 }
 
 export function createPressKitShare(bandId: string, kitId: string): { token: string; publicUrl: string } {
   assertBand(bandId);
-  const existing = pressKitShares.find((s) => s.kitId === kitId);
-  const token = existing?.token ?? genId('share');
-  if (!existing) pressKitShares.push({ kitId, token });
-  return { token, publicUrl: `${window.location.origin}${window.location.pathname}#/public/press-kit/${token}` };
+  const existing = shares().find((s) => s.kitId === kitId);
+  // A random token, not genId(): that counter restarts every page load and would collide with saved shares.
+  const token = existing?.token ?? generateId();
+  if (!existing) {
+    shares().push({ kitId, token });
+    persist();
+  }
+  return { token, publicUrl: shareUrl(token) };
 }
 
 export function disablePressKitShare(bandId: string, kitId: string): void {
   assertBand(bandId);
-  const idx = pressKitShares.findIndex((s) => s.kitId === kitId);
-  if (idx !== -1) pressKitShares.splice(idx, 1);
+  const idx = shares().findIndex((s) => s.kitId === kitId);
+  if (idx !== -1) {
+    shares().splice(idx, 1);
+    persist();
+  }
 }
 
-export function getPublicPressKit(token: string): { kit: PressKit; bandName: string; bandLogo: string | null; images: PressKitImage[] } | null {
-  const share = pressKitShares.find((s) => s.token === token);
+export function getPublicPressKit(token: string): { kit: PressKit; bandName: string; bandLogo: string | null; images: PressKitImage[]; tourDates: PublicTourDate[] } | null {
+  const share = shares().find((s) => s.token === token);
   if (!share) return null;
   const kit = state.pressKits.find((k) => k.id === share.kitId);
   if (!kit) return null;
   const images = state.pressKitImages.filter((img) => kit.imageIds.includes(img.id));
-  return { kit, bandName: state.band.name, bandLogo: state.band.logo ?? null, images };
+  // Mirrors the server: only gigs picked on the kit, and of those only confirmed, upcoming ones, with public fields.
+  const kitGigs = kit.gigIds ?? [];
+  const tourDates: PublicTourDate[] = state.gigs
+    .filter((g) => kitGigs.includes(g.id))
+    .filter((g) => g.status === 'confirmed')
+    .filter((g) => new Date(g.startsAt).getTime() >= Date.now())
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+    .map((g) => ({
+      id: g.id,
+      title: g.title,
+      startsAt: g.startsAt,
+      timezone: g.timezone ?? null,
+      venue: g.venue ?? null,
+      address: g.address ?? null,
+      tourId: g.tourId ?? null,
+      tourName: state.tours.find((t) => t.id === g.tourId)?.name ?? null,
+    }));
+  return { kit, bandName: state.band.name, bandLogo: state.band.logo ?? null, images, tourDates };
 }
 
 export function getPublicRider(bandId: string, riderId: string): { rider: InputList; bandName: string; bandLogo: string | null } | null {

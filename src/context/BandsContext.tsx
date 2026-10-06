@@ -11,6 +11,8 @@ import type {
   StageplotItem,
   InputList,
   PressKit,
+  Tour,
+  Gig,
 } from '../types';
 import type { TrashListItem } from '../components/TrashView';
 import {
@@ -105,6 +107,8 @@ interface BandsContextValue {
   bandSetlistsByBandId: Record<string, Setlist[]>;
   bandInputListsByBandId: Record<string, InputList[]>;
   bandPressKitsByBandId: Record<string, PressKit[]>;
+  bandToursByBandId: Record<string, Tour[]>;
+  bandGigsByBandId: Record<string, Gig[]>;
   bandTrashByBandId: Record<string, TrashListItem[]>;
   loading: boolean;
   refreshBands: () => Promise<void>;
@@ -119,6 +123,10 @@ interface BandsContextValue {
   refreshBandSetlists: (bandId: string) => Promise<void>;
   refreshBandInputLists: (bandId: string) => Promise<void>;
   refreshBandPressKits: (bandId: string) => Promise<void>;
+  refreshBandTours: (bandId: string) => Promise<void>;
+  refreshBandGigs: (bandId: string) => Promise<void>;
+  /** Applies a local change to a band's cached gigs (after the gigs page saves or deletes one). */
+  updateBandGigsCache: (bandId: string, update: (gigs: Gig[]) => Gig[]) => void;
   refreshBandTrash: (bandId: string) => Promise<void>;
   addSongToBandLibrary: (bandId: string, song: Song) => Promise<string | null>;
   updateBandSong: (bandId: string, song: Song) => Promise<string | null>;
@@ -150,6 +158,9 @@ interface BandsContextValue {
   removeSongFromBandSetlist: (bandId: string, setlistId: string, songId: string) => Promise<string | null>;
   moveSongInBandSetlist: (bandId: string, setlistId: string, songId: string, beforeSongId: string | null) => Promise<string | null>;
   updateSongNoteInBandSetlist: (bandId: string, setlistId: string, songId: string, note: string) => Promise<string | null>;
+  addBandTour: (bandId: string, name: string) => Promise<{ tourId: string | null; error: string | null }>;
+  renameBandTour: (bandId: string, tourId: string, name: string) => Promise<string | null>;
+  deleteBandTour: (bandId: string, tourId: string) => Promise<string | null>;
   addBandPressKit: (bandId: string, name: string) => Promise<{ kitId: string | null; error: string | null }>;
   deleteBandPressKit: (bandId: string, kitId: string) => Promise<string | null>;
   renameBandPressKit: (bandId: string, kitId: string, name: string) => Promise<string | null>;
@@ -196,6 +207,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
   const [bandSetlistsByBandId, setBandSetlistsByBandId] = useState<Record<string, Setlist[]>>({});
   const [bandInputListsByBandId, setBandInputListsByBandId] = useState<Record<string, InputList[]>>({});
   const [bandPressKitsByBandId, setBandPressKitsByBandId] = useState<Record<string, PressKit[]>>({});
+  const [bandToursByBandId, setBandToursByBandId] = useState<Record<string, Tour[]>>({});
+  const [bandGigsByBandId, setBandGigsByBandId] = useState<Record<string, Gig[]>>({});
   const [bandTrashByBandId, setBandTrashByBandId] = useState<Record<string, TrashListItem[]>>({});
   const [fetching, setFetching] = useState(false);
   // The first fetch for a user only starts in an effect, so `fetching` alone is
@@ -221,6 +234,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       setBandSetlistsByBandId({});
       setBandInputListsByBandId({});
       setBandPressKitsByBandId({});
+      setBandToursByBandId({});
+      setBandGigsByBandId({});
       setBandTrashByBandId({});
       setFetching(false);
       setLoadedUserId(null);
@@ -291,6 +306,124 @@ export function BandsProvider({ children }: { children: ReactNode }) {
 
     setBandPressKitsByBandId((prev) => ({ ...prev, [bandId]: kits }));
   }, [userId]);
+
+  const refreshBandTours = useCallback(async (bandId: string) => {
+    if (!userId) return;
+
+    const tours = await dataClient.bandTours.list(bandId);
+
+    setBandToursByBandId((prev) => ({ ...prev, [bandId]: tours }));
+  }, [userId]);
+
+  const refreshBandGigs = useCallback(async (bandId: string) => {
+    if (!userId) return;
+
+    const gigs = await dataClient.bandGigs.list(bandId);
+
+    setBandGigsByBandId((prev) => ({ ...prev, [bandId]: gigs }));
+  }, [userId]);
+
+  const updateBandGigsCache = useCallback((bandId: string, update: (gigs: Gig[]) => Gig[]) => {
+    setBandGigsByBandId((prev) => ({ ...prev, [bandId]: update(prev[bandId] ?? []) }));
+  }, []);
+
+  const addBandTour = useCallback(async (bandId: string, name: string): Promise<{ tourId: string | null; error: string | null }> => {
+    if (!userId) return { tourId: null, error: 'Not signed in.' };
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return { tourId: null, error: 'Band not found.' };
+
+    const isEditor = band.ownerId === userId || band.memberRoles[userId] === 'editor';
+    if (!isEditor) return { tourId: null, error: 'You do not have permission to edit this band.' };
+
+    const trimmed = name.trim();
+    if (!trimmed) return { tourId: null, error: 'Tour name is required.' };
+
+    try {
+      const existing = bandToursByBandId[bandId] ?? [];
+      const newTour = await dataClient.bandTours.create(bandId, {
+        id: generateId(),
+        name: trimmed,
+        sortOrder: existing.length,
+      });
+      setBandToursByBandId((prev) => ({ ...prev, [bandId]: [...(prev[bandId] ?? []), newTour] }));
+      return { tourId: newTour.id, error: null };
+    } catch (error) {
+      return { tourId: null, error: error instanceof Error ? error.message : 'Failed to create tour.' };
+    }
+  }, [bandToursByBandId, bands, userId]);
+
+  const renameBandTour = useCallback(async (bandId: string, tourId: string, name: string): Promise<string | null> => {
+    if (!userId) return 'Not signed in.';
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+    const isEditor = band.ownerId === userId || band.memberRoles[userId] === 'editor';
+    if (!isEditor) return 'You do not have permission to edit this band.';
+    const trimmed = name.trim();
+    if (!trimmed) return 'Tour name is required.';
+    const previousTours = bandToursByBandId[bandId] ?? [];
+    const target = previousTours.find((tour) => tour.id === tourId);
+    if (!target) return 'Tour not found.';
+    const nextTour: Tour = { ...target, name: trimmed };
+    setBandToursByBandId((prev) => ({
+      ...prev,
+      [bandId]: (prev[bandId] ?? []).map((t) => (t.id === tourId ? nextTour : t)),
+    }));
+    try {
+      await dataClient.bandTours.update(bandId, nextTour);
+      return null;
+    } catch (error) {
+      setBandToursByBandId((prev) => ({ ...prev, [bandId]: previousTours }));
+      return error instanceof Error ? error.message : 'Failed to rename tour.';
+    }
+  }, [bandToursByBandId, bands, userId]);
+
+  const deleteBandTour = useCallback(async (bandId: string, tourId: string): Promise<string | null> => {
+    if (!userId) return 'Not signed in.';
+
+    const band = bands.find((entry) => entry.id === bandId);
+    if (!band) return 'Band not found.';
+
+    const isEditor = band.ownerId === userId || band.memberRoles[userId] === 'editor';
+    if (!isEditor) return 'You do not have permission to edit this band.';
+
+    const previousTours = bandToursByBandId[bandId] ?? [];
+    const tourToDelete = previousTours.find((entry) => entry.id === tourId);
+    if (!tourToDelete) return null;
+
+    const { deletedAt, purgeAt } = createTrashTimestamps();
+    const trashId = generateId();
+
+    setBandToursByBandId((prev) => ({
+      ...prev,
+      [bandId]: previousTours.filter((t) => t.id !== tourId),
+    }));
+    setBandTrashByBandId((prev) => ({
+      ...prev,
+      [bandId]: [
+        { trashId, itemType: 'tour' as const, name: tourToDelete.name, deletedAt, purgeAt },
+        ...(prev[bandId] ?? []),
+      ].sort(compareTrashByDeletedAtDesc),
+    }));
+
+    try {
+      // The server writes the trash record as part of this call; the tour's gigs are kept, ungrouped.
+      await dataClient.bandTours.remove(bandId, tourId);
+      // The server keeps the tour's gigs but ungroups them; mirror that in the cache.
+      setBandGigsByBandId((prev) => ({
+        ...prev,
+        [bandId]: (prev[bandId] ?? []).map((g) => (g.tourId === tourId ? { ...g, tourId: undefined } : g)),
+      }));
+      return null;
+    } catch (error) {
+      setBandToursByBandId((prev) => ({ ...prev, [bandId]: previousTours }));
+      setBandTrashByBandId((prev) => ({
+        ...prev,
+        [bandId]: (prev[bandId] ?? []).filter((entry) => entry.trashId !== trashId),
+      }));
+      return error instanceof Error ? error.message : 'Failed to move tour to trash.';
+    }
+  }, [bandToursByBandId, bands, userId]);
 
   const addBandPressKit = useCallback(async (bandId: string, name: string): Promise<{ kitId: string | null; error: string | null }> => {
     if (!userId || !user?.email) return { kitId: null, error: 'Not signed in.' };
@@ -1978,13 +2111,15 @@ export function BandsProvider({ children }: { children: ReactNode }) {
       refreshBandSongLists(bandId),
       refreshBandSetlists(bandId),
       refreshBandInputLists(bandId),
+      refreshBandTours(bandId),
+      refreshBandGigs(bandId),
       refreshBandTrash(bandId),
     ]).catch((refreshError) => {
       console.warn('Restored trash item, but failed to refresh band data.', refreshError);
     });
 
     return null;
-  }, [bands, refreshBandInputLists, refreshBandSetlists, refreshBandSongLists, refreshBandSongs, refreshBandTrash, userId]);
+  }, [bands, refreshBandInputLists, refreshBandSetlists, refreshBandSongLists, refreshBandSongs, refreshBandTours, refreshBandGigs, refreshBandTrash, userId]);
 
   const deleteBandTrashItemPermanently = useCallback(async (bandId: string, trashId: string): Promise<string | null> => {
     if (!userId) {
@@ -2016,6 +2151,8 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     bandSetlistsByBandId,
     bandInputListsByBandId,
     bandPressKitsByBandId,
+    bandToursByBandId,
+    bandGigsByBandId,
     bandTrashByBandId,
     loading,
     refreshBands,
@@ -2030,6 +2167,12 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     refreshBandSetlists,
     refreshBandInputLists,
     refreshBandPressKits,
+    refreshBandTours,
+    refreshBandGigs,
+    updateBandGigsCache,
+    addBandTour,
+    renameBandTour,
+    deleteBandTour,
     refreshBandTrash,
     addSongToBandLibrary,
     updateBandSong,
@@ -2123,6 +2266,14 @@ export function BandsProvider({ children }: { children: ReactNode }) {
     updateBandPressKitIcon,
     refreshBandPressKits,
     bandPressKitsByBandId,
+    bandToursByBandId,
+    refreshBandTours,
+    bandGigsByBandId,
+    refreshBandGigs,
+    updateBandGigsCache,
+    addBandTour,
+    renameBandTour,
+    deleteBandTour,
   ]);
 
   return <BandsContext.Provider value={value}>{children}</BandsContext.Provider>;

@@ -9,8 +9,6 @@ import {
   ListPlus,
   Wrench,
   SlidersHorizontal,
-  Check,
-  Plus,
   FileDown,
   FileUp,
   SquarePen,
@@ -33,6 +31,7 @@ import ChordDisplay, { type ChordOccurrence } from './ChordDisplay';
 import ChordDiagram, { type DiagramInstrument } from './ChordDiagram';
 import LanguageBadge from './LanguageBadge';
 import SongMetaBadges from './SongMetaBadges';
+import AddToMenu from './AddToMenu';
 import VisualMetronome from './VisualMetronome';
 import VisualTuner from './VisualTuner';
 import { transposeChord, replaceChordOccurrence } from '../utils/chordParser';
@@ -98,9 +97,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     writeStoredString(notationStorageKey(song.id), next);
   }, [song.id]);
   const [activeChord, setActiveChord] = useState<ActiveChord | null>(null);
-  const [listMenuOpen, setListMenuOpen] = useState(false);
   const [updatingFromFile, setUpdatingFromFile] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const updateFromFileInputRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [toolbarVisible, setToolbarVisible] = useState(true);
@@ -108,13 +105,17 @@ export default function SongView({ song, accentColor, bandId }: Props) {
   const {
     bands,
     bandSongListsByBandId,
+    bandSetlistsByBandId,
     updateBandSong,
     refreshBandSongs,
     addSongToBandSongList,
     removeSongFromBandSongList,
+    addSongToBandSetlist,
+    removeSongFromBandSetlist,
     removeSongFromBandLibrary,
   } = useBands();
   const bandSongLists = bandSongListsByBandId[bandId] ?? [];
+  const bandSetlists = bandSetlistsByBandId[bandId] ?? [];
   const { user } = useAuth();
   const availableBands = bands ?? [];
 
@@ -235,17 +236,6 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     void handNotes.saveMyTextNotes(textNotes);
   }, [handNotes]);
 
-  useEffect(() => {
-    if (!listMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setListMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [listMenuOpen]);
-
   // Track toolbar visibility to show floating tools when scrolled away
   useEffect(() => {
     const el = toolbarRef.current;
@@ -333,9 +323,11 @@ export default function SongView({ song, accentColor, bandId }: Props) {
     [activeChord, chordInstrument, chordVoicings, transpose, song, bandId, updateBandSong],
   );
 
+  // Keyed on the element, not the whole activeChord: its rect changes on every scroll and must not re-attach listeners.
+  const activeChordElement = activeChord?.element ?? null;
   useEffect(() => {
-    if (!activeChord) return;
-    const el = activeChord.element;
+    if (!activeChordElement) return;
+    const el = activeChordElement;
     const update = () => setActiveChord(prev => prev ? { ...prev, rect: el.getBoundingClientRect() } : null);
     window.addEventListener('scroll', update, { passive: true, capture: true });
     window.addEventListener('resize', update, { passive: true });
@@ -343,7 +335,7 @@ export default function SongView({ song, accentColor, bandId }: Props) {
       window.removeEventListener('scroll', update, { capture: true });
       window.removeEventListener('resize', update);
     };
-  }, [activeChord?.element]);
+  }, [activeChordElement]);
 
   // Close the chord diagram when transpose changes so it can't show a stale chord name
   useEffect(() => {
@@ -959,44 +951,28 @@ export default function SongView({ song, accentColor, bandId }: Props) {
 
           <div className="song-toolbar-row song-toolbar-row--actions">
             <div className="song-actions">
-              <div className="add-to-list-wrap" ref={menuRef}>
-                <button
-                  className="rec-btn rec-btn--toggle"
-                  onClick={() => setListMenuOpen((v) => !v)}
-                  title="Manage songlists"
-                  aria-label="Manage songlists"
-                >
-                  <ListPlus size={15} />
-                  <span className="song-action-label">Songlists</span>
-                </button>
-                {listMenuOpen && (
-                  <div className="list-dropdown">
-                    {bandSongLists.length === 0 ? (
-                      <p className="list-dropdown-empty">No songlists yet — create one from the band sidebar</p>
-                    ) : (
-                      bandSongLists.map((list) => {
-                        const inList = list.songIds.includes(song.id);
-                        return (
-                          <button
-                            key={list.id}
-                            className={`list-dropdown-item${inList ? ' in-list' : ''}`}
-                            onClick={() => {
-                              if (inList) {
-                                void removeSongFromBandSongList(bandId, list.id, song.id);
-                              } else {
-                                void addSongToBandSongList(bandId, list.id, song.id);
-                              }
-                            }}
-                          >
-                            {inList ? <Check size={13} /> : <Plus size={13} />}
-                            {list.name}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
-              </div>
+              <AddToMenu
+                label="Add to"
+                title="Add to a songlist or setlist"
+                icon={<ListPlus size={15} />}
+                songId={song.id}
+                sections={[
+                  {
+                    title: 'Songlists',
+                    emptyText: 'No songlists yet — create one from the band sidebar',
+                    lists: bandSongLists,
+                    onAdd: (listId, songId) => addSongToBandSongList(bandId, listId, songId),
+                    onRemove: (listId, songId) => removeSongFromBandSongList(bandId, listId, songId),
+                  },
+                  {
+                    title: 'Setlists',
+                    emptyText: 'No setlists yet — create one from the band sidebar',
+                    lists: bandSetlists,
+                    onAdd: (listId, songId) => addSongToBandSetlist(bandId, listId, songId),
+                    onRemove: (listId, songId) => removeSongFromBandSetlist(bandId, listId, songId),
+                  },
+                ]}
+              />
 
               <button
                 className="song-action-btn song-action-btn--import song-action-btn--labeled"

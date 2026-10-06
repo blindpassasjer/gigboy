@@ -35,6 +35,32 @@ export interface PressKitRiderItem {
   updatedAt?: string;
 }
 
+/** A gig listed on a press kit — only the fields safe to publish. */
+export interface PressKitDate {
+  title: string;
+  startsAt: string;
+  timezone?: string | null;
+  venue?: string | null;
+  address?: string | null;
+  tourName?: string | null;
+}
+
+/** "Sat, Nov 7, 2026, 20:00 — Saturday Night at Union Hall — Union Hall, 70 Union Street" (gig's own timezone). */
+export function pressKitDateLine(date: PressKitDate): string {
+  const when = new Date(date.startsAt);
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  };
+  let formatted: string;
+  try {
+    formatted = when.toLocaleString('en-GB', { ...options, timeZone: date.timezone ?? undefined });
+  } catch {
+    formatted = when.toLocaleString('en-GB', options); // unknown IANA zone stored on the gig
+  }
+  const where = [date.venue, date.address].filter(Boolean).join(', ');
+  return [formatted, date.title, where].filter(Boolean).join(' — ');
+}
+
 export interface PressKitPayload {
   bandName: string;
   stageplots: PressKitStageplotItem[];
@@ -45,6 +71,8 @@ export interface PressKitPayload {
   presaveReleaseName?: string;
   presaveReleaseDate?: string;
   presaveUrls?: string[];
+  /** Upcoming dates listed on the kit, soonest first. */
+  tourDates?: PressKitDate[];
   generatedAt?: string;
 }
 
@@ -136,6 +164,7 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
 
   const videoUrls = payload.videoUrls ?? [];
   const presaveUrls = payload.presaveUrls ?? [];
+  const tourDates = payload.tourDates ?? [];
 
   root.file(
     'README.txt',
@@ -149,8 +178,24 @@ export async function generatePressKitZip(payload: PressKitPayload): Promise<Blo
       `Images: ${payload.images.length}`,
       `Music & Videos: ${videoUrls.length}`,
       `Presave links: ${presaveUrls.length}`,
+      `Upcoming dates: ${tourDates.length}`,
     ].join('\n')
   );
+
+  if (tourDates.length > 0) {
+    // Grouped by tour (dates arrive soonest-first), like the public page.
+    const lines: string[] = [];
+    let currentTour: string | null | undefined;
+    tourDates.forEach((date, index) => {
+      if (index === 0 || date.tourName !== currentTour) {
+        if (index > 0) lines.push('');
+        if (date.tourName) lines.push(date.tourName);
+        currentTour = date.tourName;
+      }
+      lines.push(`- ${pressKitDateLine(date)}`);
+    });
+    root.file('upcoming-dates.txt', lines.join('\n'));
+  }
 
   if (videoUrls.length > 0) {
     root.file('videos.txt', videoUrls.join('\n'));

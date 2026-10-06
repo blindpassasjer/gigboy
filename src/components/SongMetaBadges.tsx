@@ -1,7 +1,9 @@
-import { Gauge, KeyRound, StickyNote, Paperclip, Mic, Calendar, Clock } from 'lucide-react';
+import { useMemo } from 'react';
+import { Gauge, KeyRound, StickyNote, Paperclip, Mic, Calendar, Clock, Guitar } from 'lucide-react';
 import type { Song } from '../types';
 import type { SongBadgeCounts } from '../hooks/useSongListBadges';
 import { formatDuration } from '../utils/duration';
+import { extractTabBlocks } from '../utils/tabParser';
 
 interface Props {
   song: Song;
@@ -10,8 +12,12 @@ interface Props {
 }
 
 export default function SongMetaBadges({ song, counts, pulseTempo = false }: Props) {
+  // A song "has tabs" if its ChordPro contains at least one non-empty {start_of_tab} block — the same
+  // definition the song view uses to render tablature.
+  const hasTabs = useMemo(() => extractTabBlocks(song.chordpro ?? '').length > 0, [song.chordpro]);
+
   const hasAny =
-    song.tempo || song.key || song.date || song.durationSeconds
+    hasTabs || song.tempo || song.key || song.date || song.durationSeconds
     || (counts && (counts.notes > 0 || counts.attachments > 0 || counts.recordings > 0));
 
   if (!hasAny) return null;
@@ -21,6 +27,11 @@ export default function SongMetaBadges({ song, counts, pulseTempo = false }: Pro
       {song.key && (
         <span className="song-meta-badge" title={`Key: ${song.key}`}>
           <KeyRound size={11} /> {song.key}
+        </span>
+      )}
+      {hasTabs && (
+        <span className="song-meta-badge song-meta-badge--tab" title="This song has tabs">
+          <Guitar size={11} /> Tabs
         </span>
       )}
       {song.date && (

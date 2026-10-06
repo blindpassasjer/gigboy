@@ -1,16 +1,29 @@
 import { Router } from 'express';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { bands, pressKitImages, pressKitShares, pressKits } from '../db/schema.js';
+import { bands, gigs, pressKitImages, pressKitShares, pressKits, tours } from '../db/schema.js';
 import { pressKitImageToApi } from '../lib/pressKitImages.js';
 import { pressKitToApi } from './bandPressKits.js';
 import { publicBandLogoUrl } from './publicAssets.js';
+
+/** The only gig fields that ever leave the server on a public page — no contact, schedule, notes or attachments. */
+export interface PublicTourDate {
+  id: string;
+  title: string;
+  startsAt: string;
+  timezone: string | null;
+  venue: string | null;
+  address: string | null;
+  tourId: string | null;
+  tourName: string | null;
+}
 
 export interface PublicPressKitData {
   kit: ReturnType<typeof pressKitToApi>;
   bandName: string;
   bandLogo: string | null;
   images: ReturnType<typeof pressKitImageToApi>[];
+  tourDates: PublicTourDate[];
 }
 
 /**
@@ -52,11 +65,42 @@ export async function getPublicPressKitData(token: string): Promise<PublicPressK
       .map((imgRow) => pressKitImageToApi(imgRow, downloadUrlBase));
   }
 
+  const gigIds = Array.isArray(row.kit.gigIds) ? row.kit.gigIds : [];
+  let tourDates: PublicTourDate[] = [];
+  if (gigIds.length > 0) {
+    // Only gigs picked on the kit, and of those only confirmed, upcoming ones — filtered here so nothing
+    // private is ever serialized.
+    const dateRows = await db
+      .select({
+        id: gigs.id,
+        title: gigs.title,
+        startsAt: gigs.startsAt,
+        timezone: gigs.timezone,
+        venue: gigs.venue,
+        address: gigs.address,
+        tourId: gigs.tourId,
+        tourName: tours.name,
+      })
+      .from(gigs)
+      .leftJoin(tours, eq(gigs.tourId, tours.id))
+      .where(
+        and(
+          eq(gigs.bandId, row.kit.bandId),
+          inArray(gigs.id, gigIds),
+          eq(gigs.status, 'confirmed'),
+          gte(gigs.startsAt, new Date()),
+        ),
+      )
+      .orderBy(asc(gigs.startsAt));
+    tourDates = dateRows.map((d) => ({ ...d, startsAt: d.startsAt.toISOString() }));
+  }
+
   return {
     kit: pressKitToApi(row.kit),
     bandName: row.bandName,
     bandLogo: publicBandLogoUrl(row.kit.bandId, row.bandLogo),
     images,
+    tourDates,
   };
 }
 

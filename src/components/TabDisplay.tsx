@@ -23,7 +23,6 @@ export default function TabDisplay({
   tabLines,
   transpose = 0,
   bpm = 120,
-  timeSignature: _timeSignature,
   showPlayback = true,
   onEdit,
 }: Props) {
@@ -50,7 +49,7 @@ export default function TabDisplay({
     } else {
       setIsPlaying(false);
     }
-  }, [tabLines, transpose]);
+  }, [tabLines, transpose, bpm]);
 
   playRef.current = startOnce;
 

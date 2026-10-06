@@ -46,6 +46,45 @@ export interface Setlist {
   sortOrder?: number;
 }
 
+/** A named run of gigs (e.g. "Summer 2026"). Gigs can also stand alone with no tour. */
+export interface Tour {
+  id: string;
+  name: string;
+  icon?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  sortOrder?: number;
+}
+
+export type GigStatus = 'confirmed' | 'tentative' | 'cancelled';
+
+export interface Gig {
+  id: string;
+  /** The tour this gig belongs to, if any. */
+  tourId?: string;
+  title: string;
+  /** Show start (on stage), ISO 8601. The gig's date is derived from this. */
+  startsAt: string;
+  endsAt?: string;
+  getInAt?: string;
+  soundCheckAt?: string;
+  /** IANA zone the gig was entered in, e.g. "Europe/Oslo". */
+  timezone?: string;
+  venue?: string;
+  address?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  notes?: string;
+  /** Attached band resources. */
+  setlistId?: string;
+  pressKitId?: string;
+  riderId?: string;
+  status: GigStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface StageplotItem {
   id: string;
   kind: string;
@@ -126,6 +165,8 @@ export interface PressKit {
   presaveUrls?: string[];
   /** Selected presave URLs to include in shared public press-kit links. */
   selectedPresaveUrls?: string[];
+  /** Gigs listed as dates on the shared press kit. Picking a gig here is the opt-in to publish it. */
+  gigIds?: string[];
   createdAt?: string;
 }
 

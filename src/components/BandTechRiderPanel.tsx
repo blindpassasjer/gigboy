@@ -7,6 +7,7 @@ import StageplotEditor from './StageplotEditor';
 import InputListEditor from './InputListEditor';
 import { useBands } from '../context/BandsContext';
 import { buildBandPublicShareUrl } from '../utils/publicShare';
+import { appOrigin } from '../lib/appOrigin';
 import { showConfirmToast } from '../utils/toastDialogs';
 import { TECH_RIDER_ICON_OPTIONS } from '../lib/iconOptions';
 import { saveBlob } from '../lib/download';
@@ -176,7 +177,7 @@ export default function BandTechRiderPanel({
       if (error) { toast.error(error); return; }
     }
     const publicUrl = buildBandPublicShareUrl(
-      window.location.origin,
+      appOrigin(),
       bandId,
       bandName,
       'riders',

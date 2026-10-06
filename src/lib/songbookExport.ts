@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import type { Band, InputList, PressKit, Setlist, Song, SongList } from '../types';
+import type { Band, Gig, InputList, PressKit, Setlist, Song, SongList, Tour } from '../types';
 import type { SongRecording } from './songRecordings';
 import { extensionFromImageMimeType, riderAsText, sanitizeFileName } from './pressKitZip';
 import { saveBlob } from './download';
@@ -18,6 +18,8 @@ export interface SongbookExportInput {
   bandSetlistsByBandId: Record<string, Setlist[]>;
   bandInputListsByBandId: Record<string, InputList[]>;
   bandPressKitsByBandId: Record<string, PressKit[]>;
+  bandToursByBandId: Record<string, Tour[]>;
+  bandGigsByBandId: Record<string, Gig[]>;
   bandPressKitImagesByBandId: Record<string, PressKitImageAsset[]>;
   /** Recordings for band songs, keyed by band ID then song ID. */
   bandRecordingsBySongId: Record<string, Record<string, SongRecording[]>>;
@@ -111,8 +113,13 @@ function riderToJson(rider: InputList, generatedAt: string): string {
 function pressKitToJson(
   kit: PressKit,
   imagesById: Map<string, PressKitImageAsset>,
+  gigs: Gig[],
   generatedAt: string,
 ): string {
+  // Gig ids mean nothing outside this install, so the kit records which gigs it lists by title and start instead.
+  const listedGigs = gigs
+    .filter((gig) => (kit.gigIds ?? []).includes(gig.id))
+    .map((gig) => ({ title: gig.title, startsAt: gig.startsAt }));
   const images = kit.imageIds
     .map((id) => imagesById.get(id))
     .filter((img): img is PressKitImageAsset => Boolean(img))
@@ -134,7 +141,75 @@ function pressKitToJson(
     presaveReleaseDate: kit.presaveReleaseDate ?? null,
     presaveUrls: kit.presaveUrls ?? [],
     selectedPresaveUrls: kit.selectedPresaveUrls ?? [],
+    listedGigs,
   }, null, 2);
+}
+
+/**
+ * Gigs and tours: `gigs.json` is the full record (tours by name, attachments by name — ids are local to this
+ * install) and `gigs.txt` is the same thing for reading by eye. There is no gig re-import yet.
+ */
+function gigsToJson(gigs: Gig[], tours: Tour[], setlists: Setlist[], riders: InputList[], kits: PressKit[], generatedAt: string): string {
+  const name = (list: Array<{ id: string; name: string }>, id: string | undefined) => (id ? (list.find((x) => x.id === id)?.name ?? null) : null);
+  return JSON.stringify({
+    type: 'gigboy.gigs',
+    version: 1,
+    exportedAt: generatedAt,
+    tours: tours.map((tour) => ({ name: tour.name, icon: tour.icon ?? null })),
+    gigs: gigs.map((gig) => ({
+      title: gig.title,
+      tour: name(tours, gig.tourId),
+      status: gig.status,
+      startsAt: gig.startsAt,
+      endsAt: gig.endsAt ?? null,
+      getInAt: gig.getInAt ?? null,
+      soundCheckAt: gig.soundCheckAt ?? null,
+      timezone: gig.timezone ?? null,
+      venue: gig.venue ?? null,
+      address: gig.address ?? null,
+      contactName: gig.contactName ?? null,
+      contactPhone: gig.contactPhone ?? null,
+      contactEmail: gig.contactEmail ?? null,
+      notes: gig.notes ?? null,
+      setlist: name(setlists, gig.setlistId),
+      technicalRider: name(riders, gig.riderId),
+      pressKit: name(kits, gig.pressKitId),
+    })),
+  }, null, 2);
+}
+
+function gigsToText(gigs: Gig[], tours: Tour[]): string {
+  const tourName = (id: string | undefined) => tours.find((t) => t.id === id)?.name ?? 'No tour';
+  const sorted = [...gigs].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  return sorted
+    .map((gig) => [
+      `${gig.startsAt.slice(0, 10)}  ${gig.title}${gig.status === 'confirmed' ? '' : ` (${gig.status})`}`,
+      `  Tour: ${tourName(gig.tourId)}`,
+      ...(gig.venue || gig.address ? [`  Venue: ${[gig.venue, gig.address].filter(Boolean).join(', ')}`] : []),
+      ...(gig.getInAt ? [`  Get in: ${gig.getInAt}`] : []),
+      ...(gig.soundCheckAt ? [`  Sound check: ${gig.soundCheckAt}`] : []),
+      `  On stage: ${gig.startsAt}`,
+      ...(gig.contactName || gig.contactPhone || gig.contactEmail
+        ? [`  Contact: ${[gig.contactName, gig.contactPhone, gig.contactEmail].filter(Boolean).join(' · ')}`]
+        : []),
+      ...(gig.notes ? [`  Notes: ${gig.notes}`] : []),
+    ].join('\n'))
+    .join('\n\n');
+}
+
+function addGigsFolder(
+  zip: JSZip,
+  gigs: Gig[],
+  tours: Tour[],
+  setlists: Setlist[],
+  riders: InputList[],
+  kits: PressKit[],
+  generatedAt: string,
+) {
+  if (gigs.length === 0 && tours.length === 0) return;
+  const folder = zip.folder('gigs');
+  folder?.file('gigs.txt', gigsToText(gigs, tours));
+  folder?.file('gigs.json', gigsToJson(gigs, tours, setlists, riders, kits, generatedAt));
 }
 
 function addSongsFolder(zip: JSZip, songs: Song[]) {
@@ -218,6 +293,7 @@ function addPressKitsFolder(
   zip: JSZip,
   kits: PressKit[],
   imagesById: Map<string, PressKitImageAsset>,
+  gigs: Gig[],
   generatedAt: string,
 ) {
   if (kits.length === 0) return;
@@ -226,7 +302,7 @@ function addPressKitsFolder(
     const kitFolder = folder?.folder(sanitizeFileName(kit.name));
     if (!kitFolder) return;
     if (kit.richText) kitFolder.file('content.html', kit.richText);
-    kitFolder.file('kit.json', pressKitToJson(kit, imagesById, generatedAt));
+    kitFolder.file('kit.json', pressKitToJson(kit, imagesById, gigs, generatedAt));
     const attachedImageNames = kit.imageIds
       .map((id) => imagesById.get(id)?.title)
       .filter((title): title is string => Boolean(title));
@@ -322,6 +398,8 @@ export async function buildSongbookExportZip(input: SongbookExportInput): Promis
     const bandSetlists = input.bandSetlistsByBandId[band.id] ?? [];
     const bandRiders = input.bandInputListsByBandId[band.id] ?? [];
     const bandPressKits = input.bandPressKitsByBandId[band.id] ?? [];
+    const bandTours = input.bandToursByBandId[band.id] ?? [];
+    const bandGigs = input.bandGigsByBandId[band.id] ?? [];
     const bandImages = input.bandPressKitImagesByBandId[band.id] ?? [];
     const bandRecordings = input.bandRecordingsBySongId[band.id] ?? {};
 
@@ -330,6 +408,8 @@ export async function buildSongbookExportZip(input: SongbookExportInput): Promis
       && bandSetlists.length === 0
       && bandRiders.length === 0
       && bandPressKits.length === 0
+      && bandTours.length === 0
+      && bandGigs.length === 0
       && bandImages.length === 0
       && Object.keys(bandRecordings).length === 0;
     if (isEmpty) return;
@@ -341,7 +421,8 @@ export async function buildSongbookExportZip(input: SongbookExportInput): Promis
     addSetlistsFolder(bandFolder, bandSetlists, bandSongs, generatedAt);
     addInputListsFolder(bandFolder, bandRiders, generatedAt);
     const imagesById = new Map(bandImages.map((img) => [img.id, img]));
-    addPressKitsFolder(bandFolder, bandPressKits, imagesById, generatedAt);
+    addPressKitsFolder(bandFolder, bandPressKits, imagesById, bandGigs, generatedAt);
+    addGigsFolder(bandFolder, bandGigs, bandTours, bandSetlists, bandRiders, bandPressKits, generatedAt);
     await addPressKitImagesFolder(bandFolder, bandImages);
     await addRecordingsFolder(bandFolder, bandSongs, bandRecordings);
   }));
@@ -356,6 +437,8 @@ export async function buildSongbookExportZip(input: SongbookExportInput): Promis
       'Songlists, setlists, technical riders, and press kits each ship as a human-readable .txt/.html',
       'file AND a matching .json file — the .json can be re-imported into gigboy from that item\'s',
       'page (Songlists, Setlists, Riders, Press Kits); the .txt/.html is just for reading by eye.',
+      'Gigs and tours are in each band\'s gigs/ folder (gigs.txt to read, gigs.json for the full record).',
+      'Gigs can\'t be re-imported into gigboy yet.',
       'Recordings are exported as their original audio files, grouped by song.',
       'Press kit images live in each band\'s images/ folder.',
       'This archive is portable: the .cho files can be opened by any ChordPro-compatible app.',

@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ClipboardList, Folder, ListMusic, Music, Newspaper, Plus, Trash2, X, ChevronsUpDown } from 'lucide-react';
+import { CalendarDays, ChevronDown, Route as RouteIcon, ChevronRight, ClipboardList, Folder, ListMusic, Music, Newspaper, Plus, Trash2, X, ChevronsUpDown } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
-import { readStoredString, writeStoredString } from '../lib/safeStorage';
+import { readStoredString, removeStoredString, writeStoredString } from '../lib/safeStorage';
 import { useStorageUsage } from '../hooks/useStorageUsage';
 import toast from '../utils/anchoredToast';
 
@@ -19,6 +19,15 @@ function formatStorageBytes(bytes: number): string {
     return '1 KB';
   }
   return `${Math.max(0, Math.round(bytes / 1024))} KB`;
+}
+
+const SIDEBAR_WIDTH_KEY = 'gigboy-sidebar-width';
+const SIDEBAR_DEFAULT_WIDTH = 220;
+const SIDEBAR_MIN_WIDTH = 200;
+const SIDEBAR_MAX_WIDTH = 480;
+
+function clampSidebarWidth(width: number): number {
+  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Math.round(width)));
 }
 
 const SONG_DRAG_MIME = 'application/x-gigboy-song-id';
@@ -65,12 +74,17 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     bandSetlistsByBandId,
     bandInputListsByBandId,
     bandPressKitsByBandId,
+    bandToursByBandId,
+    bandGigsByBandId,
     bandTrashByBandId,
     refreshBandSongs,
     refreshBandSongLists,
     refreshBandSetlists,
     refreshBandInputLists,
     refreshBandPressKits,
+    refreshBandTours,
+    refreshBandGigs,
+    addBandTour,
     refreshBandTrash,
     createBand,
     addBandPressKit,
@@ -87,6 +101,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [addingBandSetlistId, setAddingBandSetlistId] = useState<string | null>(null);
   const [addingBandInputListId, setAddingBandInputListId] = useState<string | null>(null);
   const [addingBandPressKitId, setAddingBandPressKitId] = useState<string | null>(null);
+  const [addingBandTourId, setAddingBandTourId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
   const [bandLibraryDropTargetId, setBandLibraryDropTargetId] = useState<string | null>(null);
   const [bandSongListDropTargetId, setBandSongListDropTargetId] = useState<string | null>(null);
@@ -95,6 +110,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const [collapsedBandSetlistIds, setCollapsedBandSetlistIds] = useState<string[]>([]);
   const [collapsedBandInputListIds, setCollapsedBandInputListIds] = useState<string[]>([]);
   const [collapsedBandPressKitIds, setCollapsedBandPressKitIds] = useState<string[]>([]);
+  const [collapsedBandTourIds, setCollapsedBandTourIds] = useState<string[]>([]);
   const sidebarMode = 'bands' as const;
   const [activeBandId, setActiveBandId] = useState<string | null>(
     () => readStoredString('gigboy-active-band-id'),
@@ -102,6 +118,64 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   const effectiveActiveBand = bands.find((band) => band.id === activeBandId) ?? bands[0] ?? null;
   const [bandSwitcherOpen, setBandSwitcherOpen] = useState(false);
   const [storagePopupOpen, setStoragePopupOpen] = useState(false);
+
+  // ── Resizable width (desktop only). `null` = the stylesheet's default width. ──
+  const animRef = useRef<HTMLDivElement>(null);
+  const [userWidth, setUserWidth] = useState<number | null>(() => {
+    const stored = Number(readStoredString(SIDEBAR_WIDTH_KEY));
+    return Number.isFinite(stored) && stored > 0 ? clampSidebarWidth(stored) : null;
+  });
+  const [resizing, setResizing] = useState(false);
+
+  const currentWidth = () => animRef.current?.getBoundingClientRect().width ?? SIDEBAR_DEFAULT_WIDTH;
+  const applyWidth = (next: number | null) => {
+    setUserWidth(next);
+    if (next === null) removeStoredString(SIDEBAR_WIDTH_KEY);
+    else writeStoredString(SIDEBAR_WIDTH_KEY, String(next));
+  };
+
+  const startResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = currentWidth();
+    const handle = event.currentTarget;
+    handle.setPointerCapture(event.pointerId);
+    setResizing(true);
+    const onMove = (moveEvent: PointerEvent) => setUserWidth(clampSidebarWidth(startWidth + moveEvent.clientX - startX));
+    const onUp = (upEvent: PointerEvent) => {
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onUp);
+      handle.removeEventListener('pointercancel', onUp);
+      setResizing(false);
+      applyWidth(clampSidebarWidth(startWidth + upEvent.clientX - startX));
+    };
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onUp);
+    handle.addEventListener('pointercancel', onUp);
+  };
+
+  /** Double-click: grow just enough to show the longest truncated name (capped), or reset if nothing is cut off. */
+  const fitWidthToNames = () => {
+    const names = animRef.current?.querySelectorAll<HTMLElement>('.sidebar-list-name') ?? [];
+    let overflow = 0;
+    names.forEach((el) => { overflow = Math.max(overflow, el.scrollWidth - el.clientWidth); });
+    applyWidth(overflow > 0 ? clampSidebarWidth(Math.ceil(currentWidth() + overflow + 8)) : null);
+  };
+
+  const handleResizeKey = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 48 : 16;
+    if (event.key === 'ArrowLeft') applyWidth(clampSidebarWidth(currentWidth() - step));
+    else if (event.key === 'ArrowRight') applyWidth(clampSidebarWidth(currentWidth() + step));
+    else if (event.key === 'Enter' || event.key === 'Home') applyWidth(null);
+    else return;
+    event.preventDefault();
+  };
+
+  /** Names are ellipsised, so give a cut-off one a native tooltip with its full text (set lazily on hover). */
+  const handleNameHover = (event: React.MouseEvent<HTMLElement>) => {
+    const el = event.target as HTMLElement;
+    if (el.classList?.contains('sidebar-list-name') && el.scrollWidth > el.clientWidth) el.title = el.textContent ?? '';
+  };
   const bandSwitcherRef = useRef<HTMLDivElement>(null);
   const storagePopupRef = useRef<HTMLDivElement>(null);
   const storageUsage = useStorageUsage(user?.id ?? null, user?.storageQuotaBytes, activeBandId);
@@ -171,6 +245,14 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       .map((band) => band.id)
       .filter((bandId) => bandPressKitsByBandId[bandId] === undefined);
 
+    const missingBandTourCollections = bands
+      .map((band) => band.id)
+      .filter((bandId) => bandToursByBandId[bandId] === undefined);
+
+    const missingBandGigCollections = bands
+      .map((band) => band.id)
+      .filter((bandId) => bandGigsByBandId[bandId] === undefined);
+
     const missingBandTrashCollections = bands
       .map((band) => band.id)
       .filter((bandId) => bandTrashByBandId[bandId] === undefined);
@@ -181,6 +263,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       && missingBandSetlistCollections.length === 0
       && missingBandInputListCollections.length === 0
       && missingBandPressKitCollections.length === 0
+      && missingBandTourCollections.length === 0
+      && missingBandGigCollections.length === 0
       && missingBandTrashCollections.length === 0
     ) return;
 
@@ -214,6 +298,18 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       });
     });
 
+    missingBandTourCollections.forEach((bandId) => {
+      void refreshBandTours(bandId).catch(() => {
+        // Sidebar counts are best-effort; detailed errors are handled on band pages.
+      });
+    });
+
+    missingBandGigCollections.forEach((bandId) => {
+      void refreshBandGigs(bandId).catch(() => {
+        // Sidebar counts are best-effort; detailed errors are handled on band pages.
+      });
+    });
+
     missingBandTrashCollections.forEach((bandId) => {
       void refreshBandTrash(bandId).catch(() => {
         // Sidebar counts are best-effort; detailed errors are handled on band pages.
@@ -223,6 +319,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     bandTrashByBandId,
     bandInputListsByBandId,
     bandPressKitsByBandId,
+    bandToursByBandId,
+    bandGigsByBandId,
     bandSetlistsByBandId,
     bandSongListsByBandId,
     bandSongsByBandId,
@@ -231,6 +329,8 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     refreshBandInputLists,
     refreshBandSetlists,
     refreshBandPressKits,
+    refreshBandTours,
+    refreshBandGigs,
     refreshBandSongLists,
     refreshBandSongs,
   ]);
@@ -240,6 +340,21 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   // context value, so there's nothing left to clear here — this is kept as a stable call site
   // for the many navigation handlers below.
   const clearGlobalSelection = () => {};
+
+  // Gigs per tour, per band — computed once per gigs change rather than filtering the list for every tour row.
+  const tourGigCounts = useMemo(() => {
+    const counts: Record<string, Record<string, number>> = {};
+    for (const [bandId, gigs] of Object.entries(bandGigsByBandId)) {
+      const perTour: Record<string, number> = {};
+      for (const gig of gigs) if (gig.tourId) perTour[gig.tourId] = (perTour[gig.tourId] ?? 0) + 1;
+      counts[bandId] = perTour;
+    }
+    return counts;
+  }, [bandGigsByBandId]);
+
+  /** A rider's "inputs" are its stage-plot items that feed a mixer channel — position-only markers don't count. */
+  const inputCount = (rider: { items?: Array<{ noChannel?: boolean }> }) =>
+    (rider.items ?? []).filter((item) => !item.noChannel).length;
 
   const commitBand = async () => {
     const name = draftName.trim();
@@ -287,6 +402,22 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       onNavigate?.();
     } else if (result.error) {
       toast.error(result.error, { duration: 8000 });
+    }
+  };
+
+  const commitBandTour = async (bandId: string) => {
+    const name = draftName.trim();
+    setDraftName('');
+    setAddingBandTourId(null);
+    if (!name) return;
+
+    const result = await addBandTour(bandId, name);
+    if (result.error) { toast.error(result.error, { duration: 8000 }); return; }
+    setCollapsedBandTourIds((prev) => prev.filter((id) => id !== bandId));
+    if (result.tourId) {
+      clearGlobalSelection();
+      navigate(`/bands/${bandId}/tours/${result.tourId}`);
+      onNavigate?.();
     }
   };
 
@@ -350,6 +481,16 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
 
   const toggleBandInputListsExpanded = (bandId: string) => {
     setCollapsedBandInputListIds((prev) => (
+      prev.includes(bandId)
+        ? prev.filter((entry) => entry !== bandId)
+        : [...prev, bandId]
+    ));
+  };
+
+  const isBandToursExpanded = (bandId: string) => !collapsedBandTourIds.includes(bandId);
+
+  const toggleBandToursExpanded = (bandId: string) => {
+    setCollapsedBandTourIds((prev) => (
       prev.includes(bandId)
         ? prev.filter((entry) => entry !== bandId)
         : [...prev, bandId]
@@ -422,8 +563,12 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
   );
 
   return (
-    <div className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}`}>
-    <aside id="app-sidebar" className={`sidebar${mobile ? ' sidebar--mobile' : ''}${open ? ' sidebar--open' : ''}`}>
+    <div
+      ref={animRef}
+      className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}${resizing ? ' sidebar-anim--resizing' : ''}`}
+      style={!mobile && userWidth !== null ? ({ '--sidebar-width': `${userWidth}px` } as React.CSSProperties) : undefined}
+    >
+    <aside id="app-sidebar" className={`sidebar${mobile ? ' sidebar--mobile' : ''}${open ? ' sidebar--open' : ''}`} onMouseOver={handleNameHover}>
       <div className="sidebar-header">
         <span className="sidebar-title"></span>
         <div className="sidebar-header-actions">
@@ -818,6 +963,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                         >
                           <SidebarItemIcon icon={rider.icon} fallback={<ClipboardList size={14} />} />
                           <span className="sidebar-list-name">{rider.name}</span>
+                          {inputCount(rider) > 0 && <span className="sidebar-list-count">{inputCount(rider)}</span>}
                         </button>
                       </div>
                     ))}
@@ -879,6 +1025,7 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                         >
                           <SidebarItemIcon icon={kit.icon} fallback={<Newspaper size={14} />} />
                           <span className="sidebar-list-name">{kit.name}</span>
+                          {kit.imageIds.length > 0 && <span className="sidebar-list-count">{kit.imageIds.length}</span>}
                         </button>
                       </div>
                     ))}
@@ -895,6 +1042,84 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
                   </div>
                 )}
 
+                <div className="sidebar-setlists-header">
+                  <button
+                    type="button"
+                    className="sidebar-section-toggle"
+                    onClick={() => toggleBandToursExpanded(band.id)}
+                    aria-expanded={isBandToursExpanded(band.id)}
+                  >
+                    {isBandToursExpanded(band.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span className="sidebar-section-title">Tours</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sidebar-icon-btn"
+                    title="New tour"
+                    aria-label="Create new tour"
+                    onClick={() => {
+                      setCollapsedBandTourIds((prev) => prev.filter((id) => id !== band.id));
+                      setAddingBandTourId(band.id);
+                      setDraftName('');
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                {isBandToursExpanded(band.id) && (
+                  <div className="sidebar-nested-group">
+                    <div className={`sidebar-list-item${pathname === `/bands/${band.id}/gigs` ? ' active' : ''}`}>
+                      <button
+                        className="sidebar-list-item-btn"
+                        onClick={() => {
+                          clearGlobalSelection();
+                          navigate(`/bands/${band.id}/gigs`);
+                          onNavigate?.();
+                        }}
+                      >
+                        <SidebarItemIcon fallback={<CalendarDays size={14} />} />
+                        <span className="sidebar-list-name">All gigs</span>
+                        {(bandGigsByBandId[band.id]?.length ?? 0) > 0 && (
+                          <span className="sidebar-list-count">{bandGigsByBandId[band.id]?.length ?? 0}</span>
+                        )}
+                      </button>
+                    </div>
+
+                    {(bandToursByBandId[band.id] ?? []).map((tour) => (
+                      <div
+                        key={tour.id}
+                        className={`sidebar-list-item${pathname === `/bands/${band.id}/tours/${tour.id}` ? ' active' : ''}`}
+                      >
+                        <button
+                          className="sidebar-list-item-btn"
+                          onClick={() => {
+                            clearGlobalSelection();
+                            navigate(`/bands/${band.id}/tours/${tour.id}`);
+                            onNavigate?.();
+                          }}
+                        >
+                          <SidebarItemIcon icon={tour.icon} fallback={<RouteIcon size={14} />} />
+                          <span className="sidebar-list-name">{tour.name}</span>
+                          {(tourGigCounts[band.id]?.[tour.id] ?? 0) > 0 && (
+                            <span className="sidebar-list-count">{tourGigCounts[band.id]?.[tour.id]}</span>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+
+                    {addingBandTourId === band.id && (
+                      <InlineInput
+                        value={draftName}
+                        onChange={setDraftName}
+                        onCommit={() => void commitBandTour(band.id)}
+                        onCancel={() => setAddingBandTourId(null)}
+                        placeholder="Tour name..."
+                      />
+                    )}
+                  </div>
+                )}
+
 
               </div>
             </div>
@@ -904,6 +1129,22 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
       )}
 
     </aside>
+    {!mobile && open && (
+      <div
+        className="sidebar-resize-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        aria-valuemin={SIDEBAR_MIN_WIDTH}
+        aria-valuemax={SIDEBAR_MAX_WIDTH}
+        aria-valuenow={Math.round(userWidth ?? SIDEBAR_DEFAULT_WIDTH)}
+        tabIndex={0}
+        title="Drag to resize · double-click to fit names"
+        onPointerDown={startResize}
+        onDoubleClick={fitWidthToNames}
+        onKeyDown={handleResizeKey}
+      />
+    )}
     </div>
   );
 }

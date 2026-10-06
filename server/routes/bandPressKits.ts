@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { pressKits } from '../db/schema.js';
+import { gigs, pressKits } from '../db/schema.js';
 import { requireAuth } from '../middleware/session.js';
 import { requireBandEditor, requireBandMember } from '../middleware/bandAccess.js';
 import { removeNullish } from '../lib/serialize.js';
@@ -22,6 +22,7 @@ export function pressKitToApi(row: PressKitRow) {
     presaveReleaseDate: row.presaveReleaseDate,
     presaveUrls: row.presaveUrls,
     selectedPresaveUrls: row.selectedPresaveUrls,
+    gigIds: row.gigIds,
     createdAt: row.createdAt?.toISOString(),
   });
 }
@@ -67,6 +68,7 @@ bandPressKitsRouter.post('/', requireBandEditor, async (req, res) => {
         selectedVideoUrls: [],
         presaveUrls: [],
         selectedPresaveUrls: [],
+        gigIds: [],
         createdBy: req.userId!,
       })
       .returning();
@@ -98,6 +100,16 @@ bandPressKitsRouter.put('/:id', requireBandEditor, async (req, res) => {
     if ('presaveReleaseDate' in body) updates.presaveReleaseDate = (body.presaveReleaseDate as string | null) ?? null;
     if (Array.isArray(body.presaveUrls)) updates.presaveUrls = body.presaveUrls as string[];
     if (Array.isArray(body.selectedPresaveUrls)) updates.selectedPresaveUrls = body.selectedPresaveUrls as string[];
+
+    if (Array.isArray(body.gigIds)) {
+      // Only this band's gigs may be listed on this band's kit (the ids are stored loosely, not as FKs).
+      const requested = body.gigIds.filter((g): g is string => typeof g === 'string');
+      const owned = requested.length
+        ? await db.select({ id: gigs.id }).from(gigs).where(and(eq(gigs.bandId, req.params.bandId), inArray(gigs.id, requested)))
+        : [];
+      const ownedIds = new Set(owned.map((g) => g.id));
+      updates.gigIds = requested.filter((g) => ownedIds.has(g));
+    }
 
     const [row] = await db
       .update(pressKits)

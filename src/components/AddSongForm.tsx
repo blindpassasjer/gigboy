@@ -133,13 +133,16 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     setEditingTabIdx(null);
   }
 
+  // A stable string, so the memo below doesn't re-run just because `tags` is a new array each render.
+  const initialTags = (initialSong?.tags ?? []).join(', ');
+
   const initialValues = useMemo<SongFormValues>(() => ({
     title: initialSong?.title ?? '',
     artist: initialSong?.artist ?? '',
     author: initialSong?.author ?? '',
     playbackUrl: initialSong?.playbackUrl ?? '',
     language: initialSong?.language ?? 'en',
-    tags: (initialSong?.tags ?? []).join(', '),
+    tags: initialTags,
     key: initialSong?.key ?? '',
     tempo: initialSong?.tempo !== undefined ? String(initialSong.tempo) : '',
     timeSignature: initialSong?.timeSignature ?? '',
@@ -153,8 +156,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     initialSong?.author,
     initialSong?.playbackUrl,
     initialSong?.language,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    initialSong?.tags?.join(','),
+    initialTags,
     initialSong?.key,
     initialSong?.tempo,
     initialSong?.timeSignature,

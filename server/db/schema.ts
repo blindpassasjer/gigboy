@@ -1,4 +1,4 @@
-import { pgTable, text, integer, bigint, timestamp, jsonb, boolean, primaryKey, check, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, bigint, timestamp, jsonb, boolean, primaryKey, check, unique, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const users = pgTable(
@@ -173,6 +173,73 @@ export const setlists = pgTable(
   },
 );
 
+/** A named run of gigs (e.g. "Summer 2026"). Gigs may also stand alone, with no tour. */
+export const tours = pgTable('tours', {
+  id: text('id').primaryKey(),
+  bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  icon: text('icon'),
+  sortOrder: integer('sort_order'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** A show/rehearsal on the band calendar. */
+export const gigs = pgTable(
+  'gigs',
+  {
+    id: text('id').primaryKey(),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
+    /** Deleting a tour keeps its gigs; they just become ungrouped. */
+    tourId: text('tour_id').references(() => tours.id, { onDelete: 'set null' }),
+    title: text('title').notNull(),
+    /** Show start (on stage) — the date of the gig is derived from this. */
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    /** Day-of-show schedule, all optional. */
+    getInAt: timestamp('get_in_at', { withTimezone: true }),
+    soundCheckAt: timestamp('sound_check_at', { withTimezone: true }),
+    /** IANA zone the gig was entered in, e.g. "Europe/Oslo" — kept for display; feed times are UTC. */
+    timezone: text('timezone'),
+    venue: text('venue'),
+    address: text('address'),
+    /** Venue-side contact (promoter, sound engineer, ...). */
+    contactName: text('contact_name'),
+    contactPhone: text('contact_phone'),
+    contactEmail: text('contact_email'),
+    notes: text('notes'),
+    /** Attached band resources; set null if the resource is later deleted. */
+    setlistId: text('setlist_id').references(() => setlists.id, { onDelete: 'set null' }),
+    pressKitId: text('press_kit_id').references(() => pressKits.id, { onDelete: 'set null' }),
+    riderId: text('rider_id').references(() => bandRiders.id, { onDelete: 'set null' }),
+    status: text('status').notNull().default('confirmed'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check('gigs_status_check', sql`${table.status} in ('confirmed', 'tentative', 'cancelled')`)],
+);
+
+/**
+ * Per-member iCal subscription token. Calendar apps can't send cookies, so the URL token is the
+ * credential — but it's bound to a user and re-checked against band_members on every fetch, so a
+ * member who is removed from the band loses the feed even though they still know the URL.
+ */
+export const calendarFeeds = pgTable(
+  'calendar_feeds',
+  {
+    token: text('token').primaryKey(),
+    bandId: text('band_id').notNull().references(() => bands.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('calendar_feeds_status_check', sql`${table.status} in ('active', 'revoked')`),
+    // At most one live link per member per band, even if two requests race to create one.
+    uniqueIndex('calendar_feeds_one_active_idx').on(table.bandId, table.userId).where(sql`${table.status} = 'active'`),
+  ],
+);
+
 /** One hand-drawn/typed note document per (song, author) — mirrors src/lib/songHandNotes.ts's Firestore shape. */
 export const handNotes = pgTable(
   'hand_notes',
@@ -325,6 +392,8 @@ export const pressKits = pgTable('press_kits', {
   presaveReleaseDate: text('presave_release_date'),
   presaveUrls: jsonb('presave_urls').$type<string[]>().notNull().default([]),
   selectedPresaveUrls: jsonb('selected_presave_urls').$type<string[]>().notNull().default([]),
+  /** Gigs listed as dates on the shared press kit. Picking a gig here is the opt-in to publish it. */
+  gigIds: jsonb('gig_ids').$type<string[]>().notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
 });

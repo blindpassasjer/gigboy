@@ -1,4 +1,4 @@
-import type { Band, InputList, PressKit, Setlist, Song, SongList } from '../../types';
+import type { Band, Gig, InputList, PressKit, Setlist, Song, SongList, Tour } from '../../types';
 import type { User } from '../../context/AuthContext';
 import type { SongAttachment } from '../songAttachments';
 import type { TrashListItem } from '../../components/TrashView';
@@ -22,6 +22,9 @@ export interface DataClient {
   bandSongLists: BandScopedCrudClient<SongList>;
   bandSetlists: BandScopedCrudClient<Setlist>;
   bandRiders: BandScopedCrudClient<InputList>;
+  bandTours: BandScopedCrudClient<Tour>;
+  bandGigs: BandScopedCrudClient<Gig>;
+  calendarFeed: CalendarFeedClient;
   publicRiders: PublicRidersClient;
   bandAttachments: BandAttachmentsClient;
   bandTrash: BandTrashClient;
@@ -149,6 +152,26 @@ export interface BandScopedCrudClient<T extends { id: string }> {
   remove(bandId: string, id: string): Promise<void>;
 }
 
+export interface CalendarFeed {
+  token: string;
+  /** Absolute URL of the .ics feed on the domain the app is served from. Swap the scheme for `webcal:` to hand it to a calendar app. */
+  feedUrl: string;
+}
+
+/**
+ * The current user's personal iCal subscription for a band's gigs. Per member, not per band: the
+ * server re-checks membership on every fetch, so a removed member's link stops working. Any
+ * member (viewers included) may manage their own feed.
+ */
+export interface CalendarFeedClient {
+  get(bandId: string): Promise<CalendarFeed | null>;
+  /** Idempotent: returns the existing active feed if there is one. */
+  create(bandId: string): Promise<CalendarFeed>;
+  /** Revokes the current link and issues a new one. */
+  regenerate(bandId: string): Promise<CalendarFeed>;
+  disable(bandId: string): Promise<void>;
+}
+
 export interface PublicRider {
   rider: InputList;
   bandName: string;
@@ -233,12 +256,26 @@ export interface PressKitSharesClient {
   disable(bandId: string, kitId: string): Promise<void>;
 }
 
+/** A gig as shown on a public press kit — deliberately only the fields safe to publish. */
+export interface PublicTourDate {
+  id: string;
+  title: string;
+  startsAt: string;
+  timezone: string | null;
+  venue: string | null;
+  address: string | null;
+  tourId: string | null;
+  tourName: string | null;
+}
+
 export interface PublicPressKit {
   kit: PressKit;
   bandName: string;
   bandLogo: string | null;
   /** Resolved `PressKitImage` objects for the kit's `imageIds`, in order. */
   images: PressKitImage[];
+  /** Upcoming, confirmed, publicly-listed gigs of the kit's tours, soonest first. */
+  tourDates: PublicTourDate[];
 }
 
 /** Unauthenticated read for a press kit's public share page, keyed by share token. */

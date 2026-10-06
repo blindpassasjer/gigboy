@@ -1,4 +1,4 @@
-import type { Band, InputList, PressKit, Setlist, Song, SongList } from '../../types';
+import type { Band, Gig, InputList, PressKit, Setlist, Song, SongList, Tour } from '../../types';
 import type { User } from '../../context/AuthContext';
 import type { SongAttachment } from '../songAttachments';
 import type { TrashListItem } from '../../components/TrashView';
@@ -13,6 +13,8 @@ import type {
   BandScopedCrudClient,
   BandsClient,
   BandTrashClient,
+  CalendarFeed,
+  CalendarFeedClient,
   DataClient,
   InviteContext,
   PressKitImage,
@@ -158,6 +160,33 @@ const publicPressKitsClient: PublicPressKitsClient = {
     }
 
     return response.json() as Promise<PublicPressKit>;
+  },
+};
+
+/** The server returns a path; prefix the origin the app is served from so the link works on any domain. */
+function toCalendarFeed(feed: { token: string; feedPath: string }): CalendarFeed {
+  return { token: feed.token, feedUrl: `${window.location.origin}${feed.feedPath}` };
+}
+
+type ApiCalendarFeed = { token: string; feedPath: string };
+
+const calendarFeedClient: CalendarFeedClient = {
+  async get(bandId) {
+    const data = await apiFetch<{ feed: ApiCalendarFeed | null }>(`/bands/${bandId}/calendar-feed`);
+    return data.feed ? toCalendarFeed(data.feed) : null;
+  },
+  async create(bandId) {
+    const data = await apiFetch<{ feed: ApiCalendarFeed }>(`/bands/${bandId}/calendar-feed`, { method: 'POST' });
+    return toCalendarFeed(data.feed);
+  },
+  async regenerate(bandId) {
+    const data = await apiFetch<{ feed: ApiCalendarFeed }>(`/bands/${bandId}/calendar-feed/regenerate`, {
+      method: 'POST',
+    });
+    return toCalendarFeed(data.feed);
+  },
+  async disable(bandId) {
+    await apiFetch<Record<string, never>>(`/bands/${bandId}/calendar-feed/disable`, { method: 'POST' });
   },
 };
 
@@ -425,6 +454,9 @@ export const apiClient: DataClient = {
   bandSongLists: createBandScopedCrudClient<SongList>('song-lists', 'songList', 'songLists'),
   bandSetlists: createBandScopedCrudClient<Setlist>('setlists', 'setlist', 'setlists'),
   bandRiders: createBandScopedCrudClient<InputList>('riders', 'rider', 'riders'),
+  bandTours: createBandScopedCrudClient<Tour>('tours', 'tour', 'tours'),
+  bandGigs: createBandScopedCrudClient<Gig>('gigs', 'gig', 'gigs'),
+  calendarFeed: calendarFeedClient,
   publicRiders: publicRidersClient,
   bandAttachments: bandAttachmentsClient,
   bandTrash: bandTrashClient,
