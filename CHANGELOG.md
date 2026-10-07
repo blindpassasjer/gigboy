@@ -8,11 +8,26 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-07
+
 ### Added
+- **User guide.** A help page at `/help` (the `?` in the top bar) with eight task-based
+  articles and screenshots: getting started, songs, practice tools, setlists, concert
+  mode, bands and gigs, press kits and riders, and your account and data. The articles are
+  Markdown in `src/help/content`; `scripts/help-screenshots.mjs` regenerates the images
+  from the demo build.
 - Pasting LaCuerda-style sheets with Spanish solfège chords (DO RE MI FA SOL LA SI,
   e.g. `MIm`, `RE4`, `LA(LA7)`, `RE4·DO9·RE4`) now imports them as chords.
 
+### Fixed
+- The song page's "Add to" menu no longer opens leftwards underneath the sidebar, and the
+  band-switcher dropdown stays inside the sidebar (long band names are truncated).
+
 ### Changed
+- Play and stop buttons now share one look: a white button with a green (play) or red
+  (stop) border and icon that fills in on hover. This covers setlist play, tab and strum
+  playback, the recorder, and concert mode's stop button.
+- Concert mode's autoscroll button is now a down-pointing play icon instead of play/pause.
 - Pasting a song no longer guesses the title and artist from plain lines at the top;
   only labeled metadata (`Artist:`, `Key:`, `Capo:`, ...) is picked up.
 

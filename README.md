@@ -13,6 +13,7 @@
   <a href="#quick-start-self-hosting">Quick start</a> ·
   <a href="#screenshots">Screenshots</a> ·
   <a href="#features">Features</a> ·
+  <a href="#user-guide">User guide</a> ·
   <a href="SELFHOSTING.md">Self-hosting guide</a> ·
   <a href="#license">License</a>
 </p>
@@ -118,6 +119,16 @@ via `VITE_DEV_ORIGIN` in [package.json](package.json), or the port with `PORT=�
 - **Offline-capable PWA** — install it, and it keeps working without a connection
 - **Admin-controlled storage quotas** — self-hosters can cap how much each user's bands are
   allowed to store, right from the admin dashboard
+
+## User guide
+
+Gigboy has a user guide built in: press the **?** in the top bar (or open `/help`). It walks
+through everything from joining a band to running Concert Mode, with screenshots. The articles
+are plain Markdown in [src/help/content](src/help/content) — edit them like any other file.
+
+The screenshots in [src/help/images](src/help/images) are generated against the demo build by
+[scripts/help-screenshots.mjs](scripts/help-screenshots.mjs), so they are easy to refresh when
+the UI changes; the header of that script explains how to run it.
 
 ## Tech stack
 

@@ -30,6 +30,7 @@ const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const PublicBandRiderPage = lazy(() => import('./pages/PublicBandRiderPage'));
 const PublicBandPressKitPage = lazy(() => import('./pages/PublicBandPressKitPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function getRouteErrorMessage(error: unknown): string {
@@ -174,6 +175,8 @@ function AuthenticatedApp() {
           <Route path="/band-invite/:inviteId" element={<AcceptBandInvitePage />} />
           <Route path="/profile/invites" element={<AcceptBandInvitePage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/help/:slug" element={<HelpPage />} />
           <Route
             path="/admin/invites"
             element={

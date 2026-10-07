@@ -452,7 +452,7 @@ export default function SetlistsView({
                 to={effectiveConcertRoute}
                 title={`Start concert for ${setlistName}`}
               >
-                <Play size={14} />
+                <Play size={14} fill="currentColor" />
               </Link>
             ) : (
               <button
@@ -461,7 +461,7 @@ export default function SetlistsView({
                 disabled
                 title="Add songs to enable concert mode"
               >
-                <Play size={14} />
+                <Play size={14} fill="currentColor" />
               </button>
             )}
             {songs.length > 0 && (

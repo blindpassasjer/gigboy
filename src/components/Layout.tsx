@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Lightbulb, Maximize2, Minimize2, Coffee, Music, Folder, ListMusic, ClipboardList, Newspaper, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Lightbulb, Maximize2, Minimize2, Coffee, Music, Folder, ListMusic, ClipboardList, Newspaper, ShieldCheck, ArrowUpRight, CircleHelp } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -562,6 +562,15 @@ export default function Layout({ children }: Props) {
               {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
             </button>
           )}
+          <Link
+            to="/help"
+            className="topbar-icon-btn"
+            title="User guide"
+            aria-label="User guide"
+            aria-current={pathname.startsWith('/help') ? 'page' : undefined}
+          >
+            <CircleHelp size={16} />
+          </Link>
           {user?.role === 'admin' && (
             <Link
               to="/admin/invites"

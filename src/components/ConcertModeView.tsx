@@ -6,7 +6,6 @@ import {
   ChevronsUpDown,
   List,
   Minus,
-  Pause,
   Play,
   Plus,
   Settings,
@@ -639,13 +638,13 @@ export default function ConcertModeView({
               {autoscroll && continuous && (
                 <button
                   type="button"
-                  className={`concert-icon-btn${scrolling ? ' is-active' : ''}`}
+                  className={`concert-icon-btn concert-icon-btn--play${scrolling ? ' is-active' : ''}`}
                   onClick={() => setScrolling((v) => !v)}
                   aria-label={scrolling ? 'Pause autoscroll' : 'Start autoscroll'}
                   aria-pressed={scrolling}
                   title={scrolling ? 'Pause autoscroll' : 'Start autoscroll'}
                 >
-                  {scrolling ? <Pause size={18} /> : <Play size={18} />}
+                  <Play size={18} fill="currentColor" style={{ transform: 'rotate(90deg)' }} />
                 </button>
               )}
               <button
