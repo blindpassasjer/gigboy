@@ -501,8 +501,8 @@ export default function SongView({ song, accentColor, bandId }: Props) {
           {song.artist && <p className="song-view-artist">{song.artist}</p>}
           {song.author && <p className="song-view-author">{song.author}</p>}
           <div className="song-view-badges">
-            <LanguageBadge code={song.language} />
-            {song.secondaryLanguages?.map((l) => <LanguageBadge key={l} code={l} />)}
+            <LanguageBadge size="sm" code={song.language} />
+            {song.secondaryLanguages?.map((l) => <LanguageBadge size="sm" key={l} code={l} />)}
             {song.tags?.map((t) => <span key={t} className="tag">{t}</span>)}
             <SongMetaBadges song={song} counts={badgeCounts} />
           </div>

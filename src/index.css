@@ -1576,6 +1576,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 .song-view-header .tag {
   background: var(--song-item-chip-bg);
   color: var(--song-item-chip-text);
+  font-weight: 600;
 }
 
 .song-card .tag,
@@ -11292,7 +11293,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 input.stageplot-legend-number {
-  width: 2.3rem;
+  width: 3.2rem;
   text-align: center;
   font-family: inherit;
   cursor: text;
@@ -11982,24 +11983,6 @@ input.stageplot-legend-number:focus {
   position: relative;
 }
 
-.gigs-search-icon {
-  position: absolute;
-  left: var(--space-lg);
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--muted);
-  pointer-events: none;
-}
-
-.gigs-search-input {
-  width: 100%;
-  padding: var(--space-md) var(--space-lg) var(--space-md) 2.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
-}
-
 /* ---- Gigs: toolbar, views, calendar ---- */
 .gigs-header-actions {
   display: flex;
@@ -12029,17 +12012,6 @@ input.stageplot-legend-number:focus {
 
 .gigs-toolbar .gigs-search {
   flex: 1 1 16rem;
-}
-
-.gigs-view-switch {
-  display: inline-flex;
-  gap: var(--space-xs);
-}
-
-.gigs-view-btn--active {
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 .gigs-item-tour {
@@ -12076,7 +12048,7 @@ input.stageplot-legend-number:focus {
 
 .gigs-row-main {
   display: grid;
-  grid-template-columns: 9.5rem minmax(0, 1.4fr) minmax(0, 1fr) auto auto;
+  grid-template-columns: 9.5rem minmax(0, 1.4fr) minmax(0, 1fr) 5.5rem 6rem;
   gap: var(--space-lg);
   align-items: center;
   width: 100%;
@@ -12103,6 +12075,14 @@ input.stageplot-legend-number:focus {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.gigs-row-time {
+  text-align: right;
+}
+
+.gigs-row-main .gigs-status {
+  justify-self: start;
 }
 
 .gigs-row-venue,
@@ -12244,6 +12224,10 @@ input.stageplot-legend-number:focus {
 
   .gigs-row-main {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .gigs-row-time {
+    text-align: left;
   }
 
   .gigs-row-date,

@@ -103,6 +103,30 @@ export function stageplotIsOutputKind(kind: string): boolean {
   return OUTPUT_KINDS.has(kind);
 }
 
+// A channel is a single number ("8") or an inclusive range for stereo pairs and
+// multi-channel sources ("1-2", "7–8"). Returns every channel number it covers,
+// or [] for anything else (free-text labels, blanks, reversed or huge ranges).
+export function stageplotChannelNumbers(channel: string | undefined): number[] {
+  const match = channel?.trim().match(/^(\d+)(?:\s*[-–—]\s*(\d+))?$/);
+  if (!match) return [];
+  const start = Number(match[1]);
+  const end = match[2] === undefined ? start : Number(match[2]);
+  if (end < start || end - start > 128) return [];
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
+export function stageplotChannelsOverlap(a: string | undefined, b: string | undefined): boolean {
+  const aNums = stageplotChannelNumbers(a);
+  const bNums = stageplotChannelNumbers(b);
+  if (aNums.length > 0 && bNums.length > 0) {
+    const bSet = new Set(bNums);
+    return aNums.some((n) => bSet.has(n));
+  }
+  // Free-text labels (or a range we can't expand) only clash with an identical label.
+  const norm = (value: string | undefined) => (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+  return norm(a) !== '' && norm(a) === norm(b);
+}
+
 // The on-stage/legend badge shows the mixer channel when one is assigned,
 // since that's what a stage plot's numbers conventionally mean — falling
 // back to list position (visually distinct) only for unassigned items, so
@@ -164,10 +188,10 @@ export function compareStageplotItemsByChannel(
 
   const aChannel = a.item.channel?.trim();
   const bChannel = b.item.channel?.trim();
-  const aNum = aChannel ? Number(aChannel) : NaN;
-  const bNum = bChannel ? Number(bChannel) : NaN;
-  const aHasNum = aChannel !== undefined && aChannel !== '' && !Number.isNaN(aNum);
-  const bHasNum = bChannel !== undefined && bChannel !== '' && !Number.isNaN(bNum);
+  const aNum = stageplotChannelNumbers(aChannel)[0] ?? NaN;
+  const bNum = stageplotChannelNumbers(bChannel)[0] ?? NaN;
+  const aHasNum = !Number.isNaN(aNum);
+  const bHasNum = !Number.isNaN(bNum);
 
   if (aHasNum && bHasNum) return aNum - bNum;
   if (aHasNum) return -1;

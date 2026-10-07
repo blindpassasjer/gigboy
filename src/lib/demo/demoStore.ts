@@ -37,7 +37,7 @@ import type { SongRecording } from '../songRecordings';
 
 const STORAGE_KEY = 'gigboy-demo-store';
 /** Bump when the seeded sample data changes, so returning visitors get the new content. */
-const SEED_VERSION = 5;
+const SEED_VERSION = 6;
 const SESSION_KEY = 'gigboy-demo-session';
 const DEMO_USER_ID = 'demo-user';
 const DEMO_BAND_ID = 'demo-band';
@@ -173,6 +173,15 @@ function seedSongs(): Song[] {
 {key: G}
 {tempo: 72}
 
+{start_of_tab}
+e|------------|------------|------------|------------|
+B|--------0---|--------1---|--------0---|--------3---|
+G|----0-------|----0-------|----0-------|----2-------|
+D|------------|------------|------------|0-----------|
+A|------------|3-----------|------------|------------|
+E|3-----------|------------|3-----------|------------|
+{end_of_tab}
+
 {start_of_verse}
 [G]Amazing [G7]grace, how [C]sweet the [G]sound
 That [Em]saved a [D]wretch like [G]me [D]
@@ -299,6 +308,15 @@ For [A]auld lang [D]syne
 {key: C}
 {tempo: 66}
 
+{start_of_tab}
+e|------------|---------1--|------------|------------|
+B|---------1--|------1-----|---------1--|---------0--|
+G|------0-----|---2--------|------0-----|------0-----|
+D|---2--------|3-----------|---2--------|---0--------|
+A|3-----------|------------|3-----------|------------|
+E|------------|------------|------------|3-----------|
+{end_of_tab}
+
 {start_of_verse}
 Oh [C]Danny boy, the [F]pipes, the [C]pipes are [G]calling
 From [C]glen to [Am]glen and [F]down the [C]mountain[G]side
@@ -318,6 +336,15 @@ The [C]summer's [F]gone, and [C]all the [Am]roses [D]falling
 {artist: The Carter Family}
 {key: C}
 {tempo: 96}
+
+{start_of_tab}
+e|------------|---------1--|---------1--|------------|
+B|---------1--|------1-----|------------|---------1--|
+G|------0-----|---2--------|------0-----|------0-----|
+D|---2--------|3-----------|---0--------|---2--------|
+A|3-----------|------------|------------|3-----------|
+E|------------|------------|3-----------|------------|
+{end_of_tab}
 
 {start_of_verse}
 Oh [C]I'll twine with my [F]mingles and [C]waving black [G7]hair

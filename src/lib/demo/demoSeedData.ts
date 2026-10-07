@@ -108,17 +108,17 @@ export interface SongListSpec {
 export const SONGLIST_SPECS: SongListSpec[] = [
   {
     name: 'Celtic & Folk Ballads',
-    icon: '🍀',
+    icon: '🎻',
     titles: ['Scarborough Fair', 'Loch Lomond', 'Danny Boy', 'The Wild Rover', 'Auld Lang Syne'],
   },
   {
     name: 'Slow & Gentle',
-    icon: '🕊️',
+    icon: '🎼',
     titles: ['Amazing Grace', 'Scarborough Fair', 'Danny Boy', 'Loch Lomond'],
   },
   {
     name: 'Sing-along Closers',
-    icon: '🍻',
+    icon: '🎤',
     titles: ['The Wild Rover', 'When the Saints Go Marching In', 'House of the Rising Sun', 'Auld Lang Syne'],
   },
 ];
@@ -149,13 +149,13 @@ export const SETLIST_SPECS: SetlistSpec[] = [
   },
   {
     name: 'Wedding Ceremony & Dinner',
-    icon: '💍',
+    icon: '✨',
     titles: ['Scarborough Fair', 'Danny Boy', 'Loch Lomond', 'Amazing Grace', 'Auld Lang Syne'],
     notes: { 'Auld Lang Syne': 'Last song — everyone in a circle' },
   },
   {
     name: 'Pub Singalong',
-    icon: '🍺',
+    icon: '🎤',
     titles: ['The Wild Rover', 'When the Saints Go Marching In', 'House of the Rising Sun', 'Danny Boy', 'Auld Lang Syne'],
   },
 ];
@@ -240,7 +240,7 @@ export const STANDARD_PLOT: RiderItem[] = [
 export const RIDER_SPECS: RiderSpec[] = [
   {
     name: 'Festival Full Band',
-    icon: '🎪',
+    icon: '🎛️',
     hospitalityNotes: 'Water and towels on stage. Hot meal for 6 after soundcheck, vegetarian option for 1.',
     logisticsNotes: 'Changeover 15 min max. Our own in-ear system (2 packs) — please provide a rack position and a clear frequency. Parking for one van next to the stage.',
     items: [
@@ -263,7 +263,7 @@ export const RIDER_SPECS: RiderSpec[] = [
   },
   {
     name: 'Acoustic Duo',
-    icon: '🎻',
+    icon: '🎙️',
     hospitalityNotes: 'Water on stage. A herbal tea and honey for the singer, please.',
     logisticsNotes: 'Very quick setup: 20 minutes in the room. We bring our own stools. Need two mains sockets at the front of the stage.',
     items: [
@@ -304,7 +304,7 @@ export interface PressKitSpec {
 export const PRESS_KIT_SPECS: PressKitSpec[] = [
   {
     name: 'Festival Booking Kit',
-    icon: '🎪',
+    icon: '🎬',
     richText:
       '<h2>The Gigboy Demo Band</h2>' +
       '<p>Six-piece folk and roots band with a big, warm live sound — fiddle, banjo, close harmonies and a rhythm section that gets festival crowds on their feet.</p>' +
@@ -316,7 +316,7 @@ export const PRESS_KIT_SPECS: PressKitSpec[] = [
   },
   {
     name: 'Wedding & Events Kit',
-    icon: '💍',
+    icon: '✨',
     richText:
       '<h2>Live music for your day</h2>' +
       '<p>From a quiet acoustic ceremony to a dance-floor finale, we adapt to your day. Our repertoire covers timeless folk songs, waltzes for the first dance, and sing-alongs that bring everyone together.</p>' +
@@ -325,7 +325,7 @@ export const PRESS_KIT_SPECS: PressKitSpec[] = [
   },
   {
     name: 'Venue One-Sheet',
-    icon: '📄',
+    icon: '⭐',
     richText:
       '<h2>For venues &amp; promoters</h2>' +
       '<p>A concise overview: what we play, what we need, and how we promote shows. We bring a small, loyal audience and promote every date to our mailing list and social channels.</p>' +

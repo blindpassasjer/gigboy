@@ -610,7 +610,7 @@ export default function SongList({
                   </div>
                   <p className="song-preview-text">{songPreviews[song.id]}</p>
                   <div className="song-card-meta">
-                    <LanguageBadge code={song.language} size="sm" flagOnly />
+                    <LanguageBadge code={song.language} size="sm" />
                     {song.tags?.map((tag) => (
                       <span key={tag} className="tag">
                         {tag}
@@ -672,7 +672,7 @@ export default function SongList({
                       {song.artist && <span className="song-card-artist">{song.artist}</span>}
                     </div>
                     <div className="song-card-meta">
-                      <LanguageBadge code={song.language} size="sm" flagOnly />
+                      <LanguageBadge code={song.language} size="sm" />
                       {song.tags?.map((tag) => (
                         <span key={tag} className="tag">
                           {tag}

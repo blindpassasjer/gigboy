@@ -11,6 +11,8 @@ import {
   stageplotItemBadge,
   stageplotItemBadgeCorner,
   stageplotIsOutputKind,
+  stageplotChannelNumbers,
+  stageplotChannelsOverlap,
   compareStageplotItemsByChannel,
   STAGEPLOT_ITEM_SCALE_MIN,
   STAGEPLOT_ITEM_SCALE_MAX,
@@ -148,7 +150,7 @@ function LegendItemRow({ item, index, canEdit, selected, siblingItems, onSelect,
     const nextStand = stand.trim();
 
     if (nextChannel && nextChannel !== (item.channel ?? '')) {
-      const claimedBy = siblingItems.find((other) => other.id !== item.id && other.channel?.trim() === nextChannel);
+      const claimedBy = siblingItems.find((other) => other.id !== item.id && !other.noChannel && stageplotIsOutputKind(other.kind) === stageplotIsOutputKind(item.kind) && stageplotChannelsOverlap(other.channel, nextChannel));
       if (claimedBy) {
         toast.error(`Channel ${nextChannel} is already used by "${claimedBy.label || 'another item'}".`);
         nextChannel = item.channel ?? '';
@@ -192,7 +194,6 @@ function LegendItemRow({ item, index, canEdit, selected, siblingItems, onSelect,
           ) : canEdit ? (
             <input
               type="text"
-              inputMode="numeric"
               value={channel}
               onChange={(event) => setChannel(event.target.value)}
               onBlur={commit}
@@ -397,8 +398,7 @@ export default function StageplotEditor({
     const usedChannels = new Set(
       currentItems
         .filter((item) => item.id !== excludeItemId && !item.noChannel && stageplotIsOutputKind(item.kind) === isOutput)
-        .map((item) => Number(item.channel?.trim()))
-        .filter((value) => Number.isFinite(value))
+        .flatMap((item) => stageplotChannelNumbers(item.channel))
     );
     let candidate = 1;
     while (usedChannels.has(candidate)) candidate += 1;
@@ -526,7 +526,7 @@ export default function StageplotEditor({
         // channel-less) fall back to the next available number instead.
         const remembered = current.channel?.trim();
         const stillFree = remembered && !items.some((item) => (
-          item.id !== itemId && !item.noChannel && stageplotIsOutputKind(item.kind) === isOutput && item.channel?.trim() === remembered
+          item.id !== itemId && !item.noChannel && stageplotIsOutputKind(item.kind) === isOutput && stageplotChannelsOverlap(item.channel, remembered)
         ));
         if (!stillFree) {
           nextPatch.channel = nextAvailableChannel(items, isOutput, itemId);

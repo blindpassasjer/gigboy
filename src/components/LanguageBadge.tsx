@@ -1,16 +1,14 @@
-import { languageName, languageAbbr } from '../utils/languages';
+import { languageName } from '../utils/languages';
 
 interface Props {
   code: string;
   size?: 'sm' | 'md';
-  flagOnly?: boolean;
 }
 
-export default function LanguageBadge({ code, size = 'md', flagOnly = false }: Props) {
-  const abbr = languageAbbr(code);
+export default function LanguageBadge({ code, size = 'md' }: Props) {
   return (
     <span className={`lang-badge lang-badge--${size}`} title={languageName(code)}>
-      {flagOnly ? abbr : languageName(code)}
+      {languageName(code)}
     </span>
   );
 }

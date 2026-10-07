@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   CalendarDays,
@@ -10,8 +10,9 @@ import {
   List as ListIcon,
   MapPin,
   Pencil,
-  Plus,
+  PenLine,
   RefreshCw,
+  Rss,
   Search,
   Trash2,
   User as UserIcon,
@@ -143,6 +144,10 @@ export default function BandGigsPage() {
   const [saving, setSaving] = useState(false);
   const [feed, setFeed] = useState<CalendarFeed | null>(null);
   const [feedBusy, setFeedBusy] = useState(false);
+  const [showFeed, setShowFeed] = useState(false);
+  const feedMenuRef = useRef<HTMLDivElement>(null);
+  const feedButtonRef = useRef<HTMLButtonElement>(null);
+  const feedPanelRef = useRef<HTMLDivElement>(null);
   const [showPast, setShowPast] = useState(false);
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ViewMode>(readStoredView);
@@ -150,6 +155,25 @@ export default function BandGigsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [renamingTour, setRenamingTour] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!showFeed) return;
+    const onDown = (e: MouseEvent) => {
+      if (!feedMenuRef.current?.contains(e.target as Node)) setShowFeed(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowFeed(false);
+        feedButtonRef.current?.focus();
+      }
+    };
+    feedPanelRef.current?.focus();
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showFeed]);
   const canEdit = band
     ? band.ownerId === user?.id || band.memberRoles[user?.id ?? ''] === 'editor'
     : false;
@@ -501,7 +525,20 @@ export default function BandGigsPage() {
               autoFocus
             />
           ) : (
-            <h1>{heading}</h1>
+            <div className="song-list-title-row">
+              <h1>{heading}</h1>
+              {canEdit && tour && (
+                <button
+                  type="button"
+                  className="title-rename-btn"
+                  onClick={() => setRenamingTour(tour.name)}
+                  aria-label="Rename tour"
+                  title="Rename tour"
+                >
+                  <PenLine size={14} />
+                </button>
+              )}
+            </div>
           )}
           <p>
             {tour
@@ -510,17 +547,85 @@ export default function BandGigsPage() {
           </p>
         </div>
         <div className="gigs-header-actions">
+          {!tourId && (
+            <div className="share-menu" ref={feedMenuRef}>
+              <button
+                ref={feedButtonRef}
+                type="button"
+                className="btn btn--secondary btn--accent"
+                onClick={() => setShowFeed((v) => !v)}
+                aria-haspopup="dialog"
+                aria-expanded={showFeed}
+                aria-label="RSS feed"
+                title="RSS feed"
+              >
+                <Rss size={14} /> <span className="gigs-view-label">RSS feed</span>
+              </button>
+              {showFeed && (
+                <div className="share-menu-panel" role="dialog" aria-label="Calendar subscription" ref={feedPanelRef} tabIndex={-1}>
+                  <span className="share-menu-title">Subscribe in your calendar</span>
+                  {isDemoMode ? (
+                    <p className="bands-status">
+                      When you run your own Gigboy, every member gets a personal calendar link here that keeps Google, Apple or
+                      Outlook calendar up to date. It needs a running server, so it isn’t available in this demo.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="bands-status">
+                        A personal, private link to every gig in this band across all tours, including the schedule and contact.
+                        Add it to Google, Apple or Outlook calendar and it stays up to date. Don’t share it — it works only while
+                        you’re a member.
+                      </p>
+                      {feed ? (
+                        <>
+                          <div className="share-menu-input-wrap">
+                            <input type="text" readOnly value={feed.feedUrl} aria-label="Calendar feed link" onFocus={(e) => e.currentTarget.select()} />
+                            <button type="button" className="share-menu-input-action" onClick={() => void copyFeedUrl()} aria-label="Copy link" title="Copy link">
+                              <Copy size={14} />
+                            </button>
+                          </div>
+                          <div className="bands-delete-confirm-actions">
+                            <a className="btn btn--primary" href={webcalUrl ?? undefined}>
+                              <CalendarPlus size={14} /> Add to calendar
+                            </a>
+                            <button
+                              type="button"
+                              className="btn btn--secondary"
+                              disabled={feedBusy}
+                              onClick={() => void runFeed(() => dataClient.calendarFeed.regenerate(id), 'New link created. The old one no longer works.')}
+                            >
+                              <RefreshCw size={14} /> New link
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn--secondary"
+                              disabled={feedBusy}
+                              onClick={() => void runFeed(async () => { await dataClient.calendarFeed.disable(id); return null; }, 'Calendar link turned off.')}
+                            >
+                              Turn off
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div>
+                          <button
+                            type="button"
+                            className="btn btn--primary"
+                            disabled={feedBusy}
+                            onClick={() => void runFeed(() => dataClient.calendarFeed.create(id))}
+                          >
+                            <CalendarPlus size={14} /> Create my calendar link
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {canEdit && tour && (
             <>
-              <button
-                type="button"
-                className="btn btn--secondary"
-                onClick={() => setRenamingTour(tour.name)}
-                aria-label="Rename tour"
-                title="Rename tour"
-              >
-                <Pencil size={14} />
-              </button>
               <button
                 type="button"
                 className="btn btn--secondary"
@@ -532,32 +637,39 @@ export default function BandGigsPage() {
               </button>
             </>
           )}
-          {canEdit && (
-            <button type="button" className="btn btn--primary" onClick={() => setDraft(emptyDraft(tourId))}>
-              <Plus size={14} /> Add gig
-            </button>
-          )}
         </div>
       </header>
 
+      {canEdit && !draft && (
+        <button
+          type="button"
+          className="fab-add-song"
+          title="Add gig"
+          aria-label="Add gig"
+          onClick={() => setDraft(emptyDraft(tourId))}
+        >
+          <CalendarPlus size={20} />
+        </button>
+      )}
+
       <div className="gigs-toolbar">
-        <div className="gigs-search">
-          <Search size={15} className="gigs-search-icon" />
+        <div className="search-box gigs-search">
+          <Search size={16} className="search-icon" />
           <input
-            type="search"
-            className="gigs-search-input"
+            type="text"
+            className="search-input"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search gigs by title, venue, contact, notes…"
             aria-label="Search gigs"
           />
         </div>
-        <div className="gigs-view-switch" role="group" aria-label="Gig view">
+        <div className="view-toggle" role="group" aria-label="Gig view">
           {VIEWS.map(({ mode, label, icon: Icon }) => (
             <button
               key={mode}
               type="button"
-              className={`btn btn--secondary gigs-view-btn${view === mode ? ' gigs-view-btn--active' : ''}`}
+              className={`view-toggle-btn${view === mode ? ' active' : ''}`}
               aria-pressed={view === mode}
               onClick={() => changeView(mode)}
               title={`${label} view`}
@@ -722,69 +834,6 @@ export default function BandGigsPage() {
             </section>
           )}
         </>
-      )}
-
-      {!tourId && isDemoMode && (
-        <section className="bands-panel" aria-label="Calendar subscription">
-          <h3>Subscribe in your calendar</h3>
-          <p className="bands-status">
-            When you run your own Gigboy, every member gets a personal calendar link here that keeps Google, Apple or
-            Outlook calendar up to date. It needs a running server, so it isn’t available in this demo.
-          </p>
-        </section>
-      )}
-
-      {!tourId && !isDemoMode && (
-        <section className="bands-panel" aria-label="Calendar subscription">
-          <h3>Subscribe in your calendar</h3>
-          <p className="bands-status">
-            A personal, private link to every gig in this band across all tours, including the schedule and contact.
-            Add it to Google, Apple or Outlook calendar and it stays up to date. Don’t share it — it works only while
-            you’re a member.
-          </p>
-          {feed ? (
-            <>
-              <div className="share-menu-input-wrap">
-                <input type="text" readOnly value={feed.feedUrl} aria-label="Calendar feed link" onFocus={(e) => e.currentTarget.select()} />
-                <button type="button" className="share-menu-input-action" onClick={() => void copyFeedUrl()} aria-label="Copy link" title="Copy link">
-                  <Copy size={14} />
-                </button>
-              </div>
-              <div className="bands-delete-confirm-actions">
-                <a className="btn btn--primary" href={webcalUrl ?? undefined}>
-                  <CalendarPlus size={14} /> Add to calendar
-                </a>
-                <button
-                  type="button"
-                  className="btn btn--secondary"
-                  disabled={feedBusy}
-                  onClick={() => void runFeed(() => dataClient.calendarFeed.regenerate(id), 'New link created. The old one no longer works.')}
-                >
-                  <RefreshCw size={14} /> New link
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--secondary"
-                  disabled={feedBusy}
-                  onClick={() => void runFeed(async () => { await dataClient.calendarFeed.disable(id); return null; }, 'Calendar link turned off.')}
-                >
-                  Turn off
-                </button>
-              </div>
-            </>
-          ) : (
-            <div>
-              <button
-                type="button"
-                className="btn btn--primary"
-                disabled={feedBusy}
-                onClick={() => void runFeed(() => dataClient.calendarFeed.create(id))}
-              >
-                <CalendarPlus size={14} /> Create my calendar link
-              </button>
-            </div>
-          )}
-        </section>
       )}
     </section>
   );
