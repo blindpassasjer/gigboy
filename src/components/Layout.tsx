@@ -486,7 +486,6 @@ export default function Layout({ children }: Props) {
               aria-controls="topbar-coffee-popover"
             >
               <Coffee size={16} />
-              <span className="topbar-link-label">Buy me a coffee</span>
             </button>
 
             {coffeeOpen ? (

@@ -9,6 +9,8 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 ## [Unreleased]
 
 ### Changed
+- The top bar's "Buy me a coffee" button is now icon-only, like the other top bar buttons
+  (it keeps its tooltip and screen-reader label).
 - The admin shield icon is gone from the top bar. Admins now find **Invites** and **Users**
   in an Administration card on their profile page; other accounts never see it.
 

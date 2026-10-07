@@ -513,6 +513,14 @@ input, select, textarea { font: inherit; color: var(--text); }
   position: relative;
 }
 
+/* Icon-only, sized like .topbar-icon-btn. */
+.topbar-coffee-trigger {
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: var(--space-2xs);
+}
+
 .topbar-link--has-notification {
   position: relative;
 }
