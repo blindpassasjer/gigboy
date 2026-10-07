@@ -15,8 +15,8 @@ D|--0--|
 A|--2--|
 E|--3--|[/tab]`);
 
-    expect(parsed.title).toBe('Wonderwall');
-    expect(parsed.artist).toBe('Oasis');
+    expect(parsed.title).toBeUndefined();
+    expect(parsed.artist).toBeUndefined();
     expect(parsed.detectedSource).toBe('Ultimate Guitar');
     expect(parsed.chordpro).toContain('{start_of_verse: Verse 1}');
     expect(parsed.chordpro).toContain('[Em7]Today is gonna be the day');
@@ -33,7 +33,7 @@ Verse 1
 | Em7 | G | Dsus4 | A7sus4 |
 Today is gonna be the day that they're gonna throw it back to you`);
 
-    expect(parsed.title).toBe('Wonderwall');
+    expect(parsed.title).toBeUndefined();
     expect(parsed.artist).toBe('Oasis');
     expect(parsed.key).toBe('F#m');
     expect(parsed.capo).toBe(2);
@@ -53,8 +53,8 @@ D|---------------|
 A|---------------|
 E|-0-------------|`);
 
-    expect(parsed.title).toBe('Nothing Else Matters');
-    expect(parsed.artist).toBe('Metallica');
+    expect(parsed.title).toBeUndefined();
+    expect(parsed.artist).toBeUndefined();
     expect(parsed.chordpro).toContain('{comment: Intro}');
     expect(parsed.chordpro).toContain('{start_of_tab}');
     expect(parsed.chordpro).toContain('e|-------0-------|');
@@ -137,6 +137,32 @@ Verso:
     expect(parsed.chordpro).toContain('[C]Para bailar la [F]bamba');
   });
 
+  it('parses LaCuerda-style solfège chord rows above lyrics', () => {
+    const parsed = parsePastedSong(`Intro: SOL*·RE4·DO9·RE4·SOL*
+
+   SOL
+A)Compañeros poetas
+                       RE
+tomando en cuenta los últimos sucesos
+   MIm(VI-0·2·3 V-0)    LA(LA7)
+quisiera preguntar -me urge-
+         SOL* SI7·MIm
+o evidente panfleto
+   SOL*     RE4·DO9·RE4
+y Playa Giron.`);
+
+    expect(parsed.title).toBeUndefined();
+    expect(parsed.warnings).toEqual([]);
+    expect(parsed.chordpro).toContain('{comment: Intro}');
+    expect(parsed.chordpro).toContain('[G] [Dsus4] [C9] [Dsus4] [G]');
+    expect(parsed.chordpro).toContain('[G]A)Compañeros poetas');
+    expect(parsed.chordpro).toContain('tomando en cuenta los últimos sucesos');
+    expect(parsed.chordpro).toContain('[D]tomando');
+    expect(parsed.chordpro).toContain('[Em]quisiera');
+    expect(parsed.chordpro).toContain('[A][A7]');
+    expect(parsed.chordpro).toContain('[B7][Em]');
+  });
+
   it('parses an OnSong-style file: header metadata, Flow line, and colon section labels', () => {
     const parsed = parsePastedSong(`Amazing Grace
 John Newton
@@ -151,8 +177,8 @@ Verse 1:
 Chorus:
 That [D]saved a [G]wretch like me`);
 
-    expect(parsed.title).toBe('Amazing Grace');
-    expect(parsed.artist).toBe('John Newton');
+    expect(parsed.title).toBeUndefined();
+    expect(parsed.artist).toBeUndefined();
     expect(parsed.key).toBe('G');
     expect(parsed.tempo).toBe(70);
     expect(parsed.detectedSource).toBe('OnSong');
@@ -173,12 +199,12 @@ Was blind but now I see`);
     expect(parsed.chordpro).toContain('Amazing grace how sweet the sound');
   });
 
-  it('still guesses a lone title line immediately followed by chorded content', () => {
+  it('keeps unlabeled header lines in the body instead of guessing a title', () => {
     const parsed = parsePastedSong(`Amazing Grace
 [G]Amazing [C]grace how [G]sweet the sound`);
 
-    expect(parsed.title).toBe('Amazing Grace');
-    expect(parsed.artist).toBeUndefined();
+    expect(parsed.title).toBeUndefined();
+    expect(parsed.chordpro).toContain('Amazing Grace\n[G]Amazing');
   });
 
   it('parses Cifra Club-style portuguese metadata and section labels', () => {

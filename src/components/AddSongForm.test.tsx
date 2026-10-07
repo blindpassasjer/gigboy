@@ -89,8 +89,8 @@ describe('AddSongForm', () => {
       },
     });
 
-    expect(screen.getByPlaceholderText('Song title')).toHaveValue('Amazing Grace');
-    expect(screen.getByPlaceholderText('Artist / band')).toHaveValue('Traditional');
+    expect(screen.getByPlaceholderText('Song title')).toHaveValue('');
+    expect(screen.getByPlaceholderText('Artist / band')).toHaveValue('');
     expect((chordproField as HTMLTextAreaElement).value).toContain('[G]');
     expect(screen.getByText('Pasted content was parsed automatically.')).toBeInTheDocument();
     expect(screen.getByText('Detected source format: Ultimate Guitar.')).toBeInTheDocument();

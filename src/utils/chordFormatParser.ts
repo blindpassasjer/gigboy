@@ -144,7 +144,60 @@ function normalizeLineEndings(input: string): string {
   return input.replace(/\r\n?/g, '\n');
 }
 
+// Spanish/Latin solfège chords as written on LaCuerda: DO RE MI FA SOL LA SI, with
+// optional #/b, quality, number and a trailing "*" (variant marker). Uppercase only,
+// so lowercase lyrics ("la", "si", "mi") are never mistaken for chords.
+const SOLFEGE_ROOTS: Record<string, string> = { DO: 'C', RE: 'D', MI: 'E', FA: 'F', SOL: 'G', LA: 'A', SI: 'B' };
+const SOLFEGE_ITEM = '(?:SOL|DO|RE|MI|FA|LA|SI)(?:#|b)?(?:m|maj|min|sus|dim|aug|add)?\\d*\\*?';
+const SOLFEGE_ITEM_RE = new RegExp(`^(SOL|DO|RE|MI|FA|LA|SI)(#|b)?(m|maj|min|sus|dim|aug|add)?(\\d*)\\*?$`);
+// One chord cell: items joined by "·" (quick changes), optionally followed by a
+// parenthetical — either an alternate chord "LA(LA7)" or a bass note annotation
+// "MIm(VI-0·2·3 V-0)" which we drop.
+const SOLFEGE_GROUP_RE = new RegExp(
+  `(?<![A-Za-zÀ-ÿ0-9])${SOLFEGE_ITEM}(?:·${SOLFEGE_ITEM})*(?:\\([^)]*\\))?(?![A-Za-zÀ-ÿ])`,
+  'g',
+);
+
+function solfegeToChord(item: string): string | null {
+  const m = item.trim().match(SOLFEGE_ITEM_RE);
+  if (!m) return null;
+  const [, root, accidental = '', quality = '', digits] = m;
+  // Bare "4" (RE4) means suspended fourth.
+  const suffix = !quality && digits === '4' ? 'sus4' : `${quality}${digits}`;
+  return `${SOLFEGE_ROOTS[root]}${accidental}${suffix}`;
+}
+
+function solfegeChordsInGroup(group: string): string[] {
+  const parenAt = group.indexOf('(');
+  const main = parenAt === -1 ? group : group.slice(0, parenAt);
+  const chords = main.split('·').map(solfegeToChord).filter((c): c is string => c !== null);
+  if (parenAt !== -1) {
+    const alt = group.slice(parenAt + 1, group.lastIndexOf(')'));
+    const altChords = alt.split('·').map(solfegeToChord);
+    if (altChords.length > 0 && altChords.every((c) => c !== null)) {
+      chords.push(...(altChords as string[]));
+    }
+  }
+  return chords;
+}
+
+// Returns chord positions if the whole line is a row of solfège chords, else null.
+function parseSolfegeRow(line: string): Array<{ chord: string; index: number; end: number }> | null {
+  const cleaned = stripRepeatAnnotations(line);
+  const tokens: Array<{ chord: string; index: number; end: number }> = [];
+  for (const match of cleaned.matchAll(SOLFEGE_GROUP_RE)) {
+    const index = match.index ?? 0;
+    const end = index + match[0].length;
+    for (const chord of solfegeChordsInGroup(match[0])) tokens.push({ chord, index, end });
+  }
+  if (tokens.length === 0) return null;
+  const rest = cleaned.replace(SOLFEGE_GROUP_RE, '').replace(/[\s|/]+/g, '');
+  return rest === '' ? tokens : null;
+}
+
 function tokenizeWithIndexes(line: string): Array<{ chord: string; index: number; end: number }> {
+  const solfege = parseSolfegeRow(line);
+  if (solfege) return solfege;
   const tokens: Array<{ chord: string; index: number; end: number }> = [];
   const matches = line.matchAll(CHORD_SCAN_RE);
   for (const match of matches) {
@@ -158,7 +211,15 @@ function tokenizeWithIndexes(line: string): Array<{ chord: string; index: number
   return tokens;
 }
 
+// "Intro: SOL·RE4·DO9" → { label: 'Intro', row: 'SOL·RE4·DO9' } when the rest is a chord row.
+function parseLabeledChordRow(line: string): { label: string; row: string } | null {
+  const m = line.trim().match(/^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 -]{1,30}):\s+(.+)$/);
+  if (!m || getSectionType(m[1].trim()) === undefined || !lineLooksLikeChordRow(m[2])) return null;
+  return { label: m[1].trim(), row: m[2] };
+}
+
 function lineLooksLikeChordRow(line: string): boolean {
+  if (parseSolfegeRow(line)) return true;
   // Strip repeat markers (x2, ×2) before checking — UG appends these to chord lines.
   const trimmed = stripRepeatAnnotations(line).trim();
   if (!trimmed) return false;
@@ -209,7 +270,7 @@ function parseMetadataLine(line: string): Partial<ParsedSong> | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
 
-  const artistMatch = trimmed.match(/^(?:by\s+|artist\s*:\s*)(.+)$/i);
+  const artistMatch = trimmed.match(/^artist\s*:\s*(.+)$/i);
   if (artistMatch) {
     return { artist: artistMatch[1].trim() };
   }
@@ -259,57 +320,37 @@ function lineStartsContent(line: string): boolean {
     || looksLikeSectionMarker(trimmed)
     || looksLikeTabLine(trimmed)
     || lineLooksLikeChordRow(trimmed)
+    || parseLabeledChordRow(trimmed) !== null
     || INLINE_CHORD_MARKER_RE.test(trimmed);
 }
 
-function parseLeadingMetadata(lines: string[], guessTitleArtist: boolean): {
-  title?: string;
+// Pulls labeled metadata (Artist:, Key:, Capo:, ...) out of the lines before the first
+// chord/section/tab content. Title and artist are never guessed from plain lines: those
+// stay in the body, since guessing from unlabeled text is wrong too often.
+function parseLeadingMetadata(lines: string[]): {
   artist?: string;
   author?: string;
   key?: string;
   capo?: number;
   tempo?: number;
-  startIndex: number;
+  content: string[];
 } {
-  let startIndex = 0;
-  let title: string | undefined;
   let artist: string | undefined;
   let author: string | undefined;
   let key: string | undefined;
   let capo: number | undefined;
   let tempo: number | undefined;
+  const kept: string[] = [];
 
-  while (startIndex < lines.length && !lines[startIndex].trim()) {
-    startIndex += 1;
-  }
-
-  if (startIndex >= lines.length) {
-    return { startIndex };
-  }
-
-  // Tracks a run of consecutive plain lines guessed as title/artist with nothing
-  // (blank line, metadata, or real content) between them. A song pasted with no
-  // header at all is just consecutive lyric lines — if a *third* one shows up
-  // immediately after we've guessed both title and artist, the "header" was
-  // actually the first two lines of the song, and we undo the guess.
-  let plainGuessRun = 0;
-  let firstPlainGuessIndex: number | undefined;
-
-  while (startIndex < lines.length) {
-    const current = lines[startIndex]?.trim() ?? '';
-
+  let i = 0;
+  for (; i < lines.length; i += 1) {
+    const current = lines[i]?.trim() ?? '';
+    if (lineStartsContent(current)) break;
     if (!current) {
-      startIndex += 1;
-      plainGuessRun = 0;
+      kept.push(lines[i]);
       continue;
     }
-
-    if (isMetadataNoise(current)) {
-      startIndex += 1;
-      plainGuessRun = 0;
-      continue;
-    }
-
+    if (isMetadataNoise(current)) continue;
     const parsedMetadata = parseMetadataLine(current);
     if (parsedMetadata) {
       artist = parsedMetadata.artist ?? artist;
@@ -317,39 +358,12 @@ function parseLeadingMetadata(lines: string[], guessTitleArtist: boolean): {
       key = parsedMetadata.key ?? key;
       capo = parsedMetadata.capo ?? capo;
       tempo = parsedMetadata.tempo ?? tempo;
-      startIndex += 1;
-      plainGuessRun = 0;
       continue;
     }
-
-    if (guessTitleArtist && !title && !lineStartsContent(current) && current.length <= 90) {
-      title = current;
-      if (plainGuessRun === 0) firstPlainGuessIndex = startIndex;
-      plainGuessRun += 1;
-      startIndex += 1;
-      continue;
-    }
-
-    if (guessTitleArtist && !artist && !lineStartsContent(current) && current.length <= 80) {
-      artist = current.replace(/^by\s+/i, '').trim();
-      plainGuessRun += 1;
-      startIndex += 1;
-      continue;
-    }
-
-    if (guessTitleArtist && title && artist && plainGuessRun >= 2 && !lineStartsContent(current)) {
-      // A third consecutive plain line: this isn't a title/artist header, it's
-      // just lyrics pasted without one. Undo the guess and let it all fall
-      // through to the song body.
-      title = undefined;
-      artist = undefined;
-      startIndex = firstPlainGuessIndex ?? startIndex;
-    }
-
-    break;
+    kept.push(lines[i]);
   }
 
-  return { title, artist, author, key, capo, tempo, startIndex };
+  return { artist, author, key, capo, tempo, content: [...kept, ...lines.slice(i)] };
 }
 
 /**
@@ -361,8 +375,7 @@ function parseLeadingMetadata(lines: string[], guessTitleArtist: boolean): {
  * - Ultimate Guitar: [ch]Chord[/ch] tags, [tab] blocks, [Verse 1] / [Chorus] section labels
  * - cuerdas.net: [Estribillo] / Estribillo: section labels, (Chord)lyrics inline format
  */
-export function parsePastedSong(text: string, options?: { guessTitleArtist?: boolean }): ParsedImportResult {
-  const guessTitleArtist = options?.guessTitleArtist ?? true;
+export function parsePastedSong(text: string): ParsedImportResult {
   const normalized = normalizeLineEndings(text).trim();
   if (!normalized) {
     return { chordpro: '', warnings: [] };
@@ -381,14 +394,13 @@ export function parsePastedSong(text: string, options?: { guessTitleArtist?: boo
   const hasChordProMarkers = /\{\s*[a-z_]+\s*:/.test(input);
 
   const lines = input.split('\n');
-  const meta = parseLeadingMetadata(lines, guessTitleArtist);
-  const content = lines.slice(meta.startIndex);
+  const meta = parseLeadingMetadata(lines);
+  const content = meta.content;
 
   if (hasChordProMarkers) {
     const parsed = parseChordPro(input);
     return {
       ...parsed,
-      title: parsed.title ?? meta.title,
       artist: parsed.artist ?? meta.artist,
       author: parsed.author ?? meta.author,
       key: parsed.key ?? meta.key,
@@ -422,6 +434,18 @@ export function parsePastedSong(text: string, options?: { guessTitleArtist?: boo
         // Intro, Outro, Solo, etc. — use a comment label
         out.push(`{comment: ${sectionLabel}}`);
       }
+      continue;
+    }
+
+    const labeledRow = parseLabeledChordRow(current);
+    if (labeledRow) {
+      if (openSection) {
+        out.push(`{end_of_${openSection}}`);
+        out.push('');
+        openSection = null;
+      }
+      out.push(`{comment: ${labeledRow.label}}`);
+      out.push(mergeChordRowWithLyrics(labeledRow.row, ''));
       continue;
     }
 
@@ -476,7 +500,6 @@ export function parsePastedSong(text: string, options?: { guessTitleArtist?: boo
   }
 
   const withDirectives = [
-    meta.title ? `{title: ${meta.title}}` : '',
     meta.artist ? `{artist: ${meta.artist}}` : '',
     meta.author ? `{author: ${meta.author}}` : '',
     meta.key ? `{key: ${meta.key}}` : '',
@@ -488,7 +511,6 @@ export function parsePastedSong(text: string, options?: { guessTitleArtist?: boo
     .join('\n');
 
   return {
-    title: meta.title,
     artist: meta.artist,
     author: meta.author,
     key: meta.key,

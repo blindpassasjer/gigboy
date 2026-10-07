@@ -8,6 +8,14 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
+### Added
+- Pasting LaCuerda-style sheets with Spanish solfège chords (DO RE MI FA SOL LA SI,
+  e.g. `MIm`, `RE4`, `LA(LA7)`, `RE4·DO9·RE4`) now imports them as chords.
+
+### Changed
+- Pasting a song no longer guesses the title and artist from plain lines at the top;
+  only labeled metadata (`Artist:`, `Key:`, `Capo:`, ...) is picked up.
+
 ## [0.3.0] - 2026-10-06
 
 ### Added
