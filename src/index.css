@@ -8973,6 +8973,12 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: var(--space-lg);
 }
 
+.profile-admin-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
 .profile-settings-card--wide {
   grid-column: 1 / -1;
 }

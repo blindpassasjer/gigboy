@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Download, LogOut, Sparkles, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Download, LogOut, Mail, ShieldCheck, Sparkles, Trash2, Users } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -375,6 +375,21 @@ export default function ProfilePage() {
             </button>
           </form>
         </section>
+
+        {user?.role === 'admin' && (
+          <section className="profile-settings-card">
+            <div className="profile-section-heading">
+              <div>
+                <h2><ShieldCheck size={18} aria-hidden="true" /> Administration</h2>
+                <p className="profile-settings-muted">Manage who can use this Gigboy. Only admins see this.</p>
+              </div>
+            </div>
+            <div className="profile-admin-links">
+              <Link to="/admin/invites" className="btn btn--secondary"><Mail size={16} /> Invites</Link>
+              <Link to="/admin/users" className="btn btn--secondary"><Users size={16} /> Users</Link>
+            </div>
+          </section>
+        )}
 
         <section className="profile-settings-card">
           <div className="profile-section-heading">

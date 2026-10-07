@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeft, Sun, Moon, Lightbulb, Maximize2, Minimize2, Coffee, Music, Folder, ListMusic, ClipboardList, Newspaper, ShieldCheck, ArrowUpRight, CircleHelp } from 'lucide-react';
+import { PanelLeft, Sun, Moon, Lightbulb, Maximize2, Minimize2, Coffee, Music, Folder, ListMusic, ClipboardList, Newspaper, ArrowUpRight, CircleHelp } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBands } from '../context/BandsContext';
@@ -571,17 +571,6 @@ export default function Layout({ children }: Props) {
           >
             <CircleHelp size={16} />
           </Link>
-          {user?.role === 'admin' && (
-            <Link
-              to="/admin/invites"
-              className="topbar-icon-btn"
-              title="Admin"
-              aria-label="Admin"
-              aria-current={pathname.startsWith('/admin/') ? 'page' : undefined}
-            >
-              <ShieldCheck size={16} />
-            </Link>
-          )}
           {user && (
             <Link
               to="/profile"

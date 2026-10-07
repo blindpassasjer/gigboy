@@ -8,6 +8,10 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
+### Changed
+- The admin shield icon is gone from the top bar. Admins now find **Invites** and **Users**
+  in an Administration card on their profile page; other accounts never see it.
+
 ## [0.3.1] - 2026-10-07
 
 ### Added
