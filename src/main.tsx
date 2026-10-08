@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
-import '@radix-ui/themes/styles.css'
+import '@radix-ui/themes/tokens.css'
 import './index.css'
 import { migrateLocalStorageKeys } from './lib/migrateLocalStorage.ts'
 import { isDynamicImportFailure, recoverFromDynamicImportFailure } from './lib/chunkRecovery.ts'
