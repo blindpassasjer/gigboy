@@ -5851,7 +5851,8 @@ input, select, textarea { font: inherit; color: var(--text); }
 .sidebar-anim {
   flex-shrink: 0;
   overflow: hidden;
-  width: var(--sidebar-width);
+  /* --sidebar-fit is set by Sidebar.tsx so the active band's name always fits */
+  width: max(var(--sidebar-width), var(--sidebar-fit, 0px));
   transition: width 0.18s ease-in-out;
   position: sticky;
   top: calc(var(--topbar-height) + var(--safe-top));
@@ -5887,13 +5888,13 @@ input, select, textarea { font: inherit; color: var(--text); }
 }
 
 .sidebar {
-  width: var(--sidebar-width);
+  width: max(var(--sidebar-width), var(--sidebar-fit, 0px));
   /* Fill the fixed-height .sidebar-anim wrapper so overflow-y below actually scrolls; without a
      height the sidebar grows to its content and the wrapper's overflow:hidden just clips it. */
   height: 100%;
   overscroll-behavior: contain;
   background: var(--surface);
-  min-width: var(--sidebar-width);
+  min-width: max(var(--sidebar-width), var(--sidebar-fit, 0px));
   border-top: 1px solid var(--border);
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -8164,16 +8165,18 @@ input, select, textarea { font: inherit; color: var(--text); }
   }
 
   .sidebar-backdrop {
+    inset: 0;
     z-index: 300;
   }
 
   .sidebar--mobile {
     position: fixed;
-    top: calc(var(--topbar-height) + var(--safe-top));
+    top: 0; /* covers the top bar so the drawer uses the full height */
+    padding-top: calc(var(--safe-top) + var(--space-lg));
     left: var(--safe-left);
     bottom: 0;
     height: auto; /* top + bottom already size the fixed drawer */
-    width: min(320px, calc(100vw - 2.5rem - var(--safe-left) - var(--safe-right)));
+    width: min(max(320px, var(--sidebar-fit, 0px)), calc(100vw - 2.5rem - var(--safe-left) - var(--safe-right)));
     min-width: 0;
     z-index: 310;
     box-shadow: var(--shadow-xl);

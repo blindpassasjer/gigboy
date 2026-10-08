@@ -610,7 +610,6 @@ export default function Layout({ children }: Props) {
           open={sidebarOpen}
           mobile={isNarrowViewport}
           onNavigate={isNarrowViewport ? () => setSidebarOpen(false) : undefined}
-          onClose={() => setSidebarOpen(false)}
         />
         {isNarrowViewport && sidebarOpen && (
           <button

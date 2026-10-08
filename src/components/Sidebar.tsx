@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CalendarDays, ChevronDown, Route as RouteIcon, ChevronRight, ClipboardList, Folder, ListMusic, Music, Newspaper, Plus, Trash2, X, ChevronsUpDown } from 'lucide-react';
+import { CalendarDays, ChevronDown, Route as RouteIcon, ChevronRight, ClipboardList, Folder, ListMusic, Music, Newspaper, Plus, Trash2, ChevronsUpDown } from 'lucide-react';
 import { useBands } from '../context/BandsContext';
 import { useAuth } from '../context/AuthContext';
 import { readStoredString, removeStoredString, writeStoredString } from '../lib/safeStorage';
@@ -45,7 +45,6 @@ interface Props {
   open: boolean;
   mobile?: boolean;
   onNavigate?: () => void;
-  onClose?: () => void;
 }
 
 function SidebarItemIcon({ icon, fallback, title }: { icon?: string; fallback: ReactNode; title?: string }) {
@@ -56,7 +55,7 @@ function SidebarItemIcon({ icon, fallback, title }: { icon?: string; fallback: R
   return <span className="sidebar-list-icon" aria-hidden="true" title={title}>{fallback}</span>;
 }
 
-export default function Sidebar({ open, mobile = false, onNavigate, onClose }: Props) {
+export default function Sidebar({ open, mobile = false, onNavigate }: Props) {
   const navigate = useNavigate();
   const { pathname, state } = useLocation();
   const stateBandId = (() => {
@@ -126,6 +125,29 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     return Number.isFinite(stored) && stored > 0 ? clampSidebarWidth(stored) : null;
   });
   const [resizing, setResizing] = useState(false);
+
+  // Width (px) the sidebar needs so the active band's name isn't cut off; null = default width suffices.
+  const [fitWidth, setFitWidth] = useState<number | null>(null);
+  const activeBandName = effectiveActiveBand?.name ?? '';
+  useLayoutEffect(() => {
+    const measure = () => {
+      const root = animRef.current;
+      const nameEl = root?.querySelector<HTMLElement>('.sidebar-band-switcher-name');
+      const aside = root?.querySelector<HTMLElement>('.sidebar');
+      if (!nameEl || !aside || nameEl.clientWidth === 0) return; // collapsed: nothing to measure
+      const range = document.createRange();
+      range.selectNodeContents(nameEl);
+      const textWidth = range.getBoundingClientRect().width;
+      // Everything in the sidebar that isn't the name's text box stays constant, so this is stable as the width changes.
+      const needed = Math.ceil(aside.getBoundingClientRect().width - nameEl.clientWidth + textWidth + 2);
+      setFitWidth((prev) => {
+        const next = needed > SIDEBAR_DEFAULT_WIDTH ? Math.min(needed, SIDEBAR_MAX_WIDTH) : null;
+        return prev === next ? prev : next;
+      });
+    };
+    measure();
+    void document.fonts?.ready.then(measure);
+  }, [activeBandName, open, mobile]);
 
   const currentWidth = () => animRef.current?.getBoundingClientRect().width ?? SIDEBAR_DEFAULT_WIDTH;
   const applyWidth = (next: number | null) => {
@@ -566,19 +588,18 @@ export default function Sidebar({ open, mobile = false, onNavigate, onClose }: P
     <div
       ref={animRef}
       className={`sidebar-anim${open ? ' sidebar-anim--open' : ''}${mobile ? ' sidebar-anim--mobile' : ''}${resizing ? ' sidebar-anim--resizing' : ''}`}
-      style={!mobile && userWidth !== null ? ({ '--sidebar-width': `${userWidth}px` } as React.CSSProperties) : undefined}
+      style={{
+        ...(!mobile && userWidth !== null ? { '--sidebar-width': `${userWidth}px` } : {}),
+        ...(fitWidth !== null ? { '--sidebar-fit': `${fitWidth}px` } : {}),
+      } as React.CSSProperties}
     >
     <aside id="app-sidebar" className={`sidebar${mobile ? ' sidebar--mobile' : ''}${open ? ' sidebar--open' : ''}`} onMouseOver={handleNameHover}>
-      <div className="sidebar-header">
-        <span className="sidebar-title"></span>
-        <div className="sidebar-header-actions">
-          {mobile && onClose && (
-            <button type="button" className="sidebar-icon-btn" title="Close sidebar" aria-label="Close sidebar" onClick={onClose}>
-              <X size={15} />
-            </button>
-          )}
+      {!mobile && (
+        <div className="sidebar-header">
+          <span className="sidebar-title"></span>
+          <div className="sidebar-header-actions" />
         </div>
-      </div>
+      )}
       <div className="sidebar-mode-switcher" ref={bandSwitcherRef}>
         <div className="sidebar-band-switcher">
         <button

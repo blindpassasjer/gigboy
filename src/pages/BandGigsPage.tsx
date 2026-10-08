@@ -673,8 +673,9 @@ export default function BandGigsPage() {
               aria-pressed={view === mode}
               onClick={() => changeView(mode)}
               title={`${label} view`}
+              aria-label={`${label} view`}
             >
-              <Icon size={14} /> <span className="gigs-view-label">{label}</span>
+              <Icon size={14} />
             </button>
           ))}
         </div>
