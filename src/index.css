@@ -12587,3 +12587,11 @@ input.stageplot-legend-number:focus {
   .help-nav ul { display: none; }
   .help-article { padding: var(--space-lg); }
 }
+
+/* iOS Safari lifts a long-pressed link for drag/preview; song rows aren't draggable. */
+.song-card-link,
+.song-preview-card-link,
+.song-action-btn {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}

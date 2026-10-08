@@ -603,7 +603,7 @@ export default function SongList({
                 key={song.id}
                 className="song-preview-card"
               >
-                <Link to={`/songs/${song.id}`} state={songPageState} className="song-preview-card-link">
+                <Link to={`/songs/${song.id}`} state={songPageState} className="song-preview-card-link" draggable={false}>
                   <div className="song-preview-card-main">
                     <span className="song-card-title">{song.title}</span>
                     {song.artist && <span className="song-card-artist">{song.artist}</span>}
@@ -622,6 +622,7 @@ export default function SongList({
                 <div className="song-actions song-actions--stacked">
                   <Link
                     to={`/songs/${song.id}/edit`}
+                    draggable={false}
                     state={songPageState}
                     className="song-action-btn song-action-btn--edit"
                     title={`Edit ${song.title}`}
@@ -666,7 +667,7 @@ export default function SongList({
                 key={song.id}
               >
                 <div className="song-card">
-                  <Link to={`/songs/${song.id}`} state={songPageState} className="song-card-link">
+                  <Link to={`/songs/${song.id}`} state={songPageState} className="song-card-link" draggable={false}>
                     <div className="song-card-main">
                       <span className="song-card-title">{song.title}</span>
                       {song.artist && <span className="song-card-artist">{song.artist}</span>}
@@ -684,6 +685,7 @@ export default function SongList({
                   <div className="song-actions">
                     <Link
                       to={`/songs/${song.id}/edit`}
+                      draggable={false}
                       state={songPageState}
                       className="song-action-btn song-action-btn--edit"
                       title={`Edit ${song.title}`}
