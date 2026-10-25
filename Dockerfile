@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-slim AS build
+FROM --platform=$BUILDPLATFORM node:20-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
