@@ -71,7 +71,7 @@ via `VITE_DEV_ORIGIN` in [package.json](package.json), or the port with `PORT=�
   whatever you set sticks to that song for you next time (the horn player reads in Eb), and each
   bandmate keeps their own
 - **Live preview** while writing — see the rendered sheet as you type
-- **Import** from ChordPro, OnSong, and pasted Ultimate Guitar / Chordify / CifraClub charts —
+- **Import** from ChordPro, OnSong, SongbookPro and pasted Ultimate Guitar / Chordify / CifraClub charts —
   drop in loose files or a whole `.zip` backup and Gigboy converts them to ChordPro
 - **Print / PDF export** — a setlist as a single large-type sheet, or the full charts one song per page
 - **Search & filter** by title, artist, tag, or language — across English, Norwegian, Spanish,

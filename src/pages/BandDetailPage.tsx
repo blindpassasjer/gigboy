@@ -43,6 +43,7 @@ export default function BandDetailPage() {
     deleteBandSongList,
     addSongToBandSongList,
     removeSongFromBandSongList,
+    addBandSetlist,
     renameBandSetlist,
     updateBandSetlistIcon,
     deleteBandSetlist,
@@ -243,13 +244,15 @@ export default function BandDetailPage() {
 
     setIsImportingSongs(true);
 
-    // Loose song files and .zip archives (e.g. a Songbook Pro / OnSong backup) both flatten
-    // to a list of parsed drafts; per-entry parse failures are collected, not fatal.
-    const { items, errors: parseErrors } = await expandSongImportSelection(files);
+    // Loose song files, .zip archives and SongbookPro backups all flatten to a list of
+    // parsed drafts; per-entry parse failures are collected, not fatal.
+    const { items, setlists, errors: parseErrors } = await expandSongImportSelection(files);
     const failedFiles: string[] = parseErrors.map((entry) => entry.name);
+    const songIdByRef = new Map<string, string>();
+    let failedAttachments = 0;
 
     const results = await Promise.allSettled(
-      items.map(async ({ draft }) => {
+      items.map(async ({ draft, attachments, ref }) => {
         const now = new Date().toISOString();
         const song: Song = {
           id: generateId(),
@@ -263,6 +266,9 @@ export default function BandDetailPage() {
           capo: draft.capo,
           tempo: draft.tempo,
           timeSignature: draft.timeSignature,
+          durationSeconds: draft.durationSeconds,
+          preferredTranspose: draft.preferredTranspose,
+          playbackUrl: draft.playbackUrl,
           chordpro: draft.chordpro,
           createdAt: now,
           updatedAt: now,
@@ -272,8 +278,35 @@ export default function BandDetailPage() {
         if (linkError) {
           throw new Error(linkError);
         }
+        if (ref) songIdByRef.set(ref, song.id);
+
+        for (const attachment of attachments ?? []) {
+          try {
+            await dataClient.bandAttachments.upload(band.id, song.id, attachment);
+          } catch {
+            failedAttachments += 1;
+          }
+        }
       })
     );
+
+    let importedSetlists = 0;
+    for (const setlist of setlists) {
+      const songIds: string[] = [];
+      const songNotes: Record<string, string> = {};
+      for (const entry of setlist.songs) {
+        const songId = songIdByRef.get(entry.ref);
+        if (!songId || songIds.includes(songId)) continue;
+        songIds.push(songId);
+        if (entry.note) songNotes[songId] = entry.note;
+      }
+      const { error } = await addBandSetlist(band.id, setlist.name, { songIds, songNotes });
+      if (error) {
+        failedFiles.push(`setlist "${setlist.name}"`);
+      } else {
+        importedSetlists += 1;
+      }
+    }
 
     let importedCount = 0;
     results.forEach((result, index) => {
@@ -284,10 +317,13 @@ export default function BandDetailPage() {
       }
     });
 
+    const setlistSuffix = importedSetlists > 0
+      ? ` and ${importedSetlists} setlist${importedSetlists === 1 ? '' : 's'}`
+      : '';
     if (importedCount > 0 && failedFiles.length === 0) {
-      toast.success(`Imported ${importedCount} song${importedCount === 1 ? '' : 's'} to ${band.name}.`);
+      toast.success(`Imported ${importedCount} song${importedCount === 1 ? '' : 's'}${setlistSuffix} to ${band.name}.`);
     } else if (importedCount > 0) {
-      toast.success(`Imported ${importedCount} song${importedCount === 1 ? '' : 's'}. ${failedFiles.length} failed.`);
+      toast.success(`Imported ${importedCount} song${importedCount === 1 ? '' : 's'}${setlistSuffix}. ${failedFiles.length} failed.`);
     } else {
       toast.error('No songs were imported.');
     }
@@ -295,6 +331,9 @@ export default function BandDetailPage() {
     if (failedFiles.length > 0) {
       const examples = failedFiles.slice(0, 2).join(', ');
       toast.error(`Failed: ${examples}${failedFiles.length > 2 ? '…' : ''}`);
+    }
+    if (failedAttachments > 0) {
+      toast.error(`${failedAttachments} PDF attachment${failedAttachments === 1 ? '' : 's'} could not be uploaded.`);
     }
 
     setIsImportingSongs(false);
@@ -726,7 +765,7 @@ export default function BandDetailPage() {
                 type="button"
                 className="btn btn--secondary"
                 onClick={() => importInputRef.current?.click()}
-                title={isImportingSongs ? 'Importing songs…' : 'Import song files or a .zip backup (ChordPro, OnSong, Ultimate Guitar…)'}
+                title={isImportingSongs ? 'Importing songs…' : 'Import song files, a .zip backup (ChordPro, OnSong, Ultimate Guitar, Songbook Pro…)'}
                 aria-label={isImportingSongs ? 'Importing songs' : 'Import song files or a zip backup'}
                 disabled={isImportingSongs}
               >

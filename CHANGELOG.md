@@ -8,6 +8,11 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
+### Added
+- **Import Songbook Pro backups.** The Library's upload button takes a `.sbpbackup` file. Songs come
+  in with their key, transpose and length; sets become setlists, with any per-set transpose
+  added as a song note; and PDF songs are created with the PDF attached.
+
 ## [0.4.0] - 2026-10-20
 
 ### Added

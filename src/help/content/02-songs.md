@@ -24,7 +24,7 @@ The **Library** is every song your band owns. Click a song to open it. The list/
 You have three ways to get a song in:
 
 - **Write it** — press the round **+** button in the Library and fill in the form (see [Writing a song](#writing-a-song)).
-- **Import files** — use the upload button at the top of the Library ("Import song files or a zip backup"). Drop in ChordPro or OnSong files, or a whole `.zip` backup, and Gigboy converts them.
+- **Import files** — use the upload button at the top of the Library ("Import song files or a zip backup"). Drop in ChordPro or OnSong files, or a whole `.zip` backup or SongbookPro backup (`.sbpbackup`), and Gigboy converts them.
 - **Paste a chart** — paste a chord sheet from Ultimate Guitar, Chordify or CifraClub into the lyrics box and Gigboy converts it to ChordPro. Chords written in solfège (Do Re Mi) are recognised too.
 
 > **Tip:** Choose a list under **Save to song list** on the form, or add the song while you are looking at a songlist, to file it straight away.
