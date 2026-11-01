@@ -5656,7 +5656,7 @@ input, select, textarea { font: inherit; color: var(--text); }
   gap: var(--space-2xs);
 }
 
-.form-actions { display: flex; justify-content: flex-end; }
+.form-actions { display: flex; justify-content: flex-end; gap: var(--space-sm); }
 
 /* ─── Login ─────────────────────────────────────────────────────────────────── */
 .login-screen {

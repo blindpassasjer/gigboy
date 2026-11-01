@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useBeforeUnload, useNavigate, useBlocker } from 'react-router-dom';
+import { useBeforeUnload, useLocation, useNavigate, useBlocker } from 'react-router-dom';
 import { flushSync } from 'react-dom';
-import { ChevronDown, FileUp, Redo2, Save, Undo2, Wand2 } from 'lucide-react';
+import { ChevronDown, FileUp, Redo2, Save, Undo2, Wand2, X } from 'lucide-react';
 import toast from '../utils/anchoredToast';
 import { generateId } from '../lib/uuid';
 import type { Song } from '../types';
@@ -48,6 +48,7 @@ Was [Em]blind but [D]now I [G]see
 {end_of_chorus}`;
 
 const UNSAVED_CHANGES_WARNING = 'You have unsaved changes.';
+const DISCARD_SONG_CONFIRM = 'Discard this song?';
 const AUTOSAVE_DELAY_MS = 900;
 
 type SongFormValues = {
@@ -77,6 +78,7 @@ export default function AddSongForm({
   songPageState,
 }: Props) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [allowNavigation, setAllowNavigation] = useState(false);
   const [title, setTitle] = useState(initialSong?.title ?? '');
   const [artist, setArtist] = useState(initialSong?.artist ?? '');
@@ -241,9 +243,14 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
 
   useEffect(() => {
     if (blocker.state !== 'blocked') return;
+    if (mode === 'add') {
+      if (window.confirm(DISCARD_SONG_CONFIRM)) blocker.proceed();
+      else blocker.reset();
+      return;
+    }
     toast(UNSAVED_CHANGES_WARNING, { icon: '!' });
     blocker.reset();
-  }, [blocker]);
+  }, [blocker, mode]);
 
   function validate(values: SongFormValues) {
     const errs: string[] = [];
@@ -453,6 +460,35 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     navigate(`/songs/${song.id}`, { state: songPageState });
   }
 
+  const handleCancel = useCallback(() => {
+    if (isDirty && !window.confirm(DISCARD_SONG_CONFIRM)) return;
+    flushSync(() => {
+      setAllowNavigation(true);
+    });
+    // No in-app history (e.g. opened directly): fall back to the library.
+    if (location.key === 'default') {
+      navigate(songPageState?.backTo ?? '/');
+    } else {
+      navigate(-1);
+    }
+  }, [isDirty, location.key, navigate, songPageState?.backTo]);
+
+  useEffect(() => {
+    if (mode !== 'add') return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (editingTabIdx !== null || editingStrumIdx !== null) return;
+      event.preventDefault();
+      handleCancel();
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [mode, editingTabIdx, editingStrumIdx, handleCancel]);
+
   const performSave = useCallback(async (valuesToSave: SongFormValues, previousSongListId: string) => {
     const generation = ++saveGenerationRef.current;
     const song = buildSong(valuesToSave);
@@ -491,7 +527,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (editingTabIdx !== null) return;
+      if (editingTabIdx !== null || editingStrumIdx !== null) return;
       event.preventDefault();
 
       const goBack = () => {
@@ -530,7 +566,7 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
     return () => {
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [mode, isDirty, navigate, initialSong?.id, songPageState, editingTabIdx, formValues, lastSavedValues, performSave]);
+  }, [mode, isDirty, navigate, initialSong?.id, songPageState, editingTabIdx, editingStrumIdx, formValues, lastSavedValues, performSave]);
 
   useEffect(() => {
     if (mode !== 'edit') return;
@@ -721,9 +757,14 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
                 {preview ? 'Edit' : 'Preview'}
               </button>
               {mode === 'add' && (
-                <Button type="submit" variant="primary" className="form-submit-inline" icon={<Save size={14} />}>
-                  Save Song
-                </Button>
+                <>
+                  <Button type="button" className="form-submit-inline" icon={<X size={14} />} onClick={handleCancel}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="primary" className="form-submit-inline" icon={<Save size={14} />}>
+                    Save Song
+                  </Button>
+                </>
               )}
               {mode === 'edit' && !preview && (
                 <>
@@ -862,6 +903,9 @@ const [tempo, setTempo] = useState(initialSong?.tempo !== undefined ? String(ini
 
         {mode === 'add' && (
           <div className="form-actions">
+            <Button type="button" icon={<X size={16} />} onClick={handleCancel}>
+              Cancel
+            </Button>
             <Button type="submit" variant="primary" icon={<Save size={16} />}>
               Save Song
             </Button>

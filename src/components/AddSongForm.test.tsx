@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import AddSongForm from './AddSongForm';
 import toast from '../utils/anchoredToast';
 import type { Song } from '../types';
@@ -10,6 +10,46 @@ vi.mock('../utils/anchoredToast', () => ({
 }));
 
 describe('AddSongForm', () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  function renderAddFromLibrary() {
+    const router = createMemoryRouter(
+      [
+        { path: '/library', element: <div>Library page</div> },
+        { path: '/add', element: <AddSongForm onSave={vi.fn().mockResolvedValue(null)} /> },
+      ],
+      { initialEntries: ['/library', '/add'], initialIndex: 1 },
+    );
+    return render(<RouterProvider router={router} />);
+  }
+
+  it('cancels an untouched form without asking', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    renderAddFromLibrary();
+
+    fireEvent.click(screen.getAllByRole('button', { name: /cancel/i })[0]);
+
+    await screen.findByText('Library page');
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('asks before discarding a dirty form on Escape', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+    renderAddFromLibrary();
+
+    fireEvent.change(screen.getByPlaceholderText('Song title'), { target: { value: 'Draft' } });
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByPlaceholderText('Song title')).toHaveValue('Draft');
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    await screen.findByText('Library page');
+  });
+
   it('does not show unsaved changes warning when saving and navigating', async () => {
     const onSave = vi.fn().mockResolvedValue(null);
 
