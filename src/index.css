@@ -5968,6 +5968,21 @@ input, select, textarea { font: inherit; color: var(--text); }
     padding: var(--space-lg);
   }
 
+  .login-brand.login-brand--hero {
+    min-width: 0;
+    gap: var(--space-sm);
+  }
+
+  .login-brand--hero .brand-logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .login-brand--hero .brand-name {
+    font-size: clamp(2rem, 13vw, 3.4rem) !important;
+    min-width: 0;
+  }
+
   .login-feature-list {
     grid-template-columns: 1fr;
     gap: var(--space-sm);
