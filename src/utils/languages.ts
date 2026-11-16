@@ -2,6 +2,7 @@ export const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
   es: 'Español',
   no: 'Norsk',
+  da: 'Dansk',
   pt: 'Português',
   fr: 'Français',
   de: 'Deutsch',

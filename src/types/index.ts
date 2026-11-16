@@ -175,6 +175,7 @@ export type Language =
   | 'es'
   | 'no'
   | 'pt'
+  | 'da'
   | 'fr'
   | 'de'
   | 'it'
