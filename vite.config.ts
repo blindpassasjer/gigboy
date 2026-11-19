@@ -221,6 +221,7 @@ export default defineConfig(({ command }) => ({
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    hookTimeout: 60000, // PGlite-backed server tests run every migration in beforeAll; slow when run in parallel
   },
   build: {
     rollupOptions: {

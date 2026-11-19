@@ -32,3 +32,5 @@ config/firebase/*.json
 *.sln
 *.sw?
 dist-demo/
+
+*.tsbuildinfo
