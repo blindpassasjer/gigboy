@@ -146,16 +146,32 @@ before the first `docker compose up`.
 
 ## Backing up
 
-Back up both folders — the database and the attachment files are separate stores:
+Back up both folders — the database and the attachment files are separate stores. The
+bundled script does both in one go (run it from the folder that holds `docker-compose.yml`):
+
+```sh
+scripts/backup.sh backup            # writes backups/gigboy-<timestamp>/{db.sql.gz,attachments.tar.gz}
+scripts/backup.sh restore backups/gigboy-20261119-030000   # replaces the current data
+```
+
+Backups are staged and only moved into place once both parts succeed, so a failed run never
+leaves a half-written backup behind. To run it nightly and keep the last 14:
+
+```sh
+0 3 * * *  cd /path/to/gigboy && KEEP=14 scripts/backup.sh backup
+```
+
+Copy the `backups/` folder off the machine too — a backup on the same disk doesn't survive
+the disk. Restoring asks for confirmation (set `YES=1` to skip it) and the app should be
+restarted afterwards (`docker compose restart app`).
+
+Prefer doing it by hand? These are the equivalent commands:
 
 ```sh
 docker compose exec postgres pg_dump -U gigboy gigboy > backup.sql
 tar czf attachments-backup.tar.gz -C data/attachments .
-```
 
-To restore:
-
-```sh
+# restore
 cat backup.sql | docker compose exec -T postgres psql -U gigboy gigboy
 tar xzf attachments-backup.tar.gz -C data/attachments
 ```

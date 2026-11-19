@@ -8,6 +8,11 @@ pre-1.0: minor bumps for features, patch bumps for fixes.
 
 ## [Unreleased]
 
+### Added
+- **`scripts/backup.sh` for self-hosters.** One command backs up the database and the attachment
+  files into a timestamped folder (`KEEP=N` prunes old ones), and `restore` puts them back. A
+  failed run never leaves a half-written backup. See SELFHOSTING.md.
+
 ## [0.4.0] - 2026-10-20
 
 ### Added
