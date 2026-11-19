@@ -27,8 +27,15 @@ function sumBytes(rows: Array<{ sizeBytes: number }>): number {
   return rows.reduce((sum, row) => sum + row.sizeBytes, 0);
 }
 
-/** Total bytes currently stored for a band: song attachments, recordings, press kit images, and logos. */
-export async function getBandStorageUsageBytes(bandId: string): Promise<number> {
+export interface BandStorageBreakdown {
+  recordingBytes: number;
+  attachmentBytes: number;
+  /** Press kit images and band logos, thumbnails included. */
+  imageBytes: number;
+}
+
+/** Bytes currently stored for a band, split by kind: song attachments, recordings, press kit images and logos. */
+export async function getBandStorageBreakdown(bandId: string): Promise<BandStorageBreakdown> {
   const bandSongRows = await db.select({ id: songs.id }).from(songs).where(eq(songs.bandId, bandId));
   const bandSongIds = bandSongRows.map((row) => row.id);
 
@@ -41,12 +48,19 @@ export async function getBandStorageUsageBytes(bandId: string): Promise<number> 
     db.select({ sizeBytes: bandLogos.sizeBytes, thumbSizeBytes: bandLogos.thumbSizeBytes }).from(bandLogos).where(eq(bandLogos.bandId, bandId)),
   ]);
 
-  return (
-    sumBytes(recordingRows)
-    + sumBytes(attachmentRows)
-    + sumBytes(imageRows.map((r) => ({ sizeBytes: r.sizeBytes + r.thumbSizeBytes })))
-    + sumBytes(logoRows.map((r) => ({ sizeBytes: r.sizeBytes + r.thumbSizeBytes })))
-  );
+  return {
+    recordingBytes: sumBytes(recordingRows),
+    attachmentBytes: sumBytes(attachmentRows),
+    imageBytes:
+      sumBytes(imageRows.map((r) => ({ sizeBytes: r.sizeBytes + r.thumbSizeBytes })))
+      + sumBytes(logoRows.map((r) => ({ sizeBytes: r.sizeBytes + r.thumbSizeBytes }))),
+  };
+}
+
+/** Total bytes currently stored for a band across every kind. */
+export async function getBandStorageUsageBytes(bandId: string): Promise<number> {
+  const { recordingBytes, attachmentBytes, imageBytes } = await getBandStorageBreakdown(bandId);
+  return recordingBytes + attachmentBytes + imageBytes;
 }
 
 /**
